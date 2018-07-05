@@ -4,6 +4,7 @@
 
 #include <ops/declarable/helpers/top_k.h>
 #include <NDArrayFactory.h>
+#include <MmulHelper.h>
 
 namespace nd4j {
 namespace ops {
@@ -202,8 +203,8 @@ namespace helpers {
 
             invertLowerMatrix(lowerMatrix.get(), upperMatrix.get());
 
-            nd4j::NDArrayFactory<T>::mmulHelper(matrix.get(), upperMatrix.get(), compound.get(), T(1.0f), T(0.0f));
-            nd4j::NDArrayFactory<T>::mmulHelper(compound.get(), permutation.get(), matrix.get(), T(1.0f), T(0.0f));
+            nd4j::MmulHelper<T>::mmul(matrix.get(), upperMatrix.get(), compound.get(), T(1.0f), T(0.0f));
+            nd4j::MmulHelper<T>::mmul(compound.get(), permutation.get(), matrix.get(), T(1.0f), T(0.0f));
             for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
                 (*output)(k) = (*matrix)(row++);
             }

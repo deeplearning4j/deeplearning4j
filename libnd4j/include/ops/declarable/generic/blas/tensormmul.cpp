@@ -7,6 +7,7 @@
 
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/CustomOperations.h>
+#include <MmulHelper.h>
 
 namespace nd4j {
     namespace ops {
@@ -28,8 +29,8 @@ namespace nd4j {
 
             nd4j_verbose("axe0: %i; axe1: %i;\n", axes_0.size(), axes_1.size());
 
-            // nd4j::NDArrayFactory<T>::tensorDot(a, b, c, axes_0, axes_1);
-            NDArray<T>* result = nd4j::NDArrayFactory<T>::tensorDot(a, b, axes_0, axes_1);
+            // nd4j::MmulHelper<T>::tensorDot(a, b, c, axes_0, axes_1);
+            NDArray<T>* result = nd4j::MmulHelper<T>::tensorDot(a, b, axes_0, axes_1);
             *c = *result;
 
             STORE_RESULT(*c);

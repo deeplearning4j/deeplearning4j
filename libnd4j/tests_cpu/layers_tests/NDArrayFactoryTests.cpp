@@ -6,6 +6,7 @@
 #include <NDArray.h>
 #include <NDArrayList.h>
 #include <NDArrayFactory.h>
+#include <MmulHelper.h>
 #include "testlayers.h"
 
 using namespace nd4j;
@@ -82,7 +83,7 @@ TEST_F(NDArrayFactoryTests, mmulHelper_test_1) {
     NDArray<float> y('c', {3,3}, {1,2,3,4,5,6,7,8,9});
     NDArray<float> expected('c', {3,3}, {138.,171.,204. ,174.,216.,258. ,210.,261.,312.});    
                                                  
-    NDArray<float>* result = NDArrayFactory<float>::mmulHelper(&x, &y, nullptr, 1., 0.);
+    NDArray<float>* result = MmulHelper<float>::mmul(&x, &y, nullptr, 1., 0.);
 
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
@@ -100,7 +101,7 @@ TEST_F(NDArrayFactoryTests, mmulHelper_test_2) {
     NDArray<float> expected('c', {3,3}, {138.,171.,204. ,174.,216.,258. ,210.,261.,312.});    
     NDArray<float> result('c', {3,3});
                                                  
-    NDArrayFactory<float>::mmulHelper(&x, &y, &result, 1., 0.);
+    MmulHelper<float>::mmul(&x, &y, &result, 1., 0.);
 
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));    
@@ -114,7 +115,7 @@ TEST_F(NDArrayFactoryTests, mmulHelper_test_3) {
     NDArray<float> y('c', {4,5});  NDArrayFactory<float>::linspace(1, y);
     NDArray<float> expected('c', {3,5}, {110.,120.,130.,140.,150.,246.,272.,298.,324.,350.,382.,424.,466.,508.,550.});    
                                                      
-    NDArray<float>* result = NDArrayFactory<float>::mmulHelper(&x, &y, nullptr, 1., 0.);
+    NDArray<float>* result = MmulHelper<float>::mmul(&x, &y, nullptr, 1., 0.);
 
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));    
@@ -130,7 +131,7 @@ TEST_F(NDArrayFactoryTests, mmulHelper_test_4) {
     NDArray<float> expected('c', {3,5}, {110.,120.,130.,140.,150.,246.,272.,298.,324.,350.,382.,424.,466.,508.,550.});    
     NDArray<float> result('c', {3,5});
                                                      
-    NDArrayFactory<float>::mmulHelper(&x, &y, &result, 1., 0.);
+    MmulHelper<float>::mmul(&x, &y, &result, 1., 0.);
 
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));    
@@ -144,7 +145,7 @@ TEST_F(NDArrayFactoryTests, mmulHelper_test_5) {
     NDArray<float> y('c', {3,5});  NDArrayFactory<float>::linspace(1, y);
     NDArray<float> expected('c', {4,5}, {46., 52., 58., 64., 70.,100.,115.,130.,145.,160.,154.,178.,202.,226.,250.,208.,241.,274.,307.,340.});    
                                                      
-    NDArray<float>* result = NDArrayFactory<float>::mmulHelper(&x, &y, nullptr, 1., 0.);
+    NDArray<float>* result = MmulHelper<float>::mmul(&x, &y, nullptr, 1., 0.);
 
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));    
@@ -160,7 +161,7 @@ TEST_F(NDArrayFactoryTests, mmulHelper_test_6) {
     NDArray<float> expected('c', {4,5}, {46., 52., 58., 64., 70.,100.,115.,130.,145.,160.,154.,178.,202.,226.,250.,208.,241.,274.,307.,340.});    
     NDArray<float> result('c', {4,5});
                                                      
-    NDArrayFactory<float>::mmulHelper(&x, &y, &result, 1., 0.);
+    MmulHelper<float>::mmul(&x, &y, &result, 1., 0.);
 
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));    
@@ -175,25 +176,11 @@ TEST_F(NDArrayFactoryTests, mmulHelper_test_7) {
     NDArray<float> exp('c', {4, 4}, {1,2, 3, 4,2,4, 6, 8,3,6, 9,12,4,8,12,16});
     NDArray<float> result('c', {4,4});
                                                      
-    NDArrayFactory<float>::mmulHelper(&x, &y, &result, 1., 0.);
+    MmulHelper<float>::mmul(&x, &y, &result, 1., 0.);
 
     ASSERT_TRUE(exp.isSameShape(&result));
     ASSERT_TRUE(exp.equalsTo(&result));    
 
-}
-
-////////////////////////////////////////////////////////////////////
-TEST_F(NDArrayFactoryTests, Test_Concat_1) {
-    NDArray<float> x('c', {2, 2}, {1, 2, 3, 4});
-    NDArray<float> y('c', {2, 2}, {-1, -2, -3, -4});
-    NDArray<float> exp('c', {2, 4}, {1, 2, -1, -2, 3, 4, -3, -4});
-
-    auto z = NDArrayFactory<float>::concat({&x, &y}, -1);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete z;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -219,7 +206,7 @@ TEST_F(NDArrayFactoryTests, tensordot_test_1) {
     NDArray<float> a('c', {2, 3, 4});
     NDArray<float> b('c', {2, 5, 3});
                                       
-    NDArray<float>* c =  NDArrayFactory<float>::tensorDot(&a, &b, {1}, {2});
+    NDArray<float>* c =  MmulHelper<float>::tensorDot(&a, &b, {1}, {2});
 
     ASSERT_TRUE(c->isSameShape({2,4,2,5}));
     delete c;
@@ -231,7 +218,7 @@ TEST_F(NDArrayFactoryTests, tensordot_test_2) {
     NDArray<float> a('c', {7, 3, 4, 6});
     NDArray<float> b('c', {2, 5, 3, 8, 4});
                                       
-    NDArray<float>* c =  NDArrayFactory<float>::tensorDot(&a, &b, {2,1}, {4,2});    
+    NDArray<float>* c =  MmulHelper<float>::tensorDot(&a, &b, {2,1}, {4,2});    
 
     ASSERT_TRUE(c->isSameShape({7,6,2,5,8}));
     delete c;
@@ -244,7 +231,7 @@ TEST_F(NDArrayFactoryTests, tensordot_test_3) {
     NDArray<float> b('c', {2, 5, 3, 8, 4});
     NDArray<float> c('f', {7,6,2,8,5});
                                       
-    NDArrayFactory<float>::tensorDot(&a, &b, &c, {2,1}, {4,2}, {0,1,2,4,3});
+    MmulHelper<float>::tensorDot(&a, &b, &c, {2,1}, {4,2}, {0,1,2,4,3});
 
     ASSERT_TRUE(c.isSameShape({7,6,2,8,5}));    
 }
@@ -273,7 +260,7 @@ TEST_F(NDArrayFactoryTests, tensordot_test_4) {
     NDArrayFactory<float>::linspace(0.5, a, 0.5);
     NDArrayFactory<float>::linspace(0.5, b, 0.5);
 
-    NDArrayFactory<float>::tensorDot(&a, &b, &c, {2,1}, {4,2}, {0,1,2,4,3});
+    MmulHelper<float>::tensorDot(&a, &b, &c, {2,1}, {4,2}, {0,1,2,4,3});
     
     ASSERT_TRUE(c.isSameShape(expected));
     ASSERT_TRUE(c.equalsTo(expected));
@@ -290,7 +277,7 @@ TEST_F(NDArrayFactoryTests, tensordot_test_5) {
     NDArrayFactory<float>::linspace(0.5, a, 0.5);
     NDArrayFactory<float>::linspace(0.5, b, 0.5);
 
-    NDArrayFactory<float>::tensorDot(&a, &b, &c, {1}, {0});
+    MmulHelper<float>::tensorDot(&a, &b, &c, {1}, {0});
     // c.printIndexedBuffer();
 
     ASSERT_TRUE(c.isSameShape(expected));
@@ -316,7 +303,7 @@ TEST_F(NDArrayFactoryTests, tensordot_test_6) {
     NDArray<float>* cR = c.reshape(a.ordering(), {bS, oH, oW, iC, mC});
     
     // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
-    NDArrayFactory<float>::tensorDot(&a, &b, cR, {{1,0,4,5,2,3}, {iC,bS*oH*oW,kW*kH}},  {{2,0,1,3},{iC,kH*kW,mC}},  {{3,0,1,2,4},{iC, bS*oH*oW, mC}});
+    MmulHelper<float>::tensorDot(&a, &b, cR, {{1,0,4,5,2,3}, {iC,bS*oH*oW,kW*kH}},  {{2,0,1,3},{iC,kH*kW,mC}},  {{3,0,1,2,4},{iC, bS*oH*oW, mC}});
     delete cR;
     
     ASSERT_TRUE(c.isSameShape(expected));
@@ -334,7 +321,7 @@ TEST_F(NDArrayFactoryTests, mmmulHelperAgain) {
     y.assign(1.0f);
     e.assign(156.0f);
 
-    NDArrayFactory<float>::mmulHelper(&x, &y, &z);
+    MmulHelper<float>::mmul(&x, &y, &z);
 
     ASSERT_TRUE(e.isSameShape(z));
     ASSERT_TRUE(e.equalsTo(z));
@@ -359,8 +346,8 @@ TEST_F(NDArrayFactoryTests, mmmulHelperAgain) {
 //     // NDArray<double> temp('c', {2,1});
                                                      
 //     NDArray<double>* bottomColumn =  x.subarray({{2, 4}, {3, 4}});
-//     // NDArrayFactory<double>::mmulHelper(&y, bottomColumn, &temp, 1., 0.);
-//     NDArrayFactory<double>::mmulHelper(&y, bottomColumn, bottomColumn, 1., 0.);
+//     // MmulHelper<double>::mmul(&y, bottomColumn, &temp, 1., 0.);
+//     MmulHelper<double>::mmul(&y, bottomColumn, bottomColumn, 1., 0.);
 //     // bottomColumn->assign(&temp);
 //     //x.printBuffer();
 
