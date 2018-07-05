@@ -9,8 +9,9 @@ import argparse
 class DocumentationGenerator:
 
     def __init__(self, args):
-        self.template_dir = args.templates
-        self.target_dir = args.sources
+        self.out_language = args.out_language
+        self.template_dir = args.templates if self.out_language == 'en' else args.templates + '_' + self.out_language
+        self.target_dir = args.sources if self.out_language == 'en' else args.sources + '_' + self.out_language
         self.project_name = args.project + '/'
         self.language = args.language
         self.docs_root = args.docs_root
@@ -276,6 +277,7 @@ if __name__ == '__main__':
     parser.add_argument('--docs_root', '-d', type=str, required=False, default='http://deeplearning4j.org')
     parser.add_argument('--templates', '-t', type=str, required=False, default='templates')
     parser.add_argument('--sources', '-s', type=str, required=False, default='doc_sources')
+    parser.add_argument('--out_language', '-o', type=str, required=False, default='en')
 
     args = parser.parse_args()
     doc_generator = DocumentationGenerator(args)
