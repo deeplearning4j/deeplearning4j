@@ -439,27 +439,8 @@ mkbuilddir() {
         echo "Removing blasbuild"
         rm -Rf blasbuild
     fi
-    mkdir -p blasbuild
-    cd blasbuild
-    CHIP_DIR="$CHIP"
-    if [ -n "$CHIP_EXTENSION" ]; then
-        CHIP_DIR="$CHIP_DIR-$CHIP_EXTENSION"
-    fi
-    if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
-        CHIP_DIR="$CHIP_DIR-$CHIP_VERSION"
-    fi
-
-    # create appropriate directories and links here for ND4J
-    if [ "$CHIP" != "$CHIP_DIR" ]; then
-        mkdir -p "$CHIP_DIR"
-        rm -f "$CHIP"
-        ln -s "$CHIP_DIR" "$CHIP"
-        mkdir -p "$CHIP/blas"
-        cd "$CHIP_DIR"
-    else
-        mkdir -p "$CHIP"
-        cd "$CHIP"
-    fi
+    mkdir -p "blasbuild/$CHIP"
+    cd "blasbuild/$CHIP"
 }
 
 
