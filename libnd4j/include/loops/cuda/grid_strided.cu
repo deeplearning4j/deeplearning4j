@@ -142,13 +142,22 @@ extern "C" __global__ void invertedMetaPairwiseStridedNumericHalf(const int opTy
 
 namespace functions {
     namespace grid {
+        template <typename T>
+        __device__ __noinline__ T invertedOpExecutorB(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, T x, T y, T *extras);
+
+        template <typename T>
+        __device__ __noinline__ T execute_2OEF(const int opType, const int opNum, T x, T y, T *extras);
+
+        template <typename T>
+        __device__ __noinline__ T execute_1OEF(const int opType, const int opNum, T x, T *extras);
+
 
         /**
          * This method is able to execute various ops that takes 2 operands (x, y) + extras
          * @tparam T
          */
         template <typename T>
-        __device__ __noinline__ T _execute_2OEF(const int opType, const int opNum, T x, T y, T *extras) {
+        __device__ __noinline__ T execute_2OEF(const int opType, const int opNum, T x, T y, T *extras) {
             T z;
             switch(opType) {
                 case 2: {
@@ -169,7 +178,7 @@ namespace functions {
         * @tparam T
         */
         template <typename T>
-        __device__ __noinline__ T _execute_1OEF(const int opType, const int opNum, T x, T *extras) {
+        __device__ __noinline__ T execute_1OEF(const int opType, const int opNum, T x, T *extras) {
             T z;
             switch(opType) {
                 case 0: {
@@ -187,7 +196,7 @@ namespace functions {
 
 
         template <typename T>
-        __device__ T _invertedOpExecutorB(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, T x, T y, T *extras) {
+        __device__ __noinline__ T invertedOpExecutorB(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, T x, T y, T *extras) {
             // this code is basically InvertedMetaOp, reorganized to suit per-type execution
 
             Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (extras);
@@ -196,13 +205,13 @@ namespace functions {
             T intermediate;
 
             // Executing first op, opA
-            intermediate = _execute_2OEF<T>(opTypeA, opNumA, x, y, paramsA);
+            intermediate = functions::grid::execute_2OEF<T>(opTypeA, opNumA, x, y, paramsA);
 
             // Executing second op, opB
-            intermediate = _execute_1OEF<T>(opTypeB, opNumB, intermediate, paramsB);
+            T intermediate2 = functions::grid::execute_1OEF<T>(opTypeB, opNumB, intermediate, paramsB);
 
             // just returning result now
-            return intermediate;
+            return intermediate2;
         }
 
         template<typename T>
@@ -228,11 +237,11 @@ namespace functions {
 
             if (incx == incy && incy == incz && incx == 1) {
                 for (Nd4jLong i = tid; i < n; i += gridDim.x * blockDim.x) {
-                    result[i] = _invertedOpExecutorB(opTypeA, opNumA, opTypeB, opNumB, dx[i], dy[i], params);
+                    result[i] = functions::grid::invertedOpExecutorB<T>(opTypeA, opNumA, opTypeB, opNumB, dx[i], dy[i], params);
                 }
             } else {
                 for (Nd4jLong i = tid; i < n; i += gridDim.x * blockDim.x) {
-                    result[i * incz] = _invertedOpExecutorB(opTypeA, opNumA, opTypeB, opNumB, dx[i * incx], dy[i * incy], params);
+                    result[i * incz] = functions::grid::invertedOpExecutorB<T>(opTypeA, opNumA, opTypeB, opNumB, dx[i * incx], dy[i * incy], params);
                 }
             }
         }

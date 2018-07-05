@@ -134,28 +134,37 @@ extern "C" __global__ void invertedMetaPairwiseShapedNumericHalf(const int opTyp
 
 namespace functions {
     namespace grid {
+        template <typename T>
+        __device__ __noinline__ T invertedOpExecutorA(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, T x, T y, T *extras);
 
-        __device__ void _ind2subC(int rank, Nd4jLong *shape, Nd4jLong idx, Nd4jLong length, Nd4jLong *coords) {
+        template <typename T>
+        __device__  __noinline__ T execute_2OE(const int opType, const int opNum, T x, T y, T *extras);
+
+        template <typename T>
+        __device__ __noinline__ T execute_1OE(const int opType, const int opNum, T x, T *extras);
+
+
+        __device__ __noinline__ void _ind2subC(int rank, Nd4jLong *shape, Nd4jLong idx, Nd4jLong length, Nd4jLong *coords) {
             shape::ind2subC(rank, shape, idx, length, coords);
         }
 
-        __device__ void _ind2subC(int rank, Nd4jLong *shape, Nd4jLong idx, Nd4jLong *coords) {
+        __device__ __noinline__ void _ind2subC(int rank, Nd4jLong *shape, Nd4jLong idx, Nd4jLong *coords) {
             shape::ind2subC(rank, shape, idx, coords);
         }
 
-        __device__ Nd4jLong _getOffset(Nd4jLong offset,  Nd4jLong *shape, Nd4jLong *stride, Nd4jLong *coords, int rank) {
+        __device__ __noinline__ Nd4jLong _getOffset(Nd4jLong offset,  Nd4jLong *shape, Nd4jLong *stride, Nd4jLong *coords, int rank) {
             return shape::getOffset(offset, shape, stride, coords, rank);
         }
 
-        __device__ Nd4jLong* _shapeOf(Nd4jLong *shape) {
+        __device__ __noinline__ Nd4jLong* _shapeOf(Nd4jLong *shape) {
             return shape::shapeOf(shape);
         }
 
-        __device__ Nd4jLong* _stride(Nd4jLong *shape) {
+        __device__ __noinline__ Nd4jLong* _stride(Nd4jLong *shape) {
             return shape::stride(shape);
         }
 
-        __device__ int _rank(Nd4jLong* shape) {
+        __device__ __noinline__ int _rank(Nd4jLong* shape) {
             return shape::rank(shape);
         }
 
@@ -164,8 +173,9 @@ namespace functions {
          * @tparam T
          */
         template <typename T>
-        __device__  __noinline__ T _execute_2OE(const int opType, const int opNum, T x, T y, T *extras) {
+        __device__  __noinline__ T execute_2OE(const int opType, const int opNum, T x, T y, T *extras) {
             T z;
+
             switch(opType) {
                 case 2: {
                     EXECUTE_NOE((x, y, extras), OPS_A(PAIRWISE_TRANSFORM_OPS));
@@ -176,6 +186,7 @@ namespace functions {
                 }
                 break;
             }
+
             return z;
         }
 
@@ -185,7 +196,7 @@ namespace functions {
         * @tparam T
         */
         template <typename T>
-        __device__ __noinline__ T _execute_1OE(const int opType, const int opNum, T x, T *extras) {
+        __device__ __noinline__ T execute_1OE(const int opType, const int opNum, T x, T *extras) {
             T z;
 
             switch(opType) {
@@ -203,7 +214,7 @@ namespace functions {
         }
 
         template <typename T>
-        __device__ T _invertedOpExecutorA(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, T x, T y, T *extras) {
+        __device__ __noinline__ T invertedOpExecutorA(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, T x, T y, T *extras) {
             // this code is basically InvertedMetaOp, reorganized to suit per-type execution
 
             auto wrap = reinterpret_cast<Nd4jPointer *> (extras);
@@ -212,13 +223,15 @@ namespace functions {
             T intermediate;
 
             // Executing first op, opA
-            intermediate = _execute_2OE<T>(opTypeA, opNumA, x, y, paramsA);
+            intermediate = functions::grid::execute_2OE<T>(opTypeA, opNumA, x, y, paramsA);
 
             // Executing second op, opB
-            intermediate = _execute_1OE<T>(opTypeB, opNumB, intermediate, paramsB);
+            T intermediate2 = functions::grid::execute_1OE<T>(opTypeB, opNumB, intermediate, paramsB);
+
+            //printf("X: [%f]; Y: [%f]; I0: [%f]; Z: [%f];\n", (float) x, (float) y, (float) intermediate, (float) intermediate2);
 
             // just returning result now
-            return intermediate;
+            return intermediate2;
         }
 
         template<typename T>
@@ -267,7 +280,7 @@ namespace functions {
 
                     auto xOffset = _getOffset(0, xShape, xStride, xCoord, xRank);
                     auto yOffset = _getOffset(0, yShape, yStride, yCoord, yRank);
-                    result[xOffset] = _invertedOpExecutorA(opTypeA, opNumA, opTypeB, opNumB, dx[xOffset], y[yOffset], extraParams); //OpType::op(dx[xOffset], y[yOffset], extraParams);
+                    result[xOffset] = functions::grid::invertedOpExecutorA<T>(opTypeA, opNumA, opTypeB, opNumB, dx[xOffset], y[yOffset], extraParams); //OpType::op(dx[xOffset], y[yOffset], extraParams);
                 }
 
             } else {
@@ -283,7 +296,7 @@ namespace functions {
                     auto xOffset = _getOffset(0, xShape, xStride, xCoord, xRank);
                     auto yOffset = _getOffset(0, yShape, yStride, yCoord, yRank);
                     auto resultOffset = _getOffset(0, zShape, zStride, resultCoord, resultRank);
-                    result[resultOffset] = _invertedOpExecutorA(opTypeA, opNumA, opTypeB, opNumB, dx[xOffset], y[yOffset], extraParams); //OpType::op(dx[xOffset], y[yOffset], extraParams);
+                    result[resultOffset] = functions::grid::invertedOpExecutorA<T>(opTypeA, opNumA, opTypeB, opNumB, dx[xOffset], y[yOffset], extraParams); //OpType::op(dx[xOffset], y[yOffset], extraParams);
                 }
             }
         }
