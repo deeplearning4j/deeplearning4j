@@ -164,7 +164,7 @@ namespace functions {
          * @tparam T
          */
         template <typename T>
-        __device__ T _execute_2OE(const int opType, const int opNum, T x, T y, T *extras) {
+        __device__  __noinline__ T _execute_2OE(const int opType, const int opNum, T x, T y, T *extras) {
             T z;
             switch(opType) {
                 case 2: {
@@ -185,8 +185,9 @@ namespace functions {
         * @tparam T
         */
         template <typename T>
-        __device__ T _execute_1OE(const int opType, const int opNum, T x, T *extras) {
+        __device__ __noinline__ T _execute_1OE(const int opType, const int opNum, T x, T *extras) {
             T z;
+
             switch(opType) {
                 case 0: {
                     EXECUTE_NOE((x, extras), OPS_A(SCALAR_OPS));
@@ -213,12 +214,8 @@ namespace functions {
             // Executing first op, opA
             intermediate = _execute_2OE<T>(opTypeA, opNumA, x, y, paramsA);
 
-            T i0 = intermediate;
-
             // Executing second op, opB
             intermediate = _execute_1OE<T>(opTypeB, opNumB, intermediate, paramsB);
-
-            printf("X: [%f]; Y: [%f]; i0: [%f]; Z: [%f];\n", (float) x, (float) y, (float) i0, (float) intermediate);
 
             // just returning result now
             return intermediate;
@@ -264,8 +261,6 @@ namespace functions {
                 Nd4jLong xCoord[MAX_RANK];
                 Nd4jLong yCoord[MAX_RANK];
 
-                printf("Inplace\n");
-
                 for (Nd4jLong i = tid; i < n; i += gridDim.x * blockDim.x) {
                     _ind2subC(xRank, xShape, i, n, xCoord);
                     _ind2subC(yRank, yShape, i, n, yCoord);
@@ -279,8 +274,6 @@ namespace functions {
                 Nd4jLong xCoord[MAX_RANK];
                 Nd4jLong yCoord[MAX_RANK];
                 Nd4jLong resultCoord[MAX_RANK];
-
-                printf("Non-inplace\n");
 
                 for (Nd4jLong i = tid; i < n; i += gridDim.x * blockDim.x) {
                     _ind2subC(xRank, xShape, i, n, xCoord);
@@ -365,7 +358,6 @@ namespace functions {
 
         template <>
         void GRIDShaped<float>::execMetaPredicateShaped(cudaStream_t * stream, Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jLong N, float *dx, Nd4jLong *xShapeInfo, float *dy, Nd4jLong *yShapeInfo, float *dz, Nd4jLong *zShapeInfo, float *extraA, float *extraB, float scalarA, float scalarB) {
-            nd4j_printf("launching execMetaPredicateShaped\n","");
             invertedMetaPairwiseShapedNumericFloat<<<128, 1024, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
 
             DEBUG_KERNEL(stream, opNumA);

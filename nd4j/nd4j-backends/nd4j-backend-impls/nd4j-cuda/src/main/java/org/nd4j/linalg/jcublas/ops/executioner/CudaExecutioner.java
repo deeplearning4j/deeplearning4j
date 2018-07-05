@@ -3059,6 +3059,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     public void setTadThreshold(int threshold) {
         nativeOps.setTADThreshold(threshold);
     }
+
+
+    @Override
+    public ExecutionerType type() {
+        return ExecutionerType.CUDA;
+    }
 }
 
 

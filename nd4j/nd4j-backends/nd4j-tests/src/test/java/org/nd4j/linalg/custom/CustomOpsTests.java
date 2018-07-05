@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -221,18 +222,11 @@ public class CustomOpsTests {
     @Test
     public void testMergeMaxMixedOrder() {
         val array0 = Nd4j.rand('f', 5, 2).addi(1); //some random array with +ve numbers
-        Nd4j.getExecutioner().commit();
-        log.info("Array0: {}", array0);
-        val array1 = array0.dup('c');
-        array1.addi(5);
-        Nd4j.getExecutioner().commit();
-        val s = array1.toString();
-        log.info("Array1: {}", s);
+        val array1 = array0.dup('c').addi(5);
         array1.put(0, 0, 0); //array1 is always bigger than array0 except at 0,0
 
         //expected value of maxmerge
         val exp = array1.dup();
-        Nd4j.getExecutioner().commit();
         exp.putScalar(0, 0, array0.getDouble(0, 0));
 
         val zF = Nd4j.zeros(array0.shape() ,'f');
@@ -243,7 +237,6 @@ public class CustomOpsTests {
                 .build();
         Nd4j.getExecutioner().exec(op);
 
-        log.info("Exp: {}", exp);
         assertEquals(exp, zF);
     }
 
@@ -323,6 +316,9 @@ public class CustomOpsTests {
 
     @Test
     public void testRandomStandardNormal_1() {
+        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA)
+            return;
+
         val shape = Nd4j.create(new float[] {5, 10});
         val op = new RandomStandardNormal(shape);
 
@@ -336,6 +332,9 @@ public class CustomOpsTests {
 
     @Test
     public void testRandomStandardNormal_2() {
+        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA)
+            return;
+
         val shape = new long[]{5, 10};
         val op = new RandomStandardNormal(shape);
 

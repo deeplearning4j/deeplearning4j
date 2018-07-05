@@ -2113,4 +2113,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
         return retShape;
     }
+
+    @Override
+    public ExecutionerType type() {
+        return ExecutionerType.NATIVE_CPU;
+    }
 }
