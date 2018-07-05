@@ -125,6 +125,10 @@ public class SameDiff {
     // here we save String -> Integer conversion to variables
     private transient Map<String, Integer> reverseMap = null;
 
+    // counter for auto-naming variables
+    private int variableId = 0;
+
+
 
     /**
      * For import, many times we have variables
@@ -1719,14 +1723,11 @@ public class SameDiff {
         return ret;
     }
 
-    // auto naming
-    private int _var_id = 0;
-
     private String getNewVarName() {
-        String varName = "sd_var_" + String.valueOf(_var_id);
+        String varName = "sd_var_" + String.valueOf(variableId);
         while (variableMap.containsKey(varName)) {
-            _var_id++;
-            varName = "sd_var_" + String.valueOf(_var_id);
+            variableId++;
+            varName = "sd_var_" + String.valueOf(variableId);
         }
         return varName;
     }
@@ -3364,8 +3365,8 @@ public class SameDiff {
      * @param y Input 2
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
-    public SDVariable xor(SDVariable ix, SDVariable iy) {
-        return xor(null, ix, iy);
+    public SDVariable xor(SDVariable x, SDVariable y) {
+        return xor(null, x, y);
     }
 
     /**
@@ -3379,19 +3380,19 @@ public class SameDiff {
      * @param y    Input 2
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
-    public SDVariable xor(String name, SDVariable ix, SDVariable iy) {
-        SDVariable result = f().xor(ix, iy);
+    public SDVariable xor(String name, SDVariable x, SDVariable y) {
+        SDVariable result = f().xor(x, y);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Elementwise absolute value operation: out = abs(x)
      *
-     * @param ix Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable abs(SDVariable ix) {
-        return abs(null, ix);
+    public SDVariable abs(SDVariable x) {
+        return abs(null, x);
     }
 
     /**
@@ -4614,7 +4615,7 @@ public class SameDiff {
      * Merge max function: merges an arbitrary number of equal shaped arrays using element-wise maximum operation:
      * out = max_i in[i]
      *
-     * @param iX Input variables
+     * @param inputs Input variables
      * @return Output variable
      */
     public SDVariable mergeMax(String name, SDVariable... inputs) {
@@ -5296,11 +5297,11 @@ public class SameDiff {
      * out[1] = in[i] if -1 < in[i] < 1<br>
      * out[i] = 1 if in[i] >= 1<br>
      *
-     * @param a Input variable
+     * @param in Input variable
      * @return Output variable
      */
-    public SDVariable hardTanh(SDVariable iX) {
-        return hardTanh(null, iX);
+    public SDVariable hardTanh(SDVariable in) {
+        return hardTanh(null, in);
     }
 
     /**
@@ -5310,11 +5311,11 @@ public class SameDiff {
      * out[i] = 1 if in[i] >= 1<br>
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param in   Input variable
      * @return Output variable
      */
-    public SDVariable hardTanh(String name, SDVariable iX) {
-        SDVariable result = functionFactory.hardTanh(iX);
+    public SDVariable hardTanh(String name, SDVariable in) {
+        SDVariable result = functionFactory.hardTanh(in);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -5324,7 +5325,7 @@ public class SameDiff {
      * out[1] = 0.2*in[i]+0.5 if -2.5 < in[i] < 2.5<br>
      * out[i] = 1 if in[i] >= 2.5<br>
      *
-     * @param a Input variable
+     * @param in Input variable
      * @return Output variable
      */
     public SDVariable hardSigmoid(SDVariable in) {
@@ -5338,7 +5339,7 @@ public class SameDiff {
      * out[i] = 1 if in[i] >= 2.5<br>
      *
      * @param name Name of the output variable
-     * @param a    Input variable
+     * @param in    Input variable
      * @return Output variable
      */
     public SDVariable hardSigmoid(String name, SDVariable in) {
@@ -7686,11 +7687,8 @@ public class SameDiff {
      * @param dimensions Dimensions to calculate cosine similarity over
      * @return Output variable
      */
-    public SDVariable cosineSimilarity(String name, SDVariable iX, SDVariable i_y, int... dimensions) {
-        SDVariable cosim = functionFactory.cosineSimilarity(
-                iX,
-                i_y,
-                dimensions);
+    public SDVariable cosineSimilarity(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable cosim = functionFactory.cosineSimilarity(x, y, dimensions);
         return updateVariableNameAndReference(cosim, name);
     }
 
@@ -7787,175 +7785,190 @@ public class SameDiff {
     }
 
     /**
-     * TODO: doc string
+     * Jaccard similarity reduction operation. The output contains the Jaccard distance for each
+     * tensor along the the specified dimensions.
      *
-     * @param ix
-     * @param iy
-     * @param dimensions
-     * @return
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Dimensions to calculate Jaccard similarity over
+     * @return Output variable
      */
-    public SDVariable jaccardDistance(SDVariable ix, SDVariable iy, int... dimensions) {
-        return jaccardDistance(null, ix, iy, dimensions);
+    public SDVariable jaccardDistance(SDVariable x, SDVariable y, int... dimensions) {
+        return jaccardDistance(null, x, y, dimensions);
     }
 
     /**
-     * TODO doc string
+     * Jaccard similarity reduction operation. The output contains the Jaccard distance for each
+     * tensor along the the specified dimensions.
      *
-     * @param name
-     * @param ix
-     * @param iy
-     * @param dimensions
-     * @return
+     * @param name       Name of the output variable
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Dimensions to calculate Jaccard similarity over
+     * @return Output variable
      */
-    public SDVariable jaccardDistance(String name, SDVariable ix, SDVariable iy, int... dimensions) {
-        SDVariable result = functionFactory.jaccardDistance(ix, iy, dimensions);
+    public SDVariable jaccardDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable result = functionFactory.jaccardDistance(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
-     * TODO doc string
+     * Binary cross entropy loss.
      *
-     * @param iX
-     * @param i_y
-     * @param dimensions
-     * @return
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Reduction dimensions
+     * @return Output variable
      */
-    public SDVariable lossBinaryXENT(SDVariable iX, SDVariable i_y, int... dimensions) {
-        return lossBinaryXENT(generateNewVarName(new LossBinaryXENT().opName(), 0), iX, i_y, dimensions);
+    public SDVariable lossBinaryXENT(SDVariable x, SDVariable y, int... dimensions) {
+        return lossBinaryXENT(generateNewVarName(new LossBinaryXENT().opName(), 0), x, y, dimensions);
     }
 
     /**
      * TODO doc string
      *
-     * @param iX
-     * @param i_y
-     * @param dimensions
-     * @return
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Reduction dimensions
+     * @return Output variable
      */
-    public SDVariable lossCosineSimilarity(SDVariable iX, SDVariable i_y, int... dimensions) {
-        return lossCosineSimilarity(generateNewVarName(new LossCosineProximity().opName(), 0), iX, i_y, dimensions);
+    public SDVariable lossCosineSimilarity(SDVariable x, SDVariable y, int... dimensions) {
+        return lossCosineSimilarity(generateNewVarName(new LossCosineProximity().opName(), 0), x, y, dimensions);
     }
 
     // TODO: document all losses
     /**
-     * @param iX
-     * @param i_y
-     * @param dimensions
-     * @return
+     * Hinge loss
+     *
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Reduction dimensions
+     * @return Output variable
      */
-    public SDVariable lossHinge(SDVariable iX, SDVariable i_y, int... dimensions) {
-        return lossHinge(generateNewVarName(new LossHinge().opName(), 0), iX, i_y, dimensions);
+    public SDVariable lossHinge(SDVariable x, SDVariable y, int... dimensions) {
+        return lossHinge(generateNewVarName(new LossHinge().opName(), 0), x, y, dimensions);
 
     }
 
     /**
-     * @param iX
-     * @param i_y
-     * @param dimensions
-     * @return
+     * Kullback-Leibler divergence loss
+     *
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Reduction dimensions
+     * @return Output variable
      */
-    public SDVariable lossKLD(SDVariable iX, SDVariable i_y, int... dimensions) {
-        return lossKLD(generateNewVarName(new LossKLD().opName(), 0), iX, i_y, dimensions);
+    public SDVariable lossKLD(SDVariable x, SDVariable y, int... dimensions) {
+        return lossKLD(generateNewVarName(new LossKLD().opName(), 0), x, y, dimensions);
 
     }
 
     /**
-     * @param iX
-     * @param i_y
-     * @param dimensions
-     * @return
+     * L1 loss
+     *
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Reduction dimensions
+     * @return Output variable
      */
-    public SDVariable lossL1(SDVariable iX, SDVariable i_y, int... dimensions) {
-        return lossL1(generateNewVarName(new LossL1().opName(), 0), iX, i_y, dimensions);
+    public SDVariable lossL1(SDVariable x, SDVariable y, int... dimensions) {
+        return lossL1(generateNewVarName(new LossL1().opName(), 0), x, y, dimensions);
 
     }
 
     /**
-     * @param iX
-     * @param i_y
-     * @param dimensions
-     * @return
+     * L2 loss
+     *
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Reduction dimensions
+     * @return Output variable
      */
-    public SDVariable lossL2(SDVariable iX, SDVariable i_y, int... dimensions) {
-        return lossL2(generateNewVarName(new LossL2().opName(), 0), iX, i_y, dimensions);
+    public SDVariable lossL2(SDVariable x, SDVariable y, int... dimensions) {
+        return lossL2(generateNewVarName(new LossL2().opName(), 0), x, y, dimensions);
 
     }
 
     /**
-     * @param iX
-     * @param i_y
-     * @param dimensions
-     * @return
+     * Mean absolute error loss
+     *
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Reduction dimensions
+     * @return Output variable
      */
-    public SDVariable lossMAE(SDVariable iX, SDVariable i_y, int... dimensions) {
-        return lossMAE(generateNewVarName(new LossMAE().opName(), 0), iX, i_y, dimensions);
+    public SDVariable lossMAE(SDVariable x, SDVariable y, int... dimensions) {
+        return lossMAE(generateNewVarName(new LossMAE().opName(), 0), x, y, dimensions);
 
     }
 
     /**
-     * @param iX
-     * @param i_y
-     * @param dimensions
-     * @return
+     * Mean squared error loss
+     *
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Reduction dimensions
+     * @return Output variable
      */
-    public SDVariable lossMSE(SDVariable iX, SDVariable i_y, int... dimensions) {
-        return lossMSE(generateNewVarName(new LossMSE().opName(), 0), iX, i_y, dimensions);
+    public SDVariable lossMSE(SDVariable x, SDVariable y, int... dimensions) {
+        return lossMSE(generateNewVarName(new LossMSE().opName(), 0), x, y, dimensions);
 
     }
 
     /**
-     * @param iX
-     * @param i_y
-     * @param dimensions
-     * @return
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Reduction dimensions
+     * @return Output variable
      */
-    public SDVariable lossMCXENT(SDVariable iX, SDVariable i_y, int... dimensions) {
-        return lossMCXENT(generateNewVarName(new LossMCXENT().opName(), 0), iX, i_y, dimensions);
+    public SDVariable lossMCXENT(SDVariable x, SDVariable y, int... dimensions) {
+        return lossMCXENT(generateNewVarName(new LossMCXENT().opName(), 0), x, y, dimensions);
 
     }
 
     /**
-     * @param iX
-     * @param i_y
-     * @param dimensions
-     * @return
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Reduction dimensions
+     * @return Output variable
      */
-    public SDVariable lossMSLE(SDVariable iX, SDVariable i_y, int... dimensions) {
-        return lossMSLE(generateNewVarName(new LossMSLE().opName(), 0), iX, i_y, dimensions);
+    public SDVariable lossMSLE(SDVariable x, SDVariable y, int... dimensions) {
+        return lossMSLE(generateNewVarName(new LossMSLE().opName(), 0), x, y, dimensions);
 
     }
 
     /**
-     * @param iX
-     * @param i_y
-     * @param dimensions
-     * @return
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Reduction dimensions
+     * @return Output variable
      */
-    public SDVariable lossNegativeLogLikelihood(SDVariable iX, SDVariable i_y, int... dimensions) {
-        return lossNegativeLogLikelihood(generateNewVarName(new LossNegativeLogLikelihood().opName(), 0), iX, i_y, dimensions);
+    public SDVariable lossNegativeLogLikelihood(SDVariable x, SDVariable y, int... dimensions) {
+        return lossNegativeLogLikelihood(generateNewVarName(new LossNegativeLogLikelihood().opName(), 0),
+                x, y, dimensions);
 
     }
 
     /**
-     * @param iX
-     * @param i_y
-     * @param dimensions
-     * @return
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Reduction dimensions
+     * @return Output variable
      */
-    public SDVariable lossPoisson(SDVariable iX, SDVariable i_y, int... dimensions) {
-        return lossPoisson(generateNewVarName(new LossPoisson().opName(), 0), iX, i_y, dimensions);
+    public SDVariable lossPoisson(SDVariable x, SDVariable y, int... dimensions) {
+        return lossPoisson(generateNewVarName(new LossPoisson().opName(), 0), x, y, dimensions);
 
     }
 
 
     /**
-     * @param iX
-     * @param i_y
-     * @param dimensions
-     * @return
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Reduction dimensions
+     * @return Output variable
      */
-    public SDVariable lossSquaredHinge(SDVariable iX, SDVariable i_y, int... dimensions) {
-        return lossSquaredHinge(generateNewVarName(new LossSquaredHinge().opName(), 0), iX, i_y, dimensions);
+    public SDVariable lossSquaredHinge(SDVariable x, SDVariable y, int... dimensions) {
+        return lossSquaredHinge(generateNewVarName(new LossSquaredHinge().opName(), 0), x, y, dimensions);
     }
 
     /**
@@ -7968,10 +7981,10 @@ public class SameDiff {
     }
 
     /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions dimensions
+     * @return Output variable
      */
     public SDVariable tensorMmul(String name,
                                  SDVariable x,
