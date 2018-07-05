@@ -190,9 +190,9 @@ class DocumentationGenerator:
         use_constructors = data.get('constructor', True)
         tag = data.get('autogen_tag', '')
 
-
         for cls in sorted(classes):
             class_string = self.inspect_class_string(module, cls)
+            class_string = self.get_tag_data(class_string, tag)
             class_string = class_string.replace('<p>', '').replace('</p>', '')
             class_name = cls.replace('.' + self.language, '')
             doc_string, class_string = self.get_main_doc_string(class_string, class_name)
@@ -203,6 +203,22 @@ class DocumentationGenerator:
 
         return page_data
 
+    '''If a tag is present in a source code string, extract everything between
+    tag::start and tag::end.
+    '''
+    def get_tag_data(self, class_string, tag):
+        start_tag = r'tag::' + tag + '::start'
+        end_tag = r'tag::' + tag + '::end'
+        if not tag:
+            return class_string
+        elif tag and start_tag in class_string and end_tag not in class_string:
+            print("Warning: Start tag, but no end tag found for tag: ", tag)
+        elif tag and start_tag in class_string and end_tag not in class_string:
+            print("Warning: End tag, but no start tag found for tag: ", tag)
+        else:
+            start = re.search(start_tag, class_string)
+            end = re.search(end_tag, class_string)
+            return class_string[start.end():end.end()]
 
     '''Before generating new docs into target folder, clean up old files. 
     '''
