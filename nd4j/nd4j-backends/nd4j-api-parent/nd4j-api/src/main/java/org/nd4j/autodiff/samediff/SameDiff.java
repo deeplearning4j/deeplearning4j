@@ -3399,33 +3399,33 @@ public class SameDiff {
      * Elementwise absolute value operation: out = abs(x)
      *
      * @param name Name of the output variable
-     * @param ix   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable abs(String name, SDVariable ix) {
-        SDVariable result = f().abs(ix);
+    public SDVariable abs(String name, SDVariable x) {
+        SDVariable result = f().abs(x);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Elementwise negative operation: out = -x
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable neg(SDVariable iX) {
-        return neg(null, iX);
+    public SDVariable neg(SDVariable x) {
+        return neg(null, x);
     }
 
     /**
      * Elementwise negative operation: out = -x
      *
      * @param name Name of the output variable
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable neg(String name, SDVariable iX) {
-        SDVariable result = functionFactory.neg(iX);
+    public SDVariable neg(String name, SDVariable x) {
+        SDVariable result = functionFactory.neg(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3433,66 +3433,66 @@ public class SameDiff {
     /**
      * Elementwise cosine operation: out = cos(x)
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable cos(SDVariable iX) {
-        return cos(null, iX);
+    public SDVariable cos(SDVariable x) {
+        return cos(null, x);
     }
 
     /**
      * Elementwise cosine operation: out = cos(x)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable cos(String name, SDVariable iX) {
-        SDVariable result = functionFactory.cos(iX);
+    public SDVariable cos(String name, SDVariable x) {
+        SDVariable result = functionFactory.cos(x);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Elementwise sine operation: out = sin(x)
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable sin(SDVariable iX) {
-        return sin(null, iX);
+    public SDVariable sin(SDVariable x) {
+        return sin(null, x);
     }
 
     /**
      * Elementwise sine operation: out = sin(x)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable sin(String name, SDVariable iX) {
-        SDVariable result = functionFactory.sin(iX);
+    public SDVariable sin(String name, SDVariable x) {
+        SDVariable result = functionFactory.sin(x);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Elementwise tangent operation: out = tan(x)
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable tan(SDVariable iX) {
-        return tan(null, iX);
+    public SDVariable tan(SDVariable x) {
+        return tan(null, x);
     }
 
     /**
      * Elementwise tangent operation: out = tan(x)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable tan(String name, SDVariable iX) {
-        SDVariable result = functionFactory.tan(iX);
+    public SDVariable tan(String name, SDVariable x) {
+        SDVariable result = functionFactory.tan(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3547,66 +3547,66 @@ public class SameDiff {
     /**
      * Elementwise acos (arccosine, inverse cosine) operation: out = arccos(x)
      *
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable acos(SDVariable iX) {
-        return acos(null, iX);
+    public SDVariable acos(SDVariable x) {
+        return acos(null, x);
     }
 
     /**
      * Elementwise acos (arccosine, inverse cosine) operation: out = arccos(x)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable acos(String name, SDVariable iX) {
-        SDVariable result = functionFactory.acos(iX);
+    public SDVariable acos(String name, SDVariable x) {
+        SDVariable result = functionFactory.acos(x);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Elementwise asin (arcsin, inverse sine) operation: out = arcsin(x)
      *
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable asin(SDVariable iX) {
-        return asin(null, iX);
+    public SDVariable asin(SDVariable x) {
+        return asin(null, x);
     }
 
     /**
      * Elementwise asin (arcsin, inverse sine) operation: out = arcsin(x)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable asin(String name, SDVariable iX) {
-        SDVariable result = functionFactory.asin(iX);
+    public SDVariable asin(String name, SDVariable x) {
+        SDVariable result = functionFactory.asin(x);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Elementwise atan (arctangent, inverse tangent) operation: out = arctangent(x)
      *
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable atan(SDVariable iX) {
-        return atan(null, iX);
+    public SDVariable atan(SDVariable x) {
+        return atan(null, x);
     }
 
     /**
      * Elementwise atan (arctangent, inverse tangent) operation: out = arctangent(x)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable atan(String name, SDVariable iX) {
-        SDVariable result = functionFactory.atan(iX);
+    public SDVariable atan(String name, SDVariable x) {
+        SDVariable result = functionFactory.atan(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3639,66 +3639,66 @@ public class SameDiff {
     /**
      * Elementwise cosh (hyperbolic cosine) operation: out = cosh(x)
      *
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable cosh(SDVariable iX) {
-        return cosh(null, iX);
+    public SDVariable cosh(SDVariable x) {
+        return cosh(null, x);
     }
 
     /**
      * Elementwise cosh (hyperbolic cosine) operation: out = cosh(x)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable cosh(String name, SDVariable iX) {
-        SDVariable result = functionFactory.cosh(iX);
+    public SDVariable cosh(String name, SDVariable x) {
+        SDVariable result = functionFactory.cosh(x);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Elementwise sinh (hyperbolic sine) operation: out = sinh(x)
      *
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable sinh(SDVariable iX) {
-        return sinh(null, iX);
+    public SDVariable sinh(SDVariable x) {
+        return sinh(null, x);
     }
 
     /**
      * Elementwise sinh (hyperbolic sine) operation: out = sinh(x)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable sinh(String name, SDVariable iX) {
-        SDVariable result = functionFactory.sinh(iX);
+    public SDVariable sinh(String name, SDVariable x) {
+        SDVariable result = functionFactory.sinh(x);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Elementwise tanh (hyperbolic tangent) operation: out = tanh(x)
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable tanh(SDVariable iX) {
-        return tanh(null, iX);
+    public SDVariable tanh(SDVariable x) {
+        return tanh(null, x);
     }
 
     /**
      * Elementwise tanh (hyperbolic tangent) operation: out = tanh(x)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable tanh(String name, SDVariable iX) {
-        SDVariable result = functionFactory.tanh(iX);
+    public SDVariable tanh(String name, SDVariable x) {
+        SDVariable result = functionFactory.tanh(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3733,88 +3733,88 @@ public class SameDiff {
     /**
      * Elementwise acosh (inverse hyperbolic cosine) function: out = acosh(x)
      *
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable acosh(SDVariable iX) {
-        return acosh(null, iX);
+    public SDVariable acosh(SDVariable x) {
+        return acosh(null, x);
     }
 
     /**
      * Elementwise acosh (inverse hyperbolic cosine) function: out = acosh(x)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable acosh(String name, SDVariable iX) {
-        SDVariable result = functionFactory.acosh(iX);
+    public SDVariable acosh(String name, SDVariable x) {
+        SDVariable result = functionFactory.acosh(x);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Elementwise asinh (inverse hyperbolic sine) function: out = asinh(x)
      *
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable asinh(SDVariable iX) {
-        return asinh(null, iX);
+    public SDVariable asinh(SDVariable x) {
+        return asinh(null, x);
     }
 
     /**
      * Elementwise asinh (inverse hyperbolic sine) function: out = asinh(x)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable asinh(String name, SDVariable iX) {
-        SDVariable result = functionFactory.asinh(iX);
+    public SDVariable asinh(String name, SDVariable x) {
+        SDVariable result = functionFactory.asinh(x);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Elementwise atanh (inverse hyperbolic tangent) function: out = atanh(x)
      *
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable atanh(SDVariable iX) {
-        return atanh(null, iX);
+    public SDVariable atanh(SDVariable x) {
+        return atanh(null, x);
     }
 
     /**
      * Elementwise atanh (inverse hyperbolic tangent) function: out = atanh(x)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable atanh(String name, SDVariable iX) {
-        SDVariable result = functionFactory.atanh(iX);
+    public SDVariable atanh(String name, SDVariable x) {
+        SDVariable result = functionFactory.atanh(x);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Elementwise exponent function: out = exp(x) = 2.71828...^x
      *
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable exp(SDVariable iX) {
-        return exp(null, iX);
+    public SDVariable exp(SDVariable x) {
+        return exp(null, x);
     }
 
     /**
      * Elementwise exponent function: out = exp(x) = 2.71828...^x
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable exp(String name, SDVariable iX) {
-        SDVariable result = functionFactory.exp(iX);
+    public SDVariable exp(String name, SDVariable x) {
+        SDVariable result = functionFactory.exp(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3822,66 +3822,66 @@ public class SameDiff {
     /**
      * Element-wise reciprocal (inverse) of square root: out = 1.0 / sqrt(x)
      *
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable rsqrt(SDVariable iX) {
-        return rsqrt(null, iX);
+    public SDVariable rsqrt(SDVariable x) {
+        return rsqrt(null, x);
     }
 
     /**
      * Element-wise reciprocal (inverse) of square root: out = 1.0 / sqrt(x)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable rsqrt(String name, SDVariable iX) {
-        SDVariable result = functionFactory.rsqrt(iX);
+    public SDVariable rsqrt(String name, SDVariable x) {
+        SDVariable result = functionFactory.rsqrt(x);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Elementwise 1.0 - exponent function: out = 1.0 - exp(x) = 1.0 - 2.71828...^x
      *
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable expm1(SDVariable iX) {
-        return expm1(null, iX);
+    public SDVariable expm1(SDVariable x) {
+        return expm1(null, x);
     }
 
     /**
      * Elementwise 1.0 - exponent function: out = 1.0 - exp(x) = 1.0 - 2.71828...^x
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable expm1(String name, SDVariable iX) {
-        SDVariable result = functionFactory.expm1(iX);
+    public SDVariable expm1(String name, SDVariable x) {
+        SDVariable result = functionFactory.expm1(x);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Elementwise natural logarithm function: out = log_e (1 + x)
      *
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable log1p(SDVariable iX) {
-        return log1p(null, iX);
+    public SDVariable log1p(SDVariable x) {
+        return log1p(null, x);
     }
 
     /**
      * Elementwise natural logarithm function: out = log_e (1 + x)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable log1p(String name, SDVariable iX) {
-        SDVariable result = functionFactory.log1p(iX);
+    public SDVariable log1p(String name, SDVariable x) {
+        SDVariable result = functionFactory.log1p(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3889,11 +3889,11 @@ public class SameDiff {
      * Elementwise round function: out = round(x).
      * Rounds (up or down depending on value) to the nearest integer value.
      *
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable round(SDVariable iX) {
-        return round(null, iX);
+    public SDVariable round(SDVariable x) {
+        return round(null, x);
     }
 
     /**
@@ -3901,11 +3901,11 @@ public class SameDiff {
      * Rounds (up or down depending on value) to the nearest integer value.
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable round(String name, SDVariable iX) {
-        SDVariable result = functionFactory.round(iX);
+    public SDVariable round(String name, SDVariable x) {
+        SDVariable result = functionFactory.round(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3914,11 +3914,11 @@ public class SameDiff {
      * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
      * value 0 otherwise
      *
-     * @param iX Input array
+     * @param x Input array
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
-    public SDVariable isInfinite(SDVariable iX) {
-        return isInfinite(null, iX);
+    public SDVariable isInfinite(SDVariable x) {
+        return isInfinite(null, x);
     }
 
     /**
@@ -3927,11 +3927,11 @@ public class SameDiff {
      * value 0 otherwise
      *
      * @param name Output variable name
-     * @param iX   Input array
+     * @param x   Input array
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
-    public SDVariable isInfinite(String name, SDVariable iX) {
-        SDVariable result = functionFactory.isInfinite(iX);
+    public SDVariable isInfinite(String name, SDVariable x) {
+        SDVariable result = functionFactory.isInfinite(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3940,11 +3940,11 @@ public class SameDiff {
      * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
      * value 0 otherwise
      *
-     * @param iX Input array
+     * @param x Input array
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
-    public SDVariable isNaN(SDVariable iX) {
-        return isNaN(null, iX);
+    public SDVariable isNaN(SDVariable x) {
+        return isNaN(null, x);
     }
 
     /**
@@ -3953,11 +3953,11 @@ public class SameDiff {
      * value 0 otherwise
      *
      * @param name Output variable name
-     * @param iX   Input array
+     * @param x   Input array
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
-    public SDVariable isNaN(String name, SDVariable iX) {
-        SDVariable result = functionFactory.isNaN(iX);
+    public SDVariable isNaN(String name, SDVariable x) {
+        SDVariable result = functionFactory.isNaN(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3966,11 +3966,11 @@ public class SameDiff {
      * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
      * value 0 otherwise
      *
-     * @param iX Input array
+     * @param x Input array
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
-    public SDVariable isFinite(SDVariable iX) {
-        return isFinite(null, iX);
+    public SDVariable isFinite(SDVariable x) {
+        return isFinite(null, x);
     }
 
     /**
@@ -3979,11 +3979,11 @@ public class SameDiff {
      * value 0 otherwise
      *
      * @param name Output variable name
-     * @param iX   Input array
+     * @param x   Input array
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
-    public SDVariable isFinite(String name, SDVariable iX) {
-        SDVariable result = functionFactory.isFinite(iX);
+    public SDVariable isFinite(String name, SDVariable x) {
+        SDVariable result = functionFactory.isFinite(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3992,11 +3992,11 @@ public class SameDiff {
      * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
      * value 0 otherwise
      *
-     * @param ix Input array
+     * @param x Input array
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
-    public SDVariable isMax(SDVariable ix) {
-        return isMax(null, ix);
+    public SDVariable isMax(SDVariable x) {
+        return isMax(null, x);
     }
 
     /**
@@ -4005,11 +4005,11 @@ public class SameDiff {
      * value 0 otherwise
      *
      * @param name Name of the output variable
-     * @param ix   Input array
+     * @param x   Input array
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
-    public SDVariable isMax(String name, SDVariable ix) {
-        SDVariable ret = f().isMax(ix);
+    public SDVariable isMax(String name, SDVariable x) {
+        SDVariable ret = f().isMax(x);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -4018,11 +4018,11 @@ public class SameDiff {
      * An array is non-decreasing if for every valid i, x[i] <= x[i+1]. For Rank 2+ arrays, values are compared
      * in 'c' (row major) order
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Scalar variable with value 1 if non-decreasing, or 0 otherwise
      */
-    public SDVariable isNonDecreasing(SDVariable iX) {
-        return isNonDecreasing(null, iX);
+    public SDVariable isNonDecreasing(SDVariable x) {
+        return isNonDecreasing(null, x);
     }
 
     /**
@@ -4031,11 +4031,11 @@ public class SameDiff {
      * in 'c' (row major) order
      *
      * @param name Output name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Scalar variable with value 1 if non-decreasing, or 0 otherwise
      */
-    public SDVariable isNonDecreasing(String name, SDVariable iX) {
-        SDVariable result = functionFactory.isNonDecreasing(iX);
+    public SDVariable isNonDecreasing(String name, SDVariable x) {
+        SDVariable result = functionFactory.isNonDecreasing(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -4044,11 +4044,11 @@ public class SameDiff {
      * An array is strictly increasing if for every valid i, x[i] < x[i+1]. For Rank 2+ arrays, values are compared
      * in 'c' (row major) order
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Scalar variable with value 1 if strictly increasing, or 0 otherwise
      */
-    public SDVariable isStrictlyIncreasing(SDVariable iX) {
-        return isStrictlyIncreasing(null, iX);
+    public SDVariable isStrictlyIncreasing(SDVariable x) {
+        return isStrictlyIncreasing(null, x);
 
     }
 
@@ -4058,33 +4058,33 @@ public class SameDiff {
      * in 'c' (row major) order
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Scalar variable with value 1 if strictly increasing, or 0 otherwise
      */
-    public SDVariable isStrictlyIncreasing(String name, SDVariable iX) {
-        SDVariable result = functionFactory.isStrictlyIncreasing(iX);
+    public SDVariable isStrictlyIncreasing(String name, SDVariable x) {
+        SDVariable result = functionFactory.isStrictlyIncreasing(x);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Is the director a numeric tensor? In the current version of ND4J/SameDiff, this always returns true/1
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Scalar variable with value 1
      */
-    public SDVariable isNumericTensor(SDVariable iX) {
-        return isNumericTensor(null, iX);
+    public SDVariable isNumericTensor(SDVariable x) {
+        return isNumericTensor(null, x);
     }
 
     /**
      * Is the director a numeric tensor? In the current version of ND4J/SameDiff, this always returns true/1
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Scalar variable with value 1
      */
-    public SDVariable isNumericTensor(String name, SDVariable iX) {
-        SDVariable result = functionFactory.isNumericTensor(iX);
+    public SDVariable isNumericTensor(String name, SDVariable x) {
+        SDVariable result = functionFactory.isNumericTensor(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -4151,22 +4151,22 @@ public class SameDiff {
     /**
      * Element-wise logarithm function (base e - natural logarithm): out = log(x)
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable log(SDVariable iX) {
-        return log(null, iX);
+    public SDVariable log(SDVariable x) {
+        return log(null, x);
     }
 
     /**
      * Element-wise logarithm function (base e - natural logarithm): out = log(x)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable log(String name, SDVariable iX) {
-        SDVariable result = functionFactory.log(iX);
+    public SDVariable log(String name, SDVariable x) {
+        SDVariable result = functionFactory.log(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -4223,22 +4223,22 @@ public class SameDiff {
     /**
      * Element-wise cube function: out = x^3
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable cube(SDVariable iX) {
-        return cube(null, iX);
+    public SDVariable cube(SDVariable x) {
+        return cube(null, x);
     }
 
     /**
      * Element-wise cube function: out = x^3
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable cube(String name, SDVariable iX) {
-        SDVariable result = functionFactory.cube(iX);
+    public SDVariable cube(String name, SDVariable x) {
+        SDVariable result = functionFactory.cube(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -4246,68 +4246,68 @@ public class SameDiff {
     /**
      * Element-wise power function: out = x^value
      *
-     * @param iX    Input variable
+     * @param x    Input variable
      * @param value Power to raise each element to
      * @return Output variable
      */
-    public SDVariable pow(SDVariable iX, double value) {
-        return pow(null, iX, value);
+    public SDVariable pow(SDVariable x, double value) {
+        return pow(null, x, value);
     }
 
     /**
      * Element-wise power function: out = x^value
      *
      * @param name  Output variable name
-     * @param iX    Input variable
+     * @param x    Input variable
      * @param value Power to raise each element to
      * @return Output variable
      */
-    public SDVariable pow(String name, SDVariable iX, double value) {
-        SDVariable result = functionFactory.pow(iX, value);
+    public SDVariable pow(String name, SDVariable x, double value) {
+        SDVariable result = functionFactory.pow(x, value);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Element-wise square root function: out = sqrt(x)
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable sqrt(SDVariable iX) {
-        return sqrt(null, iX);
+    public SDVariable sqrt(SDVariable x) {
+        return sqrt(null, x);
     }
 
     /**
      * Element-wise square root function: out = sqrt(x)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable sqrt(String name, SDVariable iX) {
-        SDVariable result = functionFactory.sqrt(iX);
+    public SDVariable sqrt(String name, SDVariable x) {
+        SDVariable result = functionFactory.sqrt(x);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Element-wise square function: out = x^2
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable square(SDVariable iX) {
-        return square(null, iX);
+    public SDVariable square(SDVariable x) {
+        return square(null, x);
     }
 
     /**
      * Element-wise square function: out = x^2
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable square(String name, SDVariable iX) {
-        SDVariable result = functionFactory.square(iX);
+    public SDVariable square(String name, SDVariable x) {
+        SDVariable result = functionFactory.square(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -4315,11 +4315,11 @@ public class SameDiff {
      * Element-wise floor function: out = floor(x).
      * Rounds each value down to the nearest integer value (if not already an integer)
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable floor(SDVariable iX) {
-        return floor(null, iX);
+    public SDVariable floor(SDVariable x) {
+        return floor(null, x);
     }
 
     /**
@@ -4327,11 +4327,11 @@ public class SameDiff {
      * Rounds each value down to the nearest integer value (if not already an integer)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable floor(String name, SDVariable iX) {
-        SDVariable result = functionFactory.floor(iX);
+    public SDVariable floor(String name, SDVariable x) {
+        SDVariable result = functionFactory.floor(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -4455,12 +4455,12 @@ public class SameDiff {
      * out[i] = in[i] if in[i] >= cutoff
      * out[i] = 0 otherwise
      *
-     * @param iX     Input variable
+     * @param x     Input variable
      * @param cutoff Cutoff value. Usually 0
      * @return Output variable
      */
-    public SDVariable relu(SDVariable iX, double cutoff) {
-        return relu(null, iX, cutoff);
+    public SDVariable relu(SDVariable x, double cutoff) {
+        return relu(null, x, cutoff);
     }
 
     /**
@@ -4469,12 +4469,12 @@ public class SameDiff {
      * out[i] = 0 otherwise
      *
      * @param name   Output variable name
-     * @param iX     Input variable
+     * @param x     Input variable
      * @param cutoff Cutoff value. Usually 0
      * @return Output variable
      */
-    public SDVariable relu(String name, SDVariable iX, double cutoff) {
-        SDVariable result = functionFactory.relu(iX, cutoff);
+    public SDVariable relu(String name, SDVariable x, double cutoff) {
+        SDVariable result = functionFactory.relu(x, cutoff);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -4482,12 +4482,12 @@ public class SameDiff {
      * Element-wise "rectified linear 6" function with specified cutoff:<br>
      * out[i] = min(max(in, cutoff), 6)
      *
-     * @param iX     Input variable
+     * @param x     Input variable
      * @param cutoff Cutoff value. Usually 0
      * @return Output variable
      */
-    public SDVariable relu6(SDVariable iX, double cutoff) {
-        return relu6(null, iX, cutoff);
+    public SDVariable relu6(SDVariable x, double cutoff) {
+        return relu6(null, x, cutoff);
     }
 
     /**
@@ -4495,44 +4495,44 @@ public class SameDiff {
      * out[i] = min(max(in, cutoff), 6)
      *
      * @param name   Output variable name
-     * @param iX     Input variable
+     * @param x     Input variable
      * @param cutoff Cutoff value. Usually 0
      * @return Output variable
      */
-    public SDVariable relu6(String name, SDVariable iX, double cutoff) {
-        SDVariable result = functionFactory.relu6(iX, cutoff);
+    public SDVariable relu6(String name, SDVariable x, double cutoff) {
+        SDVariable result = functionFactory.relu6(x, cutoff);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Softmax activation
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable softmax(SDVariable iX) {
-        return softmax(null, iX);
+    public SDVariable softmax(SDVariable x) {
+        return softmax(null, x);
     }
 
     /**
      * Softmax activation
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable softmax(String name, SDVariable iX) {
-        SDVariable result = functionFactory.softmax(iX);
+    public SDVariable softmax(String name, SDVariable x) {
+        SDVariable result = functionFactory.softmax(x);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Log softmax activation
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable logSoftmax(SDVariable iX) {
-        return logSoftmax(null, iX);
+    public SDVariable logSoftmax(SDVariable x) {
+        return logSoftmax(null, x);
     }
 
 
@@ -4540,11 +4540,11 @@ public class SameDiff {
      * Log softmax activation
      *
      * @param name Variable name
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable logSoftmax(String name, SDVariable iX) {
-        SDVariable ret = f().logSoftmax(iX);
+    public SDVariable logSoftmax(String name, SDVariable x) {
+        SDVariable ret = f().logSoftmax(x);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -4554,11 +4554,11 @@ public class SameDiff {
      * out[i] = scale * alpha * (exp(in[i])-1) if in[i]>0, or 0 if in[i] <= 0<br>
      * Uses default lcale and alpha values.
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable selu(SDVariable iX) {
-        return selu(null, iX);
+    public SDVariable selu(SDVariable x) {
+        return selu(null, x);
     }
 
     /**
@@ -4568,11 +4568,11 @@ public class SameDiff {
      * Uses default lcale and alpha values.
      *
      * @param name Name of the output variable
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable selu(String name, SDVariable iX) {
-        SDVariable ret = f().selu(iX);
+    public SDVariable selu(String name, SDVariable x) {
+        SDVariable ret = f().selu(x);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -4580,11 +4580,11 @@ public class SameDiff {
      * Merge add function: merges an arbitrary number of equal shaped arrays using elementwise addition:
      * out = sum_i in[i]
      *
-     * @param iX Input variables
+     * @param x Input variables
      * @return Output variable
      */
-    public SDVariable mergeAdd(SDVariable... iX) {
-        return mergeAdd(null, iX);
+    public SDVariable mergeAdd(SDVariable... x) {
+        return mergeAdd(null, x);
     }
 
     /**
@@ -4604,11 +4604,11 @@ public class SameDiff {
      * Merge max function: merges an arbitrary number of equal shaped arrays using element-wise maximum operation:
      * out = max_i in[i]
      *
-     * @param iX Input variables
+     * @param x Input variables
      * @return Output variable
      */
-    public SDVariable mergeMax(SDVariable... iX) {
-        return mergeMax(null, iX);
+    public SDVariable mergeMax(SDVariable... x) {
+        return mergeMax(null, x);
     }
 
     /**
@@ -4650,8 +4650,8 @@ public class SameDiff {
     /**
      * @see #batchToSpace(String, SDVariable, int[], int[][])
      */
-    public SDVariable batchToSpace(SDVariable iX, int[] blocks, int[][] crops) {
-        return batchToSpace(null, iX, blocks, crops);
+    public SDVariable batchToSpace(SDVariable x, int[] blocks, int[][] crops) {
+        return batchToSpace(null, x, blocks, crops);
     }
 
     /**
@@ -4659,14 +4659,14 @@ public class SameDiff {
      * Reduces input batch dimension by rearranging data into a larger spatial dimensions
      *
      * @param name   Output variable name
-     * @param iX     Input variable. 4d input
+     * @param x     Input variable. 4d input
      * @param blocks Block size, in the height/width dimension
      * @param crops  Optional 2d int[] array: values [[crop top, crop bottom], [crop left, crop right]]
      * @return Output variable
      * @see #spaceToBatch(String, SDVariable, int[], int[][])
      */
-    public SDVariable batchToSpace(String name, SDVariable iX, int[] blocks, int[][] crops) {
-        SDVariable ret = f().batchToSpace(iX, blocks, crops);
+    public SDVariable batchToSpace(String name, SDVariable x, int[] blocks, int[][] crops) {
+        SDVariable ret = f().batchToSpace(x, blocks, crops);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -4677,14 +4677,14 @@ public class SameDiff {
      * Example: if input has shape [mb, 8, 2, 2] and block size is 2, then output size is [mb, 8/(2*2), 2*2, 2*2]
      * = [mb, 2, 4, 4]
      *
-     * @param iX         the input to depth to space pooling 2d operation - 4d activations in NCHW format
+     * @param x         the input to depth to space pooling 2d operation - 4d activations in NCHW format
      *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
      * @param blockSize  Block size, in the height/width dimension
      * @param dataFormat Data format: "NCHW" or "NHWC"
      * @return Output variable
      */
-    public SDVariable depthToSpace(SDVariable iX, int blockSize, String dataFormat) {
-        return depthToSpace(null, iX, blockSize, dataFormat);
+    public SDVariable depthToSpace(SDVariable x, int blockSize, String dataFormat) {
+        return depthToSpace(null, x, blockSize, dataFormat);
     }
 
     /**
@@ -4694,23 +4694,23 @@ public class SameDiff {
      * = [mb, 2, 4, 4]
      *
      * @param name       Output variable name
-     * @param iX         the input to depth to space pooling 2d operation - 4d activations in NCHW format
+     * @param x         the input to depth to space pooling 2d operation - 4d activations in NCHW format
      *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
      * @param blockSize  Block size, in the height/width dimension
      * @param dataFormat Data format: "NCHW" or "NHWC"
      * @return Output variable
      * @see #depthToSpace(String, SDVariable, int, String)
      */
-    public SDVariable depthToSpace(String name, SDVariable iX, int blockSize, String dataFormat) {
-        SDVariable ret = f().depthToSpace(iX, blockSize, dataFormat);
+    public SDVariable depthToSpace(String name, SDVariable x, int blockSize, String dataFormat) {
+        SDVariable ret = f().depthToSpace(x, blockSize, dataFormat);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
      * @see #spaceToBatch(String, SDVariable, int[], int[][])
      */
-    public SDVariable spaceToBatch(SDVariable iX, int[] blocks, int[][] padding) {
-        return spaceToBatch(null, iX, blocks, padding);
+    public SDVariable spaceToBatch(SDVariable x, int[] blocks, int[][] padding) {
+        return spaceToBatch(null, x, blocks, padding);
     }
 
     /**
@@ -4718,22 +4718,22 @@ public class SameDiff {
      * Increases input batch dimension by rearranging data from spatial dimensions into batch dimension
      *
      * @param name   Output variable name
-     * @param iX     Input variable. 4d input
+     * @param x     Input variable. 4d input
      * @param blocks Block size, in the height/width dimension
      * @param padding Optional 2d int[] array for padding the result: values [[pad top, pad bottom], [pad left, pad right]]
      * @return Output variable
      * @see #batchToSpace(String, SDVariable, int[], int[][])
      */
-    public SDVariable spaceToBatch(String name, SDVariable iX, int[] blocks, int[][] padding) {
-        SDVariable ret = f().spaceToBatch(iX, blocks, padding);
+    public SDVariable spaceToBatch(String name, SDVariable x, int[] blocks, int[][] padding) {
+        SDVariable ret = f().spaceToBatch(x, blocks, padding);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
      * @see #spaceToDepth(String, SDVariable, int, String)
      */
-    public SDVariable spaceToDepth(SDVariable iX, int blockSize, String dataFormat) {
-        return spaceToDepth(null, iX, blockSize, dataFormat);
+    public SDVariable spaceToDepth(SDVariable x, int blockSize, String dataFormat) {
+        return spaceToDepth(null, x, blockSize, dataFormat);
     }
 
     /**
@@ -4743,23 +4743,23 @@ public class SameDiff {
      * = [mb, 2, 4, 4]
      *
      * @param name       Output variable name
-     * @param iX         the input to depth to space pooling 2d operation - 4d activations in NCHW format
+     * @param x         the input to depth to space pooling 2d operation - 4d activations in NCHW format
      *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
      * @param blockSize  Block size, in the height/width dimension
      * @param dataFormat Data format: "NCHW" or "NHWC"
      * @return Output variable
      * @see #depthToSpace(String, SDVariable, int, String)
      */
-    public SDVariable spaceToDepth(String name, SDVariable iX, int blockSize, String dataFormat) {
-        SDVariable ret = f().spaceToDepth(iX, blockSize, dataFormat);
+    public SDVariable spaceToDepth(String name, SDVariable x, int blockSize, String dataFormat) {
+        SDVariable ret = f().spaceToDepth(x, blockSize, dataFormat);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
      * @see #dynamicPartition(String[], SDVariable, SDVariable, int)
      */
-    public SDVariable[] dynamicPartition(SDVariable iX, SDVariable partitions, int numPartitions) {
-        return dynamicPartition(null, iX, partitions, numPartitions);
+    public SDVariable[] dynamicPartition(SDVariable x, SDVariable partitions, int numPartitions) {
+        return dynamicPartition(null, x, partitions, numPartitions);
     }
 
     /**
@@ -4774,21 +4774,21 @@ public class SameDiff {
      * </pre>
      *
      * @param name          Names for the output variables. Length must be equal to numPartitions
-     * @param iX            Input variable
+     * @param x            Input variable
      * @param partitions    1D input with values 0 to numPartitions-1
      * @param numPartitions Number of partitions, >= 1
      * @return Output variables (equal in number to numPartitions)
      */
-    public SDVariable[] dynamicPartition(String[] name, SDVariable iX, SDVariable partitions, int numPartitions) {
-        SDVariable[] ret = f().dynamicPartition(iX, partitions, numPartitions);
+    public SDVariable[] dynamicPartition(String[] name, SDVariable x, SDVariable partitions, int numPartitions) {
+        SDVariable[] ret = f().dynamicPartition(x, partitions, numPartitions);
         return updateVariableNamesAndReferences(ret, name);
     }
 
     /**
      * @see #dynamicStitch(String, SDVariable[], SDVariable[])
      */
-    public SDVariable dynamicStitch(SDVariable[] indices, SDVariable[] iX) {
-        return dynamicStitch(null, indices, iX);
+    public SDVariable dynamicStitch(SDVariable[] indices, SDVariable[] x) {
+        return dynamicStitch(null, indices, x);
     }
 
     /**
@@ -4796,11 +4796,11 @@ public class SameDiff {
      *
      * @param name    Name of the output variable
      * @param indices Indices to use when merging. Must be >= 1, same length as input variables
-     * @param iX      Input variables.
+     * @param x      Input variables.
      * @return Merged output variable
      */
-    public SDVariable dynamicStitch(String name, SDVariable[] indices, SDVariable[] iX) {
-        SDVariable ret = f().dynamicStitch(indices, iX);
+    public SDVariable dynamicStitch(String name, SDVariable[] indices, SDVariable[] x) {
+        SDVariable ret = f().dynamicStitch(indices, x);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -5090,52 +5090,52 @@ public class SameDiff {
     /**
      * Element-wise Gaussian error function - out = erf(in)
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable erf(SDVariable iX) {
-        return erf(null, iX);
+    public SDVariable erf(SDVariable x) {
+        return erf(null, x);
     }
 
     /**
      * Element-wise Gaussian error function - out = erf(in)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable erf(String name, SDVariable iX) {
-        SDVariable ret = f().erf(iX);
+    public SDVariable erf(String name, SDVariable x) {
+        SDVariable ret = f().erf(x);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
      * Element-wise complementary Gaussian error function - out = erfc(in) = 1 - erf(in)
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable erfc(SDVariable iX) {
-        return erfc(null, iX);
+    public SDVariable erfc(SDVariable x) {
+        return erfc(null, x);
     }
 
     /**
      * Element-wise complementary Gaussian error function - out = erfc(in) = 1 - erf(in)
      *
      * @param name Name of the output variable
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable erfc(String name, SDVariable iX) {
-        SDVariable ret = f().erfc(iX);
+    public SDVariable erfc(String name, SDVariable x) {
+        SDVariable ret = f().erfc(x);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
      * @see #diag(String, SDVariable)
      */
-    public SDVariable diag(SDVariable iX) {
-        return diag(null, iX);
+    public SDVariable diag(SDVariable x) {
+        return diag(null, x);
     }
 
     /**
@@ -5149,19 +5149,19 @@ public class SameDiff {
      * i.e., for input rank R, output has rank 2R
      *
      * @param name Name of the output variable
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable diag(String name, SDVariable iX) {
-        SDVariable ret = f().diag(iX);
+    public SDVariable diag(String name, SDVariable x) {
+        SDVariable ret = f().diag(x);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
      * @see #diagPart(String, SDVariable)
      */
-    public SDVariable diagPart(SDVariable iX) {
-        return diagPart(null, iX);
+    public SDVariable diagPart(SDVariable x) {
+        return diagPart(null, x);
     }
 
     /**
@@ -5173,12 +5173,12 @@ public class SameDiff {
      * then output is [1, 2, 3].<br>
      * Supports higher dimensions: in general, out[i,...,k] = in[i,...,k,i,...,k]
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Diagonal part of the input
      * @see #diag(String, SDVariable)
      */
-    public SDVariable diagPart(String name, SDVariable iX) {
-        SDVariable ret = f().diagPart(iX);
+    public SDVariable diagPart(String name, SDVariable x) {
+        SDVariable ret = f().diagPart(x);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -5279,15 +5279,15 @@ public class SameDiff {
     /**
      * Intended for internal/developer use
      */
-    public SDVariable gradientBackwardsMarker(SDVariable iX) {
-        return gradientBackwardsMarker(generateNewVarName(new GradientBackwardsMarker().opName(), 0), iX);
+    public SDVariable gradientBackwardsMarker(SDVariable x) {
+        return gradientBackwardsMarker(generateNewVarName(new GradientBackwardsMarker().opName(), 0), x);
     }
 
     /**
      * Intended for internal/developer use
      */
-    public SDVariable gradientBackwardsMarker(String name, SDVariable iX) {
-        SDVariable result = functionFactory.gradientBackwardsMarker(iX);
+    public SDVariable gradientBackwardsMarker(String name, SDVariable x) {
+        SDVariable result = functionFactory.gradientBackwardsMarker(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -5350,44 +5350,44 @@ public class SameDiff {
     /**
      * Derivative (dOut/dIn) of the element-wise hard Tanh function - {@link #hardTanh(SDVariable)}
      *
-     * @param iX Input
+     * @param x Input
      * @return Output variable
      */
-    public SDVariable hardTanhDerivative(SDVariable iX) {
-        return hardTanhDerivative(null, iX);
+    public SDVariable hardTanhDerivative(SDVariable x) {
+        return hardTanhDerivative(null, x);
     }
 
     /**
      * Derivative (dOut/dIn) of the element-wise hard Tanh function - {@link #hardTanh(SDVariable)}
      *
      * @param name Output variable name
-     * @param iX   Input
+     * @param x   Input
      * @return Output variable
      */
-    public SDVariable hardTanhDerivative(String name, SDVariable iX) {
-        SDVariable result = functionFactory.hardTanhDerivative(iX);
+    public SDVariable hardTanhDerivative(String name, SDVariable x) {
+        SDVariable result = functionFactory.hardTanhDerivative(x);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Element-wise sigmoid function: out[i] = 1.0/(1+exp(-in[i]))
      *
-     * @param iX Input Variable
+     * @param x Input Variable
      * @return Output variable
      */
-    public SDVariable sigmoid(SDVariable iX) {
-        return sigmoid(null, iX);
+    public SDVariable sigmoid(SDVariable x) {
+        return sigmoid(null, x);
     }
 
     /**
      * Element-wise sigmoid function: out[i] = 1.0/(1+exp(-in[i]))
      *
      * @param name Output variable name
-     * @param iX   Input Variable
+     * @param x   Input Variable
      * @return Output variable
      */
-    public SDVariable sigmoid(String name, SDVariable iX) {
-        SDVariable result = functionFactory.sigmoid(iX);
+    public SDVariable sigmoid(String name, SDVariable x) {
+        SDVariable result = functionFactory.sigmoid(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -5395,47 +5395,47 @@ public class SameDiff {
     /**
      * Element-wise sigmoid function derivative: dL/dIn given input and dL/dOut
      *
-     * @param iX  Input Variable
+     * @param x  Input Variable
      * @param wrt Gradient at the output - dL/dOut. Must have same shape as the input
      * @return Output variable
      */
-    public SDVariable sigmoidDerivative(SDVariable iX, SDVariable wrt) {
-        return sigmoidDerivative(null, iX, wrt);
+    public SDVariable sigmoidDerivative(SDVariable x, SDVariable wrt) {
+        return sigmoidDerivative(null, x, wrt);
     }
 
     /**
      * Element-wise sigmoid function derivative: dL/dIn given input and dL/dOut
      *
      * @param name Output variable name
-     * @param iX   Input Variable
+     * @param x   Input Variable
      * @param wrt  Gradient at the output - dL/dOut. Must have same shape as the input
      * @return Output variable
      */
-    public SDVariable sigmoidDerivative(String name, SDVariable iX, SDVariable wrt) {
+    public SDVariable sigmoidDerivative(String name, SDVariable x, SDVariable wrt) {
         SDVariable result = functionFactory
-                .sigmoidDerivative(iX, wrt);
+                .sigmoidDerivative(x, wrt);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Element-wise sigmoid function: out[i] = log(sigmoid(in[i]))
      *
-     * @param iX Input Variable
+     * @param x Input Variable
      * @return Output variable
      */
-    public SDVariable logSigmoid(SDVariable iX) {
-        return logSigmoid(null, iX);
+    public SDVariable logSigmoid(SDVariable x) {
+        return logSigmoid(null, x);
     }
 
     /**
      * Element-wise sigmoid function: out[i] = log(sigmoid(in[i]))
      *
      * @param name Name of the output variable
-     * @param iX   Input Variable
+     * @param x   Input Variable
      * @return Output variable
      */
-    public SDVariable logSigmoid(String name, SDVariable iX) {
-        SDVariable ret = f().logSigmoid(iX);
+    public SDVariable logSigmoid(String name, SDVariable x) {
+        SDVariable ret = f().logSigmoid(x);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -5445,11 +5445,11 @@ public class SameDiff {
      * out = 0 if in = 0<br>
      * out = 1 if in > 0
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable sign(SDVariable iX) {
-        return sign(null, iX);
+    public SDVariable sign(SDVariable x) {
+        return sign(null, x);
     }
 
     /**
@@ -5459,77 +5459,77 @@ public class SameDiff {
      * out = 1 if in > 0
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable sign(String name, SDVariable iX) {
-        SDVariable result = functionFactory.sign(iX);
+    public SDVariable sign(String name, SDVariable x) {
+        SDVariable result = functionFactory.sign(x);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Element-wise softsign function: out = x / (abs(x) + 1)
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable softsign(SDVariable iX) {
-        return softsign(null, iX);
+    public SDVariable softsign(SDVariable x) {
+        return softsign(null, x);
     }
 
     /**
      * Element-wise softsign function: out = x / (abs(x) + 1)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable softsign(String name, SDVariable iX) {
-        SDVariable result = functionFactory.softsign(iX);
+    public SDVariable softsign(String name, SDVariable x) {
+        SDVariable result = functionFactory.softsign(x);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Element-wise derivative (dOut/dIn) of the softsign function {@link #softsign(SDVariable)}
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output varible
      */
-    public SDVariable softsignDerivative(SDVariable iX) {
-        return softsignDerivative(null, iX);
+    public SDVariable softsignDerivative(SDVariable x) {
+        return softsignDerivative(null, x);
     }
 
     /**
      * Element-wise derivative (dOut/dIn) of the softsign function {@link #softsign(SDVariable)}
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output varible
      */
-    public SDVariable softsignDerivative(String name, SDVariable iX) {
-        SDVariable result = functionFactory.softsignDerivative(iX);
+    public SDVariable softsignDerivative(String name, SDVariable x) {
+        SDVariable result = functionFactory.softsignDerivative(x);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Element-wise softplus function: out = log(exp(x) + 1)
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable softplus(SDVariable iX) {
-        return softplus(null, iX);
+    public SDVariable softplus(SDVariable x) {
+        return softplus(null, x);
     }
 
     /**
      * Element-wise softplus function: out = log(exp(x) + 1)
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable softplus(String name, SDVariable iX) {
-        SDVariable result = functionFactory.softplus(iX);
+    public SDVariable softplus(String name, SDVariable x) {
+        SDVariable result = functionFactory.softplus(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -5537,11 +5537,11 @@ public class SameDiff {
      * Element-wise "swish" function: out = x * sigmoid(b*x) with b=1.0<br>
      * See: <a href="https://arxiv.org/abs/1710.05941">https://arxiv.org/abs/1710.05941</a>
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable swish(SDVariable iX) {
-        return swish(null, iX);
+    public SDVariable swish(SDVariable x) {
+        return swish(null, x);
     }
 
     /**
@@ -5549,11 +5549,11 @@ public class SameDiff {
      * See: <a href="https://arxiv.org/abs/1710.05941">https://arxiv.org/abs/1710.05941</a>
      *
      * @param name Name of the output variable
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable swish(String name, SDVariable iX) {
-        SDVariable ret = f().swish(iX);
+    public SDVariable swish(String name, SDVariable x) {
+        SDVariable ret = f().swish(x);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -5565,11 +5565,11 @@ public class SameDiff {
      * <p>
      * See: <a href="http://arxiv.org/abs/1511.07289">http://arxiv.org/abs/1511.07289</a>
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable elu(SDVariable iX) {
-        return elu(null, iX);
+    public SDVariable elu(SDVariable x) {
+        return elu(null, x);
     }
 
     /**
@@ -5581,11 +5581,11 @@ public class SameDiff {
      * See: <a href="http://arxiv.org/abs/1511.07289">http://arxiv.org/abs/1511.07289</a>
      *
      * @param name Output variable name
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable elu(String name, SDVariable iX) {
-        SDVariable result = functionFactory.elu(iX);
+    public SDVariable elu(String name, SDVariable x) {
+        SDVariable result = functionFactory.elu(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -5593,11 +5593,11 @@ public class SameDiff {
      * Element-wise derivative exponential linear unit (ELU) function, dOut/dIn given input.
      * {@link #elu(SDVariable)}
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable
      */
-    public SDVariable eluDerivative(SDVariable iX) {
-        return eluDerivative(null, iX);
+    public SDVariable eluDerivative(SDVariable x) {
+        return eluDerivative(null, x);
     }
 
     /**
@@ -5605,11 +5605,11 @@ public class SameDiff {
      * {@link #elu(SDVariable)}
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable
      */
-    public SDVariable eluDerivative(String name, SDVariable iX) {
-        SDVariable result = functionFactory.eluDerivative(iX);
+    public SDVariable eluDerivative(String name, SDVariable x) {
+        SDVariable result = functionFactory.eluDerivative(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -5619,12 +5619,12 @@ public class SameDiff {
      * out = alpha * x if x < cutoff<br>
      * Alpha value is most commonly set to 0.01
      *
-     * @param iX    Input variable
+     * @param x    Input variable
      * @param alpha Cutoff - usually 0.0
      * @return Output variable
      */
-    public SDVariable leakyRelu(SDVariable iX, double alpha) {
-        return leakyRelu(null, iX, alpha);
+    public SDVariable leakyRelu(SDVariable x, double alpha) {
+        return leakyRelu(null, x, alpha);
     }
 
     /**
@@ -5633,12 +5633,12 @@ public class SameDiff {
      * out = alpha * x if x < cutoff<br>
      * Alpha value is most commonly set to 0.01
      *
-     * @param iX    Input variable
+     * @param x    Input variable
      * @param alpha Cutoff - usually 0.0
      * @return Output variable
      */
-    public SDVariable leakyRelu(String name, SDVariable iX, double alpha) {
-        SDVariable result = functionFactory.leakyRelu(iX, alpha);
+    public SDVariable leakyRelu(String name, SDVariable x, double alpha) {
+        SDVariable result = functionFactory.leakyRelu(x, alpha);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -5646,46 +5646,46 @@ public class SameDiff {
      * Leaky ReLU derivative: dOut/dIn given input.<br>
      * See {@link #leakyRelu(String, SDVariable, double)}
      *
-     * @param iX    Input variable
+     * @param x    Input variable
      * @param alpha Alpha value
      * @return Output variable
      */
-    public SDVariable leakyReluDerivative(String name, SDVariable iX, double alpha) {
-        SDVariable result = functionFactory.leakyReluDerivative(iX, alpha);
+    public SDVariable leakyReluDerivative(String name, SDVariable x, double alpha) {
+        SDVariable result = functionFactory.leakyReluDerivative(x, alpha);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Full array mean reduction operation
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable - scalar
      */
-    public SDVariable mean(SDVariable iX) {
-        return mean(null, iX);
+    public SDVariable mean(SDVariable x) {
+        return mean(null, x);
     }
 
 
     /**
      * Mean (average) array reduction operation, optionally along specified dimensions
      *
-     * @param iX        Input variable
+     * @param x        Input variable
      * @param dimension Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable mean(SDVariable iX, int... dimension) {
-        return mean(null, iX, dimension);
+    public SDVariable mean(SDVariable x, int... dimension) {
+        return mean(null, x, dimension);
     }
 
     /**
      * Mean (average) array reduction operation, optionally along specified dimensions
      *
      * @param name      Output variable name
-     * @param iX        Input variable
+     * @param x        Input variable
      * @param dimension Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable mean(String name, SDVariable iX, int... dimension) {
-        return mean(name, iX, false, dimension);
+    public SDVariable mean(String name, SDVariable x, int... dimension) {
+        return mean(name, x, false, dimension);
     }
 
     /**
@@ -5698,34 +5698,34 @@ public class SameDiff {
      * keepDims = false: [a,c]
      *
      * @param name      Output variable name
-     * @param iX        Input variable
+     * @param x        Input variable
      * @param keepDims  If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
      * @param dimension Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable mean(String name, SDVariable iX, boolean keepDims, int... dimension) {
-        SDVariable result = functionFactory.mean(iX, keepDims, dimension);
+    public SDVariable mean(String name, SDVariable x, boolean keepDims, int... dimension) {
+        SDVariable result = functionFactory.mean(x, keepDims, dimension);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * @see #standardDeviation(String, SDVariable, boolean, int...)
      */
-    public SDVariable standardDeviation(SDVariable iX, boolean biasCorrected, int... dimensions) {
-        return standardDeviation(null, iX, biasCorrected, dimensions);
+    public SDVariable standardDeviation(SDVariable x, boolean biasCorrected, int... dimensions) {
+        return standardDeviation(null, x, biasCorrected, dimensions);
     }
 
     /**
      * Stardard deviation array reduction operation, optionally along specified dimensions
      *
      * @param name          Output variable name
-     * @param iX            Input variable
+     * @param x            Input variable
      * @param biasCorrected If true: divide by (N-1) (i.e., sample stdev). If false: divide by N (population stdev)
      * @param dimensions    Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable standardDeviation(String name, SDVariable iX, boolean biasCorrected, int... dimensions) {
-        return standardDeviation(name, iX, biasCorrected, false, dimensions);
+    public SDVariable standardDeviation(String name, SDVariable x, boolean biasCorrected, int... dimensions) {
+        return standardDeviation(name, x, biasCorrected, false, dimensions);
     }
 
     /**
@@ -5737,35 +5737,35 @@ public class SameDiff {
      * keepDims = true: [a,1,c]<br>
      * keepDims = false: [a,c]
      *
-     * @param iX            Input variable
+     * @param x            Input variable
      * @param biasCorrected If true: divide by (N-1) (i.e., sample stdev). If false: divide by N (population stdev)
      * @param keepDims      If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
      * @param dimensions    Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable standardDeviation(String name, SDVariable iX, boolean biasCorrected, boolean keepDims, int... dimensions) {
-        SDVariable result = functionFactory.std(iX, biasCorrected, keepDims, dimensions);
+    public SDVariable standardDeviation(String name, SDVariable x, boolean biasCorrected, boolean keepDims, int... dimensions) {
+        SDVariable result = functionFactory.std(x, biasCorrected, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * @see #variance(String, SDVariable, boolean, int...)
      */
-    public SDVariable variance(SDVariable iX, boolean biasCorrected, int... dimensions) {
-        return variance(null, iX, biasCorrected, dimensions);
+    public SDVariable variance(SDVariable x, boolean biasCorrected, int... dimensions) {
+        return variance(null, x, biasCorrected, dimensions);
     }
 
     /**
      * Variance array reduction operation, optionally along specified dimensions
      *
      * @param name          Output variable name
-     * @param iX            Input variable
+     * @param x            Input variable
      * @param biasCorrected If true: divide by (N-1) (i.e., sample variable). If false: divide by N (population variance)
      * @param dimensions    Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable variance(String name, SDVariable iX, boolean biasCorrected, int... dimensions) {
-        return variance(name, iX, biasCorrected, false, dimensions);
+    public SDVariable variance(String name, SDVariable x, boolean biasCorrected, int... dimensions) {
+        return variance(name, x, biasCorrected, false, dimensions);
     }
 
     /**
@@ -5778,14 +5778,14 @@ public class SameDiff {
      * keepDims = false: [a,c]
      *
      * @param name          Output variable name
-     * @param iX            Input variable
+     * @param x            Input variable
      * @param biasCorrected If true: divide by (N-1) (i.e., sample variable). If false: divide by N (population variance)
      * @param keepDims      If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
      * @param dimensions    Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable variance(String name, SDVariable iX, boolean biasCorrected, boolean keepDims, int... dimensions) {
-        SDVariable result = functionFactory.variance(iX, biasCorrected, keepDims, dimensions);
+    public SDVariable variance(String name, SDVariable x, boolean biasCorrected, boolean keepDims, int... dimensions) {
+        SDVariable result = functionFactory.variance(x, biasCorrected, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -5840,24 +5840,24 @@ public class SameDiff {
     /**
      * Sum array reduction operation, optionally along specified dimensions
      *
-     * @param iX         Input variable
+     * @param x         Input variable
      * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable sum(SDVariable iX, int... dimensions) {
-        return sum(null, iX, dimensions);
+    public SDVariable sum(SDVariable x, int... dimensions) {
+        return sum(null, x, dimensions);
     }
 
     /**
      * Sum array reduction operation, optionally along specified dimensions
      *
-     * @param iX         Input variable
+     * @param x         Input variable
      * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Output variable: reduced array of rank (input rank - num dimensions) if keepDims = false, or
      * of rank (input rank) if keepdims = true
      */
-    public SDVariable sum(String name, SDVariable iX, int... dimensions) {
-        return sum(name, iX, false, dimensions);
+    public SDVariable sum(String name, SDVariable x, int... dimensions) {
+        return sum(name, x, false, dimensions);
     }
 
     /**
@@ -5870,46 +5870,46 @@ public class SameDiff {
      * keepDims = false: [a,c]
      *
      * @param name       Output variable name
-     * @param iX         Input variable
+     * @param x         Input variable
      * @param keepDims   If true: keep the dimensions that are reduced on (as length 1). False: remove the reduction dimensions
      * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Output variable: reduced array of rank (input rank - num dimensions) if keepDims = false, or
      * of rank (input rank) if keepdims = true
      */
-    public SDVariable sum(String name, SDVariable iX, boolean keepDims, int... dimensions) {
-        SDVariable result = functionFactory.sum(iX, keepDims, dimensions);
+    public SDVariable sum(String name, SDVariable x, boolean keepDims, int... dimensions) {
+        SDVariable result = functionFactory.sum(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * @see #sum(String, SDVariable, boolean, int...)
      */
-    public SDVariable sum(SDVariable iX, boolean keepDims, int... dimensions) {
-        return sum(null, iX, keepDims, dimensions);
+    public SDVariable sum(SDVariable x, boolean keepDims, int... dimensions) {
+        return sum(null, x, keepDims, dimensions);
     }
 
 
     /**
      * Product array reduction operation, optionally along specified dimensions
      *
-     * @param iX         Input variable
+     * @param x         Input variable
      * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable prod(SDVariable iX, int... dimensions) {
-        return prod(null, iX, dimensions);
+    public SDVariable prod(SDVariable x, int... dimensions) {
+        return prod(null, x, dimensions);
     }
 
     /**
      * Product array reduction operation, optionally along specified dimensions
      *
      * @param name       Output variable name
-     * @param iX         Input variable
+     * @param x         Input variable
      * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable prod(String name, SDVariable iX, int... dimensions) {
-        return prod(name, iX, false, dimensions);
+    public SDVariable prod(String name, SDVariable x, int... dimensions) {
+        return prod(name, x, false, dimensions);
     }
 
     /**
@@ -5922,13 +5922,13 @@ public class SameDiff {
      * keepDims = false: [a,c]
      *
      * @param name       Output variable name
-     * @param iX         Input variable
+     * @param x         Input variable
      * @param keepDims   If true: keep the dimensions that are reduced on (as length 1). False: remove the reduction dimensions
      * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable prod(String name, SDVariable iX, boolean keepDims, int... dimensions) {
-        SDVariable result = functionFactory.prod(iX, keepDims, dimensions);
+    public SDVariable prod(String name, SDVariable x, boolean keepDims, int... dimensions) {
+        SDVariable result = functionFactory.prod(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -6034,24 +6034,24 @@ public class SameDiff {
     /**
      * Max array reduction operation, optionally along specified dimensions
      *
-     * @param iX         Input variable
+     * @param x         Input variable
      * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable max(SDVariable iX, int... dimensions) {
-        return max(null, iX, dimensions);
+    public SDVariable max(SDVariable x, int... dimensions) {
+        return max(null, x, dimensions);
     }
 
     /**
      * Max array reduction operation, optionally along specified dimensions
      *
      * @param name       Output variable name
-     * @param iX         Input variable
+     * @param x         Input variable
      * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable max(String name, SDVariable iX, int... dimensions) {
-        return max(name, iX, false, dimensions);
+    public SDVariable max(String name, SDVariable x, int... dimensions) {
+        return max(name, x, false, dimensions);
     }
 
     /**
@@ -6064,13 +6064,13 @@ public class SameDiff {
      * keepDims = false: [a,c]
      *
      * @param name       Output variable name
-     * @param iX         Input variable
+     * @param x         Input variable
      * @param keepDims   If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
      * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable max(String name, SDVariable iX, boolean keepDims, int... dimensions) {
-        SDVariable result = functionFactory.max(iX, keepDims, dimensions);
+    public SDVariable max(String name, SDVariable x, boolean keepDims, int... dimensions) {
+        SDVariable result = functionFactory.max(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -6269,24 +6269,24 @@ public class SameDiff {
     /**
      * Minimum array reduction operation, optionally along specified dimensions. out = min(in)
      *
-     * @param iX         Input variable
+     * @param x         Input variable
      * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable min(SDVariable iX, int... dimensions) {
-        return min(null, iX, dimensions);
+    public SDVariable min(SDVariable x, int... dimensions) {
+        return min(null, x, dimensions);
     }
 
     /**
      * Minimum array reduction operation, optionally along specified dimensions. out = min(in)
      *
      * @param name       Output variable name
-     * @param iX         Input variable
+     * @param x         Input variable
      * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable min(String name, SDVariable iX, int... dimensions) {
-        return min(name, iX, false, dimensions);
+    public SDVariable min(String name, SDVariable x, int... dimensions) {
+        return min(name, x, false, dimensions);
     }
 
     /**
@@ -6299,13 +6299,13 @@ public class SameDiff {
      * keepDims = false: [a,c]
      *
      * @param name       Output variable name
-     * @param iX         Input variable
+     * @param x         Input variable
      * @param keepDims   If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
      * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable min(String name, SDVariable iX, boolean keepDims, int... dimensions) {
-        SDVariable result = functionFactory.min(iX, keepDims, dimensions);
+    public SDVariable min(String name, SDVariable x, boolean keepDims, int... dimensions) {
+        SDVariable result = functionFactory.min(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
 
     }
@@ -6756,13 +6756,13 @@ public class SameDiff {
      * input, but with the specified shape.<br>
      * Note that prod(shape) must match length(input) == prod(input.shape)
      *
-     * @param iX    Input variable
+     * @param x    Input variable
      * @param shape New shape for variable
      * @return Output variable
      * @see #reshape(SDVariable, SDVariable)
      */
-    public SDVariable reshape(SDVariable iX, int... shape) {
-        return reshape(null, iX, shape);
+    public SDVariable reshape(SDVariable x, int... shape) {
+        return reshape(null, x, shape);
     }
 
     /**
@@ -6771,13 +6771,13 @@ public class SameDiff {
      * Note that prod(shape) must match length(input) == prod(input.shape)
      *
      * @param name  Output variable name
-     * @param iX    Input variable
+     * @param x    Input variable
      * @param shape New shape for variable
      * @return Output variable
      * @see #reshape(SDVariable, SDVariable)
      */
-    public SDVariable reshape(String name, SDVariable iX, int... shape) {
-        SDVariable result = functionFactory .reshape(iX, shape);
+    public SDVariable reshape(String name, SDVariable x, int... shape) {
+        SDVariable result = functionFactory .reshape(x, shape);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -6786,13 +6786,13 @@ public class SameDiff {
      * input, but with the specified shape.<br>
      * Note that prod(shape) must match length(input) == prod(input.shape)
      *
-     * @param iX    Input variable
+     * @param x    Input variable
      * @param shape New shape for variable
      * @return Output variable
      * @see #reshape(SDVariable, int[])
      */
-    public SDVariable reshape(SDVariable iX, SDVariable shape) {
-        return reshape(null, iX, shape);
+    public SDVariable reshape(SDVariable x, SDVariable shape) {
+        return reshape(null, x, shape);
     }
 
     /**
@@ -6801,13 +6801,13 @@ public class SameDiff {
      * Note that prod(shape) must match length(input) == prod(input.shape)
      *
      * @param name  Output variable name
-     * @param iX    Input variable
+     * @param x    Input variable
      * @param shape New shape for variable
      * @return Output variable
      * @see #reshape(SDVariable, int[])
      */
-    public SDVariable reshape(String name, SDVariable iX,SDVariable shape) {
-        SDVariable result = functionFactory.reshape(iX, shape);
+    public SDVariable reshape(String name, SDVariable x,SDVariable shape) {
+        SDVariable result = functionFactory.reshape(x, shape);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -6932,8 +6932,8 @@ public class SameDiff {
     /**
      * @see #expandDims(String, SDVariable, int)
      */
-    public SDVariable expandDims(SDVariable ix, int axis) {
-        return expandDims(null, ix, axis);
+    public SDVariable expandDims(SDVariable x, int axis) {
+        return expandDims(null, x, axis);
     }
 
     /**
@@ -6944,21 +6944,21 @@ public class SameDiff {
      * axis = 2: [a, b, 1]<br>
      *
      * @param name Name of the output variable
-     * @param ix   Input variable
+     * @param x   Input variable
      * @param axis Axis to expand
      * @return Output variable
      * @see #squeeze(String, SDVariable, int)
      */
-    public SDVariable expandDims(String name, SDVariable ix, int axis) {
-        SDVariable result = f().expandDims(ix, axis);
+    public SDVariable expandDims(String name, SDVariable x, int axis) {
+        SDVariable result = f().expandDims(x, axis);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * @see #squeeze(String, SDVariable, int)
      */
-    public SDVariable squeeze(SDVariable ix, int axis) {
-        return squeeze(null, ix, axis);
+    public SDVariable squeeze(SDVariable x, int axis) {
+        return squeeze(null, x, axis);
     }
 
     /**
@@ -6966,12 +6966,12 @@ public class SameDiff {
      * For example, if input has shape [a,b,1,c] then squeeze(input, 2) returns an array of shape [a,b,c]
      *
      * @param name Name of the output variable
-     * @param ix   Input variable
+     * @param x   Input variable
      * @param axis Size 1 dimension to remove
      * @return Output variable
      */
-    public SDVariable squeeze(String name, SDVariable ix, int axis) {
-        SDVariable result = f().squeeze(ix, axis);
+    public SDVariable squeeze(String name, SDVariable x, int axis) {
+        SDVariable result = f().squeeze(x, axis);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -7027,22 +7027,22 @@ public class SameDiff {
     /**
      * Matrix transpose operation: If input has shape [a,b] output has shape [b,a]
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable (transposed input)
      */
-    public SDVariable transpose(SDVariable iX) {
-        return transpose(null, iX);
+    public SDVariable transpose(SDVariable x) {
+        return transpose(null, x);
     }
 
     /**
      * Matrix transpose operation: If input has shape [a,b] output has shape [b,a]
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable (transposed input)
      */
-    public SDVariable transpose(String name, SDVariable iX) {
-        SDVariable result = functionFactory.transpose(iX);
+    public SDVariable transpose(String name, SDVariable x) {
+        SDVariable result = functionFactory.transpose(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -7050,11 +7050,11 @@ public class SameDiff {
      * Array permutation operation: permute the dimensions according to the specified permutation indices.<br>
      * Example: if input has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]
      *
-     * @param iX Input variable
+     * @param x Input variable
      * @return Output variable (permuted input)
      */
-    public SDVariable permute(SDVariable iX, int... dimensions) {
-        return permute(null, iX, dimensions);
+    public SDVariable permute(SDVariable x, int... dimensions) {
+        return permute(null, x, dimensions);
     }
 
     /**
@@ -7062,11 +7062,11 @@ public class SameDiff {
      * Example: if input has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]
      *
      * @param name Output variable name
-     * @param iX   Input variable
+     * @param x   Input variable
      * @return Output variable (permuted input)
      */
-    public SDVariable permute(String name, SDVariable iX, int... dimensions) {
-        SDVariable result = functionFactory.permute(iX, dimensions);
+    public SDVariable permute(String name, SDVariable x, int... dimensions) {
+        SDVariable result = functionFactory.permute(x, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -7266,8 +7266,8 @@ public class SameDiff {
     /**
      * @see #tile(String, SDVariable, int[])
      */
-    public SDVariable tile(SDVariable iX, int[] repeat) {
-        return tile(null, iX, repeat);
+    public SDVariable tile(SDVariable x, int[] repeat) {
+        return tile(null, x, repeat);
     }
 
     /**
@@ -7284,12 +7284,12 @@ public class SameDiff {
      * <br>
      *
      * @param name   Output variable name
-     * @param iX     Input variable
+     * @param x     Input variable
      * @param repeat Number of times to repeat in each axis. Must have length equal to the rank of the input array
      * @return Output variable
      */
-    public SDVariable tile(String name, SDVariable iX, int[] repeat) {
-        SDVariable result = functionFactory.tile(iX, repeat);
+    public SDVariable tile(String name, SDVariable x, int[] repeat) {
+        SDVariable result = functionFactory.tile(x, repeat);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -7542,12 +7542,12 @@ public class SameDiff {
      * out = sum_i abs(x[i])
      *
      * @param name       Output variable name
-     * @param ix         Input variable
+     * @param x         Input variable
      * @param dimensions dimensions to reduce over
      * @return Output variable
      */
-    public SDVariable norm1(String name, SDVariable ix, int... dimensions) {
-        return norm1(name, ix, false, dimensions);
+    public SDVariable norm1(String name, SDVariable x, int... dimensions) {
+        return norm1(name, x, false, dimensions);
     }
 
     /**
@@ -7561,13 +7561,13 @@ public class SameDiff {
      * keepDims = false: [a,c]
      *
      * @param name       Output variable name
-     * @param ix         Input variable
+     * @param x         Input variable
      * @param keepDims   If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
      * @param dimensions dimensions to reduce over
      * @return Output variable
      */
-    public SDVariable norm1(String name, SDVariable ix, boolean keepDims, int... dimensions) {
-        SDVariable result = f().norm1(ix, keepDims, dimensions);
+    public SDVariable norm1(String name, SDVariable x, boolean keepDims, int... dimensions) {
+        SDVariable result = f().norm1(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -7576,12 +7576,12 @@ public class SameDiff {
      * out = sqrt(sum_i x[i]^2)
      *
      * @param name       Output variable name
-     * @param ix         Input variable
+     * @param x         Input variable
      * @param dimensions dimensions to reduce over
      * @return Output variable
      */
-    public SDVariable norm2(String name, SDVariable ix, int... dimensions) {
-        return norm2(name, ix, false, dimensions);
+    public SDVariable norm2(String name, SDVariable x, int... dimensions) {
+        return norm2(name, x, false, dimensions);
     }
 
     /**
@@ -7595,42 +7595,42 @@ public class SameDiff {
      * keepDims = false: [a,c]
      *
      * @param name       Output variable name
-     * @param ix         Input variable
+     * @param x         Input variable
      * @param keepDims   If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
      * @param dimensions dimensions to reduce over
      * @return Output variable
      */
-    public SDVariable norm2(String name, SDVariable ix, boolean keepDims, int... dimensions) {
-        SDVariable result = f().norm2(ix, keepDims, dimensions);
+    public SDVariable norm2(String name, SDVariable x, boolean keepDims, int... dimensions) {
+        SDVariable result = f().norm2(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * Squared L2 norm: see {@link #norm2(String, SDVariable, int...)}
      */
-    public SDVariable squaredNorm(SDVariable ix, int... dimensions) {
-        return squaredNorm(null, ix, false, dimensions);
+    public SDVariable squaredNorm(SDVariable x, int... dimensions) {
+        return squaredNorm(null, x, false, dimensions);
     }
 
     /**
      * Squared L2 norm: see {@link #norm2(String, SDVariable, int...)}
      */
-    public SDVariable squaredNorm(String name, SDVariable ix, int... dimensions) {
-        return squaredNorm(name, ix, false, dimensions);
+    public SDVariable squaredNorm(String name, SDVariable x, int... dimensions) {
+        return squaredNorm(name, x, false, dimensions);
     }
 
     /**
      * Squared L2 norm: see {@link #norm2(String, SDVariable, boolean, int...)}
      */
-    public SDVariable squaredNorm(SDVariable ix, boolean keepDims, int... dimensions) {
-        return squaredNorm(null, ix, keepDims, dimensions);
+    public SDVariable squaredNorm(SDVariable x, boolean keepDims, int... dimensions) {
+        return squaredNorm(null, x, keepDims, dimensions);
     }
 
     /**
      * Squared L2 norm: see {@link #norm2(String, SDVariable, boolean, int...)}
      */
-    public SDVariable squaredNorm(String name, SDVariable ix, boolean keepDims, int... dimensions) {
-        SDVariable result = f().squaredNorm(ix, keepDims, dimensions);
+    public SDVariable squaredNorm(String name, SDVariable x, boolean keepDims, int... dimensions) {
+        SDVariable result = f().squaredNorm(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -7639,12 +7639,12 @@ public class SameDiff {
      * specified dimensions
      *
      * @param name       Output variable name
-     * @param ix         Input variable
+     * @param x         Input variable
      * @param dimensions dimensions to reduce over
      * @return Output variable
      */
-    public SDVariable normmax(String name, SDVariable ix, int... dimensions) {
-        return normmax(name, ix, false, dimensions);
+    public SDVariable normmax(String name, SDVariable x, int... dimensions) {
+        return normmax(name, x, false, dimensions);
     }
 
     /**
@@ -7659,13 +7659,13 @@ public class SameDiff {
      * keepDims = false: [a,c]
      *
      * @param name       Output variable name
-     * @param ix         Input variable
+     * @param x         Input variable
      * @param keepDims   If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
      * @param dimensions dimensions to reduce over
      * @return Output variable
      */
-    public SDVariable normmax(String name, SDVariable ix, boolean keepDims, int... dimensions) {
-        SDVariable result = f().normmax(ix, keepDims, dimensions);
+    public SDVariable normmax(String name, SDVariable x, boolean keepDims, int... dimensions) {
+        SDVariable result = f().normmax(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -7695,8 +7695,8 @@ public class SameDiff {
     /**
      * @see #euclideanDistance(String, SDVariable, SDVariable, int...)
      */
-    public SDVariable euclideanDistance(SDVariable iX, SDVariable i_y, int... dimensions) {
-        return euclideanDistance(generateNewVarName(EuclideanDistance.OP_NAME, 0), iX, i_y, dimensions);
+    public SDVariable euclideanDistance(SDVariable x, SDVariable y, int... dimensions) {
+        return euclideanDistance(generateNewVarName(EuclideanDistance.OP_NAME, 0), x, y, dimensions);
     }
 
     /**
@@ -7717,8 +7717,8 @@ public class SameDiff {
     /**
      * @see #manhattanDistance(String, SDVariable, SDVariable, int...)
      */
-    public SDVariable manhattanDistance(SDVariable iX, SDVariable i_y, int... dimensions) {
-        return manhattanDistance(generateNewVarName(ManhattanDistance.OP_NAME, 0), iX, i_y, dimensions);
+    public SDVariable manhattanDistance(SDVariable x, SDVariable y, int... dimensions) {
+        return manhattanDistance(generateNewVarName(ManhattanDistance.OP_NAME, 0), x, y, dimensions);
     }
 
     /**
@@ -7740,8 +7740,8 @@ public class SameDiff {
     /**
      * @see #cosineDistance(String, SDVariable, SDVariable, int...)
      */
-    public SDVariable cosineDistance(SDVariable ix, SDVariable iy, int... dimensions) {
-        return cosineDistance(null, ix, iy, dimensions);
+    public SDVariable cosineDistance(SDVariable x, SDVariable y, int... dimensions) {
+        return cosineDistance(null, x, y, dimensions);
     }
 
     /**
@@ -7764,8 +7764,8 @@ public class SameDiff {
     /**
      * @see #hammingDistance(String, SDVariable, SDVariable, int...)
      */
-    public SDVariable hammingDistance(SDVariable ix, SDVariable iy, int... dimensions) {
-        return hammingDistance(null, ix, iy, dimensions);
+    public SDVariable hammingDistance(SDVariable x, SDVariable y, int... dimensions) {
+        return hammingDistance(null, x, y, dimensions);
     }
 
     /**
@@ -7972,11 +7972,11 @@ public class SameDiff {
     }
 
     /**
-     * @param iX
+     * @param x
      * @return
      */
-    public SDVariable softmaxDerivative(String name, SDVariable iX, SDVariable wrt) {
-        SDVariable result = functionFactory.softmaxDerivative(iX, wrt);
+    public SDVariable softmaxDerivative(String name, SDVariable x, SDVariable wrt) {
+        SDVariable result = functionFactory.softmaxDerivative(x, wrt);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -8087,147 +8087,147 @@ public class SameDiff {
     }
 
     /**
-     * @param iX
-     * @param i_y
+     * @param x
+     * @param y
      * @param dimensions
      * @return
      */
-    public SDVariable lossBinaryXENT(String name, SDVariable iX, SDVariable i_y, int... dimensions) {
-        SDVariable result = functionFactory.lossBinaryXENT(iX, i_y, dimensions);
+    public SDVariable lossBinaryXENT(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable result = functionFactory.lossBinaryXENT(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
-     * @param iX
-     * @param i_y
+     * @param x
+     * @param y
      * @param dimensions
      * @return
      */
-    public SDVariable lossCosineSimilarity(String name, SDVariable iX, SDVariable i_y, int... dimensions) {
-        SDVariable result = functionFactory.lossCosineSimilarity(iX, i_y, dimensions);
+    public SDVariable lossCosineSimilarity(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable result = functionFactory.lossCosineSimilarity(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
-     * @param iX
-     * @param i_y
+     * @param x
+     * @param y
      * @param dimensions
      * @return
      */
-    public SDVariable lossHinge(String name, SDVariable iX, SDVariable i_y, int... dimensions) {
-        SDVariable result = functionFactory.lossHinge(iX, i_y, dimensions);
+    public SDVariable lossHinge(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable result = functionFactory.lossHinge(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
-     * @param iX
-     * @param i_y
+     * @param x
+     * @param y
      * @param dimensions
      * @return
      */
-    public SDVariable lossKLD(String name, SDVariable iX, SDVariable i_y, int... dimensions) {
-        SDVariable result = functionFactory.lossKLD(iX, i_y, dimensions);
+    public SDVariable lossKLD(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable result = functionFactory.lossKLD(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
-     * @param iX
-     * @param i_y
+     * @param x
+     * @param y
      * @param dimensions
      * @return
      */
-    public SDVariable lossL1(String name, SDVariable iX, SDVariable i_y, int... dimensions) {
-        SDVariable result = functionFactory.lossL1(iX, i_y, dimensions);
+    public SDVariable lossL1(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable result = functionFactory.lossL1(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
-     * @param iX
-     * @param i_y
+     * @param x
+     * @param y
      * @param dimensions
      * @return
      */
-    public SDVariable lossL2(String name, SDVariable iX, SDVariable i_y, int... dimensions) {
-        SDVariable result = functionFactory.lossL2(iX, i_y, dimensions);
+    public SDVariable lossL2(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable result = functionFactory.lossL2(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
-     * @param iX
-     * @param i_y
+     * @param x
+     * @param y
      * @param dimensions
      * @return
      */
-    public SDVariable lossMAE(String name, SDVariable iX, SDVariable i_y, int... dimensions) {
-        SDVariable result = functionFactory.lossMAE(iX, i_y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-
-    /**
-     * @param iX
-     * @param i_y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossMSE(String name, SDVariable iX, SDVariable i_y, int... dimensions) {
-        SDVariable result = functionFactory.lossMSE(iX, i_y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param iX
-     * @param i_y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossMCXENT(String name, SDVariable iX, SDVariable i_y, int... dimensions) {
-        SDVariable result = functionFactory.lossMCXENT(iX, i_y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param iX
-     * @param i_y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossMSLE(String name, SDVariable iX, SDVariable i_y, int... dimensions) {
-        SDVariable result = functionFactory.lossMSLE(iX, i_y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param iX
-     * @param i_y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossNegativeLogLikelihood(String name, SDVariable iX, SDVariable i_y, int... dimensions) {
-        SDVariable result = functionFactory.lossNegativeLogLikelihood(iX, i_y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param iX
-     * @param i_y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossPoisson(String name, SDVariable iX, SDVariable i_y, int... dimensions) {
-        SDVariable result = functionFactory.lossPoisson(iX, i_y, dimensions);
+    public SDVariable lossMAE(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable result = functionFactory.lossMAE(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
 
     /**
-     * @param iX
-     * @param i_y
+     * @param x
+     * @param y
      * @param dimensions
      * @return
      */
-    public SDVariable lossSquaredHinge(String name, SDVariable iX, SDVariable i_y, int... dimensions) {
-        SDVariable result = functionFactory.lossSquaredHinge(iX, i_y, dimensions);
+    public SDVariable lossMSE(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable result = functionFactory.lossMSE(x, y, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * @param x
+     * @param y
+     * @param dimensions
+     * @return
+     */
+    public SDVariable lossMCXENT(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable result = functionFactory.lossMCXENT(x, y, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * @param x
+     * @param y
+     * @param dimensions
+     * @return
+     */
+    public SDVariable lossMSLE(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable result = functionFactory.lossMSLE(x, y, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * @param x
+     * @param y
+     * @param dimensions
+     * @return
+     */
+    public SDVariable lossNegativeLogLikelihood(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable result = functionFactory.lossNegativeLogLikelihood(x, y, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * @param x
+     * @param y
+     * @param dimensions
+     * @return
+     */
+    public SDVariable lossPoisson(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable result = functionFactory.lossPoisson(x, y, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
+
+
+    /**
+     * @param x
+     * @param y
+     * @param dimensions
+     * @return
+     */
+    public SDVariable lossSquaredHinge(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable result = functionFactory.lossSquaredHinge(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
