@@ -42,11 +42,6 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     include_directories("/usr/local/include")
 ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
-
-message("CPU BLAS")
-add_definitions(-D__CPUBLAS__=true)
-add_library(nd4jcpu SHARED ../../blas/cpu/NativeOps.cpp   ../../include/nd4jmemset.h ../../include/nd4jmalloc.h)
-
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
     message(FATAL_ERROR "You need at least GCC 4.9")
 endif()
@@ -67,5 +62,5 @@ elseif(MSYS)
 endif()
 
 
-add_executable(runtests ../../include/cnpy/cnpy.cpp CnpyTests.cpp)
-target_link_libraries(runtests nd4jcpu  gtest gtest_main)
+add_executable(runtests ../../include/cnpy/cnpy.cpp ../layers_tests/CnpyTests.cpp)
+target_link_libraries(runtests ${LIBND4J_NAME}static gtest gtest_main)

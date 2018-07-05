@@ -1792,8 +1792,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
-    public INDArray empty() {
+    public INDArray empty(DataBuffer.Type type) {
         long extras  = ArrayOptionsHelper.setOptionBit(0L, ArrayType.EMPTY);
+        extras = ArrayOptionsHelper.setOptionBit(extras, type);
         val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new int[0], new int[0],0,1,'c', extras);
         return new JCublasNDArray(null, (CudaLongDataBuffer) shape.getFirst(), shape.getSecond());
     }

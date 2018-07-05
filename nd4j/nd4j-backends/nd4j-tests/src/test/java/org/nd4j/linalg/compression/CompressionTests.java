@@ -672,7 +672,6 @@ public class CompressionTests extends BaseNd4jTest {
         assertEquals(exp_1, initial);
     }
 
-
     @Override
     public char ordering() {
         return 'c';

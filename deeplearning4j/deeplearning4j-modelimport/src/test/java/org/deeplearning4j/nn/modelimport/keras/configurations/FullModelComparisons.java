@@ -200,7 +200,43 @@ public class FullModelComparisons {
         for (int i = 0; i < 5; i++) {
             TestCase.assertEquals(output.getDouble(i), kerasOutput.getDouble(i), 1e-4);
         }
+    }
 
+
+    @Test
+    public void cnnBatchNormLargerTest() throws IOException, UnsupportedKerasConfigurationException,
+            InvalidKerasConfigurationException {
+
+        String modelPath = "modelimport/keras/fullconfigs/cnn_batch_norm/cnn_batch_norm_medium.h5";
+
+
+        ClassPathResource modelResource = new ClassPathResource(modelPath, classLoader);
+
+        KerasSequentialModel kerasModel = new KerasModel().modelBuilder()
+                .modelHdf5Filename(modelResource.getFile().getAbsolutePath())
+                .enforceTrainingConfig(false)
+                .buildSequential();
+
+        MultiLayerNetwork model = kerasModel.getMultiLayerNetwork();
+        model.init();
+
+        System.out.println(model.summary());
+
+        ClassPathResource inputResource = new ClassPathResource(
+                "modelimport/keras/fullconfigs/cnn_batch_norm/input.npy", classLoader);
+        INDArray input = Nd4j.createFromNpyFile(inputResource.getFile());
+        input = input.permute(0, 3, 1, 2);
+        assertTrue(Arrays.equals(input.shape(), new long[] {5, 1, 48, 48}));
+
+        INDArray output = model.output(input);
+
+        ClassPathResource outputResource = new ClassPathResource(
+                "modelimport/keras/fullconfigs/cnn_batch_norm/predictions.npy", classLoader);
+        INDArray kerasOutput = Nd4j.createFromNpyFile(outputResource.getFile());
+
+        for (int i = 0; i < 5; i++) {
+            TestCase.assertEquals(output.getDouble(i), kerasOutput.getDouble(i), 1e-4);
+        }
     }
 
 }

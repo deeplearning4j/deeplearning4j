@@ -6606,4 +6606,26 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public boolean isEmpty() {
         return Shape.isEmpty(jvmShapeInfo.javaShapeInformation);
     }
+
+
+    @Override
+    public long[] shapeInfoJava() {
+        return jvmShapeInfo.javaShapeInformation;
+    }
+
+    @Override
+    public DataBuffer.Type dataType() {
+        val e = Shape.extras(jvmShapeInfo.javaShapeInformation);
+
+        if (e != 0) {
+            val t = ArrayOptionsHelper.dataType(jvmShapeInfo.javaShapeInformation);
+            if (t != DataBuffer.Type.UNKNOWN)
+                return t;
+        }
+
+        if (data != null)
+            return data.dataType();
+
+        return DataBuffer.Type.UNKNOWN;
+    }
 }

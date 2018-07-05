@@ -492,8 +492,9 @@ namespace functions {
             int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
             float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
+            nd4j_printf("smem: %i\n", launchDims.z)
 
-            functions::summarystats::summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+            functions::summarystats::summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z * 2, *stream>>>(
                     opNum,
                             x,
                             xShapeInfo, shape::rank(hostXShapeInfo),
@@ -531,7 +532,7 @@ namespace functions {
             float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
 
-            functions::summarystats::summaryStatsReduceHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+            functions::summarystats::summaryStatsReduceHalf<<<launchDims.x,launchDims.y,launchDims.z * 4, *stream>>>(
                     opNum,
                             x,
                             xShapeInfo, shape::rank(hostXShapeInfo),

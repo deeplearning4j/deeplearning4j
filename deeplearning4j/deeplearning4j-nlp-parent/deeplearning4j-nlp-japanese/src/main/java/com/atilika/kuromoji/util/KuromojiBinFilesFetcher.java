@@ -42,7 +42,7 @@ public class KuromojiBinFilesFetcher {
         binFileList.add(new File(root, "unknownDictionary.bin"));
 
         for (File f : binFileList) {
-            if (f.exists() == false) {
+            if (!f.exists()) {
                 return false;
             }
         }
@@ -51,8 +51,12 @@ public class KuromojiBinFilesFetcher {
 
     public static File downloadAndUntar() throws IOException {
         File rootDir = getKuromojiRoot();
-
-        rootDir.mkdir();
+        File[] files = rootDir.listFiles();
+        if (rootDir.exists() && files != null && files.length > 0) {
+            log.warn("Kuromoji dictionary files exist but failed checks. Deleting and re-downloading.");
+            FileUtils.deleteDirectory(rootDir);
+            rootDir.mkdir();
+        }
 
         log.info("Downloading Kuromoji bin files...");
 
@@ -60,13 +64,12 @@ public class KuromojiBinFilesFetcher {
         File tarFile = new File(rootDir, "kuromoji_bin_files.tar.gz");
         if (!tarFile.isFile()) {
             FileUtils.copyURLToFile(
-                    new URL("https://dhkuromoji.blob.core.windows.net/kuromoji/kuromoji_bin_files.tar.gz"),
-                    tarFile);
+                            new URL("https://dhkuromoji.blob.core.windows.net/kuromoji/kuromoji_bin_files.tar.gz"),
+                            tarFile);
         }
         ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(), rootDir.getAbsolutePath());
 
-
-        return null;
+        return rootDir.getAbsoluteFile();
     }
 
     @Deprecated
