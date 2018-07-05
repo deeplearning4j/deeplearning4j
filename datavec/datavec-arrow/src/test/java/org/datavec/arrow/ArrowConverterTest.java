@@ -49,6 +49,25 @@ public class ArrowConverterTest {
 
 
 
+    @Test
+    public void testToArrayFromINDArray() {
+        Schema.Builder schemaBuilder = new Schema.Builder();
+        schemaBuilder.addColumnNDArray("outputArray",new long[]{1,4});
+        Schema schema = schemaBuilder.build();
+        int numRows = 4;
+        List<List<Writable>> ret = new ArrayList<>(numRows);
+        for(int i = 0; i < numRows; i++) {
+            ret.add(Arrays.<Writable>asList(new NDArrayWritable(Nd4j.linspace(1,4,4))));
+        }
+
+        List<FieldVector> fieldVectors = ArrowConverter.toArrowColumns(bufferAllocator, schema, ret);
+        ArrowWritableRecordBatch arrowWritableRecordBatch = new ArrowWritableRecordBatch(fieldVectors,schema);
+        INDArray array = ArrowConverter.toArray(arrowWritableRecordBatch);
+        assertArrayEquals(new long[]{4,4},array.shape());
+
+        INDArray assertion = Nd4j.repeat(Nd4j.linspace(1,4,4),4).reshape(4,4);
+        assertEquals(assertion,array);
+    }
 
     @Test
     public void testArrowColumnINDArray() {

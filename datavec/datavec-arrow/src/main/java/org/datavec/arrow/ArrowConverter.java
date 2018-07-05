@@ -102,12 +102,31 @@ public class ArrowConverter {
                     break;
                 case Long:
                     break;
+                case NDArray:
+                    break;
                 default:
-                    throw new ND4JIllegalArgumentException("Illegal data type found for column " + schema.getName(i));
+                    throw new ND4JIllegalArgumentException("Illegal data type found for column " + schema.getName(i) + " of type " + schema.getType(i));
             }
         }
 
+
         int rows  = arrowWritableRecordBatch.getList().get(0).getValueCount();
+
+        if(schema.numColumns() == 1 && schema.getMetaData(0).getColumnType() == ColumnType.NDArray) {
+            INDArray[] toConcat =  new INDArray[rows];
+            VarBinaryVector valueVectors = (VarBinaryVector) arrowWritableRecordBatch.getList().get(0);
+            for(int i = 0; i < rows; i++) {
+                byte[] bytes = valueVectors.get(i);
+                ByteBuffer direct = ByteBuffer.allocateDirect(bytes.length);
+                direct.put(bytes);
+                INDArray fromTensor = BinarySerde.toArray(direct);
+                toConcat[i] = fromTensor;
+            }
+
+            return Nd4j.concat(0,toConcat);
+
+        }
+
         int cols = schema.numColumns();
         INDArray arr  = Nd4j.create(rows,cols);
         for(int i = 0; i < cols; i++) {
@@ -688,7 +707,7 @@ public class ArrowConverter {
                 case Categorical: ret.add(stringVectorOf(bufferAllocator,schema.getName(i),numRows)); break;
                 case Time: ret.add(timeVectorOf(bufferAllocator,schema.getName(i),numRows)); break;
                 case NDArray: ret.add(ndarrayVectorOf(bufferAllocator,schema.getName(i),numRows)); break;
-                default: throw new IllegalArgumentException("Illegal type found " + schema.getType(i));
+                default: throw new IllegalArgumentException("Illegal type found for creation of field vectors" + schema.getType(i));
 
             }
         }
