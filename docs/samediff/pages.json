@@ -26,7 +26,8 @@
         "samediff/SameDiff.java"
       ],
       "include": [
-        "newCloner",
+        "gradient",
+        "getGradient",
         "updateVariableName"
       ],
       "constructors": true
@@ -37,7 +38,7 @@
         "samediff/SameDiff.java"
       ],
       "exclude": [
-        "newCloner",
+        "gradient",
         "updateVariableName"
       ],
       "constructors": false

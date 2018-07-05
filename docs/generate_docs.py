@@ -128,8 +128,14 @@ class DocumentationGenerator:
     def get_public_method_data(self, class_string, includes, excludes):
         method_regex = r'public [static\s]?[a-zA-Z0-9]* ([a-zA-Z0-9]*)\('
 
-        # Either use all methods or the ones provided by includes
-        method_strings = includes if includes else re.findall(method_regex, class_string)
+        print('>>> INCLUDES/EXCLUDES')
+        print(includes)
+        print(excludes)
+
+        # Either use all methods or use include methods that can be found
+        method_strings = re.findall(method_regex, class_string)
+        if includes:
+            method_strings = [i for i in includes if i in method_strings]
 
         # Exclude all 'exclude' methods
         method_strings = [m for m in method_strings if m not in excludes]
@@ -190,12 +196,10 @@ class DocumentationGenerator:
         if cls:
             classes = cls
 
-        includes = data.get('includes', [])
-        excludes = data.get('excludes', [])
-        if includes and excludes:
-            raise ValueError('Can\'t set both includes and excludes for page data')
+        includes = data.get('include', [])
+        excludes = data.get('exclude', [])
 
-        use_constructors = data.get('constructor', True)
+        use_constructors = data.get('constructors', True)
         tag = data.get('autogen_tag', '')
 
         for cls in sorted(classes):
