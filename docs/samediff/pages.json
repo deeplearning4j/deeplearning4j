@@ -17,13 +17,30 @@
       "page": "samediff/variables.md",
       "class": [
         "samediff/SDVariable.java"
-      ]
+      ],
+      "autogen_tag": "sdvars"
     },
     {
       "page": "samediff/samediff.md",
       "class": [
         "samediff/SameDiff.java"
-      ]
+      ],
+      "include": [
+        "newCloner",
+        "updateVariableName"
+      ],
+      "constructors": true
+    },
+    {
+      "page": "samediff/ops.md",
+      "class": [
+        "samediff/SameDiff.java"
+      ],
+      "exclude": [
+        "newCloner",
+        "updateVariableName"
+      ],
+      "constructors": false
     },
     {
       "page": "samediff/execution.md",

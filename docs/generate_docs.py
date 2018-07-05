@@ -185,8 +185,11 @@ class DocumentationGenerator:
         if cls:
             classes = cls
 
-        # print(module)
-        # print(classes)
+        includes = data.get('includes', [])
+        excludes = data.get('excludes', [])
+        use_constructors = data.get('constructor', True)
+        tag = data.get('autogen_tag', '')
+
 
         for cls in sorted(classes):
             class_string = self.inspect_class_string(module, cls)
