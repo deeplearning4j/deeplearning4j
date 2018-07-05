@@ -15,7 +15,8 @@ pages:
   - SameDiff and DL4J: getting-started/samediff-dl4j.md
 - SameDiff graphs:
   - SameDiff variables: samediff/variables.md
-  - SameDiff graphs and operations: samediff/samediff.md
+  - SameDiff graphs: samediff/samediff.md
+  - SameDiff operations: samediff/ops.md
   - SameDiff execution: samediff/execution.md
 - Samediff functions:
   - Differential functions: functions/function-factory.md
