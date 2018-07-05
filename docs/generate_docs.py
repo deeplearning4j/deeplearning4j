@@ -108,9 +108,9 @@ class DocumentationGenerator:
 
     '''Returns doc string and signature data for constructors.
     '''
-    def get_constructor_data(self, class_string, class_name):
+    def get_constructor_data(self, class_string, class_name, use_contructor):
         constructors = []
-        if 'public ' + class_name in class_string:
+        if 'public ' + class_name in class_string and use_contructor:
             while 'public ' + class_name in class_string:
                 doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n[\S\s]*?(public ' \
                             + class_name + '.[\S\s]*?){'
@@ -187,6 +187,9 @@ class DocumentationGenerator:
 
         includes = data.get('includes', [])
         excludes = data.get('excludes', [])
+        if includes and excludes:
+            raise ValueError('Can\'t set both includes and excludes for page data')
+
         use_constructors = data.get('constructor', True)
         tag = data.get('autogen_tag', '')
 
@@ -196,7 +199,7 @@ class DocumentationGenerator:
             class_string = class_string.replace('<p>', '').replace('</p>', '')
             class_name = cls.replace('.' + self.language, '')
             doc_string, class_string = self.get_main_doc_string(class_string, class_name)
-            constructors, class_string = self.get_constructor_data(class_string, class_name)
+            constructors, class_string = self.get_constructor_data(class_string, class_name, use_constructors)
             methods = self.get_public_method_data(class_string)
 
             page_data.append([module, class_name, doc_string, constructors, methods])
@@ -204,7 +207,7 @@ class DocumentationGenerator:
         return page_data
 
     '''If a tag is present in a source code string, extract everything between
-    tag::start and tag::end.
+    tag::<tag>::start and tag::<tag>::end.
     '''
     def get_tag_data(self, class_string, tag):
         start_tag = r'tag::' + tag + '::start'
@@ -218,7 +221,7 @@ class DocumentationGenerator:
         else:
             start = re.search(start_tag, class_string)
             end = re.search(end_tag, class_string)
-            return class_string[start.end():end.end()]
+            return class_string[start.end():end.start()]
 
     '''Before generating new docs into target folder, clean up old files. 
     '''
