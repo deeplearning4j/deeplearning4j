@@ -554,4 +554,9 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     public void setTadThreshold(int threshold) {
         backendExecutioner.setTadThreshold(threshold);
     }
+
+    @Override
+    public ExecutionerType type() {
+        return backendExecutioner.type();
+    }
 }

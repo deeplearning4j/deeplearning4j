@@ -773,4 +773,10 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public void setTadThreshold(int threshold) {
         // no-op
     }
+
+
+    @Override
+    public ExecutionerType type() {
+        throw new UnsupportedOperationException();
+    }
 }

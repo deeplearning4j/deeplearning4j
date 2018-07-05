@@ -22,16 +22,16 @@ __device__ inline static void metaPredicateStridedGeneric(const int opTypeA, con
     __shared__ T *paramsPtr;
     if (threadIdx.x == 0) {
         if (opTypeA == 0) {
-            params[0] = (Nd4jPointer *) &scalarA;
+            params[0] = reinterpret_cast<Nd4jPointer *>(&scalarA);
         }
-        else params[0] = (Nd4jPointer *) extraA;
+        else params[0] = reinterpret_cast<Nd4jPointer *>(extraA);
 
         if (opTypeB == 0) {
-            params[1] = (Nd4jPointer *) &scalarB;
+            params[1] = reinterpret_cast<Nd4jPointer *>(&scalarB);
         }
-        else params[1] = (Nd4jPointer *) extraB;
+        else params[1] = reinterpret_cast<Nd4jPointer *>(extraB);
 
-        paramsPtr = (T *) params;
+        paramsPtr = reinterpret_cast<T *>(params);
     }
     __syncthreads();
 #ifdef __EXPERIMENTAL__
@@ -81,16 +81,16 @@ __device__ static inline void invertedMetaPairwiseStridedGeneric(const int opTyp
     __shared__ T *paramsPtr;
     if (threadIdx.x == 0) {
         if (opTypeA == 0) {
-            params[0] = (Nd4jPointer *) &scalarA;
+            params[0] = reinterpret_cast<Nd4jPointer *>(&scalarA);
         }
-        else params[0] = (Nd4jPointer *) extraA;
+        else params[0] = reinterpret_cast<Nd4jPointer *>(extraA);
 
         if (opTypeB == 0) {
-            params[1] = (Nd4jPointer *) &scalarB;
+            params[1] = reinterpret_cast<Nd4jPointer *>(&scalarB);
         }
-        else params[1] = (Nd4jPointer *) extraB;
+        else params[1] = reinterpret_cast<Nd4jPointer *>(extraB);
 
-        paramsPtr = (T *) params;
+        paramsPtr = reinterpret_cast<T *>(params);
     }
     __syncthreads();
 
@@ -104,16 +104,16 @@ __device__ static inline void invertedMetaPairwiseStridedNumericGeneric(const in
     __shared__ T *paramsPtr;
     if (threadIdx.x == 0) {
         if (opTypeA == 0) {
-            params[0] = (Nd4jPointer *) &scalarA;
+            params[0] = reinterpret_cast<Nd4jPointer *>(&scalarA);
         }
-        else params[0] = (Nd4jPointer *) extraA;
+        else params[0] = reinterpret_cast<Nd4jPointer *>(extraA);
 
         if (opTypeB == 0) {
-            params[1] = (Nd4jPointer *) &scalarB;
+            params[1] = reinterpret_cast<Nd4jPointer *>(&scalarB);
         }
-        else params[1] = (Nd4jPointer *) extraB;
+        else params[1] = reinterpret_cast<Nd4jPointer *>(extraB);
 
-        paramsPtr = (T *) params;
+        paramsPtr = reinterpret_cast<T *>(params);
     }
     __syncthreads();
 
@@ -148,7 +148,7 @@ namespace functions {
          * @tparam T
          */
         template <typename T>
-        __device__ T _execute_2OEF(const int opType, const int opNum, T x, T y, T *extras) {
+        __device__ __noinline__ T _execute_2OEF(const int opType, const int opNum, T x, T y, T *extras) {
             T z;
             switch(opType) {
                 case 2: {
@@ -169,7 +169,7 @@ namespace functions {
         * @tparam T
         */
         template <typename T>
-        __device__ T _execute_1OEF(const int opType, const int opNum, T x, T *extras) {
+        __device__ __noinline__ T _execute_1OEF(const int opType, const int opNum, T x, T *extras) {
             T z;
             switch(opType) {
                 case 0: {
