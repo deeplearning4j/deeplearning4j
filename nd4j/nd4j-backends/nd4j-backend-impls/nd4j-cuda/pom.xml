@@ -112,7 +112,6 @@
                         <includePath>${libnd4jhome}/include/indexing</includePath>
                     </includePaths>
                     <linkPaths>
-                        <linkPath>${libnd4jhome}/blasbuild/cuda-${cuda.version}/blas</linkPath>
                         <linkPath>${libnd4jhome}/blasbuild/cuda/blas</linkPath>
                     </linkPaths>
                 </configuration>
