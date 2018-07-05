@@ -2,13 +2,11 @@ package org.datavec.arrow;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.arrow.flatbuf.Tensor;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.*;
 import org.apache.arrow.vector.dictionary.Dictionary;
 import org.apache.arrow.vector.dictionary.DictionaryProvider;
-import org.apache.arrow.vector.holders.VarBinaryHolder;
 import org.apache.arrow.vector.ipc.ArrowFileReader;
 import org.apache.arrow.vector.ipc.ArrowFileWriter;
 import org.apache.arrow.vector.ipc.SeekableReadChannel;
@@ -20,7 +18,6 @@ import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.util.ByteArrayReadableSeekableByteChannel;
-import org.datavec.api.records.Buffer;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.*;
 import org.datavec.api.transform.schema.Schema;
@@ -29,12 +26,12 @@ import org.datavec.api.util.ndarray.RecordConverter;
 import org.datavec.api.writable.*;
 import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
 import org.datavec.arrow.recordreader.ArrowWritableRecordTimeSeriesBatch;
-import org.nd4j.arrow.ArrowSerde;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.serde.binary.BinarySerde;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -755,7 +752,7 @@ public class ArrowConverter {
                 case String:
                     String stringSet = TypeConversion.getInstance().convertString(value);
                     VarCharVector textVector = (VarCharVector) fieldVector;
-                    textVector.setSafe(row, stringSet.getBytes());
+                    textVector.set(row, stringSet.getBytes());
                     break;
                 case Time:
                     //all timestamps are long based, just directly convert it to the super type
@@ -767,8 +764,8 @@ public class ArrowConverter {
                     VarBinaryVector nd4jArrayVector = (VarBinaryVector) fieldVector;
                     //slice the databuffer to use only the needed portion of the buffer
                     //for proper offsets
-                    ByteBuffer byteBuffer = ArrowSerde.toTensor(arr.get()).getByteBuffer().slice();
-                    nd4jArrayVector.set(row,byteBuffer,0,byteBuffer.capacity());
+                    ByteBuffer byteBuffer = BinarySerde.toByteBuffer(arr.get());
+                    nd4jArrayVector.setSafe(row,byteBuffer,0,byteBuffer.capacity());
                     break;
 
             }
@@ -868,7 +865,7 @@ public class ArrowConverter {
         for(int i = 0; i < data.length; i++) {
             //slice the databuffer to use only the needed portion of the buffer
             //for proper offset
-            ByteBuffer byteBuffer = ArrowSerde.toTensor(data[i]).getByteBuffer().slice();
+            ByteBuffer byteBuffer = BinarySerde.toByteBuffer(data[i]);
             ret.set(i,byteBuffer,0,byteBuffer.capacity());
         }
 
@@ -909,7 +906,7 @@ public class ArrowConverter {
      */
     public static VarBinaryVector ndarrayVectorOf(BufferAllocator allocator,String name,int length) {
         VarBinaryVector ret = new VarBinaryVector(name,allocator);
-        ret.allocateNew();
+        ret.allocateNewSafe();
         ret.setValueCount(length);
         return ret;
     }
@@ -1186,8 +1183,9 @@ public class ArrowConverter {
             case NDArray:
                 VarBinaryVector valueVector = (VarBinaryVector) from;
                 byte[] bytes = valueVector.get(item);
-                Tensor tensor = Tensor.getRootAsTensor(ByteBuffer.wrap(bytes));
-                INDArray fromTensor = ArrowSerde.fromTensor(tensor);
+                ByteBuffer direct = ByteBuffer.allocateDirect(bytes.length);
+                direct.put(bytes);
+                INDArray fromTensor = BinarySerde.toArray(direct);
                 return new NDArrayWritable(fromTensor);
             default:
                 throw new IllegalArgumentException("Illegal type " + from.getClass().getName());

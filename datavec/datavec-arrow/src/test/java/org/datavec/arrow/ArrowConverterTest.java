@@ -48,12 +48,14 @@ public class ArrowConverterTest {
     public TemporaryFolder testDir = new TemporaryFolder();
 
 
+
+
     @Test
     public void testArrowColumnINDArray() {
         Schema.Builder schema = new Schema.Builder();
         List<String> single = new ArrayList<>();
         int numCols = 2;
-        INDArray arr = Nd4j.create(4);
+        INDArray arr = Nd4j.linspace(1,4,4);
         for(int i = 0; i < numCols; i++) {
             schema.addColumnNDArray(String.valueOf(i),new long[]{1,4});
             single.add(String.valueOf(i));
@@ -80,6 +82,11 @@ public class ArrowConverterTest {
         assertTrue(writable instanceof NDArrayWritable);
         NDArrayWritable ndArrayWritable = (NDArrayWritable) writable;
         assertEquals(arr,ndArrayWritable.get());
+
+        Writable writable1 = ArrowConverter.fromEntry(0, fieldVectors.get(0), ColumnType.NDArray);
+        NDArrayWritable ndArrayWritablewritable1 = (NDArrayWritable) writable1;
+        System.out.println(ndArrayWritablewritable1.get());
+
     }
 
     @Test
