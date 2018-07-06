@@ -2721,7 +2721,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         //null character
         if (ordering() == '\u0000') {
             //Shape.setOrder(shapeInfo(), Nd4j.order());
-            setOrder('c');
+            val si = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride, 0,1, Nd4j.order());
+            setShapeInformation(si);
         }
 
     }
@@ -2735,7 +2736,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         //null character
         if (ordering() == '\u0000') {
-            setOrder('c');
+            val si = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride, 0,1, Nd4j.order());
+            setShapeInformation(si);
         }
 
     }
