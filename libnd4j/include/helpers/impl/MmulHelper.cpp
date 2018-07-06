@@ -539,7 +539,7 @@ void MmulHelper<T>::matmul(const nd4j::NDArray<T>* x, const nd4j::NDArray<T>* y,
             dimsToExclude[i] = i;
 
         const Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(xT->getShapeInfo(), dimsToExclude);
-        Nd4jLong idxRanges[2 * xRank];
+        Nd4jLong idxRanges[MAX_RANK * 2];
 
 #pragma omp parallel for schedule(guided) private(idxRanges)
         for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
