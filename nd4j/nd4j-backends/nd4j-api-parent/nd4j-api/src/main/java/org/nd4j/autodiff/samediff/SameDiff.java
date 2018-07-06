@@ -585,6 +585,19 @@ public class SameDiff {
         variableNameToArr.put(varName, arr);
     }
 
+    /**
+     * Put the array if it does not exist for the given variable name, or update it if it does
+     * @param varName Variable name
+     * @param arr     Array
+     */
+    public void putOrUpdateArrayForVarName(@NonNull String varName, INDArray arr){
+        if(variableNameToArr.containsKey(varName)){
+            updateArrayForVarName(varName, arr);
+        } else {
+            putArrayForVarName(varName, arr);
+        }
+    }
+
 
     /**
      * Get the shape for the given vertex id.
