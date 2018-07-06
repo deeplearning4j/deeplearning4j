@@ -29,7 +29,7 @@ TEST_F(DeclarableOpsTests9, reduceStDevBP_test3) {
     NDArray<float> gradO2('c', {3}, {1.,2.,3.});
     NDArray<float> exp('c', {3,4}, {-0.335410, -0.111803, 0.111803, 0.335410, -0.670820, -0.223607, 0.223607, 0.670820, -1.006231, -0.335410, 0.335410, 1.006231});         
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_stdev_bp<float> op;
 
@@ -399,9 +399,6 @@ TEST_F(DeclarableOpsTests9, concat_test9) {
 
     delete result;
 }
-
-
-
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, tile_bp_test3) {
@@ -1007,5 +1004,107 @@ TEST_F(DeclarableOpsTests9, matmul_test24) {
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test10) {
+
+    NDArray<float> x0('c', {2,3,4});
+    NDArray<float> x1('f', {2,2,4});
+    NDArray<float> x2('c', {2,1,4});
+    NDArray<float> exp('c', {2,6,4}, { 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 9.f, 10.f, 11.f, 12.f, 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 1.f,  2.f,  3.f,  4.f,
+                                      13.f, 14.f, 15.f, 16.f,17.f, 18.f, 19.f, 20.f,21.f, 22.f, 23.f, 24.f, 9.f, 10.f, 11.f, 12.f,13.f, 14.f, 15.f, 16.f, 5.f,  6.f,  7.f,  8.f});
+
+    NDArrayFactory<float>::linspace(1, x0);
+    NDArrayFactory<float>::linspace(1, x1);
+    NDArrayFactory<float>::linspace(1, x2);
+
+    nd4j::ops::concat<float> op;
+
+    auto result = op.execute({&x0, &x1, &x2}, {}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
 
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test11) {
+
+    NDArray<float> x0('c', {2,3,4});
+    NDArray<float> x1('f', {2,2,4});
+    NDArray<float> x2('f', {2,1,4});
+    NDArray<float> exp('c', {2,6,4}, { 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 9.f, 10.f, 11.f, 12.f, 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 1.f,  2.f,  3.f,  4.f,
+                                      13.f, 14.f, 15.f, 16.f,17.f, 18.f, 19.f, 20.f,21.f, 22.f, 23.f, 24.f, 9.f, 10.f, 11.f, 12.f,13.f, 14.f, 15.f, 16.f, 5.f,  6.f,  7.f,  8.f});
+
+    NDArrayFactory<float>::linspace(1, x0);
+    NDArrayFactory<float>::linspace(1, x1);
+    NDArrayFactory<float>::linspace(1, x2);
+
+    nd4j::ops::concat<float> op;
+
+    auto result = op.execute({&x0, &x1, &x2}, {}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test12) {
+
+    NDArray<float> x0('c', {2,3,4});
+    NDArray<float> x1('f', {2,2,4});
+    NDArray<float> x2('f', {2,1,4});
+    NDArray<float> exp('c', {2,6,4}, { 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 9.f, 10.f, 11.f, 12.f, 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 1.f,  2.f,  3.f,  4.f,
+                                      13.f, 14.f, 15.f, 16.f,17.f, 18.f, 19.f, 20.f,21.f, 22.f, 23.f, 24.f, 9.f, 10.f, 11.f, 12.f,13.f, 14.f, 15.f, 16.f, 5.f,  6.f,  7.f,  8.f});
+
+    NDArrayFactory<float>::linspace(1, x0);
+    NDArrayFactory<float>::linspace(1, x1);
+    NDArrayFactory<float>::linspace(1, x2);
+
+    nd4j::ops::concat<float> op;
+
+    auto result = op.execute({&x0, &x1, &x2}, {}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test13) {
+
+    NDArray<float> x0('f', {2,3,4});
+    NDArray<float> x1('f', {2,2,4});
+    NDArray<float> x2('f', {2,1,4});
+    NDArray<float> exp('f', {2,6,4}, { 1.f, 13.f, 5.f, 17.f, 9.f, 21.f, 1.f,  9.f, 5.f, 13.f, 1.f,  5.f, 2.f, 14.f, 6.f, 18.f,10.f, 22.f, 2.f, 10.f, 6.f, 14.f, 2.f,  6.f,
+                                       3.f, 15.f, 7.f, 19.f,11.f, 23.f, 3.f, 11.f, 7.f, 15.f, 3.f,  7.f, 4.f, 16.f, 8.f, 20.f,12.f, 24.f, 4.f, 12.f, 8.f, 16.f, 4.f,  8.f});
+
+    NDArrayFactory<float>::linspace(1, x0);
+    NDArrayFactory<float>::linspace(1, x1);
+    NDArrayFactory<float>::linspace(1, x2);
+
+    nd4j::ops::concat<float> op;
+
+    auto result = op.execute({&x0, &x1, &x2}, {}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+
+ 

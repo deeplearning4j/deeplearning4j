@@ -181,7 +181,7 @@ TEST_F(LegacyOpsTests, ReduceTests_2) {
 
 TEST_F(LegacyOpsTests, ReduceTests_3) {
     NDArray<float> x('c', {3, 5});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     NDArray<float> indices('c', {1,1}, {1});
 
 
@@ -201,7 +201,7 @@ TEST_F(LegacyOpsTests, ReduceTests_3) {
 
 TEST_F(LegacyOpsTests, ReduceTests_4) {
     NDArray<float> x('c', {2, 3, 5});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     NDArray<float> indices('c', {1,1}, {1});
 
 

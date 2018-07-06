@@ -23,7 +23,7 @@ TEST_F(IndexingTests, StridedSlice_1) {
     exp.putScalar(1, 26.f);
     exp.putScalar(2, 27.f);
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     //nd4j_debug("print x->rankOf(): %i", x.rankOf());
 
@@ -55,7 +55,7 @@ TEST_F(IndexingTests, StridedSlice_2) {
     NDArray<float> exp('c', {2, 3, 3});
     exp.setBuffer(_expB);
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::strided_slice<float> op;
 
@@ -78,7 +78,7 @@ TEST_F(IndexingTests, StridedSlice_3) {
     NDArray<float> exp('c', {2, 3, 2});
     exp.setBuffer(_expB);
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::strided_slice<float> op;
 

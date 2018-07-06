@@ -184,8 +184,8 @@ TEST_F(DeclarableOpsTests2, YetAnotherMatmulTest_1) {
     NDArray<float> B('c', {3, 1});
     NDArray<float> exp('c', {3, 1}, {14.00,  32.00,  50.00});
 
-    NDArrayFactory<float>::linspace(1, A);
-    NDArrayFactory<float>::linspace(1, B);
+    A.linspace(1);
+    B.linspace(1);
 
     nd4j::ops::matmul<float> op;
 
@@ -202,7 +202,7 @@ TEST_F(DeclarableOpsTests2, YetAnotherMatmulTest_1) {
 
 TEST_F(DeclarableOpsTests2, Test_Squeeze_1) {
     NDArray<float> x('c', {2, 1, 3, 1, 1, 1, 4});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     auto exp = x.reshape('c', {2, 3, 4});
 
     nd4j::ops::squeeze<float> op;
@@ -222,7 +222,7 @@ TEST_F(DeclarableOpsTests2, Test_Squeeze_1) {
 
 TEST_F(DeclarableOpsTests2, Test_Squeeze_2) {
     NDArray<float> x('c', {2, 3, 4});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     auto exp = x.dup();
 
     nd4j::ops::squeeze<float> op;
@@ -560,8 +560,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_1) {
     NDArray<float> weights('c', {2,3,4,5});
     NDArray<float> expected('c', {2,3,4,5});
                                         
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(2, predictions);
+    labels.linspace(1);
+    predictions.linspace(2);
     weights.assign(0.5);
     expected.assign(0.5);
 
@@ -588,8 +588,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_2) {
     NDArray<float> weights('c', {1,1,4,5});
     NDArray<float> expected('c', {2,3,4,5});
                                         
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(2, predictions);
+    labels.linspace(1);
+    predictions.linspace(2);
     weights.assign(0.5);
     expected.assign(0.5);
 
@@ -615,8 +615,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_3) {
     NDArray<float> weights('c', {1,1,1,5});
     NDArray<float> expected('c', {2,3,4,5});
                                         
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(2, predictions);
+    labels.linspace(1);
+    predictions.linspace(2);
     weights.assign(0.5);
     expected.assign(0.5);
 
@@ -642,8 +642,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_4) {
     NDArray<float> weights('c', {2,1,1,5});
     NDArray<float> expected('c', {2,3,4,5});
                                         
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(2, predictions);
+    labels.linspace(1);
+    predictions.linspace(2);
     weights.assign(0.5);
     expected.assign(0.5);
 
@@ -669,8 +669,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_5) {
     NDArray<float> weights('c', {1,1});
     NDArray<float> expected('c', {2,3,4,5});
                                         
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(2, predictions);
+    labels.linspace(1);
+    predictions.linspace(2);
     weights.assign(0.5);
     expected.assign(0.5);
 
@@ -696,8 +696,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_6) {
     NDArray<float> weights('c', {1,1});
     NDArray<float> expected('c', {2,3,4,5});
                                         
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(2, predictions);
+    labels.linspace(1);
+    predictions.linspace(2);
     weights.assign(0.);
     expected.assign(0.);
 
@@ -722,8 +722,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_7) {
     NDArray<float> predictions('c', {2,3,4,5});
     NDArray<float> weights('c', {2,3,4,5});
                                             
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(2, predictions);
+    labels.linspace(1);
+    predictions.linspace(2);
     weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss<float> op;
@@ -747,8 +747,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_8) {
     NDArray<float> predictions('c', {2,3,4,5});
     NDArray<float> weights('c', {2,3,4,5});
                                             
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(2, predictions);
+    labels.linspace(1);
+    predictions.linspace(2);
     weights.assign(0.);
 
     nd4j::ops::absolute_difference_loss<float> op;
@@ -772,8 +772,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_9) {
     NDArray<float> predictions('c', {2,3,4,5});
     NDArray<float> weights('c', {2,1,4,1});
                                             
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(2, predictions);
+    labels.linspace(1);
+    predictions.linspace(2);
     weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss<float> op;
@@ -797,8 +797,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_10) {
     NDArray<float> predictions('c', {2,3,4,5});
     NDArray<float> weights('c', {1,1});
                                             
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(2, predictions);
+    labels.linspace(1);
+    predictions.linspace(2);
     weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss<float> op;
@@ -822,8 +822,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_11) {
     NDArray<float> predictions('c', {2,3,4,5});
     NDArray<float> weights('c', {1,1});
                                             
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(2, predictions);
+    labels.linspace(1);
+    predictions.linspace(2);
     weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss<float> op;
@@ -847,8 +847,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_12) {
     NDArray<float> predictions('c', {2,3,4,5});
     NDArray<float> weights('c', {1,1});
                                             
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(2, predictions);
+    labels.linspace(1);
+    predictions.linspace(2);
     weights.assign(0.);
 
     nd4j::ops::absolute_difference_loss<float> op;
@@ -872,8 +872,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_13) {
     NDArray<float> predictions('c', {2,3,4,5});
     NDArray<float> weights('c', {2,3,4,5});
                                             
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(2, predictions);
+    labels.linspace(1);
+    predictions.linspace(2);
     weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss<float> op;
@@ -897,8 +897,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_14) {
     NDArray<float> predictions('c', {2,3,4,5});
     NDArray<float> weights('c', {2,3,4,5});
                                             
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(2, predictions);
+    labels.linspace(1);
+    predictions.linspace(2);
     weights.assign(0.5);
     weights(1) = 0.;
     weights(2) = 0.;
@@ -924,8 +924,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_15) {
     NDArray<float> predictions('c', {2,3,4,5});
     NDArray<float> weights('c', {2,3,4,5});
                                             
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(3, predictions);
+    labels.linspace(1);
+    predictions.linspace(3);
     weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss<float> op;
@@ -949,8 +949,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_16) {
     NDArray<float> predictions('c', {2,3,4,5});
     NDArray<float> weights('c', {2,3,4,5});
                                             
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(3, predictions);
+    labels.linspace(1);
+    predictions.linspace(3);
     weights.assign(0.5);
     predictions(0) = 0.;
     predictions(1) = 0.;
@@ -978,8 +978,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_17) {
     NDArray<float> predictions('c', {2,3,4,5});
     NDArray<float> weights('c', {2,3,4,5});
                                             
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(3, predictions);
+    labels.linspace(1);
+    predictions.linspace(3);
     weights.assign(0.5);
     predictions(0) = 0.;
     predictions(1) = 0.;
@@ -1011,8 +1011,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_18) {
     NDArray<float> predictions('c', {2,3,4,5});
     NDArray<float> weights('c', {2,1,1,5});
                                             
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(3, predictions);
+    labels.linspace(1);
+    predictions.linspace(3);
     weights.assign(0.5);
     predictions(0) = 0.;
     predictions(1) = 0.;
@@ -1045,8 +1045,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_19) {
     NDArray<float> predictions('c', {2,3,4,5});
     NDArray<float> weights('c', {1,1});
                                             
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(3, predictions);
+    labels.linspace(1);
+    predictions.linspace(3);
     weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss<float> op;
@@ -1070,8 +1070,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_20) {
     NDArray<float> predictions('c', {2,3,4,5});
     NDArray<float> weights('c', {2,3,4,5});
                                             
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(3, predictions);
+    labels.linspace(1);
+    predictions.linspace(3);
     weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss<float> op;
@@ -1095,8 +1095,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_21) {
     NDArray<float> predictions('c', {2,3,4,5});
     NDArray<float> weights('c', {2,3,1,1});
                                             
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(3, predictions);
+    labels.linspace(1);
+    predictions.linspace(3);
     weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss<float> op;
@@ -1120,8 +1120,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_22) {
     NDArray<float> predictions('c', {2,3,4,5});
     NDArray<float> weights('c', {1,1});
                                             
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(3, predictions);
+    labels.linspace(1);
+    predictions.linspace(3);
     weights.assign(0.);
 
     nd4j::ops::absolute_difference_loss<float> op;
@@ -1145,8 +1145,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_23) {
     NDArray<float> predictions('c', {2,3,4,5});
     NDArray<float> weights('c', {2,3,4,5});
                                             
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(3, predictions);
+    labels.linspace(1);
+    predictions.linspace(3);
     weights.assign(0.5);
     predictions(0) = 0.;
     predictions(1) = 0.;
@@ -1183,8 +1183,8 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test1) {
     NDArray<float> weights('c', {1,3,4});
     NDArray<float> expected('c', {1,3,4}, {-91.5,-107.5,-125.5,-145.5, -167.5,-191.5,-217.5,-245.5, -275.5,-307.5,-341.5,-377.5});
                                         
-    NDArrayFactory<float>::linspace(1, labels);
-    NDArrayFactory<float>::linspace(2, predictions);
+    labels.linspace(1);
+    predictions.linspace(2);
     weights.assign(0.5);    
 
     nd4j::ops::cosine_distance_loss<float> op;
@@ -1209,7 +1209,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test2) {
     NDArray<float> weights('c', {2,1,4});
     NDArray<float> expected('c', {2,1,4}, {-3.25, -4., -4.75, -5.5,-12.25,-13.,-13.75,-14.5});
                                         
-    NDArrayFactory<float>::linspace(1, labels);
+    labels.linspace(1);
     weights.assign(0.5);    
     predictions.assign(0.5);    
 
@@ -1236,7 +1236,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test3) {
     NDArray<float> weights('c', {2,3,1});
     NDArray<float> expected('c', {2,3,1}, {-2., -6.,-10.,-14.,-18.,-22.});
                                         
-    NDArrayFactory<float>::linspace(1, labels);
+    labels.linspace(1);
     weights.assign(0.5);    
     predictions.assign(0.5);    
 
@@ -1261,7 +1261,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test4) {
     NDArray<float> weights('c', {1,1});
     NDArray<float> expected('c', {2,3,1}, {-2., -6.,-10.,-14.,-18.,-22.});
                                         
-    NDArrayFactory<float>::linspace(1, labels);
+    labels.linspace(1);
     weights.assign(0.5);    
     predictions.assign(0.5);    
 
@@ -1286,7 +1286,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test5) {
     NDArray<float> predictions('c', {2,3,4});
     NDArray<float> weights('c', {2,1,4});    
                                             
-    NDArrayFactory<float>::linspace(1, labels);
+    labels.linspace(1);
     weights.assign(0.5);
     predictions.assign(0.5);
 
@@ -1311,7 +1311,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test6) {
     NDArray<float> predictions('c', {2,3,4});
     NDArray<float> weights('c', {1,1});    
                                             
-    NDArrayFactory<float>::linspace(1, labels);
+    labels.linspace(1);
     weights.assign(0.5);
     predictions.assign(0.5);
 
@@ -1336,7 +1336,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test7) {
     NDArray<float> predictions('c', {2,3,4});
     NDArray<float> weights('c', {1,1,4});    
                                             
-    NDArrayFactory<float>::linspace(1, labels);
+    labels.linspace(1);
     weights.assign(0.5);
     predictions.assign(0.5);
 
@@ -1361,7 +1361,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test8) {
     NDArray<float> predictions('c', {2,3,4});
     NDArray<float> weights('c', {2,3,1});    
                                             
-    NDArrayFactory<float>::linspace(1, labels);
+    labels.linspace(1);
     weights.assign(0.5);
     predictions.assign(0.5);
 
@@ -1386,7 +1386,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test9) {
     NDArray<float> predictions('c', {2,3,4});
     NDArray<float> weights('c', {1,1});    
                                             
-    NDArrayFactory<float>::linspace(1, labels);
+    labels.linspace(1);
     weights.assign(0.5);
     predictions.assign(0.5);
 
@@ -1411,7 +1411,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test10) {
     NDArray<float> predictions('c', {2,3,4});
     NDArray<float> weights('c', {2,3,1});    
                                             
-    NDArrayFactory<float>::linspace(1, labels);
+    labels.linspace(1);
     weights.assign(0.5);
     predictions.assign(0.5);
     weights(0) = 0.;
@@ -1439,7 +1439,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test1) {
     NDArray<float> weights('c', {2,3,4});
     NDArray<float> expected('c', {2,3,4}, {1., 0. , 0., 2.5,0., 3.5, 0., 4.5,0., 5.5, 0., 6.5, 0., 7.5, 0., 8.5,0., 9.5,10., 0. ,0.,11.5, 0.,12.5});
                                             
-    NDArrayFactory<float>::linspace(1, logits);
+    logits.linspace(1);
     weights.assign(0.5);    
 
     nd4j::ops::hinge_loss<float> op;
@@ -1464,7 +1464,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test2) {
     NDArray<float> weights('c', {1,1});
     NDArray<float> expected('c', {2,3,4}, {1., 0. , 0., 2.5,0., 3.5, 0., 4.5,0., 5.5, 0., 6.5, 0., 7.5, 0., 8.5,0., 9.5,10., 0. ,0.,11.5, 0.,12.5});
                                             
-    NDArrayFactory<float>::linspace(1, logits);
+    logits.linspace(1);
     weights.assign(0.5);    
 
     nd4j::ops::hinge_loss<float> op;
@@ -1489,7 +1489,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test3) {
     NDArray<float> weights('c', {1,3,1});
     NDArray<float> expected('c', {2,3,4}, {1., 0. , 0., 2.5,0., 3.5, 0., 4.5,0., 5.5, 0., 6.5, 0., 7.5, 0., 8.5,0., 9.5,10., 0. ,0.,11.5, 0.,12.5});
                                             
-    NDArrayFactory<float>::linspace(1, logits);
+    logits.linspace(1);
     weights.assign(0.5);    
 
     nd4j::ops::hinge_loss<float> op;
@@ -1513,7 +1513,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test4) {
     NDArray<float> logits('c', {2,3,4});
     NDArray<float> weights('c', {2,3,4});    
                                             
-    NDArrayFactory<float>::linspace(1, logits);
+    logits.linspace(1);
     weights.assign(0.5);
     
 
@@ -1537,7 +1537,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test5) {
     NDArray<float> logits('c', {2,3,4});
     NDArray<float> weights('c', {1,1});    
                                             
-    NDArrayFactory<float>::linspace(1, logits);
+    logits.linspace(1);
     weights.assign(0.5);
     
 
@@ -1561,7 +1561,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test6) {
     NDArray<float> logits('c', {2,3,4});
     NDArray<float> weights('c', {2,1,1});    
                                             
-    NDArrayFactory<float>::linspace(1, logits);
+    logits.linspace(1);
     weights.assign(0.5);
     
 
@@ -1585,7 +1585,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test7) {
     NDArray<float> logits('c', {2,3,4});
     NDArray<float> weights('c', {2,3,4});    
                                             
-    NDArrayFactory<float>::linspace(1, logits);
+    logits.linspace(1);
     weights.assign(0.5);
     
 
@@ -1609,7 +1609,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test8) {
     NDArray<float> logits('c', {2,3,4});
     NDArray<float> weights('c', {1,1});    
                                             
-    NDArrayFactory<float>::linspace(1, logits);
+    logits.linspace(1);
     weights.assign(0.5);
     
 
@@ -1633,7 +1633,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test9) {
     NDArray<float> logits('c', {2,3,4});
     NDArray<float> weights('c', {1,1,4});    
                                             
-    NDArrayFactory<float>::linspace(1, logits);
+    logits.linspace(1);
     weights.assign(0.5);
     
 
@@ -1657,7 +1657,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test10) {
     NDArray<float> logits('c', {2,3,4});
     NDArray<float> weights('c', {2,3,4});    
                                             
-    NDArrayFactory<float>::linspace(1, logits);
+    logits.linspace(1);
     weights.assign(0.5);
     
 
@@ -1681,7 +1681,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test11) {
     NDArray<float> logits('c', {2,3,4});
     NDArray<float> weights('c', {2,1,4});    
                                             
-    NDArrayFactory<float>::linspace(1, logits);
+    logits.linspace(1);
     weights.assign(0.5);
     
 
@@ -1705,7 +1705,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test12) {
     NDArray<float> logits('c', {2,3,4});
     NDArray<float> weights('c', {2,3,4});    
                                             
-    NDArrayFactory<float>::linspace(1, logits);
+    logits.linspace(1);
     weights.assign(0.5);
     weights(0) = 0.;
     weights(1) = 0.;
@@ -1733,7 +1733,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test13) {
     NDArray<float> logits('c', {2,3,4});
     NDArray<float> weights('c', {1,1});    
                                             
-    NDArrayFactory<float>::linspace(1, logits);
+    logits.linspace(1);
     weights.assign(0.);    
     
 
@@ -1758,7 +1758,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test1) {
     NDArray<double> weights('c', {2,3,4});
     NDArray<double> expected('c', {2,3,4}, {0.0425 ,0.0875 ,0.13250001,0.17749999,0.22250001,0.26750001,0.31250003,0.35749999,0.4025    ,0.44749999,0.49249998,0.53750002, 0.58249998,0.6275    ,0.67250001,0.71749997,0.76249999,0.8075    ,0.85250002,0.89749998,0.9425    ,0.98749995,1.03250015,1.0775001});
                                             
-    NDArrayFactory<double>::linspace(0.1, labels, 0.1);
+    labels.linspace(0.1, 0.1);
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
 
@@ -1783,7 +1783,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test2) {
     NDArray<double> weights('c', {2,3,1}); 
     NDArray<double> expected('c', {2,3,4}, {0.0425 ,0.0875 ,0.13250001,0.17749999,0.22250001,0.26750001,0.31250003,0.35749999,0.4025    ,0.44749999,0.49249998,0.53750002, 0.58249998,0.6275    ,0.67250001,0.71749997,0.76249999,0.8075    ,0.85250002,0.89749998,0.9425    ,0.98749995,1.03250015,1.0775001});
                                             
-    NDArrayFactory<double>::linspace(0.1, labels, 0.1);
+    labels.linspace(0.1, 0.1);
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
 
@@ -1808,7 +1808,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test3) {
     NDArray<double> weights('c', {1,1}); 
     NDArray<double> expected('c', {2,3,4}, {0.0425 ,0.0875 ,0.13250001,0.17749999,0.22250001,0.26750001,0.31250003,0.35749999,0.4025    ,0.44749999,0.49249998,0.53750002, 0.58249998,0.6275    ,0.67250001,0.71749997,0.76249999,0.8075    ,0.85250002,0.89749998,0.9425    ,0.98749995,1.03250015,1.0775001});
                                             
-    NDArrayFactory<double>::linspace(0.1, labels, 0.1);
+    labels.linspace(0.1, 0.1);
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
 
@@ -1832,7 +1832,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test4) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, labels, 0.1);
+    labels.linspace(0.1, 0.1);
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
 
@@ -1856,7 +1856,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test5) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {1,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, labels, 0.1);
+    labels.linspace(0.1, 0.1);
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
 
@@ -1880,7 +1880,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test6) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, labels, 0.1);
+    labels.linspace(0.1, 0.1);
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
 
@@ -1904,7 +1904,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test7) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,1,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, labels, 0.1);
+    labels.linspace(0.1, 0.1);
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
 
@@ -1928,7 +1928,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test8) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, labels, 0.1);
+    labels.linspace(0.1, 0.1);
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
     weights(0) = 0.;
@@ -1956,7 +1956,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test9) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, labels, 0.1);
+    labels.linspace(0.1, 0.1);
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
 
@@ -1980,7 +1980,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test10) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {1,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, labels, 0.1);
+    labels.linspace(0.1, 0.1);
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
 
@@ -2004,7 +2004,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test11) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, labels, 0.1);
+    labels.linspace(0.1, 0.1);
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
     weights(0) = 0.;
@@ -2033,7 +2033,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test1) {
     NDArray<double> weights('c', {2,3,4}); 
     NDArray<double> expected('c', {2,3,4}, {1.60943663,  2.48403668,  3.05256081,  3.40363169,  3.57730675,  3.59525585,  3.46986699,  3.20791793,  2.81228209,  2.28273821,  1.61630058,  0.80721998, -0.15329313, -1.27764463, -2.5828433 , -4.09208679, -5.83734226, -7.8636713 ,-10.23689461,-13.05822182,-16.49509811,-20.85659218,-26.82411766,-36.52717209});
                                             
-    NDArrayFactory<double>::linspace(0.04, predictions, 0.04);
+    predictions.linspace(0.04, 0.04);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
@@ -2058,7 +2058,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test2) {
     NDArray<double> weights('c', {2,1,4}); 
     NDArray<double> expected('c', {2,3,4}, {1.60943663,  2.48403668,  3.05256081,  3.40363169,  3.57730675,  3.59525585,  3.46986699,  3.20791793,  2.81228209,  2.28273821,  1.61630058,  0.80721998, -0.15329313, -1.27764463, -2.5828433 , -4.09208679, -5.83734226, -7.8636713 ,-10.23689461,-13.05822182,-16.49509811,-20.85659218,-26.82411766,-36.52717209});
                                             
-    NDArrayFactory<double>::linspace(0.04, predictions, 0.04);
+    predictions.linspace(0.04, 0.04);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
@@ -2083,7 +2083,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test3) {
     NDArray<double> weights('c', {1,1}); 
     NDArray<double> expected('c', {2,3,4}, {1.60943663,  2.48403668,  3.05256081,  3.40363169,  3.57730675,  3.59525585,  3.46986699,  3.20791793,  2.81228209,  2.28273821,  1.61630058,  0.80721998, -0.15329313, -1.27764463, -2.5828433 , -4.09208679, -5.83734226, -7.8636713 ,-10.23689461,-13.05822182,-16.49509811,-20.85659218,-26.82411766,-36.52717209});
                                             
-    NDArrayFactory<double>::linspace(0.04, predictions, 0.04);
+    predictions.linspace(0.04, 0.04);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
@@ -2107,7 +2107,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test4) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.04, predictions, 0.04);
+    predictions.linspace(0.04, 0.04);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
@@ -2131,7 +2131,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test5) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {1,3,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.04, predictions, 0.04);
+    predictions.linspace(0.04, 0.04);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
@@ -2155,7 +2155,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test6) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {1,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.04, predictions, 0.04);
+    predictions.linspace(0.04, 0.04);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
@@ -2179,7 +2179,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test7) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.04, predictions, 0.04);
+    predictions.linspace(0.04, 0.04);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
@@ -2203,7 +2203,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test8) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {1,3,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.04, predictions, 0.04);
+    predictions.linspace(0.04, 0.04);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
@@ -2227,7 +2227,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test9) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {1,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.04, predictions, 0.04);
+    predictions.linspace(0.04, 0.04);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
@@ -2251,7 +2251,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test10) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.04, predictions, 0.04);
+    predictions.linspace(0.04, 0.04);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
     weights(0) = 0.;
@@ -2279,7 +2279,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test11) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.04, predictions, 0.04);
+    predictions.linspace(0.04, 0.04);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
@@ -2303,7 +2303,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test12) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {1,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.04, predictions, 0.04);
+    predictions.linspace(0.04, 0.04);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
@@ -2327,7 +2327,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test13) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.04, predictions, 0.04);
+    predictions.linspace(0.04, 0.04);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
     weights(0) = 0.;
@@ -2355,7 +2355,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test1) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
@@ -2379,7 +2379,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test2) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {1,3,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
@@ -2403,7 +2403,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test3) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {1,1,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
@@ -2428,7 +2428,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test4) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,1,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
@@ -2452,7 +2452,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test5) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {1,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
@@ -2476,7 +2476,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test6) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,3,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
@@ -2500,7 +2500,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test7) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,1,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
@@ -2524,7 +2524,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test8) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {1,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
@@ -2548,7 +2548,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test9) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
     weights(0) = 0.;
@@ -2577,7 +2577,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test1) {
     NDArray<double> weights('c', {2,3,4}); 
     NDArray<double> expected('c', {2,3,4}, {0.125, 0.5, 1.125, 2., 3.125, 4.5, 6.125, 8.,10.125,12.5,15.125,18.,21.125,24.5,28.125,32.,36.125,40.5,45.125,50.,55.125,60.5,66.125,72.});
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
@@ -2602,7 +2602,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test2) {
     NDArray<double> weights('c', {2,1,4}); 
     NDArray<double> expected('c', {2,3,4}, {0.125, 0.5, 1.125, 2., 3.125, 4.5, 6.125, 8.,10.125,12.5,15.125,18.,21.125,24.5,28.125,32.,36.125,40.5,45.125,50.,55.125,60.5,66.125,72.});
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
@@ -2627,7 +2627,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test3) {
     NDArray<double> weights('c', {2,1,1}); 
     NDArray<double> expected('c', {2,3,4}, {0.125, 0.5, 1.125, 2., 3.125, 4.5, 6.125, 8.,10.125,12.5,15.125,18.,21.125,24.5,28.125,32.,36.125,40.5,45.125,50.,55.125,60.5,66.125,72.});
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
@@ -2652,7 +2652,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test4) {
     NDArray<double> weights('c', {2,3,4}); 
     NDArray<double> expected('c', {2,3,4}, {0., 0., 0., 0., 3.125, 4.5, 6.125, 8.,10.125,12.5,15.125,18.,21.125,24.5,28.125,32.,36.125,40.5,45.125,50.,55.125,60.5,66.125,72.});
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
     weights(0) = 0.;
@@ -2680,7 +2680,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test5) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
@@ -2704,7 +2704,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test6) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {1,1,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
@@ -2728,7 +2728,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test7) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {1,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
@@ -2752,7 +2752,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test8) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
     weights(0) = 0.;
@@ -2780,7 +2780,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test9) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);        
 
@@ -2804,7 +2804,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test10) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {1,3,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);        
 
@@ -2828,7 +2828,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test11) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {1,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);        
 
@@ -2852,7 +2852,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test12) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,3,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);        
     weights(0) = 0.;
@@ -2879,7 +2879,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test13) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);        
 
@@ -2903,7 +2903,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test14) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,1,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);        
 
@@ -2927,7 +2927,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test15) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {1,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);        
 
@@ -2951,7 +2951,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test16) {
     NDArray<double> predictions('c', {2,3,4});
     NDArray<double> weights('c', {2,3,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    predictions.linspace(0.5, 0.5);
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);        
     weights(0) = 0.;
@@ -2979,7 +2979,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test1) {
     NDArray<double> weights('c', {2,3,4}); 
     NDArray<double> expected('c', {2,3,4}, {0.37219834,0.29906943,0.27717763,0.45650762,0.23703849,0.51874399,0.20159303,0.58555031,0.17057693,0.65663081,0.14366767,0.73164123,0.12050423,0.81020868,0.10070664,0.89195037,0.08389302,0.97648883,1.01969337,0.06346401,0.05775976,1.15254164,0.04777273,1.2434181 });
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::sigm_cross_entropy_loss<double> op;
@@ -3003,7 +3003,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test2) {
     NDArray<double> weights('c', {2,1,1}); 
     NDArray<double> expected('c', {2,3,4}, {0.37219834,0.29906943,0.27717763,0.45650762,0.23703849,0.51874399,0.20159303,0.58555031,0.17057693,0.65663081,0.14366767,0.73164123,0.12050423,0.81020868,0.10070664,0.89195037,0.08389302,0.97648883,1.01969337,0.06346401,0.05775976,1.15254164,0.04777273,1.2434181 });
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::sigm_cross_entropy_loss<double> op;
@@ -3027,7 +3027,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test3) {
     NDArray<double> weights('c', {1,1}); 
     NDArray<double> expected('c', {2,3,4}, {0.37219834,0.29906943,0.27717763,0.45650762,0.23703849,0.51874399,0.20159303,0.58555031,0.17057693,0.65663081,0.14366767,0.73164123,0.12050423,0.81020868,0.10070664,0.89195037,0.08389302,0.97648883,1.01969337,0.06346401,0.05775976,1.15254164,0.04777273,1.2434181 });
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::sigm_cross_entropy_loss<double> op;
@@ -3051,7 +3051,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test4) {
     NDArray<double> weights('c', {2,3,4}); 
     NDArray<double> expected('c', {2,3,4}, {0.24719833, 0.54906946, 0.65217763,-0.04349237,0.86203849,-0.23125602, 1.07659304,-0.41444966,1.29557693,-0.59336919, 1.5186677 ,-0.76835877,1.74550426,-0.93979132, 1.9757067 ,-1.10804963,2.20889306,-1.27351117,-1.35530663, 2.56346393,2.68275976,-1.59745836, 2.92277265,-1.7565819 });
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::sigm_cross_entropy_loss<double> op;
@@ -3074,7 +3074,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test5) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::sigm_cross_entropy_loss<double> op;
@@ -3097,7 +3097,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test6) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> weights('c', {2,3,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::sigm_cross_entropy_loss<double> op;
@@ -3120,7 +3120,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test7) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> weights('c', {1,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::sigm_cross_entropy_loss<double> op;
@@ -3143,7 +3143,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test8) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::sigm_cross_entropy_loss<double> op;
@@ -3167,7 +3167,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test9) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> weights('c', {2,3,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
     weights(0) = 0.;
     weights(1) = 0.;
@@ -3193,7 +3193,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test10) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::sigm_cross_entropy_loss<double> op;
@@ -3216,7 +3216,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test11) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> weights('c', {1,1,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::sigm_cross_entropy_loss<double> op;
@@ -3239,7 +3239,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test12) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> weights('c', {1,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::sigm_cross_entropy_loss<double> op;
@@ -3262,7 +3262,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test13) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> weights('c', {2,3,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
     weights(0) = 0.;
     weights(1) = 0.;
@@ -3288,7 +3288,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test14) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> weights('c', {2,3,4}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::sigm_cross_entropy_loss<double> op;
@@ -3311,7 +3311,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test15) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> weights('c', {1,3,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::sigm_cross_entropy_loss<double> op;
@@ -3334,7 +3334,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test16) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> weights('c', {1,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::sigm_cross_entropy_loss<double> op;
@@ -3357,7 +3357,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test17) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> weights('c', {2,3,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
     weights(0) = 0.;
     weights(1) = 0.;
@@ -3384,7 +3384,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test1) {
     NDArray<double> weights('c', {2,3}); 
     NDArray<double> expected('c', {2,3}, {1.39253557,1.44253552,1.44253552,1.44253552,1.39253557,1.44253552});
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::softmax_cross_entropy_loss<double> op;
@@ -3408,7 +3408,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test2) {
     NDArray<double> weights('c', {2,3}); 
     NDArray<double> expected('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::softmax_cross_entropy_loss<double> op;
@@ -3432,7 +3432,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test3) {
     NDArray<double> weights('c', {2,1}); 
     NDArray<double> expected('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::softmax_cross_entropy_loss<double> op;
@@ -3456,7 +3456,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test4) {
     NDArray<double> weights('c', {1,3}); 
     NDArray<double> expected('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::softmax_cross_entropy_loss<double> op;
@@ -3480,7 +3480,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test5) {
     NDArray<double> weights('c', {1,1}); 
     NDArray<double> expected('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::softmax_cross_entropy_loss<double> op;
@@ -3503,7 +3503,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test6) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> weights('c', {2,3}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::softmax_cross_entropy_loss<double> op;
@@ -3526,7 +3526,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test7) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> weights('c', {2,3}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::softmax_cross_entropy_loss<double> op;
@@ -3549,7 +3549,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test8) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> weights('c', {1,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::softmax_cross_entropy_loss<double> op;
@@ -3572,7 +3572,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test9) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> weights('c', {1,3}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::softmax_cross_entropy_loss<double> op;
@@ -3595,7 +3595,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test10) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> weights('c', {1,3}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::softmax_cross_entropy_loss<double> op;
@@ -3618,7 +3618,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test11) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> weights('c', {1,3}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::softmax_cross_entropy_loss<double> op;
@@ -3641,7 +3641,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test12) {
     NDArray<double> logits('c', {2,4});
     NDArray<double> weights('c', {2,1}); 
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::softmax_cross_entropy_loss<double> op;
@@ -3665,7 +3665,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test13) {
     NDArray<double> weights('c', {2,1}); 
     NDArray<double> expected('c', {2,1}, {1.39253557,1.44253552});
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::softmax_cross_entropy_loss<double> op;
@@ -3691,7 +3691,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test14) {
     NDArray<double> weights('c', {2,1}); 
     NDArray<double> expected('c', {2,1}, {-2.08880329, -2.28880334});
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::softmax_cross_entropy_loss<double> op;
@@ -3715,7 +3715,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test15) {
     NDArray<double> weights('c', {1,1}); 
     NDArray<double> expected('c', {2,1}, {-2.08880329, -2.28880334});
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
     nd4j::ops::softmax_cross_entropy_loss<double> op;

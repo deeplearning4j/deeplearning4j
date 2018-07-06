@@ -206,7 +206,7 @@ TEST_F(ShapeTests, Test_Transpose_4) {
 
 TEST_F(ShapeTests, Test_Edge_1) {
     NDArray<float> x('f', {1, 4, 1, 4});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     x.reshapei('c', {4, 4});
 

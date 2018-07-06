@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.6)
 project(libnd4j)
-set( CMAKE_VERBOSE_MAKEFILE on)
+set( CMAKE_VERBOSE_MAKEFILE OFF)
 option(NATIVE "Optimize for build machine (might not work on others)" OFF)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 #ensure we create lib files

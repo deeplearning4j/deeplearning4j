@@ -1210,7 +1210,7 @@ TEST_F(DeclarableOpsTests1, Reshapeas1) {
 TEST_F(DeclarableOpsTests1, Test_Cast_1) {
     // TODO: right now there's no real cast implementation, but genera idea should be the same: arrays equality to be expected
     NDArray<float> x('c', {5, 5});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::cast<float> op;
 
@@ -2449,8 +2449,8 @@ TEST_F(DeclarableOpsTests1, CompactLaunchTests1) {
     NDArray<double> input('c', {2, 3, 4, 4});
     NDArray<double> weights('c', {3, 3, 5, 5});
 
-    nd4j::NDArrayFactory<double>::linspace(1, input);
-    nd4j::NDArrayFactory<double>::linspace(1, weights);
+    input.linspace(1);
+    weights.linspace(1);
 
     nd4j::ops::deconv2d<double> op;
     auto result = op.execute({&input, &weights}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0, 0});
@@ -2475,8 +2475,8 @@ TEST_F(DeclarableOpsTests1, CompactLaunchTests2) {
     NDArray<double> weights('c', {3, 3, 5, 5});
     NDArray<double> z('c', {2, 3, 8, 8});
 
-    nd4j::NDArrayFactory<double>::linspace(1, input);
-    nd4j::NDArrayFactory<double>::linspace(1, weights);
+    input.linspace(1);
+    weights.linspace(1);
 
 
     nd4j::ops::deconv2d<double> op;
@@ -2499,7 +2499,7 @@ TEST_F(DeclarableOpsTests1, batchnorm_test1) {
     
     NDArray<double> expected('c', {2,3,2,3,2}, {-0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, 0.49088821, 0.66059214, 0.83029607, 1., 1.16970393, 1.33940786, 1.50911179, 1.67881572, 1.84851965, 2.01822358, 2.18792751, 2.35763144, 2.52733537, 2.6970393 , 2.86674323, 3.03644717, 3.2061511 , 3.37585503, 3.54555896, 3.71526289, 3.88496682, 4.05467075, 4.22437468, 4.39407861, 4.56378254, 4.73348647, 4.9031904 , 5.07289433, 5.24259826, 5.41230219, 5.58200612, 5.75171005, 5.92141398, 6.09111791, 6.26082184, 6.43052577, 6.6002297 , 6.76993364, 6.93963757, 7.1093415 , 7.27904543, 7.44874936, 7.61845329, 7.78815722, 7.95786115, 8.12756508, 8.29726901, 8.46697294, 8.63667687, 8.8063808 , 8.97608473, 9.14578866, 9.31549259, 9.48519652, 9.65490045, 9.82460438, 9.99430831,10.16401224,10.33371617,10.50342011,10.67312404,10.84282797,11.0125319 ,11.18223583,11.35193976,11.52164369});
 
-    NDArrayFactory<double>::linspace(0.1, input, 0.1);
+    input.linspace(0.1, 0.1);
     mean.assign(1.);
     variance.assign(0.5);
     gamma.assign(1.2);
@@ -2530,7 +2530,7 @@ TEST_F(DeclarableOpsTests1, batchnorm_test2) {
     
     NDArray<double> expected('c', {2,3,2,3,2}, {-0.52733537,-0.52733537,-0.35763144,-0.35763144,-0.18792751,-0.18792751, -0.52733537,-0.52733537,-0.35763144,-0.35763144,-0.18792751,-0.18792751, -0.01822358,-0.01822358, 0.15148035, 0.15148035, 0.32118428, 0.32118428, -0.01822358,-0.01822358, 0.15148035, 0.15148035, 0.32118428, 0.32118428, 0.49088821, 0.49088821, 0.66059214, 0.66059214, 0.83029607, 0.83029607, 0.49088821, 0.49088821, 0.66059214, 0.66059214, 0.83029607, 0.83029607, 1.        , 1.        , 1.16970393, 1.16970393, 1.33940786, 1.33940786, 1.        , 1.        , 1.16970393, 1.16970393, 1.33940786, 1.33940786, 1.50911179, 1.50911179, 1.67881572, 1.67881572, 1.84851965, 1.84851965, 1.50911179, 1.50911179, 1.67881572, 1.67881572, 1.84851965, 1.84851965, 2.01822358, 2.01822358, 2.18792751, 2.18792751, 2.35763144, 2.35763144, 2.01822358, 2.01822358, 2.18792751, 2.18792751, 2.35763144, 2.35763144});
 
-    NDArrayFactory<double>::linspace(0.1, input, 0.1);
+    input.linspace(0.1, 0.1);
     mean.assign(1.);
     variance.assign(0.5);
     gamma.assign(1.2);
@@ -2561,7 +2561,7 @@ TEST_F(DeclarableOpsTests1, batchnorm_test3) {
     
     NDArray<double> expected('c', {2,3,2,3,2}, {-0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, 0.49088821, 0.66059214, 0.83029607, 1., 1.16970393, 1.33940786, 1.50911179, 1.67881572, 1.84851965, 2.01822358, 2.18792751, 2.35763144, 2.52733537, 2.6970393 , 2.86674323, 3.03644717, 3.2061511 , 3.37585503, 3.54555896, 3.71526289, 3.88496682, 4.05467075, 4.22437468, 4.39407861, 4.56378254, 4.73348647, 4.9031904 , 5.07289433, 5.24259826, 5.41230219, 5.58200612, 5.75171005, 5.92141398, 6.09111791, 6.26082184, 6.43052577, 6.6002297 , 6.76993364, 6.93963757, 7.1093415 , 7.27904543, 7.44874936, 7.61845329, 7.78815722, 7.95786115, 8.12756508, 8.29726901, 8.46697294, 8.63667687, 8.8063808 , 8.97608473, 9.14578866, 9.31549259, 9.48519652, 9.65490045, 9.82460438, 9.99430831,10.16401224,10.33371617,10.50342011, 10.67312404,10.84282797,11.0125319 ,11.18223583,11.35193976,11.52164369});
 
-    NDArrayFactory<double>::linspace(0.1, input, 0.1);
+    input.linspace(0.1, 0.1);
     mean.assign(1.);
     variance.assign(0.5);
     gamma.assign(1.2);
@@ -2592,7 +2592,7 @@ TEST_F(DeclarableOpsTests1, batchnorm_test4) {
     
     NDArray<double> expected('c', {2,3,2,3,2}, {-0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428});
 
-    NDArrayFactory<double>::linspace(0.1, input, 0.1);
+    input.linspace(0.1, 0.1);
     mean.assign(1.);
     variance.assign(0.5);
     gamma.assign(1.2);
@@ -2952,7 +2952,7 @@ TEST_F(DeclarableOpsTests1, Maxpool2d_bp2) {
     NDArray<double> expected('c', {bS,iD,iH,iW});
 
 
-    nd4j::NDArrayFactory<double>::linspace(1., input);
+    input.linspace(1.);
     epsilon.setBuffer(epsilonBuff);
     expected.setBuffer(expectedBuff);
     
@@ -2983,7 +2983,7 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_bp2) {
     NDArray<double> expected('c', {bS,iD,iH,iW});
 
 
-    nd4j::NDArrayFactory<double>::linspace(1., input);
+    input.linspace(1.);
     epsilon.setBuffer(epsilonBuff);
     expected.setBuffer(expectedBuff);
     
@@ -3001,7 +3001,7 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_bp2) {
 
 TEST_F(DeclarableOpsTests1, ArgMax1) {
     NDArray<float> x('c', {3, 5});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     NDArray<float> exp('c', {3, 1});
     exp.assign(4.0f);
 
@@ -3022,7 +3022,7 @@ TEST_F(DeclarableOpsTests1, ArgMax1) {
 
 TEST_F(DeclarableOpsTests1, ArgMax2) {
     NDArray<float> x('c', {3, 5});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     NDArray<float> exp('c', {1, 5});
     exp.assign(2.0f);
 
@@ -3044,7 +3044,7 @@ TEST_F(DeclarableOpsTests1, ArgMax2) {
 TEST_F(DeclarableOpsTests1, ArgMax3) {
     NDArray<float> x('c', {3, 5});
     NDArray<float> dim('c', {1, 1}, {0});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     NDArray<float> exp('c', {1, 5});
     exp.assign(2.0f);
 
@@ -3065,7 +3065,7 @@ TEST_F(DeclarableOpsTests1, ArgMax3) {
 TEST_F(DeclarableOpsTests1, ArgMax4) {
     NDArray<float> x('c', {3, 5});
     NDArray<float> dim('c', {1, 1}, {1});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     NDArray<float> exp('c', {3, 1});
     exp.assign(4.0f);
 
@@ -3087,7 +3087,7 @@ TEST_F(DeclarableOpsTests1, ArgMax4) {
 TEST_F(DeclarableOpsTests1, ArgMax5) {
     NDArray<float> x('c', {3, 5});
     NDArray<float> dim('c', {1, 2}, {0, 1});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     NDArray<float> exp('c', {1, 1}, {14});
 
 
@@ -3108,7 +3108,7 @@ TEST_F(DeclarableOpsTests1, ArgMax5) {
 
 TEST_F(DeclarableOpsTests1, ArgMin1) {
     NDArray<float> x('c', {3, 5});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     NDArray<float> exp('c', {3, 1});
     exp.assign(0.0f);
 
@@ -3129,10 +3129,10 @@ TEST_F(DeclarableOpsTests1, ArgMin1) {
 
 TEST_F(DeclarableOpsTests1, SquareTests1) {
     NDArray<float> x('c', {3, 5});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     NDArray<float> exp('c', {3, 5});
-    NDArrayFactory<float>::linspace(1, exp);
+    exp.linspace(1);
     exp *= exp;
 
     nd4j::ops::square<float> op;
@@ -3524,7 +3524,7 @@ TEST_F(DeclarableOpsTests1, Stack_11) {
 
 TEST_F(DeclarableOpsTests1, Test_Range_Integer_1) {
     NDArray<float> exp('c', {4});
-    NDArrayFactory<float>::linspace(1, exp);
+    exp.linspace(1);
 
     nd4j::ops::range<float> op;
 
@@ -3544,7 +3544,7 @@ TEST_F(DeclarableOpsTests1, Test_Range_Integer_1) {
 
 TEST_F(DeclarableOpsTests1, Test_Range_Integer_2) {
     NDArray<float> exp('c', {4});
-    NDArrayFactory<float>::linspace(1, exp);
+    exp.linspace(1);
 
     NDArray<float> start('c', {1, 1});
     NDArray<float> stop('c', {1, 1});
@@ -3573,7 +3573,7 @@ TEST_F(DeclarableOpsTests1, Test_Range_Integer_2) {
 
 TEST_F(DeclarableOpsTests1, Test_Range_Integer_3) {
     NDArray<float> exp('c', {4});
-    NDArrayFactory<float>::linspace(1, exp);
+    exp.linspace(1);
 
     nd4j::ops::range<float> op;
 

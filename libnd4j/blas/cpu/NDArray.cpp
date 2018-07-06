@@ -3577,6 +3577,178 @@ T NDArray<T>::getTrace() const {
     return sum;
 }
 
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+NDArray<T>* NDArray<T>::valueOf(const std::vector<Nd4jLong>& shape, const T value, const char order) {
+    
+    NDArray<T>* result = new NDArray<T>(order, shape);
+    result->assign(value);
+    return result;
+}
+
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+NDArray<T>* NDArray<T>::valueOf(const std::initializer_list<Nd4jLong>& shape, const T value, const char order) {
+
+    return valueOf(std::vector<Nd4jLong>(shape), value, order);
+}
+
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+NDArray<T>* NDArray<T>::linspace(const T from, const T to, const Nd4jLong numElements) {
+
+    NDArray<T>* result = new NDArray<T>('c', {1, (int)numElements});
+
+    for (Nd4jLong e = 0; e < numElements; e++) {
+        T step = (T) e / ((T) numElements - (T) 1.0f);
+        result->getBuffer()[e] = (from * ((T) 1.0f - step) + step * to);
+    }
+    return result;
+}
+
+////////////////////////////////////////////////////////////////////////
+template<typename T>
+void NDArray<T>::linspace(const T from, const T step) {
+            
+    for (Nd4jLong i = 0; i < _length; ++i)
+        (*this)(i) = from + (step * i);
+}
+
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+NDArray<T>* NDArray<T>::scalar(const T value) {
+
+    NDArray<T>* result = new NDArray<T>('c', {1, 1});
+    result->putScalar(0, value);
+
+    return result;
+}
+
+////////////////////////////////////////////////////////////////////////
+template<typename T>
+NDArray<T>* NDArray<T>::createUninitialized() const {
+    
+    Nd4jLong* newShape(nullptr);
+    ALLOCATE(newShape, _workspace, shape::shapeInfoLength(_shapeInfo), Nd4jLong);
+    memcpy(newShape, _shapeInfo, shape::shapeInfoByteLength(_shapeInfo));
+
+    T* buffer(nullptr);
+    ALLOCATE(buffer, _workspace, _length, T);
+    NDArray<T>* result = new NDArray<T>(buffer, newShape, _workspace);
+    result->triggerAllocationFlag(true, true);
+
+    return result;
+}
+
+////////////////////////////////////////////////////////////////////////
+template<typename T>
+ResultSet<T>* NDArray<T>::multipleTensorsAlongDimension(const std::vector<int> &indices, const std::vector<int> &dimensions) const {
+    
+    ResultSet<T>* result = new ResultSet<T>();
+
+    if (indices.size() == 0)
+        return result;
+
+    std::vector<int> copy(dimensions);
+
+    // we need to sort dimensions (?)
+    if (dimensions.size() > 1)
+        std::sort (copy.begin(), copy.end());
+
+    Nd4jLong tadLength = shape::tadLength(_shapeInfo, copy.data(), copy.size());
+    Nd4jLong numTads = _length / tadLength;
+
+    std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, copy.data(), copy.size()));
+    tad->createTadOnlyShapeInfo();
+    tad->createOffsets();
+
+    // FIXME: why we're not using workspaces here?
+    Nd4jLong* shapeInfo = new Nd4jLong[shape::shapeInfoLength(tad->tadOnlyShapeInfo[0])];
+    std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
+
+    for (auto idx: indices) {
+        if (idx >= numTads) {
+            nd4j_printf("NDArray::multipleTensorsAlongDimension: index %i is higher then number of TADs: %i\n", idx, numTads);
+            throw std::runtime_error("Bad index");
+        }
+
+        T* buffer = _buffer + tad->tadOffsets[idx];
+        NDArray<T>* array = new NDArray<T>(buffer, shapeInfo);
+        result->push_back(array);
+    }
+
+    // if we have no indices - just delete shapeInfo
+    if (result->size() > 0)
+        result->at(0)->triggerAllocationFlag(false, true);
+    else
+        delete[] shapeInfo;
+
+    return result;
+}
+
+////////////////////////////////////////////////////////////////////////
+template<typename T>
+ResultSet<T>* NDArray<T>::allTensorsAlongDimension(const std::vector<int> &dimensions) const {
+        
+    ResultSet<T>* result = new ResultSet<T>();
+
+    if(dimensions.size() == 0)
+        return result;
+
+    std::vector<int> copy(dimensions);
+
+    // we need to sort dimensions (?)
+    if (dimensions.size() > 1)
+        std::sort (copy.begin(), copy.end());
+
+    if(copy.back() >= rankOf())
+        throw std::runtime_error("NDArray::allTensorsAlongDimension static function: all input dimensions must be smaller than rank of input array !");
+
+    Nd4jLong tadLength = shape::tadLength(_shapeInfo, copy.data(), copy.size());
+    Nd4jLong numTads = _length / tadLength;
+
+    std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, copy.data(), copy.size()));
+    tad->createTadOnlyShapeInfo();
+    tad->createOffsets();
+
+    auto shapeInfo = new Nd4jLong[shape::shapeInfoLength(tad->tadOnlyShapeInfo[0])];
+    std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
+
+    for (int idx = 0; idx < numTads; idx++ ) {
+        T* buffer = _buffer + tad->tadOffsets[idx];
+        NDArray<T>* array = new NDArray<T>(buffer, shapeInfo);
+        result->push_back(array);
+    }
+
+    // if we have no indices - just delete shapeInfo
+    if (result->size() > 0)
+        result->at(0)->triggerAllocationFlag(false, true);
+    else
+        delete[] shapeInfo;
+
+    return result;
+}
+
+////////////////////////////////////////////////////////////////////////
+template<typename T>
+ResultSet<T>* NDArray<T>::allTensorsAlongDimension(const std::initializer_list<int>& dimensions) const {
+        
+    return allTensorsAlongDimension(std::vector<int>(dimensions));
+}
+
+////////////////////////////////////////////////////////////////////////
+template<typename T>
+ResultSet<T>* NDArray<T>::allExamples() const {
+        
+    std::vector<int> dimensions(rankOf() - 1);            
+    for (int e = 1; e < rankOf(); e++)
+        dimensions[e-1] = e;
+
+    return allTensorsAlongDimension(dimensions);
+}
+
+
+
 
 template class ND4J_EXPORT NDArray<float>;
 template class ND4J_EXPORT NDArray<float16>;

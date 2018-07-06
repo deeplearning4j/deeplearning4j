@@ -842,7 +842,7 @@ TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_6) {
 
 TEST_F(DeclarableOpsTests3, Test_AvgPool_1) {
     NDArray<float> x('c', {2, 10, 10, 3});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::avgpool2d<float> op;
     //                                  kY  kX  sY  sX  pY  pX  dY  dX  M   P
