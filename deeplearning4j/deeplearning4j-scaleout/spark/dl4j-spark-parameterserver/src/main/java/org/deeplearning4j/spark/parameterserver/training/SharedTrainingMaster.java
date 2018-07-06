@@ -61,6 +61,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     protected Integer numWorkers;
     protected Integer numWorkersPerNode;
+    protected int workerPrefetchBatches;
     protected RDDTrainingApproach rddTrainingApproach;
     protected StorageLevel storageLevel;
 
@@ -99,7 +100,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                     RDDTrainingApproach rddTrainingApproach, StorageLevel storageLevel, boolean collectTrainingStats,
                     RepartitionStrategy repartitionStrategy, Repartition repartition, double threshold,
                     double minThreshold, double thresholdStep, double stepTrigger, int stepDelay, int shakeFrequency,
-                    int batchSizePerWorker, long debugLongerIterations, int numWorkersPerNode) {
+                    int batchSizePerWorker, long debugLongerIterations, int numWorkersPerNode, int workerPrefetchBatches) {
         this.voidConfiguration = voidConfiguration;
         this.numWorkers = numWorkers;
         this.threshold = threshold;
@@ -117,6 +118,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         this.rddDataSetNumExamples = batchSizePerWorker;
         this.debugLongerIterations = debugLongerIterations;
         this.numWorkersPerNode = numWorkersPerNode;
+        this.workerPrefetchBatches = workerPrefetchBatches;
 
 
         if (collectTrainingStats)
@@ -232,7 +234,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         SharedTrainingConfiguration configuration = SharedTrainingConfiguration.builder().threshold(threshold)
                         .minThreshold(minThreshold).shakeFrequency(shakeFrequency).thresholdStep(thresholdStep)
                         .voidConfiguration(voidConfiguration).debugLongerIterations(debugLongerIterations)
-                        .numberOfWorkersPerNode(numWorkersPerNode).build();
+                        .numberOfWorkersPerNode(numWorkersPerNode)
+                        .prefetchSize(workerPrefetchBatches)
+                .build();
 
         if (collectTrainingStats)
             stats.logBroadcastStart();
@@ -946,6 +950,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         protected int batchSize;
         protected long debugLongerIterations = 0L;
         protected int numWorkersPerNode = -1;
+        protected int workerPrefetchNumBatches = 2;
 
 
         public Builder(int rddDataSetNumExamples) {
@@ -1211,11 +1216,16 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             return this;
         }
 
+        public Builder workerPrefetchNumBatches(int prefetchNumBatches){
+            this.workerPrefetchNumBatches = prefetchNumBatches;
+            return this;
+        }
+
         public SharedTrainingMaster build() {
             SharedTrainingMaster master = new SharedTrainingMaster(voidConfiguration, numWorkers, rddTrainingApproach,
                             storageLevel, collectTrainingStats, repartitionStrategy, repartition, threshold,
                             minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, batchSize,
-                            debugLongerIterations, numWorkersPerNode);
+                            debugLongerIterations, numWorkersPerNode, workerPrefetchNumBatches);
             if (transport != null)
                 master.transport = this.transport;
 
