@@ -5,7 +5,6 @@
 #include "testlayers.h"
 #include <chrono>
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 #include <helpers/RandomLauncher.h>
 #include <ops/declarable/LegacyRandomOp.h>
 #include <ops/declarable/CustomOperations.h>

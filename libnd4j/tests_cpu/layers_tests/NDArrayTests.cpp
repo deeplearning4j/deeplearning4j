@@ -5,7 +5,6 @@
 #include "testlayers.h"
 #include <memory>
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 #include <MmulHelper.h>
 
 using namespace nd4j;
@@ -1299,7 +1298,7 @@ TEST_F(NDArrayTest, TestIndexedPut5) {
 TEST_F(NDArrayTest, TestAllTensors1) {
     NDArray<float> matrix('c', {3, 5});
 
-    std::unique_ptr<ResultSet<float>> rows(NDArrayFactory<float>::allTensorsAlongDimension(&matrix, {1}));
+    std::unique_ptr<ResultSet<float>> rows(matrix.allTensorsAlongDimension({1}));
 
     ASSERT_EQ(3, rows->size());
 }

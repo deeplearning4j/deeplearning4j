@@ -3,7 +3,6 @@
 //
 
 #include <ops/declarable/helpers/axis.h>
-#include <NDArrayFactory.h>
 
 namespace nd4j {
 namespace ops {
@@ -13,8 +12,8 @@ namespace helpers {
     void extractPatches(NDArray<T>* images, NDArray<T>* output, 
         int sizeRow, int sizeCol, int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame){
         std::vector<int> restDims({1, 2, 3}); // the first and the last dims
-        std::unique_ptr<ResultSet<T>> listOfMatricies(NDArrayFactory<T>::allTensorsAlongDimension(images, restDims));
-        std::unique_ptr<ResultSet<T>> listOfOutputs(NDArrayFactory<T>::allTensorsAlongDimension(output, restDims));
+        std::unique_ptr<ResultSet<T>> listOfMatricies(images->allTensorsAlongDimension(restDims));
+        std::unique_ptr<ResultSet<T>> listOfOutputs(output->allTensorsAlongDimension(restDims));
         // 3D matricies - 2D matricies of vectors (if last dim is greater than 1)
         int e = 0;
         int ksizeRowsEffective = sizeRow + (sizeRow - 1) * (rateRow - 1);

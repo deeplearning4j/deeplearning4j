@@ -4,7 +4,6 @@
 
 #include <NDArray.h>
 #include <NDArrayList.h>
-#include <NDArrayFactory.h>
 #include "testlayers.h"
 
 using namespace nd4j;

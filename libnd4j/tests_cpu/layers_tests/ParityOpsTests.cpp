@@ -75,7 +75,7 @@ TEST_F(ParityOpsTests, TestMinimum1) {
 
 TEST_F(ParityOpsTests, TestTear1) {
     NDArray<float> input('c', {10, 5});
-    auto tads = NDArrayFactory<float>::allTensorsAlongDimension(&input, {1});
+    auto tads = input.allTensorsAlongDimension({1});
     for (int e = 0; e < tads->size(); e++) {
         ASSERT_EQ(5, tads->at(e)->lengthOf());
         tads->at(e)->assign((float) e + 1);
@@ -96,7 +96,7 @@ TEST_F(ParityOpsTests, TestTear1) {
 
 TEST_F(ParityOpsTests, TestUnstack1) {
     NDArray<float> input('c', {10, 5});
-    auto tads = NDArrayFactory<float>::allTensorsAlongDimension(&input, {1});
+    auto tads = input.allTensorsAlongDimension({1});
     for (int e = 0; e < tads->size(); e++) {
         ASSERT_EQ(5, tads->at(e)->lengthOf());
         tads->at(e)->assign((float) e + 1);
@@ -122,7 +122,7 @@ TEST_F(ParityOpsTests, TestUnstack1) {
 
 TEST_F(ParityOpsTests, TestUnstack2) {
     NDArray<float> input('c', {5,2,6});
-    auto tads = NDArrayFactory<float>::allTensorsAlongDimension(&input, {0, 1});
+    auto tads = input.allTensorsAlongDimension({0,1});
     for (int e = 0; e < tads->size(); e++) {
         ASSERT_EQ(10, tads->at(e)->lengthOf());
         tads->at(e)->assign((float) e + 1);
@@ -614,7 +614,7 @@ TEST_F(ParityOpsTests, Test_Bias_Add_1) {
     auto z = result->at(0);
 
 
-    auto tads = NDArrayFactory<float>::allTensorsAlongDimension(z, {1});
+    auto tads = z->allTensorsAlongDimension({1});
     for (int e = 0; e < tads->size(); e++) {
         ASSERT_TRUE(bias.equalsTo(tads->at(e)));
     }

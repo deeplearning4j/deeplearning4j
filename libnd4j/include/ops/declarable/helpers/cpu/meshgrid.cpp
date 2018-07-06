@@ -5,7 +5,6 @@
 
 #include<ops/declarable/helpers/meshgrid.h>
 #include <array/ResultSet.h>
-#include <NDArrayFactory.h>
 #include <numeric>
 
 namespace nd4j 	  {
@@ -26,7 +25,7 @@ void meshgrid(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<
     }
             
     for(int i = 0; i < rank; ++i) {        
-        ResultSet<T>* list = NDArrayFactory<T>::allTensorsAlongDimension(outArrs[i], {inIndices[i]});        
+        ResultSet<T>* list = outArrs[i]->allTensorsAlongDimension({inIndices[i]});        
         for(int j = 0; j < list->size(); ++j)
             list->at(j)->assign(inArrs[i]);
 

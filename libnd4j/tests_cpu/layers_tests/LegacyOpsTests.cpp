@@ -4,7 +4,6 @@
 
 #include "testlayers.h"
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 #include <ops/declarable/LegacyTransformOp.h>
 #include <ops/declarable/LegacyPairwiseTransformOp.h>
 #include <ops/declarable/LegacyScalarOp.h>
@@ -272,7 +271,7 @@ TEST_F(LegacyOpsTests, BroadcastingTests_1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
-    auto list = NDArrayFactory<double>::allTensorsAlongDimension(&x, {1});
+    auto list = x.allTensorsAlongDimension({1});
 
     for (int e = 0; e < list->size(); e++)
         ASSERT_TRUE(row.equalsTo(list->at(e)));

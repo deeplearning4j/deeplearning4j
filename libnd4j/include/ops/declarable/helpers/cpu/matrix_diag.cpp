@@ -3,7 +3,6 @@
 //
 
 #include "ResultSet.h"
-#include "NDArrayFactory.h"
 #include <ops/declarable/helpers/matrix_diag.h>
 
 namespace nd4j {
@@ -17,8 +16,8 @@ namespace helpers {
 template <typename T>
 int matrixDiag(const NDArray<T>* input, NDArray<T>* output) {
 
-    ResultSet<T>* listOut  = NDArrayFactory<T>::allTensorsAlongDimension(output,  {output->rankOf() - 2, output->rankOf() - 1});
-    ResultSet<T>* listDiag = NDArrayFactory<T>::allTensorsAlongDimension(input, {input->rankOf() - 1});
+    ResultSet<T>* listOut  = output->allTensorsAlongDimension({output->rankOf() - 2, output->rankOf() - 1});
+    ResultSet<T>* listDiag = input->allTensorsAlongDimension({input->rankOf() - 1});
 
     if (listOut->size() != listDiag->size()) {
         nd4j_printf("matrix_diag: Input matrix has wrong shape.", "");

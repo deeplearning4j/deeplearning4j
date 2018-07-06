@@ -4,7 +4,6 @@
 
 #include <helpers/shape.h>
 #include "testlayers.h"
-#include <NDArrayFactory.h>
 #include <ops/declarable/headers/shape.h>
 
 using namespace nd4j;

@@ -3,7 +3,6 @@
 //
 
 #include <ops/declarable/helpers/top_k.h>
-#include <NDArrayFactory.h>
 #include <MmulHelper.h>
 
 namespace nd4j {
@@ -85,7 +84,7 @@ namespace helpers {
 
         T determinant = (T)1.0;
         std::unique_ptr<NDArray<T>> compoundMatrix(input->dup()); // copy
-        std::unique_ptr<NDArray<T>> permutationMatrix(NDArrayFactory<T>::createUninitialized(input)); //put identity
+        std::unique_ptr<NDArray<T>> permutationMatrix(input->createUninitialized()); //put identity
         permutationMatrix->setIdentity();
 
         T pivotValue; // = T(0.0);

@@ -12,7 +12,6 @@
 #include <helpers/helper_hash.h>
 #include <NDArray.h>
 #include <array/NDArrayList.h>
-#include <NDArrayFactory.h>
 #include <NativeOps.h>
 #include <ops/gemm.h>
 

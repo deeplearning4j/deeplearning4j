@@ -9,7 +9,6 @@
 #include <NDArray.h>
 #include <graph/Variable.h>
 #include <flatbuffers/flatbuffers.h>
-#include <NDArrayFactory.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;

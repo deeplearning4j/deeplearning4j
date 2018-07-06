@@ -3,7 +3,6 @@
 
 #include "../NDArray.h"
 #include "../NativeOpExcutioner.h"
-#include "../NDArrayFactory.h"
 #include <memory/Workspace.h>
 #include <memory/MemoryRegistrator.h>
 #include <ops.h>
