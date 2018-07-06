@@ -22,7 +22,7 @@ public class CompressionMagicTests extends BaseNd4jTest {
 
     @Before
     public void setUp() throws Exception {
-        Nd4j.preventUnpack = true;
+
     }
 
     @Test
