@@ -22,6 +22,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -37,6 +38,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * LayerVertex is a GraphVertex with a neural network Layer (and, optionally an {@link InputPreProcessor}) in it
@@ -86,6 +88,11 @@ public class LayerVertex extends BaseGraphVertex {
 
         this.layer = new FrozenLayer(this.layer);
         this.layer.conf().getLayer().setLayerName(vertexName);
+    }
+
+    @Override
+    public Map<String, INDArray> paramTable(boolean backpropOnly) {
+        return layer.paramTable(backpropOnly);
     }
 
     @Override
@@ -259,4 +266,20 @@ public class LayerVertex extends BaseGraphVertex {
         IOutputLayer ol = (IOutputLayer)layer;
         return ol.computeScoreForExamples(l1, l2, workspaceMgr);
     }
+
+    @Override
+    public TrainingConfig getConfig(){
+        return getLayer().getConfig();
+    }
+
+    @Override
+    public INDArray params(){
+        return layer.params();
+    }
+
+    @Override
+    public INDArray getGradientsViewArray(){
+        return layer.getGradientsViewArray();
+    }
 }
+

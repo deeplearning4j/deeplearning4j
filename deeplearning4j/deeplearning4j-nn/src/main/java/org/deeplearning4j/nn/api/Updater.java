@@ -20,7 +20,7 @@ public interface Updater extends Serializable {
      * @param viewArray  View array
      * @param initialize Whether to initialize the array or not
      */
-    void setStateViewArray(Layer layer, INDArray viewArray, boolean initialize);
+    void setStateViewArray(Trainable layer, INDArray viewArray, boolean initialize);
 
     /**
      * @return the view array for this updater
@@ -34,5 +34,5 @@ public interface Updater extends Serializable {
      * @param gradient
      * @param iteration
      */
-    void update(Layer layer, Gradient gradient, int iteration, int epoch, int miniBatchSize, LayerWorkspaceMgr workspaceMgr);
+    void update(Trainable layer, Gradient gradient, int iteration, int epoch, int miniBatchSize, LayerWorkspaceMgr workspaceMgr);
 }

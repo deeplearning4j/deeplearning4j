@@ -585,6 +585,19 @@ public class SameDiff {
         variableNameToArr.put(varName, arr);
     }
 
+    /**
+     * Put the array if it does not exist for the given variable name, or update it if it does
+     * @param varName Variable name
+     * @param arr     Array
+     */
+    public void putOrUpdateArrayForVarName(@NonNull String varName, INDArray arr){
+        if(variableNameToArr.containsKey(varName)){
+            updateArrayForVarName(varName, arr);
+        } else {
+            putArrayForVarName(varName, arr);
+        }
+    }
+
 
     /**
      * Get the shape for the given vertex id.
@@ -655,6 +668,12 @@ public class SameDiff {
             }
         }
 
+
+        if(log.isTraceEnabled()){
+            long[] pShape = variableNameToShape.get(varName);
+            log.trace("Updated shape for variable \"{}\": previous shape {}, new shape {}", varName,
+                    (pShape == null ? "<not set>" : Arrays.toString(pShape)), Arrays.toString(shape));
+        }
         variableNameToShape.put(varName, shape);
     }
 
@@ -697,7 +716,7 @@ public class SameDiff {
      *                                  its shape does not match the specified shape
      */
     public void putOrUpdateShapeForVarName(String varName, @NonNull long[] shape, boolean clearArrayOnShapeMismatch){
-        if(variableNameToArr.containsKey(varName)){
+        if(variableNameToShape.containsKey(varName)){
             updateShapeForVarName(varName, shape, clearArrayOnShapeMismatch);
         } else {
             putShapeForVarName(varName, shape);
@@ -763,11 +782,7 @@ public class SameDiff {
 
         reverseArrayLookup.put(arr, variable);
         variableNameToArr.put(variable.getVarName(), arr);
-        if (!shapeAlreadyExistsForVarName(variable.getVarName()))
-            putShapeForVarName(variable.getVarName(), arr.shape());
-        else {
-            updateShapeForVarName(variable.getVarName(), arr.shape());
-        }
+        putOrUpdateShapeForVarName(variable.getVarName(), arr.shape(), true);
         // invalidate exec cache
         exec_cache = null;
 

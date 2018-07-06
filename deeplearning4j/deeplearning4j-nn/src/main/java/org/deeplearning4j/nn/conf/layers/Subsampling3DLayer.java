@@ -30,7 +30,7 @@ import java.util.Map;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class Subsampling3DLayer extends Layer {
+public class Subsampling3DLayer extends NoParamLayer {
 
     protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;
     protected org.deeplearning4j.nn.conf.layers.PoolingType poolingType;

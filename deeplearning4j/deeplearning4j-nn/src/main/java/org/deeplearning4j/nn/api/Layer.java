@@ -37,7 +37,7 @@ import java.util.Collection;
  *
  * @author Adam Gibson
  */
-public interface Layer extends Serializable, Cloneable, Model {
+public interface Layer extends Serializable, Cloneable, Model, Trainable {
 
     enum Type {
         FEED_FORWARD, RECURRENT, CONVOLUTIONAL, CONVOLUTIONAL3D,

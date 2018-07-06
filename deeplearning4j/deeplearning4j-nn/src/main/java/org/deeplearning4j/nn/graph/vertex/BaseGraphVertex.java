@@ -21,10 +21,14 @@ package org.deeplearning4j.nn.graph.vertex;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+
+import java.util.Collections;
+import java.util.Map;
 
 /** BaseGraphVertex defines a set of common functionality for GraphVertex instances.
  */
@@ -186,5 +190,30 @@ public abstract class BaseGraphVertex implements GraphVertex {
     @Override
     public void clearVertex() {
         clear();
+    }
+
+    @Override
+    public Map<String, INDArray> paramTable(boolean backpropOnly) {
+        return Collections.emptyMap();
+    }
+
+    @Override
+    public int numParams(){
+        return params() == null ? 0 : (int)params().length();
+    }
+
+    @Override
+    public TrainingConfig getConfig() {
+        return null;
+    }
+
+    @Override
+    public INDArray params() {
+        return null;
+    }
+
+    @Override
+    public INDArray getGradientsViewArray() {
+        return null;
     }
 }

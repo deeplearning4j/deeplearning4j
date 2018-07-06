@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.NoParamLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
@@ -21,7 +22,7 @@ import java.util.Map;
  * @author Alex Black
  */
 @NoArgsConstructor
-public class MaskLayer extends Layer {
+public class MaskLayer extends NoParamLayer {
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                                                        int layerIndex, INDArray layerParamsView, boolean initializeParams) {
