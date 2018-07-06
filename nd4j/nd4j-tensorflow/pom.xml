@@ -13,8 +13,6 @@
 
     <name>nd4j-tensorflow</name>
 
-
-
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -36,4 +34,10 @@
             <artifactId>junit</artifactId>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>testresources</id>
+        </profile>
+    </profiles>
 </project>
