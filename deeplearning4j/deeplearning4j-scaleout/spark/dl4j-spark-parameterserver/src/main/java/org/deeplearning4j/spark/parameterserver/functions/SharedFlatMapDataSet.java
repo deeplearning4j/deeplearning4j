@@ -35,6 +35,11 @@ class SharedFlatMapDataSetAdapter<R extends TrainingResult> implements FlatMapFu
 
     @Override
     public Iterable<R> call(Iterator<DataSet> dataSetIterator) throws Exception {
+        //Under some limited circumstances, we might have an empty partition. In this case, we should return immediately
+        if(!dataSetIterator.hasNext()){
+            return Collections.emptyList();
+        }
+
         /*
             That's the place where we do our stuff. Here's the plan:
             1) we pass given iterator to VirtualDataSetIterator, which acts as holder for them
