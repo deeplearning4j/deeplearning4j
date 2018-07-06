@@ -27,7 +27,6 @@ import java.util.NoSuchElementException;
  *
  * @author Adam Gibson
  */
-@AllArgsConstructor
 public class TransformProcessRecordReader implements RecordReader {
     protected RecordReader recordReader;
     protected TransformProcess transformProcess;
