@@ -405,6 +405,19 @@ public class KerasModelEndToEndTest {
     }
 
     /**
+     * InceptionV3 Keras 2 no top
+     */
+    @Test
+    public void importInceptionKeras2() throws Exception {
+        int[] inputShape = new int[]{299, 299, 3};
+        ComputationGraph graph = importFunctionalModelH5Test(
+                "modelimport/keras/examples/inception/inception_tf_keras_2.h5", inputShape, false);
+        INDArray input = Nd4j.ones(10, 3, 299, 299);
+        graph.output(input);
+        System.out.println(graph.summary());
+    }
+
+    /**
      * InceptionV3
      */
     @Test
