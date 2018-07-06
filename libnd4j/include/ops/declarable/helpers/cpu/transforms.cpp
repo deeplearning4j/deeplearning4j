@@ -765,8 +765,8 @@ void concat(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output, const in
     const int numOfArrs = inArrs.size();
     const int rank  = inArrs[0]->rankOf();
     const int rank2 = 2*rank;
-    int* indices = new int[2 * rank * numOfArrs];
-    memset(indices, 0, 2 * rank * numOfArrs * sizeof(int));
+    Nd4jLong* indices = new Nd4jLong[2 * rank * numOfArrs];
+    memset(indices, 0, 2 * rank * numOfArrs * sizeof(Nd4jLong));
 
     // take into account indices for first array
     indices[2 * axis + 1] = inArrs[0]->sizeAt(axis);

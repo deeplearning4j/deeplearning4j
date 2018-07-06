@@ -6,6 +6,7 @@
 #include <memory>
 #include <NDArray.h>
 #include <NDArrayFactory.h>
+#include <MmulHelper.h>
 
 using namespace nd4j;
 
@@ -786,7 +787,7 @@ TEST_F(NDArrayTest, TestMmulHelper1) {
     auto yShape = new Nd4jLong[8] {2, 1, 3, 1, 1, 0, 1, 99};
     auto y = new NDArray<float>(yBuffer, yShape);
 
-    auto z = NDArrayFactory<float>::mmulHelper(x, y);
+    auto z = MmulHelper<float>::mmul(x, y);
 
     ASSERT_EQ(1, z->lengthOf());
     ASSERT_NEAR(28, z->getScalar(0), 1e-5);
@@ -819,7 +820,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul1) {
     x.permutei({1, 0});
     y.permutei({1, 0});
 
-    auto z = NDArrayFactory<float>::mmulHelper(&x, &y);
+    auto z = MmulHelper<float>::mmul(&x, &y);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -848,7 +849,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul2) {
     x_->permutei({1, 0});
     y_->permutei({1, 0});
 
-    auto z = NDArrayFactory<float>::mmulHelper(x_, y_);
+    auto z = MmulHelper<float>::mmul(x_, y_);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -880,7 +881,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul3) {
     x.reshapei('c', {2 * 2 * 2, 3 * 2 * 2});
     y.reshapei('c', {2 * 2 * 3, 2});
 
-    auto z = NDArrayFactory<float>::mmulHelper(&x, &y);
+    auto z = MmulHelper<float>::mmul(&x, &y);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -911,7 +912,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul4) {
     x.reshapei('c', {2 * 2 * 2, 3 * 2 * 2});
     y_->reshapei('c', {2 * 2 * 3, 2});
 
-    auto z = NDArrayFactory<float>::mmulHelper(&x, y_);
+    auto z = MmulHelper<float>::mmul(&x, y_);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -941,7 +942,7 @@ TEST_F(NDArrayTest, TestMmulHelper2) {
 
     //nd4j::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->getBuffer(), y->rows(), y->getBuffer(), 1, 0.0, z->getBuffer(), 1);
 
-    NDArrayFactory<float>::mmulHelper(x, y, z);
+    MmulHelper<float>::mmul(x, y, z);
 
     //z->printBuffer();
 
@@ -970,7 +971,7 @@ TEST_F(NDArrayTest, TestMmulHelper3) {
 
     //nd4j::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->getBuffer(), y->rows(), y->getBuffer(), 1, 0.0, z->getBuffer(), 1);
 
-    NDArrayFactory<float>::mmulHelper(x, y, z);
+    MmulHelper<float>::mmul(x, y, z);
 
     //z->printBuffer();
 
@@ -1003,7 +1004,7 @@ TEST_F(NDArrayTest, TestMmulHelper4) {
     auto expBuffer = new float[9]{7.0, 21.0, 35.0, 10.0, 28.0, 46.0, 13.0, 35.0, 57.0};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
 
-    NDArrayFactory<float>::mmulHelper(x, y, z);
+    MmulHelper<float>::mmul(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
 
     delete[] expBuffer;
@@ -1033,7 +1034,7 @@ TEST_F(NDArrayTest, TestMmulHelper5) {
     auto expBuffer = new float[9]{7.0, 14.0, 21.0, 12.0, 21.0, 30.0, 17.0, 28.0, 39.0};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
 
-    NDArrayFactory<float>::mmulHelper(x, y, z);
+    MmulHelper<float>::mmul(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
 
     delete[] expBuffer;
@@ -1063,7 +1064,7 @@ TEST_F(NDArrayTest, TestMmulHelper6) {
     auto expBuffer = new float[9]{39.0, 54.0, 69.0, 9.0, 18.0, 27.0, 9.0, 12.0, 15.0};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
 
-    NDArrayFactory<float>::mmulHelper(x, y, z);
+    MmulHelper<float>::mmul(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
 
 
@@ -1094,7 +1095,7 @@ TEST_F(NDArrayTest, TestMmulHelper7) {
     auto expBuffer = new float[9]{110.00,  260.00,  410.00};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
 
-    NDArrayFactory<float>::mmulHelper(y, x, z);
+    MmulHelper<float>::mmul(y, x, z);
 
     //z->printBuffer();
     ASSERT_TRUE(z->equalsTo(exp));
@@ -1127,7 +1128,7 @@ TEST_F(NDArrayTest, TestMmulHelper_ND_1) {
     NDArray<float> exp(_expB, _expS);
     exp.triggerAllocationFlag(false, false);
 
-    auto c = NDArrayFactory<float>::mmulHelper(&a, &b);
+    auto c = MmulHelper<float>::mmul(&a, &b);
 
     ASSERT_TRUE(exp.isSameShapeStrict(c));
     //c->printShapeInfo("Result shape");
@@ -1154,7 +1155,7 @@ TEST_F(NDArrayTest, TestMmulHelper_ND_2) {
     NDArray<float> exp(_expB, _expS);
     exp.triggerAllocationFlag(false, false);
 
-    auto c = NDArrayFactory<float>::mmulHelper(&a, &b);
+    auto c = MmulHelper<float>::mmul(&a, &b);
 
     ASSERT_TRUE(exp.isSameShapeStrict(c));
     //c->printShapeInfo("Result shape");
@@ -1766,7 +1767,7 @@ TEST_F(NDArrayTest, TestTensorDotAgain_1) {
     NDArrayFactory<double>::linspace(1, input);
     NDArrayFactory<double>::linspace(1, weights);
 
-    auto result = NDArrayFactory<double>::tensorDot(&weights, &input, {0}, {1});
+    auto result = MmulHelper<double>::tensorDot(&weights, &input, {0}, {1});
 
     //result->printShapeInfo("result shape");
     ASSERT_TRUE(exp.isSameShape(result));
@@ -1839,7 +1840,7 @@ TEST_F(NDArrayTest, TestMMulMultiDim) {
     NDArrayFactory<double>::linspace(1, input);
     NDArrayFactory<double>::linspace(1, weights);
 
-    auto result = NDArrayFactory<double>::mmulHelper(&weights, &input, nullptr, 1., 0.);
+    auto result = MmulHelper<double>::mmul(&weights, &input, nullptr, 1., 0.);
     //  result must have such shape   [bS x 3K x N]
 
     ASSERT_TRUE(result->isSameShape(&expected));
@@ -1880,7 +1881,7 @@ TEST_F(NDArrayTest, TestMatmMul_Again_1) {
     NDArray<double> c(_expB, _expS);
     c.triggerAllocationFlag(false, false);
 
-    auto c_ = NDArrayFactory<double>::mmulHelper(&a, &b);
+    auto c_ = MmulHelper<double>::mmul(&a, &b);
 
     ASSERT_TRUE(c.isSameShape(c_));
     ASSERT_TRUE(c.equalsTo(c_));
@@ -1901,7 +1902,7 @@ TEST_F(NDArrayTest, TestMatmMul_Again_2) {
     NDArray<double> c(_expB, _expS);
     c.triggerAllocationFlag(false, false);
 
-    auto c_ = NDArrayFactory<double>::mmulHelper(&a, &b);
+    auto c_ = MmulHelper<double>::mmul(&a, &b);
 
     ASSERT_TRUE(c.isSameShape(c_));
 

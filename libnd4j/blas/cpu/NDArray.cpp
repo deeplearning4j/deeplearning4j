@@ -21,6 +21,7 @@
 #include <helpers/ShapeUtils.h>
 #include <sstream>
 #include <helpers/ArrayUtils.h>
+#include <MmulHelper.h>
 
 namespace nd4j {
 
@@ -2546,7 +2547,7 @@ bool NDArray<T>::isUnitary() {
         throw std::runtime_error("isUnitary method: matrix must be square and have rank = 2 !");
 
     NDArray<T>* tr = this->transpose();
-    NDArray<T>* trMul = nd4j::NDArrayFactory<T>::mmulHelper(this, tr, nullptr, 1.f, 0.f);
+    NDArray<T>* trMul = MmulHelper<T>::mmul(this, tr, nullptr, 1.f, 0.f);
 
     bool result = trMul->isIdentityMatrix();
     delete tr;
@@ -2925,7 +2926,7 @@ bool NDArray<T>::isUnitary() {
     ////////////////////////////////////////////////////////////////////////
     // operator returns sub-array with buffer pointing at this->_buffer + certain offset
     template<typename T>
-    NDArray<T> NDArray<T>::operator()(const int* idx, bool keepUnitiesInShape)  const {
+    NDArray<T> NDArray<T>::operator()(const Nd4jLong* idx, bool keepUnitiesInShape)  const {
 
         const int rank = rankOf();
         Nd4jLong *newShape;
@@ -2937,7 +2938,7 @@ bool NDArray<T>::isUnitary() {
         auto stridesOf = shape::stride(newShape);
 
         Nd4jLong offset = 0;
-        int first, last;
+        Nd4jLong first, last;
         for (int d = 0; d < rank; ++d) {
             // building new shape first
             if (idx[2*d] != idx[2*d+1]) {
@@ -3298,7 +3299,7 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     template<typename T>
     NDArray<T> mmul(const NDArray<T>& left, const NDArray<T>& right) {
 
-        NDArray<T>* ptr =  NDArrayFactory<T>::mmulHelper(const_cast<NDArray<T>*>(&left), const_cast<NDArray<T>*>(&right), nullptr, (T)1., (T)0.);
+        NDArray<T>* ptr =  MmulHelper<T>::mmul(const_cast<NDArray<T>*>(&left), const_cast<NDArray<T>*>(&right), nullptr, (T)1., (T)0.);
         NDArray<T> result(*ptr);
         delete ptr;
         return result;
