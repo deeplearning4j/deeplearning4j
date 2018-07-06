@@ -1,4 +1,4 @@
-set( CMAKE_VERBOSE_MAKEFILE on)
+set(CMAKE_VERBOSE_MAKEFILE OFF)
 
 if(LINUX)
     link_directories(/usr/local/lib)

@@ -221,7 +221,7 @@ TEST_F(LegacyOpsTests, ReduceTests_4) {
 
 TEST_F(LegacyOpsTests, IndexReduceTests_1) {
     NDArray<double> x('c', {5, 5});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::LegacyIndexReduceOp<double> op(0);
 
@@ -240,7 +240,7 @@ TEST_F(LegacyOpsTests, IndexReduceTests_1) {
 
 TEST_F(LegacyOpsTests, IndexReduceTests_2) {
     NDArray<double> x('c', {5, 5});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::LegacyIndexReduceOp<double> op(0);
 
@@ -265,7 +265,7 @@ TEST_F(LegacyOpsTests, BroadcastingTests_1) {
     x.assign(0.0f);
 
     NDArray<double> row('c', {1, 5});
-    NDArrayFactory<double>::linspace(1, row);
+    row.linspace(1);
 
     nd4j::ops::LegacyBroadcastOp<double> op(0);
     Nd4jStatus status = op.execute({&x, &row}, {&x}, {}, {1});

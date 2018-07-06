@@ -50,7 +50,7 @@ TEST_F(VariableTests, TestClone_1) {
 TEST_F(VariableTests, Test_FlatVariableDataType_1) {
     flatbuffers::FlatBufferBuilder builder(1024);
     NDArray<float> original('c', {5, 10});
-    NDArrayFactory<float>::linspace(1, original);
+    original.linspace(1);
 
     auto vec = original.asByteVector();
 
@@ -84,7 +84,7 @@ TEST_F(VariableTests, Test_FlatVariableDataType_1) {
 TEST_F(VariableTests, Test_FlatVariableDataType_2) {
     flatbuffers::FlatBufferBuilder builder(1024);
     NDArray<double> original('c', {5, 10});
-    NDArrayFactory<double>::linspace(1, original);
+    original.linspace(1);
 
     auto vec = original.asByteVector();
 
@@ -120,8 +120,8 @@ TEST_F(VariableTests, Test_FlatVariableDataType_3) {
     flatbuffers::FlatBufferBuilder builder(1024);
     NDArray<double> original('c', {5, 10});
     NDArray<float> floating('c', {5, 10});
-    NDArrayFactory<double>::linspace(1, original);
-    NDArrayFactory<float>::linspace(1, floating);
+    original.linspace(1);
+    floating.linspace(1);
 
     auto vec = original.asByteVector();
 

@@ -40,7 +40,7 @@ TEST_F(NDArrayListTests, BasicTests_2) {
 
 TEST_F(NDArrayListTests, Test_Stack_UnStack_1) {
     NDArray<float> input('c', {10, 10});
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
 
     NDArrayList<float> list(false);
 

@@ -144,7 +144,7 @@ TEST_F(ParityOpsTests, TestUnstack2) {
 TEST_F(ParityOpsTests, TestUnstack3) { 
     NDArray<float> input('c', {3,2,3});
     NDArray<float> exp('c', {3, 2}, {1.f, 4., 7., 10.f, 13.f,  16.f});
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
 
     nd4j::ops::unstack<float> op;
 
@@ -163,7 +163,7 @@ TEST_F(ParityOpsTests, TestUnstack3) {
 TEST_F(ParityOpsTests, TestUnstack4) { 
     NDArray<float> input('c', {3,2,3});
     NDArray<float> exp('c', {3, 3}, { 1, 2, 3, 7, 8, 9, 13, 14, 15.});
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
 
     nd4j::ops::unstack<float> op;
 
@@ -181,7 +181,7 @@ TEST_F(ParityOpsTests, TestUnstack4) {
 TEST_F(ParityOpsTests, TestUnstack5) { 
     NDArray<float> input('c', {3,2,3});
     NDArray<float> exp('c', {2, 3}, { 1, 2, 3, 4, 5, 6});
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
 
     nd4j::ops::unstack<float> op;
 
@@ -199,7 +199,7 @@ TEST_F(ParityOpsTests, TestUnstack5) {
 TEST_F(ParityOpsTests, TestUnstack6) { 
     NDArray<float> input('c', {1, 1, 1});
     NDArray<float> exp('c', {1, 1}, {1});
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
 
     nd4j::ops::unstack<float> op;
 
@@ -217,7 +217,7 @@ TEST_F(ParityOpsTests, TestUnstack6) {
 TEST_F(ParityOpsTests, TestUnstack7) { 
     NDArray<float> input('c', {1, 1, 1});
     NDArray<float> exp('c', {1, 1}, {1});
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
 
     nd4j::ops::unstack<float> op;
 
@@ -235,7 +235,7 @@ TEST_F(ParityOpsTests, TestUnstack7) {
 TEST_F(ParityOpsTests, TestUnstack8) { 
     NDArray<float> input('c', {1, 1});
     NDArray<float> exp('c', {1}, {1});
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
 
     nd4j::ops::unstack<float> op;
 
@@ -253,7 +253,7 @@ TEST_F(ParityOpsTests, TestUnstack8) {
 TEST_F(ParityOpsTests, TestUnstack9) {
     NDArray<float> input('c', {1, 1});
     NDArray<float> exp('c', {1}, {1});
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
 
     nd4j::ops::unstack<float> op;
 
@@ -271,7 +271,7 @@ TEST_F(ParityOpsTests, TestUnstack9) {
 
 TEST_F(ParityOpsTests, ExpandDimsTest1) {
     NDArray<float> input('c', {5, 5});
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
     auto reshaped = input.reshape('c', {5, 1, 5});
 
     nd4j::ops::expand_dims<float> op;
@@ -292,7 +292,7 @@ TEST_F(ParityOpsTests, ExpandDimsTest1) {
 
 TEST_F(ParityOpsTests, ExpandDimsTest2) {
     NDArray<float> input('c', {3, 4});
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
     auto reshaped = input.reshape('c', {1, 3, 4});
 
     nd4j::ops::expand_dims<float> op;
@@ -313,7 +313,7 @@ TEST_F(ParityOpsTests, ExpandDimsTest2) {
 
 TEST_F(ParityOpsTests, ExpandDimsTest3) {
     NDArray<float> input('c', {3, 4});
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
     auto reshaped = input.reshape('c', {3, 1, 4});
 
     nd4j::ops::expand_dims<float> op;
@@ -333,7 +333,7 @@ TEST_F(ParityOpsTests, ExpandDimsTest3) {
 
 TEST_F(ParityOpsTests, ExpandDimsTest4) {
     NDArray<float> input('c', {3, 4});
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
     auto reshaped = input.reshape('c', {1, 3, 4});
 
     nd4j::ops::expand_dims<float> op;

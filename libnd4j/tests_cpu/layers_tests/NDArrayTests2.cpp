@@ -32,7 +32,7 @@ TEST_F(NDArrayTest2, Test_ByteVector_1) {
 
 TEST_F(NDArrayTest2, Test_ByteVector_2) {
     NDArray<float16> x('c', {10, 10});
-    NDArrayFactory<float16>::linspace(1, x);
+    x.linspace(1);
 
     auto vec = x.asByteVector();
 
@@ -46,7 +46,7 @@ TEST_F(NDArrayTest2, Test_ByteVector_2) {
 
 TEST_F(NDArrayTest2, Test_ByteVector_3) {
     NDArray<double> x('c', {10, 10});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     auto vec = x.asByteVector();
 
@@ -331,8 +331,8 @@ TEST_F(NDArrayTest2, Operator_Plus_Test_6) {
     NDArray<double> x('c', {3, 3, 3});
     NDArray<double> y('c', {3, 1, 3});
     NDArray<double> expected('c', {3, 3, 3}, {2., 4., 6., 5., 7., 9., 8.,10.,12., 14.,16.,18.,17.,19.,21.,20.,22.,24., 26.,28.,30.,29.,31.,33.,32.,34.,36.});
-    NDArrayFactory<double>::linspace(1, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(1);
+    y.linspace(1);
 
     NDArray<double> result = x + y;
     
@@ -670,7 +670,6 @@ TEST_F(NDArrayTest2, TestStdDev3) {
     
     // NDArray<double> array('c', {10, 10});
     NDArray<double> array('c', {2, 2}, {0.2946, 0.2084, 0.0345, 0.7368});
-    // NDArrayFactory<double>::linspace(0.1, array, 0.1);
     const int len = array.lengthOf();
 
     double sum = 0.;

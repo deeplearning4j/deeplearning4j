@@ -2085,7 +2085,7 @@ TEST_F(DeclarableOpsTests8, avgpool2d_test13) {
                                                       782.5,  783.5,  784.5, 790. ,  791. ,  792. , 799. ,  800. ,  801. , 806.5,  807.5,  808.5, 857.5,  858.5,  859.5, 865. ,  866. ,  867. , 874. ,  875. ,  876. , 881.5,  882.5,  883.5,
                                                       917.5,  918.5,  919.5, 925. ,  926. ,  927. , 934. ,  935. ,  936. , 941.5,  942.5,  943.5, 992.5,  993.5,  994.5,1000. , 1001. , 1002. ,1009. , 1010. , 1011. ,1016.5, 1017.5, 1018.5,
                                                      1082.5, 1083.5, 1084.5,1090. , 1091. , 1092. ,1099. , 1100. , 1101. ,1106.5, 1107.5, 1108.5,1157.5, 1158.5, 1159.5,1165. , 1166. , 1167. ,1174. , 1175. , 1176. ,1181.5, 1182.5, 1183.5});
-    NDArrayFactory<double>::linspace(1., input);    
+    input.linspace(1.);    
 
     nd4j::ops::avgpool2d<double> op;
     ResultSet<double>* results = op.execute({&input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 0, dataFormat});
@@ -2339,7 +2339,7 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test5) {
     NDArray<double> x('c', {3, 5});
     NDArray<double> exp('c', {3, 5}, {1.,  2.,  2.89271,  3.50524,  4.00892, 6.,  7.,  7.71389,  7.88678,  8.01784, 11., 12., 12.53507, 12.26833, 12.02676});    
 
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::clipbynorm<double> op;
     auto result = op.execute({&x}, {15.f}, {0});
@@ -2357,7 +2357,7 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test6) {
     NDArray<double> x('c', {3, 5});
     NDArray<double> exp('c', {3, 5}, {1., 2., 3., 4., 5., 4.95434, 5.78006, 6.60578, 7.43151, 8.25723, 5.64288, 6.15587, 6.66886, 7.18185, 7.69484});    
 
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::clipbynorm<double> op;
     auto result = op.execute({&x}, {15.f}, {1});
@@ -2375,7 +2375,7 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test7) {
     NDArray<double> x('c', {3, 5});
     NDArray<double> exp('c', {3, 5}, {0.42597, 0.85194, 1.27791, 1.70389, 2.12986, 2.55583, 2.9818 , 3.40777, 3.83374, 4.25971, 4.68569, 5.11166, 5.53763, 5.9636 , 6.38957});
 
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::clipbynorm<double> op;
     auto result = op.execute({&x}, {15.f}, {0,1});
@@ -2393,7 +2393,7 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test8) {
     NDArray<double> x('c', {3, 5});
     NDArray<double> exp('c', {3, 5}, {0.42597, 0.85194, 1.27791, 1.70389, 2.12986, 2.55583, 2.9818 , 3.40777, 3.83374, 4.25971, 4.68569, 5.11166, 5.53763, 5.9636 , 6.38957});
 
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::clipbynorm<double> op;
     auto result = op.execute({&x}, {15.}, {});
@@ -2444,7 +2444,7 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test11) {
     NDArray<double> exp('c', {2, 3, 4}, {1.,  2.,  3.,  4.,  4.44787,  5.33745,  6.22702,  7.1166 , 6.33046,  7.03384,  7.73723,  8.44061,
                                         13., 14., 15., 16., 15.12277, 16.01235, 16.90192, 17.7915 ,14.77107, 15.47446, 16.17784, 16.88123});
 
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::clipbynorm<double> op;
     auto result = op.execute({&x}, {35.}, {0, 2});
@@ -2572,7 +2572,7 @@ TEST_F(DeclarableOpsTests8, ones_as_test1) {
 TEST_F(DeclarableOpsTests8, NormalizeMoments_SGO_1) {
 
     NDArray<double> data  ('c', {10, 10});
-    NDArrayFactory<double>::linspace(1, data);
+    data.linspace(1);
     
     NDArray<double>* means = data.sum({0});
     NDArray<double>* deviance = data.varianceAlongDimension<simdOps::SummaryStatsVariance<double>>(true, {0}); //('c', {10, 10});

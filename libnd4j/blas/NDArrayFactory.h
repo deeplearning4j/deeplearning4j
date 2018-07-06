@@ -28,10 +28,6 @@ namespace nd4j {
 
         static NDArray<T>* repeat(NDArray<T> *original, std::vector<int>& repeats);
 
-        static NDArray<T>* linspace(T from, T to, Nd4jLong numElements);
-        
-        static void linspace(T from, NDArray<T>& arr, T step = 1.0f);
-
         static NDArray<T>* scalar(T value);
 
         static NDArray<T>* valueOf(std::initializer_list<Nd4jLong> shape, T value, char order = 'c');

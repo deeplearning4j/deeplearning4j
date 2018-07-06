@@ -18,7 +18,7 @@ class ListOperationsTests : public testing::Test {
 TEST_F(ListOperationsTests, BasicTest_Write_1) {
     NDArrayList<double> list(5);
     NDArray<double> x('c', {1, 128});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::write_list<double> op;
 
@@ -151,7 +151,7 @@ TEST_F(ListOperationsTests, BasicTest_Size_1) {
 
 TEST_F(ListOperationsTests, BasicTest_Create_1) {
     NDArray<double> matrix('c', {3, 2});
-    NDArrayFactory<double>::linspace(1, matrix);
+    matrix.linspace(1);
 
     nd4j::ops::create_list<double> op;
 
@@ -308,7 +308,7 @@ TEST_F(ListOperationsTests, BasicTest_Gather_1) {
     }
 
     NDArray<double> indices('c', {1, 10});
-    NDArrayFactory<double>::linspace(9, indices, -1);
+    indices.linspace(9, -1);
 
     nd4j::ops::gather_list<double> op;
     auto result = op.execute(&list, {&indices}, {}, {});
@@ -347,7 +347,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
     delete tadsExp;
 
     auto indices = NDArrayFactory<float>::valueOf({1, 3}, 1.0f, 'c');
-    //NDArrayFactory<float>::linspace(0, *indices);
+    //indices->linspace(0);
 
 
     auto variableSpace = graph.getVariableSpace();
@@ -482,7 +482,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
 
     //auto indices = NDArrayFactory<float>::valueOf({1, 3}, 1.0f, 'c');
     auto indices = new NDArray<float>('c', {1, 3});
-    NDArrayFactory<float>::linspace(0, *indices);
+    indices->linspace(0);
 
 
     auto variableSpace = graph.getVariableSpace();

@@ -54,8 +54,8 @@ TEST_F(RNGTests, Test_Dropout_1) {
     NDArray<float> x0('c', {10, 10});
     NDArray<float> x1('c', {10, 10});
 
-    NDArrayFactory<float>::linspace(1, x0);
-    NDArrayFactory<float>::linspace(1, x1);
+    x0.linspace(1);
+    x1.linspace(1);
 
     float prob[] = {0.5f};
 
@@ -74,8 +74,8 @@ TEST_F(RNGTests, Test_DropoutInverted_1) {
     NDArray<float> x0('c', {10, 10});
     NDArray<float> x1('c', {10, 10});
 
-    NDArrayFactory<float>::linspace(1, x0);
-    NDArrayFactory<float>::linspace(1, x1);
+    x0.linspace(1);
+    x1.linspace(1);
 
     float prob[] = {0.5f};
 

@@ -130,25 +130,7 @@ namespace nd4j {
         return nullptr;
     }
 
-    template<typename T>
-    NDArray<T>* NDArrayFactory<T>::linspace(T from, T to, Nd4jLong numElements) {
-        auto result = new NDArray<T>('c', {1, (int)numElements});
-
-        for (Nd4jLong e = 0; e < numElements; e++) {
-            T step = (T) e / ((T) numElements - (T) 1.0f);
-            result->getBuffer()[e] = (from * ((T) 1.0f - step) + step * to);
-        }
-
-        return result;
-    }
-
-    template<typename T>
-    void NDArrayFactory<T>::linspace(T from, NDArray<T>& arr, T step) {
-        
-        Nd4jLong size = arr.lengthOf();
-        for (Nd4jLong i = 0; i < size; ++i)
-            arr(i) = from + (step * i);
-    }
+    
 
     template<typename T>
     NDArray<T>* NDArrayFactory<T>::createUninitialized(NDArray<T>* other) {

@@ -90,7 +90,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test2) {
 
     NDArray<double> x('c', {N});
     NDArray<double> y('c', {N});
-    NDArrayFactory<double>::linspace(0., y, 1./N);  // [0, 1)
+    y.linspace(0., 1./N);  // [0, 1)
 
 
     Nd4jLong *buffer = new Nd4jLong[N];
@@ -151,7 +151,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {
 
     NDArray<double> x('c', {N});
     NDArray<double> y('c', {N});
-    NDArrayFactory<double>::linspace(-N/2., y);  // [-25000, 25000)
+    y.linspace(-N/2.);  // [-25000, 25000)
 
 
     Nd4jLong *buffer = new Nd4jLong[N];
@@ -179,7 +179,7 @@ TEST_F(DeclarableOpsTests9, tile_bp_test1) {
     NDArray<double> gradO   ('c', {4, 9});
     NDArray<double> gradIExp('c', {2, 3}, {0.78, 0.84, 0.9,1.32, 1.38, 1.44});
 
-    NDArrayFactory<double>::linspace(0.01, gradO, 0.01);
+    gradO.linspace(0.01, 0.01);
 
     nd4j::ops::tile_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &gradO}, {}, {2, 3});
@@ -199,7 +199,7 @@ TEST_F(DeclarableOpsTests9, tile_bp_test2) {
     NDArray<double> gradO   ('c', {2, 9});
     NDArray<double> gradIExp('c', {2, 3}, {0.12, 0.15, 0.18, 0.39, 0.42, 0.45});
 
-    NDArrayFactory<double>::linspace(0.01, gradO, 0.01);
+    gradO.linspace(0.01, 0.01);
 
     nd4j::ops::tile_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &gradO}, {}, {1, 3});
@@ -220,9 +220,9 @@ TEST_F(DeclarableOpsTests9, concat_test1) {
     NDArray<float> exp('c', {2,6,4}, {1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 9.f, 10.f, 11.f, 12.f, 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 1.f,  2.f,  3.f,  4.f,
                                      13.f, 14.f, 15.f, 16.f,17.f, 18.f, 19.f, 20.f,21.f, 22.f, 23.f, 24.f, 9.f, 10.f, 11.f, 12.f,13.f, 14.f, 15.f, 16.f, 5.f,  6.f,  7.f,  8.});
 
-    NDArrayFactory<float>::linspace(1, x0);
-    NDArrayFactory<float>::linspace(1, x1);
-    NDArrayFactory<float>::linspace(1, x2);
+    x0.linspace(1);
+    x1.linspace(1);
+    x2.linspace(1);
 
     nd4j::ops::concat<float> op;
 
@@ -244,9 +244,9 @@ TEST_F(DeclarableOpsTests9, concat_test2) {
     NDArray<float> x2('c', {1,1,1});
     NDArray<float> exp('c', {1,6,1}, {1.f, 2.f, 3.f, 1.f, 2.f, 1.f});
 
-    NDArrayFactory<float>::linspace(1, x0);
-    NDArrayFactory<float>::linspace(1, x1);
-    NDArrayFactory<float>::linspace(1, x2);
+    x0.linspace(1);
+    x1.linspace(1);
+    x2.linspace(1);
 
     nd4j::ops::concat<float> op;
 
@@ -268,9 +268,9 @@ TEST_F(DeclarableOpsTests9, concat_test3) {
     NDArray<float> x2('c', {1});
     NDArray<float> exp('c', {6}, {1.f, 2.f, 3.f, 1.f, 2.f, 1.f});
 
-    NDArrayFactory<float>::linspace(1, x0);
-    NDArrayFactory<float>::linspace(1, x1);
-    NDArrayFactory<float>::linspace(1, x2);
+    x0.linspace(1);
+    x1.linspace(1);
+    x2.linspace(1);
 
     nd4j::ops::concat<float> op;
 
@@ -407,7 +407,7 @@ TEST_F(DeclarableOpsTests9, tile_bp_test3) {
     NDArray<double> gradO   ('c', {2, 3});
     NDArray<double> gradIExp('c', {2, 3}, {0.01, 0.02, 0.03,0.04, 0.05, 0.06});
 
-    NDArrayFactory<double>::linspace(0.01, gradO, 0.01);
+    gradO.linspace(0.01, 0.01);
 
     nd4j::ops::tile_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &gradO}, {}, {1, 1});
@@ -427,7 +427,7 @@ TEST_F(DeclarableOpsTests9, tile_bp_test4) {
     NDArray<double> gradO   ('c', {12});
     NDArray<double> gradIExp('c', {6}, {0.08, 0.1 , 0.12, 0.14, 0.16, 0.18});
 
-    NDArrayFactory<double>::linspace(0.01, gradO, 0.01);
+    gradO.linspace(0.01, 0.01);
 
     nd4j::ops::tile_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &gradO}, {}, {2});
@@ -447,7 +447,7 @@ TEST_F(DeclarableOpsTests9, tile_bp_test5) {
     NDArray<double> gradO   ('c', {1});
     NDArray<double> gradIExp('c', {1}, {0.01});
 
-    NDArrayFactory<double>::linspace(0.01, gradO, 0.01);
+    gradO.linspace(0.01, 0.01);
 
     nd4j::ops::tile_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &gradO}, {}, {1});
@@ -467,7 +467,7 @@ TEST_F(DeclarableOpsTests9, tile_bp_test6) {
     NDArray<double> gradO   ('c', {2, 3, 6});
     NDArray<double> gradIExp('c', {2, 1, 3}, {0.51, 0.57, 0.63, 1.59, 1.65, 1.71});
 
-    NDArrayFactory<double>::linspace(0.01, gradO, 0.01);
+    gradO.linspace(0.01, 0.01);
 
     nd4j::ops::tile_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &gradO}, {}, {1, 3, 2});
@@ -488,8 +488,8 @@ TEST_F(DeclarableOpsTests9, matmul_test1) {
     NDArray<double> y ('c', {4, 3});
     NDArray<double> exp('f', {3, 3}, {35.,  79., 123., 40.,  92., 144., 45., 105., 165.});
 
-    NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.5, y, 0.5);
+    x.linspace(1.);
+    y.linspace(0.5, 0.5);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {});
@@ -510,8 +510,8 @@ TEST_F(DeclarableOpsTests9, matmul_test2) {
     NDArray<double> y ('f', {4, 3});
     NDArray<double> exp('f', {3, 3}, {35., 79., 123.,40., 92., 144.,45.,105., 165.});
 
-    NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.5, y, 0.5);
+    x.linspace(1.);
+    y.linspace(0.5, 0.5);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {});
@@ -531,8 +531,8 @@ TEST_F(DeclarableOpsTests9, matmul_test3) {
     NDArray<double> y ('c', {4, 3});
     NDArray<double> exp('f', {3, 3}, {35., 79., 123.,40., 92., 144.,45.,105., 165.});
 
-    NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.5, y, 0.5);
+    x.linspace(1.);
+    y.linspace(0.5, 0.5);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {});
@@ -553,8 +553,8 @@ TEST_F(DeclarableOpsTests9, matmul_test4) {
     NDArray<double> y ('f', {4, 3});
     NDArray<double> exp('f', {3, 3}, {35., 79., 123.,40., 92., 144.,45.,105., 165.});
 
-    NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.5, y, 0.5);
+    x.linspace(1.);
+    y.linspace(0.5, 0.5);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {});
@@ -575,8 +575,8 @@ TEST_F(DeclarableOpsTests9, matmul_test5) {
     NDArray<double> y ('c', {4, 3});
     NDArray<double> exp('f', {3, 3}, {83.,  94., 105., 94., 107., 120., 105., 120., 135.});
 
-    NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.5, y, 0.5);
+    x.linspace(1.);
+    y.linspace(0.5, 0.5);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {1});
@@ -596,8 +596,8 @@ TEST_F(DeclarableOpsTests9, matmul_test6) {
     NDArray<double> y ('f', {3, 4});
     NDArray<double> exp('f', {3, 3}, {35.,  40.,  45., 79.,  92., 105., 123., 144., 165.});
 
-    NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.5, y, 0.5);
+    x.linspace(1.);
+    y.linspace(0.5, 0.5);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 1});
@@ -619,8 +619,8 @@ TEST_F(DeclarableOpsTests9, matmul_test7) {
                                         7. , 107.8, 323.8, 655. , 1101.4,17.4, 137.4, 372.6, 723. , 1188.6,27.8, 167. , 421.4, 791. , 1275.8,
                                        11. , 131. , 366.2, 716.6, 1182.2,27.8, 167. , 421.4, 791. , 1275.8,44.6, 203. , 476.6, 865.4, 1369.4,});
 
-    NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+    x.linspace(1.);
+    y.linspace(0.1, 0.1);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {0, 1});
@@ -644,8 +644,8 @@ TEST_F(DeclarableOpsTests9, matmul_test8) {
                                           11. , 1763. , 131. , 2459. , 366.2, 3270.2, 716.6, 4196.6,1182.2, 5238.2,  27.8, 1875.8, 167. , 2591. , 421.4, 3421.4, 791. , 4367. ,1275.8, 5427.8,
                                           44.6, 1988.6, 203. , 2723. , 476.6, 3572.6, 865.4, 4537.4,1369.4, 5617.4});
 
-    NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+    x.linspace(1.);
+    y.linspace(0.1, 0.1);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {0, 1});
@@ -669,8 +669,8 @@ TEST_F(DeclarableOpsTests9, matmul_test9) {
                                           24.6, 1848.6, 159. , 2559. , 408.6, 3384.6, 773.4, 4325.4,1253.4, 5381.4,  28.8, 1876.8, 168. , 2592. , 422.4, 3422.4, 792. , 4368. ,1276.8, 5428.8,
                                           33. , 1905. , 177. , 2625. , 436.2, 3460.2, 810.6, 4410.6,1300.2, 5476.2});
 
-    NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+    x.linspace(1.);
+    y.linspace(0.1, 0.1);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 1});
@@ -690,8 +690,8 @@ TEST_F(DeclarableOpsTests9, matmul_test10) {
     NDArray<double> y ('f', {1, 3, 4});
     NDArray<double> exp('f', {1, 3, 3}, {35.,  40.,  45., 79.,  92., 105., 123., 144., 165.});
 
-    NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.5, y, 0.5);
+    x.linspace(1.);
+    y.linspace(0.5, 0.5);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 1});
@@ -711,8 +711,8 @@ TEST_F(DeclarableOpsTests9, matmul_test11) {
     NDArray<double> y ('f', {1, 4});
     NDArray<double> exp('f', {1, 1}, {15});
 
-    NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.5, y, 0.5);
+    x.linspace(1.);
+    y.linspace(0.5, 0.5);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 1});
@@ -732,8 +732,8 @@ TEST_F(DeclarableOpsTests9, matmul_test12) {
     NDArray<double> y ('f', {1, 1, 4});
     NDArray<double> exp('f', {1, 1, 1}, {15});
 
-    NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.5, y, 0.5);
+    x.linspace(1.);
+    y.linspace(0.5, 0.5);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 1});
@@ -753,8 +753,8 @@ TEST_F(DeclarableOpsTests9, matmul_test13) {
     NDArray<double> y ('c', {3, 5});
     NDArray<double> exp('f', {5, 2}, {23. , 26. , 29. , 32. , 35., 50. , 57.5, 65. , 72.5, 80.});
 
-    NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.5, y, 0.5);
+    x.linspace(1.);
+    y.linspace(0.5, 0.5);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {0, 0, 1});
@@ -774,8 +774,8 @@ TEST_F(DeclarableOpsTests9, matmul_test14) {
     NDArray<double> y ('c', {3, 5});
     NDArray<double> exp('f', {5, 2}, {37. , 41.5, 46. , 50.5, 55., 46. , 52. , 58. , 64. , 70.});
 
-    NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.5, y, 0.5);
+    x.linspace(1.);
+    y.linspace(0.5, 0.5);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 0, 1});
@@ -795,8 +795,8 @@ TEST_F(DeclarableOpsTests9, matmul_test15) {
     NDArray<double> y ('c', {3, 5});
     NDArray<double> exp('f', {5, 2}, {37. , 41.5, 46. , 50.5, 55., 46. , 52. , 58. , 64. , 70.});
 
-    NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.5, y, 0.5);
+    x.linspace(1.);
+    y.linspace(0.5, 0.5);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 0, 1});
@@ -819,8 +819,8 @@ TEST_F(DeclarableOpsTests9, matmul_test16) {
                                           20.2, 365.8,139. , 700.6, 27.4, 400. ,159.7, 748.3,  6.4, 305.2,101.8, 616.6, 14.5, 340.3,123.4, 665.2, 22.6, 375.4,145. , 713.8,
                                           30.7, 410.5,166.6, 762.4,  7. , 313. ,106. , 628. , 16. , 349. ,128.5, 677.5, 25. , 385. ,151. , 727. , 34. , 421. ,173.5, 776.5});
 
-    NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+    x.linspace(1.);
+    y.linspace(0.1, 0.1);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 1, 1});
@@ -840,8 +840,8 @@ TEST_F(DeclarableOpsTests9, matmul_test17) {
     NDArray<double> y ('c', {4});
     NDArray<double> exp('f',{3}, {7., 8., 9.});
 
-    NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+    x.linspace(1.);
+    y.linspace(0.1, 0.1);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 0});
@@ -861,8 +861,8 @@ TEST_F(DeclarableOpsTests9, matmul_test18) {
     NDArray<double> y ('c', {4, 3});
     NDArray<double> exp('f',{4}, {1.4, 3.2, 5., 6.8});
 
-    NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+    x.linspace(1.);
+    y.linspace(0.1, 0.1);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {0, 1});
@@ -882,8 +882,8 @@ TEST_F(DeclarableOpsTests9, matmul_test19) {
     NDArray<double> y ('c', {1, 1});
     NDArray<double> exp('f',{1, 1}, {0.2});
 
-    NDArrayFactory<double>::linspace(2., x);
-    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+    x.linspace(2.);
+    y.linspace(0.1, 0.1);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {});
@@ -904,8 +904,8 @@ TEST_F(DeclarableOpsTests9, matmul_test20) {
     NDArray<double> y ('c', {1, 1});
     NDArray<double> exp('f',{1, 1}, {0.2});
 
-    NDArrayFactory<double>::linspace(2., x);
-    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+    x.linspace(2.);
+    y.linspace(0.1, 0.1);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {1,1,1});
@@ -926,8 +926,8 @@ TEST_F(DeclarableOpsTests9, matmul_test21) {
     NDArray<double> y ('c', {1, 1});
     NDArray<double> exp('f',{1}, {0.2});
 
-    NDArrayFactory<double>::linspace(2., x);
-    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+    x.linspace(2.);
+    y.linspace(0.1, 0.1);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {});
@@ -948,8 +948,8 @@ TEST_F(DeclarableOpsTests9, matmul_test22) {
     NDArray<double> y ('c', {1});
     NDArray<double> exp('f',{1}, {0.2});
 
-    NDArrayFactory<double>::linspace(2., x);
-    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+    x.linspace(2.);
+    y.linspace(0.1, 0.1);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {1});
@@ -970,8 +970,8 @@ TEST_F(DeclarableOpsTests9, matmul_test23) {
     NDArray<double> y ('c', {4});
     NDArray<double> exp(3.);
 
-    NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+    x.linspace(1.);
+    y.linspace(0.1, 0.1);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 1});
@@ -1013,9 +1013,9 @@ TEST_F(DeclarableOpsTests9, concat_test10) {
     NDArray<float> exp('c', {2,6,4}, { 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 9.f, 10.f, 11.f, 12.f, 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 1.f,  2.f,  3.f,  4.f,
                                       13.f, 14.f, 15.f, 16.f,17.f, 18.f, 19.f, 20.f,21.f, 22.f, 23.f, 24.f, 9.f, 10.f, 11.f, 12.f,13.f, 14.f, 15.f, 16.f, 5.f,  6.f,  7.f,  8.f});
 
-    NDArrayFactory<float>::linspace(1, x0);
-    NDArrayFactory<float>::linspace(1, x1);
-    NDArrayFactory<float>::linspace(1, x2);
+    x0.linspace(1);
+    x1.linspace(1);
+    x2.linspace(1);
 
     nd4j::ops::concat<float> op;
 
@@ -1039,9 +1039,9 @@ TEST_F(DeclarableOpsTests9, concat_test11) {
     NDArray<float> exp('c', {2,6,4}, { 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 9.f, 10.f, 11.f, 12.f, 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 1.f,  2.f,  3.f,  4.f,
                                       13.f, 14.f, 15.f, 16.f,17.f, 18.f, 19.f, 20.f,21.f, 22.f, 23.f, 24.f, 9.f, 10.f, 11.f, 12.f,13.f, 14.f, 15.f, 16.f, 5.f,  6.f,  7.f,  8.f});
 
-    NDArrayFactory<float>::linspace(1, x0);
-    NDArrayFactory<float>::linspace(1, x1);
-    NDArrayFactory<float>::linspace(1, x2);
+    x0.linspace(1);
+    x1.linspace(1);
+    x2.linspace(1);
 
     nd4j::ops::concat<float> op;
 
@@ -1064,9 +1064,9 @@ TEST_F(DeclarableOpsTests9, concat_test12) {
     NDArray<float> exp('c', {2,6,4}, { 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 9.f, 10.f, 11.f, 12.f, 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 1.f,  2.f,  3.f,  4.f,
                                       13.f, 14.f, 15.f, 16.f,17.f, 18.f, 19.f, 20.f,21.f, 22.f, 23.f, 24.f, 9.f, 10.f, 11.f, 12.f,13.f, 14.f, 15.f, 16.f, 5.f,  6.f,  7.f,  8.f});
 
-    NDArrayFactory<float>::linspace(1, x0);
-    NDArrayFactory<float>::linspace(1, x1);
-    NDArrayFactory<float>::linspace(1, x2);
+    x0.linspace(1);
+    x1.linspace(1);
+    x2.linspace(1);
 
     nd4j::ops::concat<float> op;
 
@@ -1089,9 +1089,9 @@ TEST_F(DeclarableOpsTests9, concat_test13) {
     NDArray<float> exp('f', {2,6,4}, { 1.f, 13.f, 5.f, 17.f, 9.f, 21.f, 1.f,  9.f, 5.f, 13.f, 1.f,  5.f, 2.f, 14.f, 6.f, 18.f,10.f, 22.f, 2.f, 10.f, 6.f, 14.f, 2.f,  6.f,
                                        3.f, 15.f, 7.f, 19.f,11.f, 23.f, 3.f, 11.f, 7.f, 15.f, 3.f,  7.f, 4.f, 16.f, 8.f, 20.f,12.f, 24.f, 4.f, 12.f, 8.f, 16.f, 4.f,  8.f});
 
-    NDArrayFactory<float>::linspace(1, x0);
-    NDArrayFactory<float>::linspace(1, x1);
-    NDArrayFactory<float>::linspace(1, x2);
+    x0.linspace(1);
+    x1.linspace(1);
+    x2.linspace(1);
 
     nd4j::ops::concat<float> op;
 
