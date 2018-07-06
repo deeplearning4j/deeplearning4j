@@ -2721,7 +2721,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         //null character
         if (ordering() == '\u0000') {
             //Shape.setOrder(shapeInfo(), Nd4j.order());
-            throw new IllegalStateException("setOrder() shouldn't ever happen here");
+            setOrder('c');
         }
 
     }
@@ -2735,8 +2735,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         //null character
         if (ordering() == '\u0000') {
-            //Shape.setOrder(shapeInfo(), Nd4j.order());
-            throw new IllegalStateException("setOrder() shouldn't ever happen here");
+            setOrder('c');
         }
 
     }
