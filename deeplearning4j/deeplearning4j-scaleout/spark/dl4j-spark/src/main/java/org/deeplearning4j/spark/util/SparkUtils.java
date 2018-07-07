@@ -387,7 +387,10 @@ public class SparkUtils {
                 //DEBUGGING
                 List<Tuple2<Integer, Integer>> partitionCounts2 =
                         rdd.mapPartitionsWithIndex(new CountPartitionsFunction<T>(), true).collect();
-                log.info("Partition counts: {}", partitionCounts2);
+                List<Tuple2<Integer, Integer>> partitionCounts3 =
+                        pairIndexed.values().mapPartitionsWithIndex(new CountPartitionsFunction<T>(), true).collect();
+                log.info("Partition counts - BEFORE: {}", partitionCounts2);
+                log.info("Partition counts - AFTER: {}", partitionCounts3);
 
                 return pairIndexed.values();
             default:
