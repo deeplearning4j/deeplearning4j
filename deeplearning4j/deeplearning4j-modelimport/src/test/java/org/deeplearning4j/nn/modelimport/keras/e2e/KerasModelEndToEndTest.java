@@ -85,7 +85,7 @@ public class KerasModelEndToEndTest {
     private static final String H5_EXTENSION = ".h5";
     private static final double EPS = 1E-5;
 
-    private static final boolean SKIP_GRAD_CHECKS = false;
+    private static final boolean SKIP_GRAD_CHECKS = true;
 
     @Rule
     public final TemporaryFolder testDir = new TemporaryFolder();
@@ -426,6 +426,20 @@ public class KerasModelEndToEndTest {
     public void importInception() throws Exception {
         ComputationGraph graph = importFunctionalModelH5Test(
                 "modelimport/keras/examples/inception/inception_v3_complete.h5");
+        INDArray input = Nd4j.ones(10, 3, 299, 299);
+        graph.output(input);
+        System.out.println(graph.summary());
+    }
+
+    /**
+     * Inception V4
+     */
+    @Test
+    public void importInceptionV4() throws Exception {
+        int[] inputShape = new int[]{299, 299, 3};
+        ComputationGraph graph = importFunctionalModelH5Test(
+                "modelimport/keras/examples/inception/inceptionv4_keras_imagenet_weightsandconfig.h5",
+                inputShape, false);
         INDArray input = Nd4j.ones(10, 3, 299, 299);
         graph.output(input);
         System.out.println(graph.summary());
