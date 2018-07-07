@@ -25,7 +25,7 @@ namespace nd4j {
                 if (e != dim)
                     dims.emplace_back(e);
 
-            auto tads = NDArrayFactory<T>::allTensorsAlongDimension(input, dims);
+            auto tads = input->allTensorsAlongDimension(dims);
             //nd4j_printf("Tad size: %d\n",tads->size());
             for (int e = 0; e < tads->size(); e++) {
                 //nd4j_printf("Calling assign at index %d\n",e);

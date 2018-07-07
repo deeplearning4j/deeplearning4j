@@ -4,7 +4,6 @@
 //
 
 #include <ops/declarable/generic/helpers/convolutions.h>
-#include <NDArrayFactory.h>
 #include <MmulHelper.h>
 
 namespace nd4j {

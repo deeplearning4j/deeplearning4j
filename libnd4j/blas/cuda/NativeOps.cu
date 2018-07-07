@@ -41,7 +41,6 @@
 // FIXME: we need cuda-specific implementations
 #include <helpers/logger.h>
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 #include <GraphExecutioner.h>
 #include <graph/GraphHolder.h>
 #include <graph/VariablesSet.h>

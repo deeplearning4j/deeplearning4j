@@ -18,7 +18,6 @@
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/DeclarableReductionOp.h>
 #include <ops/declarable/DeclarableCustomOp.h>
-#include <NDArrayFactory.h>
 #include <ops/declarable/CustomOperations.h>
 #include <graph/Context.h>
 #include <ops/declarable/OpRegistrator.h>

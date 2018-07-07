@@ -29,7 +29,7 @@ public:
 
 TEST_F(PlaygroundTests, LambdaTest_1) {
     NDArray<float> array('c', {8192, 1024});
-    NDArrayFactory<float>::linspace(1, array);
+    array.linspace(1);
 
     auto lambda = LAMBDA_F(_x) {
         return _x + 32.12f;
@@ -55,7 +55,7 @@ TEST_F(PlaygroundTests, LambdaTest_1) {
 TEST_F(PlaygroundTests, LambdaTest_2) {
     NDArray<float> array('c', {8192, 1024});
     NDArray<float> row('c', {1, 1024});
-    NDArrayFactory<float>::linspace(1, array);
+    array.linspace(1);
 
     auto lambda = LAMBDA_F(_x) {
         return _x + 32.12f;

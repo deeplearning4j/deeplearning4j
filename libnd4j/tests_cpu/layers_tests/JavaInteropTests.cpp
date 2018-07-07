@@ -126,10 +126,10 @@ TEST_F(JavaInteropTests, TestSconv2d_1) {
     NDArray<float> output('c', {3, 2, 8, 8});
     output.assign(0.0);
 
-    NDArrayFactory<float>::linspace(1, input);
-    NDArrayFactory<float>::linspace(1, weightsD);
-    NDArrayFactory<float>::linspace(1, weightsP);
-    NDArrayFactory<float>::linspace(1, bias);
+    input.linspace(1);
+    weightsD.linspace(1);
+    weightsP.linspace(1);
+    bias.linspace(1);
 
     NDArray<float> expOutput('c', {3, 2, 8, 8});
 
@@ -162,8 +162,8 @@ TEST_F(JavaInteropTests, TestSconv2d_2) {
     NDArray<float> output('c', {3, 3, 8, 8});
     output.assign(0.0);
 
-    NDArrayFactory<float>::linspace(1, input);
-    NDArrayFactory<float>::linspace(1, weightsD);
+    input.linspace(1);
+    weightsD.linspace(1);
 
     NDArray<float> expOutput('c', {3, 3, 8, 8});
 
@@ -215,7 +215,7 @@ TEST_F(JavaInteropTests, TestPooling2d_1) {
 TEST_F(JavaInteropTests, TestMaxPooling2d_1) {
     NDArray<float> input('c', {1, 2, 4, 5});
     NDArray<float> output('c', {1, 2, 4, 5});
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
 
 
     Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer()};
@@ -245,7 +245,7 @@ TEST_F(JavaInteropTests, TestCol2Im_1) {
      */
     NDArray<float> input('c', {1, 2, 2, 2, 4, 5});
     NDArray<float> output('c', {1, 2, 4, 5});
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
 
     Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer()};
     Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo()};
@@ -278,7 +278,7 @@ TEST_F(JavaInteropTests, TestPNorm_1) {
      */
     NDArray<float> input('c', {1, 3, 4, 4});
     NDArray<float> output('c', {1, 3, 3, 3});
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
 
     NativeOps nativeOps;
 
@@ -301,7 +301,7 @@ TEST_F(JavaInteropTests, TestPNorm_1) {
 TEST_F(JavaInteropTests, TestInplace_1) {
     NDArray<float> input('c', {10, 10});
     //NDArray<float> exp('c', {10, 10});
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
 
     NativeOps nativeOps;
 

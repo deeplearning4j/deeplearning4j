@@ -4,7 +4,6 @@
 
 #include "testlayers.h"
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 #include <ops/declarable/LegacyTransformOp.h>
 #include <ops/declarable/LegacyPairwiseTransformOp.h>
 #include <ops/declarable/LegacyScalarOp.h>
@@ -181,7 +180,7 @@ TEST_F(LegacyOpsTests, ReduceTests_2) {
 
 TEST_F(LegacyOpsTests, ReduceTests_3) {
     NDArray<float> x('c', {3, 5});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     NDArray<float> indices('c', {1,1}, {1});
 
 
@@ -201,7 +200,7 @@ TEST_F(LegacyOpsTests, ReduceTests_3) {
 
 TEST_F(LegacyOpsTests, ReduceTests_4) {
     NDArray<float> x('c', {2, 3, 5});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     NDArray<float> indices('c', {1,1}, {1});
 
 
@@ -221,7 +220,7 @@ TEST_F(LegacyOpsTests, ReduceTests_4) {
 
 TEST_F(LegacyOpsTests, IndexReduceTests_1) {
     NDArray<double> x('c', {5, 5});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::LegacyIndexReduceOp<double> op(0);
 
@@ -240,7 +239,7 @@ TEST_F(LegacyOpsTests, IndexReduceTests_1) {
 
 TEST_F(LegacyOpsTests, IndexReduceTests_2) {
     NDArray<double> x('c', {5, 5});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::LegacyIndexReduceOp<double> op(0);
 
@@ -265,14 +264,14 @@ TEST_F(LegacyOpsTests, BroadcastingTests_1) {
     x.assign(0.0f);
 
     NDArray<double> row('c', {1, 5});
-    NDArrayFactory<double>::linspace(1, row);
+    row.linspace(1);
 
     nd4j::ops::LegacyBroadcastOp<double> op(0);
     Nd4jStatus status = op.execute({&x, &row}, {&x}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
-    auto list = NDArrayFactory<double>::allTensorsAlongDimension(&x, {1});
+    auto list = x.allTensorsAlongDimension({1});
 
     for (int e = 0; e < list->size(); e++)
         ASSERT_TRUE(row.equalsTo(list->at(e)));

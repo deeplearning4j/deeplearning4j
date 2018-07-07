@@ -6,7 +6,6 @@
 #include <NDArray.h>
 #include <graph/Variable.h>
 #include <flatbuffers/flatbuffers.h>
-#include <NDArrayFactory.h>
 #include <ops/declarable/headers/broadcastable.h>
 
 using namespace nd4j;

@@ -3,7 +3,7 @@
 //
 
 #include <ops/declarable/helpers/adjust_saturation.h>
-#include <NDArrayFactory.h>
+
 
 namespace nd4j {
 namespace ops {
@@ -33,8 +33,8 @@ namespace helpers {
                 helpers::hsv_to_rgb(h, s, v, o, o + 1, o + 2);
             }
         } else {
-            auto tadsChannelsIn = NDArrayFactory<T>::allTensorsAlongDimension(array, {0});
-            auto tadsChannelsOut = NDArrayFactory<T>::allTensorsAlongDimension(output, {0});
+            auto tadsChannelsIn = array->allTensorsAlongDimension({0});
+            auto tadsChannelsOut = output->allTensorsAlongDimension({0});
 
             auto bufferR = tadsChannelsIn->at(0)->buffer();
             auto bufferG = tadsChannelsIn->at(1)->buffer();
@@ -70,8 +70,8 @@ namespace helpers {
     template <typename T>
     void _adjust_saturation(NDArray<T> *array, NDArray<T> *output, T delta, bool isNHWC) {
         if (array->rankOf() == 4) {
-            auto tadsIn = NDArrayFactory<T>::allTensorsAlongDimension(array, {0});
-            auto tadsOut = NDArrayFactory<T>::allTensorsAlongDimension(output, {0});
+            auto tadsIn = array->allTensorsAlongDimension({0});
+            auto tadsOut = output->allTensorsAlongDimension({0});
 
 #pragma omp parallel for
             for (int e = 0; e < tadsIn->size(); e++)

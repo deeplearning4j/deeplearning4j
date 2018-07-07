@@ -4,7 +4,7 @@
 
 #include <ops/declarable/helpers/householder.h>
 #include <ops/declarable/helpers/biDiagonalUp.h>
-#include <NDArrayFactory.h>
+
 
 namespace nd4j {
 namespace ops {

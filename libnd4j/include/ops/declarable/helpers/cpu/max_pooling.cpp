@@ -5,7 +5,6 @@
 #include <ops/declarable/helpers/max_pooling.h>
 #include <ops/declarable/generic/helpers/convolutions.h>
 
-#include <NDArrayFactory.h>
 
 namespace nd4j {
 namespace ops {

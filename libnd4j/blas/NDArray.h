@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <array/ArrayOptions.h>
 #include <array/ArrayType.h>
+#include <array/ResultSet.h>
 
 
 namespace nd4j {
@@ -74,9 +75,18 @@ namespace nd4j {
         DataType _dataType = DataType_FLOAT;
 
         std::string toStringValue(T value);
+    
     public:
 
         static NDArray<T>* createEmpty(nd4j::memory::Workspace* workspace = nullptr);
+
+        static NDArray<T>* valueOf(const std::initializer_list<Nd4jLong>& shape, const T value, const char order = 'c');
+
+        static NDArray<T>* valueOf(const std::vector<Nd4jLong>& shape, const T value, const char order = 'c');
+        
+        static NDArray<T>* linspace(const T from, const T to, const Nd4jLong numElements);
+
+        static NDArray<T>* scalar(const T value);
 
         
         /**
@@ -959,6 +969,21 @@ namespace nd4j {
         *  calculates the trace of an array, that is sum of elements on main diagonal = sum array[i, i, i, ...]
         */
         T getTrace() const;
+
+        /**
+        *  fill array linearly as follows: arr[0] = from, arr[1] = from+step, arr[2] = from+2*step, ...
+        */
+        void linspace(const T from, const T step = 1.0f);
+
+        NDArray<T>* createUninitialized() const;
+
+        ResultSet<T>* multipleTensorsAlongDimension(const std::vector<int>& indices, const std::vector<int>& dimensions) const;
+
+        ResultSet<T>* allTensorsAlongDimension(const std::vector<int>& dimensions) const;
+
+        ResultSet<T>* allTensorsAlongDimension(const std::initializer_list<int>& dimensions) const;
+
+        ResultSet<T>* allExamples()const ;        
         
         /**
         *  default destructor

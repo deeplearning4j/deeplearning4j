@@ -20,9 +20,9 @@ TEST_F(BroadcastableOpsTests, Test_Add_1) {
     NDArray<float> x('c', {5, 5});
     NDArray<float> y('c', {1, 5});
     NDArray<float> exp('c', {5, 5});
-    NDArrayFactory<float>::linspace(1, x);
-    NDArrayFactory<float>::linspace(1, y);
-    NDArrayFactory<float>::linspace(1, exp);
+    x.linspace(1);
+    y.linspace(1);
+    exp.linspace(1);
 
     exp.template applyBroadcast<simdOps::Add<float>>({1}, &y);
 
@@ -45,9 +45,9 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_1) {
     NDArray<float> x('c', {5, 5});
     NDArray<float> y('c', {1, 5});
     NDArray<float> exp('c', {5, 5});
-    NDArrayFactory<float>::linspace(1, x);
-    NDArrayFactory<float>::linspace(1, y);
-    NDArrayFactory<float>::linspace(1, exp);
+    x.linspace(1);
+    y.linspace(1);
+    exp.linspace(1);
 
     exp.template applyBroadcast<simdOps::Multiply<float>>({1}, &y);
 
@@ -70,9 +70,9 @@ TEST_F(BroadcastableOpsTests, Test_SquaredSubtract_1) {
     NDArray<float> x('c', {5, 5});
     NDArray<float> y('c', {1, 5});
     NDArray<float> exp('c', {5, 5});
-    NDArrayFactory<float>::linspace(1, x);
-    NDArrayFactory<float>::linspace(1, y);
-    NDArrayFactory<float>::linspace(1, exp);
+    x.linspace(1);
+    y.linspace(1);
+    exp.linspace(1);
 
     exp.template applyBroadcast<simdOps::SquaredSubtract<float>>({1}, &y);
 

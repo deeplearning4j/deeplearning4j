@@ -6,7 +6,6 @@
 #define LIBND4J_BROADCAST_HELPER_H
 
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 #include <helpers/ShapeUtils.h>
 
 namespace nd4j {
@@ -27,7 +26,7 @@ namespace nd4j {
                         return z;
                     } else {
                         auto v = y->getShapeAsVector();
-                        auto tZ = NDArrayFactory<T>::valueOf(v, x->getScalar(0), y->ordering());
+                        auto tZ = NDArray<T>::valueOf(v, x->getScalar(0), y->ordering());
                         tZ->template applyPairwiseTransform<OpName>(y, extraArgs);
                         return tZ;
                     }

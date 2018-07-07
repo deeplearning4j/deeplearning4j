@@ -3,7 +3,6 @@
 //
 
 #include <ops/declarable/helpers/roll.h>
-#include <NDArrayFactory.h>
 
 namespace nd4j {
 namespace ops {
@@ -60,8 +59,8 @@ namespace helpers {
         NDArray<T>* source = input;
         for (int axe: axes) {
             if (axe == source->rankOf() - 1) {// last dimension
-                std::unique_ptr<ResultSet<T>> listOfTensors(NDArrayFactory<T>::allTensorsAlongDimension(source, {axe}));
-                std::unique_ptr<ResultSet<T>> listOfOutTensors(NDArrayFactory<T>::allTensorsAlongDimension(output, {axe}));
+                std::unique_ptr<ResultSet<T>> listOfTensors(source->allTensorsAlongDimension({axe}));
+                std::unique_ptr<ResultSet<T>> listOfOutTensors(output->allTensorsAlongDimension({axe}));
                 int fullLen = listOfTensors->size();
                 int theShift = shift;
                 if (theShift > 0) {
@@ -79,8 +78,8 @@ namespace helpers {
                 for (int i = 0; i < dims.size(); ++i)
                     dims[i] = axe + 1 + i;
 
-                std::unique_ptr<ResultSet<T>> listOfTensors(NDArrayFactory<T>::allTensorsAlongDimension(source, {dims}));
-                std::unique_ptr<ResultSet<T>> listOfOutTensors(NDArrayFactory<T>::allTensorsAlongDimension(output, {dims}));
+                std::unique_ptr<ResultSet<T>> listOfTensors(source->allTensorsAlongDimension({dims}));
+                std::unique_ptr<ResultSet<T>> listOfOutTensors(output->allTensorsAlongDimension({dims}));
             
                 int fullLen = listOfTensors->size();
                 int sizeAt = input->sizeAt(axe);
