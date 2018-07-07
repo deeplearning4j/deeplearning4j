@@ -89,7 +89,7 @@ if(APPLE)
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static-libgcc -static-libstdc++")
     #SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static")
 elseif(MSYS)
-    #SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static")
 endif()
 
 
