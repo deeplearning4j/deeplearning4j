@@ -56,10 +56,6 @@ public class CycleSchedule implements ISchedule {
                          @JsonProperty("cycleLength") int cycleLength,
                          @JsonProperty("annealingLength") int annealingLength,
                          @JsonProperty("annealingDecay") double annealingDecay){
-        if(initialLearningRate > maxLearningRate){
-            throw new IllegalArgumentException("initialLearningRate less than maxLearningRate not supported!");
-        }
-
         this.scheduleType = scheduleType;
         this.initialLearningRate = initialLearningRate;
         this.maxLearningRate = maxLearningRate;

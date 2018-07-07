@@ -111,6 +111,12 @@ public class TestSchedules {
         assertEquals(1.5, schedule.valueAt(45, 0), 1e-6);
         assertEquals(0.15, schedule.valueAt(90, 0), 1e-6);
         assertEquals(0.015, schedule.valueAt(91, 0), 1e-6);
+
+        schedule = new CycleSchedule(ScheduleType.ITERATION, 0.95, 0.85, 100, 10, 1);
+        assertEquals(0.95, schedule.valueAt(0, 0), 1e-6);
+        assertEquals(0.85, schedule.valueAt(45, 0), 1e-6);
+        assertEquals(0.95, schedule.valueAt(90, 0), 1e-6);
+        assertEquals(0.95, schedule.valueAt(91, 0), 1e-6);
     }
 
     private static double calcExponentialDecay(double lr, double decayRate, double iteration) {
