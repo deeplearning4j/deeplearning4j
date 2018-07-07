@@ -7,17 +7,6 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
 
 
-include_directories(blas/ include/ include/helpers include/loops include/graph include/ops include/types include/array include/cnpy include/memory include/indexing)
-add_subdirectory(blas)
-
-option(BUILD_TESTS "Build tests" OFF)
-if(BUILD_TESTS)
-  # tests are always compiled with all ops included
-  set(LIBND4J_ALL_OPS true)
-  set(LIBND4J_BUILD_MINIFIER true)
-  add_subdirectory(tests_cpu)
-endif()
-
 # -fsanitize=address
 # -fsanitize=leak
 if (APPLE)
@@ -29,6 +18,17 @@ elseif(WIN32)
 else()
     set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D_RELEASE=true")
     set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -fsanitize=address")
+endif()
+
+include_directories(blas/ include/ include/helpers include/loops include/graph include/ops include/types include/array include/cnpy include/memory include/indexing)
+add_subdirectory(blas)
+
+option(BUILD_TESTS "Build tests" OFF)
+if(BUILD_TESTS)
+    # tests are always compiled with all ops included
+    set(LIBND4J_ALL_OPS true)
+    set(LIBND4J_BUILD_MINIFIER true)
+    add_subdirectory(tests_cpu)
 endif()
 
 if(NATIVE)
