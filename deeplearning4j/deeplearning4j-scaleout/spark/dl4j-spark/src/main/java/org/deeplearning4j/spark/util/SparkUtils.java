@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -42,6 +43,7 @@ import java.util.*;
  *
  * @author Alex Black
  */
+@Slf4j
 public class SparkUtils {
 
     private static final String KRYO_EXCEPTION_MSG = "Kryo serialization detected without an appropriate registrator "
@@ -370,6 +372,7 @@ public class SparkUtils {
                 }
 
                 if (initialPartitions == numPartitions && allCorrectSize) {
+                    log.info("Did not repartition - all correct size: initial={}, numPartitions={}", initialPartitions, numPartitions);
                     //Don't need to do any repartitioning here - already in the format we want
                     return rdd;
                 }
@@ -380,6 +383,11 @@ public class SparkUtils {
                 int remainder = (totalObjects - numPartitions * objectsPerPartition) % numPartitions;
                 pairIndexed = pairIndexed
                                 .partitionBy(new BalancedPartitioner(numPartitions, objectsPerPartition, remainder));
+
+                //DEBUGGING
+                List<Tuple2<Integer, Integer>> partitionCounts2 =
+                        rdd.mapPartitionsWithIndex(new CountPartitionsFunction<T>(), true).collect();
+                log.info("Partition counts: {}", partitionCounts2);
 
                 return pairIndexed.values();
             default:
