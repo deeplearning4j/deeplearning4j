@@ -24,6 +24,8 @@ namespace nd4j {
                 int stop = INT_ARG(1);
                 int step = INT_ARG(2);
 
+                REQUIRE_TRUE(step != 0, 0, "Range: step shouldn't be zero");
+
                 int cnt = 0;
                 auto e = static_cast<T>(start);
                 if (start > stop) {
@@ -43,6 +45,8 @@ namespace nd4j {
                 T start = T_ARG(0);
                 T stop = T_ARG(1);
                 T step = T_ARG(2);
+
+                REQUIRE_TRUE(step != static_cast<T>(0.0f), 0, "Range: step shouldn't be zero");
 
                 int cnt = 0;
                 auto e = start;
@@ -69,6 +73,8 @@ namespace nd4j {
                 T start = arr0->getScalar(0);
                 T stop = arr1->getScalar(0);
                 T step = arr2->getScalar(0);
+
+                REQUIRE_TRUE(step != static_cast<T>(0.0f), 0, "Range: step shouldn't be zero");
 
                 auto e = start;
                 if (start > stop) {
@@ -104,6 +110,7 @@ namespace nd4j {
                 auto step = INT_ARG(2);
 
                 REQUIRE_TRUE(stop != start, 0, "Range: stop should be larger then start");
+                REQUIRE_TRUE(step != 0, 0, "Range: step shouldn't be zero");
 
                 auto e = static_cast<T>(start);
                 if (start > stop) {
@@ -123,6 +130,7 @@ namespace nd4j {
                 T step = T_ARG(2);
 
                 REQUIRE_TRUE(stop != start, 0, "Range: stop should be larger then start");
+                REQUIRE_TRUE(step != static_cast<T>(0.0f), 0, "Range: step shouldn't be zero");
 
                 auto e = start;
                 if (start > stop) {
@@ -137,7 +145,6 @@ namespace nd4j {
                     }
                 }
             } else {
-                // FIXME:if that's runtime evaluation - we'll just pass some vector. 
                 REQUIRE_TRUE(block.width() == 3, 0, "Runtime range should have 3 arrays as input, but got %i instead", block.width());
 
                 auto arr0 = INPUT_VARIABLE(0);
@@ -149,6 +156,7 @@ namespace nd4j {
                 T step = arr2->getScalar(0);
 
                 REQUIRE_TRUE(stop != start, 0, "Range: stop should be larger then start");
+                REQUIRE_TRUE(step != static_cast<T>(0.0f), 0, "Range: step shouldn't be zero");
 
                 auto e = start;
                 if (start > stop) {

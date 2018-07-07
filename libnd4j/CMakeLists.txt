@@ -6,6 +6,10 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 #ensure we create lib files
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
 
+
+include_directories(blas/ include/ include/helpers include/loops include/graph include/ops include/types include/array include/cnpy include/memory include/indexing)
+add_subdirectory(blas)
+
 option(BUILD_TESTS "Build tests" OFF)
 if(BUILD_TESTS)
   # tests are always compiled with all ops included
@@ -21,7 +25,7 @@ if (APPLE)
     set(CMAKE_CXX_FLAGS_DEBUG  " -O0 -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D__APPLE_OS__=true")
 elseif(WIN32)
     set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D_RELEASE=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  " -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
 else()
     set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D_RELEASE=true")
     set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -fsanitize=address")
@@ -34,17 +38,6 @@ if(NATIVE)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
     ENDIF()
 endif()
-
-
-if (NOT DEFINED ENV{CLION_IDE})
-    message("NOT CLION")
-    include_directories(blas/ include/ include/helpers include/loops include/graph include/ops include/types include/array include/cnpy)
-    add_subdirectory(blas)
-endif ()
-
-if ($ENV{CLION_IDE})
-    add_subdirectory(tests_cpu)
-endif ()
 
 set (CMAKE_INSTALL_PREFIX $ENV{ND4J_HOME}/nd4j-native-parent/nd4j-native/src/main/resources)
 
