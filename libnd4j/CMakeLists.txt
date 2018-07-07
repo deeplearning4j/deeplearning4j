@@ -23,7 +23,6 @@ endif()
 include_directories(blas/ include/ include/helpers include/loops include/graph include/ops include/types include/array include/cnpy include/memory include/indexing)
 add_subdirectory(blas)
 
-option(BUILD_TESTS "Build tests" OFF)
 if(BUILD_TESTS)
     # tests are always compiled with all ops included
     set(LIBND4J_ALL_OPS true)
