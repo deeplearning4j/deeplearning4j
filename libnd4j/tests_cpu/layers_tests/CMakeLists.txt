@@ -23,22 +23,22 @@ endif()
 
 # -fsanitize=address
 # -fsanitize=leak
-if (APPLE)
-    set(CMAKE_CXX_FLAGS  " -O0 -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D__APPLE_OS__=true")
-elseif(WIN32)    
-    set(CMAKE_CXX_FLAGS  " -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
-else()
-    if ("${_RELEASE}")
-        set(CMAKE_CXX_FLAGS  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
-        if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
-            set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -mcpu=native")
-        else()
-            set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
-        endif()
-    else()
-        set(CMAKE_CXX_FLAGS  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -fsanitize=address")
-    endif()
-endif()
+#if (APPLE)
+#    set(CMAKE_CXX_FLAGS  " -O0 -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D__APPLE_OS__=true")
+#elseif(WIN32)
+#    set(CMAKE_CXX_FLAGS  " -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+#else()
+#    if ("${_RELEASE}")
+#        set(CMAKE_CXX_FLAGS  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+#        if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
+#            set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -mcpu=native")
+#        else()
+#            set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
+#        endif()
+#    else()
+#        set(CMAKE_CXX_FLAGS  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -fsanitize=address")
+#    endif()
+#endif()
 
 # TODO: get rid of this once problem confirmed solved
 #if (APPLE)
@@ -50,21 +50,21 @@ endif()
 #endif()
 
 # tests are always compiled with all ops included
-SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true")
+#SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true")
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+#if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+#    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
+#elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
     # using Intel C++
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -fp-model fast")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+#    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -fp-model fast")
+#elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # using Visual Studio C++
 
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+#elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     # using GCC
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
-endif()
+#    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
+#endif()
 
 
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
