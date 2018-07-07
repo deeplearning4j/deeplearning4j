@@ -25,7 +25,9 @@ public class TestSchedules {
                 new MapSchedule.Builder(ScheduleType.ITERATION).add(0, 1.0).add(10,0.5).build(),
                 new PolySchedule(ScheduleType.ITERATION, 1.0, 2, 100),
                 new SigmoidSchedule(ScheduleType.ITERATION, 1.0, 0.5, 10),
-                new StepSchedule(ScheduleType.ITERATION, 1.0, 0.9, 100)};
+                new StepSchedule(ScheduleType.ITERATION, 1.0, 0.9, 100),
+                new CycleSchedule(ScheduleType.ITERATION, 1.5, 100)
+        };
 
 
         for(ISchedule s : schedules){
@@ -101,6 +103,14 @@ public class TestSchedules {
                 assertEquals(0.1, schedule.valueAt(i, 0), 1e-6);
             }
         }
+    }
+    @Test
+    public void testCycleSchedule(){
+        ISchedule schedule = new CycleSchedule(ScheduleType.ITERATION, 1.5, 100);
+        assertEquals(0.15, schedule.valueAt(0, 0), 1e-6);
+        assertEquals(1.5, schedule.valueAt(45, 0), 1e-6);
+        assertEquals(0.15, schedule.valueAt(90, 0), 1e-6);
+        assertEquals(0.015, schedule.valueAt(91, 0), 1e-6);
     }
 
     private static double calcExponentialDecay(double lr, double decayRate, double iteration) {
