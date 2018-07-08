@@ -185,9 +185,9 @@ public class TensorflowConversion {
         switch(tensorflowType) {
             case DT_DOUBLE: return DataBuffer.Type.DOUBLE;
             case DT_FLOAT: return DataBuffer.Type.FLOAT;
-            case DT_INT8: return DataBuffer.Type.INT;
-            case DT_INT16: return DataBuffer.Type.LONG;
-            default: throw new IllegalArgumentException("Illlegal type " + tensorflowType);
+            case DT_INT32: return DataBuffer.Type.LONG;
+            case DT_INT64: return DataBuffer.Type.LONG;
+            default: throw new IllegalArgumentException("Illegal type " + tensorflowType);
         }
     }
 
