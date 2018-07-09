@@ -595,3 +595,60 @@ TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
     delete ressX;
     delete ress;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, Test_AlphaDropout_01) {
+    NDArray<float> x0('c', {10, 10});
+    NDArray<float> x1('c', {10, 10});
+
+    NDArrayFactory<float>::linspace(1, x0);
+//    NDArrayFactory<float>::linspace(1, x1);
+    NativeOps nativeOps;
+
+    Nd4jLong* _bufferA = new Nd4jLong[100000];
+    long _seed = 119L;
+    auto _rngA = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
+
+    float prob[] = {0.5f, 0.5f, 1.5f, 1.6f};
+    
+    x0.template applyRandom<randomOps::AlphaDropOut<float>>(_rngA, nullptr, &x0, prob);
+//    x1.template applyRandom<randomOps::DropOut<float>>(_rngB, nullptr, &x1, prob);
+    x0.printIndexedBuffer("Result1Alpha");
+//    ASSERT_TRUE(x0.equalsTo(&x1));
+
+    // this check is required to ensure we're calling wrong signature
+//    ASSERT_FALSE(x0.equalsTo(nexp0));
+//    ASSERT_FALSE(x0.equalsTo(nexp1));
+//    ASSERT_FALSE(x0.equalsTo(nexp2));
+    nativeOps.destroyRandom(_rngA);
+    delete [] _bufferA;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, Test_AlphaDropout_02) {
+    NDArray<float> x0('c', {10, 10});
+//    NDArray<float> x1('c', {10, 10});
+
+    NDArrayFactory<float>::linspace(1, x0);
+//    NDArrayFactory<float>::linspace(1, x1);
+    NativeOps nativeOps;
+
+    Nd4jLong* _bufferA = new Nd4jLong[100000];
+    long _seed = 119L;
+    auto _rngA = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
+
+    float prob[] = {0.5f, 1.0f, 0.f, 0.f};
+    
+    x0.template applyRandom<randomOps::AlphaDropOut<float>>(_rngA, nullptr, &x0, prob);
+//    x1.template applyRandom<randomOps::DropOut<float>>(_rngB, nullptr, &x1, prob);
+    x0.printIndexedBuffer("Result1Alpha");
+//    ASSERT_TRUE(x0.equalsTo(&x1));
+
+    // this check is required to ensure we're calling wrong signature
+//    ASSERT_FALSE(x0.equalsTo(nexp0));
+//    ASSERT_FALSE(x0.equalsTo(nexp1));
+//    ASSERT_FALSE(x0.equalsTo(nexp2));
+    nativeOps.destroyRandom(_rngA);
+    delete [] _bufferA;
+}
+
