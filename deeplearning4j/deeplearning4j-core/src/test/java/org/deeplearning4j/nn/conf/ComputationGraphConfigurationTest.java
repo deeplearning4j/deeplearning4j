@@ -238,6 +238,28 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
     }
 
     @Test
+    public void testAllowDisconnectedLayers() {
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
+                .addLayer("bidirectional",
+                        new Bidirectional(new LSTM.Builder().activation(Activation.TANH).nOut(10).build()),
+                        "in")
+                .addLayer("out", new RnnOutputLayer.Builder().nOut(6)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX)
+                        .build(), "bidirectional")
+                .addLayer("disconnected_layer",
+                        new Bidirectional(new LSTM.Builder().activation(Activation.TANH).nOut(10).build()),
+                        "in")
+                .setOutputs("out")
+                .setInputTypes(new InputType.InputTypeRecurrent(10, 12))
+                .allowDisconnected(true)
+                .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+    }
+
+        @Test
     public void testBidirectionalGraphSummary() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
                 .addLayer("bidirectional",
@@ -254,7 +276,6 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
         graph.summary();
-
     }
 
     @AllArgsConstructor

@@ -311,6 +311,9 @@ public class KerasModel {
         NeuralNetConfiguration.Builder modelBuilder = new NeuralNetConfiguration.Builder();
 
         ComputationGraphConfiguration.GraphBuilder graphBuilder = modelBuilder.graphBuilder();
+        // NOTE: normally this is disallowed in DL4J. However, in Keras you can create disconnected graph vertices.
+        // The responsibility for doing this correctly is that of the Keras user.
+        graphBuilder.allowDisconnected(true);
 
         /* Build String array of input layer names, add to ComputationGraph. */
         String[] inputLayerNameArray = new String[this.inputLayerNames.size()];
