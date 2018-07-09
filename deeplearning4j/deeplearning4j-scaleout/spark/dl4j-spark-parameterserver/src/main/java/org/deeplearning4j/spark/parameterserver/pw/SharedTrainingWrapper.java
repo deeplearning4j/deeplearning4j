@@ -21,6 +21,8 @@ import org.deeplearning4j.spark.parameterserver.networking.messages.SilentIntrod
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingResult;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingWorker;
 import org.deeplearning4j.spark.parameterserver.util.BlockingObserver;
+import org.deeplearning4j.spark.parameterserver.util.CountingIterator;
+import org.deeplearning4j.spark.util.SparkUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -34,10 +36,12 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
 import org.nd4j.parameterserver.distributed.util.NetworkOrganizer;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class maintains ParallelWrapper instance in Spark environment, and provides primitives for inter-executor
@@ -58,6 +62,7 @@ public class SharedTrainingWrapper {
 
     protected AtomicBoolean isFirst = new AtomicBoolean(false);
 
+    protected ThreadLocal<AtomicInteger> iteratorDataSetCount = new ThreadLocal<>();    //Using AtomicInteger because it's mutable, not because it's atomic
     protected ThreadLocal<BlockingObserver> observer = new ThreadLocal<>();
     protected EncodedGradientsAccumulator accumulator;
     protected Model originalModel;
@@ -87,11 +92,14 @@ public class SharedTrainingWrapper {
      * @param iterator
      */
     public void attachDS(Iterator<DataSet> iterator) {
+        if(iteratorDataSetCount.get() == null)
+            iteratorDataSetCount.set(new AtomicInteger(0));
+        AtomicInteger count = iteratorDataSetCount.get();
 
         log.info("Attaching thread...");
 
         // we're creating our Observable wrapper
-        VirtualIterator<DataSet> wrapped = new VirtualIterator<>(iterator);
+        VirtualIterator<DataSet> wrapped = new VirtualIterator<>(new CountingIterator<>(iterator, count));
 
         // and creating Observer which will be used to monitor progress within iterator
         BlockingObserver obs = new BlockingObserver();
@@ -110,10 +118,13 @@ public class SharedTrainingWrapper {
      * @param iterator
      */
     public void attachMDS(Iterator<MultiDataSet> iterator) {
+        if(iteratorDataSetCount.get() == null)
+            iteratorDataSetCount.set(new AtomicInteger(0));
+        AtomicInteger count = iteratorDataSetCount.get();
         log.info("Attaching thread...");
 
         // we're creating our Observable wrapper
-        VirtualIterator<MultiDataSet> wrapped = new VirtualIterator<>(iterator);
+        VirtualIterator<MultiDataSet> wrapped = new VirtualIterator<>(new CountingIterator<>(iterator, count));
 
         // and creating Observer which will be used to monitor progress within iterator
         BlockingObserver obs = new BlockingObserver();
@@ -341,7 +352,9 @@ public class SharedTrainingWrapper {
             // FIXME: fill stats here
             return SharedTrainingResult.builder().aggregationsCount(1).scoreSum(originalModel.score())
                             .updaterStateArray(updaterState).listenerMetaData(new ArrayList<>())
-                            .listenerStaticInfo(new ArrayList<>()).listenerUpdates(new ArrayList<>()).build();
+                            .listenerStaticInfo(new ArrayList<>()).listenerUpdates(new ArrayList<>())
+                            .minibatchesPerExecutor(Collections.singletonMap(SparkUtils.getSparkExecutorId(), iteratorDataSetCount.get().get()))
+                    .build();
         } else {
             // blocking call right here, all non-master threads will be blocked here
             try {
@@ -351,7 +364,7 @@ public class SharedTrainingWrapper {
                 log.info("Feeder thread done...");
 
                 //  nothing to do here, just give away empty result
-                return new SharedTrainingResult();
+                return SharedTrainingResult.builder().minibatchesPerExecutor(Collections.singletonMap(SparkUtils.getSparkExecutorId(), iteratorDataSetCount.get().get())).build();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 // FIXME: we don't really need to throw it again, it's here only for debugging purposes

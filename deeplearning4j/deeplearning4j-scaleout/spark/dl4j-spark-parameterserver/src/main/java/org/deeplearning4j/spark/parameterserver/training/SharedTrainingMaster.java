@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.parameterserver.training;
 
+import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -54,6 +55,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Data
 public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResult, SharedTrainingWorker>
                 implements TrainingMaster<SharedTrainingResult, SharedTrainingWorker> {
     protected List<TrainingHook> trainingHooks;
@@ -68,6 +70,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     protected boolean collectTrainingStats;
     protected int rddDataSetNumExamples;
     protected long debugLongerIterations = 0L;
+    protected boolean logMinibatchesPerWorker = true;
 
     // TODO: this option should be abstracted, if we decide to generalize this trainingmaster
     protected double threshold;
@@ -692,6 +695,18 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             Collection<Persistable> updates = finalResult.getListenerUpdates();
             if (updates != null && !updates.isEmpty()) {
                 statsStorage.putUpdate(updates);
+            }
+        }
+
+        if (logMinibatchesPerWorker){
+            if(finalResult.getMinibatchesPerExecutor() != null){
+                List<String> l = new ArrayList<>(finalResult.getMinibatchesPerExecutor().keySet());
+                Collections.sort(l);
+                Map<String,Integer> linkedMap = new LinkedHashMap<>();
+                for(String s : l){
+                    linkedMap.put(s, finalResult.getMinibatchesPerExecutor().get(s));
+                }
+                log.info("Number of minibatches processed per JVM/executor: {}", linkedMap);
             }
         }
 

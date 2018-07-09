@@ -27,6 +27,7 @@ import org.deeplearning4j.spark.impl.common.repartition.BalancedPartitioner;
 import org.deeplearning4j.spark.impl.common.repartition.EqualPartitioner;
 import org.deeplearning4j.spark.impl.common.repartition.HashingBalancedPartitioner;
 import org.deeplearning4j.spark.impl.common.repartition.MapTupleToPairFlatMap;
+import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -53,6 +54,8 @@ public class SparkUtils {
                     + " serialization issues (NullPointerException) with off-heap data in INDArrays.\n"
                     + "Use nd4j-kryo_2.10 or _2.11 artifact, with sparkConf.set(\"spark.kryo.registrator\", \"org.nd4j.Nd4jRegistrator\");\n"
                     + "See https://deeplearning4j.org/spark#kryo for more details";
+
+    private static String sparkExecutorId;
 
     private SparkUtils() {}
 
@@ -622,5 +625,38 @@ public class SparkUtils {
 
         //Step 3: Recombine
         return singleExampleDataSets.values().mapPartitions(new BatchDataSetsFunction(newBatchSize));
+    }
+
+    /**
+     * Get the Spark executor ID<br>
+     * The ID is parsed from the JVM launch args. If that is not specified (or can't be obtained) then the value
+     * from {@link UIDProvider#getJVMUID()} is returned
+     * @return
+     */
+    public static String getSparkExecutorId(){
+        if(sparkExecutorId == null)
+            return sparkExecutorId;
+
+        synchronized (SparkUtils.class){
+            //re-check, in case some other thread set it while waiting for lock
+            if(sparkExecutorId == null)
+                return sparkExecutorId;
+
+            String s = System.getProperty("sun.java.command");
+            if(s == null || s.isEmpty() || !s.contains("executor-id")){
+                sparkExecutorId = UIDProvider.getJVMUID();
+                return sparkExecutorId;
+            }
+
+            int idx = s.indexOf("executor-id");
+            String sub = s.substring(idx);
+            String[] split = sub.split(" ");
+            if(split.length < 2){
+                sparkExecutorId = UIDProvider.getJVMUID();
+                return sparkExecutorId;
+            }
+            sparkExecutorId = split[1];
+            return sparkExecutorId;
+        }
     }
 }
