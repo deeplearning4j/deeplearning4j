@@ -13,6 +13,14 @@ import scala.Tuple2;
 import java.util.List;
 import java.util.Random;
 
+/**
+ * Equal repartitioner. Splits the data into numExecutors equal sized partitions.<br>
+ * Note that if the number of objects isn't an exact multiple of the number of executors, the "remainder"
+ * are randomly allocated to one partition without replacement (i.e., the largest partitions will have exactly 1
+ * more object than the smallest partitions)
+ *
+ * @author Alex Black
+ */
 @Slf4j
 public class EqualRepartitioner implements Repartitioner {
     @Override
@@ -53,7 +61,6 @@ public class EqualRepartitioner implements Repartitioner {
         }
 
         if (initialPartitions == numPartitions && !repartitionRequired) {
-            //log.info("Did not repartition - all correct size: initial={}, numPartitions={}", initialPartitions, numExecutors);
             //Don't need to do any repartitioning here - already in the format we want
             return rdd;
         }
@@ -81,14 +88,6 @@ public class EqualRepartitioner implements Repartitioner {
 
         int partitionSizeExRemainder = totalObjects / numPartitions;
         pairIndexed = pairIndexed.partitionBy(new EqualPartitioner(numPartitions, partitionSizeExRemainder, remainderPartitions));
-
-//        //DEBUGGING
-//        List<Tuple2<Integer, Integer>> partitionCounts2 =
-//                rdd.mapPartitionsWithIndex(new CountPartitionsFunction<T>(), true).collect();
-//        List<Tuple2<Integer, Integer>> partitionCounts3 =
-//                pairIndexed.values().mapPartitionsWithIndex(new CountPartitionsFunction<T>(), true).collect();
-//        log.info("Partition counts - BEFORE: {}", partitionCounts2);
-//        log.info("Partition counts - AFTER: {}", partitionCounts3);
         return pairIndexed.values();
     }
 }

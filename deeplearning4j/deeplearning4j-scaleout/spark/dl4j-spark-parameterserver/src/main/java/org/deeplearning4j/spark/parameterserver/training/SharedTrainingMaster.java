@@ -943,7 +943,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         protected double stepTrigger = 0.05;
         protected int stepDelay = 50;
         protected int shakeFrequency = 0;
+        @Deprecated
         protected Repartition repartition = Repartition.Always;
+        @Deprecated
         protected RepartitionStrategy repartitionStrategy = RepartitionStrategy.Balanced;
         protected StorageLevel storageLevel = StorageLevel.MEMORY_ONLY_SER();
         protected StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
@@ -1011,7 +1013,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
          * This parameter defines when repartition is applied (if applied)
          * @param repartition
          * @return
+         * @deprecated Use {@link #repartitioner(Repartitioner)}
          */
+        @Deprecated
         public Builder repartitionData(Repartition repartition) {
             this.repartition = repartition;
             return this;
@@ -1023,7 +1027,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
          * for details
          *
          * @param repartitionStrategy Repartitioning strategy to use
+         * @deprecated Use {@link #repartitioner(Repartitioner)}
          */
+        @Deprecated
         public Builder repartitionStrategy(RepartitionStrategy repartitionStrategy) {
             this.repartitionStrategy = repartitionStrategy;
             return this;
@@ -1224,11 +1230,24 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             return this;
         }
 
+        /**
+         * Number of minibatches to asynchronously prefetch when training. Default: 2
+         * @param prefetchNumBatches Number of batches to prefetch
+         */
         public Builder workerPrefetchNumBatches(int prefetchNumBatches){
             this.workerPrefetchNumBatches = prefetchNumBatches;
             return this;
         }
 
+        /**
+         * Repartitioner to use to repartition data before fitting.
+         * DL4J performs a MapPartitions operation for training, hence how the data is partitioned can matter a lot for
+         * performance (specifically, too few partitions can result in poor cluster utilization).
+         * Default is {@link DefaultRepartitioner}
+         *
+         * @param repartitioner Repartitioner to use
+         * @return Repartitioner
+         */
         public Builder repartitioner(Repartitioner repartitioner){
             this.repartitioner = repartitioner;
             return this;

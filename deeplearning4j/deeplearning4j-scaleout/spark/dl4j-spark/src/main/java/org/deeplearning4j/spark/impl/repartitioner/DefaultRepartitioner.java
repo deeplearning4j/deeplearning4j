@@ -8,17 +8,27 @@ import scala.Tuple2;
 import java.util.List;
 
 /**
- * DefaultRepartitioner: Repartition data so that we exactly N objects per partition, up to a maximum of M partitions
+ * DefaultRepartitioner: Repartition data so that we exactly the minimum number of objects per partition, up to a
+ * specified maximum number of partitions partitions
+ *
+ * @author Alex Black
  */
 public class DefaultRepartitioner implements Repartitioner {
     public static final int DEFAULT_MAX_PARTITIONS = 5000;
 
     private final int maxPartitions;
 
+    /**
+     * Create a DefaultRepartitioner with the default maximum number of partitions, {@link #DEFAULT_MAX_PARTITIONS}
+     */
     public DefaultRepartitioner(){
         this(DEFAULT_MAX_PARTITIONS);
     }
 
+    /**
+     *
+     * @param maxPartitions Maximum number of partitions
+     */
     public DefaultRepartitioner(int maxPartitions){
         this.maxPartitions = maxPartitions;
     }

@@ -92,11 +92,13 @@ public class SharedTrainingWrapper {
      * @param iterator
      */
     public void attachDS(Iterator<DataSet> iterator) {
+        log.info("Attaching thread...");
+
+        //Count the number of minibatches - used for reporting/debugging purposes
         if(iteratorDataSetCount.get() == null)
             iteratorDataSetCount.set(new AtomicInteger(0));
         AtomicInteger count = iteratorDataSetCount.get();
-
-        log.info("Attaching thread...");
+        count.set(0);
 
         // we're creating our Observable wrapper
         VirtualIterator<DataSet> wrapped = new VirtualIterator<>(new CountingIterator<>(iterator, count));
@@ -118,10 +120,13 @@ public class SharedTrainingWrapper {
      * @param iterator
      */
     public void attachMDS(Iterator<MultiDataSet> iterator) {
+        log.info("Attaching thread...");
+
+        //Count the number of minibatches - used for reporting/debugging purposes
         if(iteratorDataSetCount.get() == null)
             iteratorDataSetCount.set(new AtomicInteger(0));
         AtomicInteger count = iteratorDataSetCount.get();
-        log.info("Attaching thread...");
+        count.set(0);
 
         // we're creating our Observable wrapper
         VirtualIterator<MultiDataSet> wrapped = new VirtualIterator<>(new CountingIterator<>(iterator, count));

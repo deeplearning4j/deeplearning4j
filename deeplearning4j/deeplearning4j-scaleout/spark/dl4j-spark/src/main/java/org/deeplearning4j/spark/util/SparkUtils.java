@@ -378,7 +378,6 @@ public class SparkUtils {
                 }
 
                 if (initialPartitions == numPartitions && allCorrectSize) {
-                    log.info("Did not repartition - all correct size: initial={}, numPartitions={}", initialPartitions, numPartitions);
                     //Don't need to do any repartitioning here - already in the format we want
                     return rdd;
                 }
@@ -390,15 +389,6 @@ public class SparkUtils {
                 log.info("Amount to rebalance: numPartitions={}, objectsPerPartition={}, remainder={}", numPartitions, objectsPerPartition, remainder);
                 pairIndexed = pairIndexed
                                 .partitionBy(new BalancedPartitioner(numPartitions, objectsPerPartition, remainder));
-
-                //DEBUGGING
-                List<Tuple2<Integer, Integer>> partitionCounts2 =
-                        rdd.mapPartitionsWithIndex(new CountPartitionsFunction<T>(), true).collect();
-                List<Tuple2<Integer, Integer>> partitionCounts3 =
-                        pairIndexed.values().mapPartitionsWithIndex(new CountPartitionsFunction<T>(), true).collect();
-                log.info("Partition counts - BEFORE: {}", partitionCounts2);
-                log.info("Partition counts - AFTER: {}", partitionCounts3);
-
                 return pairIndexed.values();
             default:
                 throw new RuntimeException("Unknown setting for repartition: " + repartition);

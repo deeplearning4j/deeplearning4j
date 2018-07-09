@@ -5,6 +5,12 @@ import lombok.AllArgsConstructor;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * A simple iterator that adds 1 to the specified counter every time next() is called
+ *
+ * @param <T> Type of iterator
+ * @author Alex Black
+ */
 @AllArgsConstructor
 public class CountingIterator<T> implements Iterator<T> {
 
