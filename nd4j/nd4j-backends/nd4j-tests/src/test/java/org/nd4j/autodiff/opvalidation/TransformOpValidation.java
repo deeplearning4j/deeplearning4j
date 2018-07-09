@@ -996,7 +996,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testPairwiseTransforms() {
-        OpValidationSuite.ignoreFailing();
+//        OpValidationSuite.ignoreFailing();
         /*
         add, sub, mul, div, rsub, rdiv
         eq, neq, gt, lt, gte, lte, or, and, xor
