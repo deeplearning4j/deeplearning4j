@@ -20,7 +20,10 @@
 
 package org.nd4j.linalg.ops;
 
+import lombok.val;
 import org.apache.commons.math3.util.FastMath;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -50,10 +53,22 @@ public class DerivativeTests extends BaseNd4jTest {
     public static final double REL_ERROR_TOLERANCE = 1e-3;
 
 
+    DataBuffer.Type initialType;
+
     public DerivativeTests(Nd4jBackend backend) {
         super(backend);
+        this.initialType = Nd4j.dataType();
     }
 
+    @Before
+    public void before() {
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+    }
+
+    @After
+    public void after() {
+        Nd4j.setDataType(this.initialType);
+    }
 
     @Test
     public void testHardTanhDerivative() {

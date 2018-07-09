@@ -1,6 +1,8 @@
 package org.nd4j.linalg.api.ndarray;
 
+import lombok.val;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -29,7 +31,11 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
         this.initialType = Nd4j.dataType();
     }
 
-
+    @After
+    public void after() {
+        DataTypeUtil.setDTypeForContext(this.initialType);
+    }
+    
     @Test
     public void testSerializationFullArrayNd4jWriteRead() throws Exception {
         int length = 100;
@@ -37,7 +43,9 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
         //WRITE OUT A DOUBLE ARRAY
         //Hack before setting datatype - fix already in r119_various branch
         Nd4j.create(1);
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        val initialType = Nd4j.dataType();
+
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
         INDArray arr = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         arr.subi(50.0123456); //assures positive and negative numbers with decimal points
 
@@ -148,12 +156,6 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
 
         //assertEquals(sub,arr2);
         assertTrue(Transforms.abs(sub1.sub(arr2).div(sub1)).maxNumber().doubleValue() < 0.01);
-    }
-
-    @After
-    public void after() {
-        DataTypeUtil.setDTypeForContext(this.initialType);
-        System.out.println("AFTER DATATYPE HERE: " + Nd4j.dataType());
     }
 
     @Override

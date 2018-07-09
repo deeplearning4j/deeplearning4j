@@ -301,6 +301,7 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     public void testJVMCompression3() throws Exception {
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
         INDArray exp = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
         BasicNDArrayCompressor.getInstance().setDefaultCompression("NOOP");
