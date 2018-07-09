@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -45,7 +46,7 @@ import java.util.*;
         defaultImpl = LegacyLayerDeserializerHelper.class)
 @Data
 @NoArgsConstructor
-public abstract class Layer implements Serializable, Cloneable {
+public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
     protected String layerName;
     protected IDropout iDropout;
     protected List<LayerConstraint> constraints;
@@ -196,6 +197,11 @@ public abstract class Layer implements Serializable, Cloneable {
     public IUpdater getUpdaterByParam(String paramName) {
         throw new UnsupportedOperationException(
                 "Not supported: all layers with parameters should override this method");
+    }
+
+    @Override
+    public void setPretrain(boolean pretrain){
+        //No op for most layers
     }
 
     /**

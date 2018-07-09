@@ -44,6 +44,12 @@ public interface OpExecutioner {
         JAVA, NATIVE
     }
 
+    // in case of adding new executioner - list it here
+    enum ExecutionerType {
+        NATIVE_CPU,
+        CUDA
+    }
+
     enum ProfilingMode {
         DISABLED,
         NAN_PANIC,
@@ -55,6 +61,14 @@ public interface OpExecutioner {
         SCOPE_PANIC,
         BANDWIDTH,
     }
+
+
+    /**
+     * This method returns type for this executioner instance
+     * @return
+     */
+    ExecutionerType type();
+
 
     /**
      * This method returns opName of the last invoked op

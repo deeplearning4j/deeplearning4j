@@ -3,7 +3,6 @@
 //
 
 #include <ops/declarable/helpers/dropout.h>
-#include <NDArrayFactory.h>
 #include <NativeOps.h>
 #include <vector>
 #include <memory>

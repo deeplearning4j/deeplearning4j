@@ -5,7 +5,6 @@
 #include <ops/declarable/helpers/stack.h>
 #include <helpers/ShapeUtils.h>
 #include <array/ResultSet.h>
-#include <NDArrayFactory.h>
 
 
 namespace nd4j {
@@ -26,7 +25,7 @@ void stack(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& outArr, const int
 	else {
 
 		std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(outArr.rankOf(), {dim});	
-		ResultSet<T>* list = NDArrayFactory<T>::allTensorsAlongDimension(&outArr, dimsToExclude);		// list.size() == block.width()
+		ResultSet<T>* list = outArr.allTensorsAlongDimension(dimsToExclude);		// list.size() == block.width()
 		
 #pragma omp parallel for if(list->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
 		for(int i=0; i<list->size(); ++i)

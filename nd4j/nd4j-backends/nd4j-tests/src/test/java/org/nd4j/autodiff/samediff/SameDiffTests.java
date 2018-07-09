@@ -2893,4 +2893,43 @@ public class SameDiffTests {
         assertNotEquals(origGrad.get("out"), out.gradient().getArr());
     }
 
+    @Test
+    public void testShapeUpdating(){
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", 3,5);
+        SDVariable w = sd.var("W", 5,4);
+        SDVariable b = sd.var("b", 1,4);
+        SDVariable z = in.mmul(w).add(b);
+        SDVariable out = sd.tanh("tanh", z);
+        ExternalErrorsFunction fn = sd.f().externalErrors(out);
+
+        INDArray inA = Nd4j.linspace(1,15,15).reshape(3,5);
+        INDArray wA = Nd4j.linspace(1,20,20).reshape(5,4);
+        INDArray bA = Nd4j.linspace(1,4,4);
+        in.setArray(inA);
+        w.setArray(wA);
+        b.setArray(bA);
+
+        INDArray grad = Nd4j.linspace(1,12,12).reshape(3,4);
+        fn.updateVariable("tanh", grad);
+
+        log.info("--------------- sd.execAndEndResult() ---------------");
+        sd.execAndEndResult();
+        log.info("--------------- sd.execBackwards() #1 ---------------");
+        sd.execBackwards();
+
+        log.info("--------------- sd.execBackwards() #2 ---------------");
+        System.out.println(sd.getFunction("grad").summary());
+
+        in.setArray(Nd4j.linspace(1, 10, 10).reshape(2,5));
+        grad = Nd4j.linspace(1,8,8).reshape(2,4);
+        fn.updateVariable("tanh", grad);
+
+        sd.execBackwards();
+        INDArray inGrad = in.getGradient().getArr();
+        assertArrayEquals(new long[]{2,5}, inGrad.shape());
+        
+    }
+
 }

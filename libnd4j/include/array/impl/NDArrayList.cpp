@@ -4,7 +4,6 @@
 
 
 #include <iterator>
-#include <NDArrayFactory.h>
 #include <array/NDArrayList.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/CustomOperations.h>
@@ -87,7 +86,7 @@ namespace nd4j {
         _axis = axis;
         std::vector<int> args({axis});
         std::vector<int> newAxis = ShapeUtils<T>::convertAxisToTadTarget(array->rankOf(), args);
-        auto result = nd4j::NDArrayFactory<T>::allTensorsAlongDimension(array, newAxis);
+        auto result = array->allTensorsAlongDimension(newAxis);
         for (int e = 0; e < result->size(); e++) {
             auto chunk = result->at(e)->dup(array->ordering());
             write(e, chunk);
@@ -169,7 +168,7 @@ namespace nd4j {
         // do we have to enforce C order here?
         auto array = new NDArray<T>('c', shape, _workspace);
         std::vector<int> axis = ShapeUtils<T>::convertAxisToTadTarget(shape.size(), {_axis});
-        auto tads = NDArrayFactory<T>::allTensorsAlongDimension(array, axis);
+        auto tads = array->allTensorsAlongDimension(axis);
 
         // just for lulz
 #pragma omp parallel for

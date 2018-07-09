@@ -41,9 +41,9 @@ namespace nd4j {
                     auto z = OUTPUT_VARIABLE(0);
 
                     auto dims = ShapeUtils<T>::convertAxisToTadTarget(x->rankOf(), {0});
-                    auto tadsX = NDArrayFactory<T>::allTensorsAlongDimension(x, dims);
-                    auto tadsY = NDArrayFactory<T>::allTensorsAlongDimension(y, dims);
-                    auto tadsZ = NDArrayFactory<T>::allTensorsAlongDimension(z, dims);
+                    auto tadsX = x->allTensorsAlongDimension(dims);
+                    auto tadsY = y->allTensorsAlongDimension(dims);
+                    auto tadsZ = z->allTensorsAlongDimension(dims);
 
                     for (int e = 0; e < tadsX->size(); e++) {
                         T v = cond->getIndexedScalar(e);

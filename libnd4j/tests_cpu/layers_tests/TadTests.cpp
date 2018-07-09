@@ -7,7 +7,6 @@
 
 #include "testlayers.h"
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 
 using namespace nd4j;
 
@@ -20,7 +19,7 @@ public:
 };
 
 TEST_F(TadTests, Test4DTad1) {
-    std::unique_ptr<NDArray<float>> arraySource(nd4j::NDArrayFactory<float>::linspace(1.0f, 10000.0f, 10000));
+    std::unique_ptr<NDArray<float>> arraySource(nd4j::NDArray<float>::linspace(1.0f, 10000.0f, 10000));
 
     std::unique_ptr<NDArray<float>> arrayExp(new NDArray<float>('c', {2, 1, 4, 4}));
     std::unique_ptr<NDArray<float>> arrayBad(new NDArray<float>('c', {2, 1, 4, 4}));
@@ -108,7 +107,7 @@ TEST_F(TadTests, TadNoAxis_1) {
 TEST_F(TadTests, TadEdgeCase_1) {
     NDArray<float> array('c', {5, 4, 1});
     NDArray<float> exp('c', {5, 4});
-    NDArrayFactory<float>::linspace(1, array);
+    array.linspace(1);
 
     auto tad = array.tensorAlongDimension(0, {0, 1});
 
@@ -167,7 +166,7 @@ TEST_F(TadTests, TestShapeTad_2) {
         
     NDArray<float> input('c', {2,1,4,1});
     
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
 
     NDArray<float> expected('c', {4,1});
 

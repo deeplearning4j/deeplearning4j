@@ -40,6 +40,7 @@ public class NDArrayMetaData extends BaseColumnMetaData {
     private long[] shape;
     private boolean allowVarLength;
 
+
     /**
      * @param name  Name of the NDArray column
      * @param shape shape of the NDArray column. Use -1 in entries to specify as "variable length" in that dimension

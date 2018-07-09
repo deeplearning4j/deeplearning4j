@@ -15,7 +15,7 @@ import java.util.*;
 
 public class ExternalErrorsFunction extends DifferentialFunction {
 
-    private static final List<long[]> OUT_SHAPE = Collections.singletonList(new long[0]);
+    private static final List<long[]> OUT_SHAPE = Collections.singletonList(new long[]{1});
 
     private Map<String,INDArray> gradients;
     private Map<String,SDVariable> gradVariables;
@@ -33,6 +33,10 @@ public class ExternalErrorsFunction extends DifferentialFunction {
 
     public void updateVariable(String str, INDArray gradient){
         gradients.put(str, gradient);
+        //Update immediately if possible. New shapes might be needed for shape calculation
+        if(gradVariables != null){
+            gradVariables.get(str).setArray(gradient);
+        }
     }
 
     @Override
@@ -100,7 +104,7 @@ public class ExternalErrorsFunction extends DifferentialFunction {
 
     @Override
     public String opName(){
-        return "ExternalErrorFnPrototype";
+        return "ExternalErrorsFn";
     }
 
     @Override

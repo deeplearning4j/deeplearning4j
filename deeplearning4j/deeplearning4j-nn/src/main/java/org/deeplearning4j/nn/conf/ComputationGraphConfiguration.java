@@ -26,8 +26,10 @@ import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.samediff.SameDiffVertex;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
+import org.deeplearning4j.nn.layers.samediff.SameDiffGraphVertex;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
@@ -1017,6 +1019,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                     if (l instanceof BasePretrainNetwork)
                         lv.getLayerConf().setPretrain(pretrain);
                 }
+                if (gv.getValue() instanceof SameDiffVertex)
+                    ((SameDiffVertex) gv.getValue()).applyGlobalConfig(globalConfiguration);
 
             }
 

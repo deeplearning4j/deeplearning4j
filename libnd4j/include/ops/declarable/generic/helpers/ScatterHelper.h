@@ -6,7 +6,6 @@
 #include <pointercast.h>
 #include <op_boilerplate.h>
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 
 
 namespace nd4j {
@@ -44,8 +43,8 @@ namespace nd4j {
                 }
 
                 std::vector<int> tadDimension = ShapeUtils<T>::convertAxisToTadTarget(input->rankOf(), {0});
-                auto tadsOperand = NDArrayFactory<T>::multipleTensorsAlongDimension(output, idc, tadDimension);
-                auto tadsUpdate = NDArrayFactory<T>::multipleTensorsAlongDimension(updates, idcU, tadDimension);
+                auto tadsOperand = output->multipleTensorsAlongDimension(idc, tadDimension);
+                auto tadsUpdate = updates->multipleTensorsAlongDimension(idcU, tadDimension);
 
                 auto z0 = tadsOperand->at(0);
                 auto z1 = tadsUpdate->at(0);
@@ -67,8 +66,8 @@ namespace nd4j {
                 auto _input = input->reshape(input->ordering(), {input->sizeAt(0), -1});
                 auto _updates = updates->reshape(updates->ordering(), {indicesLength, (int) updates->lengthOf() / indicesLength});
 
-                auto tadsOperand = NDArrayFactory<T>::allTensorsAlongDimension(_input, {1});
-                auto tadsUpdates = NDArrayFactory<T>::allTensorsAlongDimension(_updates, {1});
+                auto tadsOperand = _input->allTensorsAlongDimension({1});
+                auto tadsUpdates = _updates->allTensorsAlongDimension({1});
 
                 for (int e = 0; e < indicesLength; e++) {
                     int idx = indices->getScalar(e);

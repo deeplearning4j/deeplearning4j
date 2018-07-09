@@ -1,11 +1,13 @@
 package org.deeplearning4j.nn.updater.graph;
 
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.Trainable;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.updater.BaseMultiLayerUpdater;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
 import java.util.HashMap;
 
 /**
@@ -16,7 +18,7 @@ import java.util.HashMap;
  */
 public class ComputationGraphUpdater extends BaseMultiLayerUpdater<ComputationGraph> {
 
-    protected Layer[] orderedLayers;
+    protected Trainable[] orderedLayers;
 
     public ComputationGraphUpdater(ComputationGraph graph) {
         this(graph, null);
@@ -26,14 +28,14 @@ public class ComputationGraphUpdater extends BaseMultiLayerUpdater<ComputationGr
         super(graph, updaterState);
 
         layersByName = new HashMap<>();
-        Layer[] layers = getOrderedLayers();
-        for (Layer l : layers) {
-            layersByName.put(l.conf().getLayer().getLayerName(), l);
+        Trainable[] layers = getOrderedLayers();
+        for (Trainable l : layers) {
+            layersByName.put(l.getConfig().getLayerName(), l);
         }
     }
 
     @Override
-    protected Layer[] getOrderedLayers() {
+    protected Trainable[] getOrderedLayers() {
         if (orderedLayers != null) {
             return orderedLayers;
         }
@@ -42,16 +44,19 @@ public class ComputationGraphUpdater extends BaseMultiLayerUpdater<ComputationGr
         //In CompGraph: we need to know topological ordering, so we know how parameters are laid out in the 1d view arrays
         int[] topologicalOrdering = network.topologicalSortOrder();
 
-        Layer[] out = new Layer[network.getNumLayers()];
+        Trainable[] out = new Trainable[network.getVertices().length];
 
         int j = 0;
         for (int i = 0; i < topologicalOrdering.length; i++) {
             GraphVertex currentVertex = vertices[topologicalOrdering[i]];
-            if (!currentVertex.hasLayer()) {
+            if (currentVertex.numParams() == 0) {
                 continue;
             }
 
-            out[j++] = currentVertex.getLayer();
+            out[j++] = currentVertex;
+        }
+        if(j != out.length){
+            out = Arrays.copyOfRange(out, 0, j);
         }
 
         orderedLayers = out;

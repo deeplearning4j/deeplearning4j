@@ -855,11 +855,11 @@ public class TestUpdaters extends BaseDL4JTest {
             //Check first updater block:
             UpdaterBlock ub0 = blocks.get(0);
             assertEquals(3, ub0.getLayersAndVariablesInBlock().size());
-            assertEquals("l0", ub0.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
+            assertEquals("l0", ub0.getLayersAndVariablesInBlock().get(0).getLayer().getConfig().getLayerName());
             assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub0.getLayersAndVariablesInBlock().get(0).getParamName());
-            assertEquals("l0", ub0.getLayersAndVariablesInBlock().get(1).getLayer().conf().getLayer().getLayerName());
+            assertEquals("l0", ub0.getLayersAndVariablesInBlock().get(1).getLayer().getConfig().getLayerName());
             assertEquals(DefaultParamInitializer.BIAS_KEY, ub0.getLayersAndVariablesInBlock().get(1).getParamName());
-            assertEquals("l1", ub0.getLayersAndVariablesInBlock().get(2).getLayer().conf().getLayer().getLayerName());
+            assertEquals("l1", ub0.getLayersAndVariablesInBlock().get(2).getLayer().getConfig().getLayerName());
             assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub0.getLayersAndVariablesInBlock().get(2).getParamName());
 
             int nParams0 = 10 * 10 + 10 + 10 * 10;
@@ -872,7 +872,7 @@ public class TestUpdaters extends BaseDL4JTest {
             //Check second updater block:
             UpdaterBlock ub1 = blocks.get(1);
             assertEquals(1, ub1.getLayersAndVariablesInBlock().size());
-            assertEquals("l1", ub1.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
+            assertEquals("l1", ub1.getLayersAndVariablesInBlock().get(0).getLayer().getConfig().getLayerName());
             assertEquals(DefaultParamInitializer.BIAS_KEY, ub1.getLayersAndVariablesInBlock().get(0).getParamName());
 
             int nParams1 = 10;
@@ -885,9 +885,9 @@ public class TestUpdaters extends BaseDL4JTest {
             //Check third updater block:
             UpdaterBlock ub2 = blocks.get(2);
             assertEquals(2, ub2.getLayersAndVariablesInBlock().size());
-            assertEquals("l2", ub2.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
+            assertEquals("l2", ub2.getLayersAndVariablesInBlock().get(0).getLayer().getConfig().getLayerName());
             assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub2.getLayersAndVariablesInBlock().get(0).getParamName());
-            assertEquals("l2", ub2.getLayersAndVariablesInBlock().get(1).getLayer().conf().getLayer().getLayerName());
+            assertEquals("l2", ub2.getLayersAndVariablesInBlock().get(1).getLayer().getConfig().getLayerName());
             assertEquals(DefaultParamInitializer.BIAS_KEY, ub2.getLayersAndVariablesInBlock().get(1).getParamName());
 
             int nParams2 = 10 * 10 + 10;
@@ -900,9 +900,9 @@ public class TestUpdaters extends BaseDL4JTest {
             //Check fourth updater block:
             UpdaterBlock ub3 = blocks.get(3);
             assertEquals(2, ub3.getLayersAndVariablesInBlock().size());
-            assertEquals("l3", ub3.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
+            assertEquals("l3", ub3.getLayersAndVariablesInBlock().get(0).getLayer().getConfig().getLayerName());
             assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub3.getLayersAndVariablesInBlock().get(0).getParamName());
-            assertEquals("l3", ub3.getLayersAndVariablesInBlock().get(1).getLayer().conf().getLayer().getLayerName());
+            assertEquals("l3", ub3.getLayersAndVariablesInBlock().get(1).getLayer().getConfig().getLayerName());
             assertEquals(DefaultParamInitializer.BIAS_KEY, ub3.getLayersAndVariablesInBlock().get(1).getParamName());
 
             int nParams3 = 10 * 10 + 10;
@@ -915,9 +915,9 @@ public class TestUpdaters extends BaseDL4JTest {
             //Check fifth updater black
             UpdaterBlock ub4 = blocks.get(4);
             assertEquals(2, ub4.getLayersAndVariablesInBlock().size());
-            assertEquals("l4", ub4.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
+            assertEquals("l4", ub4.getLayersAndVariablesInBlock().get(0).getLayer().getConfig().getLayerName());
             assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub4.getLayersAndVariablesInBlock().get(0).getParamName());
-            assertEquals("l4", ub4.getLayersAndVariablesInBlock().get(1).getLayer().conf().getLayer().getLayerName());
+            assertEquals("l4", ub4.getLayersAndVariablesInBlock().get(1).getLayer().getConfig().getLayerName());
             assertEquals(DefaultParamInitializer.BIAS_KEY, ub4.getLayersAndVariablesInBlock().get(1).getParamName());
 
             int nParams4 = 10 * 10 + 10;

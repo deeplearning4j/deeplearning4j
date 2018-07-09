@@ -28,7 +28,7 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_1) {
     NDArray<float> x('c', {2, 4, 4, 2});
     NDArray<float> exp('c', {2, 2, 2, 2}, {6.f, 7.f,  10.f,  11.f,  22.f,  23.f,  26.f,  27.f,  38.f,  39.f,  42.f,  43.f,  54.f,  55.f,  58.f, 59.f});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
 
     nd4j::ops::avgpool2d<float> op;
@@ -49,7 +49,7 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_2) {
     NDArray<float> x('c', {2, 4, 4, 2});
     NDArray<float> exp('c', {2, 2, 2, 2}, {6.f, 7.f,  10.f,  11.f,  22.f,  23.f,  26.f,  27.f,  38.f,  39.f,  42.f,  43.f,  54.f,  55.f,  58.f, 59.f});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
 
     nd4j::ops::avgpool2d<float> op;
@@ -70,7 +70,7 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_3) {
     NDArray<float> x('c', {2, 4, 4, 2});
     NDArray<float> exp('c', {2, 2, 2, 2}, {11.f,  12.f,  15.f,  16.f,  27.f,  28.f,  31.f,  32.f,  43.f,  44.f,  47.f,  48.f,  59.f,  60.f,  63.f, 64.f});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
 
     nd4j::ops::maxpool2d<float> op;
@@ -91,7 +91,7 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_4) {
     NDArray<float> x('c', {2, 4, 4, 2});
     NDArray<float> exp('c', {2, 2, 2, 2}, {11.f,  12.f,  15.f,  16.f,  27.f,  28.f,  31.f,  32.f,  43.f,  44.f,  47.f,  48.f,  59.f,  60.f,  63.f, 64.f});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
 
     nd4j::ops::maxpool2d<float> op;
@@ -112,7 +112,7 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_5) {
     NDArray<float> x('c', {2, 5, 5, 2});
     NDArray<float> exp('c', {2, 3, 3, 2}, {7.f,    8.f,   11.f,   12.f,   14.f,   15.f,   27.f,   28.f,   31.f,   32.f,   34.f,   35.f, 42.f,   43.f,   46.f,   47.f,   49.f,   50.f,   57.f,   58.f,   61.f,   62.f,   64.f,   65.f, 77.f,   78.f,   81.f,   82.f,   84.f,   85.f,   92.f,   93.f,   96.f,   97.f,   99.f,  100.f,});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
 
     nd4j::ops::avgpool2d<float> op;
@@ -132,7 +132,7 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_6) {
     NDArray<float> x('c', {2, 5, 5, 2});
     NDArray<float> exp('c', {2, 2, 2, 2}, {7.f,   8.f,  11.f,  12.f,  27.f,  28.f,  31.f,  32.f,  57.f,  58.f,  61.f,  62.f,  77.f,  78.f,  81.f, 82.f});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
     nd4j::ops::avgpool2d<float> op;
     auto result = op.execute({&x}, {}, {2, 2, 2, 2, 0, 0, 1, 1, 0, 1, 1});
@@ -151,7 +151,7 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_7) {
     NDArray<float> x('c', {2, 2, 5, 5});
     NDArray<float> exp('c', {2, 2, 2, 2}, {7.f, 9.f, 17.f, 19.f, 32.f, 34.f, 42.f, 44.f, 57.f, 59.f, 67.f, 69.f, 82.f, 84.f, 92.f, 94.f});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
 
     nd4j::ops::maxpool2d<float> op;
@@ -171,7 +171,7 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_8) {
     NDArray<float> x('c', {2, 2, 5, 5});
     NDArray<float> exp('c', {2, 2, 3, 3}, {1.f, 2.5f, 4.5f, 8.5f, 10.f, 12.f, 18.5f, 20.f, 22.f, 26.f, 27.5f, 29.5f, 33.5f, 35.f, 37.f, 43.5f, 45.f, 47.f,  51.f, 52.5f, 54.5f,  58.5f, 60.f, 62.f, 68.5f, 70.f, 72.f,  76.f, 77.5f, 79.5f, 83.5f, 85.f, 87.f,  93.5f, 95.f, 97.f});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
 
     nd4j::ops::avgpool2d<float> op;
@@ -192,7 +192,7 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_9) {
     NDArray<float> x('c', {2, 2, 5, 5});
     NDArray<float> exp('c', {2, 2, 3, 3}, {0.25f, 1.25f, 2.25f,  4.25f, 10.f, 12.f, 9.25f, 20.f, 22.f, 6.5f, 13.75f, 14.75, 16.75f, 35.f, 37.f,  21.75f, 45.f, 47.f,  12.75f, 26.25f, 27.25f,  29.25f, 60.f, 62.f, 34.25f, 70.f, 72.f, 19.f, 38.75f, 39.75f, 41.75f, 85.f, 87.f, 46.75f, 95.f, 97.f});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
 
     nd4j::ops::avgpool2d<float> op;
@@ -213,7 +213,7 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_10) {
     NDArray<float> x('c', {2, 2, 5, 5});
     NDArray<float> exp('c', {2, 2, 3, 3}, {4.f, 6.f, 7.5f, 14.f, 16.f, 17.5f,  21.5f, 23.5f, 25.f, 29.f, 31.f, 32.5f, 39.f, 41.f, 42.5f, 46.5f, 48.5f, 50.f, 54.f, 56.f, 57.5f,  64.f, 66.f, 67.5f, 71.5f, 73.5f, 75.f, 79.f, 81.f, 82.5f, 89.f, 91.f, 92.5f,  96.5f, 98.5f, 100.f});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
 
     nd4j::ops::avgpool2d<float> op;
@@ -234,7 +234,7 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_11) {
     NDArray<float> x('c', {1, 1, 3, 3});
     NDArray<float> exp('c', {1, 1, 2, 2}, {3, 4, 6, 7});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
 
     nd4j::ops::avgpool2d<float> op;
@@ -254,7 +254,7 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_12) {
     NDArray<float> x('c', {1, 1, 3, 3});
     NDArray<float> exp('c', {1, 1, 3, 3}, {3.f, 4.f, 4.5f, 6.f, 7.f, 7.5f, 7.5f, 8.5f, 9.f});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
 
     nd4j::ops::avgpool2d<float> op;
@@ -332,8 +332,8 @@ TEST_F(DeclarableOpsTests4, Test_Reshape_Again) {
     NDArray<float> x('c', {4, 3});
     NDArray<float> exp('c', {4, 3});
 
-    NDArrayFactory<float>::linspace(1, x);
-    NDArrayFactory<float>::linspace(1, exp);
+    x.linspace(1);
+    exp.linspace(1);
 
     nd4j::ops::reshape<float> op;
     auto result = op.execute({&x}, {}, {-99, 4, 3});
@@ -351,8 +351,8 @@ TEST_F(DeclarableOpsTests4, Test_Gemv_Transpose_1) {
     NDArray<float> y('c', {4, 1});
     NDArray<float> exp('c',{ 3, 1}, {70, 80, 90});
 
-    NDArrayFactory<float>::linspace(1, x);
-    NDArrayFactory<float>::linspace(1, y);
+    x.linspace(1);
+    y.linspace(1);
 
     nd4j::ops::matmul<float> op;
     auto result = op.execute({&x, &y}, {}, {1, 0});
@@ -775,7 +775,7 @@ TEST_F(DeclarableOpsTests4, Test_Matmul_YATS_1) {
 TEST_F(DeclarableOpsTests4, Test_Matmul_YATS_2) {
     NDArray<float> a('c', {4}, {1, 2, 3, 4});
     NDArray<float> b('c', {4, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
-    NDArray<float> exp('c', {1, 3}, {70, 80, 90});
+    NDArray<float> exp('c', {3}, {70, 80, 90});
 
     nd4j::ops::matmul<float> op;
     auto result = op.execute({&a, &b}, {}, {});
@@ -783,8 +783,6 @@ TEST_F(DeclarableOpsTests4, Test_Matmul_YATS_2) {
 
     auto z = result->at(0);
 
-    // z->printShapeInfo("z");
-    
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -864,9 +862,9 @@ TEST_F(DeclarableOpsTests4, Test_TileToShape_1) {
 
 TEST_F(DeclarableOpsTests4, Test_StridedSlice_Alex_1) {
     NDArray<float> x('c', {3, 4, 5});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     NDArray<float> exp('c', {1,3,4,5});
-    NDArrayFactory<float>::linspace(1, exp);
+    exp.linspace(1);
 
     nd4j::ops::strided_slice<float> op;
     auto result = op.execute({&x}, {}, {0,0,0,1,0, -999,0,0,0, -999,3,4,5, -999,1,1,1});
@@ -886,9 +884,9 @@ TEST_F(DeclarableOpsTests4, Test_StridedSlice_Alex_2) {
     NDArray<float> begin('c', {4}, {-999,0,0,0});
     NDArray<float> end('c', {4}, {-999,3,4,5});
     NDArray<float> stride('c', {4}, {-999,1,1,1});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     NDArray<float> exp('c', {1,3,4,5});
-    NDArrayFactory<float>::linspace(1, exp);
+    exp.linspace(1);
 
     nd4j::ops::strided_slice<float> op;
     auto result = op.execute({&x, &begin, &end, &stride}, {}, {0,0,0,1,0});
@@ -911,12 +909,12 @@ TEST_F(DeclarableOpsTests4, parallel_stack_test1) {
     NDArray<float> x1('c', {2,2,2});
     NDArray<float> x2('c', {2,2,2});
     NDArray<float> x3('c', {2,2,2});
-    NDArrayFactory<float>::linspace(1, x1);
-    NDArrayFactory<float>::linspace(9, x2);
-    NDArrayFactory<float>::linspace(17,x3);
+    x1.linspace(1);
+    x2.linspace(9);
+    x3.linspace(17);
 
     NDArray<float> expected('c', {3,2,2,2});
-    NDArrayFactory<float>::linspace(1, expected);
+    expected.linspace(1);
     
     nd4j::ops::parallel_stack<float> op;
     ResultSet<float>*  results = op.execute({&x1, &x2, &x3}, {}, {});
@@ -1343,7 +1341,7 @@ TEST_F(DeclarableOpsTests4, lstm_test1) {
     NDArray<double> Wp ('c', {numUnits, numProj});
     NDArray<double> b  ('c', {4*numUnits});
 
-    NDArrayFactory<double>::linspace(0.5, x, 0.5);
+    x.linspace(0.5, 0.5);
     h0 = 1.;
     c0 = 2.;
     Wx = 0.003;
@@ -1393,7 +1391,7 @@ TEST_F(DeclarableOpsTests4, gru_test1) {
     NDArray<double> Wh ('c', {numUnits, 3*numUnits});
     NDArray<double> b  ('c', {3*numUnits});
 
-    NDArrayFactory<double>::linspace(0.5, x, 0.5);
+    x.linspace(0.5, 0.5);
     h0 = 1.;    
     Wx = 0.003;
     Wh = 0.006;
@@ -1651,7 +1649,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test1) {
     NDArray<double> expected('c', {bS, iC, oD, oH, oW}, {10.5, 11.5, 13.5, 14.5, 22.5, 23.5, 25.5, 26.5, 46.5, 47.5, 49.5, 50.5, 58.5, 59.5, 61.5, 62.5,
                                                          82.5, 83.5, 85.5, 86.5, 94.5, 95.5, 97.5, 98.5,118.5,119.5,121.5,122.5,130.5,131.5,133.5,134.5,
                                                         154.5,155.5,157.5,158.5,166.5,167.5,169.5,170.5,190.5,191.5,193.5,194.5,202.5,203.5,205.5,206.5});
-    NDArrayFactory<double>::linspace(1., input);
+    input.linspace(1.);
     
     nd4j::ops::avgpool3dnew<double> op;
     ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW, paddingMode, 1, dataFormat});
@@ -1679,7 +1677,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test2) {
                                                           133. ,134. ,135. ,136. ,137. ,138. ,137.5,138.5,139.5,137.5,138.5,139.5,140.5,141.5,142.5,142. ,143. ,144. ,146.5,147.5,148.5,149.5,150.5,151.5,151. ,152. ,153. ,151. ,152. ,153. ,154. ,155. ,156. ,155.5,156.5,157.5,
                                                           169. ,170. ,171. ,172. ,173. ,174. ,173.5,174.5,175.5,173.5,174.5,175.5,176.5,177.5,178.5,178. ,179. ,180. ,182.5,183.5,184.5,185.5,186.5,187.5,187. ,188. ,189. ,187. ,188. ,189. ,190. ,191. ,192. ,191.5,192.5,193.5,
                                                           187. ,188. ,189. ,190. ,191. ,192. ,191.5,192.5,193.5,191.5,192.5,193.5,194.5,195.5,196.5,196. ,197. ,198. ,200.5,201.5,202.5,203.5,204.5,205.5,205. ,206. ,207. ,205. ,206. ,207. ,208. ,209. ,210. ,209.5,210.5,211.5});
-    NDArrayFactory<double>::linspace(1., input);    
+    input.linspace(1.);    
 
     nd4j::ops::avgpool3dnew<double> op;
     ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 0, dataFormat});
@@ -1704,7 +1702,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test3) {
     NDArray<double> expected('c', {bS, oD, oH, oW, iC}, {  29.5, 30.5, 31.5, 32.5, 33.5, 34.5, 38.5, 39.5, 40.5, 41.5, 42.5, 43.5, 65.5, 66.5, 67.5, 68.5, 69.5, 70.5,
                                                            74.5, 75.5, 76.5, 77.5, 78.5, 79.5,137.5,138.5,139.5,140.5,141.5,142.5,146.5,147.5,148.5,149.5,150.5,151.5,
                                                           173.5,174.5,175.5,176.5,177.5,178.5,182.5,183.5,184.5,185.5,186.5,187.5});
-    NDArrayFactory<double>::linspace(1., input);    
+    input.linspace(1.);    
 
     nd4j::ops::avgpool3dnew<double> op;
     ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
@@ -1744,7 +1742,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test4) {
                                                         46.00, 92.25, 92.75, 46.50, 46.75, 93.75, 94.25, 47.25, 31.416666, 63.00, 63.333332, 31.75, 62.833332, 126.00, 126.666664, 63.50, 95.00, 190.50, 191.50, 96.00, 96.50,
                                                         193.50, 194.50, 97.50, 64.833336, 130.00, 130.666672, 65.50, 66.833336, 134.00, 134.666672, 67.50, 101.00, 202.50, 203.50, 102.00, 102.50, 205.50, 206.50, 103.50, 
                                                         68.833336, 138.00, 138.666672, 69.50, 34.416668, 69.00, 69.333336, 34.75, 52.00, 104.25, 104.75, 52.50, 52.75, 105.75, 106.25, 53.25, 35.416668, 71.00, 71.333336, 35.75});
-    NDArrayFactory<double>::linspace(1., input);
+    input.linspace(1.);
     
     nd4j::ops::avgpool3dnew<double> op;
     ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
@@ -1776,7 +1774,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test1) {
                                                          0.166667, 0.333333, 0.166667,0.333333, 0.666667, 0.333333,0.333333, 0.666667, 0.333333,0.166667, 0.333333, 0.166667,0.333333, 0.666667, 0.333333,0.666667, 1.333333, 0.666667,0.666667, 1.333333, 0.666667,0.333333, 0.666667, 0.333333,
                                                          0.166667, 0.333333, 0.166667,0.333333, 0.666667, 0.333333,0.333333, 0.666667, 0.333333,0.166667, 0.333333, 0.166667,0.166667, 0.333333, 0.166667,0.333333, 0.666667, 0.333333,0.333333, 0.666667, 0.333333,0.166667, 0.333333, 0.166667,
                                                          0.333333, 0.666667, 0.333333,0.666667, 1.333333, 0.666667,0.666667, 1.333333, 0.666667,0.333333, 0.666667, 0.333333,0.166667, 0.333333, 0.166667,0.333333, 0.666667, 0.333333,0.333333, 0.666667, 0.333333,0.166667, 0.333333, 0.166667});
-    NDArrayFactory<double>::linspace(1., input);
+    input.linspace(1.);
     gradO = 2.;
     
     nd4j::ops::avgpool3dnew_bp<double> op;
@@ -1810,7 +1808,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test2) {
                                                          1.333333, 1.333333, 1.333333,2. , 2. , 2. ,2. , 2. , 2. ,1.333333, 1.333333, 1.333333,1.333333, 1.333333, 1.333333,2. , 2. , 2. ,2. , 2. , 2. ,1.333333, 1.333333, 1.333333,
                                                          1.333333, 1.333333, 1.333333,2. , 2. , 2. ,2. , 2. , 2. ,1.333333, 1.333333, 1.333333,1.333333, 1.333333, 1.333333,2. , 2. , 2. ,2. , 2. , 2. ,1.333333, 1.333333, 1.333333,
                                                          1.333333, 1.333333, 1.333333,2. , 2. , 2. ,2. , 2. , 2. ,1.333333, 1.333333, 1.333333,1.333333, 1.333333, 1.333333,2. , 2. , 2. ,2. , 2. , 2. ,1.333333, 1.333333, 1.333333});
-    NDArrayFactory<double>::linspace(1., input);
+    input.linspace(1.);
     gradO = 2.;
     
     nd4j::ops::avgpool3dnew_bp<double> op;
@@ -1843,7 +1841,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test3) {
                                                          0.41667, 0.41667, 0.41667,0.83333, 0.83333, 0.83333,1.25, 1.25, 1.25 ,0.83333, 0.83333, 0.83333,1.66667, 1.66667, 1.66667,2.5 , 2.5 , 2.5  ,1.16667, 1.16667, 1.16667,2.33333, 2.33333, 2.33333,3.5 , 3.5 , 3.5  ,
                                                          1.16667, 1.16667, 1.16667,2.33333, 2.33333, 2.33333,3.5 , 3.5 , 3.5  ,0.83333, 0.83333, 0.83333,1.66667, 1.66667, 1.66667,2.5 , 2.5 , 2.5  ,1.25   , 1.25   , 1.25   ,2.5    , 2.5    , 2.5    ,3.75, 3.75, 3.75 ,
                                                          1.75   , 1.75   , 1.75   ,3.5    , 3.5    , 3.5    ,5.25, 5.25, 5.25 ,1.75   , 1.75   , 1.75   ,3.5    , 3.5    , 3.5    ,5.25, 5.25, 5.25 ,1.25   , 1.25   , 1.25   ,2.5    , 2.5    , 2.5    ,3.75, 3.75, 3.75 });
-    NDArrayFactory<double>::linspace(1., input);
+    input.linspace(1.);
     gradO = 2.;
     
     nd4j::ops::avgpool3dnew_bp<double> op;
@@ -1875,7 +1873,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test4) {
                                                          0.91667, 0.91667, 0.91667,1.83333, 1.83333, 1.83333,2.75, 2.75 , 2.75 ,0.33333, 0.33333, 0.33333,0.66667, 0.66667, 0.66667,1.  , 1.   , 1.   ,0.66667, 0.66667, 0.66667,1.33333, 1.33333, 1.33333,2.  , 2.   , 2.   ,
                                                          1.16667, 1.16667, 1.16667,2.33333, 2.33333, 2.33333,3.5 , 3.5  , 3.5  ,1.83333, 1.83333, 1.83333,3.66667, 3.66667, 3.66667,5.5 , 5.5  , 5.5  ,0.5    , 0.5    , 0.5    ,1.     , 1.     , 1.     ,1.5 , 1.5  , 1.5  ,
                                                          1.     , 1.     , 1.     ,2.     , 2.     , 2.     ,3.  , 3.   , 3.   ,1.75   , 1.75   , 1.75   ,3.5    , 3.5    , 3.5    ,5.25, 5.25 , 5.25 ,2.75   , 2.75   , 2.75   ,5.5    , 5.5    , 5.5    ,8.25, 8.25 , 8.25 });
-    NDArrayFactory<double>::linspace(1., input);
+    input.linspace(1.);
     gradO = 2.;
     
     nd4j::ops::avgpool3dnew_bp<double> op;
@@ -1901,7 +1899,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test1) {
     NDArray<double> input   ('c', {bS, iC, iD, iH, iW});
     NDArray<double> expected('c', {bS, iC, oD, oH, oW}, {20., 21., 23., 24., 32., 33., 35., 36., 56., 57., 59., 60., 68., 69., 71., 72., 92., 93., 95., 96.,104.,105.,107.,108.,
                                                          128.,129.,131.,132.,140.,141.,143.,144.,164.,165.,167.,168.,176.,177.,179.,180.,200.,201.,203.,204.,212.,213.,215.,216.});
-    NDArrayFactory<double>::linspace(1., input);
+    input.linspace(1.);
     
     nd4j::ops::maxpool3dnew<double> op;
     ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW, paddingMode, 1, dataFormat});
@@ -1929,7 +1927,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test2) {
                                                          157., 158., 159.,160., 161., 162.,160., 161., 162.,166., 167., 168.,169., 170., 171.,169., 170., 171.,175., 176., 177.,178., 179., 180.,178., 179., 180.,175., 176., 177.,178., 179., 180.,178., 179., 180.,
                                                          193., 194., 195.,196., 197., 198.,196., 197., 198.,202., 203., 204.,205., 206., 207.,205., 206., 207.,211., 212., 213.,214., 215., 216.,214., 215., 216.,211., 212., 213.,214., 215., 216.,214., 215., 216.,
                                                          193., 194., 195.,196., 197., 198.,196., 197., 198.,202., 203., 204.,205., 206., 207.,205., 206., 207.,211., 212., 213.,214., 215., 216.,214., 215., 216.,211., 212., 213.,214., 215., 216.,214., 215., 216.});
-    NDArrayFactory<double>::linspace(1., input);    
+    input.linspace(1.);    
 
     nd4j::ops::maxpool3dnew<double> op;
     ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, 1, dataFormat});
@@ -1953,7 +1951,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test3) {
     NDArray<double> input   ('c', {bS, iD, iH, iW, iC});
     NDArray<double> expected('c', {bS, oD, oH, oW, iC}, {58.,  59.,  60., 61.,  62.,  63., 67.,  68.,  69., 70.,  71.,  72., 94.,  95.,  96., 97.,  98.,  99.,103., 104., 105.,106., 107., 108.,
                                                          166., 167., 168.,169., 170., 171.,175., 176., 177.,178., 179., 180.,202., 203., 204.,205., 206., 207.,211., 212., 213.,214., 215., 216.});
-    NDArrayFactory<double>::linspace(1., input);    
+    input.linspace(1.);    
 
     nd4j::ops::maxpool3dnew<double> op;
     ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
@@ -1983,7 +1981,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test4) {
                                                         136., 137., 138., 138.,139., 140., 141., 141.,142., 143., 144., 144.,142., 143., 144., 144.,148., 149., 150., 150.,151., 152., 153., 153.,154., 155., 156., 156.,154., 155., 156., 156.,160., 161., 162., 162.,163., 164., 165., 165.,166., 167., 168., 168.,166., 167., 168., 168.,
                                                         172., 173., 174., 174.,175., 176., 177., 177.,178., 179., 180., 180.,178., 179., 180., 180.,172., 173., 174., 174.,175., 176., 177., 177.,178., 179., 180., 180.,178., 179., 180., 180.,184., 185., 186., 186.,187., 188., 189., 189.,190., 191., 192., 192.,190., 191., 192., 192.,
                                                         196., 197., 198., 198.,199., 200., 201., 201.,202., 203., 204., 204.,202., 203., 204., 204.,208., 209., 210., 210.,211., 212., 213., 213.,214., 215., 216., 216.,214., 215., 216., 216.,208., 209., 210., 210.,211., 212., 213., 213.,214., 215., 216., 216.,214., 215., 216., 216.});
-    NDArrayFactory<double>::linspace(1., input);
+    input.linspace(1.);
     
     nd4j::ops::maxpool3dnew<double> op;
     ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW, paddingMode, 1, dataFormat});
@@ -2013,8 +2011,8 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test1) {
                                                          0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 2.5, 2.6,0. , 2.7, 2.8,0. , 0. , 0. ,0. , 0. , 0. ,0. , 2.9, 3. ,0. , 3.1, 3.2,
                                                          0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 3.3, 3.4,0. , 3.5, 3.6,0. , 0. , 0. ,0. , 0. , 0. ,0. , 3.7, 3.8,0. , 3.9, 4. ,
                                                          0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 4.1, 4.2,0. , 4.3, 4.4,0. , 0. , 0. ,0. , 0. , 0. ,0. , 4.5, 4.6,0. , 4.7, 4.8});
-    NDArrayFactory<double>::linspace(1., input);
-    NDArrayFactory<double>::linspace(0.1, gradO, 0.1);
+    input.linspace(1.);
+    gradO.linspace(0.1, 0.1);
     
     nd4j::ops::maxpool3dnew_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW, paddingMode, 1, dataFormat});
@@ -2046,8 +2044,8 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test2) {
                                                          0.000e+00, 0.000e+00, 0.000e+00,2.570e+01, 2.580e+01, 5.190e+01,2.610e+01, 2.620e+01, 5.270e+01,5.340e+01, 5.360e+01, 1.078e+02,0.000e+00, 0.000e+00, 0.000e+00,2.730e+01, 2.740e+01, 5.510e+01,2.770e+01, 2.780e+01, 5.590e+01,5.660e+01, 5.680e+01, 1.142e+02,
                                                          0.000e+00, 0.000e+00, 0.000e+00,5.940e+01, 5.960e+01, 1.198e+02,6.020e+01, 6.040e+01, 1.214e+02,1.228e+02, 1.232e+02, 2.476e+02,0.000e+00, 0.000e+00, 0.000e+00,3.210e+01, 3.220e+01, 6.470e+01,3.250e+01, 3.260e+01, 6.550e+01,6.620e+01, 6.640e+01, 1.334e+02,
                                                          0.000e+00, 0.000e+00, 0.000e+00,3.370e+01, 3.380e+01, 6.790e+01,3.410e+01, 3.420e+01, 6.870e+01,6.940e+01, 6.960e+01, 1.398e+02,0.000e+00, 0.000e+00, 0.000e+00,7.220e+01, 7.240e+01, 1.454e+02,7.300e+01, 7.320e+01, 1.470e+02,1.484e+02, 1.488e+02, 2.988e+02});
-    NDArrayFactory<double>::linspace(1., input);
-    NDArrayFactory<double>::linspace(0.1, gradO, 0.1);
+    input.linspace(1.);
+    gradO.linspace(0.1, 0.1);
     
     nd4j::ops::maxpool3dnew_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW, paddingMode, 1, dataFormat});
@@ -2078,8 +2076,8 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test3) {
                                                           0., 0., 0.,  0. ,  0. ,  0. ,  0. ,   0.  ,  0. ,  0. , 0. ,  0. ,  0. ,   0.  ,  0. ,  0. ,   0.     ,  0. ,  0. ,   0.     ,  0. , 10.9,  11.     , 11.1, 22.7,  22.9    , 23.1,
                                                           0., 0., 0., 11.8, 11.9, 12. , 24.5,  24.7 , 24.9,  0. , 0. ,  0. , 26.3,  26.5 , 26.7, 54.4,  54.8    , 55.2,  0. ,   0.     ,  0. ,  0. ,   0.     ,  0. ,  0. ,   0.     ,  0. ,
                                                           0., 0., 0., 32.6, 32.8, 33. , 67. ,  67.4 , 67.8,  0. , 0. ,  0. , 34.4,  34.6 , 34.8, 70.6,  71.     , 71.4,  0. ,   0.     ,  0. , 74.2,  74.6    , 75. ,152. , 152.8    ,153.6});
-    NDArrayFactory<double>::linspace(1., input);
-    NDArrayFactory<double>::linspace(0.1, gradO, 0.1);
+    input.linspace(1.);
+    gradO.linspace(0.1, 0.1);
     
     nd4j::ops::maxpool3dnew_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, 1, dataFormat});
@@ -2110,8 +2108,8 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test4) {
                                                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
                                                          10.9, 11, 11.1, 22.7, 22.9, 23.1, 0, 0, 0, 38.1, 38.4, 38.7, 78.9, 79.5, 80.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32.6, 32.8, 33, 67, 67.4, 67.8, 0, 0, 0, 108.6, 109.2, 109.8, 222.6, 223.8, 225,});
-    NDArrayFactory<double>::linspace(1., input);
-    NDArrayFactory<double>::linspace(0.1, gradO, 0.1);
+    input.linspace(1.);
+    gradO.linspace(0.1, 0.1);
     
     nd4j::ops::maxpool3dnew_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW,  paddingMode, 1, dataFormat});

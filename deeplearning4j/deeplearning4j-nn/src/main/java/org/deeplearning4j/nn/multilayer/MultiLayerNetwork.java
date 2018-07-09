@@ -1385,6 +1385,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
     }
 
+    @Override
+    public TrainingConfig getConfig() {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
     /**
      * Returns a 1 x m vector where the vector is composed of
      * a flattened vector of all of the weights for the

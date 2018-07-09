@@ -7,6 +7,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/convolutions.h>
+#include <MmulHelper.h>
 
 namespace nd4j {
 namespace ops  {
@@ -64,7 +65,7 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
     NDArray<T> columns(input->ordering(), {bS, iC, kD, kH, kW, oD, oH, oW}, block.getWorkspace());            
     ConvolutionUtils<T>::vol2col(*input, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);                 // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]        
     // [bS, iC, kD, kH, kW, oD, oH, oW] x [kD, kH, kW, iC, oC]/[oC, iC, kD, kH, kW] = [bS, oD, oH, oW, oC]
-    nd4j::NDArrayFactory<T>::tensorDot(&columns, weights, output, {1,2,3,4}, weightsAxesForDot, permutForGradW);
+    nd4j::MmulHelper<T>::tensorDot(&columns, weights, output, {1,2,3,4}, weightsAxesForDot, permutForGradW);
 
     if(bias)
         output->template applyBroadcast<simdOps::Add<T>>({indIOioC}, bias);
@@ -213,7 +214,7 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
     // ----- calculation of gradW and gradB ----- //                
     NDArray<T> columns(input->ordering(), {bS, iC, kD, kH, kW, oD, oH, oW}, block.getWorkspace());      
     ConvolutionUtils<T>::vol2col(*input, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);                         // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]        
-    nd4j::NDArrayFactory<T>::tensorDot(&columns, gradO, gradW, {0,5,6,7}, gradOaxesForDot, permutForGradW);     // [bS, iC, kD, kH, kW, oD, oH, oW] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [iC, kD, kH, kW, oC]
+    nd4j::MmulHelper<T>::tensorDot(&columns, gradO, gradW, {0,5,6,7}, gradOaxesForDot, permutForGradW);     // [bS, iC, kD, kH, kW, oD, oH, oW] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [iC, kD, kH, kW, oC]
 
     if(gradB) {        
         if(gradB->rankOf() == 2) 
@@ -224,7 +225,7 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
     }
 
     //----- calculation of gradI -----//            
-    nd4j::NDArrayFactory<T>::tensorDot(weights, gradO, &columns, {indWoC}, {indIOioC}, permutForColumns);   // [kD, kH, kW, iC, oC]/[oC, iC, kD, kH, kW]] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [kD, kH, kW, iC, bS, oD, oH, oW]/[iC, kD, kH, kW, bS, oD, oH, oW]
+    nd4j::MmulHelper<T>::tensorDot(weights, gradO, &columns, {indWoC}, {indIOioC}, permutForColumns);   // [kD, kH, kW, iC, oC]/[oC, iC, kD, kH, kW]] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [kD, kH, kW, iC, bS, oD, oH, oW]/[iC, kD, kH, kW, bS, oD, oH, oW]
     ConvolutionUtils<T>::col2vol(columns, *gradI, sD, sH, sW, pD, pH, pW, dD, dH, dW);                     // columns [bS, iC, kD, kH, kW, oD, oH, oW] is de-convoluted to  [bS, iC, iD, iH, iW]
    
     if(!isNDHWC) {

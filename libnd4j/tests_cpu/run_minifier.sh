@@ -10,7 +10,8 @@ CXX=/usr/bin/g++
 #export CXX_PATH
 export CXX
 
-make -j4 && layers_tests/minifier -l -o nd4j_minilib.h 
+../buildnativeoperations.sh -m -b debug
+../blasbuild/cpu/blas/minifier -l -o nd4j_minilib.h
 #
 #echo "TESTING MINIFIER with all resources"
 #echo "Testing adam_sum.fb"

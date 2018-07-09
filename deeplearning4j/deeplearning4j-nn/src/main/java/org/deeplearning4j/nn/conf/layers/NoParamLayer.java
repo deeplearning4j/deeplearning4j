@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 
@@ -33,7 +34,23 @@ public abstract class NoParamLayer extends Layer {
     }
 
     @Override
+    public GradientNormalization getGradientNormalization() {
+        return GradientNormalization.None;
+    }
+
+    @Override
+    public double getGradientNormalizationThreshold() {
+        return 0;
+    }
+
+    @Override
     public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException(getClass().getSimpleName() + " does not contain parameters");
     }
+
+    @Override
+    public boolean isPretrain() {
+        return false;
+    }
+
 }

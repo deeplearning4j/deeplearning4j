@@ -504,24 +504,26 @@ public class Shape {
         }
 
         if (left.length != 2 && right.length != 2) {
-            throw new IllegalArgumentException("Illegal shapes for matrix multiply. Must be of length 2");
+            throw new IllegalArgumentException("Illegal shapes for matrix multiply. Must be of length 2. Left shape: "
+                    + Arrays.toString(left) + ", right shape: " + Arrays.toString(right));
         }
 
         for(int i = 0; i < left.length; i++) {
             if(left[i] < 1)
-                throw new ND4JIllegalStateException("Left shape contained value < 0 at index " + i);
+                throw new ND4JIllegalStateException("Left shape contained value < 0 at index " + i + " - left shape " + Arrays.toString(left));
         }
 
 
 
         for(int i = 0; i < right.length; i++) {
             if(right[i] < 1)
-                throw new ND4JIllegalStateException("Right shape contained value < 0 at index " + i);
+                throw new ND4JIllegalStateException("Right shape contained value < 0 at index " + i + " - right shape " + Arrays.toString(right));
         }
 
 
         if (left.length > 1 && left[1] != right[0])
-            throw new IllegalArgumentException("Columns of left not equal to rows of right");
+            throw new IllegalArgumentException("Columns of left not equal to rows of right: left shape " + Arrays.toString(left)
+                    + ", right shape " + Arrays.toString(right));
 
         if(left.length < right.length) {
             if(left[0] == right[0]) {
@@ -543,24 +545,26 @@ public class Shape {
         }
 
         if (left.length != 2 && right.length != 2) {
-            throw new IllegalArgumentException("Illegal shapes for matrix multiply. Must be of length 2");
+            throw new IllegalArgumentException("Illegal shapes for matrix multiply. Must be of length 2. Left shape: "
+                    + Arrays.toString(left) + ", right shape: " + Arrays.toString(right));
         }
 
         for(int i = 0; i < left.length; i++) {
             if(left[i] < 1)
-                throw new ND4JIllegalStateException("Left shape contained value < 0 at index " + i);
+                throw new ND4JIllegalStateException("Left shape contained value < 0 at index " + i + " - left shape " + Arrays.toString(left));
         }
 
 
 
         for(int i = 0; i < right.length; i++) {
             if(right[i] < 1)
-                throw new ND4JIllegalStateException("Right shape contained value < 0 at index " + i);
+                throw new ND4JIllegalStateException("Right shape contained value < 0 at index " + i + " - right shape " + Arrays.toString(right));
         }
 
 
         if (left.length > 1 && left[1] != right[0])
-            throw new IllegalArgumentException("Columns of left not equal to rows of right");
+            throw new IllegalArgumentException("Columns of left not equal to rows of right: left shape " + Arrays.toString(left)
+                    + ", right shape " + Arrays.toString(right));
 
         if(left.length < right.length) {
             if(left[0] == right[0]) {

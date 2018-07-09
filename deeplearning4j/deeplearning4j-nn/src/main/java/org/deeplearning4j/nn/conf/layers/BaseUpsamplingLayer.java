@@ -36,7 +36,7 @@ import org.deeplearning4j.nn.params.EmptyParamInitializer;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public abstract class BaseUpsamplingLayer extends Layer {
+public abstract class BaseUpsamplingLayer extends NoParamLayer {
 
     protected int[] size;
 

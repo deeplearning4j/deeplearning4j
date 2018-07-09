@@ -1,6 +1,7 @@
 package org.nd4j.linalg.compression;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -671,7 +672,6 @@ public class CompressionTests extends BaseNd4jTest {
 
         assertEquals(exp_1, initial);
     }
-
 
     @Override
     public char ordering() {

@@ -20,7 +20,7 @@ namespace nd4j {
             for (auto &v: dims)
                 REQUIRE_TRUE(v >= 0 && v < input->rankOf(), 0, "Tear dimensions should be non-negative values, and lower then input rank. Got %i instead", v);
 
-            auto tads = NDArrayFactory<T>::allTensorsAlongDimension(input, dims);
+            auto tads = input->allTensorsAlongDimension(dims);
             for (int e = 0; e < tads->size(); e++) {
                 auto outE = OUTPUT_VARIABLE(e);
                 outE->assign(tads->at(e));

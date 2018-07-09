@@ -43,7 +43,7 @@ public class LayerOpValidation extends BaseOpValidation {
         SDVariable sdWeights = sameDiff.var("weights", weights);
         SDVariable sdBias = sameDiff.var("bias", b);
 
-        SDVariable res = sameDiff.xwPlusB(sdInput, sdWeights, sdBias);
+        SDVariable res = sameDiff.linear(sdInput, sdWeights, sdBias);
         SDVariable loss = sameDiff.standardDeviation(res, true);
 
         INDArray exp = input.mmul(weights).addiRowVector(b);

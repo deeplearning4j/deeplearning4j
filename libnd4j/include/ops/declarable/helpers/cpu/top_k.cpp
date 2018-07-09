@@ -3,7 +3,6 @@
 //
 
 #include <ops/declarable/helpers/top_k.h>
-#include <NDArrayFactory.h>
 #include <ops/declarable/headers/parity_ops.h>
 namespace nd4j {
 namespace ops {
@@ -12,7 +11,7 @@ namespace helpers {
     template <typename T>
     int topKFunctor(NDArray<T>* input, NDArray<T>* values, NDArray<T>* indeces, int k, bool needSort) {
         int width = input->sizeAt(-1);
-        std::unique_ptr<ResultSet<T>> lastDimList(NDArrayFactory<T>::allTensorsAlongDimension(input, {input->rankOf() - 1}));
+        std::unique_ptr<ResultSet<T>> lastDimList(input->allTensorsAlongDimension({input->rankOf() - 1}));
 
 // ----------------------------------------------------------------------------------------------- //
 // this assumption is right:

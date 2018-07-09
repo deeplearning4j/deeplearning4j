@@ -1359,7 +1359,8 @@ public interface NDArrayFactory {
      */
     INDArray scalar(Number value);
 
-    INDArray empty();
+    INDArray empty(DataBuffer.Type type);
+
     INDArray trueScalar(Number value);
 
     INDArray trueVector(float[] data);

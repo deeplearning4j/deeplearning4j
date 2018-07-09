@@ -36,8 +36,8 @@ namespace nd4j {
 
             REQUIRE_TRUE(!(pT != 0 || pW != 0 || pH != 0), 0, "Padding isn't supported on CPU backend O_o");
             
-            std::unique_ptr<ResultSet<T>> batchIn(NDArrayFactory<T>::allExamples(input));
-            std::unique_ptr<ResultSet<T>> batchOut(NDArrayFactory<T>::allExamples(output));
+            std::unique_ptr<ResultSet<T>> batchIn(input->allExamples());
+            std::unique_ptr<ResultSet<T>> batchOut(output->allExamples());
 
             // FIXME: helpers should be used here
             for (int e = 0; e < batchIn->size(); e++) {
@@ -45,7 +45,7 @@ namespace nd4j {
                 auto tadOut = batchOut->at(e);
 
                 if (biasUsed) {
-                    std::unique_ptr<ResultSet<T>> outputBlock(NDArrayFactory<T>::allExamples(tadOut));
+                    std::unique_ptr<ResultSet<T>> outputBlock(tadOut->allExamples());
                     for (int i = 0; i < bias->lengthOf(); i++) {
                         auto oB = outputBlock->at(i);
                         oB->assign(bias->getScalar(i));

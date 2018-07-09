@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.layers.samediff;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
@@ -33,7 +34,7 @@ import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
 
 @Slf4j
-public class TestSameDiffDense {
+public class TestSameDiffDense extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
@@ -412,88 +413,5 @@ public class TestSameDiffDense {
                 TestUtils.testModelSerialization(net);
             }
         }
-    }
-
-
-    @Test
-    public void testDebug() {
-
-        int nIn = 3;
-        int nOut = 4;
-        int minibatch = 3;
-
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .trainingWorkspaceMode(WorkspaceMode.NONE)
-                .inferenceWorkspaceMode(WorkspaceMode.NONE)
-                .list()
-                .layer(new SameDiffDense.Builder().nIn(nIn).nOut(nOut)
-                        .activation(Activation.TANH)
-                        .build())
-                .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut).activation(Activation.SOFTMAX)
-                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                .build();
-
-        MultiLayerNetwork netSD = new MultiLayerNetwork(conf);
-        netSD.init();
-
-
-        INDArray in = Nd4j.rand(minibatch, nIn);
-        INDArray l = TestUtils.randomOneHot(minibatch, nOut, 12345);
-        netSD.setInput(in);
-        netSD.setLabels(l);
-
-        netSD.computeGradientAndScore();
-
-        Gradient gSD = netSD.gradient();
-
-        //Sanity check: different minibatch size
-        in = Nd4j.rand(2 * minibatch, nIn);
-        l = TestUtils.randomOneHot(2 * minibatch, nOut, 12345);
-        netSD.setInput(in);
-        netSD.setLabels(l);
-
-        netSD.computeGradientAndScore();
-    }
-
-    @Test
-    public void testDebug2Fwd() {
-
-        int nIn = 3;
-        int nOut = 4;
-        int minibatch = 3;
-
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .trainingWorkspaceMode(WorkspaceMode.NONE)
-                .inferenceWorkspaceMode(WorkspaceMode.NONE)
-                .list()
-                .layer(new SameDiffDense.Builder().nIn(nIn).nOut(nOut)
-                        .activation(Activation.TANH)
-                        .build())
-                .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut).activation(Activation.SOFTMAX)
-                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                .build();
-
-        MultiLayerNetwork netSD = new MultiLayerNetwork(conf);
-        netSD.init();
-
-
-        INDArray in = Nd4j.rand(minibatch, nIn);
-        INDArray l = TestUtils.randomOneHot(minibatch, nOut, 12345);
-        netSD.setInput(in);
-        netSD.setLabels(l);
-
-        INDArray output = netSD.output(in);
-        netSD.computeGradientAndScore();        //ADD THIS, SUDDENLY SHAPES ARE WRONG
-
-        //Sanity check: different minibatch size
-        in = Nd4j.rand(2 * minibatch, nIn);
-        l = TestUtils.randomOneHot(2 * minibatch, nOut, 12345);
-        netSD.setInput(in);
-        netSD.setLabels(l);
-
-        INDArray out2 = netSD.output(in);
-
-        System.out.println(Arrays.toString(output.shape()));
-        System.out.println(Arrays.toString(out2.shape()));
     }
 }

@@ -24,15 +24,18 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 @Data
 @NoArgsConstructor
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true, exclude = {"pretrain"})
+@EqualsAndHashCode(callSuper = true, exclude = {"pretrain"})
+@JsonIgnoreProperties("pretrain")
 public abstract class BasePretrainNetwork extends FeedForwardLayer {
 
     protected LossFunctions.LossFunction lossFunction;
     protected double visibleBiasInit;
+    protected boolean pretrain;
 
     public BasePretrainNetwork(Builder builder) {
         super(builder);
@@ -72,6 +75,16 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
     @Override
     public boolean isPretrainParam(String paramName) {
         return PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(paramName);
+    }
+
+    @Override
+    public boolean isPretrain(){
+        return pretrain;
+    }
+
+    @Override
+    public void setPretrain(boolean pretrain){
+        this.pretrain = pretrain;
     }
 
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
