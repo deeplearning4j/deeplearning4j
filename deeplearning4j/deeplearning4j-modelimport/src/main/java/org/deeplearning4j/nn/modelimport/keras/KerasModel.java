@@ -73,6 +73,7 @@ public class KerasModel {
     protected int truncatedBPTT = 0; // truncated BPTT value
     protected int kerasMajorVersion;
     protected String kerasBackend;
+    protected KerasLayer.DimOrder dimOrder = null;
 
     public KerasModel() {
     }
@@ -93,7 +94,7 @@ public class KerasModel {
             throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
         this(modelBuilder.getModelJson(), modelBuilder.getModelYaml(), modelBuilder.getWeightsArchive(),
                 modelBuilder.getWeightsRoot(), modelBuilder.getTrainingJson(), modelBuilder.getTrainingArchive(),
-                modelBuilder.isEnforceTrainingConfig(), modelBuilder.getInputShape());
+                modelBuilder.isEnforceTrainingConfig(), modelBuilder.getInputShape(), modelBuilder.getDimOrder());
     }
 
     /**
@@ -112,13 +113,14 @@ public class KerasModel {
      */
     protected KerasModel(String modelJson, String modelYaml, Hdf5Archive weightsArchive, String weightsRoot,
                          String trainingJson, Hdf5Archive trainingArchive, boolean enforceTrainingConfig,
-                         int[] inputShape)
+                         int[] inputShape, KerasLayer.DimOrder dimOrder)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
 
         Map<String, Object> modelConfig = KerasModelUtils.parseModelConfig(modelJson, modelYaml);
         this.kerasMajorVersion = KerasModelUtils.determineKerasMajorVersion(modelConfig, config);
         this.kerasBackend = KerasModelUtils.determineKerasBackend(modelConfig, config);
         this.enforceTrainingConfig = enforceTrainingConfig;
+        this.dimOrder = dimOrder;
 
         /* Determine model configuration type. */
         if (!modelConfig.containsKey(config.getFieldClassName()))
@@ -199,6 +201,19 @@ public class KerasModel {
                 layerConfigMap.put(config.getFieldBackend(), this.kerasBackend);
 
             KerasLayerConfiguration kerasLayerConf = new KerasLayer(this.kerasMajorVersion).conf;
+
+            if (dimOrder != null) { // Force override of dim ordering with value from model builder
+                String dimOrderString;
+                if (dimOrder == KerasLayer.DimOrder.TENSORFLOW)
+                    dimOrderString = kerasLayerConf.getDIM_ORDERING_TENSORFLOW();
+                else if (dimOrder == KerasLayer.DimOrder.THEANO)
+                    dimOrderString = kerasLayerConf.getDIM_ORDERING_THEANO();
+                else
+                    throw new InvalidKerasConfigurationException("Invalid data format / dim ordering");
+                layerConfigMap.put(kerasLayerConf.getLAYER_FIELD_DIM_ORDERING(), dimOrderString);
+            }
+
+
             KerasLayer layer = KerasLayerUtils.getKerasLayerFromConfig(
                     layerConfigMap, this.enforceTrainingConfig, kerasLayerConf, customLayers, layers);
             layersOrdered.add(layer);

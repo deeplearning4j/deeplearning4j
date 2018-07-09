@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.modelimport.keras.utils;
 import lombok.Data;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.nn.modelimport.keras.Hdf5Archive;
+import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasModelConfiguration;
@@ -27,6 +28,7 @@ public class KerasModelBuilder implements Cloneable, Closeable {
     protected boolean enforceTrainingConfig = false;
     protected KerasModelConfiguration config;
     protected int[] inputShape = null;
+    protected KerasLayer.DimOrder dimOrder = null;
 
 
     /**
@@ -146,6 +148,23 @@ public class KerasModelBuilder implements Cloneable, Closeable {
      */
     public KerasModelBuilder trainingYaml(String trainingYaml) {
         this.trainingYaml = trainingYaml;
+        return this;
+    }
+
+    /**
+     * Manually set dim order for Keras model, i.e. either TENSORFLOW (channels last)
+     * or THEANO (channels first).
+     *
+     * Dim ordering will be automatically inferred from your model file, so don't
+     * tamper with this option unless you're sure what you're doing. Explicitly
+     * setting dim ordering can be useful for very old Keras models (before version 1.2),
+     * for which inference can be difficult.
+     *
+     * @param dimOrder Ordering of dimensions (channels first vs. last)
+     * @return Model builder
+     */
+    public KerasModelBuilder dimOrder(KerasLayer.DimOrder dimOrder){
+        this.dimOrder = dimOrder;
         return this;
     }
 
