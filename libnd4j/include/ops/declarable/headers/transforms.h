@@ -15,6 +15,7 @@ namespace nd4j {
 
         #if NOT_EXCLUDED(OP_clipbynorm)
         DECLARE_CONFIGURABLE_OP(clipbynorm, 1, 1, true, 1, 0);
+        DECLARE_CUSTOM_OP(clipbynorm_bp, 2, 1, false, 1, 0);
         #endif
 
         #if NOT_EXCLUDED(OP_clipbyavgnorm)
