@@ -22,6 +22,8 @@ package org.nd4j.linalg.ops;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -73,7 +75,16 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
     public OpExecutionerTestsC(Nd4jBackend backend) {
         super(backend);
+        this.initialType = Nd4j.dataType();
     }
+
+    DataBuffer.Type initialType;
+
+    @After
+    public void after() {
+        Nd4j.setDataType(this.initialType);
+    }
+
 
     @Test
     public void testSoftmaxReference() {

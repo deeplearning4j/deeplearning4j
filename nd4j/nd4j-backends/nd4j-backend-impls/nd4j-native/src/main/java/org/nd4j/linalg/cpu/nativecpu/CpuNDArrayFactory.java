@@ -1351,7 +1351,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, DataBuffer buffer) {
-        convertDataEx(typeSrc, source, typeDst, buffer.addressPointer(), buffer.length() * buffer.getElementSize());
+        convertDataEx(typeSrc, source, typeDst, buffer.addressPointer(), buffer.length());
     }
 
     @Override

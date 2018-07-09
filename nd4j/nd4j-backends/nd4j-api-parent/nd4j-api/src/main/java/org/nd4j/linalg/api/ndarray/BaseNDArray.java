@@ -6616,6 +6616,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public DataBuffer.Type dataType() {
+        if (data != null)
+            return data.dataType();
+
         val e = Shape.extras(jvmShapeInfo.javaShapeInformation);
 
         if (e != 0) {
@@ -6623,9 +6626,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             if (t != DataBuffer.Type.UNKNOWN)
                 return t;
         }
-
-        if (data != null)
-            return data.dataType();
 
         return DataBuffer.Type.UNKNOWN;
     }
