@@ -22,6 +22,7 @@ import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.BaseTrainingMaster;
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingMasterStats;
+import org.deeplearning4j.spark.impl.repartitioner.DefaultRepartitioner;
 import org.deeplearning4j.spark.parameterserver.accumulation.SharedTrainingAccumulationFunction;
 import org.deeplearning4j.spark.parameterserver.accumulation.SharedTrainingAccumulationTuple;
 import org.deeplearning4j.spark.parameterserver.accumulation.SharedTrainingAggregateFunction;
@@ -66,6 +67,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     protected int workerPrefetchBatches;
     protected RDDTrainingApproach rddTrainingApproach;
     protected StorageLevel storageLevel;
+    protected Repartitioner repartitioner;
 
     protected boolean collectTrainingStats;
     protected int rddDataSetNumExamples;
@@ -103,7 +105,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                     RDDTrainingApproach rddTrainingApproach, StorageLevel storageLevel, boolean collectTrainingStats,
                     RepartitionStrategy repartitionStrategy, Repartition repartition, double threshold,
                     double minThreshold, double thresholdStep, double stepTrigger, int stepDelay, int shakeFrequency,
-                    int batchSizePerWorker, long debugLongerIterations, int numWorkersPerNode, int workerPrefetchBatches) {
+                    int batchSizePerWorker, long debugLongerIterations, int numWorkersPerNode, int workerPrefetchBatches,
+                    Repartitioner repartitioner) {
         this.voidConfiguration = voidConfiguration;
         this.numWorkers = numWorkers;
         this.threshold = threshold;
@@ -111,6 +114,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         this.thresholdStep = thresholdStep;
         this.stepTrigger = stepTrigger;
         this.stepDelay = stepDelay;
+        this.shakeFrequency = shakeFrequency;
         this.rddTrainingApproach = rddTrainingApproach;
         this.repartitionStrategy = repartitionStrategy;
         this.repartition = repartition;
@@ -122,6 +126,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         this.debugLongerIterations = debugLongerIterations;
         this.numWorkersPerNode = numWorkersPerNode;
         this.workerPrefetchBatches = workerPrefetchBatches;
+        this.repartitioner = repartitioner;
 
 
         if (collectTrainingStats)
@@ -260,39 +265,6 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     protected int numObjectsEachWorker(int numExamplesEachRddObject) {
         return batchSizePerWorker / numExamplesEachRddObject;
-    }
-
-    protected int getNumDataSetObjectsPerSplit(int numExamplesEachRddObject) {
-        int dataSetObjectsPerSplit;
-        if (numExamplesEachRddObject == 1) {
-            dataSetObjectsPerSplit = numWorkers * batchSizePerWorker; // * averagingFrequency;
-        } else {
-            int numDataSetObjsReqEachWorker = numObjectsEachWorker(numExamplesEachRddObject);
-            if (numDataSetObjsReqEachWorker < 1) {
-                //In this case: more examples in a DataSet object than we actually require
-                //For example, 100 examples in DataSet, with batchSizePerWorker=50 and averagingFrequency=1
-                numDataSetObjsReqEachWorker = 1;
-            }
-
-            dataSetObjectsPerSplit = numDataSetObjsReqEachWorker * numWorkers;
-        }
-        return dataSetObjectsPerSplit;
-    }
-
-    protected <T> JavaRDD<T>[] getSplitRDDs(JavaRDD<T> trainingData, int totalDataSetObjectCount,
-                    int examplesPerDataSetObject) {
-        int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit(examplesPerDataSetObject);
-
-        if (collectTrainingStats)
-            stats.logSplitStart();
-
-        JavaRDD<T>[] splits = SparkUtils.balancedRandomSplit(totalDataSetObjectCount, dataSetObjectsPerSplit,
-                        trainingData, rng.nextLong());
-
-        if (collectTrainingStats)
-            stats.logSplitEnd();
-
-        return splits;
     }
 
     protected <T, Repr extends JavaRDDLike<T, Repr>> long getTotalDataSetObjectCount(
@@ -776,20 +748,25 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             stats.logMapPartitionsEnd(nPartitions);
     }
 
-    protected void doIteration(SparkComputationGraph network, JavaRDD<DataSet> split, int splitNum, int numSplits) {
+    protected void doIteration(SparkComputationGraph network, JavaRDD<DataSet> data, int splitNum, int numSplits) {
         log.info("Starting training of split {} of {}. workerMiniBatchSize={}, updatesThreshold={}, Configured for {} workers",
                         splitNum, numSplits, batchSizePerWorker, threshold, numWorkers);
 
         if (collectTrainingStats)
             stats.logMapPartitionsStart();
 
-        JavaRDD<DataSet> splitData = split;
-
         if (collectTrainingStats)
             stats.logRepartitionStart();
 
-        splitData = SparkUtils.repartitionEqually(splitData, repartition, numWorkers);
-        int nPartitions = splitData.partitions().size();
+        if(repartitioner != null){
+            log.info("Repartitioning training data using repartitioner: {}", repartitioner);
+            int minPerWorker = Math.max(1, batchSizePerWorker/rddDataSetNumExamples);
+            data = repartitioner.repartition(data, minPerWorker, numWorkers);
+        } else {
+            log.info("Repartitioning training data using SparkUtils repartitioner");
+            data = SparkUtils.repartitionEqually(data, repartition, numWorkers);
+        }
+        int nPartitions = data.partitions().size();
 
         if (collectTrainingStats && repartition != Repartition.Never)
             stats.logRepartitionEnd();
@@ -798,7 +775,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         FlatMapFunction<Iterator<DataSet>, SharedTrainingResult> function =
                         new SharedFlatMapDataSet<>(getWorkerInstance(network));
 
-        JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);
+        JavaRDD<SharedTrainingResult> result = data.mapPartitions(function);
 
         processResults(null, network, result);
 
@@ -806,7 +783,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             stats.logMapPartitionsEnd(nPartitions);
     }
 
-    protected void doIterationPathsMDS(SparkComputationGraph graph, JavaRDD<String> split, int splitNum, int numSplits,
+    protected void doIterationPathsMDS(SparkComputationGraph graph, JavaRDD<String> data, int splitNum, int numSplits,
                     int dataSetObjectNumExamples) {
 
         log.info("Starting training of split {} of {}. workerMiniBatchSize={}, updatesThreshold={}, Configured for {} workers",
@@ -815,16 +792,19 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats)
             stats.logMapPartitionsStart();
 
-        JavaRDD<String> splitData = split;
-
         if (collectTrainingStats)
             stats.logRepartitionStart();
 
-        // FIXME: do we still want that?
-        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy,
-                        numObjectsEachWorker(dataSetObjectNumExamples), numWorkers);
+        if(repartitioner != null){
+            log.info("Repartitioning training data using repartitioner: {}", repartitioner);
+            int minPerWorker = Math.max(1, batchSizePerWorker/rddDataSetNumExamples);
+            data = repartitioner.repartition(data, minPerWorker, numWorkers);
+        } else {
+            log.info("Repartitioning training data using SparkUtils repartitioner");
+            data = SparkUtils.repartitionEqually(data, repartition, numWorkers);
+        }
 
-        int nPartitions = splitData.partitions().size();
+        int nPartitions = data.partitions().size();
         if (collectTrainingStats && repartition != Repartition.Never)
             stats.logRepartitionEnd();
 
@@ -832,7 +812,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                         new SharedFlatMapPathsMDS<>(getWorkerInstance(graph));
 
 
-        JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);
+        JavaRDD<SharedTrainingResult> result = data.mapPartitions(function);
 
         processResults(null, graph, result);
 
@@ -841,7 +821,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     }
 
 
-    protected void doIterationPaths(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<String> split,
+    protected void doIterationPaths(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<String> data,
                     int splitNum, int numSplits, int dataSetObjectNumExamples) {
         if (network == null && graph == null)
             throw new DL4JInvalidConfigException("Both MLN & CompGraph are NULL");
@@ -852,16 +832,19 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats)
             stats.logMapPartitionsStart();
 
-        JavaRDD<String> splitData = split;
-
         if (collectTrainingStats)
             stats.logRepartitionStart();
 
-        // FIXME: do we still want that?
-        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy,
-                        numObjectsEachWorker(dataSetObjectNumExamples), numWorkers);
+        if(repartitioner != null){
+            log.info("Repartitioning training data using repartitioner: {}", repartitioner);
+            int minPerWorker = Math.max(1, batchSizePerWorker/dataSetObjectNumExamples);
+            data = repartitioner.repartition(data, minPerWorker, numWorkers);
+        } else {
+            log.info("Repartitioning training data using SparkUtils repartitioner");
+            data = SparkUtils.repartitionEqually(data, repartition, numWorkers);
+        }
 
-        int nPartitions = splitData.partitions().size();
+        int nPartitions = data.partitions().size();
         if (collectTrainingStats && repartition != Repartition.Never)
             stats.logRepartitionEnd();
 
@@ -869,7 +852,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                         network != null ? getWorkerInstance(network) : getWorkerInstance(graph));
 
 
-        JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);
+        JavaRDD<SharedTrainingResult> result = data.mapPartitions(function);
 
         processResults(network, graph, result);
 
@@ -878,21 +861,26 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     }
 
     protected void doIterationPDS(SparkDl4jMultiLayer network, SparkComputationGraph graph,
-                    JavaRDD<PortableDataStream> split, int splitNum, int numSplits) {
+                    JavaRDD<PortableDataStream> data, int splitNum, int numSplits) {
         log.info("Starting training of split {} of {}. workerMiniBatchSize={}, updatesThreshold={}, Configured for {} workers",
                         splitNum, numSplits, batchSizePerWorker, threshold, numWorkers);
 
         if (collectTrainingStats)
             stats.logMapPartitionsStart();
 
-        JavaRDD<PortableDataStream> splitData = split;
         if (collectTrainingStats)
             stats.logRepartitionStart();
 
-        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy,
-                        numObjectsEachWorker(rddDataSetNumExamples), numWorkers);
+        if(repartitioner != null){
+            log.info("Repartitioning training data using repartitioner: {}", repartitioner);
+            int minPerWorker = Math.max(1, batchSizePerWorker/rddDataSetNumExamples);
+            data = repartitioner.repartition(data, minPerWorker, numWorkers);
+        } else {
+            log.info("Repartitioning training data using SparkUtils repartitioner");
+            data = SparkUtils.repartitionEqually(data, repartition, numWorkers);
+        }
 
-        int nPartitions = splitData.partitions().size();
+        int nPartitions = data.partitions().size();
 
         if (collectTrainingStats && repartition != Repartition.Never)
             stats.logRepartitionEnd();
@@ -901,7 +889,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                         new SharedFlatMapPDS<>(getWorkerInstance(network));
 
 
-        JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);
+        JavaRDD<SharedTrainingResult> result = data.mapPartitions(function);
 
         processResults(network, graph, result);
 
@@ -910,7 +898,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     }
 
 
-    protected void doIterationMultiPDS(SparkComputationGraph graph, JavaRDD<PortableDataStream> split, int splitNum,
+    protected void doIterationMultiPDS(SparkComputationGraph graph, JavaRDD<PortableDataStream> data, int splitNum,
                     int numSplits) {
         log.info("Starting training of split {} of {}. workerMiniBatchSize={}, updatesThreshold={}, Configured for {} workers",
                         splitNum, numSplits, batchSizePerWorker, threshold, numWorkers);
@@ -918,14 +906,19 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats)
             stats.logMapPartitionsStart();
 
-        JavaRDD<PortableDataStream> splitData = split;
         if (collectTrainingStats)
             stats.logRepartitionStart();
 
-        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy,
-                        numObjectsEachWorker(rddDataSetNumExamples), numWorkers);
+        if(repartitioner != null){
+            log.info("Repartitioning training data using repartitioner: {}", repartitioner);
+            int minPerWorker = Math.max(1, batchSizePerWorker/rddDataSetNumExamples);
+            data = repartitioner.repartition(data, minPerWorker, numWorkers);
+        } else {
+            log.info("Repartitioning training data using SparkUtils repartitioner");
+            data = SparkUtils.repartitionEqually(data, repartition, numWorkers);
+        }
 
-        int nPartitions = splitData.partitions().size();
+        int nPartitions = data.partitions().size();
 
         if (collectTrainingStats && repartition != Repartition.Never)
             stats.logRepartitionEnd();
@@ -934,7 +927,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                         new SharedFlatMapMultiPDS<>(getWorkerInstance(graph));
 
 
-        JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);
+        JavaRDD<SharedTrainingResult> result = data.mapPartitions(function);
 
         processResults(null, graph, result);
 
@@ -965,6 +958,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         protected long debugLongerIterations = 0L;
         protected int numWorkersPerNode = -1;
         protected int workerPrefetchNumBatches = 2;
+        protected Repartitioner repartitioner = new DefaultRepartitioner();
 
 
         public Builder(int rddDataSetNumExamples) {
@@ -1235,11 +1229,16 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             return this;
         }
 
+        public Builder repartitioner(Repartitioner repartitioner){
+            this.repartitioner = repartitioner;
+            return this;
+        }
+
         public SharedTrainingMaster build() {
             SharedTrainingMaster master = new SharedTrainingMaster(voidConfiguration, numWorkers, rddTrainingApproach,
                             storageLevel, collectTrainingStats, repartitionStrategy, repartition, threshold,
                             minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, batchSize,
-                            debugLongerIterations, numWorkersPerNode, workerPrefetchNumBatches);
+                            debugLongerIterations, numWorkersPerNode, workerPrefetchNumBatches, repartitioner);
             if (transport != null)
                 master.transport = this.transport;
 

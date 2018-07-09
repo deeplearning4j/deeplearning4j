@@ -27,6 +27,7 @@ import org.deeplearning4j.spark.impl.common.repartition.BalancedPartitioner;
 import org.deeplearning4j.spark.impl.common.repartition.EqualPartitioner;
 import org.deeplearning4j.spark.impl.common.repartition.HashingBalancedPartitioner;
 import org.deeplearning4j.spark.impl.common.repartition.MapTupleToPairFlatMap;
+import org.deeplearning4j.spark.impl.repartitioner.EqualRepartitioner;
 import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -404,7 +405,7 @@ public class SparkUtils {
         }
     }
 
-    static <T> JavaPairRDD<Integer, T> indexedRDD(JavaRDD<T> rdd) {
+    public static <T> JavaPairRDD<Integer, T> indexedRDD(JavaRDD<T> rdd) {
         return rdd.zipWithIndex().mapToPair(new PairFunction<Tuple2<T, Long>, Integer, T>() {
             @Override
             public Tuple2<Integer, T> call(Tuple2<T, Long> elemIdx) {
@@ -422,72 +423,7 @@ public class SparkUtils {
                 if (origNumPartitions == numPartitions)
                     return rdd;
             case Always:
-                //Repartition: either always, or origNumPartitions != numWorkers
-
-                //First: count number of elements in each partition. Need to know this so we can work out how to properly index each example,
-                // so we can in turn create properly balanced partitions after repartitioning
-                //Because the objects (DataSets etc) should be small, this should be OK
-
-                //Count each partition...
-                List<Tuple2<Integer, Integer>> partitionCounts =
-                        rdd.mapPartitionsWithIndex(new CountPartitionsFunction<T>(), true).collect();
-                int totalObjects = 0;
-                int initialPartitions = partitionCounts.size();
-
-                for (Tuple2<Integer, Integer> t2 : partitionCounts) {
-                    totalObjects += t2._2();
-                }
-
-                //Check if already correct
-                int minAllowable = (int)Math.floor(totalObjects / (double)numPartitions);
-                int maxAllowable = (int)Math.ceil(totalObjects / (double)numPartitions);
-
-                boolean repartitionRequired = false;
-                for (Tuple2<Integer, Integer> t2 : partitionCounts) {
-                    if(t2._2() < minAllowable || t2._2() > maxAllowable ){
-                        repartitionRequired = true;
-                        break;
-                    }
-                }
-
-                if (initialPartitions == numPartitions && !repartitionRequired) {
-                    log.info("Did not repartition - all correct size: initial={}, numPartitions={}", initialPartitions, numPartitions);
-                    //Don't need to do any repartitioning here - already in the format we want
-                    return rdd;
-                }
-
-                //Index each element for repartitioning (can only do manual repartitioning on a JavaPairRDD)
-                JavaPairRDD<Integer, T> pairIndexed = indexedRDD(rdd);
-
-                //Handle remainder.
-                //We'll randomly allocate one of these to a single partition, with no partition getting more than 1 (otherwise, imbalanced)
-                //Given that we don't know exactly how Spark will allocate partitions to workers, we are probably better off doing
-                // this randomly rather than "first N get +1" or "every M get +1" as this could introduce poor load balancing
-                int remainder = totalObjects % numPartitions;
-                int[] remainderPartitions = null;
-                if (remainder > 0) {
-                    remainderPartitions = new int[remainder];
-                    int[] temp = new int[numPartitions];
-                    for( int i=0; i< temp.length; i++ ){
-                        temp[i] = i;
-                    }
-                    MathUtils.shuffleArray(temp, new Random());
-                    for( int i=0; i<remainder; i++ ){
-                        remainderPartitions[i] = temp[i];
-                    }
-                }
-
-                int partitionSizeExRemainder = totalObjects / numPartitions;
-                pairIndexed = pairIndexed.partitionBy(new EqualPartitioner(numPartitions, partitionSizeExRemainder, remainderPartitions));
-
-                //DEBUGGING
-                List<Tuple2<Integer, Integer>> partitionCounts2 =
-                        rdd.mapPartitionsWithIndex(new CountPartitionsFunction<T>(), true).collect();
-                List<Tuple2<Integer, Integer>> partitionCounts3 =
-                        pairIndexed.values().mapPartitionsWithIndex(new CountPartitionsFunction<T>(), true).collect();
-                log.info("Partition counts - BEFORE: {}", partitionCounts2);
-                log.info("Partition counts - AFTER: {}", partitionCounts3);
-                return pairIndexed.values();
+                return new EqualRepartitioner().repartition(rdd, -1, numPartitions);
             default:
                 throw new RuntimeException("Unknown setting for repartition: " + repartition);
         }
@@ -634,7 +570,7 @@ public class SparkUtils {
      * @return
      */
     public static String getSparkExecutorId(){
-        if(sparkExecutorId == null)
+        if(sparkExecutorId != null)
             return sparkExecutorId;
 
         synchronized (SparkUtils.class){
