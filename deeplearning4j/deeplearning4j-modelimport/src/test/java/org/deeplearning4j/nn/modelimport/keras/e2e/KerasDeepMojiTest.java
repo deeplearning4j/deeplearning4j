@@ -34,6 +34,8 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
@@ -51,33 +53,25 @@ import static java.io.File.createTempFile;
 @Slf4j
 public class KerasDeepMojiTest {
 
-    private static final String TEMP_MODEL_FILENAME = "tempModel";
-    private static final String H5_EXTENSION = ".h5";
-
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
-
-    // run manually, might take a long time to load (too long for unit tests)
-    //@Ignore
     @Test
     public void testDeepMojiImport() throws Exception {
 
         KerasLayer.registerCustomLayer("AttentionWeightedAverage", KerasDeepMojiAttention.class);
-        importFunctionalModelH5Test("modelimport/keras/examples/DeepMoji/deepmoji.h5", null, false);
+
+        ClassPathResource modelResource = new ClassPathResource("modelimport/keras/examples/DeepMoji/deepmoji.h5",
+                        KerasModelEndToEndTest.class.getClassLoader());
+        File modelFile = createTempFile("tempModel", ".h5");
+        Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        KerasModelBuilder builder = new KerasModel()
+                .modelBuilder()
+                .modelHdf5Filename(modelFile.getAbsolutePath())
+                .enforceTrainingConfig(false);
+        KerasModel model = builder.buildModel();
+        ComputationGraph graph = model.getComputationGraph();
+
+        INDArray input = Nd4j.create(new int[] {10, 30});
+        graph.output(input);
     }
 
-    private ComputationGraph importFunctionalModelH5Test(String modelPath, int[] inputShape, boolean train) throws Exception {
-        ClassPathResource modelResource =
-                new ClassPathResource(modelPath,
-                        KerasModelEndToEndTest.class.getClassLoader());
-        File modelFile = createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
-        Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
-                .enforceTrainingConfig(train);
-        if (inputShape != null) {
-            builder.inputShape(inputShape);
-        }
-        KerasModel model = builder.buildModel();
-        return model.getComputationGraph();
-    }
+
 }

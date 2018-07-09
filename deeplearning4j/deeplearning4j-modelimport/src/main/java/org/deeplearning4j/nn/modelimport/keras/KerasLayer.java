@@ -356,6 +356,42 @@ public class KerasLayer {
         return false;
     }
 
+
+
+    /**
+     * Some DL4J layers need explicit specification of number of inputs, which Keras does infer.
+     * This method searches through previous layers until a FeedForwardLayer is found. These layers
+     * have nOut values that subsequently correspond to the nIn value of this layer.
+     *
+     * @param previousLayers
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
+    protected long getNInFromConfig(Map<String, ? extends KerasLayer> previousLayers) throws UnsupportedKerasConfigurationException {
+        int size = previousLayers.size();
+        int count = 0;
+        long nIn;
+        String inboundLayerName = inboundLayerNames.get(0);
+        while (count <= size) {
+            if (previousLayers.containsKey(inboundLayerName)) {
+                KerasLayer inbound = previousLayers.get(inboundLayerName);
+                try {
+                    FeedForwardLayer ffLayer = (FeedForwardLayer) inbound.getLayer();
+                    nIn = ffLayer.getNOut();
+                    if (nIn > 0)
+                        return nIn;
+                    count++;
+                    inboundLayerName = inbound.getInboundLayerNames().get(0);
+                } catch (Exception e) {
+                    inboundLayerName = inbound.getInboundLayerNames().get(0);
+                }
+            }
+        }
+        throw new UnsupportedKerasConfigurationException("Could not determine number of input channels for" +
+                "depthwise convolution.");
+    }
+
+
     /**
      * Gets appropriate DL4J InputPreProcessor for given InputTypes.
      *

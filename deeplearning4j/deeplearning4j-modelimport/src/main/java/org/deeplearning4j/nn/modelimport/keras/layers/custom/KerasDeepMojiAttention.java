@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.custom;
 
+import lombok.val;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.samediff.DeepMojiAttentionLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -43,9 +44,10 @@ public class KerasDeepMojiAttention extends KerasLayer {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         Map<String, Object> attentionParams = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        // TODO: get channels properly
 
-        DeepMojiAttentionLayer layer = new DeepMojiAttentionLayer(1);
+        // TODO: this is hard-coded for DeepMoji
+        DeepMojiAttentionLayer layer = new DeepMojiAttentionLayer.Builder()
+                .channels(30).timeSteps(2304).nIn(64).nOut(64).build();
         this.layer = layer;
     }
 

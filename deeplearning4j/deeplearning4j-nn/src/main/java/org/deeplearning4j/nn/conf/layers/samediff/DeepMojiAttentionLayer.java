@@ -6,8 +6,10 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 /**
@@ -20,13 +22,24 @@ import java.util.Map;
 public class DeepMojiAttentionLayer extends SameDiffLayer {
 
     // TODO: Masking
-    private int channels;
+    private long channels;
+    private int timeSteps;
     private final double EPS = 1e-7;
-    private int nIn;
+    private long nIn;
+    private long nOut;
 
-    public DeepMojiAttentionLayer(int channels, WeightInit weightInit) {
-        this.weightInit = weightInit;
-        this.channels = channels;
+    public DeepMojiAttentionLayer(Builder builder) {
+        super(builder);
+
+        this.nIn = builder.nIn;
+        this.nOut = builder.nOut;
+        this.weightInit = builder.weightInit;
+        this.channels = builder.channels;
+        this.timeSteps = builder.timeSteps;
+    }
+
+    private DeepMojiAttentionLayer(){
+        //No op (Jackson)
     }
 
     @Override
@@ -35,12 +48,10 @@ public class DeepMojiAttentionLayer extends SameDiffLayer {
             throw new IllegalStateException("Invalid input for DeepMoji attention layer (layer name=\"" + getLayerName()
                     + "\"): Expected RNN input, got " + inputType);
         }
-        InputType.InputTypeRecurrent rnnType = (InputType.InputTypeRecurrent) inputType;
-        this.nIn = (int) rnnType.getTimeSeriesLength();
-    }
-
-    public DeepMojiAttentionLayer(int channels) {
-        this(channels, WeightInit.UNIFORM);
+        if (override) {
+            InputType.InputTypeRecurrent rnnType = (InputType.InputTypeRecurrent) inputType;
+            this.nIn = (int) rnnType.getSize();
+        }
     }
 
     /**
@@ -56,15 +67,15 @@ public class DeepMojiAttentionLayer extends SameDiffLayer {
     public SDVariable defineLayer(SameDiff sd, SDVariable layerInput, Map<String, SDVariable> paramTable) {
         SDVariable weights = paramTable.get(DefaultParamInitializer.WEIGHT_KEY);
 
-        SDVariable logits = sd.mmul(layerInput, weights);
+        SDVariable logits = sd.tensorMmul(layerInput, weights, new int[][] { {2}, {0}});
         SDVariable reshapedLogits = sd.reshape(logits, layerInput.getShape()[0], layerInput.getShape()[1]);
         SDVariable ai = sd.exp(reshapedLogits);
         SDVariable aiSum = sd.sum(ai, 1);
-        SDVariable aiSumEps = aiSum.add(EPS);
+        SDVariable aiSumEps = sd.expandDims(aiSum.add(EPS), 1);
         SDVariable attentionWeights = ai.div(aiSumEps);
         SDVariable weightedInput = layerInput.mul(sd.expandDims(attentionWeights, 2));
 
-        return sd.sum(weightedInput, 1);
+        return sd.sum(weightedInput, 2);
     }
 
 
@@ -75,10 +86,10 @@ public class DeepMojiAttentionLayer extends SameDiffLayer {
                     + "\"): Expected RNN input, got " + inputType);
         }
         InputType.InputTypeRecurrent rnnType = (InputType.InputTypeRecurrent) inputType;
-        long tsLength = rnnType.getTimeSeriesLength();
+        long size = rnnType.getSize();
 
-        // Layer will "average out" second dimension
-        return InputType.feedForward(tsLength);
+        // Layer will "average out" time-step dimension
+        return InputType.feedForward(size);
     }
 
     @Override
@@ -88,6 +99,40 @@ public class DeepMojiAttentionLayer extends SameDiffLayer {
 
     @Override
     public void initializeParameters(Map<String, INDArray> params) {
-        initWeights(channels, 1, weightInit,  params.get(DefaultParamInitializer.WEIGHT_KEY));
+        initWeights( (int) channels, 1, weightInit,  params.get(DefaultParamInitializer.WEIGHT_KEY));
+    }
+
+    public static class Builder extends SameDiffLayer.Builder<Builder> {
+
+        private int nIn;
+        private int nOut;
+        private int channels;
+        private int timeSteps;
+
+        public Builder nIn(int nIn){
+            this.nIn = nIn;
+            return this;
+        }
+
+        public Builder nOut(int nOut){
+            this.nOut = nOut;
+            return this;
+        }
+
+        public Builder channels(int channels){
+            this.channels = channels;
+            return this;
+        }
+
+
+        public Builder timeSteps(int timeSteps){
+            this.timeSteps = timeSteps;
+            return this;
+        }
+
+        @Override
+        public DeepMojiAttentionLayer build() {
+            return new DeepMojiAttentionLayer(this);
+        }
     }
 }
