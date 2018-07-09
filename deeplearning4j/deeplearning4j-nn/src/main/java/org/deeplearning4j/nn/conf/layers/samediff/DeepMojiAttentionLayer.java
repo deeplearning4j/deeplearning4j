@@ -22,15 +22,25 @@ public class DeepMojiAttentionLayer extends SameDiffLayer {
     // TODO: Masking
     private int channels;
     private final double EPS = 1e-7;
+    private int nIn;
 
     public DeepMojiAttentionLayer(int channels, WeightInit weightInit) {
         this.weightInit = weightInit;
         this.channels = channels;
     }
 
+    @Override
+    public void setNIn(InputType inputType, boolean override) {
+        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
+            throw new IllegalStateException("Invalid input for DeepMoji attention layer (layer name=\"" + getLayerName()
+                    + "\"): Expected RNN input, got " + inputType);
+        }
+        InputType.InputTypeRecurrent rnnType = (InputType.InputTypeRecurrent) inputType;
+        this.nIn = (int) rnnType.getTimeSeriesLength();
+    }
+
     public DeepMojiAttentionLayer(int channels) {
-        this.channels = channels;
-        this.weightInit = WeightInit.UNIFORM;
+        this(channels, WeightInit.UNIFORM);
     }
 
     /**
@@ -47,8 +57,7 @@ public class DeepMojiAttentionLayer extends SameDiffLayer {
         SDVariable weights = paramTable.get(DefaultParamInitializer.WEIGHT_KEY);
 
         SDVariable logits = sd.mmul(layerInput, weights);
-        // TODO: this is shitty, sd reshape should also take long
-        SDVariable reshapedLogits = sd.reshape(logits, (int) layerInput.getShape()[0], (int) layerInput.getShape()[1]);
+        SDVariable reshapedLogits = sd.reshape(logits, layerInput.getShape()[0], layerInput.getShape()[1]);
         SDVariable ai = sd.exp(reshapedLogits);
         SDVariable aiSum = sd.sum(ai, 1);
         SDVariable aiSumEps = aiSum.add(EPS);
@@ -61,16 +70,15 @@ public class DeepMojiAttentionLayer extends SameDiffLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
+        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for DeepMoji attention layer (layer name=\"" + getLayerName()
-                    + "\"): Expected CNN input, got " + inputType);
+                    + "\"): Expected RNN input, got " + inputType);
         }
-        InputType.InputTypeConvolutional cnnType = (InputType.InputTypeConvolutional) inputType;
-        long height = cnnType.getHeight();
-        long tsLength = cnnType.getChannels();
+        InputType.InputTypeRecurrent rnnType = (InputType.InputTypeRecurrent) inputType;
+        long tsLength = rnnType.getTimeSeriesLength();
 
-        // Layer will "average out" second dimension (width)
-        return InputType.recurrent(height, tsLength);
+        // Layer will "average out" second dimension
+        return InputType.feedForward(tsLength);
     }
 
     @Override

@@ -22,39 +22,62 @@ import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
+import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
+import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
+import org.deeplearning4j.nn.modelimport.keras.layers.custom.KerasDeepMojiAttention;
 import org.deeplearning4j.nn.modelimport.keras.layers.custom.KerasLRN;
 import org.deeplearning4j.nn.modelimport.keras.layers.custom.KerasPoolHelper;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+
+import static java.io.File.createTempFile;
 
 /**
- * Test import of Keras custom layers. Must be run manually, since user must download weights and config from
- * http://blob.deeplearning4j.org/models/googlenet_keras_weights.h5
- * http://blob.deeplearning4j.org/models/googlenet_config.json
+ * Test import of DeepMoji application
  *
  * @author Max Pumperla
  */
 @Slf4j
 public class KerasDeepMojiTest {
 
+    private static final String TEMP_MODEL_FILENAME = "tempModel";
+    private static final String H5_EXTENSION = ".h5";
+
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 
     // run manually, might take a long time to load (too long for unit tests)
-    @Ignore
+    //@Ignore
     @Test
     public void testDeepMojiImport() throws Exception {
 
-        // TODO: Need Keras layer as well... create KerasSameDiffLayer to make this easier
+        KerasLayer.registerCustomLayer("AttentionWeightedAverage", KerasDeepMojiAttention.class);
+        importFunctionalModelH5Test("modelimport/keras/examples/DeepMoji/deepmoji.h5", null, false);
+    }
 
-        KerasLayer.registerCustomLayer("AttentionWeightedAverage", KerasPoolHelper.class);
-
+    private ComputationGraph importFunctionalModelH5Test(String modelPath, int[] inputShape, boolean train) throws Exception {
+        ClassPathResource modelResource =
+                new ClassPathResource(modelPath,
+                        KerasModelEndToEndTest.class.getClassLoader());
+        File modelFile = createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
+        Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
+                .enforceTrainingConfig(train);
+        if (inputShape != null) {
+            builder.inputShape(inputShape);
+        }
+        KerasModel model = builder.buildModel();
+        return model.getComputationGraph();
     }
 }
