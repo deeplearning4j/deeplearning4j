@@ -19,6 +19,8 @@ package org.deeplearning4j.nn.modelimport.keras.e2e;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.eval.ROCMultiClass;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.api.Layer;
@@ -33,6 +35,7 @@ import org.deeplearning4j.nn.layers.recurrent.LastTimeStepLayer;
 import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.modelimport.keras.Hdf5Archive;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
+import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
@@ -58,6 +61,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
@@ -337,6 +341,7 @@ public class KerasModelEndToEndTest {
     public void importFlatIntoLSTM() throws Exception {
         importFunctionalModelH5Test("modelimport/keras/examples/reshape_to_rnn/reshape_model.h5");
     }
+    
 
     /**
      * Functional LSTM test
@@ -429,6 +434,30 @@ public class KerasModelEndToEndTest {
         INDArray input = Nd4j.ones(10, 3, 299, 299);
         graph.output(input);
         System.out.println(graph.summary());
+    }
+
+    /**
+     * Inception V4
+     */
+    @Test
+    @Ignore
+    // Model and weights have about 170mb, too large for test resources and also too excessive to enable as unit test
+    public void importInceptionV4() throws Exception {
+        String modelUrl = DL4JResources.getURLString(
+                "models/inceptionv4_keras_imagenet_weightsandconfig.h5");
+        File kerasFile = testDir.newFile("inceptionv4_keras_imagenet_weightsandconfig.h5");
+
+        if (!kerasFile.exists()) {
+            FileUtils.copyURLToFile(new URL(modelUrl), kerasFile);
+            kerasFile.deleteOnExit();
+        }
+
+        int[] inputShape = new int[]{299, 299, 3};
+        ComputationGraph graph = importFunctionalModelH5Test(
+                kerasFile.getAbsolutePath(), inputShape, false);
+
+        // System.out.println(graph.summary());
+
     }
 
     /**

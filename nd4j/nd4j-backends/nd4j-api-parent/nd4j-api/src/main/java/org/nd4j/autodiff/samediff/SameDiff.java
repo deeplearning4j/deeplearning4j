@@ -6776,6 +6776,36 @@ public class SameDiff {
      * @return Output variable
      * @see #reshape(SDVariable, SDVariable)
      */
+    public SDVariable reshape(SDVariable x, long... shape) {
+        return reshape(null, x, shape);
+    }
+
+    /**
+     * Reshape the input variable to the specified (fixed) shape. The output variable will have the same values as the
+     * input, but with the specified shape.<br>
+     * Note that prod(shape) must match length(input) == prod(input.shape)
+     *
+     * @param name  Output variable name
+     * @param x    Input variable
+     * @param shape New shape for variable
+     * @return Output variable
+     * @see #reshape(SDVariable, SDVariable)
+     */
+    public SDVariable reshape(String name, SDVariable x, long... shape) {
+        SDVariable result = functionFactory .reshape(x, shape);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * Reshape the input variable to the specified (fixed) shape. The output variable will have the same values as the
+     * input, but with the specified shape.<br>
+     * Note that prod(shape) must match length(input) == prod(input.shape)
+     *
+     * @param x    Input variable
+     * @param shape New shape for variable
+     * @return Output variable
+     * @see #reshape(SDVariable, SDVariable)
+     */
     public SDVariable reshape(SDVariable x, int... shape) {
         return reshape(null, x, shape);
     }

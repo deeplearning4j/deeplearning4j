@@ -30,6 +30,8 @@ import org.nd4j.linalg.io.ClassPathResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -55,9 +57,11 @@ public class MiniBatchTests extends BaseSparkTest {
         count = points.count();
         assertEquals(300, count);
 
+        points = points.repartition(1);
         JavaRDD<DataSet> miniBatches = new RDDMiniBatches(10, points).miniBatchesJava();
         count = miniBatches.count();
-        assertEquals(30, count);
+        List<DataSet> list = miniBatches.collect();
+        assertEquals(30, count);    //Expect exactly 30 from 1 partition... could be more for multiple input partitions
 
         lines.unpersist();
         points.unpersist();
