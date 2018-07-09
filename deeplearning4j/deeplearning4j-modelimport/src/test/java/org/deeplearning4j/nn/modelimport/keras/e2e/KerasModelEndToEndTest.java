@@ -446,14 +446,16 @@ public class KerasModelEndToEndTest {
                 "models/inceptionv4_keras_imagenet_weightsandconfig.h5");
         File kerasFile = testDir.newFile("inceptionv4_keras_imagenet_weightsandconfig.h5");
 
-        FileUtils.copyURLToFile(new URL(modelUrl), kerasFile);
+        if (!kerasFile.exists()) {
+            FileUtils.copyURLToFile(new URL(modelUrl), kerasFile);
+            kerasFile.deleteOnExit();
+        }
 
         int[] inputShape = new int[]{299, 299, 3};
         ComputationGraph graph = importFunctionalModelH5Test(
                 kerasFile.getAbsolutePath(), inputShape, false);
 
-        System.out.println(graph.summary());
-        kerasFile.deleteOnExit();
+        // System.out.println(graph.summary());
 
     }
 
