@@ -575,7 +575,7 @@ public class SparkUtils {
 
         synchronized (SparkUtils.class){
             //re-check, in case some other thread set it while waiting for lock
-            if(sparkExecutorId == null)
+            if(sparkExecutorId != null)
                 return sparkExecutorId;
 
             String s = System.getProperty("sun.java.command");
