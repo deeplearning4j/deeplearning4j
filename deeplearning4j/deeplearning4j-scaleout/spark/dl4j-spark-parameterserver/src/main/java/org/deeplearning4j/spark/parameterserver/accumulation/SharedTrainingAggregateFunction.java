@@ -9,6 +9,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author raver119@gmail.com
@@ -24,7 +26,9 @@ public class SharedTrainingAggregateFunction implements
                             .scoreSum(result.getScoreSum()).listenerStaticInfo(result.getListenerStaticInfo())
                             .listenerUpdates(result.getListenerUpdates()).listenerMetaData(result.getListenerMetaData())
                             .sparkTrainingStats(result.getSparkTrainingStats())
-                            .aggregationsCount(result.getAggregationsCount()).build();
+                            .aggregationsCount(result.getAggregationsCount())
+                            .minibatchesPerExecutor(result.getMinibatchesPerExecutor())
+                    .build();
         }
 
 
@@ -82,10 +86,26 @@ public class SharedTrainingAggregateFunction implements
                 listenerUpdates.addAll(listenerUpdates2);
         }
 
+        Map<String,Integer> minibatchesPerExecutor = new HashMap<>();
+        if(tuple.getMinibatchesPerExecutor() != null) {
+            for (Map.Entry<String, Integer> e : tuple.getMinibatchesPerExecutor().entrySet()){
+                minibatchesPerExecutor.put(e.getKey(), e.getValue());
+            }
+        }
+        if(result.getMinibatchesPerExecutor() != null){
+            for (Map.Entry<String, Integer> e : result.getMinibatchesPerExecutor().entrySet()){
+                if(minibatchesPerExecutor.containsKey(e.getKey())){
+                    minibatchesPerExecutor.put(e.getKey(), minibatchesPerExecutor.get(e.getKey()) + e.getValue());
+                } else {
+                    minibatchesPerExecutor.put(e.getKey(), e.getValue());
+                }
+            }
+        }
 
         return SharedTrainingAccumulationTuple.builder().scoreSum(score).updaterStateArray(updaterStateSum)
                         .aggregationsCount(aggregationsCount).sparkTrainingStats(stats)
                         .listenerMetaData(listenerMetaData).listenerUpdates(listenerUpdates)
-                        .listenerStaticInfo(listenerStaticInfo).build();
+                        .listenerStaticInfo(listenerStaticInfo)
+                        .minibatchesPerExecutor(minibatchesPerExecutor).build();
     }
 }

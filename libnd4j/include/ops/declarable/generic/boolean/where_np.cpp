@@ -49,9 +49,9 @@ namespace nd4j {
                     REQUIRE_TRUE(condition->lengthOf() == x->sizeAt(0), 0, "Condition length should be equal to the dim0 of x/y to act as TAD-mask, but got %d instead", condition->lengthOf());
 
                     auto dims = ShapeUtils<T>::convertAxisToTadTarget(x->rankOf(), {0});
-                    auto tadsX = NDArrayFactory<T>::allTensorsAlongDimension(x, dims);
-                    auto tadsY = NDArrayFactory<T>::allTensorsAlongDimension(y, dims);
-                    auto tadsZ = NDArrayFactory<T>::allTensorsAlongDimension(z, dims);
+                    auto tadsX = x->allTensorsAlongDimension(dims);
+                    auto tadsY = y->allTensorsAlongDimension(dims);
+                    auto tadsZ = z->allTensorsAlongDimension(dims);
 
                     for (int e = 0; e < tadsX->size(); e++) {
                         T v = condition->getIndexedScalar(e);

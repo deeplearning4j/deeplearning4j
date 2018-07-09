@@ -119,7 +119,6 @@ namespace nd4j {
         auto z = reinterpret_cast<T *>(dz);
 
         if (N < nd4j::Environment::getInstance()->elementwiseThreshold()) {
-#pragma omp simd
             for (int i = 0; i < N; i++) {
                 // FIXME: get rid of through-float though
                 z[i] = static_cast<T>(static_cast<float>(x[i]));
@@ -143,5 +142,7 @@ namespace nd4j {
     template void TypeCast::convertToThreshold<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
     template void TypeCast::convertToThreshold<double>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
 
+#ifndef __CLION_IDE__
     BUILD_DOUBLE_TEMPLATE(template void TypeCast::convertGeneric, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES, LIBND4J_TYPES)
+#endif
 }

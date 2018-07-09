@@ -2721,7 +2721,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         //null character
         if (ordering() == '\u0000') {
             //Shape.setOrder(shapeInfo(), Nd4j.order());
-            throw new IllegalStateException("setOrder() shouldn't ever happen here");
+            val si = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride, 0,1, Nd4j.order());
+            setShapeInformation(si);
         }
 
     }
@@ -2735,8 +2736,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         //null character
         if (ordering() == '\u0000') {
-            //Shape.setOrder(shapeInfo(), Nd4j.order());
-            throw new IllegalStateException("setOrder() shouldn't ever happen here");
+            val si = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride, 0,1, Nd4j.order());
+            setShapeInformation(si);
         }
 
     }
@@ -6615,6 +6616,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public DataBuffer.Type dataType() {
+        if (data != null)
+            return data.dataType();
+
         val e = Shape.extras(jvmShapeInfo.javaShapeInformation);
 
         if (e != 0) {
@@ -6622,9 +6626,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             if (t != DataBuffer.Type.UNKNOWN)
                 return t;
         }
-
-        if (data != null)
-            return data.dataType();
 
         return DataBuffer.Type.UNKNOWN;
     }

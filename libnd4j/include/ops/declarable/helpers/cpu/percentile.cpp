@@ -4,7 +4,6 @@
 
 #include <ops/declarable/helpers/percentile.h>
 #include "ResultSet.h"
-#include <NDArrayFactory.h>
 
 namespace nd4j    {
 namespace ops     {
@@ -24,7 +23,7 @@ void percentile(const NDArray<T>& input, NDArray<T>& output, std::vector<int>& a
         shape::checkDimensions(inputRank, axises);          // check, sort dimensions and remove duplicates if they are present
 
 
-    ResultSet<T>* listOfSubArrs = NDArrayFactory<T>::allTensorsAlongDimension(&input, axises);
+    ResultSet<T>* listOfSubArrs = input.allTensorsAlongDimension(axises);
     
     std::vector<Nd4jLong> shapeOfSubArr(listOfSubArrs->at(0)->rankOf());
     for(int i=0; i<shapeOfSubArr.size(); ++i)

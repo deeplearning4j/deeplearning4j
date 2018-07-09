@@ -26,7 +26,6 @@ namespace ops {
             axis += input->rankOf();
 
         std::vector<int> dims = ShapeUtils<T>::convertAxisToTadTarget(input->rankOf(), {axis});
-        //auto tads = NDArrayFactory<T>::allTensorsAlongDimension(input, dims);
 
         int pos = 0;
         for (int e = 0; e < sizes->lengthOf(); e++) {

@@ -49,7 +49,7 @@ namespace nd4j {
                 axis = output->rankOf() + axis;
 
             auto vec = ShapeUtils<T>::convertAxisToTadTarget(input->rankOf(), {axis});
-            auto tads = NDArrayFactory<T>::allTensorsAlongDimension(output, {axis});
+            auto tads = output->allTensorsAlongDimension({axis});
             for (int e = 0; e < tads->size(); e++) {
                 auto tad = tads->at(e);
                 tad->assign(off);

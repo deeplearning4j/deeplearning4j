@@ -186,7 +186,7 @@
         <javacpp.version>1.4.2-SNAPSHOT</javacpp.version>
         <javacpp-presets.version>1.4.2-SNAPSHOT</javacpp-presets.version>
         <javacv.version>1.4.2-SNAPSHOT</javacv.version>
-        <openblas.version>0.3.0</openblas.version>
+        <openblas.version>0.3.1</openblas.version>
         <mkl.version>2018.3</mkl.version>
         <mkl-dnn.version>0.14</mkl-dnn.version>
         <opencv.version>3.4.1</opencv.version>

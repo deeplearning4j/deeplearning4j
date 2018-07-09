@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -23,11 +24,15 @@ import org.deeplearning4j.spark.impl.common.CountPartitionsFunction;
 import org.deeplearning4j.spark.impl.common.SplitPartitionsFunction;
 import org.deeplearning4j.spark.impl.common.SplitPartitionsFunction2;
 import org.deeplearning4j.spark.impl.common.repartition.BalancedPartitioner;
+import org.deeplearning4j.spark.impl.common.repartition.EqualPartitioner;
 import org.deeplearning4j.spark.impl.common.repartition.HashingBalancedPartitioner;
 import org.deeplearning4j.spark.impl.common.repartition.MapTupleToPairFlatMap;
+import org.deeplearning4j.spark.impl.repartitioner.EqualRepartitioner;
+import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.MathUtils;
 import org.slf4j.Logger;
 import scala.Tuple2;
 
@@ -42,6 +47,7 @@ import java.util.*;
  *
  * @author Alex Black
  */
+@Slf4j
 public class SparkUtils {
 
     private static final String KRYO_EXCEPTION_MSG = "Kryo serialization detected without an appropriate registrator "
@@ -49,6 +55,8 @@ public class SparkUtils {
                     + " serialization issues (NullPointerException) with off-heap data in INDArrays.\n"
                     + "Use nd4j-kryo_2.10 or _2.11 artifact, with sparkConf.set(\"spark.kryo.registrator\", \"org.nd4j.Nd4jRegistrator\");\n"
                     + "See https://deeplearning4j.org/spark#kryo for more details";
+
+    private static String sparkExecutorId;
 
     private SparkUtils() {}
 
@@ -378,22 +386,37 @@ public class SparkUtils {
                 JavaPairRDD<Integer, T> pairIndexed = indexedRDD(rdd);
 
                 int remainder = (totalObjects - numPartitions * objectsPerPartition) % numPartitions;
+                log.info("Amount to rebalance: numPartitions={}, objectsPerPartition={}, remainder={}", numPartitions, objectsPerPartition, remainder);
                 pairIndexed = pairIndexed
                                 .partitionBy(new BalancedPartitioner(numPartitions, objectsPerPartition, remainder));
-
                 return pairIndexed.values();
             default:
                 throw new RuntimeException("Unknown setting for repartition: " + repartition);
         }
     }
 
-    static <T> JavaPairRDD<Integer, T> indexedRDD(JavaRDD<T> rdd) {
+    public static <T> JavaPairRDD<Integer, T> indexedRDD(JavaRDD<T> rdd) {
         return rdd.zipWithIndex().mapToPair(new PairFunction<Tuple2<T, Long>, Integer, T>() {
             @Override
             public Tuple2<Integer, T> call(Tuple2<T, Long> elemIdx) {
                 return new Tuple2<>(elemIdx._2().intValue(), elemIdx._1());
             }
         });
+    }
+
+    public static <T> JavaRDD<T> repartitionEqually(JavaRDD<T> rdd, Repartition repartition, int numPartitions){
+        int origNumPartitions = rdd.partitions().size();
+        switch (repartition) {
+            case Never:
+                return rdd;
+            case NumPartitionsWorkersDiffers:
+                if (origNumPartitions == numPartitions)
+                    return rdd;
+            case Always:
+                return new EqualRepartitioner().repartition(rdd, -1, numPartitions);
+            default:
+                throw new RuntimeException("Unknown setting for repartition: " + repartition);
+        }
     }
 
     /**
@@ -528,5 +551,38 @@ public class SparkUtils {
 
         //Step 3: Recombine
         return singleExampleDataSets.values().mapPartitions(new BatchDataSetsFunction(newBatchSize));
+    }
+
+    /**
+     * Get the Spark executor ID<br>
+     * The ID is parsed from the JVM launch args. If that is not specified (or can't be obtained) then the value
+     * from {@link UIDProvider#getJVMUID()} is returned
+     * @return
+     */
+    public static String getSparkExecutorId(){
+        if(sparkExecutorId != null)
+            return sparkExecutorId;
+
+        synchronized (SparkUtils.class){
+            //re-check, in case some other thread set it while waiting for lock
+            if(sparkExecutorId != null)
+                return sparkExecutorId;
+
+            String s = System.getProperty("sun.java.command");
+            if(s == null || s.isEmpty() || !s.contains("executor-id")){
+                sparkExecutorId = UIDProvider.getJVMUID();
+                return sparkExecutorId;
+            }
+
+            int idx = s.indexOf("executor-id");
+            String sub = s.substring(idx);
+            String[] split = sub.split(" ");
+            if(split.length < 2){
+                sparkExecutorId = UIDProvider.getJVMUID();
+                return sparkExecutorId;
+            }
+            sparkExecutorId = split[1];
+            return sparkExecutorId;
+        }
     }
 }

@@ -6,7 +6,6 @@
 #define LIBND4J_MMULHELPER_CPP
 
 #include "../MmulHelper.h"
-#include <NDArrayFactory.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/BlasHelper.h>
 
@@ -209,8 +208,8 @@ nd4j::NDArray<T>* MmulHelper<T>::mmulNxN(nd4j::NDArray<T>* A, nd4j::NDArray<T>* 
                 throw std::runtime_error("Bad result shape");
             }
             if (A->rankOf() > B->rankOf()) {
-                auto aL = NDArrayFactory<T>::allTensorsAlongDimension(A, {A->rankOf() - 2, A->rankOf() - 1});
-                auto cL = NDArrayFactory<T>::allTensorsAlongDimension(result, {result->rankOf() - 2, result->rankOf() - 1});
+                auto aL = A->allTensorsAlongDimension({A->rankOf() - 2, A->rankOf() - 1});
+                auto cL = result->allTensorsAlongDimension({result->rankOf() - 2, result->rankOf() - 1});
                 nd4j_debug("NumTads: %i\n", aL->size());
                 for (int e = 0; e < aL->size(); e++) {
                     auto c_ = mmul(aL->at(e), B, cL->at(e));
@@ -222,8 +221,8 @@ nd4j::NDArray<T>* MmulHelper<T>::mmulNxN(nd4j::NDArray<T>* A, nd4j::NDArray<T>* 
                 delete aL;
                 delete cL;
             } else {
-                auto bL = NDArrayFactory<T>::allTensorsAlongDimension(B, {B->rankOf() - 2, B->rankOf() - 1});
-                auto cL = NDArrayFactory<T>::allTensorsAlongDimension(result, {result->rankOf() - 2, result->rankOf() - 1});
+                auto bL = B->allTensorsAlongDimension({B->rankOf() - 2, B->rankOf() - 1});
+                auto cL = result->allTensorsAlongDimension({result->rankOf() - 2, result->rankOf() - 1});
                 nd4j_debug("NumTads: %i\n", bL->size());
                 for (int e = 0; e < bL->size(); e++) {
                     auto c_ = mmul(A, bL->at(e), cL->at(e));
@@ -261,9 +260,9 @@ nd4j::NDArray<T>* MmulHelper<T>::mmulNxN(nd4j::NDArray<T>* A, nd4j::NDArray<T>* 
                 nd4j_printf("Bad result shape for MatMul\n", "");
                 throw std::runtime_error("Bad result shape");
             }
-            auto aL = NDArrayFactory<T>::allTensorsAlongDimension(A, {A->rankOf() - 2, A->rankOf() - 1});
-            auto bL = NDArrayFactory<T>::allTensorsAlongDimension(B, {B->rankOf() - 2, B->rankOf() - 1});
-            auto cL = NDArrayFactory<T>::allTensorsAlongDimension(result, {result->rankOf() - 2, result->rankOf() - 1});
+            auto aL = A->allTensorsAlongDimension({A->rankOf() - 2, A->rankOf() - 1});
+            auto bL = B->allTensorsAlongDimension({B->rankOf() - 2, B->rankOf() - 1});
+            auto cL = result->allTensorsAlongDimension({result->rankOf() - 2, result->rankOf() - 1});
             int aL_size = aL->size();
             int bL_size = bL->size();
             int cL_size = cL->size();

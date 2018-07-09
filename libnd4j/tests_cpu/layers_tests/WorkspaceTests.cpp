@@ -9,7 +9,6 @@
 #include <NDArray.h>
 #include <Workspace.h>
 #include <MemoryRegistrator.h>
-#include <NDArrayFactory.h>
 #include <MmulHelper.h>
 
 using namespace nd4j;

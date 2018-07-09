@@ -3,7 +3,6 @@
 //
 
 #include <ResultSet.h>
-#include <NDArrayFactory.h>
 #include <ops/declarable/helpers/reduce_norm.h>
 
 namespace nd4j {
@@ -20,8 +19,8 @@ namespace helpers {
                 dimensions.emplace_back(e);
             }
         }
-        std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
-        std::unique_ptr<ResultSet<T>> inList(NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions));
+        std::unique_ptr<ResultSet<T>> outList(output->allTensorsAlongDimension(dimensions));
+        std::unique_ptr<ResultSet<T>> inList(input->allTensorsAlongDimension(dimensions));
 //#pragma omp parallel for if (outList->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static) 
         for (Nd4jLong e = 0; e < outList->size(); ++e) {
             outList->at(e)->assign(epsilon);

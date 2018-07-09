@@ -61,7 +61,7 @@ namespace ops {
                         dimensions.emplace_back(e);
                     }
                 }
-                std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
+                std::unique_ptr<ResultSet<T>> outList(output->allTensorsAlongDimension(dimensions));
                 for (Nd4jLong e = 0; e < outList->size(); ++e) {
                     outList->at(e)->assign(epsilon);
                 }

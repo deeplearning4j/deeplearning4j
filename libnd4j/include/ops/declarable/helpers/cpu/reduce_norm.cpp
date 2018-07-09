@@ -3,7 +3,6 @@
 //
 
 #include <ResultSet.h>
-#include <NDArrayFactory.h>
 #include <ops/declarable/helpers/reduce_product.h>
 
 namespace nd4j {
@@ -19,8 +18,8 @@ namespace helpers {
                 dimensions.emplace_back(e);
             }
         }
-        std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
-        std::unique_ptr<ResultSet<T>> inList(NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions));
+        std::unique_ptr<ResultSet<T>> outList(output->allTensorsAlongDimension(dimensions));
+        std::unique_ptr<ResultSet<T>> inList(input->allTensorsAlongDimension(dimensions));
         for (int e = 0; e < outList->size(); ++e) {
             auto norm1Backprop = LAMBDA_TT(_x, _e) {
                 return (_x >= T(0.f) ?_e:-_e);
@@ -38,8 +37,8 @@ namespace helpers {
                 dimensions.emplace_back(e);
             }
         }
-        std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
-        std::unique_ptr<ResultSet<T>> inList(NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions));
+        std::unique_ptr<ResultSet<T>> outList(output->allTensorsAlongDimension(dimensions));
+        std::unique_ptr<ResultSet<T>> inList(input->allTensorsAlongDimension(dimensions));
         for (int e = 0; e < outList->size(); ++e) {
             epsilon->template applyPairwiseTransform<simdOps::Multiply<T>>(inList->at(e), outList->at(e), nullptr);
             outList->at(e)->template applyPairwiseTransform<simdOps::Divide<T>>(tempNorm, outList->at(e), nullptr);
@@ -55,8 +54,8 @@ namespace helpers {
                 dimensions.emplace_back(e);
             }
         }
-        std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
-        std::unique_ptr<ResultSet<T>> inList(NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions));
+        std::unique_ptr<ResultSet<T>> outList(output->allTensorsAlongDimension(dimensions));
+        std::unique_ptr<ResultSet<T>> inList(input->allTensorsAlongDimension(dimensions));
         for (int e = 0; e < outList->size(); ++e) {
             outList->at(e)->assign(T(2.f));
             outList->at(e)->template applyPairwiseTransform<simdOps::Multiply<T>>(epsilon, outList->at(e), nullptr);

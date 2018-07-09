@@ -9,7 +9,9 @@ import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.tensorflow.conversion.graphrunner.GraphRunner;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.bytedeco.javacpp.tensorflow.ConfigProto;
@@ -20,21 +22,31 @@ public class GraphRunnerTest {
 
     @Test
     public void testGraphRunner() throws Exception {
+        List<String> inputs = Arrays.asList("input_0","input_1");
         byte[] content = IOUtils.toByteArray(new ClassPathResource("/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").getInputStream());
 
-        try(GraphRunner graphRunner = new GraphRunner(content)) {
+        try(GraphRunner graphRunner = new GraphRunner(content,inputs)) {
             runGraphRunnerTest(graphRunner);
         }
     }
 
     @Test
     public void testGraphRunnerFilePath() throws Exception {
+        List<String> inputs = Arrays.asList("input_0","input_1");
         File file = new ClassPathResource("/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").getFile();
-        try(GraphRunner graphRunner = new GraphRunner(file.getAbsolutePath())) {
+        try(GraphRunner graphRunner = new GraphRunner(file.getAbsolutePath(),inputs)) {
             runGraphRunnerTest(graphRunner);
         }
     }
 
+    @Test
+    public void testInputOutputResolution() throws Exception {
+        ClassPathResource lenetPb = new ClassPathResource("tf_graphs/lenet_frozen.pb");
+        byte[] content = IOUtils.toByteArray(lenetPb.getInputStream());
+        GraphRunner graphRunner = new GraphRunner(content,Arrays.asList("Reshape/tensor"));
+        assertEquals(1,graphRunner.getInputOrder().size());
+        assertEquals(1,graphRunner.getOutputOrder().size());
+    }
 
     private void runGraphRunnerTest(GraphRunner graphRunner) throws Exception {
 
@@ -43,15 +55,15 @@ public class GraphRunnerTest {
         JsonFormat.parser().merge(json,builder);
         org.tensorflow.framework.ConfigProto build = builder.build();
         assertEquals(build,graphRunner.getProtoBufConfigProto());
-        assertNotNull(graphRunner.getInputsForGraph());
-        assertNotNull(graphRunner.getOutputsForGraph());
+        assertNotNull(graphRunner.getInputOrder());
+        assertNotNull(graphRunner.getOutputOrder());
 
 
         org.tensorflow.framework.ConfigProto configProto1 = GraphRunner.fromJson(json);
 
         assertEquals(graphRunner.getProtoBufConfigProto(),configProto1);
-        assertEquals(2,graphRunner.getInputsForGraph().size());
-        assertEquals(1,graphRunner.getOutputsForGraph().size());
+        assertEquals(2,graphRunner.getInputOrder().size());
+        assertEquals(1,graphRunner.getOutputOrder().size());
 
         INDArray input1 = Nd4j.linspace(1,4,4).reshape(4);
         INDArray input2 = Nd4j.linspace(1,4,4).reshape(4);
