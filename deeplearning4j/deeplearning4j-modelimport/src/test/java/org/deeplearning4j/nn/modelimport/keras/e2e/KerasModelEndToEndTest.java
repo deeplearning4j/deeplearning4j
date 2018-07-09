@@ -89,7 +89,7 @@ public class KerasModelEndToEndTest {
     private static final String H5_EXTENSION = ".h5";
     private static final double EPS = 1E-5;
 
-    private static final boolean SKIP_GRAD_CHECKS = true;
+    private static final boolean SKIP_GRAD_CHECKS = false;
 
     @Rule
     public final TemporaryFolder testDir = new TemporaryFolder();
