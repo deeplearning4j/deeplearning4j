@@ -3,7 +3,7 @@
 //
 
 #include <ops/declarable/helpers/axis.h>
-#include <NDArrayFactory.h>
+
 
 namespace nd4j {
 namespace ops {

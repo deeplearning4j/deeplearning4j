@@ -537,7 +537,7 @@ Nd4jLong* ShapeUtils<T>::evalTileShapeInfo(const NDArray<T>& arr, const std::vec
     // evaluate new shapeInfo
     Nd4jLong* newShapeInfo = nullptr;    
     if(diff < 0) {      
-        ALLOCATE(newShapeInfo, workspace, dim*2 + 4, Nd4jLong);
+        ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(dim), Nd4jLong);
         newShapeInfo[0] = dim;                  // set new rank
         for(int i=1; i <= -diff; ++i)
             newShapeInfo[i] = 1;                // set unities to be new dimensions at left-hand side of newShapeInfo shape place
@@ -546,8 +546,8 @@ Nd4jLong* ShapeUtils<T>::evalTileShapeInfo(const NDArray<T>& arr, const std::vec
             newShapeInfo[i] *= reps[i - 1];     // set new shape by multiplying old dimensions by corresponding numbers from reps 
     }
     else {      
-        ALLOCATE(newShapeInfo, workspace, rankOld*2 + 4, Nd4jLong);
-        memcpy(newShapeInfo, arr.getShapeInfo(), (rankOld*2 + 4)*sizeof(Nd4jLong));      // copy all elements of _shapeInfo to newShapeInfo
+        ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(rankOld), Nd4jLong);
+        memcpy(newShapeInfo, arr.getShapeInfo(), shape::shapeInfoByteLength(rankOld));      // copy all elements of _shapeInfo to newShapeInfo
         for(int i=1; i <= dim; ++i)
             newShapeInfo[rankOld + 1 - i] *= reps[dim - i];     // set new shape by multiplying old dimensions by corresponding numbers from reps 
     }
@@ -895,7 +895,137 @@ std::vector<Nd4jLong> ShapeUtils<T>::composeShapeUsingDimsAndIdx(const std::vect
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
+template<typename T>
+std::vector<Nd4jLong> ShapeUtils<T>::evalShapeForMatmul(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const bool transX, const bool transY) {
 
+    const int xRank = xShapeInfo[0];
+    const int yRank = yShapeInfo[0];
+
+    const Nd4jLong x0Dim = transX ? xShapeInfo[xRank]   : xShapeInfo[xRank-1];
+    const Nd4jLong y0Dim = transY ? yShapeInfo[yRank]   : yShapeInfo[yRank-1];
+    const Nd4jLong x1Dim = transX ? xShapeInfo[xRank-1] : xShapeInfo[xRank];
+    const Nd4jLong y1Dim = transY ? yShapeInfo[yRank-1] : yShapeInfo[yRank];
+    
+
+    if(xRank == 1 && yRank == 1) {   // dot case, output is scalar
+        if(xShapeInfo[1] != yShapeInfo[1]) {
+            nd4j_printf("ShapeUtils::evalShapeForMatmul method: since input arrays are vectors they must have the same length, but got x length = %i, y length = %i !", xShapeInfo[1], yShapeInfo[1]); 
+            throw std::invalid_argument("");
+        }
+        return std::vector<Nd4jLong>({0});
+    }
+
+
+    if(xRank == 1 && yRank == 2) {  // vector x matrix, i.e. [4] x [4,5] = [5], output is vector
+        if(xShapeInfo[1] != y0Dim) {
+            nd4j_printf("ShapeUtils::evalShapeForMatmul method: input arrays have inconsistent shapes for vector-matrix product: x %s, y %s !", ShapeUtils<T>::shapeAsString(xShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(yShapeInfo).c_str());
+            throw std::invalid_argument("");
+        }
+        return std::vector<Nd4jLong>({y1Dim});
+    }
+
+
+    if(xRank == 2 && yRank == 1) {  // matrix x vector , i.e. [4,5] x [5] = [4], output is vector
+        if(x1Dim != yShapeInfo[1]) {
+            nd4j_printf("ShapeUtils::evalShapeForMatmul method: input arrays have inconsistent shapes for vector-matrix product: x %s, y %s !", ShapeUtils<T>::shapeAsString(xShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(yShapeInfo).c_str());
+            throw std::invalid_argument("");
+        }        
+        return std::vector<Nd4jLong>({x0Dim});
+    }
+
+    
+    // rest cases - usual 2Dx2D or batched mmul    
+    if(xRank != yRank) {
+        nd4j_printf("ShapeUtils::evalShapeForMatmul static method: the ranks of arrays must be the same, but got xRank = %i and yRank = %i ! \n", xRank, yRank);
+        throw std::invalid_argument("");
+    }   
+
+    if(x1Dim != y0Dim) {
+        nd4j_printf("ShapeUtils::evalShapeForMatmul static method: input shapes are inconsistent: xDim %i != yDim %i \n", x1Dim, y0Dim);
+        throw std::invalid_argument("");       
+    }
+
+    for(int i = 0; i < xRank - 2; ++i)
+        if(xShapeInfo[i+1] != yShapeInfo[i+1]) {
+            nd4j_printf("ShapeUtils::evalShapeForMatmul static method: input shapes are inconsistent: xShape = %s, yShape = %s ! \n", ShapeUtils<T>::shapeAsString(xShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(yShapeInfo).c_str());
+            throw std::invalid_argument("");       
+        }    
+
+    std::vector<Nd4jLong> cShape(xRank);
+
+    // copy batch part of shape (if present)
+    for(int i = 0; i < xRank - 2; ++i)
+        cShape[i] = xShapeInfo[i+1];
+    // copy rest part of shape (two dims: multiplication part)
+    cShape[xRank-2] = x0Dim;
+    cShape[xRank-1] = y1Dim;
+
+    return cShape;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+template<typename T>
+Nd4jLong ShapeUtils<T>::getNumOfSubArrs(const Nd4jLong* shapeInfo, const std::vector<int>& dimsToExclude) {
+
+    Nd4jLong numOfSubArrs = 1;
+
+    for(const auto& dim : dimsToExclude)
+        numOfSubArrs *= shapeInfo[dim + 1];
+
+    return numOfSubArrs;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+template<typename T>
+void ShapeUtils<T>::evalIdxRangesForSubArr(const Nd4jLong subArrIdx,  const Nd4jLong* shapeInfo, const std::vector<int>& dimsToExclude, Nd4jLong* idxRanges) {
+
+    const int rank  = shapeInfo[0];    
+    const int subArrRank = dimsToExclude.size();
+
+    if(subArrRank == 0 || subArrRank > rank)
+        throw std::invalid_argument("ShapeUtils::evalIdxRangesForSubArr static method: dimsToExclude is empty or has size > rank of array !");
+    
+    std::vector<Nd4jLong> shapeOfSubArr(subArrRank), indexes(subArrRank);    
+    for(int i = 0; i < subArrRank; ++i)
+        shapeOfSubArr[i] = shapeInfo[dimsToExclude[i] + 1];
+
+    shape::ind2sub(subArrRank, shapeOfSubArr.data(), subArrIdx, indexes.data());
+
+    memset(idxRanges, 0, 2 * rank * sizeof(Nd4jLong));
+    
+    for(int i = 0; i < subArrRank; ++i) {
+        
+        int currIdx = 2 * dimsToExclude[i];
+        idxRanges[currIdx]    = indexes[i];
+        idxRanges[currIdx +1] = indexes[i] + 1;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+template<typename T>
+Nd4jLong* ShapeUtils<T>::createShapeInfo(const char order, const std::vector<Nd4jLong> shapeOnly, memory::Workspace* workspace) {
+
+    int rank = shapeOnly.size();
+
+    if(shapeOnly[0] == 0) // scalar case
+        rank = 0;
+    
+    Nd4jLong* shapeInfo = nullptr;
+    
+    if(rank == 0) {    // scalar case
+        shapeInfo = ShapeUtils<T>::createScalarShapeInfo(workspace);
+    }
+    else {
+        ALLOCATE(shapeInfo, workspace, shape::shapeInfoLength(rank), Nd4jLong);
+        shapeInfo[0] = rank;
+        for(int i = 0; i < rank; ++i)
+            shapeInfo[i + 1] = shapeOnly[i];
+        shape::updateStrides(shapeInfo, order);
+    }
+
+    return shapeInfo;
+}
 
 template class ND4J_EXPORT ShapeUtils<float>;
 template class ND4J_EXPORT ShapeUtils<float16>;

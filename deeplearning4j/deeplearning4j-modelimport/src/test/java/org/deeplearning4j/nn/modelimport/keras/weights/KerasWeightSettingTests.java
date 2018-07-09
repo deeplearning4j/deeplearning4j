@@ -35,88 +35,83 @@ public class KerasWeightSettingTests {
             for (String backend : backends) {
                 String densePath = "modelimport/keras/weights/dense_" + backend + "_" + version + ".h5";
                 importDense(densePath);
-                log.info("***** Successfully imported " + densePath);
 
                 String conv2dPath = "modelimport/keras/weights/conv2d_" + backend + "_" + version + ".h5";
                 importConv2D(conv2dPath);
-                log.info("***** Successfully imported " + conv2dPath);
 
                 if (version == 2 && backend.equals("tensorflow")) { // TODO should work for theano
                     String conv2dReshapePath = "modelimport/keras/weights/conv2d_reshape_"
                             + backend + "_" + version + ".h5";
                     System.out.println(backend + "_" + version);
                     importConv2DReshape(conv2dReshapePath);
-                    log.info("***** Successfully imported " + conv2dReshapePath);
                 }
 
                 if (version == 2) {
                     String conv1dFlattenPath = "modelimport/keras/weights/embedding_conv1d_flatten_"
                             + backend + "_" + version + ".h5";
                     importConv1DFlatten(conv1dFlattenPath);
-                    log.info("***** Successfully imported " + conv1dFlattenPath);
                 }
 
                 String lstmPath = "modelimport/keras/weights/lstm_" + backend + "_" + version + ".h5";
                 importLstm(lstmPath);
-                log.info("***** Successfully imported " + lstmPath);
 
                 String embeddingLstmPath = "modelimport/keras/weights/embedding_lstm_"
                         + backend + "_" + version + ".h5";
                 importEmbeddingLstm(embeddingLstmPath);
-                log.info("***** Successfully imported " + embeddingLstmPath);
 
 
                 if (version == 2) {
                     String embeddingConv1dExtendedPath = "modelimport/keras/weights/embedding_conv1d_extended_"
                             + backend + "_" + version + ".h5";
                     importEmbeddingConv1DExtended(embeddingConv1dExtendedPath);
-                    log.info("***** Successfully imported " + embeddingConv1dExtendedPath);
                 }
 
                 if (version == 2) {
                     String embeddingConv1dPath = "modelimport/keras/weights/embedding_conv1d_"
                             + backend + "_" + version + ".h5";
                     importEmbeddingConv1D(embeddingConv1dPath);
-                    log.info("***** Successfully imported " + embeddingConv1dPath);
                 }
 
                 String simpleRnnPath = "modelimport/keras/weights/simple_rnn_" + backend + "_" + version + ".h5";
                 importSimpleRnn(simpleRnnPath);
-                log.info("***** Successfully imported " + simpleRnnPath);
 
                 String bidirectionalLstmPath = "modelimport/keras/weights/bidirectional_lstm_"
                         + backend + "_" + version + ".h5";
                 importBidirectionalLstm(bidirectionalLstmPath);
-                log.info("***** Successfully imported " + bidirectionalLstmPath);
 
                 String bidirectionalLstmNoSequencesPath =
                         "modelimport/keras/weights/bidirectional_lstm_no_return_sequences_"
                                 + backend + "_" + version + ".h5";
                 importBidirectionalLstm(bidirectionalLstmNoSequencesPath);
-                log.info("***** Successfully imported " + bidirectionalLstmNoSequencesPath);
 
                 if (version == 2 && backend.equals("tensorflow")) {
                     String batchToConv2dPath = "modelimport/keras/weights/batch_to_conv2d_"
                             + backend + "_" + version + ".h5";
                     importBatchNormToConv2D(batchToConv2dPath);
-                    log.info("***** Successfully imported " + batchToConv2dPath);
                 }
 
                 if (backend.equals("tensorflow") && version == 2) { // TODO should work for theano
                     String simpleSpaceToBatchPath = "modelimport/keras/weights/space_to_depth_simple_"
                             + backend + "_" + version + ".h5";
                     importSimpleSpaceToDepth(simpleSpaceToBatchPath);
-                    log.info("***** Successfully imported " + simpleSpaceToBatchPath);
                 }
 
                 if (backend.equals("tensorflow") && version == 2) {
                     String graphSpaceToBatchPath = "modelimport/keras/weights/space_to_depth_graph_"
                             + backend + "_" + version + ".h5";
                     importGraphSpaceToDepth(graphSpaceToBatchPath);
-                    log.info("***** Successfully imported " + graphSpaceToBatchPath);
+                }
+
+                if (backend.equals("tensorflow") && version == 2) {
+                    String sepConvPath = "modelimport/keras/weights/sepconv2d_" + backend + "_" + version + ".h5";
+                    importSepConv2D(sepConvPath);
                 }
             }
         }
+    }
+
+    private void logSuccess(String modelPath) {
+        log.info("***** Successfully imported " + modelPath);
     }
 
     private void importDense(String modelPath) throws Exception {
@@ -129,6 +124,43 @@ public class KerasWeightSettingTests {
 
         INDArray bias = model.getLayer(0).getParam("b");
         assert (bias.length() == 6);
+        logSuccess(modelPath);
+    }
+
+    private void importSepConv2D(String modelPath) throws Exception {
+        MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
+
+        INDArray depthWeights = model.getLayer(0).getParam("W");
+        val depthWeightShape = depthWeights.shape();
+
+        long depthMult = 2;
+        long kernel = 3;
+        long nIn = 5;
+        long nOut = 6;
+
+        assert (depthWeightShape[0] == depthMult);
+        assert (depthWeightShape[1] == nIn);
+        assert (depthWeightShape[2] == kernel);
+        assert (depthWeightShape[3] == kernel);
+
+        INDArray weights = model.getLayer(0).getParam("pW");
+        val weightShape = weights.shape();
+
+
+        assert (weightShape[0] == nOut);
+        assert (weightShape[1] == nIn * depthMult);
+        assert (weightShape[2] == 1);
+        assert (weightShape[3] == 1);
+
+        INDArray bias = model.getLayer(0).getParam("b");
+        assert (bias.length() == 6);
+
+        INDArray input = Nd4j.ones(1, 5, 3, 4);
+        INDArray output = model.output(input);
+
+        assert Arrays.equals(output.shape(), new long[] {1, 6, 1, 2});
+
+        logSuccess(modelPath);
     }
 
     private void importConv2D(String modelPath) throws Exception {
@@ -143,6 +175,7 @@ public class KerasWeightSettingTests {
 
         INDArray bias = model.getLayer(0).getParam("b");
         assert (bias.length() == 6);
+        logSuccess(modelPath);
     }
 
 
@@ -157,7 +190,7 @@ public class KerasWeightSettingTests {
         INDArray input = Nd4j.zeros(mb, inShape[0], inShape[1], inShape[2]);
         INDArray output = model.output(input);
         assert Arrays.equals(output.shape(), new long[]{mb, nOut});
-
+        logSuccess(modelPath);
     }
 
     private void importConv1DFlatten(String modelPath) throws Exception {
@@ -171,11 +204,13 @@ public class KerasWeightSettingTests {
         INDArray input = Nd4j.zeros(mb, inputLength);
         INDArray output = model.output(input);
         assert Arrays.equals(output.shape(), new long[]{mb, nOut, inputLength - kernel + 1});
+        logSuccess(modelPath);
     }
 
     private void importBatchNormToConv2D(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
         model.summary();
+        logSuccess(modelPath);
     }
 
     private void importSimpleSpaceToDepth(String modelPath) throws Exception {
@@ -185,6 +220,7 @@ public class KerasWeightSettingTests {
         INDArray input = Nd4j.zeros(10, 4, 6, 6);
         INDArray output = model.output(input);
         assert Arrays.equals(output.shape(), new long[]{10, 16, 3, 3});
+        logSuccess(modelPath);
     }
 
     private void importGraphSpaceToDepth(String modelPath) throws Exception {
@@ -195,12 +231,14 @@ public class KerasWeightSettingTests {
         INDArray[] output = model.output(input);
         log.info(Arrays.toString(output[0].shape()));
         assert Arrays.equals(output[0].shape(), new long[]{10, 32, 3, 3});
+        logSuccess(modelPath);
     }
 
     private void importLstm(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
         model.summary();
         // TODO: check weights
+        logSuccess(modelPath);
     }
 
     private void importEmbeddingLstm(String modelPath) throws Exception {
@@ -220,11 +258,12 @@ public class KerasWeightSettingTests {
         INDArray inEmbedding = Nd4j.zeros(mb, inputLength);
         INDArray output = model.output(inEmbedding);
         assert Arrays.equals(output.shape(), new long[]{mb, nOut, inputLength});
-
+        logSuccess(modelPath);
     }
 
     private void importEmbeddingConv1DExtended(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
+        logSuccess(modelPath);
     }
 
     private void importEmbeddingConv1D(String modelPath) throws Exception {
@@ -245,18 +284,20 @@ public class KerasWeightSettingTests {
         INDArray inEmbedding = Nd4j.zeros(mb, inputLength);
         INDArray output = model.output(inEmbedding);
         assert Arrays.equals(output.shape(), new long[]{mb, nOut, inputLength - kernel + 1});
-
+        logSuccess(modelPath);
     }
 
     private void importSimpleRnn(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
         model.summary();
+        logSuccess(modelPath);
         // TODO: check weights
     }
 
     private void importBidirectionalLstm(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
         model.summary();
+        logSuccess(modelPath);
         // TODO: check weights
     }
 

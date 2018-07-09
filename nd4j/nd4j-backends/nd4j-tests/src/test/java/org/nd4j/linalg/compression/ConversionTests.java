@@ -2,6 +2,7 @@ package org.nd4j.linalg.compression;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -18,6 +19,14 @@ public class ConversionTests extends BaseNd4jTest {
 
     public ConversionTests(Nd4jBackend backend) {
         super(backend);
+        this.initialType = Nd4j.dataType();
+    }
+
+    DataBuffer.Type initialType;
+
+    @After
+    public void after() {
+        Nd4j.setDataType(this.initialType);
     }
 
 

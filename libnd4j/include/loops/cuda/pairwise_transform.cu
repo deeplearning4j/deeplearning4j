@@ -659,8 +659,8 @@ namespace functions {
 					Nd4jLong yCoord[MAX_RANK];
 
 	    			for (Nd4jLong i = tid; i < n; i += gridDim.x * blockDim.x) {
-		    			shape::ind2subC(xRank,shape::shapeOf(xShapeBuffer), i, xCoord);
-			    		shape::ind2subC(yRank,shape::shapeOf(yShapeBuffer), i, yCoord);
+		    			shape::ind2subC(xRank,shape::shapeOf(xShapeBuffer), i, n, xCoord);
+			    		shape::ind2subC(yRank,shape::shapeOf(yShapeBuffer), i, n, yCoord);
 
 				    	auto xOffset = shape::getOffset(0, shape::shapeOf(xShapeBuffer), shape::stride(xShapeBuffer), xCoord, xRank);
 					    auto yOffset = shape::getOffset(0, shape::shapeOf(yShapeBuffer), shape::stride(yShapeBuffer), yCoord, yRank);
@@ -672,9 +672,9 @@ namespace functions {
     		    	Nd4jLong resultCoord[MAX_RANK];
 
     				for (Nd4jLong i = tid; i < n; i += gridDim.x * blockDim.x) {
-	    				shape::ind2subC(xRank,shape::shapeOf(xShapeBuffer), i, xCoord);
-		    			shape::ind2subC(yRank,shape::shapeOf(yShapeBuffer), i, yCoord);
-			    		shape::ind2subC(resultRank,shape::shapeOf(resultShapeBuffer), i, resultCoord);
+	    				shape::ind2subC(xRank,shape::shapeOf(xShapeBuffer), i, n, xCoord);
+		    			shape::ind2subC(yRank,shape::shapeOf(yShapeBuffer), i, n, yCoord);
+			    		shape::ind2subC(resultRank,shape::shapeOf(resultShapeBuffer), i, n, resultCoord);
 
     					auto xOffset = shape::getOffset(0, shape::shapeOf(xShapeBuffer), shape::stride(xShapeBuffer), xCoord, xRank);
 	    				auto yOffset = shape::getOffset(0, shape::shapeOf(yShapeBuffer), shape::stride(yShapeBuffer), yCoord, yRank);

@@ -68,13 +68,18 @@ public class ShapeDescriptor {
     @Override
     public int hashCode() {
         int result = (int) order;
-        // FIXME: LONG
-        result = 31 * result + Long.hashCode(offset);
-        result = 31 * result + Long.hashCode(extras);
+
+        result = 31 * result + longHashCode(offset);
+        result = 31 * result + longHashCode(extras);
         result = 31 * result + ews;
         result = 31 * result + Arrays.hashCode(shape);
         result = 31 * result + Arrays.hashCode(stride);
         return result;
+    }
+
+    private int longHashCode(long v) {
+        // impl from j8
+        return (int)(v ^ (v >>> 32));
     }
 
     @Override

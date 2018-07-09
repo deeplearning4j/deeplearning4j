@@ -5,7 +5,6 @@
 #include "testlayers.h"
 #include <ops/declarable/CustomOperations.h>
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 #include <NativeOps.h>
 
 using namespace nd4j;
@@ -23,12 +22,12 @@ TEST_F(IndexingTests, StridedSlice_1) {
     exp.putScalar(1, 26.f);
     exp.putScalar(2, 27.f);
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     //nd4j_debug("print x->rankOf(): %i", x.rankOf());
 
     /*
-    auto tads = NDArrayFactory<float>::allTensorsAlongDimension(&x, {0});
+    auto tads = x.allTensorsAlongDimension({0});
     nd4j_debug("numTads: %i\n", tads->size());
     for (int e = 0; e < tads->size(); e++)
         tads->at(e)->assign((float) e);
@@ -55,7 +54,7 @@ TEST_F(IndexingTests, StridedSlice_2) {
     NDArray<float> exp('c', {2, 3, 3});
     exp.setBuffer(_expB);
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::strided_slice<float> op;
 
@@ -78,7 +77,7 @@ TEST_F(IndexingTests, StridedSlice_3) {
     NDArray<float> exp('c', {2, 3, 2});
     exp.setBuffer(_expB);
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::strided_slice<float> op;
 
@@ -195,7 +194,7 @@ TEST_F(IndexingTests, SimpleSlice_4) {
 
 TEST_F(IndexingTests, MaskedSlice_0) {
     NDArray<float> matrix('c', {3, 5});
-    auto tads = NDArrayFactory<float>::allTensorsAlongDimension(&matrix, {1});
+    auto tads = matrix.allTensorsAlongDimension({1});
     for (int e = 0; e < tads->size(); e++) {
         tads->at(e)->assign((float) (e+1));
     }
@@ -222,7 +221,7 @@ TEST_F(IndexingTests, MaskedSlice_0) {
 
 TEST_F(IndexingTests, MaskedSlice_00) {
     NDArray<float> matrix('c', {3, 5});
-    auto tads = NDArrayFactory<float>::allTensorsAlongDimension(&matrix, {1});
+    auto tads = matrix.allTensorsAlongDimension({1});
     for (int e = 0; e < tads->size(); e++) {
         tads->at(e)->assign((float) (e+1));
     }
@@ -249,7 +248,7 @@ TEST_F(IndexingTests, MaskedSlice_00) {
 
 TEST_F(IndexingTests, MaskedSlice_1) {
     NDArray<float> matrix('c', {3, 5});
-    auto tads = NDArrayFactory<float>::allTensorsAlongDimension(&matrix, {1});
+    auto tads = matrix.allTensorsAlongDimension({1});
     for (int e = 0; e < tads->size(); e++) {
         tads->at(e)->assign((float) (e+1));
     }

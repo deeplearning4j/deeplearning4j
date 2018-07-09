@@ -3,7 +3,6 @@
 //
 
 #include <ops/declarable/helpers/unique.h>
-#include <NDArrayFactory.h>
 
 namespace nd4j {
 namespace ops {

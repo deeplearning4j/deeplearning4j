@@ -935,10 +935,10 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     public void flushQueueBlocking() {
         flushQueue();
 
-        //    logger.info("Blocking flush");n
+        val context =((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext());
 
-        ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).syncOldStream();
-        ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).syncSpecialStream();
+        context.syncSpecialStream();
+        context.syncOldStream();
     }
 
     public void addToWatchdog(INDArray array, String tag) {

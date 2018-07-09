@@ -26,7 +26,7 @@ namespace nd4j {
          * 1: transB (where applicable)
          */
         #if NOT_EXCLUDED(OP_matmul)
-        DECLARE_CUSTOM_OP(matmul, 2, 1, false, -2, -2);
+        DECLARE_CUSTOM_OP(matmul, 2, 1, false, 0, -2);
         #endif
 
         /**

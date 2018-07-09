@@ -8,7 +8,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
-import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLayer;
+import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
 import org.deeplearning4j.nn.conf.layers.samediff.SDLayerParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayerUtils;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
@@ -27,7 +27,7 @@ import java.util.*;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonIgnoreProperties({"paramShapes"})
-public class SameDiffConv extends BaseSameDiffLayer {
+public class SameDiffConv extends SameDiffLayer {
 
     private static final List<String> WEIGHT_KEYS = Collections.singletonList(ConvolutionParamInitializer.WEIGHT_KEY);
     private static final List<String> BIAS_KEYS = Collections.singletonList(ConvolutionParamInitializer.BIAS_KEY);
@@ -108,7 +108,7 @@ public class SameDiffConv extends BaseSameDiffLayer {
     }
 
     @Override
-    public List<SDVariable> defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable) {
+    public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable) {
 
         SDVariable w = paramTable.get(ConvolutionParamInitializer.WEIGHT_KEY);
 
@@ -130,7 +130,7 @@ public class SameDiffConv extends BaseSameDiffLayer {
 
         SDVariable conv = sameDiff.conv2d(vars, c);    //TODO can't set name
 
-        return Collections.singletonList(activation.asSameDiff("out", sameDiff, conv));
+        return activation.asSameDiff("out", sameDiff, conv);
     }
 
     @Override
@@ -143,7 +143,7 @@ public class SameDiffConv extends BaseSameDiffLayer {
         }
     }
 
-    public static class Builder extends BaseSameDiffLayer.Builder<Builder> {
+    public static class Builder extends SameDiffLayer.Builder<Builder> {
 
         private int nIn;
         private int nOut;

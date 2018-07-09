@@ -85,6 +85,8 @@ public class KerasModelEndToEndTest {
     private static final String H5_EXTENSION = ".h5";
     private static final double EPS = 1E-5;
 
+    private static final boolean SKIP_GRAD_CHECKS = false;
+
     @Rule
     public final TemporaryFolder testDir = new TemporaryFolder();
 
@@ -403,6 +405,19 @@ public class KerasModelEndToEndTest {
     }
 
     /**
+     * InceptionV3 Keras 2 no top
+     */
+    @Test
+    public void importInceptionKeras2() throws Exception {
+        int[] inputShape = new int[]{299, 299, 3};
+        ComputationGraph graph = importFunctionalModelH5Test(
+                "modelimport/keras/examples/inception/inception_tf_keras_2.h5", inputShape, false);
+        INDArray input = Nd4j.ones(10, 3, 299, 299);
+        graph.output(input);
+        System.out.println(graph.summary());
+    }
+
+    /**
      * InceptionV3
      */
     @Test
@@ -528,7 +543,7 @@ public class KerasModelEndToEndTest {
                 compareMulticlassAUC("predictions", outputs, predictionsKeras, predictionsDl4j, nOut, EPS);
             }
 
-            if (checkGradients) {
+            if (checkGradients && ! SKIP_GRAD_CHECKS) {
                 Random r = new Random(12345);
                 INDArray input = getInputs(outputsArchive, tfOrdering)[0];
                 INDArray predictionsDl4j = model.output(input, false);

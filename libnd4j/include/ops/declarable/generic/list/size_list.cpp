@@ -12,7 +12,7 @@ namespace nd4j {
         LIST_OP_IMPL(size_list, 1, 1, 0, 0) {
             auto list = INPUT_LIST(0);
 
-            auto result = NDArrayFactory<T>::scalar((T) list->height());
+            auto result = NDArray<T>::scalar((T) list->height());
 
             OVERWRITE_RESULT(result);
 

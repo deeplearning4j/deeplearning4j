@@ -6,6 +6,7 @@
 #if NOT_EXCLUDED(OP_crelu)
 
 #include <ops/declarable/CustomOperations.h>
+#include<ops/declarable/helpers/transforms.h>
 
 namespace nd4j {
     namespace ops {
@@ -17,7 +18,8 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            NDArrayFactory<T>::concat({x, tmp}, -1, z);
+            helpers::concat({x, tmp}, *z, x->rankOf()-1);
+            // NDArrayFactory<T>::concat({x, tmp}, -1, z);
 
             // TODO: make this configurable?
             T threshold = (T) 0.0f;

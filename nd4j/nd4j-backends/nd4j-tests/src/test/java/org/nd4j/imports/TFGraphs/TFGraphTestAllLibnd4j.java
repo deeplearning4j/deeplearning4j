@@ -30,7 +30,8 @@ public class TFGraphTestAllLibnd4j {
             "deep_mnist_no_dropout",
             "ssd_mobilenet_v1_coco",
             "yolov2_608x608",
-            "inception_v3_with_softmax"
+            "inception_v3_with_softmax",
+            "conv_5" // still RNG differences
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 
@@ -59,6 +60,7 @@ public class TFGraphTestAllLibnd4j {
             return;
         }
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, EXECUTE_WITH);
+        //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
     }
 
 }

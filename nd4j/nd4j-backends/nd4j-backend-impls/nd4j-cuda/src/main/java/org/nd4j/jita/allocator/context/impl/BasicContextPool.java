@@ -167,7 +167,7 @@ public class BasicContextPool implements ContextPool {
     }
 
     protected CudaContext createNewStream(Integer deviceId) {
-        log.debug("Creating new stream for thread: [{}], device: [{}]...", Thread.currentThread().getId(), deviceId);
+        log.trace("Creating new stream for thread: [{}], device: [{}]...", Thread.currentThread().getId(), deviceId);
         //JCuda.cudaSetDevice(deviceId);
         nativeOps.setDevice(new CudaPointer(deviceId));
 

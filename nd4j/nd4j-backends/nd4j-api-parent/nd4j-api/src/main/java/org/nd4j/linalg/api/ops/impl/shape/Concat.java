@@ -142,7 +142,7 @@ public class Concat extends DynamicCustomOp {
 
             this.concatDimension = concatDimension;
             addIArgument(this.concatDimension);
-            log.debug("Concat dimension: {}", concatDimension);
+            log.trace("Concat dimension: {}", concatDimension);
 
         }
 

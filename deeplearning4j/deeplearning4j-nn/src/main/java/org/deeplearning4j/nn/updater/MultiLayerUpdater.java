@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.updater;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.Trainable;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -35,8 +36,13 @@ public class MultiLayerUpdater extends BaseMultiLayerUpdater<MultiLayerNetwork> 
     }
 
     @Override
-    protected Layer[] getOrderedLayers() {
-        return network.getLayers();
+    protected Trainable[] getOrderedLayers() {
+        Layer[] layers = network.getLayers();
+        Trainable[] t = new Trainable[layers.length];
+        for( int i=0; i<layers.length; i++ ){
+            t[i] = layers[i];
+        }
+        return t;
     }
 
     @Override

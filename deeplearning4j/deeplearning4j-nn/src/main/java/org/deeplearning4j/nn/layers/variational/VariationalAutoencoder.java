@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.layers.variational;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -461,6 +462,11 @@ public class VariationalAutoencoder implements Layer {
     @Override
     public INDArray params() {
         return paramsFlattened;
+    }
+
+    @Override
+    public TrainingConfig getConfig() {
+        return conf.getLayer();
     }
 
     @Override

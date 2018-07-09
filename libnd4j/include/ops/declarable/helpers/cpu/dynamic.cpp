@@ -2,8 +2,6 @@
 // Created by george on 05.04.18.
 //
 #include <ops/declarable/helpers/dynamic.h>
-#include <NDArrayFactory.h>
-//#include <op_boilerplate.h>
 
 namespace nd4j {
     namespace ops {
@@ -20,7 +18,7 @@ namespace nd4j {
                     for (int i = sourceDimsLen; i > 0; i--)
                         sourceDims[sourceDimsLen - i] = input->rankOf() - i;
 
-                    std::unique_ptr<ResultSet<T>> listOfTensors(NDArrayFactory<T>::allTensorsAlongDimension(input, sourceDims));
+                    std::unique_ptr<ResultSet<T>> listOfTensors(input->allTensorsAlongDimension(sourceDims));
 
 #pragma omp parallel for if(outputList.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                     for (unsigned int i = 0; i < outputList.size(); i++) {
@@ -32,7 +30,7 @@ namespace nd4j {
                             outDims[k - 1] = k;
 
                         std::unique_ptr<ResultSet<T>> listOutForCurrent(
-                                NDArrayFactory<T>::allTensorsAlongDimension(outputs[i].first, outDims));
+                                outputs[i].first->allTensorsAlongDimension(outDims));
 
                         outputs[i].second = 0;
 
@@ -81,7 +79,7 @@ namespace nd4j {
                     for (int i = restDims.size(); i > 0;  i--)
                         restDims[restDims.size() - i] = output->rankOf() - i;
 
-                    std::unique_ptr<ResultSet<T>> listOfOutTensors(NDArrayFactory<T>::allTensorsAlongDimension(output, restDims));
+                    std::unique_ptr<ResultSet<T>> listOfOutTensors(output->allTensorsAlongDimension(restDims));
 
                     for (int e = 0; e < numOfData; e++) {
                         NDArray<T>* data = inputs[e];
@@ -90,7 +88,7 @@ namespace nd4j {
                         for (int i = sourceDims.size(); i > 0;  i--)
                             sourceDims[sourceDims.size() - i] = data->rankOf() - i;
 
-                        std::unique_ptr<ResultSet<T>> listOfTensors(NDArrayFactory<T>::allTensorsAlongDimension(data, sourceDims));
+                        std::unique_ptr<ResultSet<T>> listOfTensors(data->allTensorsAlongDimension(sourceDims));
 
                         for (int i = 0; i < index->lengthOf(); i++) {
                             int pos = (*index)(i);

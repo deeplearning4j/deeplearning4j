@@ -111,6 +111,11 @@ public abstract class FeedForwardLayer extends BaseLayer {
         return false; //No pretrain params in standard FF layers
     }
 
+    @Override
+    public boolean isPretrain() {
+        return false;
+    }
+
     public abstract static class Builder<T extends Builder<T>> extends BaseLayer.Builder<T> {
         protected int nIn = 0;
         protected int nOut = 0;

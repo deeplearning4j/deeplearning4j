@@ -198,7 +198,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                         continue;
                     attemptToGetOrCreateArrForVar(newVars[i], outputShapes.get(i));
                 }
-            } else if (getDescriptor().getNumOutputs() < 1  && getNumOutputs() < 1) {
+            } else if (getDescriptor() != null && getDescriptor().getNumOutputs() < 1  && getNumOutputs() < 1) {
                 //this should only happen if we have no way of knowing how many
                 //outputs are known from the descriptor
                 return new SDVariable[0];
@@ -212,19 +212,35 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 sameDiff.addOutgoingFor(outputVariables, this);
             return newVars;
         } else {
-            val shape = calculateOutputShape();
-            if (shape != null && !shape.isEmpty()) {
-                Preconditions.checkState(shape.size() == outputVariables.length, "Different number of calculated" +
-                        " shapes (%s) vs. number of output variables (%s)", shape.size(), outputVariables.length);
-
-                for (int i = 0; i < outputVariables.length; i++) {
-                    val var = outputVariables[i];
-                    if (var.getShape() == null) {
-                        attemptToGetOrCreateArrForVar(var, shape.get(i));
-                    }
+            //Output variables are already defined. Initialize the output arrays if possible
+            boolean missingArray = false;
+            for(SDVariable v : outputVariables){
+                if(v.getArr() == null){
+                    missingArray = true;
+                    break;
                 }
             }
 
+            if(missingArray) {
+                List<long[]> shape;
+                try {
+                    shape = calculateOutputShape();
+                } catch (Exception e) {
+                    throw new RuntimeException("Error calculating shape for op " + opName() + " of type " + getClass().getSimpleName()
+                            + " with name " + getOwnName(), e);
+                }
+                if (shape != null && !shape.isEmpty()) {
+                    Preconditions.checkState(shape.size() == outputVariables.length, "Different number of calculated" +
+                            " shapes (%s) vs. number of output variables (%s) - op %s", shape.size(), outputVariables.length, opName());
+
+                    for (int i = 0; i < outputVariables.length; i++) {
+                        val var = outputVariables[i];
+                        if (var.getShape() == null) {
+                            attemptToGetOrCreateArrForVar(var, shape.get(i));
+                        }
+                    }
+                }
+            }
         }
 
         return outputVariables;

@@ -630,6 +630,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
+    public void setData(long[] data) {
+        set(data, data.length, 0, 0);
+    }
+
+    @Override
     public void setData(float[] data) {
         set(data, data.length, 0, 0);
     }

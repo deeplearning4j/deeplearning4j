@@ -174,17 +174,28 @@
         <unirest.version>1.4.9</unirest.version>
         <reflections.version>0.9.10</reflections.version>
 
+        <javacpp.parser.skip>false</javacpp.parser.skip>     <!-- To skip header file parsing phase: -Djavacpp.parser.skip=true  -->
+        <javacpp.compiler.skip>false</javacpp.compiler.skip> <!-- To skip native compilation phase: -Djavacpp.compiler.skip=true -->
+        <javacpp.platform>${os.name}-${os.arch}</javacpp.platform> <!-- For Android: -Dplatform=android-arm -->
+        <javacpp.platform.root/>      <!-- -Djavacpp.platform.root=/path/to/android-ndk/ -->
+        <javacpp.platform.compiler/>  <!-- -Djavacpp.platform.compiler=/path/to/arm-linux-androideabi-g++ -->
+        <javacpp.platform.sysroot/>   <!-- -Djavacpp.platform.sysroot=$(xcrun -sdk iphoneos -show-sdk-path) -->
+        <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=avx512 -->
+        <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
+
         <javacpp.version>1.4.2-SNAPSHOT</javacpp.version>
         <javacpp-presets.version>1.4.2-SNAPSHOT</javacpp-presets.version>
         <javacv.version>1.4.2-SNAPSHOT</javacv.version>
-        <openblas.version>0.3.0</openblas.version>
+        <openblas.version>0.3.1</openblas.version>
         <mkl.version>2018.3</mkl.version>
         <mkl-dnn.version>0.14</mkl-dnn.version>
         <opencv.version>3.4.1</opencv.version>
-        <ffmpeg.version>4.0</ffmpeg.version>
+        <ffmpeg.version>4.0.1</ffmpeg.version>
         <leptonica.version>1.76.0</leptonica.version>
         <hdf5.version>1.10.2</hdf5.version>
         <ale.version>0.6.0</ale.version>
+        <tensorflow.version>1.9.0-rc2</tensorflow.version>
+        <tensorflow.javacpp.version>${tensorflow.version}-1.4.2-SNAPSHOT</tensorflow.javacpp.version>
 
         <commons-compress.version>1.16.1</commons-compress.version>
         <commonsmath.version>3.4.1</commonsmath.version>
@@ -206,9 +217,9 @@
         <jackson.version>2.5.1</jackson.version>
         <spark.jackson.version>2.4.4</spark.jackson.version>
         <typesafe.config.version>1.3.0</typesafe.config.version>
-        <lombok.version>1.16.20</lombok.version>
+        <lombok.version>1.18.0</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
-        <lucene-solr.version>7.3.0</lucene-solr.version>
+        <lucene-solr.version>7.4.0</lucene-solr.version>
         <json.version>20131018</json.version>
         <google.protobuf.version>2.6.1</google.protobuf.version>
         <failIfNoTests>false</failIfNoTests>
@@ -288,6 +299,11 @@
                                     <version>3.3</version>
                                     <message>Please install maven 3.3 or higher</message>
                                 </requireMavenVersion>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <exclude>org.projectlombok:*:*:*:compile</exclude>
+                                    </excludes>
+                                </bannedDependencies>
                             </rules>
                         </configuration>
                     </execution>
@@ -665,6 +681,151 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>libnd4jhome-defined</id>
+            <activation>
+                <property>
+                    <name>env.LIBND4J_HOME</name>
+                </property>
+            </activation>
+            <properties>
+                <libnd4jhome>${env.LIBND4J_HOME}</libnd4jhome>
+            </properties>
+        </profile>
+        <profile>
+            <id>libnd4jhome-undefined</id>
+            <activation>
+                <property>
+                    <name>!env.LIBND4J_HOME</name>
+                </property>
+            </activation>
+            <properties>
+                <libnd4jhome>${basedir}/../../../../libnd4j/</libnd4jhome>
+            </properties>
+        </profile>
+        <!-- If someone knows a better way to do this, please do let me know! -->
+        <profile>
+            <id>linux</id>
+            <activation>
+                <os>
+                    <name>linux</name>
+                </os>
+            </activation>
+            <properties>
+                <os.name>linux</os.name>
+            </properties>
+        </profile>
+        <profile>
+            <id>macosx</id>
+            <activation>
+                <os>
+                    <name>mac os x</name>
+                </os>
+            </activation>
+            <properties>
+                <os.name>macosx</os.name>
+            </properties>
+        </profile>
+        <profile>
+            <id>windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <os.name>windows</os.name>
+            </properties>
+        </profile>
+        <profile>
+            <id>i386</id>
+            <activation>
+                <os>
+                    <arch>i386</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.arch>x86_64</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>i486</id>
+            <activation>
+                <os>
+                    <arch>i486</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.arch>x86_64</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>i586</id>
+            <activation>
+                <os>
+                    <arch>i586</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.arch>x86_64</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>i686</id>
+            <activation>
+                <os>
+                    <arch>i686</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.arch>x86_64</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>x86</id>
+            <activation>
+                <os>
+                    <arch>x86</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.arch>x86_64</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>amd64</id>
+            <activation>
+                <os>
+                    <arch>amd64</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.arch>x86_64</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>x86-64</id>
+            <activation>
+                <os>
+                    <arch>x86-64</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.arch>x86_64</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>arm</id>
+            <activation>
+                <os>
+                    <arch>arm</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.arch>arm</os.arch>
+            </properties>
         </profile>
     </profiles>
 </project>

@@ -87,6 +87,7 @@ public class SharedTrainingWrapper {
      * @param iterator
      */
     public void attachDS(Iterator<DataSet> iterator) {
+
         log.info("Attaching thread...");
 
         // we're creating our Observable wrapper

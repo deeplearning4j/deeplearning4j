@@ -3,10 +3,7 @@ package org.deeplearning4j.optimize.solver;
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -810,6 +807,11 @@ public class TestOptimizers extends BaseDL4JTest {
         @Override
         public void addListeners(TrainingListener... listener) {
             // no-op
+        }
+
+        @Override
+        public TrainingConfig getConfig() {
+            return conf.getLayer();
         }
 
         /**

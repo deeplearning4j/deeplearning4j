@@ -22,7 +22,7 @@ public class SparseCOOLevel2Test extends BaseNd4jTest {
     // matrix = [[1, 2], [0, 0]]
     private double[] data = {1, 2};
     private int[][] indexes = new int[][] {{0, 0}, {0, 1}};
-    private int[] shape = {2, 2};
+    private long[] shape = {2, 2};
 
     public SparseCOOLevel2Test(Nd4jBackend backend) {
         super(backend);

@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.NonNull;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -331,5 +332,10 @@ public abstract class BaseWrapperLayer implements Layer {
     @Override
     public LayerHelper getHelper() {
         return underlying.getHelper();
+    }
+
+    @Override
+    public TrainingConfig getConfig() {
+        return underlying.getConfig();
     }
 }

@@ -54,7 +54,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     protected WeightInitScheme weightInitScheme;
 
 
-
+    // autogen_tag::sdvars::start
 
     @Builder
     private SDVariable(String varName,
@@ -183,6 +183,8 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return getArr(false);
     }
 
+
+    // autogen_tag::sdvars::end
     /**
      * A getter for the allocated ndarray with this {@link SDVariable}.
      *
@@ -409,6 +411,9 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return sameDiff.neq(name, this, other);
     }
 
+    public SDVariable mmul(SDVariable other){
+        return sameDiff.mmul(this, other);
+    }
 
     //scalars
 

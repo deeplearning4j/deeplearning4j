@@ -5,11 +5,12 @@
 #include <types/types.h>
 #include <op_boilerplate.h>
 #include <loops/type_conversions.h>
+#include <OmpLaunchHelper.h>
 
 namespace nd4j {
 
-    template<typename T>
-    void TypeCast::convertToThreshold(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz) {
+    template <typename T>
+    void TypeCast::convertToThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz) {
         // we suppose that first 4 bytes are integer, second 4 bytes are float
         // integer: enc length
         // integer: dec length
@@ -25,51 +26,66 @@ namespace nd4j {
         auto l = static_cast<int>(N);
         z[1] = l;
 
+        int threads = OmpLaunchHelper::betterThreads(N);
+        int span = OmpLaunchHelper::betterSpan(N, threads);
+
+        T tt = static_cast<T>(threshold);
+        T mtt = -tt;
+
         // we use 3 as offset, since first 12 bytes are occupied with header
         int flimit = limit + 4;
         volatile int cnt = 4;
         volatile bool flag = false;
-#pragma omp parallel for schedule(guided) default(shared)
-        for (int e = 0; e < l; e++) {
-            bool flag_load;
+#pragma omp parallel num_threads(threads) default(shared)
+        {
+            int tid = omp_get_thread_num();
+            int start = span * tid;
+            int stop = span * (tid + 1);
+            if (stop > l)
+                stop = l;
+
+            for (int e = start; e < stop; e++) {
+                bool flag_load;
 #pragma omp atomic read
-            flag_load = flag;
-            if (flag_load)
-                continue;
+                flag_load = flag;
+                if (flag_load)
+                    break;
 
-            T cUpd = x[e];
-            if (cUpd >= static_cast<T>(threshold)) {
-                int idx;
+                T cUpd = x[e];
+                if (cUpd >= tt) {
+                    int idx;
 #pragma omp atomic capture
-                idx = cnt++;
+                    idx = cnt++;
 
-                if (idx >= flimit) {
+                    if (idx >= flimit) {
 #pragma omp atomic write
-                    flag = true;
-                    continue;
-                }
+                        flag = true;
+                        break;
+                    }
 
-                z[idx] = e + 1;
-                x[e] -= static_cast<T>(threshold);
-            } else if (cUpd <= static_cast<T>(-threshold)) {
-                int idx;
+                    z[idx] = e + 1;
+                    x[e] -= tt;
+                } else if (cUpd <= mtt) {
+                    int idx;
 #pragma omp atomic capture
-                idx = cnt++;
+                    idx = cnt++;
 
-                if (idx >= flimit) {
+                    if (idx >= flimit) {
 #pragma omp atomic write
-                    flag = true;
-                    continue;
-                }
+                        flag = true;
+                        break;
+                    }
 
-                z[idx] = -e - 1;
-                x[e] += static_cast<T>(threshold);
+
+                    z[idx] = -e - 1;
+                    x[e] += tt;
+                }
             }
         }
     }
 
-    template<typename T>
-    void TypeCast::convertFromThreshold(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz) {
+    template <typename T>
+    void TypeCast::convertFromThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz) {
         FloatBits fb;
         auto z = reinterpret_cast<T *>(dz);
         auto x = reinterpret_cast<int *>(dx);
@@ -88,7 +104,6 @@ namespace nd4j {
         }
     }
 
-
     /**
      * This is cpu version, so leave it here as inline, to avoid templates instantiation
      *
@@ -104,7 +119,6 @@ namespace nd4j {
         auto z = reinterpret_cast<T *>(dz);
 
         if (N < nd4j::Environment::getInstance()->elementwiseThreshold()) {
-#pragma omp simd
             for (int i = 0; i < N; i++) {
                 z[i] = static_cast<T>(x[i]);
             }
@@ -119,16 +133,14 @@ namespace nd4j {
 
 
     template void TypeCast::convertFromThreshold<float>(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz);
-
     template void TypeCast::convertFromThreshold<float16>(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz);
-
     template void TypeCast::convertFromThreshold<double>(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz);
 
-    template void TypeCast::convertToThreshold<float>(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz);
+    template void TypeCast::convertToThreshold<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template void TypeCast::convertToThreshold<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template void TypeCast::convertToThreshold<double>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
 
-    template void TypeCast::convertToThreshold<float16>(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz);
-
-    template void TypeCast::convertToThreshold<double>(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz);
-
-    BUILD_DOUBLE_TEMPLATE(template void TypeCast::convertGeneric, (Nd4jPointer * extras, void * dx, Nd4jLong N, void * dz), LIBND4J_TYPES, LIBND4J_TYPES)
+#ifndef __CLION_IDE__
+    BUILD_DOUBLE_TEMPLATE(template void TypeCast::convertGeneric, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES, LIBND4J_TYPES)
+#endif
 }

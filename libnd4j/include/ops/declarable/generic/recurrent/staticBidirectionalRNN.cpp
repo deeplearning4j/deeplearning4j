@@ -5,6 +5,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/rnn.h>
 #include<ops/declarable/helpers/reverse.h>
+#include<ops/declarable/helpers/transforms.h>
 
 namespace nd4j {
 namespace ops  {
@@ -88,7 +89,8 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
     helpers::reverseSequence<T>(hBWcopy, seqLen, hBW, 0, 1);
 
     // concatenate hFW and hBW along last third dimension
-    NDArrayFactory<T>::concat({hFW, hBW}, 2, h);
+    // NDArrayFactory<T>::concat({hFW, hBW}, 2, h);
+    helpers::concat({hFW, hBW}, *h, 2);
 
     delete hBW;
     delete hFW;

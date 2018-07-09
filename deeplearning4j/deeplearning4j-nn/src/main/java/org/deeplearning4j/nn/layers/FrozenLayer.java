@@ -3,8 +3,10 @@ package org.deeplearning4j.nn.layers;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.misc.DummyConfig;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
@@ -34,6 +36,7 @@ public class FrozenLayer extends BaseWrapperLayer {
     private boolean logTestMode = false;
     private boolean logGradient = false;
     private Gradient zeroGradient;
+    private transient DummyConfig config;
 
     public FrozenLayer(Layer insideLayer) {
         super(insideLayer);
@@ -201,6 +204,14 @@ public class FrozenLayer extends BaseWrapperLayer {
 
     public Layer getInsideLayer() {
         return underlying;
+    }
+
+    @Override
+    public TrainingConfig getConfig(){
+        if (config == null) {
+            config = new DummyConfig(getUnderlying().getConfig().getLayerName());
+        }
+        return config;
     }
 }
 

@@ -4,7 +4,6 @@
 
 #include <vector>
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 
 namespace nd4j {
     namespace ops {

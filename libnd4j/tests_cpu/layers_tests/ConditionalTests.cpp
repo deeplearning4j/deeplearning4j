@@ -28,10 +28,10 @@ public:
 TEST_F(ConditionalTests, BasicTests_1) {
     Graph<float> graph;
 
-    auto x = NDArrayFactory<float>::valueOf({2, 2}, 1.0);
-    auto y0 = NDArrayFactory<float>::valueOf({2, 2}, 5.0);
-    auto y1 = NDArrayFactory<float>::valueOf({2, 2}, -5.0);
-    auto scalar = NDArrayFactory<float>::scalar(1.0);
+    auto x  =     NDArray<float>::valueOf({2, 2}, 1.0);
+    auto y0 =     NDArray<float>::valueOf({2, 2}, 5.0);
+    auto y1 =     NDArray<float>::valueOf({2, 2}, -5.0);
+    auto scalar = NDArray<float>::scalar(1.0);
 
     auto variableSpace = graph.getVariableSpace();
 

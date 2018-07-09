@@ -29,6 +29,11 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
         this.initialType = Nd4j.dataType();
     }
 
+    @After
+    public void after() {
+        Nd4j.setDataType(this.initialType);
+    }
+
     @Test
     public void testSerializationFullArrayNd4jWriteRead() throws Exception {
         int length = 100;
@@ -147,12 +152,6 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
 
         //assertEquals(sub,arr2);
         assertTrue(Transforms.abs(sub1.sub(arr2).div(sub1)).maxNumber().doubleValue() < 0.01);
-    }
-
-    @After
-    public void after() {
-        DataTypeUtil.setDTypeForContext(this.initialType);
-        System.out.println("AFTER DATATYPE HERE: " + Nd4j.dataType());
     }
 
     @Override

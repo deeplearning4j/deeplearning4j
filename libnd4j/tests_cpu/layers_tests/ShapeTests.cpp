@@ -4,7 +4,6 @@
 
 #include <helpers/shape.h>
 #include "testlayers.h"
-#include <NDArrayFactory.h>
 #include <ops/declarable/headers/shape.h>
 
 using namespace nd4j;
@@ -206,7 +205,7 @@ TEST_F(ShapeTests, Test_Transpose_4) {
 
 TEST_F(ShapeTests, Test_Edge_1) {
     NDArray<float> x('f', {1, 4, 1, 4});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     x.reshapei('c', {4, 4});
 
@@ -294,7 +293,7 @@ TEST_F(ShapeTests, Tests_Transpose_119_1) {
     NDArray<float> y('c', {2}, {1.0f, 0.0f});
     NDArray<float> z('c', {2, 3});
 
-    NDArrayFactory<float>::linspace(1.0, x);
+    x.linspace(1.f);
 
     auto e = x.permute({1, 0});
     e->streamline('c');
@@ -311,7 +310,7 @@ TEST_F(ShapeTests, Tests_Transpose_119_1) {
 
 TEST_F(ShapeTests, Tests_Transpose_119_2) {
     NDArray<float> x('c', {3, 5});
-    NDArrayFactory<float>::linspace(1.0f, x);
+    x.linspace(1.f);
 
     auto exp = x.transpose();
 
@@ -330,7 +329,7 @@ TEST_F(ShapeTests, Tests_Transpose_119_2) {
 
 TEST_F(ShapeTests, Tests_Transpose_119_3) {
     NDArray<float> x('c', {3, 5});
-    NDArrayFactory<float>::linspace(1.0f, x);
+    x.linspace(1.f);
 
     NDArray<float> z('c', {5, 3});
 

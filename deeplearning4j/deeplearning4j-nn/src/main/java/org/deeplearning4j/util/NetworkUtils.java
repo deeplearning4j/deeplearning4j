@@ -156,6 +156,32 @@ public class NetworkUtils {
         }
     }
 
+    /**
+     * Get the current learning rate, for the specified layer, fromthe network.
+     * Note: If the layer has no learning rate (no parameters, or an updater without a learning rate) then null is returned
+     * @param net           Network
+     * @param layerNumber   Layer number to get the learning rate for
+     * @return Learning rate for the specified layer, or null
+     */
+    public static Double getLearningRate(MultiLayerNetwork net, int layerNumber){
+        Layer l = net.getLayer(layerNumber).conf().getLayer();
+        int iter = net.getIterationCount();
+        int epoch = net.getEpochCount();
+        if (l instanceof BaseLayer) {
+            BaseLayer bl = (BaseLayer) l;
+            IUpdater u = bl.getIUpdater();
+            if (u != null && u.hasLearningRate()) {
+                double d = u.getLearningRate(iter, epoch);
+                if(Double.isNaN(d)){
+                    return null;
+                }
+                return d;
+            }
+            return null;
+        }
+        return null;
+    }
+
     private static void refreshUpdater(MultiLayerNetwork net) {
         INDArray origUpdaterState = net.getUpdater().getStateViewArray();
         net.setUpdater(null);
@@ -248,6 +274,32 @@ public class NetworkUtils {
                 refreshUpdater(net);
             }
         }
+    }
+
+    /**
+     * Get the current learning rate, for the specified layer, from the network.
+     * Note: If the layer has no learning rate (no parameters, or an updater without a learning rate) then null is returned
+     * @param net        Network
+     * @param layerName  Layer name to get the learning rate for
+     * @return Learning rate for the specified layer, or null
+     */
+    public static Double getLearningRate(ComputationGraph net, String layerName){
+        Layer l = net.getLayer(layerName).conf().getLayer();
+        int iter = net.getConfiguration().getIterationCount();
+        int epoch = net.getConfiguration().getEpochCount();
+        if (l instanceof BaseLayer) {
+            BaseLayer bl = (BaseLayer) l;
+            IUpdater u = bl.getIUpdater();
+            if (u != null && u.hasLearningRate()) {
+                double d = u.getLearningRate(iter, epoch);
+                if(Double.isNaN(d)){
+                    return null;
+                }
+                return d;
+            }
+            return null;
+        }
+        return null;
     }
 
     private static void refreshUpdater(ComputationGraph net) {
