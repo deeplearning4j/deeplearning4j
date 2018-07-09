@@ -341,6 +341,7 @@ public class KerasModelEndToEndTest {
     public void importFlatIntoLSTM() throws Exception {
         importFunctionalModelH5Test("modelimport/keras/examples/reshape_to_rnn/reshape_model.h5");
     }
+    
 
     /**
      * Functional LSTM test
