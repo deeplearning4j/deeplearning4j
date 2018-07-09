@@ -651,6 +651,24 @@ TEST_F(DeclarableOpsTests9, Test_AlphaDropout_02) {
     delete [] _bufferA;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, Test_AlphaDropout_BP_1) {
+    NDArray<float> x('c', {10, 10});
+    NDArray<float> eps('c', {10, 10});
+
+    x.linspace(1);
+    eps.linspace(1);
+
+    nd4j::ops::alpha_dropout_bp<float> op;
+
+    auto ress = op.execute({&x, &eps}, {0.5f, 0.5f, 1.5f, 1.6f}, {119});
+
+    ASSERT_EQ(ND4J_STATUS_OK, ress->status());
+
+    ress->at(0)->printIndexedBuffer("Result1AlphaBP");
+    delete ress;
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, matmul_test1) {
 
