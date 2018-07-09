@@ -8,6 +8,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author raver119@gmail.com
@@ -78,11 +80,26 @@ public class SharedTrainingAccumulationFunction implements
                 listenerUpdates.addAll(listenerUpdates2);
         }
 
-
+        Map<String,Integer> minibatchesPerExecutor = new HashMap<>();
+        if(tuple1.getMinibatchesPerExecutor() != null) {
+            for (Map.Entry<String, Integer> e : tuple1.getMinibatchesPerExecutor().entrySet()){
+                minibatchesPerExecutor.put(e.getKey(), e.getValue());
+            }
+        }
+        if(tuple2.getMinibatchesPerExecutor() != null){
+            for (Map.Entry<String, Integer> e : tuple2.getMinibatchesPerExecutor().entrySet()){
+                if(minibatchesPerExecutor.containsKey(e.getKey())){
+                    minibatchesPerExecutor.put(e.getKey(), minibatchesPerExecutor.get(e.getKey()) + e.getValue());
+                } else {
+                    minibatchesPerExecutor.put(e.getKey(), e.getValue());
+                }
+            }
+        }
 
         return SharedTrainingAccumulationTuple.builder().scoreSum(score).updaterStateArray(stateView)
                         .aggregationsCount(aggregationsCount).sparkTrainingStats(stats)
                         .listenerMetaData(listenerMetaData).listenerUpdates(listenerUpdates)
-                        .listenerStaticInfo(listenerStaticInfo).build();
+                        .listenerStaticInfo(listenerStaticInfo)
+                        .minibatchesPerExecutor(minibatchesPerExecutor).build();
     }
 }
