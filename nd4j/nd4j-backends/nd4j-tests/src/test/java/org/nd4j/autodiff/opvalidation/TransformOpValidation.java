@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -200,14 +201,12 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testCross() {
-        OpValidationSuite.ignoreFailing();
-
         INDArray a = Nd4j.create(new float[]{4, 2, 1}, new int[]{1, 3});
         INDArray b = Nd4j.create(new float[]{1, 3, 4}, new int[]{1, 3});
 
         INDArray expOut = Nd4j.create(1, 3);
 
-        DynamicCustomOp op = new Cross(a, b, expOut);
+        val op = new Cross(a, b, expOut);
         Nd4j.getExecutioner().exec(op);
 
         SameDiff sd = SameDiff.create();
