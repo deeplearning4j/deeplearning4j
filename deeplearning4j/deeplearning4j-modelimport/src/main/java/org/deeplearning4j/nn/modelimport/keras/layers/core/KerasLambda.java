@@ -1,3 +1,20 @@
+/*-
+ *
+ *  * Copyright 2018 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
+ *
+ */
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -10,11 +27,11 @@ import java.util.Map;
 
 
 /**
- * Wraps a DL4J SameDiffLambda layer into a KerasLayer
+ * Wraps a DL4J SameDiffLambda into a KerasLayer
  *
  * @author Max Pumperla
  */
-public class KerasSameDiffLambda extends KerasLayer {
+public class KerasLambda extends KerasLayer {
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
@@ -23,7 +40,7 @@ public class KerasSameDiffLambda extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasSameDiffLambda(Map<String, Object> layerConfig, SameDiffLayer sameDiffLayer)
+    public KerasLambda(Map<String, Object> layerConfig, SameDiffLayer sameDiffLayer)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true, sameDiffLayer);
     }
@@ -36,10 +53,11 @@ public class KerasSameDiffLambda extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasSameDiffLambda(Map<String, Object> layerConfig, boolean enforceTrainingConfig,
-                               SameDiffLayer sameDiffLayer)
+    public KerasLambda(Map<String, Object> layerConfig, boolean enforceTrainingConfig,
+                       SameDiffLayer sameDiffLayer)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
+        sameDiffLayer.setLayerName(this.layerName);
         this.layer = sameDiffLayer;
     }
 

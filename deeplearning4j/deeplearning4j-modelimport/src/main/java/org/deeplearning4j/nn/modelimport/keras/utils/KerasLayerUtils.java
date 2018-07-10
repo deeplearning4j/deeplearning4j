@@ -292,7 +292,7 @@ public class KerasLayerUtils {
             layer = new KerasCropping2D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CROPPING_1D())) {
             layer = new KerasCropping1D(layerConfig, enforceTrainingConfig);
-        }  else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LAMBDA())) {
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LAMBDA()) && !lambdaLayers.isEmpty()) {
             String lambdaLayerName = KerasLayerUtils.getLayerNameFromConfig(layerConfig, conf);
             SameDiffLambdaLayer lambdaLayer;
             if (lambdaLayers.containsKey(lambdaLayerName)) {
@@ -301,8 +301,8 @@ public class KerasLayerUtils {
                 throw new UnsupportedKerasConfigurationException("No SameDiff Lambda layer found for Lambda" +
                         "layer " + lambdaLayerName);
             }
-            layer = new KerasSameDiffLambda(layerConfig, enforceTrainingConfig, lambdaLayer);
-        }  {
+            layer = new KerasLambda(layerConfig, enforceTrainingConfig, lambdaLayer);
+        } else {
             Class<? extends KerasLayer> customConfig = customLayers.get(layerClassName);
             if (customConfig == null)
                 throw new UnsupportedKerasConfigurationException("Unsupported keras layer type " + layerClassName);
