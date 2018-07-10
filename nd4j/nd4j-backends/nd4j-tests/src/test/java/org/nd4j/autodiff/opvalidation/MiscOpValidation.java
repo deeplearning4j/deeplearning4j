@@ -901,7 +901,7 @@ public class MiscOpValidation extends BaseOpValidation {
                     String msg = order + ", exclusive=" + exclusive + ", reverse=" + reverse;
 
                     INDArray out = Nd4j.create(3, 5);
-                    OpTestCase op = new OpTestCase(new CumSum(arr, axisArg, out, exclusive, reverse));
+                    OpTestCase op = new OpTestCase(new CumSum(arr, out, exclusive, reverse, 1));
 
                     if(!exclusive && !reverse){
                         op.expectedOutput(0, expFF);
@@ -968,7 +968,7 @@ public class MiscOpValidation extends BaseOpValidation {
                 for (boolean reverse : new boolean[]{false, true}) {
 
                     INDArray out = Nd4j.create(3, 5);
-                    OpTestCase op = new OpTestCase(new CumProd(arr, axisArg, out, exclusive, reverse));
+                    OpTestCase op = new OpTestCase(new CumProd(arr, out, exclusive, reverse, 1));
                     String msg = order + ", exclusive=" + exclusive + ", reverse=" + reverse;
 
                     if(!exclusive && !reverse){

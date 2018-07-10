@@ -26,27 +26,30 @@ public class CumSum extends DynamicCustomOp {
 
     protected boolean exclusive = false;
     protected boolean reverse = false;
+    protected int[] axis = new int[0];
 
     public CumSum() {
     }
 
 
-    public CumSum(SameDiff sameDiff, SDVariable x, SDVariable axis) {
-        this(sameDiff, x, axis, false, false);
+    public CumSum(SameDiff sameDiff, SDVariable x, int... axis) {
+        this(sameDiff, x, false, false, axis);
     }
 
-    public CumSum(SameDiff sameDiff, SDVariable x, SDVariable axis, boolean exclusive, boolean reverse) {
-        super(null, sameDiff, new SDVariable[]{x, axis});
+    public CumSum(SameDiff sameDiff, SDVariable x,  boolean exclusive, boolean reverse, int... axis) {
+        super(null, sameDiff, new SDVariable[]{x});
         this.sameDiff = sameDiff;
         this.exclusive = exclusive;
         this.reverse = reverse;
+        this.axis = axis;
         addArgs();
     }
 
-    public CumSum(INDArray in, INDArray axis, INDArray result, boolean exclusive, boolean reverse) {
-        super(null, new INDArray[]{in, axis}, new INDArray[]{result}, null, (List<Integer>)null);
+    public CumSum(INDArray in, INDArray result, boolean exclusive, boolean reverse, int... axis) {
+        super(null, new INDArray[]{in}, new INDArray[]{result}, null, (List<Integer>)null);
         this.exclusive = exclusive;
         this.reverse = reverse;
+        this.axis = axis;
         addArgs();
     }
 
@@ -107,6 +110,8 @@ public class CumSum extends DynamicCustomOp {
 
     protected void addArgs() {
         addIArgument(exclusive ? 1 : 0, reverse ? 1 : 0);
+        for (val a: axis)
+            addIArgument(axis);
     }
 
     @Override
@@ -116,7 +121,7 @@ public class CumSum extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
-        return Collections.singletonList(f().cumsumBp(arg(0), arg(1), grad.get(0), exclusive, reverse));
+        return Collections.singletonList(f().cumsumBp(arg(0), grad.get(0), exclusive, reverse, axis));
     }
 
 }

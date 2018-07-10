@@ -663,6 +663,30 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
     }
 }
 
+template<typename T>
+void clipByNormBp(NDArray<T>& input, NDArray<T>& epsNext, NDArray<T>& output, const std::vector<int>& dimensions, const T clipNorm) {
+    NDArray<T> norm2 = input.template reduceAlongDims<simdOps::Norm2<T>>(dimensions, true);
+
+    if (dimensions.empty()) {
+        if (norm2(0) > clipNorm)
+            output.assign(epsNext * (clipNorm / norm2(0)));
+        else
+            output.assign(epsNext);
+    } else {
+        ResultSet<T>* inTads  = input.allTensorsAlongDimension(dimensions);
+        ResultSet<T>* epsTads  = epsNext.allTensorsAlongDimension(dimensions);
+        ResultSet<T>* outTads = output.allTensorsAlongDimension(dimensions);
+        const int numTads = inTads->size();
+        for (int e = 0; e < numTads; e++) {
+            if (norm2(e) > clipNorm)
+                outTads->at(e)->assign(*epsTads->at(e) * (clipNorm / norm2(e)));
+            else
+                outTads->at(e)->assign(epsTads->at(e));
+        }
+    }
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 void clipByAveraged(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& dimensions, const T clipNorm, const bool isInplace) {
@@ -891,6 +915,10 @@ template void mergeAdd<double>(const std::vector<NDArray<double>*>& inArrs, NDAr
 template void clipByNorm<float>(NDArray<float>& input, NDArray<float>& output, const std::vector<int>& dimensions, const float clipNorm, const bool isInplace);
 template void clipByNorm<float16>(NDArray<float16>& input, NDArray<float16>& output, const std::vector<int>& dimensions, const float16 clipNorm, const bool isInplace);
 template void clipByNorm<double>(NDArray<double>& input, NDArray<double>& output, const std::vector<int>& dimensions, const double clipNorm, const bool isInplace);
+
+template void clipByNormBp<float>(NDArray<float>& input, NDArray<float>& eps, NDArray<float>& output, const std::vector<int>& dimensions, const float clipNorm);
+template void clipByNormBp<float16>(NDArray<float16>& input, NDArray<float16>& eps, NDArray<float16>& output, const std::vector<int>& dimensions, const float16 clipNorm);
+template void clipByNormBp<double>(NDArray<double>& input, NDArray<double>& eps, NDArray<double>& output, const std::vector<int>& dimensions, const double clipNorm);
 
 template void clipByAveraged<float>(NDArray<float>& input, NDArray<float>& output, const std::vector<int>& dimensions, const float clipNorm, const bool isInplace);
 template void clipByAveraged<float16>(NDArray<float16>& input, NDArray<float16>& output, const std::vector<int>& dimensions, const float16 clipNorm, const bool isInplace);

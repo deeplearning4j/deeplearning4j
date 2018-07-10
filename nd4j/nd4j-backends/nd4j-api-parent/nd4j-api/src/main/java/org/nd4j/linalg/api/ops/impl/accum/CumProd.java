@@ -19,26 +19,35 @@ import java.util.*;
 public class CumProd extends DynamicCustomOp {
     protected boolean exclusive = false;
     protected boolean reverse = false;
+    protected int[] axis = new int[0];
 
     public CumProd() {
     }
 
-    public CumProd(SameDiff sameDiff, SDVariable x, SDVariable axis) {
-        this(sameDiff, x, axis, false, false);
+    public CumProd(SameDiff sameDiff, SDVariable x, int... axis) {
+        this(sameDiff, x, false, false, axis);
     }
 
-    public CumProd(SameDiff sameDiff, SDVariable x, SDVariable axis, boolean exclusive, boolean reverse) {
-        super(null, sameDiff, new SDVariable[]{x, axis});
+    public CumProd(SameDiff sameDiff, SDVariable x, boolean exclusive, boolean reverse, int... axis) {
+        super(null, sameDiff, new SDVariable[]{x, });
         this.sameDiff = sameDiff;
         this.exclusive = exclusive;
         this.reverse = reverse;
+        this.axis = axis;
+
+        tArguments.clear();
+        iArguments.clear();
         addArgs();
     }
 
-    public CumProd(INDArray in, INDArray axis, INDArray result, boolean exclusive, boolean reverse) {
-        super(null, new INDArray[]{in, axis}, new INDArray[]{result}, null, (List<Integer>)null);
+    public CumProd(INDArray in, INDArray result, boolean exclusive, boolean reverse, int... axis) {
+        super(null, new INDArray[]{in}, new INDArray[]{result}, null, (List<Integer>)null);
         this.exclusive = exclusive;
         this.reverse = reverse;
+        this.axis = axis;
+
+        tArguments.clear();
+        iArguments.clear();
         addArgs();
     }
 
@@ -99,6 +108,9 @@ public class CumProd extends DynamicCustomOp {
 
     protected void addArgs() {
         addIArgument(exclusive ? 1 : 0, reverse ? 1 : 0);
+        if (axis != null)
+            for (val a: axis)
+                addIArgument(a);
     }
 
     @Override
@@ -108,6 +120,6 @@ public class CumProd extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
-        return Collections.singletonList(f().cumprodBp(arg(0), arg(1), grad.get(0), exclusive, reverse));
+        return Collections.singletonList(f().cumprodBp(arg(0), grad.get(0), exclusive, reverse, axis));
     }
 }

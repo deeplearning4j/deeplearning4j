@@ -59,8 +59,8 @@ public class Cross extends DynamicCustomOp {
         SDVariable b = rarg();
         SDVariable ones = sameDiff.onesLike(a);
 
-        SDVariable gradLeft = grad.mul(sameDiff.cross(ones, b));
-        SDVariable gradRight = grad.mul(sameDiff.cross(a, ones));
+        SDVariable gradLeft = grad.mul(sameDiff.cross(b, ones));
+        SDVariable gradRight = grad.mul(sameDiff.cross(ones, a));
 
         return Arrays.asList(gradLeft, gradRight);
     }

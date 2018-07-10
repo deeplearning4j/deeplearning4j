@@ -356,7 +356,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 return newVars;
             }
 
-            val newVars = sameDiff.generateOutputVariableForOp(this,null);
+            val newVars = sameDiff.generateOutputVariableForOp(this, baseName);
 
             INDArray arr = null;
             if(newVars == null || newVars.length < 1 || newVars[0].getShape() == null) {
