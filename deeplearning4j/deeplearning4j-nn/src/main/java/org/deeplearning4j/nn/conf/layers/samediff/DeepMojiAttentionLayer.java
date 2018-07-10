@@ -13,7 +13,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 /**
- * Attention layer for DeepMoji network architecture.
+ * Attention layer for DeepMoji network architecture, following the implementation
+ * here: https://github.com/bfelbo/DeepMoji
  *
  *
  * @author  Max Pumperla
@@ -21,12 +22,12 @@ import java.util.Map;
 @Data
 public class DeepMojiAttentionLayer extends SameDiffLayer {
 
-    // TODO: Masking
-    private long channels;
     private int timeSteps;
-    private final double EPS = 1e-7;
     private long nIn;
     private long nOut;
+
+    private final double EPS = 1e-7;
+
 
     public DeepMojiAttentionLayer(Builder builder) {
         super(builder);
@@ -34,7 +35,6 @@ public class DeepMojiAttentionLayer extends SameDiffLayer {
         this.nIn = builder.nIn;
         this.nOut = builder.nOut;
         this.weightInit = builder.weightInit;
-        this.channels = builder.channels;
         this.timeSteps = builder.timeSteps;
     }
 
@@ -55,8 +55,9 @@ public class DeepMojiAttentionLayer extends SameDiffLayer {
     }
 
     /**
-     * In the defineLayer method, you define the actual layer forward pass
-     * For this layer, we are returning out = activationFn( input*weights + bias)
+     * This attention layer computes a weighted average over all "channels" dimensions, i.e.
+     * for an input of shape (mb, channels, timeSteps) it will compute an output of shape
+     * (mb, timeSteps).
      *
      * @param sd         The SameDiff instance for this layer
      * @param layerInput An SDVariable representing the 4D inputs to this layer
@@ -94,19 +95,18 @@ public class DeepMojiAttentionLayer extends SameDiffLayer {
 
     @Override
     public void defineParameters(SDLayerParams params) {
-        params.addWeightParam(DefaultParamInitializer.WEIGHT_KEY, channels, 1);
+        params.addWeightParam(DefaultParamInitializer.WEIGHT_KEY, nIn, 1);
     }
 
     @Override
     public void initializeParameters(Map<String, INDArray> params) {
-        initWeights( (int) channels, 1, weightInit,  params.get(DefaultParamInitializer.WEIGHT_KEY));
+        initWeights( (int) nIn, 1, weightInit,  params.get(DefaultParamInitializer.WEIGHT_KEY));
     }
 
     public static class Builder extends SameDiffLayer.Builder<Builder> {
 
         private int nIn;
         private int nOut;
-        private int channels;
         private int timeSteps;
 
         public Builder nIn(int nIn){
@@ -118,12 +118,6 @@ public class DeepMojiAttentionLayer extends SameDiffLayer {
             this.nOut = nOut;
             return this;
         }
-
-        public Builder channels(int channels){
-            this.channels = channels;
-            return this;
-        }
-
 
         public Builder timeSteps(int timeSteps){
             this.timeSteps = timeSteps;
