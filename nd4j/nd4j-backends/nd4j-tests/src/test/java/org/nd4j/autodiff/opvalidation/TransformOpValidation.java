@@ -518,14 +518,13 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testTransforms() {
-        OpValidationSuite.ignoreFailing();
         //Test transforms (non-pairwise)
         Nd4j.getRandom().setSeed(12345);
 
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 80; i++) {
+        for (int i = 49; i < 80; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -979,6 +978,7 @@ public class TransformOpValidation extends BaseOpValidation {
             String error = OpValidation.validate(tc, true);
             if(error != null){
                 allFailed.add(name);
+                throw new RuntimeException();
             }
         }
 
@@ -996,7 +996,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testPairwiseTransforms() {
-//        OpValidationSuite.ignoreFailing();
         /*
         add, sub, mul, div, rsub, rdiv
         eq, neq, gt, lt, gte, lte, or, and, xor
