@@ -89,7 +89,7 @@ public class KerasModelEndToEndTest {
     private static final String H5_EXTENSION = ".h5";
     private static final double EPS = 1E-5;
 
-    private static final boolean SKIP_GRAD_CHECKS = false;
+    private static final boolean SKIP_GRAD_CHECKS = true;
 
     @Rule
     public final TemporaryFolder testDir = new TemporaryFolder();
@@ -525,7 +525,7 @@ public class KerasModelEndToEndTest {
         importEndModelTest(modelPath, inputsOutputsPath, tfOrdering, checkPredictions, false);
     }
 
-    private void importEndModelTest(String modelPath, String inputsOutputsPath, boolean tfOrdering, boolean checkPredictions,
+    public void importEndModelTest(String modelPath, String inputsOutputsPath, boolean tfOrdering, boolean checkPredictions,
                                     boolean checkGradients) throws Exception {
         ClassPathResource modelResource =
                 new ClassPathResource(modelPath,

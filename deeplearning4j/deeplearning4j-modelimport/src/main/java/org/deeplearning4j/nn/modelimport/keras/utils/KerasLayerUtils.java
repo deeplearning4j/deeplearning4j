@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.modelimport.keras.utils;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLambdaLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
@@ -155,9 +156,10 @@ public class KerasLayerUtils {
     public static KerasLayer getKerasLayerFromConfig(Map<String, Object> layerConfig,
                                                      KerasLayerConfiguration conf,
                                                      Map<String, Class<? extends KerasLayer>> customLayers,
+                                                     Map<String, SameDiffLambdaLayer> lambdaLayers,
                                                      Map<String, ? extends KerasLayer> previousLayers)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        return getKerasLayerFromConfig(layerConfig, false, conf, customLayers, previousLayers);
+        return getKerasLayerFromConfig(layerConfig, false, conf, customLayers, lambdaLayers, previousLayers);
     }
 
     /**
@@ -175,6 +177,7 @@ public class KerasLayerUtils {
                                                      boolean enforceTrainingConfig,
                                                      KerasLayerConfiguration conf,
                                                      Map<String, Class<? extends KerasLayer>> customLayers,
+                                                     Map<String, SameDiffLambdaLayer> lambdaLayers,
                                                      Map<String, ? extends KerasLayer> previousLayers
     )
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -289,6 +292,16 @@ public class KerasLayerUtils {
             layer = new KerasCropping2D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CROPPING_1D())) {
             layer = new KerasCropping1D(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LAMBDA()) && !lambdaLayers.isEmpty()) {
+            String lambdaLayerName = KerasLayerUtils.getLayerNameFromConfig(layerConfig, conf);
+            SameDiffLambdaLayer lambdaLayer;
+            if (lambdaLayers.containsKey(lambdaLayerName)) {
+                lambdaLayer = lambdaLayers.get(lambdaLayerName);
+            } else {
+                throw new UnsupportedKerasConfigurationException("No SameDiff Lambda layer found for Lambda" +
+                        "layer " + lambdaLayerName);
+            }
+            layer = new KerasLambda(layerConfig, enforceTrainingConfig, lambdaLayer);
         } else {
             Class<? extends KerasLayer> customConfig = customLayers.get(layerClassName);
             if (customConfig == null)
