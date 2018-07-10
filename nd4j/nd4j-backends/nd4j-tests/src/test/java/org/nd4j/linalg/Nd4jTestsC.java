@@ -26,6 +26,7 @@ import lombok.var;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.imports.TFGraphs.NodeReader;
 import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -6694,6 +6695,23 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
             assertEquals(c, f, 1e-5);
         }
+    }
+
+    @Test
+    public void testMatmul_vs_tf() throws Exception {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+
+        val arrayA = NodeReader.readArray("mnist_00", "input.placeholder");
+        val arrayB = NodeReader.readArray("mnist_00", "Variable.0");
+        val arrayC = Nd4j.create(100, 10);
+        val exp = NodeReader.readArray("mnist_00", "MatMul.0");
+        val badExp = Nd4j.create(100, 10);
+
+        val op = new Mmul(arrayA, arrayB, arrayC, null);
+        Nd4j.getExecutioner().exec(op);
+        assertEquals(exp, arrayC);
+        assertNotEquals(badExp, arrayC);
     }
 
     ///////////////////////////////////////////////////////
