@@ -7,6 +7,10 @@
 #ifndef LIBND4J_SPECIALS_SPARSE_H
 #define LIBND4J_SPECIALS_SPARSE_H
 
+#define ND4J_CLIPMODE_THROW 0
+#define ND4J_CLIPMODE_WRAP 1
+#define ND4J_CLIPMODE_CLIP 2
+
 #include <pointercast.h>
 
 namespace nd4j {
@@ -45,6 +49,13 @@ namespace nd4j {
                                                     int rank);
 
             static void sortCooIndicesGeneric(Nd4jLong *indices, T *values, Nd4jLong length, int rank);
+
+            /**
+             * Converts indices in COO format into an array of flat indices
+             * 
+             * based on numpy.ravel_multi_index
+             */
+            static void ravelMultiIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *fullShapeBuffer, int mode);
         };
     }
 }

@@ -7,6 +7,8 @@
 #include <pointercast.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <shape.h>
+
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -200,6 +202,23 @@ namespace nd4j {
 #endif
         }
 
+        template <typename T>
+        void SparseUtils<T>::ravelMultiIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *fullShapeBuffer, int mode){
+            Nd4jLong * stride = shape::stride(fullShapeBuffer);
+            Nd4jLong rank = shape::rank(fullShapeBuffer);
+
+#ifdef _OPENMP
+            int numThreads = omp_get_max_threads();
+#pragma omp parallel for num_threads(numThreads) if (numThreads > 1) schedule(guided)
+#endif
+            for (Nd4jLong i = 0; i < length; ++i){
+                Nd4jLong raveledIndex = 0;
+                for (Nd4jLong j = 0; j < rank; ++j){
+                    raveledIndex += indices[i * rank + j] * stride[j];
+                }
+                flatIndices[i] = raveledIndex;
+            }
+        }
 
         template class ND4J_EXPORT SparseUtils<float>;
         template class ND4J_EXPORT SparseUtils<float16>;
