@@ -6710,6 +6710,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         val op = new Mmul(arrayA, arrayB, arrayC, null);
         Nd4j.getExecutioner().exec(op);
+
+
+        Nd4j.getExecutioner().enableDebugMode(false);
+        Nd4j.getExecutioner().enableVerboseMode(false);
+
         assertEquals(exp, arrayC);
         assertNotEquals(badExp, arrayC);
     }
