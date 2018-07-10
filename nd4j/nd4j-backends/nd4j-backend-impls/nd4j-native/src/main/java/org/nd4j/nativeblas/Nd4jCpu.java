@@ -27497,8 +27497,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
-//         #if NOT_EXCLUDED(OP_cumsum_bp)
-        @Name("nd4j::ops::cumsum_bp<float>") public static class float_cumsum_bp extends FloatDeclarableOp {
+//         #if NOT_EXCLUDED(OP_cumsum)
+        @Name("nd4j::ops::cumsum_bp<float>") public static class float_cumsum_bp extends FloatDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public float_cumsum_bp(Pointer p) { super(p); }
@@ -27513,7 +27513,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
-        @Name("nd4j::ops::cumsum_bp<float16>") public static class half_cumsum_bp extends HalfDeclarableOp {
+        @Name("nd4j::ops::cumsum_bp<float16>") public static class half_cumsum_bp extends HalfDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public half_cumsum_bp(Pointer p) { super(p); }
@@ -27528,7 +27528,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
-        @Name("nd4j::ops::cumsum_bp<double>") public static class double_cumsum_bp extends DoubleDeclarableOp {
+        @Name("nd4j::ops::cumsum_bp<double>") public static class double_cumsum_bp extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public double_cumsum_bp(Pointer p) { super(p); }

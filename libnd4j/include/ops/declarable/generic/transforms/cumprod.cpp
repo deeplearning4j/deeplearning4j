@@ -42,7 +42,7 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        CONFIGURABLE_OP_IMPL(cumprod_bp, 2, 1, true, 0, 2) {
+        CONFIGURABLE_OP_IMPL(cumprod_bp, 2, -1, true, 0, 2) {
             auto input = INPUT_VARIABLE(0);
             auto epsilon = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);

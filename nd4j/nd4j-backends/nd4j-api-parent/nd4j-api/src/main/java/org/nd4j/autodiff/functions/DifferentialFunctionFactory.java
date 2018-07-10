@@ -645,12 +645,12 @@ public class DifferentialFunctionFactory {
         return new MatchConditionTransform(sameDiff(), in, condition).outputVariable();
     }
 
-    public SDVariable cumsum(SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
-        return new CumSum(sameDiff(), in, axis, exclusive, reverse).outputVariable();
+    public SDVariable cumsum(SDVariable in, boolean exclusive, boolean reverse, int... axis) {
+        return new CumSum(sameDiff(), in, exclusive, reverse, axis).outputVariable();
     }
 
-    public SDVariable cumsumBp(SDVariable in, SDVariable axis, SDVariable grad, boolean exclusive, boolean reverse) {
-        return new CumSumBp(sameDiff(), in, axis, grad, exclusive, reverse).outputVariable();
+    public SDVariable cumsumBp(SDVariable in, SDVariable grad, boolean exclusive, boolean reverse, int... axis) {
+        return new CumSumBp(sameDiff(), in, grad, exclusive, reverse, axis).outputVariable();
     }
 
     public SDVariable cumprod(SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {

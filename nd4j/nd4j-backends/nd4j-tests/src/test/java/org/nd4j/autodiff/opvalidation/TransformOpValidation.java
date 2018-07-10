@@ -522,7 +522,7 @@ public class TransformOpValidation extends BaseOpValidation {
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 49; i < 80; i++) {
+        for (int i = 51; i < 80; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -795,8 +795,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     boolean exclusive = false;
                     boolean reverseBool = false;
 
-                    SDVariable dimArg = sd.var("dim", Nd4j.trueScalar(dim));
-                    t = sd.cumsum(in, dimArg, exclusive, reverseBool);
+                    t = sd.cumsum(in, exclusive, reverseBool, dim);
                     INDArray expOut51 = Nd4j.create(ia.shape());
                     DynamicCustomOp cumsum = DynamicCustomOp.builder("cumsum")
                             .addIntegerArguments((exclusive) ? 1 : 0, (reverseBool) ? 1 : 0, dim)
