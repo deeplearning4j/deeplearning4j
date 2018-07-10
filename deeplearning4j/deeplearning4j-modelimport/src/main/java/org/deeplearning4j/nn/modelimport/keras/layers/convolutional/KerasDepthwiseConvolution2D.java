@@ -162,31 +162,6 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
         this.layer = builder.build();
     }
 
-    long getNInFromConfig(Map<String, ? extends KerasLayer> previousLayers) throws UnsupportedKerasConfigurationException {
-        int size = previousLayers.size();
-        int count = 0;
-        long nIn;
-        String inboundLayerName = inboundLayerNames.get(0);
-        while (count <= size) {
-            if (previousLayers.containsKey(inboundLayerName)) {
-                KerasLayer inbound = previousLayers.get(inboundLayerName);
-                try {
-                    FeedForwardLayer ffLayer = (FeedForwardLayer) inbound.getLayer();
-                    nIn = ffLayer.getNOut();
-                    if (nIn > 0)
-                        return nIn;
-                    count++;
-                    inboundLayerName = inbound.getInboundLayerNames().get(0);
-                } catch (Exception e) {
-                    inboundLayerName = inbound.getInboundLayerNames().get(0);
-                }
-            }
-        }
-        throw new UnsupportedKerasConfigurationException("Could not determine number of input channels for" +
-                "depthwise convolution.");
-    }
-
-
     /**
      * Set weights for layer.
      *

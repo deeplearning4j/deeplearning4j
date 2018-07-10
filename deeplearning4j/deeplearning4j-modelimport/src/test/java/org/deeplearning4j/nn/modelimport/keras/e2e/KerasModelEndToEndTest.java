@@ -525,7 +525,7 @@ public class KerasModelEndToEndTest {
         importEndModelTest(modelPath, inputsOutputsPath, tfOrdering, checkPredictions, false);
     }
 
-    private void importEndModelTest(String modelPath, String inputsOutputsPath, boolean tfOrdering, boolean checkPredictions,
+    public void importEndModelTest(String modelPath, String inputsOutputsPath, boolean tfOrdering, boolean checkPredictions,
                                     boolean checkGradients) throws Exception {
         ClassPathResource modelResource =
                 new ClassPathResource(modelPath,
