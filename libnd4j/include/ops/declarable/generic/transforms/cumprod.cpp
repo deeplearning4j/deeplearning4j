@@ -42,7 +42,7 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        CONFIGURABLE_OP_IMPL(cumprod_bp, 2, -1, true, 0, 2) {
+        CUSTOM_OP_IMPL(cumprod_bp, 2, -1, false, 0, 2) {
             auto input = INPUT_VARIABLE(0);
             auto epsilon = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
@@ -54,6 +54,21 @@ namespace nd4j {
             output->putScalar(0, epsilon->getScalar(0));
             // 
             return ND4J_STATUS_OK;
+        }
+
+        DECLARE_SHAPE_FN(cumprod_bp) {
+            auto inp = inputShape->at(0);
+            Nd4jLong *newShapeX = nullptr;
+            COPY_SHAPE(inp, newShapeX);
+
+            if (block.width() == 2) {
+                return SHAPELIST(newShapeX);
+            } else {
+                Nd4jLong *newShapeA = nullptr;
+                COPY_SHAPE(inputShape->at(1), newShapeA);
+
+                return SHAPELIST(newShapeX, newShapeA);
+            }
         }
     }
 }

@@ -146,11 +146,11 @@ namespace nd4j {
         #endif
 
         #if NOT_EXCLUDED(OP_cumsum)
-        DECLARE_CUSTOM_OP(cumsum_bp, 2, -1, true, 0, 2);
+        DECLARE_CUSTOM_OP(cumsum_bp, 2, -1, false, 0, 2);
         #endif
 
         #if NOT_EXCLUDED(OP_cumprod)
-        DECLARE_CONFIGURABLE_OP(cumprod_bp, 2, 1, true, 0, 2);
+        DECLARE_CUSTOM_OP(cumprod_bp, 2, -21, false, 0, 2);
         #endif
 
     }

@@ -522,7 +522,7 @@ public class TransformOpValidation extends BaseOpValidation {
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 51; i < 80; i++) {
+        for (int i = 52; i < 80; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -807,8 +807,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     dim = 0;
                     boolean ex = false;
                     boolean revBool = false;
-                    SDVariable dimArg2 = sd.var("dim", Nd4j.trueScalar(dim));
-                    t = sd.cumprod(in, dimArg2, ex, revBool);
+                    t = sd.cumprod(in, ex, revBool, 0);
                     INDArray expOut52 = Nd4j.create(ia.shape());
                     for( int s0=0; s0<ia.size(0); s0++){
                         for( int s1=0; s1<ia.size(1); s1++ ){

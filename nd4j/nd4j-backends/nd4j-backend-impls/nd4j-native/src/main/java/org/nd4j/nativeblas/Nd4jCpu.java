@@ -27546,7 +27546,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
 //         #if NOT_EXCLUDED(OP_cumprod)
-        @Name("nd4j::ops::cumprod_bp<float>") public static class float_cumprod_bp extends FloatDeclarableOp {
+        @Name("nd4j::ops::cumprod_bp<float>") public static class float_cumprod_bp extends FloatDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public float_cumprod_bp(Pointer p) { super(p); }
@@ -27561,7 +27561,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
-        @Name("nd4j::ops::cumprod_bp<float16>") public static class half_cumprod_bp extends HalfDeclarableOp {
+        @Name("nd4j::ops::cumprod_bp<float16>") public static class half_cumprod_bp extends HalfDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public half_cumprod_bp(Pointer p) { super(p); }
@@ -27576,7 +27576,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
-        @Name("nd4j::ops::cumprod_bp<double>") public static class double_cumprod_bp extends DoubleDeclarableOp {
+        @Name("nd4j::ops::cumprod_bp<double>") public static class double_cumprod_bp extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public double_cumprod_bp(Pointer p) { super(p); }

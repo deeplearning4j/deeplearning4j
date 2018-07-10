@@ -653,12 +653,12 @@ public class DifferentialFunctionFactory {
         return new CumSumBp(sameDiff(), in, grad, exclusive, reverse, axis).outputVariable();
     }
 
-    public SDVariable cumprod(SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
-        return new CumProd(sameDiff(), in, axis, exclusive, reverse).outputVariable();
+    public SDVariable cumprod(SDVariable in, boolean exclusive, boolean reverse, int... axis) {
+        return new CumProd(sameDiff(), in, exclusive, reverse, axis).outputVariable();
     }
 
-    public SDVariable cumprodBp(SDVariable in, SDVariable axis, SDVariable grad, boolean exclusive, boolean reverse) {
-        return new CumProdBp(sameDiff(), in, axis, grad, exclusive, reverse).outputVariable();
+    public SDVariable cumprodBp(SDVariable in, SDVariable grad, boolean exclusive, boolean reverse, int... axis) {
+        return new CumProdBp(sameDiff(), in, grad, exclusive, reverse, axis).outputVariable();
     }
 
     public SDVariable biasAdd(SDVariable input, SDVariable bias) {
