@@ -34,7 +34,7 @@ namespace nd4j {
             REQUIRE_TRUE(indices->lengthOf() == array->sizeAt(0), 0, "ScatterList: Indices length should be equal number of TADs along dim0, but got %i instead", indices->lengthOf());
 
             std::vector<int> axis = ShapeUtils<T>::convertAxisToTadTarget(array->rankOf(), {0});
-            auto tads = NDArrayFactory<T>::allTensorsAlongDimension(array, axis);
+            auto tads = array->allTensorsAlongDimension( axis);
             for (int e = 0; e < tads->size(); e++) {
                 auto idx = (int) indices->getIndexedScalar(e);
                 if (idx >= tads->size())

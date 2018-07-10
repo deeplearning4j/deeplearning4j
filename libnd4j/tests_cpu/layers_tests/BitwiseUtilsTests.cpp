@@ -5,7 +5,6 @@
 #include "testlayers.h"
 #include <ops/declarable/CustomOperations.h>
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 #include <NativeOps.h>
 #include <helpers/BitwiseUtils.h>
 

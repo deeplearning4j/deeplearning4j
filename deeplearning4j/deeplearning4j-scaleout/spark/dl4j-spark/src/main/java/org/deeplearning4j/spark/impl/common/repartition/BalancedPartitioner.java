@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.impl.common.repartition;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.Partitioner;
 
 import java.util.Random;
@@ -14,6 +15,7 @@ import java.util.Random;
  *
  * @author Alex Black
  */
+@Slf4j
 public class BalancedPartitioner extends Partitioner {
     private final int numPartitions; //Total number of partitions
     private final int elementsPerPartition;
@@ -46,6 +48,8 @@ public class BalancedPartitioner extends Partitioner {
             if (outputPartition >= numPartitions) {
                 //Should never happen, unless there's some up-stream problem with calculating elementsPerPartition
                 outputPartition = getRandom().nextInt(numPartitions);
+                log.warn("**** Random partition assigned (1): elementIdx={}, numPartitions={}, elementsPerPartition={}, remainder={}",
+                        elementIdx, numPartitions, elementsPerPartition, remainder);
             }
             return outputPartition;
         } else {
@@ -57,6 +61,8 @@ public class BalancedPartitioner extends Partitioner {
             if (outputPartition >= numPartitions) {
                 //Should never happen, unless there's some up-stream problem with calculating elementsPerPartition
                 outputPartition = getRandom().nextInt(numPartitions);
+                log.warn("**** Random partition assigned (2): elementIdx={}, numPartitions={}, elementsPerPartition={}, remainder={}",
+                        elementIdx, numPartitions, elementsPerPartition, remainder);
             }
             return outputPartition;
         }

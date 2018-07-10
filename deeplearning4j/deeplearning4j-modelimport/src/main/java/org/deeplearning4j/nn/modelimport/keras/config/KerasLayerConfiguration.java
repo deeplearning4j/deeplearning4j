@@ -36,7 +36,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_LAYER = "layer";
 
     /* Basic layer names */
-    // Missing Layers: Lambda, ActivityRegularization, Masking
+    // Missing Layers: ActivityRegularization, Masking
     // Conv3DTranspose, SeparableConv1D, ConvRNN2D, ConvLSTM2D
     // CuDNNGRU, CuDNNLSTM (TF only)
     // LocallyConnected1D-2D
@@ -46,6 +46,8 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_PERMUTE = "Permute";
     private final String LAYER_CLASS_NAME_DROPOUT = "Dropout";
     private final String LAYER_CLASS_NAME_REPEAT = "RepeatVector";
+    private final String LAYER_CLASS_NAME_LAMBDA = "Lambda";
+
 
     private final String LAYER_CLASS_NAME_SPATIAL_DROPOUT_1D = "SpatialDropout1D";
     private final String LAYER_CLASS_NAME_SPATIAL_DROPOUT_2D = "SpatialDropout2D";

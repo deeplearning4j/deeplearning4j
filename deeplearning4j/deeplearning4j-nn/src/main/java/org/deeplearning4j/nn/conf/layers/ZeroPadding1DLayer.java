@@ -43,7 +43,7 @@ import java.util.Map;
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-public class ZeroPadding1DLayer extends Layer {
+public class ZeroPadding1DLayer extends NoParamLayer {
 
     private int[] padding; // [padLeft, padRight]
 

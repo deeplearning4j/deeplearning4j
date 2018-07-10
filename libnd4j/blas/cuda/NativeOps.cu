@@ -41,7 +41,6 @@
 // FIXME: we need cuda-specific implementations
 #include <helpers/logger.h>
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 #include <GraphExecutioner.h>
 #include <graph/GraphHolder.h>
 #include <graph/VariablesSet.h>
@@ -6724,6 +6723,18 @@ void NativeOps::deleteResultWrapper(Nd4jPointer ptr) {
 	delete p;
 }
 
+
+int NativeOps::estimateThresholdFloat(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold) {
+	throw std::runtime_error("estimateThresholdFloat: Not implemented yet");
+}
+
+int NativeOps::estimateThresholdDouble(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold) {
+    throw std::runtime_error("estimateThresholdDouble: Not implemented yet");
+}
+
+int NativeOps::estimateThresholdHalf(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold) {
+    throw std::runtime_error("estimateThresholdHalf: Not implemented yet");
+}
 
 /*
  * TypeDef:

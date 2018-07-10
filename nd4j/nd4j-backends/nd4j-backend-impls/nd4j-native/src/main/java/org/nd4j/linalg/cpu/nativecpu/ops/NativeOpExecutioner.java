@@ -626,8 +626,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
 
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().elementWiseStride() >= 1
-                        && !op.isExecSpecial()) {
+                if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().elementWiseStride() >= 1  && !op.isExecSpecial() && op.x().ordering() == op.z().ordering()) {
                     loop.execScalarDouble(null, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
                             op.x().elementWiseStride(),
                             (DoublePointer) op.z().data().addressPointer(),
@@ -643,8 +642,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             op.scalar().doubleValue(),
                             (DoublePointer) getPointerForExtraArgs(op));
             } else {
-                if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().elementWiseStride() >= 1
-                        && !op.isExecSpecial()) {
+                if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.z().ordering()) {
                     loop.execScalarFloat(null, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
                             op.x().elementWiseStride(), (FloatPointer) op.z().data().addressPointer(),
                             op.z().elementWiseStride(), op.scalar().floatValue(),
@@ -1255,7 +1253,15 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         properties.put(Nd4jEnvironment.HOST_FREE_MEMORY_KEY, Pointer.maxBytes() - Pointer.totalBytes());
 
         // fill bandwidth information
-        properties.put(Nd4jEnvironment.MEMORY_BANDWIDTH_KEY, PerformanceTracker.getInstance().getCurrentBandwidth());
+        /*
+        Note: Environment information is logged as part of ND4J initialization... but PerformanceTracker required
+        ND4J init to be completed before it can be initialized. Hence we can get a null PerformanceTracker when
+        OpExecutioner.printEnvironmentInformation() is called as part of ND4J class initialization - even
+        though PerformanceTracker.getInstance() refers to a static final field (as it may not yet be initialized)
+         */
+        if(PerformanceTracker.getInstance() != null) {
+            properties.put(Nd4jEnvironment.MEMORY_BANDWIDTH_KEY, PerformanceTracker.getInstance().getCurrentBandwidth());
+        }
 
         return properties;
     }
@@ -1419,14 +1425,20 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray thresholdEncode(INDArray input, double threshold, Integer boundary) {
 
-        MatchCondition condition = new MatchCondition(input, Conditions.absGreaterThanOrEqual(threshold));
-        int cntAbs = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+        //val condition = new MatchCondition(input, Conditions.absGreaterThanOrEqual(threshold));
+        //long t1 = System.currentTimeMillis();
+        int cntAbs = input.data().dataType() == DataBuffer.Type.FLOAT ? loop.estimateThresholdFloat(null, input.data().addressPointer(), (int) input.length(), (float) threshold)
+                : input.data().dataType() == DataBuffer.Type.DOUBLE ? loop.estimateThresholdDouble(null, input.data().addressPointer(), (int) input.length(), (float) threshold)
+                : loop.estimateThresholdHalf(null, input.data().addressPointer(), (int) input.length(), (float) threshold);
+        //long t2 = System.currentTimeMillis();
 
         if (cntAbs < 2)
             return null;
 
         if (boundary != null)
             cntAbs = Math.min(cntAbs, boundary);
+
+        //log.info("S: {}; T: {}", cntAbs, t2 - t1);
 
         DataBuffer buffer = input.data();
 
@@ -2104,5 +2116,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         }
         return retShape;
+    }
+
+    @Override
+    public ExecutionerType type() {
+        return ExecutionerType.NATIVE_CPU;
     }
 }

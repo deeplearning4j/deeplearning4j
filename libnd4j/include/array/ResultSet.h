@@ -9,11 +9,14 @@
 #ifndef LIBND4J_RESULTSET_H
 #define LIBND4J_RESULTSET_H
 
-#include <NDArray.h>
 #include <vector>
 #include <graph/generated/result_generated.h>
+#include <pointercast.h>
 
 namespace  nd4j {
+
+    template<typename T> class NDArray; // forward declaration of template class NDArray
+    
     template<typename T>
     class ResultSet {
     private:

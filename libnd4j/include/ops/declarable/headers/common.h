@@ -9,7 +9,6 @@
 #include <op_boilerplate.h>
 #include <types/float16.h>
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 #include <graph/Context.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/BooleanOp.h>

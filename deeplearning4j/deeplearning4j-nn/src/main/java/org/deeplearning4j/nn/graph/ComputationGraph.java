@@ -1513,7 +1513,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
      */
     public Map<String, INDArray> feedForward(INDArray[] input, int layerTillIndex,boolean train) {
-        return feedForward(input, train, true);
+        setInputs(input);
+        return feedForward(train, layerTillIndex);
     }
 
 
@@ -3260,12 +3261,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     public Map<String, INDArray> paramTable(boolean backpropParamsOnly) {
-        //Get all parameters from all layers
+        //Get all parameters from all layers/vertices
         Map<String, INDArray> allParams = new LinkedHashMap<>();
-        for (Layer layer : layers) {
-            Map<String, INDArray> paramMap = layer.paramTable(backpropParamsOnly);
+        for(GraphVertex gv : vertices){
+            Map<String, INDArray> paramMap = gv.paramTable(backpropParamsOnly);
             for (Map.Entry<String, INDArray> entry : paramMap.entrySet()) {
-                String newKey = layer.conf().getLayer().getLayerName() + "_" + entry.getKey();
+                String newKey = gv.getVertexName() + "_" + entry.getKey();
                 allParams.put(newKey, entry.getValue());
             }
         }
@@ -4383,6 +4384,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public void setLearningRate(String layerName, ISchedule newLr) {
         NetworkUtils.setLearningRate(this, layerName, newLr);
+    }
+
+    /**
+     * Get the current learning rate, for the specified layer, from the network.
+     * Note: If the layer has no learning rate (no parameters, or an updater without a learning rate) then null is returned
+     * @param layerNumber   Layer number to get the learning rate for
+     * @return Learning rate for the specified layer, or null
+     */
+    public Double getLearningRate(String layerName){
+        return NetworkUtils.getLearningRate(this, layerName);
     }
 
     /**

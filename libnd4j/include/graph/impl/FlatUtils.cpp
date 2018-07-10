@@ -24,22 +24,21 @@ namespace nd4j {
             auto newShape = new Nd4jLong[shape::shapeInfoLength(rank)];
             memcpy(newShape, flatArray->shape()->data(), shape::shapeInfoByteLength(rank));
 
+            // empty arrays is special case, nothing to restore here
+            if (shape::isEmpty(newShape)) {
+                delete[] newShape;
+                return NDArray<T>::createEmpty();
+            }
+
             auto length = shape::length(newShape);
             auto newBuffer = new T[length];
             auto dtype = DataTypeUtils::fromFlatDataType(flatArray->dtype());
 
-            auto bLength = flatArray->buffer()->size();
-
-            // this is ugly fix for x86_64 crash
-            auto tmp = new int8_t[bLength];
-            memcpy(tmp, (void *)flatArray->buffer()->data(), bLength);
-
-            DataTypeConversions<T>::convertType(newBuffer, tmp, dtype, ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()),  length);
+            DataTypeConversions<T>::convertType(newBuffer, (void *)flatArray->buffer()->data(), dtype, ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()),  length);
 
             auto array = new NDArray<T>(newBuffer, newShape);
             array->triggerAllocationFlag(true, true);
 
-            delete[] tmp;
             return array;
         }
 

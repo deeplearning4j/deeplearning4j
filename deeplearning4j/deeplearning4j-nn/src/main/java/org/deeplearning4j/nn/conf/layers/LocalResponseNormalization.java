@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -90,6 +91,11 @@ public class LocalResponseNormalization extends Layer {
     }
 
     @Override
+    public boolean isPretrain() {
+        return false;
+    }
+
+    @Override
     public double getL1ByParam(String paramName) {
         //Not applicable
         return 0;
@@ -104,6 +110,16 @@ public class LocalResponseNormalization extends Layer {
     @Override
     public boolean isPretrainParam(String paramName) {
         return false; //No params in LRN
+    }
+
+    @Override
+    public GradientNormalization getGradientNormalization() {
+        return GradientNormalization.None;
+    }
+
+    @Override
+    public double getGradientNormalizationThreshold() {
+        return 0;
     }
 
     @Override

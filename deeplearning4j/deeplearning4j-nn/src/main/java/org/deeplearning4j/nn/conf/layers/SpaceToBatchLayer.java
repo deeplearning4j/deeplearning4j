@@ -57,7 +57,7 @@ import java.util.Map;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class SpaceToBatchLayer extends Layer {
+public class SpaceToBatchLayer extends NoParamLayer {
 
     // TODO: throw error when block and padding dims don't match
 

@@ -89,8 +89,6 @@ public class CudaContext {
      * on the old stream
      */
     public void syncOldStream() {
-        //        ContextHolder.getInstance().setContext();
-        //        System.out.println("old sync called");
         syncOldStream(false);
     }
 

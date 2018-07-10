@@ -22,6 +22,7 @@ package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import lombok.var;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
@@ -1496,7 +1497,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testNorm2Double() {
         DataBuffer.Type initialType = Nd4j.dataType();
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+
         INDArray n = Nd4j.create(new double[] {1, 2, 3, 4});
         double assertion = 5.47722557505;
         double norm3 = n.norm2Number().doubleValue();
@@ -1507,7 +1509,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
         double norm2 = row1.norm2Number().doubleValue();
         double assertion2 = 5.0f;
         assertEquals(getFailureMessage(), assertion2, norm2, 1e-1);
-        DataTypeUtil.setDTypeForContext(initialType);
+
+        Nd4j.setDataType(initialType);
     }
 
 
@@ -2075,7 +2078,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testNullPointerDataBuffer() {
         DataBuffer.Type initialType = Nd4j.dataType();
 
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
 
         ByteBuffer allocate = ByteBuffer.allocateDirect(10 * 4).order(ByteOrder.nativeOrder());
         allocate.asFloatBuffer().put(new float[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
@@ -2084,7 +2087,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         System.out.println(sum);
         assertEquals(55f, sum, 0.001f);
 
-        DataTypeUtil.setDTypeForContext(initialType);
+        Nd4j.setDataType(initialType);
     }
 
     @Test
@@ -6651,6 +6654,46 @@ public class Nd4jTestsC extends BaseNd4jTest {
         val tE = System.nanoTime();
 
         log.info("Average time: {}", ((tE - tS) / iterations));
+    }
+
+
+    @Test
+    public void testIndexesIteration_1() {
+        val arrayC = Nd4j.linspace(1,  60,  60).reshape(3, 4, 5);
+        val arrayF = arrayC.dup('f');
+
+        val iter = new NdIndexIterator(arrayC.ordering(), arrayC.shape());
+        while (iter.hasNext()) {
+            val idx = iter.next();
+
+            val c = arrayC.getDouble(idx);
+            val f = arrayF.getDouble(idx);
+
+            assertEquals(c, f, 1e-5);
+        }
+    }
+
+
+    @Test
+    public void testIndexesIteration_2() {
+        val arrayC = Nd4j.linspace(1,  60,  60).reshape(3, 4, 5);
+        val arrayF = arrayC.dup('f');
+
+        val iter = new NdIndexIterator(arrayC.ordering(), arrayC.shape());
+        while (iter.hasNext()) {
+            val idx = iter.next();
+
+            var c = arrayC.getDouble(idx);
+            var f = arrayF.getDouble(idx);
+
+            arrayC.putScalar(idx,  c + 1.0);
+            arrayF.putScalar(idx, f + 1.0);
+
+            c = arrayC.getDouble(idx);
+            f = arrayF.getDouble(idx);
+
+            assertEquals(c, f, 1e-5);
+        }
     }
 
     ///////////////////////////////////////////////////////

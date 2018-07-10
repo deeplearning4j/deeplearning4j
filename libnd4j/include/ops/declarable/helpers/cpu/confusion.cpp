@@ -3,7 +3,7 @@
 //
 
 #include <ops/declarable/helpers/confusion.h>
-#include <NDArrayFactory.h>
+
 
 namespace nd4j {
 namespace ops {
@@ -11,7 +11,7 @@ namespace helpers {
 
     template <typename T>
     void confusionFunctor(NDArray<T>* labels, NDArray<T>* predictions, NDArray<T>* weights, NDArray<T>* output) {
-        std::unique_ptr<ResultSet<T>> arrs(NDArrayFactory<T>::allTensorsAlongDimension(output, {1}));
+        std::unique_ptr<ResultSet<T>> arrs(output->allTensorsAlongDimension({1}));
 
 #pragma omp parallel for if(labels->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)                    
         for (int j = 0; j < labels->lengthOf(); ++j){

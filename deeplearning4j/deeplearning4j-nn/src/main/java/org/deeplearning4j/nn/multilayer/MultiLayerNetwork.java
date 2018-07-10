@@ -1385,6 +1385,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
     }
 
+    @Override
+    public TrainingConfig getConfig() {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
     /**
      * Returns a 1 x m vector where the vector is composed of
      * a flattened vector of all of the weights for the
@@ -3628,6 +3633,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     public void setLearningRate(int layerNumber, ISchedule newLr){
         NetworkUtils.setLearningRate(this, layerNumber, newLr);
+    }
+
+    /**
+     * Get the current learning rate, for the specified layer, from the network.
+     * Note: If the layer has no learning rate (no parameters, or an updater without a learning rate) then null is returned
+     * @param layerNumber   Layer number to get the learning rate for
+     * @return Learning rate for the specified layer, or null
+     */
+    public Double getLearningRate(int layerNumber){
+        return NetworkUtils.getLearningRate(this, layerIndex);
     }
 
     /**

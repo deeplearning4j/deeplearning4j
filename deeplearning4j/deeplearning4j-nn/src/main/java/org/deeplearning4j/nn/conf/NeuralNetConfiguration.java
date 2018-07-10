@@ -30,12 +30,13 @@ import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop;
+import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
-import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLayer;
+import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyGraphVertexDeserializer;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyLayerDeserializer;
@@ -173,6 +174,13 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
     public double getL2ByParam(String variable) {
         return l2ByParam.get(variable);
+    }
+
+    public void setPretrain(boolean pretrain){
+        this.pretrain = pretrain;
+        if(layer != null){
+            layer.setPretrain(pretrain);
+        }
     }
 
     /**
@@ -1092,8 +1100,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             else
                 layerName = layer.getLayerName();
 
-            if(layer instanceof BaseSameDiffLayer){
-                BaseSameDiffLayer sdl = (BaseSameDiffLayer)layer;
+            if(layer instanceof AbstractSameDiffLayer){
+                AbstractSameDiffLayer sdl = (AbstractSameDiffLayer)layer;
                 sdl.applyGlobalConfig(this);
             }
 

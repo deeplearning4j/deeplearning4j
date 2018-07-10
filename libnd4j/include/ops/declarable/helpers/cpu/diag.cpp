@@ -3,7 +3,6 @@
 //
 
 #include "ResultSet.h"
-#include "NDArrayFactory.h"
 #include <ops/declarable/helpers/diag.h>
 
 namespace nd4j {

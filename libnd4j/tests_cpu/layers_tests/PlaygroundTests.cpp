@@ -8,6 +8,8 @@
 #include <Node.h>
 #include <ops/declarable/CustomOperations.h>
 #include <graph/profiling/GraphProfilingHelper.h>
+#include <type_conversions.h>
+#include <helpers/threshold.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -27,7 +29,7 @@ public:
 
 TEST_F(PlaygroundTests, LambdaTest_1) {
     NDArray<float> array('c', {8192, 1024});
-    NDArrayFactory<float>::linspace(1, array);
+    array.linspace(1);
 
     auto lambda = LAMBDA_F(_x) {
         return _x + 32.12f;
@@ -53,7 +55,7 @@ TEST_F(PlaygroundTests, LambdaTest_1) {
 TEST_F(PlaygroundTests, LambdaTest_2) {
     NDArray<float> array('c', {8192, 1024});
     NDArray<float> row('c', {1, 1024});
-    NDArrayFactory<float>::linspace(1, array);
+    array.linspace(1);
 
     auto lambda = LAMBDA_F(_x) {
         return _x + 32.12f;
@@ -516,6 +518,88 @@ TEST_F(PlaygroundTests, Test_Im2Col_3) {
     // nd4j_printf("Permuted time: %lld us;\n", permTime / iterations);    
 }
 
+
+TEST_F(PlaygroundTests, loop_test_1) {
+
+    NDArray<float> f('c', {2}, {5000, 10000});
+    nd4j::ops::randomuniform<float> op;
+
+    auto result = op.execute({&f}, {-1.0f, 1.0f}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto array = result->at(0);
+
+    auto buffer = array->buffer();
+    int cnt = 0;
+    int iterations = 1;
+
+    nd4j_printf("Array length: %lld\n", array->lengthOf());
+
+    int length = (int) array->lengthOf();
+    int span = (int) (array->lengthOf() / 6) + 8;
+
+    NativeOps ops;
+
+    auto t = new int[1000000];
+
+
+
+
+    FloatBits fb;
+    float threshold = 0.99f;
+    fb.f_ = threshold;
+    int le = ops.estimateThresholdFloat(nullptr, reinterpret_cast<void *>(array->buffer()), static_cast<int>(array->lengthOf()), threshold);
+
+    t[0] = le;
+    t[1] = length;
+    t[2] = fb.i_;
+
+    nd4j_printf("number of elements: [%i]\n", le);
+
+    long permTime = 0;
+
+    for (int x = 0; x < iterations; x++) {
+        auto permStart = std::chrono::system_clock::now();
+        ops.estimateThresholdFloat(nullptr, reinterpret_cast<void *>(array->buffer()), static_cast<int>(array->lengthOf()), threshold);
+        TypeCast::convertToThreshold<float>(nullptr, buffer, array->lengthOf(), t);
+
+        /*
+#pragma omp parallel reduction(+:cnt)
+        {
+            int tid = omp_get_thread_num();
+            int start = span * tid;
+            int stop = span * (tid + 1);
+            if (stop > length)
+                stop = length;
+
+#pragma omp simd
+            for (int e = start; e < stop; e++) {
+                auto v = fabsf(buffer[e]);
+                if (v >= 0.995f)
+                    cnt++;
+            }
+        }
+         */
+/*
+#pragma omp parallel for simd reduction(+:cnt)
+        for (int e = 0; e < length; e++) {
+            auto v = fabsf(buffer[e]);
+            if (v >= 0.995f)
+                cnt++;
+        }
+        */
+
+        auto permEnd = std::chrono::system_clock::now();
+        permTime += std::chrono::duration_cast<std::chrono::microseconds> (permEnd - permStart).count();
+    }
+
+
+
+    nd4j_printf("Permuted time: %lld us; Counter: %i;\n", permTime / iterations, cnt);
+
+    delete result;
+    delete[] t;
+}
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, ndarray_tile_test1) {

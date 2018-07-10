@@ -43,6 +43,11 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
         Nd4j.getRandom().setSeed(123);
     }
 
+    @After
+    public void after() {
+        DataTypeUtil.setDTypeForContext(this.initialType);
+    }
+
     @Test
     public void testLossFunctionGradients() {
 
@@ -231,12 +236,6 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
 
         return activationFn;
 
-    }
-
-    @After
-    public void after() {
-        DataTypeUtil.setDTypeForContext(this.initialType);
-        System.out.println("AFTER DATATYPE HERE: " + Nd4j.dataType());
     }
 
     @Override
