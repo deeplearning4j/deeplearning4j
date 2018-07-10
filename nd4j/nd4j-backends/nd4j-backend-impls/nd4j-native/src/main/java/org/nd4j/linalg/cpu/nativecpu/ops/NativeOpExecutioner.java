@@ -626,8 +626,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
 
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().elementWiseStride() >= 1
-                        && !op.isExecSpecial()) {
+                if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().elementWiseStride() >= 1  && !op.isExecSpecial() && op.x().ordering() == op.z().ordering()) {
                     loop.execScalarDouble(null, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
                             op.x().elementWiseStride(),
                             (DoublePointer) op.z().data().addressPointer(),
@@ -643,8 +642,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             op.scalar().doubleValue(),
                             (DoublePointer) getPointerForExtraArgs(op));
             } else {
-                if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().elementWiseStride() >= 1
-                        && !op.isExecSpecial()) {
+                if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.z().ordering()) {
                     loop.execScalarFloat(null, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
                             op.x().elementWiseStride(), (FloatPointer) op.z().data().addressPointer(),
                             op.z().elementWiseStride(), op.scalar().floatValue(),
