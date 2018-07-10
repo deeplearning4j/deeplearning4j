@@ -9,8 +9,11 @@ import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.accum.Mmul;
 import org.nd4j.linalg.api.ops.impl.shape.Unstack;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -18,6 +21,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 
@@ -75,22 +79,34 @@ public class LocallyConnected2DLayer extends ConvolutionLayer {
         int outH = layerConf.getOutputSize()[0];
         int outW = layerConf.getOutputSize()[1];
 
-        List<INDArray> arrayList = new ArrayList<>();
+        INDArray[] inputArray = new INDArray[outH * outW];
         for (int i = 0; i < outH; i++) { // iterate over all output patches
             for (int j = 0; j < outW; j++) {
-                INDArray arr = input.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                inputArray[i * outH + j] = input.get(NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.interval(i * sH, i * sH + kH),
-                        NDArrayIndex.interval(j * sW, j * sW + kW));
-                arrayList.add(arr.reshape(1, miniBatch, featureDim));
+                        NDArrayIndex.interval(j * sW, j * sW + kW))
+                        .reshape(1, miniBatch, featureDim);
             }
         }
-        INDArray[] inputArray = arrayList.toArray(new INDArray[outH * outW]);
-        for (int i = 0; i < inputArray.length; i ++) {
-            inputArray[i] = Nd4j.create(new int[] {featureDim, outDepth});
-        }
-        INDArray[] weightArray = new INDArray[outH * outW];
-        Nd4j.getExecutioner().exec(new Unstack(weights, weightArray, 0));
-        System.out.println(weightArray[0]);
+        INDArray concatOutput = Nd4j.create(outH * outW, miniBatch, featureDim);
+        DynamicCustomOp op = DynamicCustomOp.builder("concat")
+                .addInputs(inputArray).addOutputs(concatOutput).addIntegerArguments(0).build();
+        Nd4j.getExecutioner().exec(op);
+
+        System.out.println(Arrays.toString(concatOutput.shape()));
+        System.out.println(Arrays.toString(weights.shape()));
+
+
+
+        INDArray mmulResult = Nd4j.create(new int[] {outH * outW, miniBatch, outDepth});
+        MMulTranspose mMulTranspose = MMulTranspose.builder()
+                .transposeB(false)
+                .a(concatOutput)
+                .b(weights)
+                .build();
+        Nd4j.getExecutioner().exec(new Mmul(concatOutput, weights, mmulResult, mMulTranspose));
+
+        System.out.println(Arrays.toString(mmulResult.shape()));
 
 
         INDArray z = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new long[]{10, 16, 6, 6});

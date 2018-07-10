@@ -54,7 +54,7 @@ public class LocallyConnectedLayerTest extends BaseDL4JTest {
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
 
-        INDArray input = Nd4j.ones(10, 3, 28, 28);
+        INDArray input = Nd4j.create(10, 3, 28, 28);
         network.output(input, false);
     }
 
