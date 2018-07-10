@@ -22,6 +22,7 @@ package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import lombok.var;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
@@ -6653,6 +6654,46 @@ public class Nd4jTestsC extends BaseNd4jTest {
         val tE = System.nanoTime();
 
         log.info("Average time: {}", ((tE - tS) / iterations));
+    }
+
+
+    @Test
+    public void testIndexesIteration_1() {
+        val arrayC = Nd4j.linspace(1,  60,  60).reshape(3, 4, 5);
+        val arrayF = arrayC.dup('f');
+
+        val iter = new NdIndexIterator(arrayC.ordering(), arrayC.shape());
+        while (iter.hasNext()) {
+            val idx = iter.next();
+
+            val c = arrayC.getDouble(idx);
+            val f = arrayF.getDouble(idx);
+
+            assertEquals(c, f, 1e-5);
+        }
+    }
+
+
+    @Test
+    public void testIndexesIteration_2() {
+        val arrayC = Nd4j.linspace(1,  60,  60).reshape(3, 4, 5);
+        val arrayF = arrayC.dup('f');
+
+        val iter = new NdIndexIterator(arrayC.ordering(), arrayC.shape());
+        while (iter.hasNext()) {
+            val idx = iter.next();
+
+            var c = arrayC.getDouble(idx);
+            var f = arrayF.getDouble(idx);
+
+            arrayC.putScalar(idx,  c + 1.0);
+            arrayF.putScalar(idx, f + 1.0);
+
+            c = arrayC.getDouble(idx);
+            f = arrayF.getDouble(idx);
+
+            assertEquals(c, f, 1e-5);
+        }
     }
 
     ///////////////////////////////////////////////////////
