@@ -78,7 +78,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testScalarOps() {
-        OpValidationSuite.ignoreFailing();
         int d0 = 2;
         int d1 = 3;
         int d2 = 4;

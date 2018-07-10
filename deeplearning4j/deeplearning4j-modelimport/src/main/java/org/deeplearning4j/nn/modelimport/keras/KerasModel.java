@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.customLayers;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.lambdaLayers;
 
 /**
  * Build ComputationGraph from Keras (Functional API) Model or
@@ -215,7 +216,7 @@ public class KerasModel {
 
 
             KerasLayer layer = KerasLayerUtils.getKerasLayerFromConfig(
-                    layerConfigMap, this.enforceTrainingConfig, kerasLayerConf, customLayers, layers);
+                    layerConfigMap, this.enforceTrainingConfig, kerasLayerConf, customLayers, lambdaLayers, layers);
             layersOrdered.add(layer);
             layers.put(layer.getLayerName(), layer);
             if (layer instanceof KerasLstm)
