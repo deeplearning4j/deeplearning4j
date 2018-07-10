@@ -78,6 +78,23 @@ namespace helpers {
     template int dropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<float16>* input, NDArray<float16>* gradOut, NDArray<float16>* output, NDArray<float16>* reduceShape, int seed, float16 probValue);
     template int dropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<double>* input, NDArray<double>* gradOut, NDArray<double>* output, NDArray<double>* reduceShape, int seed, double probValue);
 
+    template <typename T>
+    int alphaDropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* gradOut, NDArray<T>* output, NDArray<T>* reduceShape, int seed, T probValue, T alpha, T alpha1, T beta) {
+        return ND4J_STATUS_OK;
+    }
+    template <typename T>
+    int alphaDropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* gradOut, NDArray<T>* output, NDArray<T>* reduceShape, int seed, T probValue, T alpha, T alpha1, T beta) {
+        return ND4J_STATUS_OK;
+    }
+
+    template int alphaDropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<float>* input, NDArray<float>* gradOut, NDArray<float>* output, NDArray<float>* reduceShape, int seed, float probValue, float alpha, float alpha1, float beta);
+    template int alphaDropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<float16>* input, NDArray<float16>* gradOut, NDArray<float16>* output, NDArray<float16>* reduceShape, int seed, float16 probValue, float16 alpha, float16 alpha1, float16 beta);
+    template int alphaDropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<double>* input, NDArray<double>* gradOut, NDArray<double>* output, NDArray<double>* reduceShape, int seed, double probValue, double alpha, double alpha1, double beta);
+
+    template int alphaDropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<float>* input, NDArray<float>* gradOut, NDArray<float>* output, NDArray<float>* reduceShape, int seed, float probValue, float alpha, float alpha1, float beta);
+    template int alphaDropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<float16>* input, NDArray<float16>* gradOut, NDArray<float16>* output, NDArray<float16>* reduceShape, int seed, float16 probValue, float16 alpha, float16 alpha1, float16 beta);
+    template int alphaDropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<double>* input, NDArray<double>* gradOut, NDArray<double>* output, NDArray<double>* reduceShape, int seed, double probValue, double alpha, double alpha1, double beta);
+
 }
 }
 }

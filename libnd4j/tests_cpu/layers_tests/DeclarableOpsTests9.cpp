@@ -509,17 +509,19 @@ TEST_F(DeclarableOpsTests9, TestDropout_BP_1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, TestDropout_1) {
 
-    NDArray<float> x('c', {2, 2, 2}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f});
+    NDArray<float> x('c', {10, 10});
 //    NDArray<float> errs('c', {2, 2, 2}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f});
-    NDArray<float> shape({2.f, 2.f});
+    //NDArray<float> shape({2.f, 2.f});
     nd4j::ops::dropout<float> op;
-
-    auto ress = op.execute({&x, &shape}, {0.2f}, {113});
+    x.linspace(1);
+    auto ress = op.execute({&x}, {0.2f}, {113});
 
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
-//    ress->at(0)->printIndexedBuffer("Result is ");
+    NDArray<float>* res = ress->at(0); //->printIndexedBuffer("Result is ");
     //x.printIndexedBuffer("Input is");
-
+    //res->sumNumber();
+    float countZero = res->template reduceNumber<simdOps::CountZero<float>>();
+    ASSERT_NEAR(countZero, 80.f, 5.f);
     delete ress;
 }
 
