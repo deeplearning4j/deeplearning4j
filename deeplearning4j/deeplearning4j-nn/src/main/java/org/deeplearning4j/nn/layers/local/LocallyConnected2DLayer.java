@@ -96,28 +96,18 @@ public class LocallyConnected2DLayer extends ConvolutionLayer {
         System.out.println(Arrays.toString(concatOutput.shape()));
         System.out.println(Arrays.toString(weights.shape()));
 
+        INDArray mmulResult = Nd4j.create(outH * outW, miniBatch, outDepth);
 
-
-        INDArray mmulResult = Nd4j.create(new int[] {outH * outW, miniBatch, outDepth});
-        MMulTranspose mMulTranspose = MMulTranspose.builder()
-                .transposeB(false)
-                .a(concatOutput)
-                .b(weights)
-                .build();
-        Nd4j.getExecutioner().exec(new Mmul(concatOutput, weights, mmulResult, mMulTranspose));
+        DynamicCustomOp mmul = DynamicCustomOp.builder("matmul")
+                .addInputs(concatOutput, weights).addOutputs(mmulResult).build();
+        Nd4j.getExecutioner().exec(mmul);
 
         System.out.println(Arrays.toString(mmulResult.shape()));
 
+        INDArray permutedResult = mmulResult.permute(1,0,2);
+        INDArray result = permutedResult.reshape(miniBatch, outDepth, outH, outW);
 
-        INDArray z = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new long[]{10, 16, 6, 6});
-
-        // TODO: permute & reshape input to (oH * oW, mb, kH * kW * nIn)
-        // TODO kernel is of shape (oH * oW, kH * kW * nIn, nOut)
-        // TODO: compute batched mmul, resulting in output shape (oH * oW, mb, nOut)
-        // TODO: permute output to (mb, nOut, oH * oW)
-        // TODO: reshape output to expected (mb, nOut, oH, oW)
-
-        return new Pair<>(z, null);
+        return new Pair<>(result, null);
     }
 
     @Override
