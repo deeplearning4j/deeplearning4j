@@ -388,7 +388,14 @@ public class SharedTrainingWrapper {
 
                 if(exceptionEncountered.get()){
                     //Propagate exception
-                    throw new RuntimeException("Training failed due to exception in ParallelWrapper fit operation", exception);
+                    Throwable t;
+                    if(wrapper == null || exception != null) {
+                        t = exception;
+                    } else {
+                        t = wrapper.getException();
+                    }
+
+                    throw new RuntimeException("Training failed due to exception in ParallelWrapper fit operation", t);
                 }
 
                 //  nothing to do here, just give away empty result (other than iterator count)

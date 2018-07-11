@@ -74,6 +74,7 @@ public class ParallelWrapper implements AutoCloseable {
     }
 
     protected AtomicBoolean exceptionEncountered;
+    protected Throwable exception;
     protected final String uuid = java.util.UUID.randomUUID().toString();
     protected Model model;
     protected int workers = 2;
@@ -108,6 +109,7 @@ public class ParallelWrapper implements AutoCloseable {
             ex.printStackTrace();
             if(exceptionEncountered != null){
                 exceptionEncountered.set(true);
+                exception = ex;
             }
         }
     };
