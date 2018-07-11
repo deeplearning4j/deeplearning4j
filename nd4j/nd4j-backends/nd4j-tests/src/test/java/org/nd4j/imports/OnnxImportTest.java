@@ -3,13 +3,30 @@ package org.nd4j.imports;
 import lombok.val;
 import org.junit.After;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
+import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import static org.junit.Assert.assertArrayEquals;
 
-public class OnnxImportTest {
+@RunWith(Parameterized.class)
+public class OnnxImportTest extends BaseNd4jTest {
+
+
+    public OnnxImportTest(Nd4jBackend backend) {
+        super(backend);
+    }
+
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
+
 
     @After
     public void tearDown() throws Exception {
@@ -47,5 +64,6 @@ public class OnnxImportTest {
         assertEquals(24,poolingCast.getConfig().getkW());*/
 
     }
+
 
 }
