@@ -6702,6 +6702,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.getExecutioner().enableDebugMode(true);
         Nd4j.getExecutioner().enableVerboseMode(true);
 
+        // uncomment this line to initialize & propagate sgemm/dgemm pointer
+        //Nd4j.getBlasWrapper().level3();
+
         val arrayA = NodeReader.readArray("mnist_00", "input.placeholder");
         val arrayB = NodeReader.readArray("mnist_00", "Variable.0");
         val arrayC = Nd4j.create(100, 10);
