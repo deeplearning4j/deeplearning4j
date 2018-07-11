@@ -522,7 +522,18 @@ TEST_F(DeclarableOpsTests9, TestDropout_1) {
     //res->sumNumber();
     float countZero = res->template reduceNumber<simdOps::CountZero<float>>();
     ASSERT_NEAR(countZero, 80.f, 5.f);
+    auto ress2 = op.execute({&x}, {0.2f}, {113});
+
+    ASSERT_EQ(ND4J_STATUS_OK, ress2->status());
+    NDArray<float>* res2 = ress2->at(0);
+
+    countZero = res->template reduceNumber<simdOps::CountZero<float>>();
+    ASSERT_NEAR(countZero, 80.f, 5.f);
+
+    ASSERT_FALSE(res->equalsTo(res2));
+
     delete ress;
+    delete ress2;
 }
 
 TEST_F(DeclarableOpsTests9, Test_Dropout_01) {
@@ -676,9 +687,17 @@ TEST_F(DeclarableOpsTests9, Test_AlphaDropout_BP_1) {
     auto ress = op.execute({&x, &eps}, {0.5f, 0.5f, 1.5f, 1.6f}, {119});
 
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
+    NDArray<float>* res = ress->at(0);
 
-    ress->at(0)->printIndexedBuffer("Result1AlphaBP");
+    auto ress2 = op.execute({&x, &eps}, {0.5f, 0.5f, 1.5f, 1.6f}, {119});
+
+    ASSERT_EQ(ND4J_STATUS_OK, ress2->status());
+    NDArray<float>* res2 = ress2->at(0);
+    ASSERT_FALSE(res2->equalsTo(res));
+    //ress->at(0)->printIndexedBuffer("Result1AlphaBP");
+
     delete ress;
+    delete ress2;
 }
 
 //////////////////////////////////////////////////////////////////////
