@@ -1,7 +1,6 @@
 package org.nd4j.linalg.api.ndarray;
 
 import com.google.common.primitives.Doubles;
-import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.flatbuffers.FlatBufferBuilder;
 import net.ericaro.neoitertools.Generator;
@@ -13,7 +12,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.LongUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -245,7 +243,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                         break;
                     }
                 } else {
-                    int lowerBound = sparseOffsets()[dim];
+                    long lowerBound = sparseOffsets()[dim];
                     long upperBound = sparseOffsets()[dim] + shape()[idxNotFixed];
                     if (!(idx[dim] >= lowerBound && idx[dim] < upperBound)) {
                         isIn = false;
@@ -304,9 +302,9 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return physicalIndexes;
     }
 
-    public int[] translateToPhysical(int[] virtualIndexes) {
+    public long[] translateToPhysical(int[] virtualIndexes) {
 
-        int[] physicalIndexes = new int[underlyingRank()];
+        long[] physicalIndexes = new long[underlyingRank()];
         int idxPhy = 0;
         int hidden = 0;
 
@@ -600,19 +598,19 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
         if (shape != null && numSpecifiedIndex > 0) {
             Generator<List<List<Long>>> gen = SpecifiedIndex.iterateOverSparse(indexes);
-            INDArray ret = Nd4j.createSparseCOO(new double[] {}, new int[][] {}, shape);
-            int count = 0;
-            int maxValue = ArrayUtil.prod(shape());
+            INDArray ret = Nd4j.createSparseCOO(new double[] {}, new long[][] {}, shape);
+            long count = 0;
+            long maxValue = ArrayUtil.prod(shape());
             while (count < maxValue) {
                 try {
                     List<List<Long>> next = gen.next();
-                    List<Integer> coordsCombo = new ArrayList<>();
-                    List<Integer> cooIdx = new ArrayList<>();
+                    List<Long> coordsCombo = new ArrayList<>();
+                    List<Long> cooIdx = new ArrayList<>();
                     for (int i = 0; i < next.size(); i++) {
                         if (next.get(i).size() != 2)
                             throw new IllegalStateException("Illegal entry returned");
-                        coordsCombo.add(next.get(i).get(0).intValue());
-                        cooIdx.add(next.get(i).get(1).intValue());
+                        coordsCombo.add(next.get(i).get(0));
+                        cooIdx.add(next.get(i).get(1));
                     }
                     count++;
 
@@ -622,7 +620,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                     * else
                     *   -> do nothing
                     * */
-                    int[] idx = Ints.toArray(coordsCombo);
+                    long[] idx = Longs.toArray(coordsCombo);
                     if (!isZero(idx)) {
                         double val = getDouble(idx);
                         ret.putScalar(filterOutFixedDimensions(resolution.getFixed(), cooIdx), val);
@@ -654,7 +652,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
 
-    public int[] filterOutFixedDimensions(int[] flags, List<Integer> idx) {
+    public long[] filterOutFixedDimensions(int[] flags, List<Long> idx) {
         checkArgument(flags.length == idx.size());
         int lastIdx = idx.size() - 1;
         for (int i = lastIdx; i >= 0; i--) {
@@ -662,7 +660,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                 idx.remove(i);
             }
         }
-        return Ints.toArray(idx);
+        return Longs.toArray(idx);
     }
 
     /**
@@ -670,12 +668,94 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * @param indexes
      * @return index of the value
      * */
-    public int reverseIndexes(int... indexes) {
-        long[] idx = translateToPhysical(ArrayUtil.toLongArray(indexes));
+    public long reverseIndexes(long... indexes) {
+        long[] idx = translateToPhysical(indexes);
         sort();
+        return indexesBinarySearch(0L, length(), idx);
+    }
 
-        // FIXME: int cast
-        return indexesBinarySearch(0, (int) length(), ArrayUtil.toInts(idx));
+    /**
+     * Return the index of the value corresponding to the indexes
+     * @param indexes
+     * @return index of the value
+     * */
+    public long reverseIndexes(int... indexes) {
+        long[] idx = translateToPhysical(indexes);
+        sort();
+        return indexesBinarySearch(0L, length(), idx);
+    }
+
+    static int compareIndices(DataBuffer idxBufferA, DataBuffer idxBufferB){
+        int cmp = 0;
+        int i = 0;
+        while (cmp == 0 && i < idxBufferA.length()){
+            cmp = Long.compare(idxBufferA.getLong(i), idxBufferB.getLong(i));
+        }
+        return cmp;
+    }
+
+    static int compareIndices(long[] idx, DataBuffer idxBuffer){
+        int cmp = 0;
+        int i = 0;
+        while (cmp == 0 && i < idx.length){
+            cmp = Long.compare(idx[i], idxBuffer.getLong(i));
+            ++i;
+        }
+        return cmp;
+    }
+
+    /**
+     * Return position between hi ansd lo where indexComparison function yields 0.
+     *
+     * If no such position exists, the return negative positon for insertion - 1.
+     * e.g.  return value -1 -> insert at position 0
+     * e.g.  return value -4 -> insert at position 3
+     * @param hi
+     * @param lo
+     * @param indexComparison
+     * @return
+     */
+    static long binarySearch(long hi, long lo, IndexComparator indexComparison){
+        int cmp;
+        while (hi > lo){
+            long mid = (hi + lo) / 2;
+            cmp = Integer.signum(indexComparison.applyAsInt(mid));
+            switch (cmp){
+                case 0:
+                    return mid;
+                case 1:
+                    lo = mid + 1;
+                    break;
+                case -1:
+                    hi = mid;
+                    break;
+            }
+        }
+        return -lo - 1;
+    }
+
+
+    /**
+     * Since we are using java 1.7 for nd4j-api, Functional interface LongToIntFunction is not available.
+     */
+    class IndexComparator {
+        long[] idx;
+        BaseSparseNDArrayCOO arrayCOO;
+
+        public IndexComparator(long[] idx, BaseSparseNDArrayCOO arrayCOO) {
+            this.idx = idx;
+            this.arrayCOO = arrayCOO;
+        }
+
+        /**
+         * Applies this function to the given argument.
+         *
+         * @param value the function argument
+         * @return the function result
+         */
+        public int applyAsInt(long value) {
+            return compareIndices(idx, arrayCOO.getUnderlyingIndicesOf(value));
+        }
     }
 
     /**
@@ -686,25 +766,9 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * @return the position of the idx array into the indexes buffers, which corresponds to the position of
      * the corresponding value in the values data.
      * */
-    public int indexesBinarySearch(int lowerBound, int upperBound, int[] idx) {
-        int min = lowerBound;
-        int max = upperBound;
-
-        int mid = (max + min) / 2;
-        int[] midIdx = getUnderlyingIndicesOf(mid).asInt();
-        if (Arrays.equals(idx, midIdx)) {
-            return mid;
-        }
-        if (ArrayUtil.lessThan(idx, midIdx)) {
-            max = mid;
-        }
-        if (ArrayUtil.greaterThan(idx, midIdx)) {
-            min = mid;
-        }
-        if (min == max) {
-            return -1;
-        }
-        return indexesBinarySearch(min, max, idx);
+    public long indexesBinarySearch(long lowerBound, long upperBound, long[] idx) {
+        IndexComparator comparator = new IndexComparator(idx,this);
+        return binarySearch(upperBound, lowerBound, comparator);
     }
 
     @Override
@@ -714,7 +778,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
     @Override
     public INDArray getScalar(long... indices) {
-        return null;
+        return super.getScalar(indices);
     }
 
     @Override
@@ -723,9 +787,9 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     @Override
-    public double getDouble(int... indices) {
-        int valIdx = reverseIndexes(indices);
-        if (valIdx == -1) {
+    public double getDouble(long... indices) {
+        long valIdx = reverseIndexes(indices);
+        if (valIdx < 0) {
             return 0;
         } else {
             return values.getDouble(valIdx);
@@ -733,8 +797,13 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     @Override
-    public double getDouble(long... indices) {
-        return 0;
+    public double getDouble(int... indices) {
+        long valIdx = reverseIndexes(indices);
+        if (valIdx < 0) {
+            return 0;
+        } else {
+            return values.getDouble(valIdx);
+        }
     }
 
     @Override
@@ -744,7 +813,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
     @Override
     public float getFloat(long[] indices) {
-        return 0;
+        return (float) getDouble(indices);
     }
 
     @Override
@@ -822,12 +891,12 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
             return Nd4j.createBuffer(new int[] {0, 0});
         }
 
-        List<Integer> ind = new ArrayList<>();
+        List<Long> ind = new ArrayList<>();
 
         for (int i = 0; i < values.length(); i++) {
             boolean isIn = true;
             int idxNotFixed = 0;
-            int[] idx = getUnderlyingIndicesOf(i).asInt(); // TODO change for getIndicesOf(i)
+            long[] idx = getUnderlyingIndicesOf(i).asLong(); // TODO change for getIndicesOf(i)
 
             for (int dim = 0; dim < idx.length; dim++) {
                 if (flags()[dim] == 1) {
@@ -836,7 +905,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                         break;
                     }
                 } else {
-                    int lowerBound = sparseOffsets()[dim];
+                    long lowerBound = sparseOffsets()[dim];
                     long upperBound = sparseOffsets()[dim] + shape()[idxNotFixed];
                     if (!(idx[dim] >= lowerBound && idx[dim] < upperBound)) {
                         isIn = false;
@@ -850,7 +919,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                 for (int dim = 0; dim < idx.length; dim++) {
                     if (flags()[dim] == 0) {
                         if (shape()[notFixedDim] == 1) {
-                            ind.add(0);
+                            ind.add(0L);
                             notFixedDim++;
                         } else {
                             ind.add(idx[dim] - sparseOffsets()[dim]);
@@ -859,7 +928,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                 }
             }
         }
-        return Nd4j.createBuffer(Ints.toArray(ind));
+        return Nd4j.createBuffer(Longs.toArray(ind));
     }
 
     /**
@@ -889,7 +958,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                         break;
                     }
                 } else {
-                    int lowerBound = sparseOffsets()[dim];
+                    long lowerBound = sparseOffsets()[dim];
                     long upperBound = sparseOffsets()[dim] + shape()[idxNotFixed];
                     if (!(idx[dim] >= lowerBound && idx[dim] < upperBound)) {
                         isIn = false;
@@ -968,17 +1037,13 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     public INDArray subArray(ShapeOffsetResolution resolution) {
         long[] offsets = resolution.getOffsets();
         long[] shape = resolution.getShapes();
-        int[] stride = LongUtils.toInts(resolution.getStrides());
+        long[] stride = resolution.getStrides();
         int[] flags = resolution.getFixed();
         flags = updateFlags(flags, shape);
-        long offset = (int) (offset() + resolution.getOffset());
+        long offset = offset() + resolution.getOffset();
         int newRank = shape.length;
         long[] sparseOffsets = createSparseOffsets(offset);
         int[] newAxis = createHiddenDimensions(resolution.getPrependAxis());
-
-
-        if (offset() + resolution.getOffset() >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Offset of array can not be >= Integer.MAX_VALUE");
 
         if (offsets.length != newRank)
             throw new IllegalArgumentException("Invalid offset " + Arrays.toString(offsets));
@@ -1118,16 +1183,9 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * @param i the index of the element+
      * @return a dataBuffer containing the indices of element
      * */
-    public DataBuffer getUnderlyingIndicesOf(int i) {
-        int from = underlyingRank() * i;
-        //int to = from + underlyingRank();
-        int[] res = new int[underlyingRank()];
-        for(int j = 0; j< underlyingRank(); j++){
-            res[j] = indices.getInt(from + j);
-        }
-
-        ///int[] arr = Arrays.copyOfRange(indices.asInt(), from, to);
-        return Nd4j.getDataBufferFactory().createInt(res);
+    public DataBuffer getUnderlyingIndicesOf(long i) {
+        long from = underlyingRank() * i;
+        return Nd4j.getDataBufferFactory().create(indices, from, underlyingRank());
     }
 
     /**
@@ -1156,14 +1214,12 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
 
-    public boolean isZero(int... indexes) {
-        for (int i = 0; i < length(); i++) {
-            int[] idx = getUnderlyingIndicesOf(i).asInt();
-            if (Arrays.equals(idx, translateToPhysical(indexes))) {
-                return false;
-            }
+    public boolean isZero(long... indexes) {
+        long i = reverseIndexes(indexes);
+        if (i < 0){
+            return true;
         }
-        return true;
+        return values.getDouble(i) == 0;
     }
 
     @Override
@@ -1258,4 +1314,45 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     public boolean isEmpty() {
         return false;
     }
+
+    @Override
+    public boolean equalsWithEps(Object o, double eps) {
+        if (o == null)
+            return false;
+
+        if (!(o instanceof INDArray))
+            return false;
+
+        INDArray n = (INDArray) o;
+
+        if (this.lengthLong() != n.lengthLong())
+            return false;
+
+        if (isScalar() && n.isScalar()) {
+            double diff = getDouble(0) - n.getDouble(0);
+            return Math.abs(diff) < eps;
+        }
+
+        if (o instanceof BaseSparseNDArrayCOO){
+            BaseSparseNDArrayCOO s = (BaseSparseNDArrayCOO) o;
+            for (long i = 0; i < indices.length(); ++i){
+                if (indices.getLong(i) != s.getIndices().getLong(i)){
+                    return false;
+                }
+            }
+            return Nd4j.create(values).equalsWithEps(Nd4j.create(s.getValues()), eps);
+
+        } else {
+            if (isVector() && n.isVector()) {
+                return false; // TODO
+            }
+
+            if (!Arrays.equals(this.shape(), n.shape()))
+                return false;
+
+            // TODO
+            return false;
+        }
+    }
+
 }

@@ -1564,4 +1564,14 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     public INDArray sortCooIndices(INDArray x) {
         throw new UnsupportedOperationException("Not an COO ndarray");
     }
+
+    @Override
+    public INDArray ravelCooIndices(INDArray x) {
+        throw new UnsupportedOperationException("Not an COO ndarray");
+    }
+
+    @Override
+    public INDArray unravelCooIndices(INDArray x, DataBuffer shapeInfo) {
+        throw new UnsupportedOperationException("Not an COO ndarray");
+    }
 }

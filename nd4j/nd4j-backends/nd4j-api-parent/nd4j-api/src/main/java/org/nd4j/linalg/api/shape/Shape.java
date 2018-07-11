@@ -2863,12 +2863,12 @@ public class Shape {
         return ret;
     }
 
-    public static int[] sparseOffsets(DataBuffer buffer) {
+    public static long[] sparseOffsets(DataBuffer buffer) {
         int flagsLength = buffer.getInt(0);
         int offLength = buffer.getInt(flagsLength + 1);
-        int[] ret = new int[offLength];
+        long[] ret = new long[offLength];
         for (int i = 0; i < offLength; i++) {
-            ret[i] = buffer.getInt(i + flagsLength + 2);
+            ret[i] = buffer.getLong(i + flagsLength + 2);
         }
         return ret;
     }

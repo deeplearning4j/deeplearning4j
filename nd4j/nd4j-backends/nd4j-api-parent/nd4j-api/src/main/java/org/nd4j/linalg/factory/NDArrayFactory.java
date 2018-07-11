@@ -1923,6 +1923,10 @@ public interface NDArrayFactory {
 
     INDArray sortCooIndices(INDArray x);
 
+    INDArray ravelCooIndices(INDArray x);
+
+    INDArray unravelCooIndices(INDArray x, DataBuffer shapeInfo);
+
     INDArray create(float[] data, long[] shape, long offset, Character order);
     INDArray create(double[] data, long[] shape, long offset, Character order);
     INDArray create(float[] data, long[] shape, char ordering);
