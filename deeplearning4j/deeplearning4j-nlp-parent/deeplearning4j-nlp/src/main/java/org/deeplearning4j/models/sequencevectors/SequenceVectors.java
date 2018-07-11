@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -109,9 +110,10 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     public void buildVocab() {
 
 
-        VocabConstructor<T> constructor = new VocabConstructor.Builder<T>().addSource(iterator, minWordFrequency)
+        val constructor = new VocabConstructor.Builder<T>().addSource(iterator, minWordFrequency)
                         .setTargetVocabCache(vocab).fetchLabels(trainSequenceVectors).setStopWords(stopWords)
                         .enableScavenger(enableScavenger).setEntriesLimit(vocabLimit)
+                        .allowParallelTokenization(configuration.isAllowParallelTokenization())
                         .setUnk(useUnknown && unknownElement != null ? unknownElement : null).build();
 
         if (existingModel != null && lookupTable instanceof InMemoryLookupTable
