@@ -227,12 +227,12 @@ def broadcast(x, y):
     if nx > ny:
         diff = nx - ny
         ys += [1] * diff
-        y = y.reshape(ys)
+        y = y.reshape(*ys)
         ny = nx
     elif ny > nx:
         diff = ny - nx
         xs += [1] * diff
-        x = x.reshape(xs)
+        x = x.reshape(*xs)
         nx = ny
     xt = []
     yt = []
@@ -254,9 +254,9 @@ def broadcast(x, y):
             raise Exception('Unable to broadcast shapes ' + str(_xs) + ''
                             ' and ' + str(_ys))
     if rep_x:
-        x = x.repmat(*xt)
+        x = Nd4j.tile(x, *xt)
     if rep_y:
-        y = y.repmat(*yt)
+        y = Nd4j.tile(y, *yt)
     return x, y
 
 
