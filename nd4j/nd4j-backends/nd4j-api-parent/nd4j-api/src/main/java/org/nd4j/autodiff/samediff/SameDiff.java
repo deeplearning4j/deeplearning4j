@@ -6696,8 +6696,8 @@ public class SameDiff {
     /**
      * @see #cumsum(String, SDVariable, SDVariable, boolean, boolean)
      */
-    public SDVariable cumsum(SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
-        return cumsum(null, in, axis, exclusive, reverse);
+    public SDVariable cumsum(SDVariable in, boolean exclusive, boolean reverse, int... axis) {
+        return cumsum(null, in, exclusive, reverse, axis);
     }
 
     /**
@@ -6715,16 +6715,16 @@ public class SameDiff {
      * @param reverse   If true: reverse the direction of the accumulation
      * @return Output variable
      */
-    public SDVariable cumsum(String name, SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
-        SDVariable ret = f().cumsum(in, axis, exclusive, reverse);
+    public SDVariable cumsum(String name, SDVariable in, boolean exclusive, boolean reverse, int... axis) {
+        SDVariable ret = f().cumsum(in, exclusive, reverse, axis);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
      * @see #cumprod(String, SDVariable, SDVariable, boolean, boolean)
      */
-    public SDVariable cumprod(SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
-        return cumprod(null, in, axis, exclusive, reverse);
+    public SDVariable cumprod(SDVariable in, boolean exclusive, boolean reverse, int... axis) {
+        return cumprod(null, in, exclusive, reverse, axis);
     }
 
     /**
@@ -6742,8 +6742,8 @@ public class SameDiff {
      * @param reverse   If true: reverse the direction of the accumulation
      * @return Output variable
      */
-    public SDVariable cumprod(String name, SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
-        SDVariable ret = f().cumprod(in, axis, exclusive, reverse);
+    public SDVariable cumprod(String name, SDVariable in, boolean exclusive, boolean reverse, int... axis) {
+        SDVariable ret = f().cumprod(in, exclusive, reverse, axis);
         return updateVariableNameAndReference(ret, name);
     }
 

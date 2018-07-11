@@ -32,6 +32,18 @@ namespace ops  {
             if (axis[e] < 0)
                 axis[e] += input->rankOf();
 
+        // if full range of axis - then clear all axis for default behavior
+        if (axis.size() == input->rankOf()) {
+            bool dropAll = true;
+            for (int e = 0; e < axis.size(); e++)
+                if (e != axis[e]) {
+                    dropAll = false;
+                    break;
+                }
+           if (dropAll)
+                axis.clear();
+        }
+            
         helpers::reverse(input, output, &axis, isLegacy);
    
         return Status::OK();

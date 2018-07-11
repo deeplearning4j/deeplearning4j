@@ -54,6 +54,7 @@ public class ClipByNorm extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
         //dOut/dIn is ??? if clipped, 1 otherwise
+        /*
         int origRank = Shape.rankFromShape(arg().getShape());
         SDVariable l2norm = f().norm2(arg(), true, dimensions);
         SDVariable isClippedBC = f().gte(l2norm, clipValue);
@@ -72,5 +73,8 @@ public class ClipByNorm extends DynamicCustomOp {
 
         SDVariable ret = notClippedBC.add(dOutdInClipped).mul(grad.get(0));
         return Arrays.asList(ret);
+        */
+
+        return Collections.singletonList(new ClipByNormBp(f().sameDiff(), arg(), grad.get(0), clipValue, dimensions).outputVariable());
     }
 }

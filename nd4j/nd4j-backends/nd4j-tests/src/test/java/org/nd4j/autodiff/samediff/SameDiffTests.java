@@ -73,11 +73,7 @@ public class SameDiffTests {
     @After
     public void after() throws Exception {
         Nd4j.setDataType(initialType);
-    }
 
-
-    @After
-    public void tearDown() throws Exception {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
@@ -99,6 +95,22 @@ public class SameDiffTests {
         inputMap.put("w", weights);
         inputMap.put("y", labels);
         return inputMap;
+    }
+
+    @Test
+    public void testVariableNaming_1() {
+        val sd = SameDiff.create();
+
+        val input = sd.var("inp", new long[]{2, 3});
+
+        val nodeA = sd.square(input);
+        val nodeB = sd.square(nodeA);
+
+        sd.associateArrayWithVariable(Nd4j.create(new double[]{1, 2, 3, 4, 5, 6}, new long[]{2, 3}), input);
+
+        sd.execAndEndResult();
+
+        nodeA.isPlaceHolder();
     }
 
 

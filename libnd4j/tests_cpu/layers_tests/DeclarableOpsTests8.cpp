@@ -2455,7 +2455,19 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test11) {
 
     delete result;
 }
- 
+
+
+TEST_F(DeclarableOpsTests8, clipbynorm_test_tf_119_1) {
+    NDArray<double> x('c', {3, 3}, {1, 2, 3, 4, 5,6, 7, 8, 9});
+    NDArray<double> e('c', {3, 3}, {0.03198684, 0.06397368, 0.09596053, 0.12794736, 0.15993419, 0.19192106, 0.22390789, 0.25589472, 0.28788155});
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {0.54}, {});
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, reduceMeanBP_test4) {
