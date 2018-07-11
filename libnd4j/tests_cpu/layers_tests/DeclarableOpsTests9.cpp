@@ -5,8 +5,8 @@
 
 #include "testlayers.h"
 #include <ops/declarable/CustomOperations.h>
-#include <NDArray.h>
-#include <ops/ops.h>
+//#include <NDArray.h>
+//#include <ops/ops.h>
 
 
 using namespace nd4j;
@@ -61,9 +61,9 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test1) {
     NDArray<double> x('c', {N});
     double extraParams[] = {lambda};
 
-    Nd4jLong *buffer = new Nd4jLong[N];
+    auto buffer = new Nd4jLong[N];
     NativeOps nativeOps;
-    nd4j::random::RandomBuffer* rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);    
+    auto rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistributionInv_test1: RNG initialization failed !");
     
@@ -612,9 +612,13 @@ TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
     auto ressX = op2.execute({&x1, &x0}, {0.5f}, {119});
 
     ASSERT_EQ(ND4J_STATUS_OK, ressX->status());
+    auto ressY = op2.execute({&x1, &x0}, {0.5f}, {119});
+    ASSERT_EQ(ND4J_STATUS_OK, ressY->status());
+    ASSERT_FALSE(ressX->at(0)->equalsTo(ressY->at(0)));
 //    ressX->at(0)->printIndexedBuffer("02Dropout result is ");
 //    ASSERT_TRUE(exp.equalsTo(ressX->at(0)));
     delete ressX;
+    delete ressY;
     delete ress;
 }
 
