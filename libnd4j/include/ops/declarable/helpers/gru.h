@@ -18,7 +18,8 @@ namespace helpers {
 	template <typename T>
 	void gruTimeLoop(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* h);
 	
-    
+	template <typename T>
+	void gruCellBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs);    
 
 }
 }

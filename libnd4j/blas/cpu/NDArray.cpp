@@ -1398,6 +1398,26 @@ template <typename T>
 }
 
 ////////////////////////////////////////////////////////////////////////
+template <typename T>
+NDArray<T> NDArray<T>::transp() const {
+        
+    int shapeInfoLength = shape::shapeInfoLength(rankOf());
+    Nd4jLong* newShapeInfo;
+
+    ALLOCATE(newShapeInfo , _workspace, shapeInfoLength, Nd4jLong);
+    memcpy(newShapeInfo, _shapeInfo, shapeInfoLength*sizeof(Nd4jLong));
+
+    NDArray<T> newArr(_buffer, newShapeInfo, _workspace);
+    newArr._isShapeAlloc = true;
+    newArr._isBuffAlloc  = false;
+
+    newArr.transposei();
+
+    return newArr;
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // method performs transpose operation based on this array and store result in target, this array remains unaffected 
     template <typename T>
     void NDArray<T>::transpose(NDArray<T>& target) const {

@@ -544,7 +544,8 @@ namespace nd4j {
         /**
         *   apply transpose operation to the copy of this array, that is this array remains unaffected 
         */
-        NDArray<T> *transpose() const;
+        NDArray<T>* transpose() const;
+        NDArray<T>  transp() const;
 
         /**
         *  perform transpose operation and store result in target, this array remains unaffected 
