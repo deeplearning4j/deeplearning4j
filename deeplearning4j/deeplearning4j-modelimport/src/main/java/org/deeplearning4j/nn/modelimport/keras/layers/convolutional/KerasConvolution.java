@@ -52,7 +52,7 @@ abstract public class KerasConvolution extends KerasLayer {
      * @param kerasVersion major keras version
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    KerasConvolution(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
+    public KerasConvolution(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
         super(kerasVersion);
     }
 
@@ -76,7 +76,7 @@ abstract public class KerasConvolution extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    KerasConvolution(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+    public KerasConvolution(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 

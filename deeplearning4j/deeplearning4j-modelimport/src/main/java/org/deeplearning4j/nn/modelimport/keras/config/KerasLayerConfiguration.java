@@ -39,7 +39,7 @@ public class KerasLayerConfiguration {
     // Missing Layers: ActivityRegularization, Masking
     // Conv3DTranspose, SeparableConv1D, ConvRNN2D, ConvLSTM2D
     // CuDNNGRU, CuDNNLSTM (TF only)
-    // LocallyConnected1D-2D
+    // LocallyConnected1D
     // Missing layers from keras 1: Highway, MaxoutDense
     private final String LAYER_CLASS_NAME_ACTIVATION = "Activation";
     private final String LAYER_CLASS_NAME_INPUT = "InputLayer";
@@ -120,6 +120,11 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D = ""; // 1: SeparableConvolution2D, 2: SeparableConv2D
     private final String LAYER_CLASS_NAME_DECONVOLUTION_2D = ""; // 1: Deconvolution2D, 2: Conv2DTranspose
     private final String LAYER_CLASS_NAME_DECONVOLUTION_3D = "Conv2DTranspose"; // Keras 2 only
+
+    // Locally connected layers
+    private final String LAYER_CLASS_NAME_LOCALLY_CONNECTED_2D = "LocallyConnected2D";
+    private final String LAYER_CLASS_NAME_LOCALLY_CONNECTED_1D = "LocallyConnected1D";
+
 
     /* Partially shared layer configurations. */
     private final String LAYER_FIELD_INPUT_SHAPE = "input_shape";
