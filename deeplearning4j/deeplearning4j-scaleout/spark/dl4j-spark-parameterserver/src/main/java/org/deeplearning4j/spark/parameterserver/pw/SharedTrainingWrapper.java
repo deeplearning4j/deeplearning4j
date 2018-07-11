@@ -284,7 +284,9 @@ public class SharedTrainingWrapper {
                     wrapper = new ParallelWrapper.Builder<>(originalModel).workers(numWorkers)
                                     .workspaceMode(trainingConfiguration.getWorkspaceMode())
                                     .trainingMode(ParallelWrapper.TrainingMode.CUSTOM).gradientsAccumulator(accumulator)
-                                    .prefetchBuffer(trainingConfiguration.getPrefetchSize()).build();
+                                    .prefetchBuffer(trainingConfiguration.getPrefetchSize())
+                                    .build();
+                    wrapper.setExceptionEncountered(exceptionEncountered);
                 } else {
                     log.info("Using standalone model instead...");
 
