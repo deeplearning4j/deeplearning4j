@@ -97,20 +97,39 @@ public class Mmul extends DynamicCustomOp {
 
     public Mmul() {}
 
+    /**
+     * For a 2D matrix of shape (M, N) we return (N, M).
+     * For a 3D matrix with leading mini-batch dimension (mb, M, N)
+     * we return (mb, N, M)
+     *
+     * @param shape input shape array
+     * @return
+     */
+    public long[] transposeShapeArray(long[] shape) {
+        if (shape.length == 2) {
+            return ArrayUtil.reverseCopy(shape);
+        } else if (shape.length == 3) {
+            return new long[] {shape[0], shape[2], shape[1]};
+        } else {
+            throw new IllegalArgumentException("Matrix input has to be of length 2 or 3, got: " + shape.length );
+        }
+
+    }
+
 
     @Override
     public List<long[]> calculateOutputShape() {
         if(mt == null)
             mt = MMulTranspose.allFalse();
 
-        long[] aShape = mt.isTransposeA() ? ArrayUtil.reverseCopy(larg().getShape()) : larg().getShape();
-        long[] bShape = mt.isTransposeB() ? ArrayUtil.reverseCopy(rarg().getShape()) : rarg().getShape();
+        long[] aShape = mt.isTransposeA() ? transposeShapeArray(larg().getShape()) : larg().getShape();
+        long[] bShape = mt.isTransposeB() ? transposeShapeArray(rarg().getShape()) : rarg().getShape();
         if(Shape.isPlaceholderShape(aShape) || Shape.isPlaceholderShape(bShape))
             return Collections.emptyList();
 
         long[] shape =  Shape.getMatrixMultiplyShape(aShape,bShape);
         if(mt.isTransposeResult())
-            shape = ArrayUtil.reverseCopy(shape);
+            shape = transposeShapeArray(shape);
 
         for(int i = 0; i < shape.length; i++) {
             if(shape[i] < 1)
