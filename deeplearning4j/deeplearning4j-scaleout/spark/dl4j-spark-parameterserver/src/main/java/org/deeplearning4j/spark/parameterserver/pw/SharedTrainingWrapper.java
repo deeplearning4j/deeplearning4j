@@ -61,6 +61,8 @@ public class SharedTrainingWrapper {
 
 
     protected AtomicBoolean isFirst = new AtomicBoolean(false);
+    protected AtomicBoolean exceptionEncountered = new AtomicBoolean(false);
+    protected Throwable exception;
 
     protected ThreadLocal<AtomicInteger> iteratorDataSetCount = new ThreadLocal<>();    //Using AtomicInteger because it's mutable, not because it's atomic
     protected ThreadLocal<BlockingObserver> observer = new ThreadLocal<>();
@@ -104,7 +106,7 @@ public class SharedTrainingWrapper {
         VirtualIterator<DataSet> wrapped = new VirtualIterator<>(new CountingIterator<>(iterator, count));
 
         // and creating Observer which will be used to monitor progress within iterator
-        BlockingObserver obs = new BlockingObserver();
+        BlockingObserver obs = new BlockingObserver(exceptionEncountered);
         wrapped.addObserver(obs);
 
         // putting that "somewhere"
@@ -132,7 +134,7 @@ public class SharedTrainingWrapper {
         VirtualIterator<MultiDataSet> wrapped = new VirtualIterator<>(new CountingIterator<>(iterator, count));
 
         // and creating Observer which will be used to monitor progress within iterator
-        BlockingObserver obs = new BlockingObserver();
+        BlockingObserver obs = new BlockingObserver(exceptionEncountered);
         wrapped.addObserver(obs);
 
         // putting that "somewhere"
@@ -147,6 +149,10 @@ public class SharedTrainingWrapper {
             first call instantiates pw, messenger etc, and gets in charge here.
          */
         if (isFirst.compareAndSet(false, true)) {
+            //Reset past exception encountered in case we're doing correct fit after incorrect...
+            exceptionEncountered.set(false);
+            exception = null;
+
             SharedTrainingConfiguration trainingConfiguration = worker.getBroadcastConfiguration().getValue();
             VoidConfiguration voidConfiguration = worker.getBroadcastConfiguration().getValue().getVoidConfiguration();
 
@@ -305,25 +311,35 @@ public class SharedTrainingWrapper {
             driver.bypassMode(false);
 
             // now we're just calling for fit
-            if (wrapper != null) {
-                if (iteratorDS != null)
-                    wrapper.fit(iteratorDS);
-                else if (iteratorMDS != null)
-                    wrapper.fit(iteratorMDS);
-                else
-                    throw new DL4JInvalidConfigException("No iterators were defined for training");
-            } else {
-                // if wrapper is null, we're fitting standalone model then
-                if (iteratorDS != null) {
-                    if (model instanceof ComputationGraph) {
-                        ((ComputationGraph) originalModel).fit(iteratorDS);
-                    } else if (model instanceof MultiLayerNetwork) {
-                        ((MultiLayerNetwork) originalModel).fit(iteratorDS);
+            if(iteratorDS == null && iteratorMDS == null)
+                throw new DL4JInvalidConfigException("No iterators were defined for training");
+
+            try {
+                if (wrapper != null) {
+                    if (iteratorDS != null)
+                        wrapper.fit(iteratorDS);
+                    else
+                        wrapper.fit(iteratorMDS);
+                } else {
+                    // if wrapper is null, we're fitting standalone model then
+                    if (iteratorDS != null) {
+                        if (model instanceof ComputationGraph) {
+                            ((ComputationGraph) originalModel).fit(iteratorDS);
+                        } else if (model instanceof MultiLayerNetwork) {
+                            ((MultiLayerNetwork) originalModel).fit(iteratorDS);
+                        }
+                    } else {
+                        if (model instanceof ComputationGraph) {
+                            ((ComputationGraph) originalModel).fit(iteratorMDS);
+                        } else if (model instanceof MultiLayerNetwork) {
+                            ((MultiLayerNetwork) originalModel).fit(iteratorMDS);
+                        }
                     }
-                } else if (iteratorMDS != null) {
-                    ((ComputationGraph) originalModel).fit(iteratorMDS);
-                } else
-                    throw new DL4JInvalidConfigException("No iterators were defined for training");
+                }
+            } catch (Throwable t){
+                log.warn("Exception encountered during fit operation", t);
+                exceptionEncountered.set(true);
+                exception = t;
             }
 
 
@@ -368,7 +384,12 @@ public class SharedTrainingWrapper {
 
                 log.info("Feeder thread done...");
 
-                //  nothing to do here, just give away empty result
+                if(exceptionEncountered.get()){
+                    //Propagate exception
+                    throw new RuntimeException("Training failed due to exception in ParallelWrapper fit operation", exception);
+                }
+
+                //  nothing to do here, just give away empty result (other than iterator count)
                 return SharedTrainingResult.builder().minibatchesPerExecutor(Collections.singletonMap(SparkUtils.getSparkExecutorId(), iteratorDataSetCount.get().get())).build();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
