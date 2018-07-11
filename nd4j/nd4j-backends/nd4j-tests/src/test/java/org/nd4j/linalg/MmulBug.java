@@ -38,7 +38,5 @@ public class MmulBug {
         target = m1.mmuli(m2, m1);
         assertEquals(true, target.equals(correctResult));
         assertEquals(true, m1.equals(correctResult));
-
-
     }
 }
