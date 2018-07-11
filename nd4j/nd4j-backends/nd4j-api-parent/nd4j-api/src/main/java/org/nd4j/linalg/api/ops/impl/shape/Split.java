@@ -43,9 +43,6 @@ public class Split extends DynamicCustomOp {
             this.splitDim = splitDim.getInt(0);
             addIArgument(splitDim.getInt(0));
         }
-
-
-
     }
 
     @Override
@@ -79,6 +76,11 @@ public class Split extends DynamicCustomOp {
         ret.put(tensorflowName(),map);
 
         return ret;
+    }
+
+    @Override
+    public int getNumOutputs(){
+        return numSplit;
     }
 
 }

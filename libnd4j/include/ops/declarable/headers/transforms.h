@@ -15,6 +15,7 @@ namespace nd4j {
 
         #if NOT_EXCLUDED(OP_clipbynorm)
         DECLARE_CONFIGURABLE_OP(clipbynorm, 1, 1, true, 1, 0);
+        DECLARE_CUSTOM_OP(clipbynorm_bp, 2, 1, false, 1, 0);
         #endif
 
         #if NOT_EXCLUDED(OP_clipbyavgnorm)
@@ -30,7 +31,8 @@ namespace nd4j {
         #endif
 
         #if NOT_EXCLUDED(OP_tile)
-        DECLARE_CUSTOM_OP(tile, 1, 1, false, 0, -2);
+        DECLARE_CUSTOM_OP(tile,    1, 1, false, 0, -2);
+        DECLARE_CUSTOM_OP(tile_bp, 2, 1, false, 0, -2);
         #endif
 
         #if NOT_EXCLUDED(OP_repeat)
@@ -41,7 +43,7 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(invert_permutation, 1, 1, false, 0, 0);
         #endif
 
-        DECLARE_CUSTOM_OP(concat, -1, 1, false, 0, -2);
+        DECLARE_CUSTOM_OP(concat, -1, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(concat_bp, -1, -1, false, 0, 1);
 
         #if NOT_EXCLUDED(OP_mergemax)
@@ -143,12 +145,12 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(mirror_pad, 2, 1, false, 0, 1);
         #endif
 
-        #if NOT_EXCLUDED(OP_cumsum_bp)
-        DECLARE_CONFIGURABLE_OP(cumsum_bp, 2, 1, true, 0, 2);
+        #if NOT_EXCLUDED(OP_cumsum)
+        DECLARE_CUSTOM_OP(cumsum_bp, 2, -1, false, 0, 2);
         #endif
 
         #if NOT_EXCLUDED(OP_cumprod)
-        DECLARE_CONFIGURABLE_OP(cumprod_bp, 2, 1, true, 0, 2);
+        DECLARE_CUSTOM_OP(cumprod_bp, 2, -21, false, 0, 2);
         #endif
 
     }

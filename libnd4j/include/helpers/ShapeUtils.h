@@ -103,6 +103,34 @@ namespace nd4j {
         static std::vector<Nd4jLong> composeShapeUsingDimsAndIdx(const std::vector<int>& dimsAndIdx);
 
         /**
+        *  x * y = c,  evaluate shape for array resulting from mmul operation
+        *  possible cases: dot product (xRank=yRank=1), matrix-vector product (xRank=2, yRank=1), vector-matrix product (xRank=1, yRank=2), matrix-matrix product (xRank=yRank and rank >=2)
+        */
+        static std::vector<Nd4jLong> evalShapeForMatmul(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const bool transX, const bool transY);
+
+        
+        /**
+        *  evaluate number of sub-arrays along dimensions stored in dimsToExclude
+        *  i.e. if shape is [2,3,4,5] and dimsToExclude={0,2}, then number of sub-arrays = 8
+        */
+        static Nd4jLong getNumOfSubArrs(const Nd4jLong* shapeInfo, const std::vector<int>& dimsToExclude);
+
+        /**
+        *  evaluate indexes ranges that define sub-array of array having shape=shapeInfo
+        *  subArrIdx - index of current sub-array
+        *  shapeInfo - shapeInfo of array for which to evaluate sub-arrays 
+        *  dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-arrays along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5]
+        *  idxRanges - where to put result, the length of idxRanges must be equal to 2*shapeInfo[0]
+        */
+        static void evalIdxRangesForSubArr(const Nd4jLong subArrIdx,  const Nd4jLong* shapeInfo, const std::vector<int>& dimsToExclude, Nd4jLong* idxRanges);
+
+        /**
+        *   create shapeInfo for given order basing on shape stored in shapeOnly vector
+        *   memory allocation for shapeInfo is on given workspace
+        */
+        static Nd4jLong* createShapeInfo(const char order, const std::vector<Nd4jLong> shapeOnly, memory::Workspace* workspace);
+
+        /**
         *  method returns false if permut == {0,1,2,...permut.size()-1} - in that case permutation is unnecessary
         */
         FORCEINLINE static bool isPermutNecessary(const std::vector<int>& permut);

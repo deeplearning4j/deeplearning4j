@@ -10,7 +10,6 @@
 #include <ops/ops.h>
 #include <vector>
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 
 template<typename T>
 nd4j::NDArray<T>  * processCondition(int mode,nd4j::NDArray<T> *arg, nd4j::NDArray<T> *comp, T compScalar);

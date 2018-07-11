@@ -6,6 +6,9 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
+import org.deeplearning4j.nn.conf.layers.samediff.SameDiffVertex;
+import org.deeplearning4j.nn.layers.samediff.SameDiffGraphVertex;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -95,15 +98,29 @@ public class SameDiffParamInitializer implements ParamInitializer {
 
     private Map<String,INDArray> subsetAndReshape(List<String> params, Map<String,long[]> paramShapes, INDArray view,
                                                   AbstractSameDiffLayer sdl){
+        return subsetAndReshape(params, paramShapes, view, sdl, null);
+    }
+
+    public Map<String,INDArray> subsetAndReshape(List<String> params, Map<String,long[]> paramShapes, INDArray view,
+                                                 AbstractSameDiffLayer sdl, SameDiffVertex sdv){
+        Class<?> clazz = (sdl != null ? sdl.getClass() : sdv.getClass());
+        String layerName = (sdl != null ? sdl.getLayerName() : ""); //TODO
+
         Map<String,INDArray> out = new LinkedHashMap<>();
         int soFar = 0;
         for(String s : params){
             val sh = paramShapes.get(s);
             val length = ArrayUtil.prodLong(sh);
+            if(length <= 0){
+                throw new IllegalStateException("Invalid array state for parameter \"" + s + "\" in layer " + layerName
+                        + " of type " + clazz.getSimpleName() + ": parameter length (" + length
+                        + ") must be > 0 - parameter array shape: " + Arrays.toString(sh));
+            }
             INDArray sub = view.get(point(0), interval(soFar, soFar + length));
 
             if(!Arrays.equals(sub.shape(), sh)){
-                sub = sub.reshape(sdl.paramReshapeOrder(s), sh); //TODO do we want to allow users to override initialization order?
+                char order = (sdl != null ? sdl.paramReshapeOrder(s) : sdv.paramReshapeOrder(s));
+                sub = sub.reshape(order, sh);
             }
             out.put(s, sub);
 

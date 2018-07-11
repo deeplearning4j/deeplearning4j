@@ -31,7 +31,7 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class RDDMiniBatches implements Serializable {
-    private int miniBatches = 10;
+    private int miniBatches;
     private JavaRDD<DataSet> toSplitJava;
 
     public RDDMiniBatches(int miniBatches, JavaRDD<DataSet> toSplit) {
@@ -70,9 +70,8 @@ public class RDDMiniBatches implements Serializable {
                 }
             }
 
-            //edge cases with map partitions where one will be left over.
-            //this is due to race conditions.
-            if (temp.size() > 1)
+            //Add remaining ('left over') data
+            if (temp.size() > 0)
                 ret.add(DataSet.merge(temp));
 
             return ret;

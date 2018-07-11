@@ -60,7 +60,7 @@ public class TestObjectDetectionRecordReader {
         ImageObjectLabelProvider lp = new TestImageObjectDetectionLabelProvider();
 
         File f = testDir.newFolder();
-        new ClassPathResource("datavec-data-image/objdetect").copyDirectory(f);
+        new ClassPathResource("datavec-data-image/objdetect/").copyDirectory(f);
 
         String path = new File(f, "000012.jpg").getParent();
 

@@ -17,6 +17,7 @@
 package org.datavec.local.transforms.transform;
 
 
+import org.datavec.api.transform.MathFunction;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.TransformProcess;
@@ -25,14 +26,15 @@ import org.datavec.api.transform.condition.column.DoubleColumnCondition;
 import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
-import org.datavec.api.writable.DoubleWritable;
-import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.Text;
-import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.*;
 
 import org.datavec.arrow.recordreader.ArrowWritableRecordTimeSeriesBatch;
 import org.datavec.local.transforms.LocalTransformExecutor;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.cpu.nativecpu.NDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.*;
 
@@ -42,6 +44,36 @@ import static org.junit.Assert.assertEquals;
  * Created by Alex on 25/11/2016.
  */
 public class ExecutionTest  {
+
+    @Test
+    public void testExecutionNdarray() {
+        Schema schema = new Schema.Builder()
+                .addColumnNDArray("first",new long[]{1,32577})
+                .addColumnNDArray("second",new long[]{1,32577}).build();
+
+        TransformProcess transformProcess = new TransformProcess.Builder(schema)
+                .ndArrayMathFunctionTransform("first", MathFunction.SIN)
+                .ndArrayMathFunctionTransform("second",MathFunction.COS)
+                .build();
+
+        List<List<Writable>> functions = new ArrayList<>();
+        List<Writable> firstRow = new ArrayList<>();
+        INDArray firstArr = Nd4j.linspace(1,4,4);
+        INDArray secondArr = Nd4j.linspace(1,4,4);
+        firstRow.add(new NDArrayWritable(firstArr));
+        firstRow.add(new NDArrayWritable(secondArr));
+        functions.add(firstRow);
+
+        List<List<Writable>> execute = LocalTransformExecutor.execute(functions, transformProcess);
+        INDArray firstResult = ((NDArrayWritable) execute.get(0).get(0)).get();
+        INDArray secondResult = ((NDArrayWritable) execute.get(0).get(1)).get();
+
+        INDArray expected = Transforms.sin(firstArr);
+        INDArray secondExpected = Transforms.cos(secondArr);
+        assertEquals(expected,firstResult);
+        assertEquals(secondExpected,secondResult);
+
+    }
 
     @Test
     public void testExecutionSimple() {

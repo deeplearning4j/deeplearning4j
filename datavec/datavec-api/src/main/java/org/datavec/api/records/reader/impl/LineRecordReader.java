@@ -194,8 +194,12 @@ public class LineRecordReader extends BaseRecordReader {
                 iterator = IOUtils.lineIterator(new InputStreamReader(is));
             }
         } else {
-            this.locations = inputSplit.locations();
-            if (locations != null && locations.length > 0) {
+            final ArrayList<URI> uris = new ArrayList<>();
+            final Iterator<URI> uriIterator = inputSplit.locationsIterator();
+            while(uriIterator.hasNext()) uris.add(uriIterator.next());
+
+            this.locations = uris.toArray(new URI[0]);
+            if (locations.length > 0) {
                 InputStream inputStream;
                 try {
                     inputStream = locations[location].toURL().openStream();

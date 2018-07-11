@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.val;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -135,6 +136,7 @@ public class ParagraphVectors extends Word2Vec {
     public void extractLabels() {
         Collection<VocabWord> vocabWordCollection = vocab.vocabWords();
         List<VocabWord> vocabWordList = new ArrayList<>();
+        List<String> stringList = new ArrayList<>();
         int[] indexArray;
 
         //INDArray pulledArray;
@@ -142,6 +144,7 @@ public class ParagraphVectors extends Word2Vec {
         for (VocabWord vWord : vocabWordCollection) {
             if (vWord.isLabel()) {
                 vocabWordList.add(vWord);
+                stringList.add(vWord.getLabel());
             }
         }
         //Build array of indexes in the order of the vocablist
@@ -154,7 +157,9 @@ public class ParagraphVectors extends Word2Vec {
         //pull the label rows and create new matrix
         if (i > 0) {
             labelsMatrix = Nd4j.pullRows(lookupTable.getWeights(), 1, indexArray);
-            labelsList = vocabWordList;
+            this.labelsList = vocabWordList;
+
+            this.labelsSource = new LabelsSource(stringList);
         }
     }
 

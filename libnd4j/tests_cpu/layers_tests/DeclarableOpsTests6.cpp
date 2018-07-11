@@ -52,6 +52,48 @@ TEST_F(DeclarableOpsTests6, Test_Dilation2D_Again_2) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_1) {
+    NDArray<float> matrix('c', {5, 2});
+    NDArray<float> b(0.0f);
+    NDArray<float> e(1.0f);
+    NDArray<float> s(1.0f);
+
+    NDArray<float> exp('c', {2}, {1.0f, 2.0f});
+
+    matrix.linspace(1);
+
+    nd4j::ops::strided_slice<float> op;
+    auto result = op.execute({&matrix, &b, &e, &s}, {}, {0, 0, 0, 0, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);    
+
+    ASSERT_EQ(exp, *z);
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_2) {
+    NDArray<float> matrix('c', {5, 2});
+    NDArray<float> b('c', {1}, {0.0f});
+    NDArray<float> e('c', {1}, {1.0f});
+    NDArray<float> s('c', {1}, {1.0f});
+
+    NDArray<float> exp('c', {2}, {1.0f, 2.0f});
+
+    matrix.linspace(1);
+
+    nd4j::ops::strided_slice<float> op;
+    auto result = op.execute({&matrix, &b, &e, &s}, {}, {0, 0, 0, 0, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);    
+
+    ASSERT_EQ(exp, *z);
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests6, Test_Simple_Scalar_1) {
     NDArray<float> x('c', {1, 1}, {2.0f});
     NDArray<float> exp('c', {1, 1}, {4.0f});
@@ -87,7 +129,7 @@ TEST_F(DeclarableOpsTests6, Test_gatherNd_Edge_1) {
     NDArray<float> x('c', {2, 4, 2, 2});
     NDArray<float> indices('c', {3, 3}, {0,2,1, 0,1,0, 1,3,1});
     NDArray<float> exp('c', {3,2}, {11.f, 12.f, 5.f, 6.f, 31.f, 32.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::gather_nd<float> op;
     auto result = op.execute({&x, &indices}, {}, {});
@@ -159,7 +201,7 @@ TEST_F(DeclarableOpsTests6, Test_BtS_1) {
 TEST_F(DeclarableOpsTests6, Test_Order_1) {
     NDArray<float> x('f', {2, 3});
     NDArray<float> exp('c', {2, 3}, {1, 2, 3, 4, 5, 6});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::order<float> op;
     auto result = op.execute({&x}, {}, {0});
@@ -995,7 +1037,7 @@ TEST_F(DeclarableOpsTests6, static_rnn_test1) {
     NDArray<double> h0('c', {bS, numUnits});
     NDArray<double> maxTimeStep('c', {bS}, {time-1, time-3});
 
-    NDArrayFactory<double>::linspace(0.01, x, 0.01);
+    x.linspace(0.01, 0.01);
     h0 = 0.2;
     Wx = 0.3;
     Wh = 0.4;
@@ -1037,7 +1079,7 @@ TEST_F(DeclarableOpsTests6, static_rnn_test2) {
     NDArray<double> b ('c', {2*numUnits});
     NDArray<double> h0('c', {bS, numUnits});
 
-    NDArrayFactory<double>::linspace(0.01, x, 0.01);
+    x.linspace(0.01, 0.01);
     h0 = 0.2;
     Wx = 0.3;
     Wh = 0.4;
@@ -1081,7 +1123,7 @@ TEST_F(DeclarableOpsTests6, static_rnn_test3) {
     NDArray<double> h0('c', {bS, numUnits});
     NDArray<double> maxTimeStep('c', {bS}, {time-1, 0});
 
-    NDArrayFactory<double>::linspace(0.01, x, 0.01);
+    x.linspace(0.01, 0.01);
     h0 = 0.2;
     Wx = 0.3;
     Wh = 0.4;
@@ -1124,7 +1166,7 @@ TEST_F(DeclarableOpsTests6, static_rnn_test4) {
     NDArray<double> h0('c', {bS, numUnits});
     NDArray<double> maxTimeStep('c', {bS}, {time-1, time-3});
 
-    NDArrayFactory<double>::linspace(0.01, x, 0.01);
+    x.linspace(0.01, 0.01);
     Wx = 0.3;
     Wh = 0.4;
     b  = 0.25;
@@ -1165,7 +1207,7 @@ TEST_F(DeclarableOpsTests6, static_rnn_test5) {
     NDArray<double> b ('c', {2*numUnits});
     NDArray<double> h0('c', {bS, numUnits});
 
-    NDArrayFactory<double>::linspace(0.01, x, 0.01);
+    x.linspace(0.01, 0.01);
     Wx = 0.3;
     Wh = 0.4;
     b  = 0.25;
@@ -1211,7 +1253,7 @@ TEST_F(DeclarableOpsTests6, static_bidir_rnn_test1) {
     NDArray<double> h0BW('c', {bS, numUnitsBW});
     NDArray<double> maxTimeStep('c', {bS}, {time-1, time-3, time-4, 0});
 
-    NDArrayFactory<double>::linspace(0.01, x, 0.01);
+    x.linspace(0.01, 0.01);
     h0FW = 0.2;    
     h0BW = 0.25;
     WxFW = 0.3;
@@ -1263,7 +1305,7 @@ TEST_F(DeclarableOpsTests6, static_bidir_rnn_test2) {
 
     NDArray<double> maxTimeStep('c', {bS}, {time-1, time-3, time-4, 0});
 
-    NDArrayFactory<double>::linspace(0.01, x, 0.01);
+    x.linspace(0.01, 0.01);
     WxFW = 0.3;
     WhFW = 0.4;
     bFW  = 0.1;
@@ -1315,7 +1357,7 @@ TEST_F(DeclarableOpsTests6, static_bidir_rnn_test3) {
     NDArray<double> WhFW('c', {numUnitsFW, numUnitsFW});    
     NDArray<double> bFW ('c', {2*numUnitsFW});
 
-    NDArrayFactory<double>::linspace(0.01, x, 0.01);
+    x.linspace(0.01, 0.01);
     WxFW = 0.3;
     WhFW = 0.4;
     bFW  = 0.1;
@@ -1368,7 +1410,7 @@ TEST_F(DeclarableOpsTests6, dynamic_rnn_test1) {
     NDArray<double> h0('c', {bS, numUnits});
     NDArray<double> maxTimeStep('c', {bS}, {time-1, time-3});
 
-    NDArrayFactory<double>::linspace(0.01, x, 0.01);
+    x.linspace(0.01, 0.01);
     h0 = 0.2;
     Wx = 0.3;
     Wh = 0.4;
@@ -1412,7 +1454,7 @@ TEST_F(DeclarableOpsTests6, dynamic_rnn_test2) {
     NDArray<double> h0('c', {bS, numUnits});
     NDArray<double> maxTimeStep('c', {bS}, {time-1, time});
 
-    NDArrayFactory<double>::linspace(0.01, x, 0.01);
+    x.linspace(0.01, 0.01);
     h0 = 0.2;
     Wx = 0.3;
     Wh = 0.4;
@@ -1455,7 +1497,7 @@ TEST_F(DeclarableOpsTests6, dynamic_rnn_test3) {
     NDArray<double> b ('c', {2*numUnits});
     NDArray<double> h0('c', {bS, numUnits});    
 
-    NDArrayFactory<double>::linspace(0.01, x, 0.01);
+    x.linspace(0.01, 0.01);
     h0 = 0.2;
     Wx = 0.3;
     Wh = 0.4;
@@ -1497,7 +1539,7 @@ TEST_F(DeclarableOpsTests6, dynamic_rnn_test4) {
     NDArray<double> b ('c', {2*numUnits});    
     NDArray<double> maxTimeStep('c', {bS}, {time-1, time-4});
 
-    NDArrayFactory<double>::linspace(0.01, x, 0.01);    
+    x.linspace(0.01, 0.01);    
     Wx = 0.3;
     Wh = 0.4;
     b  = 0.25;
@@ -1537,7 +1579,7 @@ TEST_F(DeclarableOpsTests6, dynamic_rnn_test5) {
     NDArray<double> Wh('c', {numUnits, numUnits});
     NDArray<double> b ('c', {2*numUnits});    
 
-    NDArrayFactory<double>::linspace(0.01, x, 0.01);    
+    x.linspace(0.01, 0.01);    
     Wx = 0.3;
     Wh = 0.4;
     b  = 0.25;
@@ -1583,7 +1625,7 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test1) {
     NDArray<double> h0BW('c', {bS, numUnitsBW});
     NDArray<double> maxTimeStep('c', {bS}, {time-1, time-3, time-4, 0});
 
-    NDArrayFactory<double>::linspace(0.01, x, 0.01);
+    x.linspace(0.01, 0.01);
     h0FW = 0.2;    
     h0BW = 0.25;
     WxFW = 0.3;
@@ -1645,7 +1687,7 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test2) {
     NDArray<double> h0BW('c', {bS, numUnitsBW});
     NDArray<double> maxTimeStep('c', {bS}, {time-1, time-3, time-4, 0});
 
-    NDArrayFactory<double>::linspace(0.01, x, 0.01);
+    x.linspace(0.01, 0.01);
     h0FW = 0.2;    
     h0BW = 0.25;
     WxFW = 0.3;
@@ -1703,7 +1745,7 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test3) {
 
     NDArray<double> maxTimeStep('c', {bS}, {time-1, time-3, time-4, 0});
 
-    NDArrayFactory<double>::linspace(0.01, x, 0.01);
+    x.linspace(0.01, 0.01);
     WxFW = 0.3;
     WhFW = 0.4;
     bFW  = 0.1;
@@ -1760,7 +1802,7 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test4) {
     NDArray<double> h0FW('c', {bS, numUnitsFW});
     NDArray<double> h0BW('c', {bS, numUnitsBW});
 
-    NDArrayFactory<double>::linspace(0.01, x, 0.01);
+    x.linspace(0.01, 0.01);
     h0FW = 0.2;    
     h0BW = 0.25;
     WxFW = 0.3;
@@ -1815,7 +1857,7 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test5) {
     NDArray<double> WhFW('c', {numUnitsFW, numUnitsFW});    
     NDArray<double> bFW ('c', {2*numUnitsFW});
 
-    NDArrayFactory<double>::linspace(0.01, x, 0.01);
+    x.linspace(0.01, 0.01);
     WxFW = 0.3;
     WhFW = 0.4;
     bFW  = 0.1;
@@ -1856,6 +1898,45 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test5) {
 }
 
 
+TEST_F(DeclarableOpsTests6, Test_Diag_119_1) {
+    NDArray<float> x('c', {3}, {0.15f, 0.25f, 0.35f});
+    NDArray<float> e('c', {3, 3}, {0.15f, 0.0f, 0.0f,   0.0f, 0.25f, 0.0f,   0.0f, 0.0f, 0.35f});
+
+    nd4j::ops::diag<float> op;
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests6, Test_Diag_119_2) {
+    NDArray<float> x('c', {1}, {0.15f});
+    NDArray<float> e('c', {1, 1}, {0.15f});
+
+    nd4j::ops::diag<float> op;
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests6, Test_Diag_119_3) {
+    NDArray<float> x(0.15f);
+    NDArray<float> e('c', {1, 1}, {0.15f});
+
+    nd4j::ops::diag<float> op;
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, deconv2d_test1) {
 
@@ -1875,7 +1956,7 @@ TEST_F(DeclarableOpsTests6, deconv2d_test1) {
                                                   55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
                                                   52.75,  57.75,  62.75,  67.75,  72.75,130.5 , 140.5 , 150.5 , 160.5 , 170.5 ,130.5 , 140.5 , 150.5 , 160.5 , 170.5 , 77.75,  82.75,  87.75,  92.75,  97.75});
     input = 0.5;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    weights.linspace(0.1, 0.1);
     
     nd4j::ops::deconv2d<double> op;
     ResultSet<double>* results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
@@ -1907,7 +1988,7 @@ TEST_F(DeclarableOpsTests6, deconv2d_test2) {
                                                 55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
                                                 55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  });    
     input = 0.5;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    weights.linspace(0.1, 0.1);
     
     nd4j::ops::deconv2d<double> op;
     ResultSet<double>* results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
@@ -1919,7 +2000,6 @@ TEST_F(DeclarableOpsTests6, deconv2d_test2) {
     
     delete results;
 }
-
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, deconv2d_tf_test1) {
@@ -1941,10 +2021,10 @@ TEST_F(DeclarableOpsTests6, deconv2d_tf_test1) {
                                                   55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
                                                   52.75,  57.75,  62.75,  67.75,  72.75,130.5 , 140.5 , 150.5 , 160.5 , 170.5 ,130.5 , 140.5 , 150.5 , 160.5 , 170.5 , 77.75,  82.75,  87.75,  92.75,  97.75});
     input = 0.5;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    weights.linspace(0.1, 0.1);
     
     nd4j::ops::deconv2d_tf<double> op;
-    ResultSet<double>* results = op.execute({&input, &weights, &outShape}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&outShape, &weights, &input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     NDArray<double>* output = results->at(0);            
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1974,10 +2054,10 @@ TEST_F(DeclarableOpsTests6, deconv2d_tf_test2) {
                                                 55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
                                                 55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  });    
     input = 0.5;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    weights.linspace(0.1, 0.1);
     
     nd4j::ops::deconv2d_tf<double> op;
-    ResultSet<double>* results = op.execute({&input, &weights, &outShape}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&outShape, &weights, &input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     NDArray<double>* output = results->at(0);            
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1986,8 +2066,6 @@ TEST_F(DeclarableOpsTests6, deconv2d_tf_test2) {
     
     delete results;
 }
-
-
 
   
 

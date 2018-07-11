@@ -34,6 +34,10 @@ class SharedFlatMapPathsMDSAdapter<R extends TrainingResult> implements FlatMapF
 
     @Override
     public Iterable<R> call(Iterator<String> dataSetIterator) throws Exception {
+        //Under some limited circumstances, we might have an empty partition. In this case, we should return immediately
+        if(!dataSetIterator.hasNext()){
+            return Collections.emptyList();
+        }
         // here we'll be converting out Strings coming out of iterator to DataSets
         // PathSparkDataSetIterator does that for us
 

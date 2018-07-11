@@ -410,7 +410,7 @@ namespace functions {
                         sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 
                         for(int i = threadIdx.x;i < tadLength; i += blockDim.x) {
-                            shape::ind2subC(tadRank,tadShape, i, xCoord);
+                            shape::ind2subC(tadRank,tadShape, i, tadLength, xCoord);
 
                             auto xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
                             IndexValue<T> comp {dx[xOffset], i};
@@ -465,7 +465,7 @@ namespace functions {
                     Nd4jLong ind2sub[MAX_RANK];
 
                     for(Nd4jLong i = tid;i < n; i += blockDim.x * gridDim.x) {
-                        shape::ind2subC(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
+                        shape::ind2subC(rank,shape::shapeOf(xShapeInfo),i, n, ind2sub);
 
                         Nd4jLong offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),ind2sub,rank);
                         IndexValue <T> indexVal = {dx[offset], i};

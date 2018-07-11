@@ -5,7 +5,6 @@
 #include <ops/declarable/helpers/reverse.h>
 #include <helpers/ShapeUtils.h>
 #include <array/ResultSet.h>
-#include <NDArrayFactory.h>
 
 
 namespace nd4j    {
@@ -177,8 +176,8 @@ void reverseSequence(const NDArray<T>* input, const NDArray<T>* seqLengths, NDAr
 
         std::vector<int> dimensions = ShapeUtils<T>::evalDimsToExclude(input->rankOf(), {batchDim});       
 
-        ResultSet<T>* inSubArrsSet  = NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions);
-        ResultSet<T>* outSubArrsSet = NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions);
+        ResultSet<T>* inSubArrsSet  = input->allTensorsAlongDimension(dimensions);
+        ResultSet<T>* outSubArrsSet = output->allTensorsAlongDimension(dimensions);
 
 // #pragma omp parallel for schedule(guided)  if(inSubArrsSet->size() > Environment::getInstance()->elementwiseThreshold()) 
         for(int i = 0; i < inSubArrsSet->size(); ++i) {
@@ -189,8 +188,8 @@ void reverseSequence(const NDArray<T>* input, const NDArray<T>* seqLengths, NDAr
                 outSubArrsSet->at(i)->assign(inSubArrsSet->at(i));
             }
             else {
-                ResultSet<T>* inInnerSet  = NDArrayFactory<T>::allTensorsAlongDimension(inSubArrsSet->at(i), {seqDim});
-                ResultSet<T>* outInnerSet = NDArrayFactory<T>::allTensorsAlongDimension(outSubArrsSet->at(i), {seqDim});
+                ResultSet<T>* inInnerSet  = inSubArrsSet->at(i)->allTensorsAlongDimension({seqDim});
+                ResultSet<T>* outInnerSet = outSubArrsSet->at(i)->allTensorsAlongDimension({seqDim});
                 for(int j = 0; j < inInnerSet->size(); ++j)
                     helpers::reverseArray<T>(inInnerSet->at(j)->getBuffer(), inInnerSet->at(j)->getShapeInfo(), outInnerSet->at(j)->getBuffer(), outInnerSet->at(j)->getShapeInfo(), numOfElemsToReverse);
             
@@ -211,8 +210,8 @@ void reverse(const NDArray<T>* input, NDArray<T>* output, const std::vector<int>
     // we need to reverse axis only if that's new op
     std::vector<int> dimensions = isLegacy ? *intArgs : ShapeUtils<T>::evalDimsToExclude(input->rankOf(), *intArgs);
 
-    ResultSet<T>* listOut = NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions);
-    ResultSet<T>* listIn  = NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions);
+    ResultSet<T>* listOut = output->allTensorsAlongDimension(dimensions);
+    ResultSet<T>* listIn  = input->allTensorsAlongDimension(dimensions);
        
     NDArray<T>* subArrIn  = nullptr;
     NDArray<T>* subArrOut = nullptr;    

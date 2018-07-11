@@ -47,8 +47,8 @@ namespace functions {
                 Nd4jLong xCoord[MAX_RANK];
 
                 for (Nd4jLong i = 0; i < length; i++) {
-                    shape::ind2subC(tadRank,xShape, i, xCoord);
-                    Nd4jLong xOffset = shape::getOffset(0, xShape, xStride, xCoord, tadRank);
+                    shape::ind2subC(tadRank,xShape, i, length, xCoord);
+                    auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, tadRank);
 
                     IndexValue<T> curr;
                     curr.value = x[xOffset];
@@ -195,7 +195,7 @@ namespace functions {
                     Nd4jLong xCoord[MAX_RANK];
 
                     for(int j = 0; j < tadLength; j++) {
-                        shape::ind2subC(rank,xShape, j, xCoord);
+                        shape::ind2subC(rank,xShape, j, tadLength, xCoord);
                         auto  xOffset = shape::getOffset(offset, xShape, xStride, xCoord, rank);
 
                         IndexValue<T> comp;

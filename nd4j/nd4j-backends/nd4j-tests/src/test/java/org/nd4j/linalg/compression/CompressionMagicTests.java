@@ -1,5 +1,6 @@
 package org.nd4j.linalg.compression;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -19,12 +20,18 @@ public class CompressionMagicTests extends BaseNd4jTest {
         super(backend);
     }
 
+    @Before
+    public void setUp() throws Exception {
+
+    }
+
     @Test
     public void testMagicDecompression1() throws Exception {
         INDArray array = Nd4j.linspace(1, 100, 2500);
 
         INDArray compressed = Nd4j.getCompressor().compress(array, "GZIP");
 
+        assertTrue(compressed.isCompressed());
         compressed.muli(1.0);
 
         assertEquals(array, compressed);
@@ -36,6 +43,7 @@ public class CompressionMagicTests extends BaseNd4jTest {
 
         INDArray compressed = Nd4j.getCompressor().compress(array, "FLOAT16");
 
+        assertTrue(compressed.isCompressed());
         compressed.muli(1.0);
 
         assertArrayEquals(array.data().asFloat(), compressed.data().asFloat(), 0.1f);
@@ -47,6 +55,9 @@ public class CompressionMagicTests extends BaseNd4jTest {
 
         INDArray compressed = Nd4j.getCompressor().compress(array, "INT16");
 
+        Nd4j.getExecutioner().commit();;
+
+        assertTrue(compressed.isCompressed());
         compressed.muli(1.0);
 
         assertEquals(array, compressed);

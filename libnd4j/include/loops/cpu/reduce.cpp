@@ -178,7 +178,7 @@ namespace functions {
                         T start = OpType::startingValue(x + offset);
 
                         for (int j = 0; j < tadLength; j++) {
-                            shape::ind2subC(tadRank, tadShape, j, xCoord);
+                            shape::ind2subC(tadRank, tadShape, j, tadLength, xCoord);
                             auto xOffset = shape::getOffset(offset, tadShape, tadStride, xCoord, tadRank);
 
                             start = OpType::update(start, OpType::op(x[xOffset], extraParams), extraParams);

@@ -106,7 +106,7 @@ public enum Activation {
             case HARDTANH:
                 return sd.hardTanh(variableName, input);
             case IDENTITY:
-                return input;    //TODO Is this OK in all cases?
+                return sd.identity(variableName, input);
             case LEAKYRELU:
                 return sd.leakyRelu(variableName, input, 0.0);
             case RELU:

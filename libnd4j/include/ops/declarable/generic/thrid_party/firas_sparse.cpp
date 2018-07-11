@@ -18,7 +18,6 @@
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/CustomOperations.h>
-#include <NDArrayFactory.h>
 
 namespace nd4j {
     namespace ops {
@@ -48,7 +47,7 @@ namespace nd4j {
                 sparse2dense.insert(pair);
             }
 
-            std::unique_ptr<ResultSet<T>> rows(NDArrayFactory<T>::allTensorsAlongDimension(x, {1}));
+            std::unique_ptr<ResultSet<T>> rows(x->allTensorsAlongDimension({1}));
 
 #pragma omp parallel for schedule(dynamic) proc_bind(close)
             for (int r = 0; r < batchSize; r++) {

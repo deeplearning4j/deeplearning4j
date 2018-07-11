@@ -163,6 +163,13 @@ public class KerasEmbedding extends KerasLayer {
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
         this.weights = new HashMap<>();
+        // TODO: "embeddings" is incorrectly read as "s" for some applications
+        if (weights.containsKey("s")) {
+            INDArray kernel = weights.get("s");
+            weights.remove("s");
+            weights.put(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS(), kernel);
+        }
+
         if (!weights.containsKey(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS()))
             throw new InvalidKerasConfigurationException(
                     "Parameter " + conf.getLAYER_FIELD_EMBEDDING_WEIGHTS() + " does not exist in weights");

@@ -3,7 +3,6 @@
 //
 
 #include <ops/declarable/helpers/lrn.h>
-#include <NDArrayFactory.h>
 
 namespace nd4j {
 namespace ops {
@@ -45,7 +44,7 @@ namespace helpers {
         halfDepth = nd4j::math::nd4j_max(halfDepth, 0);
         const int channel =  input->sizeAt(1);
 
-        std::unique_ptr<NDArray<T>> activitySqr(NDArrayFactory<T>::createUninitialized(input));
+        std::unique_ptr<NDArray<T>> activitySqr(input->createUninitialized());
         std::unique_ptr<NDArray<T>> sumPart(activitySqr->dup('c'));
 
         input->template applyPairwiseTransform<simdOps::Multiply<T>>(input, activitySqr.get(), nullptr);

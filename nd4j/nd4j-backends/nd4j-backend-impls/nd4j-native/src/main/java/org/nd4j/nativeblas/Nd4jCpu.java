@@ -337,10 +337,12 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_firas_sparse.class,
         float_clipbyvalue.class,
         float_clipbynorm.class,
+        float_clipbynorm_bp.class,
         float_clipbyavgnorm.class,
         float_cumsum.class,
         float_cumprod.class,
         float_tile.class,
+        float_tile_bp.class,
         float_repeat.class,
         float_invert_permutation.class,
         float_concat.class,
@@ -696,10 +698,12 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_firas_sparse.class,
         half_clipbyvalue.class,
         half_clipbynorm.class,
+        half_clipbynorm_bp.class,
         half_clipbyavgnorm.class,
         half_cumsum.class,
         half_cumprod.class,
         half_tile.class,
+        half_tile_bp.class,
         half_repeat.class,
         half_invert_permutation.class,
         half_concat.class,
@@ -1055,10 +1059,12 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_firas_sparse.class,
         double_clipbyvalue.class,
         double_clipbynorm.class,
+        double_clipbynorm_bp.class,
         double_clipbyavgnorm.class,
         double_cumsum.class,
         double_cumprod.class,
         double_tile.class,
+        double_tile_bp.class,
         double_repeat.class,
         double_invert_permutation.class,
         double_concat.class,
@@ -6669,6 +6675,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
     public native void deleteResultWrapper(@Cast("Nd4jPointer") Pointer ptr);
 
+    public native int estimateThresholdFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer x, int N, float threshold);
+    public native int estimateThresholdDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer x, int N, float threshold);
+    public native int estimateThresholdHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer x, int N, float threshold);
+
     // this method executes op that requires scope to be present: if/while/cond/whatever
     public native @Cast("Nd4jStatus") int execCustomOpWithScopeHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer state, @Cast("Nd4jLong") long opHash, @Cast("Nd4jLong*") LongPointer scopes, int numScopes, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs);
     public native @Cast("Nd4jStatus") int execCustomOpWithScopeHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer state, @Cast("Nd4jLong") long opHash, @Cast("Nd4jLong*") LongBuffer scopes, int numScopes, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs);
@@ -7047,6 +7057,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #include <stdint.h>
 // #include <array/ArrayOptions.h>
 // #include <array/ArrayType.h>
+// #include <array/ResultSet.h>
     @Namespace("nd4j") public static native @ByVal @Name("operator -") FloatNDArray subtract(float arg0, @Const @ByRef FloatNDArray arg1);
     @Namespace("nd4j") public static native @ByVal @Name("operator -") HalfNDArray subtract(@Cast("const float16") short arg0, @Const @ByRef HalfNDArray arg1);
     @Namespace("nd4j") public static native @ByVal @Name("operator -") DoubleNDArray subtract(double arg0, @Const @ByRef DoubleNDArray arg1);
@@ -7069,6 +7080,17 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         public static native FloatNDArray createEmpty(Workspace workspace/*=nullptr*/);
         public static native FloatNDArray createEmpty();
+
+        public static native FloatNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongPointer shape, float value, char order/*='c'*/);
+        public static native FloatNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongPointer shape, float value);
+        public static native FloatNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongBuffer shape, float value, char order/*='c'*/);
+        public static native FloatNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongBuffer shape, float value);
+        public static native FloatNDArray valueOf(@Cast("Nd4jLong*") @StdVector long[] shape, float value, char order/*='c'*/);
+        public static native FloatNDArray valueOf(@Cast("Nd4jLong*") @StdVector long[] shape, float value);
+        
+        public static native FloatNDArray linspace(float from, float to, @Cast("const Nd4jLong") long numElements);
+
+        public static native FloatNDArray scalar(float value);
 
         
         /**
@@ -7792,12 +7814,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Const IntPointer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Const IntPointer idx);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Const IntBuffer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Const IntBuffer idx);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Const int[] idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Const int[] idx);
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong*") LongPointer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong*") LongPointer idx);
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong*") LongBuffer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong*") LongBuffer idx);
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong*") long[] idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong*") long[] idx);
 
         /**
         *  addition operator: array + other
@@ -7973,6 +7995,24 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  calculates the trace of an array, that is sum of elements on main diagonal = sum array[i, i, i, ...]
         */
         public native float getTrace();
+
+        /**
+        *  fill array linearly as follows: arr[0] = from, arr[1] = from+step, arr[2] = from+2*step, ...
+        */
+        public native void linspace(float from, float step/*=1.0f*/);
+        public native void linspace(float from);
+
+        public native FloatNDArray createUninitialized();
+
+        public native FloatResultSet multipleTensorsAlongDimension(@StdVector IntPointer indices, @StdVector IntPointer dimensions);
+        public native FloatResultSet multipleTensorsAlongDimension(@StdVector IntBuffer indices, @StdVector IntBuffer dimensions);
+        public native FloatResultSet multipleTensorsAlongDimension(@StdVector int[] indices, @StdVector int[] dimensions);
+
+        public native FloatResultSet allTensorsAlongDimension(@StdVector IntPointer dimensions);
+        public native FloatResultSet allTensorsAlongDimension(@StdVector IntBuffer dimensions);
+        public native FloatResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
+
+        public native FloatResultSet allExamples();        
         
         /**
         *  default destructor
@@ -8211,6 +8251,17 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         public static native HalfNDArray createEmpty(Workspace workspace/*=nullptr*/);
         public static native HalfNDArray createEmpty();
+
+        public static native HalfNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("const float16") short value, char order/*='c'*/);
+        public static native HalfNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("const float16") short value);
+        public static native HalfNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("const float16") short value, char order/*='c'*/);
+        public static native HalfNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("const float16") short value);
+        public static native HalfNDArray valueOf(@Cast("Nd4jLong*") @StdVector long[] shape, @Cast("const float16") short value, char order/*='c'*/);
+        public static native HalfNDArray valueOf(@Cast("Nd4jLong*") @StdVector long[] shape, @Cast("const float16") short value);
+        
+        public static native HalfNDArray linspace(@Cast("const float16") short from, @Cast("const float16") short to, @Cast("const Nd4jLong") long numElements);
+
+        public static native HalfNDArray scalar(@Cast("const float16") short value);
 
         
         /**
@@ -8934,12 +8985,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
-        public native @ByVal @Name("operator ()") HalfNDArray apply(@Const IntPointer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") HalfNDArray apply(@Const IntPointer idx);
-        public native @ByVal @Name("operator ()") HalfNDArray apply(@Const IntBuffer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") HalfNDArray apply(@Const IntBuffer idx);
-        public native @ByVal @Name("operator ()") HalfNDArray apply(@Const int[] idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") HalfNDArray apply(@Const int[] idx);
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("const Nd4jLong*") LongPointer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("const Nd4jLong*") LongPointer idx);
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("const Nd4jLong*") LongBuffer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("const Nd4jLong*") LongBuffer idx);
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("const Nd4jLong*") long[] idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("const Nd4jLong*") long[] idx);
 
         /**
         *  addition operator: array + other
@@ -9115,6 +9166,24 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  calculates the trace of an array, that is sum of elements on main diagonal = sum array[i, i, i, ...]
         */
         public native @Cast("float16") short getTrace();
+
+        /**
+        *  fill array linearly as follows: arr[0] = from, arr[1] = from+step, arr[2] = from+2*step, ...
+        */
+        public native void linspace(@Cast("const float16") short from, @Cast("const float16") short step/*=1.0f*/);
+        public native void linspace(@Cast("const float16") short from);
+
+        public native HalfNDArray createUninitialized();
+
+        public native HalfResultSet multipleTensorsAlongDimension(@StdVector IntPointer indices, @StdVector IntPointer dimensions);
+        public native HalfResultSet multipleTensorsAlongDimension(@StdVector IntBuffer indices, @StdVector IntBuffer dimensions);
+        public native HalfResultSet multipleTensorsAlongDimension(@StdVector int[] indices, @StdVector int[] dimensions);
+
+        public native HalfResultSet allTensorsAlongDimension(@StdVector IntPointer dimensions);
+        public native HalfResultSet allTensorsAlongDimension(@StdVector IntBuffer dimensions);
+        public native HalfResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
+
+        public native HalfResultSet allExamples();        
         
         /**
         *  default destructor
@@ -9353,6 +9422,17 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         public static native DoubleNDArray createEmpty(Workspace workspace/*=nullptr*/);
         public static native DoubleNDArray createEmpty();
+
+        public static native DoubleNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongPointer shape, double value, char order/*='c'*/);
+        public static native DoubleNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongPointer shape, double value);
+        public static native DoubleNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongBuffer shape, double value, char order/*='c'*/);
+        public static native DoubleNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongBuffer shape, double value);
+        public static native DoubleNDArray valueOf(@Cast("Nd4jLong*") @StdVector long[] shape, double value, char order/*='c'*/);
+        public static native DoubleNDArray valueOf(@Cast("Nd4jLong*") @StdVector long[] shape, double value);
+        
+        public static native DoubleNDArray linspace(double from, double to, @Cast("const Nd4jLong") long numElements);
+
+        public static native DoubleNDArray scalar(double value);
 
         
         /**
@@ -10076,12 +10156,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
-        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const IntPointer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const IntPointer idx);
-        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const IntBuffer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const IntBuffer idx);
-        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const int[] idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const int[] idx);
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("const Nd4jLong*") LongPointer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("const Nd4jLong*") LongPointer idx);
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("const Nd4jLong*") LongBuffer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("const Nd4jLong*") LongBuffer idx);
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("const Nd4jLong*") long[] idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("const Nd4jLong*") long[] idx);
 
         /**
         *  addition operator: array + other
@@ -10257,6 +10337,24 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  calculates the trace of an array, that is sum of elements on main diagonal = sum array[i, i, i, ...]
         */
         public native double getTrace();
+
+        /**
+        *  fill array linearly as follows: arr[0] = from, arr[1] = from+step, arr[2] = from+2*step, ...
+        */
+        public native void linspace(double from, double step/*=1.0f*/);
+        public native void linspace(double from);
+
+        public native DoubleNDArray createUninitialized();
+
+        public native DoubleResultSet multipleTensorsAlongDimension(@StdVector IntPointer indices, @StdVector IntPointer dimensions);
+        public native DoubleResultSet multipleTensorsAlongDimension(@StdVector IntBuffer indices, @StdVector IntBuffer dimensions);
+        public native DoubleResultSet multipleTensorsAlongDimension(@StdVector int[] indices, @StdVector int[] dimensions);
+
+        public native DoubleResultSet allTensorsAlongDimension(@StdVector IntPointer dimensions);
+        public native DoubleResultSet allTensorsAlongDimension(@StdVector IntBuffer dimensions);
+        public native DoubleResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
+
+        public native DoubleResultSet allExamples();        
         
         /**
         *  default destructor
@@ -10609,7 +10707,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
 
 //////////////////////////////////////////////////////////////////////////
-// returns true if these two NDArrays have same shape
 // still the definition of inline function must be in header file
 
 
@@ -10771,9 +10868,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #ifndef LIBND4J_RESULTSET_H
 // #define LIBND4J_RESULTSET_H
 
-// #include <NDArray.h>
 // #include <vector>
 // #include <graph/generated/result_generated.h>
+// #include <pointercast.h> // forward declaration of template class NDArray
+    
     @Name("nd4j::ResultSet<float>") @NoOffset public static class FloatResultSet extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -10798,6 +10896,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native void purge();
         public native void setNonRemovable();
     }
+    
     @Name("nd4j::ResultSet<float16>") @NoOffset public static class HalfResultSet extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -10822,6 +10921,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native void purge();
         public native void setNonRemovable();
     }
+    
     @Name("nd4j::ResultSet<double>") @NoOffset public static class DoubleResultSet extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -10849,230 +10949,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
 
 // #endif //LIBND4J_RESULTSET_H
-
-
-// Parsed from NDArrayFactory.h
-
-//
-// @author raver119@gmail.com
-//
-
-// #ifndef LIBND4J_NDARRAYFACTORY_H
-// #define LIBND4J_NDARRAYFACTORY_H
-
-// #include "NDArray.h"
-// #include <array/ResultSet.h>
-    @Name("nd4j::NDArrayFactory<float>") public static class FloatNDArrayFactory extends Pointer {
-        static { Loader.load(); }
-        /** Default native constructor. */
-        public FloatNDArrayFactory() { super((Pointer)null); allocate(); }
-        /** Native array allocator. Access with {@link Pointer#position(long)}. */
-        public FloatNDArrayFactory(long size) { super((Pointer)null); allocateArray(size); }
-        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-        public FloatNDArrayFactory(Pointer p) { super(p); }
-        private native void allocate();
-        private native void allocateArray(long size);
-        @Override public FloatNDArrayFactory position(long position) {
-            return (FloatNDArrayFactory)super.position(position);
-        }
-    
-        public static native FloatNDArray createUninitialized(FloatNDArray other);
-
-        public static native FloatResultSet multipleTensorsAlongDimension(FloatNDArray ndArray, @StdVector IntPointer indices, @StdVector IntPointer dimensions);
-        public static native FloatResultSet multipleTensorsAlongDimension(FloatNDArray ndArray, @StdVector IntBuffer indices, @StdVector IntBuffer dimensions);
-        public static native FloatResultSet multipleTensorsAlongDimension(FloatNDArray ndArray, @StdVector int[] indices, @StdVector int[] dimensions);
-
-        public static native FloatResultSet allTensorsAlongDimension(@Const FloatNDArray ndArray, @StdVector IntPointer dimensions);
-        public static native FloatResultSet allTensorsAlongDimension(@Const FloatNDArray ndArray, @StdVector IntBuffer dimensions);
-        public static native FloatResultSet allTensorsAlongDimension(@Const FloatNDArray ndArray, @StdVector int[] dimensions);
-
-        public static native FloatResultSet allExamples(FloatNDArray ndArray);
-
-        public static native FloatNDArray tile(FloatNDArray original, @StdVector IntPointer dimensions);
-        public static native FloatNDArray tile(FloatNDArray original, @StdVector IntBuffer dimensions);
-        public static native FloatNDArray tile(FloatNDArray original, @StdVector int[] dimensions);
-
-        public static native FloatNDArray repeat(FloatNDArray original, @StdVector IntPointer repeats);
-        public static native FloatNDArray repeat(FloatNDArray original, @StdVector IntBuffer repeats);
-        public static native FloatNDArray repeat(FloatNDArray original, @StdVector int[] repeats);
-
-        public static native FloatNDArray mmulHelper(FloatNDArray A, FloatNDArray B, FloatNDArray C/*=nullptr*/, float alpha/*=1.0f*/, float beta/*=0.0f*/);
-        public static native FloatNDArray mmulHelper(FloatNDArray A, FloatNDArray B);
-
-        public static native FloatNDArray tensorDot(@Const FloatNDArray A, @Const FloatNDArray B, @StdVector IntPointer axesA, @StdVector IntPointer axesB);
-        public static native FloatNDArray tensorDot(@Const FloatNDArray A, @Const FloatNDArray B, @StdVector IntBuffer axesA, @StdVector IntBuffer axesB);
-        public static native FloatNDArray tensorDot(@Const FloatNDArray A, @Const FloatNDArray B, @StdVector int[] axesA, @StdVector int[] axesB);
-
-        public static native void tensorDot(@Const FloatNDArray a, @Const FloatNDArray b, FloatNDArray c, @StdVector IntPointer axes_a, @StdVector IntPointer axes_b, @StdVector IntPointer permutForC/*={}*/);
-        public static native void tensorDot(@Const FloatNDArray a, @Const FloatNDArray b, FloatNDArray c, @StdVector IntPointer axes_a, @StdVector IntPointer axes_b);
-        public static native void tensorDot(@Const FloatNDArray a, @Const FloatNDArray b, FloatNDArray c, @StdVector IntBuffer axes_a, @StdVector IntBuffer axes_b, @StdVector IntBuffer permutForC/*={}*/);
-        public static native void tensorDot(@Const FloatNDArray a, @Const FloatNDArray b, FloatNDArray c, @StdVector IntBuffer axes_a, @StdVector IntBuffer axes_b);
-        public static native void tensorDot(@Const FloatNDArray a, @Const FloatNDArray b, FloatNDArray c, @StdVector int[] axes_a, @StdVector int[] axes_b, @StdVector int[] permutForC/*={}*/);
-        public static native void tensorDot(@Const FloatNDArray a, @Const FloatNDArray b, FloatNDArray c, @StdVector int[] axes_a, @StdVector int[] axes_b);
-
-// #ifndef __JAVACPP_HACK__
-// #endif
-
-        public static native FloatNDArray linspace(float from, float to, @Cast("Nd4jLong") long numElements);
-        
-        public static native void linspace(float from, @ByRef FloatNDArray arr, float step/*=1.0f*/);
-        public static native void linspace(float from, @ByRef FloatNDArray arr);
-
-        public static native FloatNDArray scalar(float value);
-        public static native FloatNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongPointer shape, float value, char order/*='c'*/);
-        public static native FloatNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongPointer shape, float value);
-        public static native FloatNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongBuffer shape, float value, char order/*='c'*/);
-        public static native FloatNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongBuffer shape, float value);
-        public static native FloatNDArray valueOf(@Cast("Nd4jLong*") @StdVector long[] shape, float value, char order/*='c'*/);
-        public static native FloatNDArray valueOf(@Cast("Nd4jLong*") @StdVector long[] shape, float value);
-
-        public static native FloatNDArray concat(@Const @ByRef FloatNDArrayVector vectors, int axis/*=0*/, FloatNDArray target/*=nullptr*/);
-        public static native FloatNDArray concat(@Const @ByRef FloatNDArrayVector vectors);
-
-        public static native FloatNDArray simpleMMul(@Const FloatNDArray a, @Const FloatNDArray b, FloatNDArray c, float alpha, float beta);
-    }
-    @Name("nd4j::NDArrayFactory<float16>") public static class HalfNDArrayFactory extends Pointer {
-        static { Loader.load(); }
-        /** Default native constructor. */
-        public HalfNDArrayFactory() { super((Pointer)null); allocate(); }
-        /** Native array allocator. Access with {@link Pointer#position(long)}. */
-        public HalfNDArrayFactory(long size) { super((Pointer)null); allocateArray(size); }
-        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-        public HalfNDArrayFactory(Pointer p) { super(p); }
-        private native void allocate();
-        private native void allocateArray(long size);
-        @Override public HalfNDArrayFactory position(long position) {
-            return (HalfNDArrayFactory)super.position(position);
-        }
-    
-        public static native HalfNDArray createUninitialized(HalfNDArray other);
-
-        public static native HalfResultSet multipleTensorsAlongDimension(HalfNDArray ndArray, @StdVector IntPointer indices, @StdVector IntPointer dimensions);
-        public static native HalfResultSet multipleTensorsAlongDimension(HalfNDArray ndArray, @StdVector IntBuffer indices, @StdVector IntBuffer dimensions);
-        public static native HalfResultSet multipleTensorsAlongDimension(HalfNDArray ndArray, @StdVector int[] indices, @StdVector int[] dimensions);
-
-        public static native HalfResultSet allTensorsAlongDimension(@Const HalfNDArray ndArray, @StdVector IntPointer dimensions);
-        public static native HalfResultSet allTensorsAlongDimension(@Const HalfNDArray ndArray, @StdVector IntBuffer dimensions);
-        public static native HalfResultSet allTensorsAlongDimension(@Const HalfNDArray ndArray, @StdVector int[] dimensions);
-
-        public static native HalfResultSet allExamples(HalfNDArray ndArray);
-
-        public static native HalfNDArray tile(HalfNDArray original, @StdVector IntPointer dimensions);
-        public static native HalfNDArray tile(HalfNDArray original, @StdVector IntBuffer dimensions);
-        public static native HalfNDArray tile(HalfNDArray original, @StdVector int[] dimensions);
-
-        public static native HalfNDArray repeat(HalfNDArray original, @StdVector IntPointer repeats);
-        public static native HalfNDArray repeat(HalfNDArray original, @StdVector IntBuffer repeats);
-        public static native HalfNDArray repeat(HalfNDArray original, @StdVector int[] repeats);
-
-        public static native HalfNDArray mmulHelper(HalfNDArray A, HalfNDArray B, HalfNDArray C/*=nullptr*/, @Cast("float16") short alpha/*=1.0f*/, @Cast("float16") short beta/*=0.0f*/);
-        public static native HalfNDArray mmulHelper(HalfNDArray A, HalfNDArray B);
-
-        public static native HalfNDArray tensorDot(@Const HalfNDArray A, @Const HalfNDArray B, @StdVector IntPointer axesA, @StdVector IntPointer axesB);
-        public static native HalfNDArray tensorDot(@Const HalfNDArray A, @Const HalfNDArray B, @StdVector IntBuffer axesA, @StdVector IntBuffer axesB);
-        public static native HalfNDArray tensorDot(@Const HalfNDArray A, @Const HalfNDArray B, @StdVector int[] axesA, @StdVector int[] axesB);
-
-        public static native void tensorDot(@Const HalfNDArray a, @Const HalfNDArray b, HalfNDArray c, @StdVector IntPointer axes_a, @StdVector IntPointer axes_b, @StdVector IntPointer permutForC/*={}*/);
-        public static native void tensorDot(@Const HalfNDArray a, @Const HalfNDArray b, HalfNDArray c, @StdVector IntPointer axes_a, @StdVector IntPointer axes_b);
-        public static native void tensorDot(@Const HalfNDArray a, @Const HalfNDArray b, HalfNDArray c, @StdVector IntBuffer axes_a, @StdVector IntBuffer axes_b, @StdVector IntBuffer permutForC/*={}*/);
-        public static native void tensorDot(@Const HalfNDArray a, @Const HalfNDArray b, HalfNDArray c, @StdVector IntBuffer axes_a, @StdVector IntBuffer axes_b);
-        public static native void tensorDot(@Const HalfNDArray a, @Const HalfNDArray b, HalfNDArray c, @StdVector int[] axes_a, @StdVector int[] axes_b, @StdVector int[] permutForC/*={}*/);
-        public static native void tensorDot(@Const HalfNDArray a, @Const HalfNDArray b, HalfNDArray c, @StdVector int[] axes_a, @StdVector int[] axes_b);
-
-// #ifndef __JAVACPP_HACK__
-// #endif
-
-        public static native HalfNDArray linspace(@Cast("float16") short from, @Cast("float16") short to, @Cast("Nd4jLong") long numElements);
-        
-        public static native void linspace(@Cast("float16") short from, @ByRef HalfNDArray arr, @Cast("float16") short step/*=1.0f*/);
-        public static native void linspace(@Cast("float16") short from, @ByRef HalfNDArray arr);
-
-        public static native HalfNDArray scalar(@Cast("float16") short value);
-        public static native HalfNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("float16") short value, char order/*='c'*/);
-        public static native HalfNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("float16") short value);
-        public static native HalfNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("float16") short value, char order/*='c'*/);
-        public static native HalfNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("float16") short value);
-        public static native HalfNDArray valueOf(@Cast("Nd4jLong*") @StdVector long[] shape, @Cast("float16") short value, char order/*='c'*/);
-        public static native HalfNDArray valueOf(@Cast("Nd4jLong*") @StdVector long[] shape, @Cast("float16") short value);
-
-        public static native HalfNDArray concat(@Const @ByRef HalfNDArrayVector vectors, int axis/*=0*/, HalfNDArray target/*=nullptr*/);
-        public static native HalfNDArray concat(@Const @ByRef HalfNDArrayVector vectors);
-
-        public static native HalfNDArray simpleMMul(@Const HalfNDArray a, @Const HalfNDArray b, HalfNDArray c, @Cast("const float16") short alpha, @Cast("const float16") short beta);
-    }
-    @Name("nd4j::NDArrayFactory<double>") public static class DoubleNDArrayFactory extends Pointer {
-        static { Loader.load(); }
-        /** Default native constructor. */
-        public DoubleNDArrayFactory() { super((Pointer)null); allocate(); }
-        /** Native array allocator. Access with {@link Pointer#position(long)}. */
-        public DoubleNDArrayFactory(long size) { super((Pointer)null); allocateArray(size); }
-        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-        public DoubleNDArrayFactory(Pointer p) { super(p); }
-        private native void allocate();
-        private native void allocateArray(long size);
-        @Override public DoubleNDArrayFactory position(long position) {
-            return (DoubleNDArrayFactory)super.position(position);
-        }
-    
-        public static native DoubleNDArray createUninitialized(DoubleNDArray other);
-
-        public static native DoubleResultSet multipleTensorsAlongDimension(DoubleNDArray ndArray, @StdVector IntPointer indices, @StdVector IntPointer dimensions);
-        public static native DoubleResultSet multipleTensorsAlongDimension(DoubleNDArray ndArray, @StdVector IntBuffer indices, @StdVector IntBuffer dimensions);
-        public static native DoubleResultSet multipleTensorsAlongDimension(DoubleNDArray ndArray, @StdVector int[] indices, @StdVector int[] dimensions);
-
-        public static native DoubleResultSet allTensorsAlongDimension(@Const DoubleNDArray ndArray, @StdVector IntPointer dimensions);
-        public static native DoubleResultSet allTensorsAlongDimension(@Const DoubleNDArray ndArray, @StdVector IntBuffer dimensions);
-        public static native DoubleResultSet allTensorsAlongDimension(@Const DoubleNDArray ndArray, @StdVector int[] dimensions);
-
-        public static native DoubleResultSet allExamples(DoubleNDArray ndArray);
-
-        public static native DoubleNDArray tile(DoubleNDArray original, @StdVector IntPointer dimensions);
-        public static native DoubleNDArray tile(DoubleNDArray original, @StdVector IntBuffer dimensions);
-        public static native DoubleNDArray tile(DoubleNDArray original, @StdVector int[] dimensions);
-
-        public static native DoubleNDArray repeat(DoubleNDArray original, @StdVector IntPointer repeats);
-        public static native DoubleNDArray repeat(DoubleNDArray original, @StdVector IntBuffer repeats);
-        public static native DoubleNDArray repeat(DoubleNDArray original, @StdVector int[] repeats);
-
-        public static native DoubleNDArray mmulHelper(DoubleNDArray A, DoubleNDArray B, DoubleNDArray C/*=nullptr*/, double alpha/*=1.0f*/, double beta/*=0.0f*/);
-        public static native DoubleNDArray mmulHelper(DoubleNDArray A, DoubleNDArray B);
-
-        public static native DoubleNDArray tensorDot(@Const DoubleNDArray A, @Const DoubleNDArray B, @StdVector IntPointer axesA, @StdVector IntPointer axesB);
-        public static native DoubleNDArray tensorDot(@Const DoubleNDArray A, @Const DoubleNDArray B, @StdVector IntBuffer axesA, @StdVector IntBuffer axesB);
-        public static native DoubleNDArray tensorDot(@Const DoubleNDArray A, @Const DoubleNDArray B, @StdVector int[] axesA, @StdVector int[] axesB);
-
-        public static native void tensorDot(@Const DoubleNDArray a, @Const DoubleNDArray b, DoubleNDArray c, @StdVector IntPointer axes_a, @StdVector IntPointer axes_b, @StdVector IntPointer permutForC/*={}*/);
-        public static native void tensorDot(@Const DoubleNDArray a, @Const DoubleNDArray b, DoubleNDArray c, @StdVector IntPointer axes_a, @StdVector IntPointer axes_b);
-        public static native void tensorDot(@Const DoubleNDArray a, @Const DoubleNDArray b, DoubleNDArray c, @StdVector IntBuffer axes_a, @StdVector IntBuffer axes_b, @StdVector IntBuffer permutForC/*={}*/);
-        public static native void tensorDot(@Const DoubleNDArray a, @Const DoubleNDArray b, DoubleNDArray c, @StdVector IntBuffer axes_a, @StdVector IntBuffer axes_b);
-        public static native void tensorDot(@Const DoubleNDArray a, @Const DoubleNDArray b, DoubleNDArray c, @StdVector int[] axes_a, @StdVector int[] axes_b, @StdVector int[] permutForC/*={}*/);
-        public static native void tensorDot(@Const DoubleNDArray a, @Const DoubleNDArray b, DoubleNDArray c, @StdVector int[] axes_a, @StdVector int[] axes_b);
-
-// #ifndef __JAVACPP_HACK__
-// #endif
-
-        public static native DoubleNDArray linspace(double from, double to, @Cast("Nd4jLong") long numElements);
-        
-        public static native void linspace(double from, @ByRef DoubleNDArray arr, double step/*=1.0f*/);
-        public static native void linspace(double from, @ByRef DoubleNDArray arr);
-
-        public static native DoubleNDArray scalar(double value);
-        public static native DoubleNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongPointer shape, double value, char order/*='c'*/);
-        public static native DoubleNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongPointer shape, double value);
-        public static native DoubleNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongBuffer shape, double value, char order/*='c'*/);
-        public static native DoubleNDArray valueOf(@Cast("Nd4jLong*") @StdVector LongBuffer shape, double value);
-        public static native DoubleNDArray valueOf(@Cast("Nd4jLong*") @StdVector long[] shape, double value, char order/*='c'*/);
-        public static native DoubleNDArray valueOf(@Cast("Nd4jLong*") @StdVector long[] shape, double value);
-
-        public static native DoubleNDArray concat(@Const @ByRef DoubleNDArrayVector vectors, int axis/*=0*/, DoubleNDArray target/*=nullptr*/);
-        public static native DoubleNDArray concat(@Const @ByRef DoubleNDArrayVector vectors);
-
-        public static native DoubleNDArray simpleMMul(@Const DoubleNDArray a, @Const DoubleNDArray b, DoubleNDArray c, double alpha, double beta);
-    }
-
-
-
-// #endif //LIBND4J_NDARRAYFACTORY_H
 
 
 // Parsed from graph/Variable.h
@@ -14099,13 +13975,13 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param numIndices the number of total indices (typically prod of shape(
  * @return the mapped indexes along each dimension
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer ind2sub(int rank,  @Cast("Nd4jLong*") LongPointer shape,int index,int numIndices);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer ind2sub(int rank,  @Cast("Nd4jLong*") LongBuffer shape,int index,int numIndices);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] ind2sub(int rank,  @Cast("Nd4jLong*") long[] shape,int index,int numIndices);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer ind2sub(int rank,  @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer ind2sub(int rank,  @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] ind2sub(int rank,  @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer ind2sub(int rank,  @Cast("Nd4jLong*") LongPointer shape,int index);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer ind2sub(int rank,  @Cast("Nd4jLong*") LongBuffer shape,int index);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] ind2sub(int rank,  @Cast("Nd4jLong*") long[] shape,int index);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer ind2sub(int rank,  @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong") long index);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer ind2sub(int rank,  @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong") long index);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] ind2sub(int rank,  @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong") long index);
 
     /**
      * Convert a linear index to
@@ -14115,9 +13991,9 @@ public static final int PREALLOC_SIZE = 33554432;
      * @param numIndices the number of total indices (typically prod of shape(
      * @return the mapped indexes along each dimension
      */
-    @Namespace("shape") public static native void ind2sub(int rank,@Cast("Nd4jLong*") LongPointer shape,int index,int numIndices,@Cast("Nd4jLong*") LongPointer out);
-    @Namespace("shape") public static native void ind2sub(int rank,@Cast("Nd4jLong*") LongBuffer shape,int index,int numIndices,@Cast("Nd4jLong*") LongBuffer out);
-    @Namespace("shape") public static native void ind2sub(int rank,@Cast("Nd4jLong*") long[] shape,int index,int numIndices,@Cast("Nd4jLong*") long[] out);
+    @Namespace("shape") public static native void ind2sub(int rank,@Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices,@Cast("Nd4jLong*") LongPointer out);
+    @Namespace("shape") public static native void ind2sub(int rank,@Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices,@Cast("Nd4jLong*") LongBuffer out);
+    @Namespace("shape") public static native void ind2sub(int rank,@Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices,@Cast("Nd4jLong*") long[] out);
 
 /**
      * Convert a linear index to
@@ -14128,9 +14004,9 @@ public static final int PREALLOC_SIZE = 33554432;
      * @param index the index to map
      * @return the mapped indexes along each dimension
      */
-    @Namespace("shape") public static native void ind2sub(int rank, @Cast("Nd4jLong*") LongPointer shape, int index, @Cast("Nd4jLong*") LongPointer out);
-    @Namespace("shape") public static native void ind2sub(int rank, @Cast("Nd4jLong*") LongBuffer shape, int index, @Cast("Nd4jLong*") LongBuffer out);
-    @Namespace("shape") public static native void ind2sub(int rank, @Cast("Nd4jLong*") long[] shape, int index, @Cast("Nd4jLong*") long[] out);
+    @Namespace("shape") public static native void ind2sub(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong*") LongPointer out);
+    @Namespace("shape") public static native void ind2sub(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong*") LongBuffer out);
+    @Namespace("shape") public static native void ind2sub(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong*") long[] out);
 
     /**
   * Convert a linear index to
@@ -14216,9 +14092,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param numIndices the number of total indices (typically prod of shape(
  * @return the mapped indexes along each dimension
  */
-    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") LongPointer shapeInfo,int index,int numIndices,@Cast("Nd4jLong*") LongPointer out);
-    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") LongBuffer shapeInfo,int index,int numIndices,@Cast("Nd4jLong*") LongBuffer out);
-    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") long[] shapeInfo,int index,int numIndices,@Cast("Nd4jLong*") long[] out);
+    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices,@Cast("Nd4jLong*") LongPointer out);
+    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices,@Cast("Nd4jLong*") LongBuffer out);
+    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices,@Cast("Nd4jLong*") long[] out);
 
     /**
  * Convert a linear index to
@@ -14228,9 +14104,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param numIndices the number of total indices (typically prod of shape(
  * @return the mapped indexes along each dimension
  */
-    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") LongPointer shapeInfo,int index,@Cast("Nd4jLong*") LongPointer out);
-    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") LongBuffer shapeInfo,int index,@Cast("Nd4jLong*") LongBuffer out);
-    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") long[] shapeInfo,int index,@Cast("Nd4jLong*") long[] out);
+    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong") long index,@Cast("Nd4jLong*") LongPointer out);
+    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong") long index,@Cast("Nd4jLong*") LongBuffer out);
+    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong") long index,@Cast("Nd4jLong*") long[] out);
 
     @Namespace("shape") public static native void printShapeInfo(@Cast("Nd4jLong*") LongPointer shapeInfo);
     @Namespace("shape") public static native void printShapeInfo(@Cast("Nd4jLong*") LongBuffer shapeInfo);
@@ -26259,6 +26135,51 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
+        @Name("nd4j::ops::clipbynorm_bp<float>") public static class float_clipbynorm_bp extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_clipbynorm_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_clipbynorm_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_clipbynorm_bp position(long position) {
+                return (float_clipbynorm_bp)super.position(position);
+            }
+        
+                                                                                    public float_clipbynorm_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::clipbynorm_bp<float16>") public static class half_clipbynorm_bp extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_clipbynorm_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_clipbynorm_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_clipbynorm_bp position(long position) {
+                return (half_clipbynorm_bp)super.position(position);
+            }
+        
+                                                                                    public half_clipbynorm_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::clipbynorm_bp<double>") public static class double_clipbynorm_bp extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_clipbynorm_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_clipbynorm_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_clipbynorm_bp position(long position) {
+                return (double_clipbynorm_bp)super.position(position);
+            }
+        
+                                                                                    public double_clipbynorm_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
 //         #endif
 
 //         #if NOT_EXCLUDED(OP_clipbyavgnorm)
@@ -26448,6 +26369,51 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public double_tile() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+        @Name("nd4j::ops::tile_bp<float>") public static class float_tile_bp extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_tile_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_tile_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_tile_bp position(long position) {
+                return (float_tile_bp)super.position(position);
+            }
+        
+                                                                                    public float_tile_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::tile_bp<float16>") public static class half_tile_bp extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_tile_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_tile_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_tile_bp position(long position) {
+                return (half_tile_bp)super.position(position);
+            }
+        
+                                                                                    public half_tile_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::tile_bp<double>") public static class double_tile_bp extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_tile_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_tile_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_tile_bp position(long position) {
+                return (double_tile_bp)super.position(position);
+            }
+        
+                                                                                    public double_tile_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
@@ -27671,8 +27637,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
-//         #if NOT_EXCLUDED(OP_cumsum_bp)
-        @Name("nd4j::ops::cumsum_bp<float>") public static class float_cumsum_bp extends FloatDeclarableOp {
+//         #if NOT_EXCLUDED(OP_cumsum)
+        @Name("nd4j::ops::cumsum_bp<float>") public static class float_cumsum_bp extends FloatDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public float_cumsum_bp(Pointer p) { super(p); }
@@ -27687,7 +27653,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
-        @Name("nd4j::ops::cumsum_bp<float16>") public static class half_cumsum_bp extends HalfDeclarableOp {
+        @Name("nd4j::ops::cumsum_bp<float16>") public static class half_cumsum_bp extends HalfDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public half_cumsum_bp(Pointer p) { super(p); }
@@ -27702,7 +27668,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
-        @Name("nd4j::ops::cumsum_bp<double>") public static class double_cumsum_bp extends DoubleDeclarableOp {
+        @Name("nd4j::ops::cumsum_bp<double>") public static class double_cumsum_bp extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public double_cumsum_bp(Pointer p) { super(p); }
@@ -27720,7 +27686,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
 //         #if NOT_EXCLUDED(OP_cumprod)
-        @Name("nd4j::ops::cumprod_bp<float>") public static class float_cumprod_bp extends FloatDeclarableOp {
+        @Name("nd4j::ops::cumprod_bp<float>") public static class float_cumprod_bp extends FloatDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public float_cumprod_bp(Pointer p) { super(p); }
@@ -27735,7 +27701,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
-        @Name("nd4j::ops::cumprod_bp<float16>") public static class half_cumprod_bp extends HalfDeclarableOp {
+        @Name("nd4j::ops::cumprod_bp<float16>") public static class half_cumprod_bp extends HalfDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public half_cumprod_bp(Pointer p) { super(p); }
@@ -27750,7 +27716,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
-        @Name("nd4j::ops::cumprod_bp<double>") public static class double_cumprod_bp extends DoubleDeclarableOp {
+        @Name("nd4j::ops::cumprod_bp<double>") public static class double_cumprod_bp extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public double_cumprod_bp(Pointer p) { super(p); }

@@ -34,6 +34,7 @@ EXPERIMENTAL=
 OPERATIONS=
 CLEAN="false"
 MINIFIER="false"
+TESTS="false"
 NAME=
 while [[ $# > 0 ]]
 do
@@ -98,6 +99,9 @@ case $key in
     ;;
     -m|--minifier)
     MINIFIER="true"
+    ;;
+    -t|--tests)
+    TESTS="true"
     ;;
     --default)
     DEFAULT=YES
@@ -395,7 +399,8 @@ if [ "$PACKAGING" == "msi" ]; then
 fi
 
 EXPERIMENTAL_ARG="no";
-MINIFIER_ARG=
+MINIFIER_ARG="-DLIBND4J_BUILD_MINIFIER=false"
+TESTS_ARG="-DBUILD_TESTS=OFF"
 NAME_ARG="-DLIBND4J_NAME=$NAME"
 
 if [ "$EXPERIMENTAL" == "yes" ]; then
@@ -404,6 +409,11 @@ fi
 
 if [ "$MINIFIER" == "true" ]; then
     MINIFIER_ARG="-DLIBND4J_BUILD_MINIFIER=true"
+fi
+
+if [ "$TESTS" == "true" ]; then
+    MINIFIER_ARG="-DLIBND4J_BUILD_MINIFIER=true"
+    TESTS_ARG="-DBUILD_TESTS=ON"
 fi
 
 ARCH_ARG="-DARCH=$ARCH -DEXTENSION=$CHIP_EXTENSION"
@@ -429,27 +439,8 @@ mkbuilddir() {
         echo "Removing blasbuild"
         rm -Rf blasbuild
     fi
-    mkdir -p blasbuild
-    cd blasbuild
-    CHIP_DIR="$CHIP"
-    if [ -n "$CHIP_EXTENSION" ]; then
-        CHIP_DIR="$CHIP_DIR-$CHIP_EXTENSION"
-    fi
-    if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
-        CHIP_DIR="$CHIP_DIR-$CHIP_VERSION"
-    fi
-
-    # create appropriate directories and links here for ND4J
-    if [ "$CHIP" != "$CHIP_DIR" ]; then
-        mkdir -p "$CHIP_DIR"
-        rm -f "$CHIP"
-        ln -s "$CHIP_DIR" "$CHIP"
-        mkdir -p "$CHIP/blas"
-        cd "$CHIP_DIR"
-    else
-        mkdir -p "$CHIP"
-        cd "$CHIP"
-    fi
+    mkdir -p "blasbuild/$CHIP"
+    cd "blasbuild/$CHIP"
 }
 
 
@@ -463,11 +454,12 @@ echo GPU_COMPUTE_CAPABILITY    = "${COMPUTE}"
 echo EXPERIMENTAL = ${EXPERIMENTAL}
 echo LIBRARY TYPE    = "${LIBTYPE}"
 echo OPERATIONS = "${OPERATIONS_ARG}"
-echo MINIFIER = "${MINIFIER}"
+echo MINIFIER = "${MINIFIER_ARG}"
+echo TESTS = "${TESTS_ARG}"
 echo NAME = "${NAME_ARG}"
 mkbuilddir
 pwd
-eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$CUDA_COMPUTE" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
+eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
 if [ "$PARALLEL" == "true" ]; then
         eval $MAKE_COMMAND -j $MAKEJ && cd ../../..
     else

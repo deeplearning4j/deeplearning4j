@@ -28,9 +28,9 @@ namespace helpers {
         auto _b = b->reshape(b->ordering(), {-1, 3});
         auto _o = o->reshape(o->ordering(), {-1, 3});
 
-        auto tadsA = NDArrayFactory<T>::allTensorsAlongDimension(_a, {1});
-        auto tadsB = NDArrayFactory<T>::allTensorsAlongDimension(_b, {1});
-        auto tadsO = NDArrayFactory<T>::allTensorsAlongDimension(_o, {1});
+        auto tadsA = _a->allTensorsAlongDimension({1});
+        auto tadsB = _b->allTensorsAlongDimension({1});
+        auto tadsO = _o->allTensorsAlongDimension({1});
 
         int tads = tadsA->size();
 

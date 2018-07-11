@@ -34,11 +34,18 @@ public class DataSetIteratorSplitter {
     protected AtomicBoolean resetPending = new AtomicBoolean(false);
     protected DataSet firstTrain = null;
 
-    public DataSetIteratorSplitter(@NonNull DataSetIterator baseIterator, long totalExamples, double ratio) {
+    /**
+     * The only constructor
+     *
+     * @param baseIterator - iterator to be wrapped and split
+     * @param totalBatches - total batches in baseIterator
+     * @param ratio - train/test split ratio
+     */
+    public DataSetIteratorSplitter(@NonNull DataSetIterator baseIterator, long totalBatches, double ratio) {
         if (!(ratio > 0.0 && ratio < 1.0))
             throw new ND4JIllegalStateException("Ratio value should be in range of 0.0 > X < 1.0");
 
-        if (totalExamples < 0)
+        if (totalBatches < 0)
             throw new ND4JIllegalStateException("totalExamples number should be positive value");
 
         if (!baseIterator.resetSupported())
@@ -46,7 +53,7 @@ public class DataSetIteratorSplitter {
 
 
         this.backedIterator = baseIterator;
-        this.totalExamples = totalExamples;
+        this.totalExamples = totalBatches;
         this.ratio = ratio;
         this.numTrain = (long) (totalExamples * ratio);
         this.numTest = totalExamples - numTrain;

@@ -9,6 +9,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/sru.h>
+#include <MmulHelper.h>
 
 namespace nd4j {
 namespace ops  {
@@ -143,7 +144,7 @@ CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
     const int time      = x->shapeOf()[2];                     // time - number of time steps
 
     // multiplication matrix = matmul(w,x)
-    NDArray<T>* wi = NDArrayFactory<T>::mmulHelper(w, x, nullptr, (T)1., (T)0.);      //       U [bS x 3K x time]
+    NDArray<T>* wi = MmulHelper<T>::mmul(w, x, nullptr, (T)1., (T)0.);      //       U [bS x 3K x time]
     // wi.printShapeInfo();
     NDArray<T>* wiZ = wi->subarray( { NDIndex::all(), NDIndex::interval(0,inSize),     NDIndex::all() } );       // [bS x inSize x time]
     NDArray<T>* wiF = wi->subarray( { NDIndex::all(), NDIndex::interval(inSize,2*inSize),   NDIndex::all() } );       // forget gate [bS x inSize x time]
@@ -369,7 +370,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     if(applyMask)
         x->template applyBroadcast<simdOps::Multiply<T>>({0, 1}, mask, x, nullptr);            // apply mask
     // multiplication matrix wi = matmul(w,x), U = WX
-    NDArray<T>* wi = NDArrayFactory<T>::mmulHelper(w, x, nullptr, (T)1., (T)0.);      // U [bS x 3K x N]
+    NDArray<T>* wi = MmulHelper<T>::mmul(w, x, nullptr, (T)1., (T)0.);      // U [bS x 3K x N]
 
     NDArray<T>* wiZ = wi->subarray( { NDIndex::all(), NDIndex::interval(0,K),     NDIndex::all() } );       // [bS x K x N]
     NDArray<T>* wiF = wi->subarray( { NDIndex::all(), NDIndex::interval(K,2*K),   NDIndex::all() } );       // forget gate [bS x K x N]
@@ -464,7 +465,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
 
     // gradX 
     NDArray<T>* weightsT = w->transpose();                                            // [K x 3K]
-    NDArrayFactory<T>::mmulHelper(weightsT, gradU, gradX, (T)1., (T)0.);                    // [bS x K x N]    
+    MmulHelper<T>::mmul(weightsT, gradU, gradX, (T)1., (T)0.);                    // [bS x K x N]    
     gradX->template applyPairwiseTransform<simdOps::Add<T>>(gradHX, gradX, nullptr);        // + grad_highway_x
     if(applyMask)
         gradX->template applyBroadcast<simdOps::Multiply<T>>({0,1}, mask, gradX, nullptr);  // apply mask
@@ -475,7 +476,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
 
     // gradW [bS x 3K x K]
     x->permutei({0, 2, 1});                                               // [bS x N x K]
-    NDArrayFactory<T>::mmulHelper(gradU, x, gradW, (T)1., (T)0.);          // [bS x 3K x K]
+    MmulHelper<T>::mmul(gradU, x, gradW, (T)1., (T)0.);          // [bS x 3K x K]
 
     delete gradUR; delete gradBF; delete gradUZ; delete gradUF; delete gradBR;
 

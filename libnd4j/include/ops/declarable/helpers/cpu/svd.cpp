@@ -6,7 +6,6 @@
 #include <ops/declarable/helpers/jacobiSVD.h>
 #include <ops/declarable/helpers/biDiagonalUp.h>
 #include <array/ResultSet.h>
-#include <NDArrayFactory.h>
 
 
 namespace nd4j {
@@ -974,13 +973,13 @@ void svd(const NDArray<T>* x, const std::vector<NDArray<T>*>& outArrs, const boo
     const int rank =  x->rankOf();    
     const int sRank = rank == 2 ? 2 : rank - 1; 
 
-    ResultSet<T>* listX = NDArrayFactory<T>::allTensorsAlongDimension(x, {rank-2, rank-1});
-    ResultSet<T>* listS = NDArrayFactory<T>::allTensorsAlongDimension(s, {sRank-1});
+    ResultSet<T>* listX = x->allTensorsAlongDimension({rank-2, rank-1});
+    ResultSet<T>* listS = s->allTensorsAlongDimension({sRank-1});
     ResultSet<T>* listU(nullptr), *listV(nullptr);
     
     if(calcUV) {                
-        listU = NDArrayFactory<T>::allTensorsAlongDimension(u, {rank-2, rank-1});
-        listV = NDArrayFactory<T>::allTensorsAlongDimension(v, {rank-2, rank-1});
+        listU = u->allTensorsAlongDimension({rank-2, rank-1});
+        listV = v->allTensorsAlongDimension({rank-2, rank-1});
     }
 
     for(int i = 0; i < listX->size(); ++i) {

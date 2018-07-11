@@ -33,9 +33,10 @@ public class TensorSizeV3 extends BaseTensorOp {
       val list = getList(sameDiff);
 
       val result = Nd4j.trueScalar(list.size());
+      val ownName = this.getOwnName();
 
       // storing our size
-      sameDiff.putArrayForVarName(this.getOwnName(), result);
+      sameDiff.putOrUpdateArrayForVarName(ownName, result);
 
       return list;
    }

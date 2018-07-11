@@ -3,7 +3,6 @@
 //
 
 #include "ResultSet.h"
-#include "NDArrayFactory.h"
 #include <ops/declarable/helpers/matrixSetDiag.h>
 
 namespace nd4j {
@@ -19,8 +18,8 @@ void matrixSetDiag(const NDArray<T>* input, const NDArray<T>* diagonal, NDArray<
 
     *output = *input;
 
-//    ResultSet<T>* listOut  = NDArrayFactory<T>::allTensorsAlongDimension(output,  {output->rankOf()-2, output->rankOf()-1});
-//    ResultSet<T>* listDiag = NDArrayFactory<T>::allTensorsAlongDimension(diagonal,{diagonal->rankOf()-1});
+//    ResultSet<T>* listOut  = output->allTensorsAlongDimension({output->rankOf()-2, output->rankOf()-1});
+//    ResultSet<T>* listDiag = diagonal->allTensorsAlongDimension({diagonal->rankOf()-1});
 
     // TODO: tune this properlys
 //#pragma omp parallel for if(listOut->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)

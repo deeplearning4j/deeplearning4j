@@ -114,6 +114,11 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         return iUpdater;
     }
 
+    @Override
+    public GradientNormalization getGradientNormalization(){
+        return gradientNormalization;
+    }
+
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> extends Layer.Builder<T> {
         protected IActivation activationFn = null;

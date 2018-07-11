@@ -48,7 +48,7 @@ import java.util.Map;
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-public class GlobalPoolingLayer extends Layer {
+public class GlobalPoolingLayer extends NoParamLayer {
 
     private PoolingType poolingType;
     private int[] poolingDimensions;

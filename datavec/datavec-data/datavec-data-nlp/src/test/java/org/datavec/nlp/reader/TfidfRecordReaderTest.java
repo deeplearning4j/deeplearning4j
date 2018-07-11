@@ -51,7 +51,7 @@ public class TfidfRecordReaderTest {
         vectorizer.initialize(conf);
         TfidfRecordReader reader = new TfidfRecordReader();
         File f = testDir.newFolder();
-        new ClassPathResource("datavec-data-nlp/labeled").copyDirectory(f);
+        new ClassPathResource("datavec-data-nlp/labeled/").copyDirectory(f);
         reader.initialize(conf, new FileSplit(f));
         int count = 0;
         int[] labelAssertions = new int[3];
@@ -77,7 +77,7 @@ public class TfidfRecordReaderTest {
         vectorizer.initialize(conf);
         TfidfRecordReader reader = new TfidfRecordReader();
         File f = testDir.newFolder();
-        new ClassPathResource("datavec-data-nlp/labeled").copyDirectory(f);
+        new ClassPathResource("datavec-data-nlp/labeled/").copyDirectory(f);
         reader.initialize(conf, new FileSplit(f));
 
         while (reader.hasNext()) {
@@ -97,7 +97,7 @@ public class TfidfRecordReaderTest {
         vectorizer.initialize(conf);
         TfidfRecordReader reader = new TfidfRecordReader();
         File f = testDir.newFolder();
-        new ClassPathResource("datavec-data-nlp/labeled").copyDirectory(f);
+        new ClassPathResource("datavec-data-nlp/labeled/").copyDirectory(f);
         reader.initialize(conf, new FileSplit(f));
 
         Record record = reader.nextRecord();

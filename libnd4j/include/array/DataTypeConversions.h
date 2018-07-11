@@ -11,6 +11,7 @@
 #include <array/DataType.h>
 #include <types/float16.h>
 #include <helpers/BitwiseUtils.h>
+#include <loops/type_conversions.h>
 
 namespace nd4j {
     template <typename T>
@@ -25,20 +26,23 @@ namespace nd4j {
                         if (std::is_same<T, float>::value && canKeep) {
                             memcpy(buffer, src, length * sizeof(T));
                         } else {
-                            auto tmp = reinterpret_cast<float *>(src);
+                            auto tmp = new float[length];
+                            memcpy(tmp, src, length * sizeof(float));
+
 
 #if __GNUC__ <= 4
                             if (!canKeep)
                                 for (Nd4jLong e = 0; e < length; e++)
                                     buffer[e] = BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
                             else
-                                for (Nd4jLong e = 0; e < length; e++)
-                                    buffer[e] = static_cast<T>(tmp[e]);
+                                TypeCast::convertGeneric<float, T>(nullptr, tmp, length, buffer);
 #else
-                            //#pragma omp parallel for simd schedule(guided)
+#pragma omp parallel for simd schedule(guided)
                             for (Nd4jLong e = 0; e < length; e++)
                                 buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
 #endif
+
+                            delete[] tmp;
                         }
                     }
                     break;
@@ -46,20 +50,23 @@ namespace nd4j {
                         if (std::is_same<T, double>::value && canKeep) {
                             memcpy(buffer, src, length * sizeof(T));
                         } else {
-                            auto tmp = reinterpret_cast<double *>(src);
+                            auto tmp = new double[length];
+                            memcpy(tmp, src, length * sizeof(double));
 
 #if __GNUC__ <= 4
                             if (!canKeep)
                                 for (Nd4jLong e = 0; e < length; e++)
                                     buffer[e] = BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
                             else
-                                for (Nd4jLong e = 0; e < length; e++)
-                                    buffer[e] = static_cast<T>(tmp[e]);
+                                TypeCast::convertGeneric<double, T>(nullptr, tmp, length, buffer);
+
+
 #else
-                            //#pragma omp parallel for simd schedule(guided)
+#pragma omp parallel for schedule(static)
                             for (Nd4jLong e = 0; e < length; e++)
                                 buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
 #endif
+                            delete[] tmp;
                         }
                     }
                     break;
@@ -68,20 +75,21 @@ namespace nd4j {
                         if (std::is_same<T, float16>::value && canKeep) {
                             memcpy(buffer, src, length * sizeof(T));
                         } else {
-                            auto tmp = reinterpret_cast<float16 *>(src);
+                            auto tmp = new float16[length];
+                            memcpy(tmp, src, length * sizeof(float16));
 
 #if __GNUC__ <= 4
                             if (!canKeep)
                                 for (Nd4jLong e = 0; e < length; e++)
                                     buffer[e] = BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
                             else
-                                for (Nd4jLong e = 0; e < length; e++)
-                                    buffer[e] = static_cast<T>(tmp[e]);
+                                TypeCast::convertGeneric<float16, T>(nullptr, tmp, length, buffer);
 #else
-                            //#pragma omp parallel for simd schedule(guided)
+#pragma omp parallel for schedule(static)
                             for (Nd4jLong e = 0; e < length; e++)
                                 buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
 #endif
+                            delete[] tmp;
                         }
                     }
                     break;

@@ -86,9 +86,7 @@ import org.nd4j.linalg.workspace.ND4JWorkspaceException;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 import org.nd4j.util.OneTimeLogger;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
 
 
@@ -527,6 +525,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (initCalled)
             return;
 
+        if (layerMap == null)
+            layerMap = new LinkedHashMap<>();
+
         if (layerWiseConfigurations.getTrainingWorkspaceMode() == null)
             layerWiseConfigurations.setTrainingWorkspaceMode(WorkspaceMode.NONE);
 
@@ -775,12 +776,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     /**
      * Perform feed-forward, optionally (not) clearing the layer input arrays.<br>
-     * Note: this method should NOT be used with clearInputs = true, unless you know what you are doing. Specifically:
-     * when using clearInputs=false, in combination with workspaces, the layer input fields may leak outside of the
-     * workspaces in which they were defined - potentially causing a crash. See https://deeplearning4j.org/workspaces
-     * for more details
+     * Note: when using clearInputs=false, there can be some performance and memory overhead: this is because the arrays are
+     * defined outside of workspaces (which are enabled by default) - otherwise, old/invalidated arrays could still be
+     * accessed after calling this method. Consequently: Don't use clearInputs=false unless you have a use case that
+     * requires them to remain after feed-forward has been completed
      *
-     * @param train       training mode
+     * @param train       training mode (true) or test mode (false)
      * @param clearInputs If false: don't clear the layer inputs
      * @return Activations from feed-forward
      */
@@ -1382,6 +1383,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     NDArrayIndex.interval(paramsSoFar, paramsSoFar + layer.numParams())));
             paramsSoFar += layer.numParams();
         }
+    }
+
+    @Override
+    public TrainingConfig getConfig() {
+        throw new UnsupportedOperationException("Not supported");
     }
 
     /**
@@ -3630,6 +3636,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
+     * Get the current learning rate, for the specified layer, from the network.
+     * Note: If the layer has no learning rate (no parameters, or an updater without a learning rate) then null is returned
+     * @param layerNumber   Layer number to get the learning rate for
+     * @return Learning rate for the specified layer, or null
+     */
+    public Double getLearningRate(int layerNumber){
+        return NetworkUtils.getLearningRate(this, layerIndex);
+    }
+
+    /**
      * Return the layer size (number of units) for the specified layer.<br>
      * Note that the meaning of the "layer size" can depend on the type of layer. For example:<br>
      * - DenseLayer, OutputLayer, recurrent layers: number of units (nOut configuration option)<br>
@@ -3739,4 +3755,21 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
         return false;
     }
+
+    private void writeObject(ObjectOutputStream oos) throws IOException {
+        ModelSerializer.writeModel(this, oos, true);
+    }
+
+    private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
+        val mln = ModelSerializer.restoreMultiLayerNetwork(ois, true);
+
+        this.defaultConfiguration = mln.defaultConfiguration.clone();
+        this.layerWiseConfigurations = mln.layerWiseConfigurations.clone();
+        this.init();
+        this.flattenedParams.assign(mln.flattenedParams);
+
+        if (mln.getUpdater() != null && mln.getUpdater(false).getStateViewArray() != null)
+            this.getUpdater(true).getStateViewArray().assign(mln.getUpdater(false).getStateViewArray());
+    }
+
 }

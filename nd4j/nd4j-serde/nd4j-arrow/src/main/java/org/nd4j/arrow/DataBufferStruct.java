@@ -2,14 +2,18 @@ package org.nd4j.arrow;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.flatbuffers.Struct;
+import lombok.Getter;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 
 public class DataBufferStruct extends Struct {
 
+    @Getter
     private DataBuffer dataBuffer;
 
     public DataBufferStruct(DataBuffer dataBuffer) {
@@ -23,9 +27,20 @@ public class DataBufferStruct extends Struct {
     public void __init(int _i, ByteBuffer _bb) { bb_pos = _i; bb = _bb; }
     public DataBufferStruct __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-    public static DataBuffer createFromByteBuffer(ByteBuffer bb,int bb_pos,DataBuffer.Type type,int length,int elementSize) {
+    /**
+     * Create a {@link DataBuffer} from a
+     * byte buffer. This is meant to be used with flatbuffers
+     * @param bb the flat buffers buffer
+     * @param bb_pos the position to start from
+     * @param type the type of buffer to create
+     * @param length the length of the buffer to create
+     * @return the created databuffer
+     */
+    public static DataBuffer createFromByteBuffer(ByteBuffer bb,int bb_pos,DataBuffer.Type type,int length) {
         bb.order(ByteOrder.LITTLE_ENDIAN);
+        int elementSize = DataTypeUtil.lengthForDtype(type);
         DataBuffer ret = Nd4j.createBuffer(ByteBuffer.allocateDirect(length *   elementSize),type,length,0);
+
         switch(type) {
             case DOUBLE:
                 for(int i = 0; i < ret.length(); i++) {
@@ -57,6 +72,14 @@ public class DataBufferStruct extends Struct {
     }
 
 
+    /**
+     * Create a data buffer struct within
+     * the passed in {@link FlatBufferBuilder}
+     * @param bufferBuilder the existing flatbuffer
+     *                      to use to serialize the {@link DataBuffer}
+     * @param create the databuffer to serialize
+     * @return an int representing the offset of the buffer
+     */
     public static int createDataBufferStruct(FlatBufferBuilder bufferBuilder,DataBuffer create) {
         bufferBuilder.prep(create.getElementSize(), (int) create.length() * create.getElementSize());
         for(int i = (int) (create.length() - 1); i >= 0; i--) {

@@ -154,6 +154,4 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         this.dimensions = dimension;
     }
 
-
-
 }
