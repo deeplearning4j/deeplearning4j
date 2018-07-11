@@ -1574,6 +1574,10 @@ public abstract class NativeOps extends Pointer {
 
     public abstract void sortCooIndicesHalf(PointerPointer extraPointers, @Cast("Nd4jLong *") LongPointer indices, @Cast("float16*") ShortPointer values, long length, int rank);
 
+    public abstract void ravelMultiIndex(PointerPointer extraPointers,  @Cast("Nd4jLong *") LongPointer indices,  @Cast("Nd4jLong *") LongPointer flatIndices, long length,   @Cast("Nd4jLong *") LongPointer fullShapeBuffer, int mode);
+
+    public abstract void unravelIndex(PointerPointer extraPointers,  @Cast("Nd4jLong *") LongPointer indices,  @Cast("Nd4jLong *") LongPointer flatIndices, long length,   @Cast("Nd4jLong *") LongPointer fullShapeBuffer);
+
     public abstract LongPointer mmapFile(PointerPointer extraPointers, String fileName, long length);
 
     public abstract void munmapFile(PointerPointer extraPointers, LongPointer ptrMap, long length);

@@ -3035,6 +3035,14 @@ void NativeOps::sortCooIndicesHalf(Nd4jPointer *extraPointers, Nd4jLong *indices
  //   NativeOpExcutioner<float>::execSortCooIndices(indices, values, length, rank);
 }
 
+void NativeOps::ravelMultiIndex(Nd4jPointer *extraPointers, Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *fullShapeBuffer, int mode) {
+    NativeOpExcutioner<float>::execRavelMultiIndex(indices, flatIndices, length, fullShapeBuffer, mode);
+}
+
+void NativeOps::unravelIndex(Nd4jPointer *extraPointers, Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *fullShapeBuffer) {
+    NativeOpExcutioner<float>::execUnravelIndex(indices, flatIndices, length, fullShapeBuffer);
+}
+
 Nd4jLong NativeOps::encodeBitmapFloat(Nd4jPointer *extraPointers, float *dx, Nd4jLong N, int *dz, float threshold) {
     return NativeOpExcutioner<float>::encodeBitmap(dx, N, dz, threshold);
 }

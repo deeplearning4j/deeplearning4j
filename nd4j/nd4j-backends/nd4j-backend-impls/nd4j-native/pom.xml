@@ -8,7 +8,12 @@
 
     <artifactId>nd4j-native</artifactId>
     <name>nd4j-native</name>
-
+    <properties >
+    <maven.compiler.testTarget>1.8</maven.compiler.testTarget>
+    <maven.compiler.testSource>1.8</maven.compiler.testSource>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>${dependency.groupId}</groupId>

@@ -6441,6 +6441,13 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native void sortCooIndicesHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongBuffer indices, @Cast("float16*") ShortBuffer values, @Cast("Nd4jLong") long length, int rank);
     public native void sortCooIndicesHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") long[] indices, @Cast("float16*") short[] values, @Cast("Nd4jLong") long length, int rank);
 
+    public native void ravelMultiIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongPointer indices, @Cast("Nd4jLong*") LongPointer flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") LongPointer fullShapeBuffer, int mode);
+    public native void ravelMultiIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongBuffer indices, @Cast("Nd4jLong*") LongBuffer flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") LongBuffer fullShapeBuffer, int mode);
+    public native void ravelMultiIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") long[] indices, @Cast("Nd4jLong*") long[] flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") long[] fullShapeBuffer, int mode);
+    
+    public native void unravelIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongPointer indices, @Cast("Nd4jLong*") LongPointer flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") LongPointer fullShapeBuffer);
+    public native void unravelIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongBuffer indices, @Cast("Nd4jLong*") LongBuffer flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") LongBuffer fullShapeBuffer);
+    public native void unravelIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") long[] indices, @Cast("Nd4jLong*") long[] flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") long[] fullShapeBuffer);
 
     public native @Cast("Nd4jLong*") LongPointer mmapFile(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("char*") String fileName, @Cast("Nd4jLong") long length);
     public native @Cast("Nd4jLong*") LongBuffer mmapFile(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("char*") BytePointer fileName, @Cast("Nd4jLong") long length);
@@ -24824,7 +24831,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        * Input arrays: 
        *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [3K x K]
-       *    2: row of biases with twice length [1 × 2K]
+       *    2: row of biases with twice length [1 ?? 2K]
        *    3: 2d tensor of previous cell state [bS x K]
        *    4: optional, 2d tensor of dropout mask [bS x K]
        *  
@@ -24886,7 +24893,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        * Input arrays:
        *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [3K x K]
-       *    2: row of biases with twice length [1 × 2K]
+       *    2: row of biases with twice length [1 ?? 2K]
        *    3: 2d tensor of previous cell state [bS x K]
        *    4: optional, 2d tensor of dropout mask [bS x K]
        *
@@ -24947,7 +24954,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        * Input arrays: 
        *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [3K x K]
-       *    2: row of biases with twice length [1 × 2K]
+       *    2: row of biases with twice length [1 ?? 2K]
        *    3: 2d tensor of previous cell state [bS x K]
        *    4: optional, 2d tensor of dropout mask [bS x K]
        *  
@@ -25011,7 +25018,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        * Input arrays: 
        *    0: input 3d tensor with shape [N x bS x 2K], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [2K x 6K]
-       *    2: row of biases with twice length [1 × 4K]
+       *    2: row of biases with twice length [1 ?? 4K]
        *    3: 2d tensor of previous cell state [bS x 2K]
        *    4: optional, 2d tensor of dropout mask [bS x 2K]
        *  
@@ -25075,7 +25082,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        * Input arrays: 
        *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [3K x K]
-       *    2: row of biases with twice length [1 × 2K]
+       *    2: row of biases with twice length [1 ?? 2K]
        *    3: 2d tensor of previous cell state [bS x K]
        *    4: 3d tensor of cell state [bS x K x N]
        *    5: 2d tensor of cell state gradients [bS x K]
@@ -25144,7 +25151,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        * Input arrays: 
        *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [3K x K]
-       *    2: row of biases with twice length [1 × 2K]
+       *    2: row of biases with twice length [1 ?? 2K]
        *    3: 2d tensor of previous cell state [bS x K]
        *    4: 3d tensor of cell state [bS x K x N]
        *    5: 2d tensor of cell state gradients [bS x K]
@@ -25213,7 +25220,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        * Input arrays: 
        *    0: input 3d tensor with shape [N x bS x 2K], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [2K x 6K]
-       *    2: row of biases with twice length [1 × 4K]
+       *    2: row of biases with twice length [1 ?? 4K]
        *    3: 2d tensor of previous cell state [bS x 2K]
        *    4: 3d tensor of cell state [N x bS x 2K]
        *    5: 2d tensor of cell state gradients [bS x 2K]
@@ -25363,7 +25370,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        *    0: input with shape [batchSize x inSize], batchSize - batch size, inSize - number of features
        *    1: previous cell state [batchSize x inSize], that is at previous time step t-1
        *    2: weights [inSize x 3*inSize]
-       *    3: biases [1 × 2*inSize]
+       *    3: biases [1 ?? 2*inSize]
        * 
        * Output arrays: 
        *    0: current cell output [batchSize x inSize], that is at current time step t
@@ -27837,7 +27844,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         * This op calculates regularized incomplete beta integral Ix(a, b).
         * Implementation is based on two algorithms depending on input values of a and b:
         * - when a and b are both >  maxValue (3000.), then apply Gauss-Legendre quadrature method
-        * - when a and b are both <= maxValue (3000.), then apply modified Lentz’s algorithm for continued fractions
+        * - when a and b are both <= maxValue (3000.), then apply modified Lentz???s algorithm for continued fractions
         *
         * Input arrays:
         *    a: define power t^{a-1}, must be > 0, type float.

@@ -507,6 +507,13 @@ public:
         nd4j::sparse::SparseUtils<T>::sortCooIndicesGeneric(indices, values, length, rank);
     }
 
+    inline static void execRavelMultiIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *fullShapeBuffer, int mode) {
+        nd4j::sparse::IndexUtils::ravelMultiIndex(indices, flatIndices, length, fullShapeBuffer, mode);
+    }
+
+    inline static void execUnravelIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *fullShapeBuffer) {
+        nd4j::sparse::IndexUtils::unravelIndex(indices, flatIndices, length, fullShapeBuffer);
+    }
 
     inline static Nd4jLong encodeBitmap(T *dx, Nd4jLong N, int *dz, float threshold) {
         return nd4j::SpecialMethods<T>::encodeBitmapGeneric(dx, N, dz, threshold);

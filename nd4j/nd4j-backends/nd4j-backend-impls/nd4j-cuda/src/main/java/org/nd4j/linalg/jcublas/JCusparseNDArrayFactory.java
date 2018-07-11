@@ -491,6 +491,13 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
+    public INDArray (INDArray x) {
+        //TODO
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
     public INDArray create(float[] data, long[] shape, long offset, Character order) {
         return null;
     }

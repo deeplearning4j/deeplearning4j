@@ -2960,6 +2960,9 @@ public:
 
     void sortCooIndicesHalf(Nd4jPointer *extraPointers, Nd4jLong *indices, float16 *values, Nd4jLong length, int rank);
 
+    void ravelMultiIndex(Nd4jPointer *extraPointers, Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *fullShapeBuffer, int mode);
+    
+    void unravelIndex(Nd4jPointer *extraPointers, Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *fullShapeBuffer);
 
     Nd4jLong* mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jLong length);
 
