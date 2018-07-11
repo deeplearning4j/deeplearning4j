@@ -7,7 +7,6 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
 import org.deeplearning4j.nn.conf.layers.samediff.SDLayerParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayerUtils;
@@ -19,7 +18,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -37,7 +35,7 @@ import java.util.*;
  *
  * @author Max Pumperla
  */
-public class SDLocallyConnected2D extends SameDiffLayer {
+public class LocallyConnected2D extends SameDiffLayer {
 
     private static final List<String> WEIGHT_KEYS = Collections.singletonList(ConvolutionParamInitializer.WEIGHT_KEY);
     private static final List<String> BIAS_KEYS = Collections.singletonList(ConvolutionParamInitializer.BIAS_KEY);
@@ -58,7 +56,7 @@ public class SDLocallyConnected2D extends SameDiffLayer {
     private int[] outputSize;
     private int featureDim;
 
-    protected SDLocallyConnected2D(Builder builder) {
+    protected LocallyConnected2D(Builder builder) {
         super(builder);
         this.nIn = builder.nIn;
         this.nOut = builder.nOut;
@@ -74,7 +72,7 @@ public class SDLocallyConnected2D extends SameDiffLayer {
         this.featureDim = kernel[0] * kernel[1] * (int) nIn;
     }
 
-    private SDLocallyConnected2D(){
+    private LocallyConnected2D(){
         //No arg constructor for Jackson/JSON serialization
     }
 
@@ -102,7 +100,7 @@ public class SDLocallyConnected2D extends SameDiffLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
         return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding, new int[]{1, 1},
-                cm, nOut, layerIndex, getLayerName(), SDLocallyConnected2D.class);
+                cm, nOut, layerIndex, getLayerName(), LocallyConnected2D.class);
     }
 
     @Override
@@ -267,10 +265,10 @@ public class SDLocallyConnected2D extends SameDiffLayer {
 
         @Override
         @SuppressWarnings("unchecked")
-        public SDLocallyConnected2D build() {
+        public LocallyConnected2D build() {
             ConvolutionUtils.validateConvolutionModePadding(cm, padding);
             ConvolutionUtils.validateCnnKernelStridePadding(kernel, stride, padding);
-            return new SDLocallyConnected2D(this);
+            return new LocallyConnected2D(this);
         }
     }
 }

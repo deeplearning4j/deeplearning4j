@@ -569,7 +569,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                                 .list()
                                 .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1)
                                         .padding(0, 0).nIn(inputDepth).nOut(2).build())//output: (5-2+0)/1+1 = 4
-                                .layer(1, new SDLocallyConnected2D.Builder().nIn(2).nOut(7).kernelSize(2, 2)
+                                .layer(1, new LocallyConnected2D.Builder().nIn(2).nOut(7).kernelSize(2, 2)
                                         .setInputSize(4, 4).convolutionMode(ConvolutionMode.Strict).hasBias(false)
                                         .stride(1, 1).padding(0, 0).build()) //(4-2+0)/1+1 = 3
                                 .layer(2, new ConvolutionLayer.Builder().nIn(7).nOut(2).kernelSize(2, 2)
