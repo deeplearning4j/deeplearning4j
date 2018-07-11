@@ -598,7 +598,7 @@ TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
     auto ress = op.execute({&x1}, {0.5f}, {119});
 
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
-//    ress->at(0)->printIndexedBuffer("01Dropout result is ");
+    //ress->at(0)->printIndexedBuffer("01Dropout result is ");
     count = 0;
     for (int e = 0; e < ress->at(0)->lengthOf(); e++)
         if (ress->at(0)->getScalar(e) != 0.f)
@@ -615,7 +615,47 @@ TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
     auto ressY = op2.execute({&x1, &x0}, {0.5f}, {119});
     ASSERT_EQ(ND4J_STATUS_OK, ressY->status());
     ASSERT_FALSE(ressX->at(0)->equalsTo(ressY->at(0)));
-//    ressX->at(0)->printIndexedBuffer("02Dropout result is ");
+    //ressX->at(0)->printIndexedBuffer("02Dropout result is ");
+/*    float countZero = ressX->at(0)->template reduceNumber<simdOps::CountZero<float>>();
+    ASSERT_NEAR(countZero, 50.f, 5.f);
+    countZero = ress->at(0)->template reduceNumber<simdOps::CountZero<float>>();
+    ASSERT_NEAR(countZero, 50.f, 5.f);
+    countZero = ressY->at(0)->template reduceNumber<simdOps::CountZero<float>>();
+    ASSERT_NEAR(countZero, 50.f, 5.f);
+    */
+//    ASSERT_TRUE(exp.equalsTo(ressX->at(0)));
+    delete ressX;
+    delete ressY;
+    delete ress;
+}
+
+TEST_F(DeclarableOpsTests9, Test_Dropout_BP_2) {
+    NDArray<float> x('c', {10, 10});
+
+    x.linspace(1);
+
+    nd4j::ops::dropout<float> op;
+
+    auto ress = op.execute({&x}, {0.5f}, {119});
+
+    ASSERT_EQ(ND4J_STATUS_OK, ress->status());
+    ress->at(0)->printIndexedBuffer("01Dropout result is ");
+
+    nd4j::ops::dropout_bp<float> op2;
+
+    auto ressX = op2.execute({&x, &x}, {0.5f}, {119});
+
+    ASSERT_EQ(ND4J_STATUS_OK, ressX->status());
+    auto ressY = op2.execute({&x, &x}, {0.5f}, {119});
+    ASSERT_EQ(ND4J_STATUS_OK, ressY->status());
+    ASSERT_FALSE(ressX->at(0)->equalsTo(ressY->at(0)));
+    ressX->at(0)->printIndexedBuffer("02Dropout result is ");
+    float countZero = ressX->at(0)->template reduceNumber<simdOps::CountZero<float>>();
+    ASSERT_NEAR(countZero, 50.f, 10.f);
+    countZero = ress->at(0)->template reduceNumber<simdOps::CountZero<float>>();
+    ASSERT_NEAR(countZero, 50.f, 10.f);
+    countZero = ressY->at(0)->template reduceNumber<simdOps::CountZero<float>>();
+    ASSERT_NEAR(countZero, 50.f, 10.f);
 //    ASSERT_TRUE(exp.equalsTo(ressX->at(0)));
     delete ressX;
     delete ressY;
