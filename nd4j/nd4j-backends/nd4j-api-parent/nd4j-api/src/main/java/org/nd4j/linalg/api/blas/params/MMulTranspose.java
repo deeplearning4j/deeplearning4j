@@ -48,17 +48,17 @@ public class MMulTranspose implements Serializable {
         this.transposeB = transposeB;
 
         if(this.transposeA && a != null) {
-            if (this.a.length() == 2)
+            if (a.rank() == 2)
                 this.a = a.transpose();
-            if (this.a.length() == 3)
+            if (a.rank() == 3)
                 this.a = a.permute(0, 2, 1);
         }
         else
             this.a = a;
         if(this.transposeB && b != null) {
-            if (this.b.length() == 2)
+            if (b.rank() == 2)
                 this.b = b.transpose();
-            if (this.b.length() == 3)
+            if (b.rank() == 3)
                 this.b = b.permute(0, 2, 1);
         }
         else

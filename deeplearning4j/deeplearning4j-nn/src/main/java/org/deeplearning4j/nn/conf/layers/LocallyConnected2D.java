@@ -22,7 +22,6 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
-import sun.plugin.dom.exception.InvalidStateException;
 
 import java.util.*;
 
@@ -80,7 +79,7 @@ public class LocallyConnected2D extends SameDiffLayer {
         int nIn = (int) getNIn();
 
         if (inputSize == null) {
-            throw new InvalidStateException("Input size has to be specified for locally connected layers.");
+            throw new IllegalArgumentException("Input size has to be specified for locally connected layers.");
         }
 
         int[] inputShape = new int[] {1, nIn, inputSize[0], inputSize[1]};

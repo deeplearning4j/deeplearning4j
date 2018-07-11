@@ -3480,6 +3480,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 .transposeB(mMulTranspose.isTransposeB())
                 .transposeResult(mMulTranspose.isTransposeResult())
                 .build();
+        System.out.println(mMulTranspose1.getA());
+        System.out.println(mMulTranspose1.getB());
         return mMulTranspose1.getA().mmul(mMulTranspose1.getB());
     }
 
