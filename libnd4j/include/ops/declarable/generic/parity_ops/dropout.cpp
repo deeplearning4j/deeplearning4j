@@ -75,7 +75,10 @@ CONFIGURABLE_OP_IMPL(alpha_dropout_bp, 2, 1, false, 4, 1) {
 
     NDArray<T>* reduceShape = nullptr; // this param is optional
     NDArray<T>* output  = OUTPUT_VARIABLE(0); // 
-    
+
+    if (block.width() > 2)
+        reduceShape = INPUT_VARIABLE(2);
+
     int seed = INT_ARG(0);
     
     T probValue   = T_ARG(0); 
@@ -93,13 +96,7 @@ CONFIGURABLE_OP_IMPL(alpha_dropout_bp, 2, 1, false, 4, 1) {
     if (rng == nullptr)
         return ND4J_STATUS_BAD_RNG;
 
-    T prob[] = {probValue, alphaValue, alpha1Value, betaValue};
-    
-    input->template applyRandom<randomOps::AlphaDropOut<T>>(rng, nullptr, output, prob);
-    output->template applyScalar<simdOps::Multiply<T>>(alphaValue);
-    output->template applyPairwiseTransform<simdOps::Multiply<T>>(gradOut, output, nullptr);
-
-    return ND4J_STATUS_OK;
+    return helpers::alphaDropOutFunctorBP(rng, input, gradOut, output, reduceShape, seed, probValue, alphaValue, alpha1Value, betaValue);
 }
 
 }

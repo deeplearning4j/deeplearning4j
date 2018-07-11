@@ -17,7 +17,7 @@ namespace helpers {
     int dropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* gradOut, NDArray<T>* output, NDArray<T>* reduceShape, int seed, T probValue);
 
     template <typename T>
-    int alphaDropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* gradOut, NDArray<T>* output, NDArray<T>* reduceShape, int seed, T probValue, T alpha, T alpha1, T beta);
+    int alphaDropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* output, NDArray<T>* reduceShape, int seed, T probValue, T alpha, T alpha1, T beta);
 
     template <typename T>
     int alphaDropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* gradOut, NDArray<T>* output, NDArray<T>* reduceShape, int seed, T probValue, T alpha, T alpha1, T beta);
