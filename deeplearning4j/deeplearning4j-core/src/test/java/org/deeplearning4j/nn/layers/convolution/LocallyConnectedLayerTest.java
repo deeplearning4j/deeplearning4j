@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.layers.convolution;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -22,8 +23,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.Arrays;
+
 /**
- * @author Adam Gibson
+ * @author Max Pumperla
  */
 public class LocallyConnectedLayerTest extends BaseDL4JTest {
 
@@ -35,13 +38,14 @@ public class LocallyConnectedLayerTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testForward() throws Exception {
+    public void testForward(){
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(123)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4)
                         .updater(new Nesterovs(0.9)).dropOut(0.5)
                         .list()
-                        .layer(new LocallyConnected2D.Builder().kernelSize(8, 8).nIn(3)
+                        .layer(new SDLocallyConnected2D.Builder().kernelSize(8, 8).nIn(3)
                                                         .stride(4, 4).nOut(16).dropOut(0.5)
+                                                        .convolutionMode(ConvolutionMode.Strict)
                                                         .setInputSize(28, 28)
                                                         .activation(Activation.RELU).weightInit(
                                                                         WeightInit.XAVIER)
@@ -54,8 +58,10 @@ public class LocallyConnectedLayerTest extends BaseDL4JTest {
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
 
-        INDArray input = Nd4j.create(10, 3, 28, 28);
-        network.output(input, false);
+        INDArray input = Nd4j.ones(10, 3, 28, 28);
+        INDArray output = network.output(input, false);
+
+        assert Arrays.equals(output.shape(), new long[] {10, 10});
     }
 
 }

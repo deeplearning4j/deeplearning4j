@@ -544,9 +544,12 @@ public class Shape {
             return left;
         }
 
-        if (left.length != 2 && right.length != 2) {
-            throw new IllegalArgumentException("Illegal shapes for matrix multiply. Must be of length 2. Left shape: "
-                    + Arrays.toString(left) + ", right shape: " + Arrays.toString(right));
+        if (left.length != 2 && right.length !=2) {
+            if (left.length != 3 && right.length != 3) {
+                throw new IllegalArgumentException("Illegal shapes for matrix multiply. Must be both of length 2 or both" +
+                        "of length 3 (batch-wise matrix multiply). Left shape: "
+                        + Arrays.toString(left) + ", right shape: " + Arrays.toString(right));
+            }
         }
 
         for(int i = 0; i < left.length; i++) {
@@ -554,15 +557,13 @@ public class Shape {
                 throw new ND4JIllegalStateException("Left shape contained value < 0 at index " + i + " - left shape " + Arrays.toString(left));
         }
 
-
-
         for(int i = 0; i < right.length; i++) {
             if(right[i] < 1)
                 throw new ND4JIllegalStateException("Right shape contained value < 0 at index " + i + " - right shape " + Arrays.toString(right));
         }
 
 
-        if (left.length > 1 && left[1] != right[0])
+        if (left.length == 2 && left[1] != right[0] || left.length == 3 && left[2] != right[1])
             throw new IllegalArgumentException("Columns of left not equal to rows of right: left shape " + Arrays.toString(left)
                     + ", right shape " + Arrays.toString(right));
 
@@ -572,7 +573,17 @@ public class Shape {
             }
         }
 
-        long[] shape = {left[0], right[1]};
+        if (left.length == 3 && left[0] != right[0]) {
+            throw new IllegalArgumentException("For batch matrix multiplication the leading dimension of both arguments" +
+                    "has to match, got left leading dimension" + left[0] + "and right " + right[0]);
+        }
+
+        long[] shape;
+        if (left.length == 2) {
+            shape = new long[]{left[0], right[1]};
+        } else {
+            shape = new long[]{left[0], left[1], right[2]};
+        }
         return shape;
     }
 
