@@ -50,12 +50,24 @@ namespace nd4j {
 
             static void sortCooIndicesGeneric(Nd4jLong *indices, T *values, Nd4jLong length, int rank);
 
+
+        };
+
+        class IndexUtils {
+            public:
             /**
              * Converts indices in COO format into an array of flat indices
              * 
              * based on numpy.ravel_multi_index
              */
             static void ravelMultiIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *fullShapeBuffer, int mode);
+
+            /**
+             * Converts flat indices to index matrix in COO format
+             * 
+             * based on numpy.unravel_index
+             */
+            static void unravelIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *fullShapeBuffer);
         };
     }
 }

@@ -202,8 +202,11 @@ namespace nd4j {
 #endif
         }
 
-        template <typename T>
-        void SparseUtils<T>::ravelMultiIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *fullShapeBuffer, int mode){
+        template class ND4J_EXPORT SparseUtils<float>;
+        template class ND4J_EXPORT SparseUtils<float16>;
+        template class ND4J_EXPORT SparseUtils<double>;
+
+        void IndexUtils::ravelMultiIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *fullShapeBuffer, int mode){
             Nd4jLong * stride = shape::stride(fullShapeBuffer);
             Nd4jLong rank = shape::rank(fullShapeBuffer);
 
@@ -220,8 +223,32 @@ namespace nd4j {
             }
         }
 
-        template class ND4J_EXPORT SparseUtils<float>;
-        template class ND4J_EXPORT SparseUtils<float16>;
-        template class ND4J_EXPORT SparseUtils<double>;
+void IndexUtils::unravelIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *fullShapeBuffer){
+            Nd4jLong * stride = shape::stride(fullShapeBuffer);
+            Nd4jLong rank = shape::rank(fullShapeBuffer);
+
+            // unravelOrder ensures that the dimensions with largest stride are unraveled first.
+            std::vector<int> unravelOrder(rank);
+            // create vector with elements 0..rank
+            std::iota(unravelOrder.begin(), unravelOrder.end(), 0);
+            // sort order according to stride length.
+            std::sort(unravelOrder.begin(), unravelOrder.end(), 
+            [&](int i1, int i2) { return stride[i1] > stride[i2]; } );
+        
+#ifdef _OPENMP
+            int numThreads = omp_get_max_threads();
+#pragma omp parallel for num_threads(numThreads) if (numThreads > 1) schedule(guided)
+#endif
+            for (Nd4jLong i = 0; i < length; ++i){
+                Nd4jLong raveledIndex = flatIndices[i];
+                for (auto j : unravelOrder){
+                    // how many strides of this size?
+                    indices[i * rank + j] = raveledIndex / stride[j];
+
+                    // remainder for subsequent smaller strides.                    
+                    raveledIndex %= stride[j];
+                }
+            }
+        }
     }
 }

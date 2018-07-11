@@ -127,7 +127,7 @@ TEST_F(SparseUtilsTest, SortCOOindices_Test) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(SparseUtilsTest, RavelIndices_Test) {
-    Nd4jLong * indicesArr = new Nd4jLong[nnz * rank]{
+    Nd4jLong * indicesArrExp = new Nd4jLong[nnz * rank]{
             0,2,7,
             2,36,35,
             3,30,17,
@@ -169,6 +169,7 @@ TEST_F(SparseUtilsTest, RavelIndices_Test) {
             48,34,44,
             49,38,39,
     };
+    Nd4jLong * indicesArr = new Nd4jLong[nnz * rank];
 
         Nd4jLong * flatIndicesExp = new Nd4jLong[nnz]{
             147,  10955,  14717,  21862,  24055,  27451,  34192,  39841,
@@ -185,12 +186,18 @@ TEST_F(SparseUtilsTest, RavelIndices_Test) {
     Nd4jLong * shapeInfoBuffer = shape::shapeBuffer(rank, shape);
 
 
-    nd4j::sparse::SparseUtils<float >::ravelMultiIndex(indicesArr, flatIndices, nnz, shapeInfoBuffer, ND4J_CLIPMODE_THROW);
+    nd4j::sparse::IndexUtils::ravelMultiIndex(indicesArrExp, flatIndices, nnz, shapeInfoBuffer, ND4J_CLIPMODE_THROW);
 
     for ( int i = 0; i < nnz; ++i){
         ASSERT_EQ(flatIndicesExp[i], flatIndices[i]);
     }
 
+    nd4j::sparse::IndexUtils::unravelIndex(indicesArr, flatIndices, nnz, shapeInfoBuffer);
+
+    for ( int i = 0; i < nnz * rank; ++i){
+        ASSERT_EQ(indicesArrExp[i], indicesArr[i]);
+    }
+    delete[] indicesArrExp;
     delete[] indicesArr;
     delete[] flatIndicesExp;
     delete[] flatIndices;
