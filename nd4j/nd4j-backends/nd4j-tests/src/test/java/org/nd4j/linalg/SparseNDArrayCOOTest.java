@@ -15,7 +15,6 @@ import static org.junit.Assert.*;
  * @author Audrey Loeffel
  */
 @Slf4j
-@Ignore // temporary ignored
 public class SparseNDArrayCOOTest {
 
 
@@ -349,6 +348,7 @@ public class SparseNDArrayCOOTest {
 
     }
 
+    @Ignore
     @Test
     public void shouldTranslateViewIndexesToOriginal2() {
         long[] shape = new long[] {4, 2, 3};
@@ -362,6 +362,7 @@ public class SparseNDArrayCOOTest {
         assertArrayEquals(new long[] {1, 1, 1}, view.translateToPhysical(new long[] {1, 0, 1}));
     }
 
+    @Ignore
     @Test
     public void shouldTranslateViewIndexesToOriginal3() {
         long[] shape = new long[] {4, 2, 3, 3};
@@ -375,6 +376,7 @@ public class SparseNDArrayCOOTest {
         assertArrayEquals(new long[] {1, 1, 2, 1}, view.translateToPhysical(new long[] {1, 0, 1}));
     }
 
+    @Ignore
     @Test
     public void shouldTranslateViewWithPrependNewAxis() {
         // TODO FIX get view with a new prepend axis
@@ -425,6 +427,7 @@ public class SparseNDArrayCOOTest {
         System.out.println(view.shapeInfoDataBuffer());
     }
 
+    @Ignore
     @Test
     public void newAxisWithDenseArray() {
         INDArray arr = Nd4j.rand(new long[] {4, 2, 3});
@@ -497,6 +500,7 @@ public class SparseNDArrayCOOTest {
     }
 
 
+    @Ignore
     @Test
     public void testDenseNewAxisWithSpecifiedIdx() {
         INDArray arr = Nd4j.rand(new long[] {4, 2, 3});
@@ -506,6 +510,7 @@ public class SparseNDArrayCOOTest {
         // null pointer exception in shapeoffsetresolution.exec
     }
 
+    @Ignore
     @Test
     public void testDenseNewAxisWithSpecifiedIdx2() {
         INDArray arr = Nd4j.rand(new long[] {4, 2, 3});
