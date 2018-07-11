@@ -14,6 +14,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Data
 public class BlockingObserver implements Observer {
     protected AtomicBoolean state = new AtomicBoolean(false);
+    protected AtomicBoolean exception;
+
+    public BlockingObserver(AtomicBoolean exception){
+        this.exception = exception;
+    }
 
     @Override
     public void update(Observable o, Object arg) {
@@ -25,7 +30,7 @@ public class BlockingObserver implements Observer {
      * This method blocks until state is set to True
      */
     public void waitTillDone() throws InterruptedException {
-        while (!state.get()) {
+        while (!exception.get() && !state.get()) {
             //LockSupport.parkNanos(1000L);
             // we don't really need uber precision here, sleep is ok
             Thread.sleep(5);
