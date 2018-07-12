@@ -19,12 +19,12 @@ import org.nd4j.linalg.primitives.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
-import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getActivationFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getIActivationFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.removeDefaultWeights;
 
 /**
  * Imports a Dense layer from Keras.
@@ -88,7 +88,7 @@ public class KerasDense extends KerasLayer {
 
         DenseLayer.Builder builder = new DenseLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf))
-                .dropOut(this.dropout).activation(getActivationFromConfig(layerConfig, conf))
+                .dropOut(this.dropout).activation(getIActivationFromConfig(layerConfig, conf))
                 .weightInit(weightInit)
                 .biasInit(0.0)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
@@ -158,13 +158,6 @@ public class KerasDense extends KerasLayer {
                 throw new InvalidKerasConfigurationException(
                         "Parameter " + conf.getKERAS_PARAM_NAME_B() + " does not exist in weights");
         }
-        if (weights.size() > 2) {
-            Set<String> paramNames = weights.keySet();
-            paramNames.remove(conf.getKERAS_PARAM_NAME_W());
-            paramNames.remove(conf.getKERAS_PARAM_NAME_B());
-            String unknownParamNames = paramNames.toString();
-            log.warn("Attemping to set weights for unknown parameters: "
-                    + unknownParamNames.substring(1, unknownParamNames.length() - 1));
-        }
+        removeDefaultWeights(weights, conf);
     }
 }

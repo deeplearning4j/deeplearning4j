@@ -38,13 +38,13 @@ import org.nd4j.linalg.primitives.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.*;
-import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getActivationFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getIActivationFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.removeDefaultWeights;
 
 /**
  * Imports a 1D Convolution layer from Keras.
@@ -104,7 +104,7 @@ public class KerasConvolution1D extends KerasConvolution {
 
         Convolution1DLayer.Builder builder = new Convolution1DLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
-                .activation(getActivationFromConfig(layerConfig, conf))
+                .activation(getIActivationFromConfig(layerConfig, conf))
                 .weightInit(weightInit)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
@@ -219,13 +219,6 @@ public class KerasConvolution1D extends KerasConvolution {
                 throw new InvalidKerasConfigurationException(
                         "Parameter " + conf.getKERAS_PARAM_NAME_B() + " does not exist in weights");
         }
-        if (weights.size() > 2) {
-            Set<String> paramNames = weights.keySet();
-            paramNames.remove(conf.getKERAS_PARAM_NAME_W());
-            paramNames.remove(conf.getKERAS_PARAM_NAME_B());
-            String unknownParamNames = paramNames.toString();
-            log.warn("Attemping to set weights for unknown parameters: "
-                    + unknownParamNames.substring(1, unknownParamNames.length() - 1));
-        }
+        removeDefaultWeights(weights, conf);
     }
 }
