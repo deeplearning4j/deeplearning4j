@@ -28,9 +28,12 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
+import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.*;
@@ -38,6 +41,7 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.removeDefaultWeights;
 
 
 /**
@@ -91,7 +95,8 @@ public class KerasLocallyConnected2D extends KerasConvolution {
         Pair<WeightInit, Distribution> init = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
                 enforceTrainingConfig, conf, kerasMajorVersion);
         WeightInit weightInit = init.getFirst();
-        Distribution distribution = init.getSecond();
+        // TODO: take care of distribution and bias init
+        //Distribution distribution = init.getSecond();
 
         LayerConstraint biasConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_B_CONSTRAINT(), conf, kerasMajorVersion);
@@ -100,7 +105,7 @@ public class KerasLocallyConnected2D extends KerasConvolution {
 
         LocallyConnected2D.Builder builder = new LocallyConnected2D.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
-                //.activation(getActivationFromConfig(layerConfig, conf))
+                .activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(weightInit)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
@@ -108,10 +113,6 @@ public class KerasLocallyConnected2D extends KerasConvolution {
                 .hasBias(hasBias)
                 .stride(getStrideFromConfig(layerConfig, 2, conf));
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);
-        //if (distribution != null)
-         //   builder.dist(distribution);
-        //if (hasBias)
-        //    builder.biasInit(0.0);
         if (padding != null)
             builder.padding(padding);
         if (dilationRate != null)
@@ -151,4 +152,29 @@ public class KerasLocallyConnected2D extends KerasConvolution {
         return this.getConvolution2DLayer().getOutputType(-1, inputType[0]);
     }
 
+
+    /**
+     * Set weights for layer.
+     *
+     * @param weights Map from parameter name to INDArray.
+     */
+    @Override
+    public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
+        this.weights = new HashMap<>();
+        if (weights.containsKey(conf.getKERAS_PARAM_NAME_W())) {
+            INDArray kerasParamValue = weights.get(conf.getKERAS_PARAM_NAME_W());
+            this.weights.put(ConvolutionParamInitializer.WEIGHT_KEY, kerasParamValue);
+        } else
+            throw new InvalidKerasConfigurationException(
+                    "Parameter " + conf.getKERAS_PARAM_NAME_W() + " does not exist in weights");
+
+        if (hasBias) {
+            if (weights.containsKey(conf.getKERAS_PARAM_NAME_B()))
+                this.weights.put(ConvolutionParamInitializer.BIAS_KEY, weights.get(conf.getKERAS_PARAM_NAME_B()));
+            else
+                throw new InvalidKerasConfigurationException(
+                        "Parameter " + conf.getKERAS_PARAM_NAME_B() + " does not exist in weights");
+        }
+        removeDefaultWeights(weights, conf);
+    }
 }

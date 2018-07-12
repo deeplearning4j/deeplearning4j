@@ -93,12 +93,25 @@ public class KerasActivationUtils {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public static IActivation getActivationFromConfig(Map<String, Object> layerConfig, KerasLayerConfiguration conf)
+    public static IActivation getIActivationFromConfig(Map<String, Object> layerConfig, KerasLayerConfiguration conf)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        return getActivationFromConfig(layerConfig, conf).getActivationFunction();
+    }
+
+    /**
+     * Get activation enum value from Keras layer configuration.
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return DL4J activation enum value
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
+     */
+    public static Activation getActivationFromConfig(Map<String, Object> layerConfig, KerasLayerConfiguration conf)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(conf.getLAYER_FIELD_ACTIVATION()))
             throw new InvalidKerasConfigurationException("Keras layer is missing "
                     + conf.getLAYER_FIELD_ACTIVATION() + " field");
-        return mapToIActivation((String) innerConfig.get(conf.getLAYER_FIELD_ACTIVATION()), conf);
+        return mapToActivation((String) innerConfig.get(conf.getLAYER_FIELD_ACTIVATION()), conf);
     }
 }

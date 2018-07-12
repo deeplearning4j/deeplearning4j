@@ -50,7 +50,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getActivationFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getIActivationFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.mapToIActivation;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
@@ -192,7 +192,7 @@ public class KerasLstm extends KerasLayer {
                 .name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf))
                 .dropOut(this.dropout)
-                .activation(getActivationFromConfig(layerConfig, conf))
+                .activation(getIActivationFromConfig(layerConfig, conf))
                 .weightInit(weightInit)
                 .weightInitRecurrent(recurrentWeightInit)
                 .biasInit(0.0) // TODO: this is incorrect
