@@ -31,7 +31,7 @@ namespace ops  {
         auto output = OUTPUT_VARIABLE(0);
         const T clipNorm = T_ARG(0);
 
-        helpers::clipByNormBp(*input, *epsNext, *output, *block.getIArguments(), clipNorm);
+        helpers::clipByNormBP(*input, *epsNext, *output, *block.getIArguments(), clipNorm); 
 
         return Status::OK();
     }
