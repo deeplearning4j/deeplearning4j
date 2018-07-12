@@ -100,7 +100,7 @@ public class KerasLocallyConnected2D extends KerasConvolution {
 
         LocallyConnected2D.Builder builder = new LocallyConnected2D.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
-                .activation(getActivationFromConfig(layerConfig, conf))
+                //.activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(weightInit)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
@@ -108,10 +108,10 @@ public class KerasLocallyConnected2D extends KerasConvolution {
                 .hasBias(hasBias)
                 .stride(getStrideFromConfig(layerConfig, 2, conf));
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);
-        if (distribution != null)
-            builder.dist(distribution);
-        if (hasBias)
-            builder.biasInit(0.0);
+        //if (distribution != null)
+         //   builder.dist(distribution);
+        //if (hasBias)
+        //    builder.biasInit(0.0);
         if (padding != null)
             builder.padding(padding);
         if (dilationRate != null)
