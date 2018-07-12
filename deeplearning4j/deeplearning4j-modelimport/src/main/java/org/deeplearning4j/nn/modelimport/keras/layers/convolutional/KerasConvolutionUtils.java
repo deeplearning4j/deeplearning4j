@@ -95,7 +95,7 @@ public class KerasConvolutionUtils {
      *
      * @throws InvalidKerasConfigurationException Invalid Keras config
      */
-    static int[] getDilationRate(Map<String, Object> layerConfig, int dimension, KerasLayerConfiguration conf,
+    public static int[] getDilationRate(Map<String, Object> layerConfig, int dimension, KerasLayerConfiguration conf,
                                         boolean forceDilation)
             throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
