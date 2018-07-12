@@ -10,11 +10,6 @@
 #include <cfloat>
 #include <iosfwd>
 #include <iostream>
-#include <types/float8.h>
-#include <types/int8.h>
-#include <types/uint8.h>
-#include <types/int16.h>
-#include <types/uint16.h>
 
 // support for half precision conversion
 #ifdef __INTEL_COMPILER
@@ -219,11 +214,6 @@ local_def ihalf cpu_float2ihalf_rn(float f)
       assign(rhs);
     }
 
-    template <class T>
-    local_def float16& operator=(const T& rhs) { 
-        assign(rhs); 
-        return *this; 
-    }
 //    local_def float16(float rhs) {
 //      assign(rhs);
 //    }
@@ -232,6 +222,14 @@ local_def ihalf cpu_float2ihalf_rn(float f)
 //      assign(rhs);
 //    }
 
+    local_def operator float() const {
+#ifdef __CUDA_ARCH__
+      return __half2float(data);
+#else
+      return cpu_ihalf2float(data);
+#endif
+    }
+
     //    local_def operator double() const { return (float)*this; }
 
     local_def operator half() const { return data; }
@@ -239,71 +237,24 @@ local_def ihalf cpu_float2ihalf_rn(float f)
     local_def unsigned short getx() const { return (const unsigned short)data.getX(); }
     local_def float16& setx(unsigned short x) { *data.getXP() = x; return *this; }
 */
-    ///////  CAST INT TYPES
+    template <class T>
+    local_def float16& operator=(const T& rhs) { assign(rhs); return *this; }
 
-    local_def operator nd4j::int8() const {
-        return static_cast<nd4j::int8>(cpu_ihalf2float(data));
+    local_def void assign(unsigned int rhs) {
+      // may be a better way ?
+      assign((float)rhs);
     }
 
-    local_def operator nd4j::uint8() const {
-        return static_cast<nd4j::uint8>(cpu_ihalf2float(data));
+    local_def void assign(int rhs) {
+      // may be a better way ?
+      assign((float)rhs);
     }
 
-    local_def operator nd4j::int16() const {
-        return static_cast<nd4j::int16>(cpu_ihalf2float(data));
+    local_def void assign(double rhs) {
+      assign((float)rhs);
     }
 
-    local_def operator nd4j::uint16() const {
-        return static_cast<nd4j::uint16>(cpu_ihalf2float(data));
-    }
-
-    local_def operator int() const {
-        return static_cast<int>(cpu_ihalf2float(data));
-    }
-
-    local_def explicit operator Nd4jLong() const {
-        return static_cast<Nd4jLong>(cpu_ihalf2float(data));
-    }
-
-    local_def explicit operator long int() const {
-        return static_cast<long int>(cpu_ihalf2float(data));
-    }
-
-    local_def explicit operator long unsigned int() const {
-        return static_cast<long unsigned int>(cpu_ihalf2float(data));
-    }
-
-    local_def explicit operator unsigned short () const {
-        return static_cast<unsigned short>(cpu_ihalf2float(data));
-    }
-
-    local_def explicit operator long long unsigned int() const {
-        return static_cast<long long unsigned int>(cpu_ihalf2float(data));
-    }
-
-    local_def explicit operator unsigned int () const {
-        return static_cast<unsigned int>(cpu_ihalf2float(data));
-    }
-
-    ///////  ASSIGN INT TYPES
-
-    void assign(nd4j::int8 rhs) {
-        assign((float)rhs);
-    }
-
-    void local_def assign(nd4j::uint8 rhs) {
-        assign((float)rhs);
-    }
-
-    void local_def assign(nd4j::int16 rhs) {
-        assign((float)rhs);
-    }
-
-    void local_def assign(nd4j::uint16 rhs) {
-        assign((float)rhs);
-    }
-
-    local_def void assign(Nd4jLong rhs) {
+    local_def void assign(long long rhs) {
         assign((float)rhs);
     }
 
@@ -322,40 +273,6 @@ local_def ihalf cpu_float2ihalf_rn(float f)
     local_def void assign(long long unsigned int rhs) {
         assign((float)rhs);
     }
-
-    local_def void assign(unsigned int rhs) {
-      // may be a better way ?
-      assign((float)rhs);
-    }
-
-    local_def void assign(int rhs) {
-      // may be a better way ?
-      assign((float)rhs);
-    }
-
-    ///////  CAST FLOAT TYPES
-    local_def explicit operator float() const {
-#ifdef __CUDA_ARCH__
-        return __half2float(data);
-#else
-        return cpu_ihalf2float(data);
-#endif
-    }
-
-    // local_def explicit operator double() const {
-    //     return static_cast<double>(cpu_ihalf2float(data));
-    // }
-
-    ///////  ASSIGN FLOAT TYPES
-    local_def void assign(nd4j::float8 rhs) {
-        assign((float)rhs);
-    }
-
-    local_def void assign(double rhs) {
-      assign((float)rhs);
-    }
-
-
 
     local_def void assign(float rhs) {
 #ifdef __CUDA_ARCH__
@@ -395,13 +312,13 @@ local_def ihalf cpu_float2ihalf_rn(float f)
       data = rhs.data;
     }
 
-    local_def float16& operator+=(float16 rhs) { assign((float)*this + (float) rhs); return *this; }
+    local_def float16& operator+=(float16 rhs) { assign((float)*this + rhs); return *this; }
 
-    local_def float16& operator-=(float16 rhs) { assign((float)*this - (float) rhs); return *this; }
+    local_def float16& operator-=(float16 rhs) { assign((float)*this - rhs); return *this; }
 
-    local_def float16& operator*=(float16 rhs) { assign((float)*this * (float) rhs); return *this; }
+    local_def float16& operator*=(float16 rhs) { assign((float)*this * rhs); return *this; }
 
-    local_def float16& operator/=(float16 rhs) { assign((float)*this / (float) rhs); return *this; }
+    local_def float16& operator/=(float16 rhs) { assign((float)*this / rhs); return *this; }
 
     local_def float16& operator+=(float rhs) { assign((float)*this + rhs); return *this; }
 
@@ -411,13 +328,13 @@ local_def ihalf cpu_float2ihalf_rn(float f)
 
     local_def float16& operator/=(float rhs) { assign((float)*this / rhs); return *this; }
 
-    local_def float16& operator++() { assign((float)*this + 1.f); return *this; }
+    local_def float16& operator++() { assign(*this + 1.f); return *this; }
 
-    local_def float16& operator--() { assign((float)*this - 1.f); return *this; }
+    local_def float16& operator--() { assign(*this - 1.f); return *this; }
 
-    local_def float16 operator++(int i) { assign((float)*this + (float)i); return *this; }
+    local_def float16 operator++(int i) { assign(*this + (float)i); return *this; }
 
-    local_def float16 operator--(int i) { assign((float)*this - (float)i); return *this; }
+    local_def float16 operator--(int i) { assign(*this - (float)i); return *this; }
 
     local_def std::ostream& operator<<(std::ostream& os) {
         os << static_cast<float>(*this);
