@@ -34,7 +34,7 @@ import org.nd4j.linalg.primitives.Pair;
 import java.util.Map;
 
 import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.*;
-import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getActivationFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getIActivationFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
@@ -100,7 +100,7 @@ public class KerasConvolution2D extends KerasConvolution {
 
         ConvolutionLayer.Builder builder = new ConvolutionLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
-                .activation(getActivationFromConfig(layerConfig, conf))
+                .activation(getIActivationFromConfig(layerConfig, conf))
                 .weightInit(weightInit)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))

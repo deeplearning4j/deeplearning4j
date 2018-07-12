@@ -128,10 +128,6 @@ class DocumentationGenerator:
     def get_public_method_data(self, class_string, includes, excludes):
         method_regex = r'public [static\s]?[a-zA-Z0-9]* ([a-zA-Z0-9]*)\('
 
-        print('>>> INCLUDES/EXCLUDES')
-        print(includes)
-        print(excludes)
-
         # Either use all methods or use include methods that can be found
         method_strings = re.findall(method_regex, class_string)
         if includes:

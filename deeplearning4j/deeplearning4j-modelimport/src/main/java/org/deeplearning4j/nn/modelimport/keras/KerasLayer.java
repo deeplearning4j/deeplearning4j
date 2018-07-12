@@ -156,6 +156,14 @@ public class KerasLayer {
     }
 
     /**
+     * Clear all lambda layers
+     *
+     */
+    public static void clearLambdaLayers() {
+        lambdaLayers.clear();
+    }
+
+    /**
      * Register a custom layer
      *
      * @param layerName   name of custom layer class
@@ -163,6 +171,14 @@ public class KerasLayer {
      */
     public static void registerCustomLayer(String layerName, Class<? extends KerasLayer> configClass) {
         customLayers.put(layerName, configClass);
+    }
+
+    /**
+     * Clear all custom layers
+     *
+     */
+    public static void clearCustomLayers() {
+        customLayers.clear();
     }
 
     /**
