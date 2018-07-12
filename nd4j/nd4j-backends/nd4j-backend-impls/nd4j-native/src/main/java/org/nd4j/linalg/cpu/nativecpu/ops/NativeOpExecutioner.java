@@ -1047,27 +1047,19 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 / (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 1 : 2);
         int shapesPos = argsPos + (batch.getSample().maxArguments() * Batch.getBatchLimit());
         for (int i = 0; i < batch.getNumAggregates(); i++) {
-            log.info("-----------------------------------------------------");
             T op = batch.getAggregates().get(i);
 
             // put num arguments
             int idx = i * maxTypes;
-            val argsSize = op.getArguments().size();
-            val shapesSize = op.getShapes().size();
-            val indexingArgsSize = op.getIndexingArguments().size();
-            val realArgsSize = op.getRealArguments().size();
-            val intArrayArgsSize = op.getIntArrayArguments().size();
-
-            pointer.put(idx, argsSize);
-            pointer.put(idx + 1, shapesSize);
-            pointer.put(idx + 2, indexingArgsSize);
-            pointer.put(idx + 3, realArgsSize);
-            pointer.put(idx + 4, intArrayArgsSize);
+            pointer.put(idx, op.getArguments().size());
+            pointer.put(idx + 1, op.getShapes().size());
+            pointer.put(idx + 2, op.getIndexingArguments().size());
+            pointer.put(idx + 3, op.getRealArguments().size());
+            pointer.put(idx + 4, op.getIntArrayArguments().size());
 
 
-            log.info("Indexing Arguments: {}", op.getIndexingArguments());
             // putting indexing arguments
-            for (int e = 0; e < indexingArgsSize; e++) {
+            for (int e = 0; e < op.getIndexingArguments().size(); e++) {
                 idx = indexPos + i * batch.getSample().maxIndexArguments();
                 pointer.put(idx + e, op.getIndexingArguments().get(e));
             }
@@ -1076,13 +1068,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             int bsize = maxIntArrays * maxArraySize;
             for (int e = 0; e < op.getIntArrayArguments().size(); e++) {
                 int step = (i * bsize) + (e * maxArraySize);
-                log.info("IntArray: {}", op.getIntArrayArguments().get(e));
-                if (op.getIntArrayArguments().get(e) != null) {
+                if (op.getIntArrayArguments().get(e) != null)
                     for (int x = 0; x < op.getIntArrayArguments().get(e).length; x++) {
                         idx = intArraysPos + step + x;
                         pointer.put(idx, op.getIntArrayArguments().get(e)[x]);
                     }
-                }
             }
 
             // TODO: variable datatype should be handled here
@@ -1090,7 +1080,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
                 FloatPointer fPtr = new FloatPointer(pointer);
-                log.info("Real Arguments: {}", op.getRealArguments());
                 for (int e = 0; e < op.getRealArguments().size(); e++) {
                     idx = realPos + i * op.maxRealArguments();
                     fPtr.put(idx + e, op.getRealArguments().get(e).floatValue());
@@ -1127,20 +1116,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     ptrPtr.put(idx + e, op.getShapes().get(e).addressPointer());
             }
         }
-
-        val sample = batch.getSample();
-
-        val numAggregates = batch.getNumAggregates();
-        val opNum = batch.opNum();
-        val maxArgs = sample.maxArguments();
-        val maxShapes = sample.maxShapes();
-        val maxIntArraysf = sample.maxIntArrays();
-        val maxIntArraySize = sample.maxIntArraySize();
-        val maxIndexArguments = sample.maxIndexArguments();
-        val maxRealArguments = sample.maxRealArguments();
-
-        val indexer = IntIndexer.create(pointer);
-
 
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
             loop.execAggregateBatchFloat(null, batch.getNumAggregates(), batch.opNum(),

@@ -60,7 +60,7 @@ public class Word2VecTestsSmall {
                 .limitVocabularySize(1) // Limit the vocab size to 2 words
                 .windowSize(5)
                 .allowParallelTokenization(true)
-                .batchSize(2)
+                .batchSize(1)
                 .learningRate(0.025)
                 .minLearningRate(0.0001)
                 .negativeSample(0.0)
