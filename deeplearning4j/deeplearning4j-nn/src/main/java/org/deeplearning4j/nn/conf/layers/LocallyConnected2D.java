@@ -76,7 +76,7 @@ public class LocallyConnected2D extends SameDiffLayer {
         //No arg constructor for Jackson/JSON serialization
     }
 
-    private void computeOutputSize() {
+    public void computeOutputSize() {
         int nIn = (int) getNIn();
 
         if (inputSize == null) {
