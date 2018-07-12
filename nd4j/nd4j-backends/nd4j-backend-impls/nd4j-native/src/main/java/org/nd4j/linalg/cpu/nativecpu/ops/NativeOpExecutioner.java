@@ -1052,16 +1052,22 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             // put num arguments
             int idx = i * maxTypes;
-            pointer.put(idx, op.getArguments().size());
-            pointer.put(idx + 1, op.getShapes().size());
-            pointer.put(idx + 2, op.getIndexingArguments().size());
-            pointer.put(idx + 3, op.getRealArguments().size());
-            pointer.put(idx + 4, op.getIntArrayArguments().size());
+            val argsSize = op.getArguments().size();
+            val shapesSize = op.getShapes().size();
+            val indexingArgsSize = op.getIndexingArguments().size();
+            val realArgsSize = op.getRealArguments().size();
+            val intArrayArgsSize = op.getIntArrayArguments().size();
+
+            pointer.put(idx, argsSize);
+            pointer.put(idx + 1, shapesSize);
+            pointer.put(idx + 2, indexingArgsSize);
+            pointer.put(idx + 3, realArgsSize);
+            pointer.put(idx + 4, intArrayArgsSize);
 
 
             log.info("Indexing Arguments: {}", op.getIndexingArguments());
             // putting indexing arguments
-            for (int e = 0; e < op.getIndexingArguments().size(); e++) {
+            for (int e = 0; e < indexingArgsSize; e++) {
                 idx = indexPos + i * batch.getSample().maxIndexArguments();
                 pointer.put(idx + e, op.getIndexingArguments().get(e));
             }

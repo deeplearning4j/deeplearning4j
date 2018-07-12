@@ -9,6 +9,7 @@
 #include <graph/GraphHolder.h>
 #include <graph/FlatUtils.h>
 #include "testlayers.h"
+#include <array>
 
 using namespace nd4j;
 using namespace nd4j::ops;
@@ -753,7 +754,12 @@ TEST_F(JavaInteropTests, Test_NLP_Aggregations_1) {
 
     auto syn0 = new float[3 * 300];
     auto syn1 = new float[3 * 300];
-    auto wtf = new float[100000];
+    auto exp = new float[100000];
+
+    for (int e = 0; e < 100000; e++) {
+        auto tmp = nd4j::math::nd4j_exp<float>((e / (100000 * 2.0f - 1.0f) * 6.0));
+        exp[e] = tmp / (tmp + 1.0f);
+    }
 
     auto maxTypes = 5;
     auto numAggregates = 2;
@@ -829,13 +835,13 @@ TEST_F(JavaInteropTests, Test_NLP_Aggregations_1) {
         idx = argsPos + e * maxArgs;
         ptrptr[idx] = reinterpret_cast<void*>(syn0);
         ptrptr[idx+1] = reinterpret_cast<void*>(syn1);
-        ptrptr[idx+2] = reinterpret_cast<void*>(wtf);
+        ptrptr[idx+2] = reinterpret_cast<void*>(exp);
     }
 
 
     ops.execAggregateBatchFloat(nullptr, numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIndexArguments, maxRealArguments, pointer.data());
 
-    delete syn0;
-    delete syn1;
-    delete wtf;
+    delete[] syn0;
+    delete[] syn1;
+    delete[] exp;
 }
