@@ -254,11 +254,11 @@ void IndexUtils::unravelIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong
             int errorCount = 0;
 
             // unravelOrder ensures that the dimensions with largest stride are unraveled first.
-            std::vector<int> unravelOrder(rank);
             // create vector with elements 0..rank
-            std::iota(unravelOrder.begin(), unravelOrder.end(), 0);
+            int * unravelOrder = shape::range<int>(0, rank);
+
             // sort order according to stride length.
-            std::sort(unravelOrder.begin(), unravelOrder.end(), 
+            std::sort(unravelOrder, unravelOrder + rank, 
             [&](int i1, int i2) { return stride[i1] > stride[i2]; } );
             
             // calculate the largest raveled index that will fit into passed shape
@@ -276,7 +276,8 @@ void IndexUtils::unravelIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong
                     ++errorCount;
                 }
 
-                for (auto j : unravelOrder){
+                for (int * it = unravelOrder; it != unravelOrder + rank; it++){
+                    int j = *it;
                     // how many strides of this size?
                     indices[i * rank + j] = raveledIndex / stride[j];
 
