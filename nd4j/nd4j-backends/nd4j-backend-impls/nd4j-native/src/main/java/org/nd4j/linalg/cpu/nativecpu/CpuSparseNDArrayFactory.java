@@ -606,10 +606,26 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
-    public INDArray ravelCooIndices(INDArray x) {
+    public INDArray ravelCooIndices(INDArray x, char clipMode) {
         if(x.getFormat() != SparseFormat.COO){
             throw new UnsupportedOperationException("Not a COO ndarray");
         }
+
+        int clipModeNative;
+        switch (clipMode){
+            case 't':
+                clipModeNative = 0;
+                break;
+            case 'w':
+                clipModeNative = 1;
+                break;
+            case 'c':
+                clipModeNative = 2;
+                break;
+            default:
+                throw new IllegalArgumentException("clipMode must be one of 't', 'w', or 'c' ");
+        }
+
         BaseSparseNDArrayCOO array = (BaseSparseNDArrayCOO) x;
         DataBuffer indices = Nd4j.createBuffer(new long[]{array.length()}, array.getIndices().dataType());
         NativeOpsHolder.getInstance().getDeviceNativeOps()
@@ -618,7 +634,7 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
                         (LongPointer) indices.addressPointer(),
                         array.length(),
                         (LongPointer) array.shapeInfoDataBuffer().addressPointer(),
-                        0
+                        clipModeNative
                         );
 
         return createSparseCOO(array.getValues(), indices, new long[]{ArrayUtil.prod(array.shape())});

@@ -211,6 +211,7 @@ namespace nd4j {
             Nd4jLong * shape = shape::shapeOf(fullShapeBuffer);
             Nd4jLong * stride = shape::stride(fullShapeBuffer);
             Nd4jLong rank = shape::rank(fullShapeBuffer);
+            int errorCount = 0;
 
 #ifdef _OPENMP
             int numThreads = omp_get_max_threads();
@@ -221,30 +222,36 @@ namespace nd4j {
                 for (Nd4jLong j = 0; j < rank; ++j){
                     Nd4jLong idx =  indices[i * rank + j];
                     if (idx >= shape[j]) {
-                        switch (mode) {
-                            case ND4J_CLIPMODE_CLIP : {
-                                idx = shape[j] - 1;
-                                break;
-                            }
-                            case ND4J_CLIPMODE_WRAP : {
-                                idx %= shape[j];
-                                break;
-                            }
-                            default: {
-                                nd4j_printf("Cannot unravel index at element %d, does not fit into specified shape.", i);
-                                std::runtime_error("sparse::IndexUtils::ravelMultiIndex Cannot unravel index");
-                            }
+                        // index does not fit into shape at j dimension.                        
+                        if (mode == ND4J_CLIPMODE_CLIP){ 
+                            // set idx to largest possible value (clip to shape)
+                            idx = shape[j] - 1;
+                        } 
+                        else if (mode == ND4J_CLIPMODE_WRAP) {
+                            idx %= shape[j];
+                        } else {
+                            // mode is ND4J_CLIPMODE_THROW or is unknown. either way. throw an error later.
+                            // cannot throw here because of parallel region
+                            nd4j_printf("sparse::IndexUtils::ravelMultiIndex Cannot ravel index at element %d, does not fit into specified shape.\n", i);
+                            ++errorCount;
                         }
                     }
-                    raveledIndex += indices[i * rank + j] * stride[j];
+                    raveledIndex += idx * stride[j];
                 }
                 flatIndices[i] = raveledIndex;
+            }
+
+            if (errorCount > 0){
+                // throw error if one ocurred in loop
+                throw std::runtime_error("sparse::IndexUtils::ravelMultiIndex Cannot ravel index");
             }
         }
 
 void IndexUtils::unravelIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *fullShapeBuffer){
+            Nd4jLong * shape = shape::shapeOf(fullShapeBuffer);
             Nd4jLong * stride = shape::stride(fullShapeBuffer);
             Nd4jLong rank = shape::rank(fullShapeBuffer);
+            int errorCount = 0;
 
             // unravelOrder ensures that the dimensions with largest stride are unraveled first.
             std::vector<int> unravelOrder(rank);
@@ -253,6 +260,9 @@ void IndexUtils::unravelIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong
             // sort order according to stride length.
             std::sort(unravelOrder.begin(), unravelOrder.end(), 
             [&](int i1, int i2) { return stride[i1] > stride[i2]; } );
+            
+            // calculate the largest raveled index that will fit into passed shape
+            Nd4jLong maxRaveledIndex = (shape[unravelOrder[0]] - 1) * stride[unravelOrder[0]];
         
 #ifdef _OPENMP
             int numThreads = omp_get_max_threads();
@@ -260,6 +270,12 @@ void IndexUtils::unravelIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong
 #endif
             for (Nd4jLong i = 0; i < length; ++i){
                 Nd4jLong raveledIndex = flatIndices[i];
+                if (raveledIndex > maxRaveledIndex){
+                    // cannot throw here because of parallel region
+                    nd4j_printf("sparse::IndexUtils::unravelIndex Cannot unravel index at element %d. raveled index of %d does not fit into specified shape.\n", i, raveledIndex);
+                    ++errorCount;
+                }
+
                 for (auto j : unravelOrder){
                     // how many strides of this size?
                     indices[i * rank + j] = raveledIndex / stride[j];
@@ -267,6 +283,11 @@ void IndexUtils::unravelIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong
                     // remainder for subsequent smaller strides.                    
                     raveledIndex %= stride[j];
                 }
+            }
+
+            if (errorCount > 0){
+                // throw error if one ocurred in loop
+                throw std::runtime_error("sparse::IndexUtils::unravelIndex Cannot unravel index");
             }
         }
     }

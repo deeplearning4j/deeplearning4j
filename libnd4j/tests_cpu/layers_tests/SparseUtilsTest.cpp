@@ -197,6 +197,17 @@ TEST_F(SparseUtilsTest, RavelIndices_Test) {
     for ( int i = 0; i < nnz * rank; ++i){
         ASSERT_EQ(indicesArrExp[i], indicesArr[i]);
     }
+    
+    shape[2] = 30;
+    shapeInfoBuffer = shape::shapeBuffer(rank, shape);
+    
+    try {
+        nd4j::sparse::IndexUtils::ravelMultiIndex(indicesArrExp, flatIndices, nnz, shapeInfoBuffer, ND4J_CLIPMODE_THROW);
+        FAIL();
+    } catch (const std::runtime_error& e) {
+        // pass
+    }
+        
     delete[] indicesArrExp;
     delete[] indicesArr;
     delete[] flatIndicesExp;

@@ -1566,7 +1566,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
-    public INDArray ravelCooIndices(INDArray x) {
+    public INDArray ravelCooIndices(INDArray x, char clipMode) {
         throw new UnsupportedOperationException("Not an COO ndarray");
     }
 

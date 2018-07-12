@@ -1559,7 +1559,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public INDArray ravel() {
-        return Nd4j.sparseFactory().ravelCooIndices(this);
+        return Nd4j.sparseFactory().ravelCooIndices(this, 't');
     }
 
     @Override

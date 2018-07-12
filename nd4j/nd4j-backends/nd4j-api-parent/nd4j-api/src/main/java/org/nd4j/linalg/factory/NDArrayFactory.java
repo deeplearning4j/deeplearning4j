@@ -1923,8 +1923,24 @@ public interface NDArrayFactory {
 
     INDArray sortCooIndices(INDArray x);
 
-    INDArray ravelCooIndices(INDArray x);
+    /**
+     * Ravel indexes in COO format to a vector.
+     * @param x sparse COO array
+     * @param clipMode how to handle indexes that does not fit into shape of the array.
+     *        't'   throw an exception (default)
+     *        'c'   clip to shape
+     *        'w'   wrap around shape
+     * @return
+     */
+    INDArray ravelCooIndices(INDArray x, char clipMode);
 
+
+    /**
+     * Reconstruct indexes in COO format from a flat raveled index
+     * @param x sparse COO matrices of rank 1
+     * @param shapeInfo databuffer representing the desired new shape to unravel to.
+     * @return
+     */
     INDArray unravelCooIndices(INDArray x, DataBuffer shapeInfo);
 
     INDArray create(float[] data, long[] shape, long offset, Character order);

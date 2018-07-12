@@ -607,8 +607,63 @@ public class SparseNDArrayCOOTest {
 
         BaseSparseNDArrayCOO unraveledArray = (BaseSparseNDArrayCOO) Nd4j.sparseFactory().unravelCooIndices(raveledArray, array.shapeInfoDataBuffer());
         Assert.assertEquals(array, unraveledArray);
+    }
+
+    /**
+     * Test that ravel functions behave like numpy equivalents.
+     * recreate these python REPL commands:
+     * <pre>
+     *     {@code
+     *     >>> import numpy
+     *     >>> A = numpy.array([[0, 0, 2], [0, 1, 1], [1, 0, 0], [1, 0, 1], [1, 1, 2], [2, 0, 1], [2, 1, 2], [3, 0, 2], [3, 1, 0]])
+     *     >>> numpy.ravel_multi_index((A[:,0], A[:,1], A[:,2]), [4,2,3])
+     *     array([ 2,  4,  6,  7, 11, 13, 17, 20, 21])
+     *     >>> numpy.ravel_multi_index((A[:,0], A[:,1], A[:,2]), [4,2,2])
+     *     ValueError: invalid entry in coordinates array
+     *     >>> numpy.ravel_multi_index((A[:,0], A[:,1], A[:,2]), [4,2,2], 'clip')
+     *     array([ 1,  3,  4,  5,  7,  9, 11, 13, 14])
+     *     >>> numpy.ravel_multi_index((A[:,0], A[:,1], A[:,2]), [4,2,2], 'wrap')
+     *     array([ 0,  3,  4,  5,  6,  9, 10, 12, 14])
+     *     }
+     * </pre>
+     */
+    @Test
+    public void testRavelClipping(){
+        long[] shape = new long[] {4, 2, 3};
+        long[] ravelShape = new long[] {24};
+        double[] values = new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9};
+        long[][] indices = new long[][] {{0, 0, 2}, {0, 1, 1}, {1, 0, 0}, {1, 0, 1}, {1, 1, 2}, {2, 0, 1}, {2, 1, 2},
+                {3, 0, 2}, {3, 1, 0}};
+
+        long[][] raveledIndicesClip =  new long[][]{{1}, {3},  {4},  {5}, {7}, {9}, {11}, {13}, {14}};
+        long[][] raveledIndicesWrap =  new long[][]{{0}, {3},  {4},  {5}, {6}, {9}, {10}, {12}, {14}};
+
+        shape[2] = 2;
+        BaseSparseNDArrayCOO array = (BaseSparseNDArrayCOO) Nd4j.createSparseCOO(values, indices, shape);
+        BaseSparseNDArrayCOO raveledArrayExpClip = (BaseSparseNDArrayCOO) Nd4j.createSparseCOO(values, raveledIndicesClip, ravelShape);
+        BaseSparseNDArrayCOO raveledArrayExpWrap = (BaseSparseNDArrayCOO) Nd4j.createSparseCOO(values, raveledIndicesWrap, ravelShape);
+        BaseSparseNDArrayCOO raveledArray;
+
+        try {
+            Nd4j.sparseFactory().ravelCooIndices(array, 't');
+        } catch (RuntimeException e){
+            Assert.assertEquals(e.getMessage(), "sparse::IndexUtils::ravelMultiIndex Cannot ravel index");
+        }
+
+        raveledArray = (BaseSparseNDArrayCOO) Nd4j.sparseFactory().ravelCooIndices(array, 'c');
+        Assert.assertEquals(raveledArrayExpClip, raveledArray);
+
+        raveledArray = (BaseSparseNDArrayCOO) Nd4j.sparseFactory().ravelCooIndices(array, 'w');
+        Assert.assertEquals(raveledArrayExpWrap, raveledArray);
+
+        shape[2] = 1;
 
 
+        try {
+            Nd4j.sparseFactory().unravelCooIndices(raveledArrayExpClip, Nd4j.getShapeInfoProvider().createShapeInformation(shape).getFirst());
+        } catch (RuntimeException e){
+            Assert.assertEquals(e.getMessage(), "sparse::IndexUtils::unravelIndex Cannot unravel index");
+        }
     }
 }
 
