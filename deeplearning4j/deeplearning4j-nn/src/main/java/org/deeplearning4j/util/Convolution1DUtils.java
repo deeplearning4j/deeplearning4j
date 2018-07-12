@@ -168,6 +168,26 @@ public class Convolution1DUtils {
     }
 
     /**
+     * Get top padding for same mode only.
+     *
+     * @param outSize  Output size (length 2 array, height dimension first)
+     * @param inSize   Input size (length 2 array, height dimension first)
+     * @param kernel   Kernel size (length 2 array, height dimension first)
+     * @param strides  Strides  (length 2 array, height dimension first)
+     * @param dilation Dilation (length 2 array, height dimension first)
+     * @return Top left padding (length 2 array, height dimension first)
+     */
+    public static int getSameModeTopLeftPadding(int outSize, int inSize, int kernel, int strides, int dilation) {
+        int eKernel = effectiveKernelSize(kernel, dilation);
+        //Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
+        int outPad = ((outSize - 1) * strides + eKernel - inSize) / 2;
+        Preconditions.checkState(outPad >= 0, "Invalid padding values calculated: %s - " +
+                        "layer configuration is invalid? Input size %s, output size %s, kernel %s, " +
+                        "strides %s, dilation %s", outPad, inSize, outSize, kernel, strides, dilation);
+        return outPad;
+    }
+
+    /**
      * Perform validation on the CNN layer kernel/stride/padding. Expect int, with values > 0 for kernel size and
      * stride, and values >= 0 for padding.
      *

@@ -68,7 +68,6 @@ public class LocallyConnected2D extends SameDiffLayer {
         this.dilation = builder.dilation;
         this.hasBias = builder.hasBias;
         this.inputSize = builder.inputSize;
-        computeOutputSize();
         this.featureDim = kernel[0] * kernel[1] * (int) nIn;
     }
 
@@ -98,6 +97,8 @@ public class LocallyConnected2D extends SameDiffLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
+        computeOutputSize();
+
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
         return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding, new int[]{1, 1},
                 cm, nOut, layerIndex, getLayerName(), LocallyConnected2D.class);

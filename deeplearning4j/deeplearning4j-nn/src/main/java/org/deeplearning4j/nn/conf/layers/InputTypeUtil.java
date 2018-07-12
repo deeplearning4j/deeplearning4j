@@ -303,18 +303,6 @@ public class InputTypeUtil {
             }
         } else if (convolutionMode == ConvolutionMode.Same) {
 
-            //'Same' padding mode:
-            //outH = ceil(inHeight / strideH)           decimal division
-            //outW = ceil(inWidth / strideW)            decimal division
-
-            //padHeightSum = ((outH - 1) * strideH + kH - inHeight)
-            //padTop = padHeightSum / 2                 integer division
-            //padBottom = padHeghtSum - padTop
-
-            //padWidthSum = ((outW - 1) * strideW + kW - inWidth)
-            //padLeft = padWidthSum / 2                 integer division
-            //padRight = padWidthSum - padLeft
-
             int outH = (int) Math.ceil(inHeight / ((double) stride[0]));
             int outW = (int) Math.ceil(inWidth / ((double) stride[1]));
 
