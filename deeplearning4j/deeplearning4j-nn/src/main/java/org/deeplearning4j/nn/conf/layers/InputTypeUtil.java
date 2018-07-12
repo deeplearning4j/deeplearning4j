@@ -46,21 +46,21 @@ public class InputTypeUtil {
         int sW = stride[1];
 
         if (sH <= 0 || sW <= 0) {
-            throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, sH <= 0)
+            throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, sH <= 0)
                     + " Invalid strides: strides must be > 0 (strideH = " + sH + ", strideW = " + sW + ")"
                     + "\n" + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputDepth,
                     convolutionMode));
         }
 
         if (kH <= 0 || kH > inHeight + 2 * padH) {
-            throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, true)
+            throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, true)
                     + " Invalid input configuration for kernel height. Require 0 < kH <= inHeight + 2*padH; got (kH="
                     + kH + ", inHeight=" + inHeight + ", padH=" + padH + ")\n" + getConfigErrorCommonLastLine(
                     inputType, kernelSize, stride, padding, outputDepth, convolutionMode));
         }
 
         if (kW <= 0 || kW > inWidth + 2 * padW) {
-            throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, false)
+            throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, false)
                     + " Invalid input configuration for kernel width. Require 0 < kW <= inWidth + 2*padW; got (kW="
                     + kW + ", inWidth=" + inWidth + ", padW=" + padW + ")\n" + getConfigErrorCommonLastLine(
                     inputType, kernelSize, stride, padding, outputDepth, convolutionMode));
@@ -119,7 +119,7 @@ public class InputTypeUtil {
         int sW = stride[1];
 
         if (sH <= 0 || sW <= 0 || sD <= 0) {
-            throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, sH <= 0)
+            throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, sH <= 0)
                     + " Invalid strides: strides must be > 0 (strideH = " + sH + ", strideW = " +
                     sW + ", strideD = " + sD + ")"
                     + "\n" + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputChannels,
@@ -127,20 +127,20 @@ public class InputTypeUtil {
         }
 
         if (kH <= 0 || kH > inHeight + 2 * padH) {
-            throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, true)
+            throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, true)
                     + " Invalid input configuration for kernel height. Require 0 < kH <= inHeight + 2*padH; got (kH="
                     + kH + ", inHeight=" + inHeight + ", padH=" + padH + ")\n" + getConfigErrorCommonLastLine(
                     inputType, kernelSize, stride, padding, outputChannels, convolutionMode));
         }
 
         if (kW <= 0 || kW > inWidth + 2 * padW) {
-            throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, false)
+            throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, false)
                     + " Invalid input configuration for kernel width. Require 0 < kW <= inWidth + 2*padW; got (kW="
                     + kW + ", inWidth=" + inWidth + ", padW=" + padW + ")\n" + getConfigErrorCommonLastLine(
                     inputType, kernelSize, stride, padding, outputChannels, convolutionMode));
         }
         if (kD <= 0 || kD > inDepth + 2 * padD) {
-            throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, false)
+            throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, false)
                     + " Invalid input configuration for kernel channels. Require 0 < kD <= inDepth + 2*padD; got (kD="
                     + kD + ", inDepth=" + inDepth + ", padD=" + padD + ")\n" + getConfigErrorCommonLastLine(
                     inputType, kernelSize, stride, padding, outputChannels, convolutionMode));
@@ -153,7 +153,7 @@ public class InputTypeUtil {
                 String str = String.format("%.2f", d);
                 int truncated = (int) d;
                 int sameSize = (int) Math.ceil(inHeight / ((double) stride[0]));
-                throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, true)
+                throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, true)
                         + "\nCombination of kernel size, stride and padding are not valid for given input height, using ConvolutionMode.Strict\n"
                         + "ConvolutionMode.Strict requires: output height = (input height - kernelSize + 2*padding)/stride + 1 in height dimension to be an integer. Got: ("
                         + inHeight + " - " + kH + " + 2*" + padH + ")/" + sH + " + 1 = " + str + "\n"
@@ -170,7 +170,7 @@ public class InputTypeUtil {
                 String str = String.format("%.2f", d);
                 int truncated = (int) d;
                 int sameSize = (int) Math.ceil(inWidth / ((double) stride[1]));
-                throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, false)
+                throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, false)
                         + "\nCombination of kernel size, stride and padding are not valid for given input width, using ConvolutionMode.Strict\n"
                         + "ConvolutionMode.Strict requires: output width = (input width - kernelSize + 2*padding)/stride + 1 in width dimension to be an integer. Got: ("
                         + inWidth + " - " + kW + " + 2*" + padW + ")/" + sW + " + 1 = " + str + "\n"
@@ -187,7 +187,7 @@ public class InputTypeUtil {
                 String str = String.format("%.2f", d);
                 int truncated = (int) d;
                 int sameSize = (int) Math.ceil(inDepth / ((double) stride[2]));
-                throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, false)
+                throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, false)
                         + "\nCombination of kernel size, stride and padding are not valid for given input width, using ConvolutionMode.Strict\n"
                         + "ConvolutionMode.Strict requires: output channels = (input channels - kernelSize + 2*padding)/stride + 1 in width dimension to be an integer. Got: ("
                         + inDepth + " - " + kD + " + 2*" + padD + ")/" + sD + " + 1 = " + str + "\n"
@@ -211,6 +211,75 @@ public class InputTypeUtil {
         int hOut = (inHeight - kH + 2 * padH) / sH + 1;
         int wOut = (inWidth - kW + 2 * padW) / sW + 1;
         return InputType.convolutional3D(dOut, hOut, wOut, outputChannels);
+    }
+
+
+    public static InputType getOutputTypeCnn1DLayers(InputType inputType, int kH, int sH, int padH,
+                                                     int dilation, ConvolutionMode convolutionMode, long outputDepth,
+                                                     long layerIdx, String layerName,
+                                                   Class<?> layerClass) {
+
+        if (convolutionMode == null) {
+            String name = layerName == null ? "(not named)" : layerName;
+            throw new DL4JInvalidConfigException("Invalid configuration: convolution mode is null for layer (idx="
+                    + layerIdx + ", name=" + name + ", type=" + layerClass.getName() + ")");
+        }
+
+        InputType.InputTypeRecurrent i = (InputType.InputTypeRecurrent) inputType;
+
+        val inHeight = (int) i.getTimeSeriesLength();
+        if(dilation != 1){
+            kH = kH + (kH-1)*(dilation-1);
+        }
+
+        if (sH <= 0) {
+            throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, sH <= 0)
+                    + " Invalid strides: strides must be > 0 (strideH = " + sH + ")"
+                    + "\n" + getConfigErrorCommonLastLine1D(inputType, kH, sH, padH, outputDepth,
+                    convolutionMode));
+        }
+
+        if (kH <= 0 || kH > inHeight + 2 * padH) {
+            throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, true)
+                    + " Invalid input configuration for kernel height. Require 0 < kH <= inHeight + 2*padH; got (kH="
+                    + kH + ", inHeight=" + inHeight + ", padH=" + padH + ")\n" + getConfigErrorCommonLastLine1D(
+                    inputType, kH, sH, padH, outputDepth, convolutionMode));
+        }
+
+
+        //Strict mode: require exactly the right size...
+        if (convolutionMode == ConvolutionMode.Strict) {
+            if ((inHeight - kH + 2 * padH) % sH != 0) {
+                double d = (inHeight - kH + 2 * padH) / ((double) sH) + 1.0;
+                String str = String.format("%.2f", d);
+                int truncated = (int) d;
+                int sameSize = (int) Math.ceil(inHeight / ((double) sH));
+                throw new DL4JInvalidConfigException(getConfigErrorCommonLine(
+                        layerIdx, layerName, layerClass, true)
+                        + "\nCombination of kernel size, stride and padding are not valid for given input height, " +
+                        "using ConvolutionMode.Strict\n"
+                        + "ConvolutionMode.Strict requires: output height = (input height - kernelSize + " +
+                        "2*padding)/stride + 1 in height dimension to be an integer. Got: ("
+                        + inHeight + " - " + kH + " + 2*" + padH + ")/" + sH + " + 1 = " + str + "\n"
+                        + "See ConvolutionType enumeration Javadoc and \"Constraints on strides\" at " +
+                        "http://cs231n.github.io/convolutional-networks/\n"
+                        + "To truncate/crop the input, such that output height = floor(" + str + ") = "
+                        + truncated + ", use ConvolutionType.Truncate.\n"
+                        + "Alternatively use ConvolutionType.Same, which will use padding to give an " +
+                        "output height of ceil("
+                        + inHeight + "/" + sH + ")=" + sameSize + "\n" + getConfigErrorCommonLastLine1D(
+                        inputType, kH, sH, padH, outputDepth, convolutionMode));
+            }
+
+        } else if (convolutionMode == ConvolutionMode.Same) {
+
+            int outH = (int) Math.ceil(inHeight / ((double) sH));
+
+            return InputType.recurrent(outputDepth, outH);
+        }
+
+        int outH = (inHeight - kH + 2 * padH) / sH + 1;
+        return InputType.recurrent(outputDepth, outH);
     }
 
 
@@ -245,21 +314,21 @@ public class InputTypeUtil {
         int sW = stride[1];
 
         if (sH <= 0 || sW <= 0) {
-            throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, sH <= 0)
+            throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, sH <= 0)
                             + " Invalid strides: strides must be > 0 (strideH = " + sH + ", strideW = " + sW + ")"
                             + "\n" + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputDepth,
                                             convolutionMode));
         }
 
         if (kH <= 0 || kH > inHeight + 2 * padH) {
-            throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, true)
+            throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, true)
                             + " Invalid input configuration for kernel height. Require 0 < kH <= inHeight + 2*padH; got (kH="
                             + kH + ", inHeight=" + inHeight + ", padH=" + padH + ")\n" + getConfigErrorCommonLastLine(
                                             inputType, kernelSize, stride, padding, outputDepth, convolutionMode));
         }
 
         if (kW <= 0 || kW > inWidth + 2 * padW) {
-            throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, false)
+            throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, false)
                             + " Invalid input configuration for kernel width. Require 0 < kW <= inWidth + 2*padW; got (kW="
                             + kW + ", inWidth=" + inWidth + ", padW=" + padW + ")\n" + getConfigErrorCommonLastLine(
                                             inputType, kernelSize, stride, padding, outputDepth, convolutionMode));
@@ -272,7 +341,7 @@ public class InputTypeUtil {
                 String str = String.format("%.2f", d);
                 int truncated = (int) d;
                 int sameSize = (int) Math.ceil(inHeight / ((double) stride[0]));
-                throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, true)
+                throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, true)
                                 + "\nCombination of kernel size, stride and padding are not valid for given input height, using ConvolutionMode.Strict\n"
                                 + "ConvolutionMode.Strict requires: output height = (input height - kernelSize + 2*padding)/stride + 1 in height dimension to be an integer. Got: ("
                                 + inHeight + " - " + kH + " + 2*" + padH + ")/" + sH + " + 1 = " + str + "\n"
@@ -290,7 +359,7 @@ public class InputTypeUtil {
                 String str = String.format("%.2f", d);
                 int truncated = (int) d;
                 int sameSize = (int) Math.ceil(inWidth / ((double) stride[1]));
-                throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, false)
+                throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, false)
                                 + "\nCombination of kernel size, stride and padding are not valid for given input width, using ConvolutionMode.Strict\n"
                                 + "ConvolutionMode.Strict requires: output width = (input width - kernelSize + 2*padding)/stride + 1 in width dimension to be an integer. Got: ("
                                 + inWidth + " - " + kW + " + 2*" + padW + ")/" + sW + " + 1 = " + str + "\n"
@@ -314,13 +383,20 @@ public class InputTypeUtil {
         return InputType.convolutional(hOut, wOut, outputDepth);
     }
 
-    private static String getConfigErrorCommonLine1(long layerIdx, String layerName, Class<?> layerClass,
-                    boolean isHeight) {
+    private static String getConfigErrorCommonLine(long layerIdx, String layerName, Class<?> layerClass,
+                                                   boolean isHeight) {
         String name = layerName == null ? "(not named)" : layerName;
         String layerType = layerClass.getSimpleName();
 
         return "Invalid configuration for layer (idx=" + layerIdx + ", name=" + name + ", type=" + layerType + ") for "
                         + (isHeight ? "height" : "width") + " dimension: ";
+    }
+
+    private static String getConfigErrorCommonLastLine1D(InputType inputType, int kernelSize, int stride,
+                                                       int padding, long outputDepth, ConvolutionMode convolutionMode) {
+        return "Input type = " + inputType + ", kernel = " + kernelSize + ", strides = " + stride + ", padding = "
+                + padding + ", layer size (output channels) = " + outputDepth + ", convolution mode = "
+                + convolutionMode;
     }
 
     private static String getConfigErrorCommonLastLine(InputType inputType, int[] kernelSize, int[] stride,

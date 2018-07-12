@@ -111,11 +111,8 @@ public class LocallyConnected1D extends SameDiffLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        return inputType;
-        // TODO: output type for 1D conv layers
-//        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-//        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding, new int[]{1, 1},
-//                cm, nOut, layerIndex, getLayerName(), LocallyConnected1D.class);
+        return InputTypeUtil.getOutputTypeCnn1DLayers(inputType, kernel, stride, padding, 1,
+                cm, nOut, layerIndex, getLayerName(), LocallyConnected1D.class);
     }
 
     @Override

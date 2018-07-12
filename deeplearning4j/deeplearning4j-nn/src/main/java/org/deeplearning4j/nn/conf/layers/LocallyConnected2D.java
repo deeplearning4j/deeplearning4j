@@ -99,7 +99,6 @@ public class LocallyConnected2D extends SameDiffLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         computeOutputSize();
 
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
         return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding, new int[]{1, 1},
                 cm, nOut, layerIndex, getLayerName(), LocallyConnected2D.class);
     }
