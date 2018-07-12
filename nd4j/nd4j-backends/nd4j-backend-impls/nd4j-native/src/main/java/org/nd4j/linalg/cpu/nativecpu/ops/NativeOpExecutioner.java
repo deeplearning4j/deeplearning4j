@@ -7,6 +7,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.indexer.IntIndexer;
 import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -1046,6 +1047,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 / (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 1 : 2);
         int shapesPos = argsPos + (batch.getSample().maxArguments() * Batch.getBatchLimit());
         for (int i = 0; i < batch.getNumAggregates(); i++) {
+            log.info("-----------------------------------------------------");
             T op = batch.getAggregates().get(i);
 
             // put num arguments
@@ -1057,6 +1059,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             pointer.put(idx + 4, op.getIntArrayArguments().size());
 
 
+            log.info("Indexing Arguments: {}", op.getIndexingArguments());
             // putting indexing arguments
             for (int e = 0; e < op.getIndexingArguments().size(); e++) {
                 idx = indexPos + i * batch.getSample().maxIndexArguments();
@@ -1067,11 +1070,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             int bsize = maxIntArrays * maxArraySize;
             for (int e = 0; e < op.getIntArrayArguments().size(); e++) {
                 int step = (i * bsize) + (e * maxArraySize);
-                if (op.getIntArrayArguments().get(e) != null)
+                log.info("IntArray: {}", op.getIntArrayArguments().get(e));
+                if (op.getIntArrayArguments().get(e) != null) {
                     for (int x = 0; x < op.getIntArrayArguments().get(e).length; x++) {
                         idx = intArraysPos + step + x;
                         pointer.put(idx, op.getIntArrayArguments().get(e)[x]);
                     }
+                }
             }
 
             // TODO: variable datatype should be handled here
@@ -1079,6 +1084,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
                 FloatPointer fPtr = new FloatPointer(pointer);
+                log.info("Real Arguments: {}", op.getRealArguments());
                 for (int e = 0; e < op.getRealArguments().size(); e++) {
                     idx = realPos + i * op.maxRealArguments();
                     fPtr.put(idx + e, op.getRealArguments().get(e).floatValue());
@@ -1115,6 +1121,20 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     ptrPtr.put(idx + e, op.getShapes().get(e).addressPointer());
             }
         }
+
+        val sample = batch.getSample();
+
+        val numAggregates = batch.getNumAggregates();
+        val opNum = batch.opNum();
+        val maxArgs = sample.maxArguments();
+        val maxShapes = sample.maxShapes();
+        val maxIntArraysf = sample.maxIntArrays();
+        val maxIntArraySize = sample.maxIntArraySize();
+        val maxIndexArguments = sample.maxIndexArguments();
+        val maxRealArguments = sample.maxRealArguments();
+
+        val indexer = IntIndexer.create(pointer);
+
 
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
             loop.execAggregateBatchFloat(null, batch.getNumAggregates(), batch.opNum(),

@@ -747,3 +747,95 @@ TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
 
     // and we should have 0 leaks reported after this line :)
 }
+
+TEST_F(JavaInteropTests, Test_NLP_Aggregations_1) {
+    NativeOps ops;
+
+    auto syn0 = new float[3 * 300];
+    auto syn1 = new float[3 * 300];
+    auto wtf = new float[100000];
+
+    auto maxTypes = 5;
+    auto numAggregates = 2;
+    auto opNum = 3;
+    auto maxArgs = 6;
+    auto maxShapes = 0;
+    auto maxIntArrays = 2;
+    auto maxIntArraySize = 40;
+    auto maxIndexArguments = 9;
+    auto maxRealArguments = 2;
+
+    std::array<int, 100000> pointer;
+
+    auto batchLimit = 512;
+
+    int indexPos = maxTypes * batchLimit;
+    int intArraysPos = indexPos + (maxIndexArguments * batchLimit);
+    int realPos = (intArraysPos + (maxIntArrays * maxIntArraySize * batchLimit));
+    int argsPos = (realPos + ((maxRealArguments * batchLimit))) / 2;
+    int shapesPos = argsPos + (maxArgs * batchLimit);
+
+    std::vector<int> intArray0({0, 0, 0, 0, 0});
+    std::vector<int> intArray1({1, 0, 0, 0, 0});
+
+    std::vector<int> indexingArgs0({1, 300, 5, 0, 100000, 3, 0, 0, 0});
+    std::vector<int> indexingArgs1({0, 300, 5, 0, 100000, 3, 1, 0, 0});
+
+    std::vector<float> realArgs0({0.024964055335354007f, 3.0768702268737162E18f});
+
+    int argSize = 6;
+    int shapesSize = 0;
+    int indexingSize = 9;
+    int realArgsSize = 2;
+    int intArraysSize = 2;
+
+    for (int e = 0; e < numAggregates; e++) {
+        auto idx = e * maxTypes;
+
+        // numbers of arguments
+        pointer[idx] = 6; // arguments size
+        pointer[idx+1] = 0; // shapes size
+        pointer[idx+2] = 9; // indexing arguments size
+        pointer[idx+3] = 2; // real args size
+        pointer[idx+4] = 2; // intArray args size
+
+        // indexing args
+        auto idxArgs = e == 0 ? indexingArgs0 : indexingArgs1;
+        for (int f = 0; f < idxArgs.size(); f++) {
+            idx = indexPos + e * maxIndexArguments;
+            pointer[idx + f] = idxArgs[f];
+        }
+
+        // int array values
+        int bsize = maxIntArrays * maxIntArraySize;
+        for (int f = 0; f < intArraysSize; f++) {
+            int step = (e * bsize) + (f * maxIntArraySize);
+            auto intArr = e == 0 ? intArray0 : intArray1;
+            for (int x = 0; x < intArr.size(); x++) {
+                idx = intArraysPos + step + x;
+                pointer[idx] = intArr[x];
+            }
+        }
+
+        // real args
+        auto ptr = reinterpret_cast<float *>(pointer.data());
+        for (int f = 0; f < realArgsSize; f++) {
+            idx = realPos + (e * maxRealArguments);
+            ptr[idx + f] = realArgs0[f];
+        }
+
+        //
+        auto ptrptr = reinterpret_cast<void **>(pointer.data());
+        idx = argsPos + e * maxArgs;
+        ptrptr[idx] = reinterpret_cast<void*>(syn0);
+        ptrptr[idx+1] = reinterpret_cast<void*>(syn1);
+        ptrptr[idx+2] = reinterpret_cast<void*>(wtf);
+    }
+
+
+    ops.execAggregateBatchFloat(nullptr, numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIndexArguments, maxRealArguments, pointer.data());
+
+    delete syn0;
+    delete syn1;
+    delete wtf;
+}
