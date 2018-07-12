@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <shape.h>
+#include <logger.h>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -207,6 +208,7 @@ namespace nd4j {
         template class ND4J_EXPORT SparseUtils<double>;
 
         void IndexUtils::ravelMultiIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *fullShapeBuffer, int mode){
+            Nd4jLong * shape = shape::shapeOf(fullShapeBuffer);
             Nd4jLong * stride = shape::stride(fullShapeBuffer);
             Nd4jLong rank = shape::rank(fullShapeBuffer);
 
@@ -217,6 +219,23 @@ namespace nd4j {
             for (Nd4jLong i = 0; i < length; ++i){
                 Nd4jLong raveledIndex = 0;
                 for (Nd4jLong j = 0; j < rank; ++j){
+                    Nd4jLong idx =  indices[i * rank + j];
+                    if (idx >= shape[j]) {
+                        switch (mode) {
+                            case ND4J_CLIPMODE_CLIP : {
+                                idx = shape[j] - 1;
+                                break;
+                            }
+                            case ND4J_CLIPMODE_WRAP : {
+                                idx %= shape[j];
+                                break;
+                            }
+                            default: {
+                                nd4j_printf("Cannot unravel index at element %d, does not fit into specified shape.", i);
+                                std::runtime_error("sparse::IndexUtils::ravelMultiIndex Cannot unravel index");
+                            }
+                        }
+                    }
                     raveledIndex += indices[i * rank + j] * stride[j];
                 }
                 flatIndices[i] = raveledIndex;
