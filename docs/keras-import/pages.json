@@ -44,6 +44,10 @@
       "module": "layers/pooling"
     },
     {
+      "page": "layers/local.md",
+      "module": "layers/local"
+    },
+    {
       "page": "layers/recurrent.md",
       "module": "layers/recurrent"
     },
