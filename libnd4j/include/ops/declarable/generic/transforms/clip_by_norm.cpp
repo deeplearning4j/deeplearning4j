@@ -26,12 +26,12 @@ namespace ops  {
 
     CUSTOM_OP_IMPL(clipbynorm_bp, 2, 1, false, 1, 0) {
         auto input = INPUT_VARIABLE(0);
-        auto epsNext = INPUT_VARIABLE(1);
+        auto gradO = INPUT_VARIABLE(1);
 
-        auto output = OUTPUT_VARIABLE(0);
+        auto gradI = OUTPUT_VARIABLE(0);
         const T clipNorm = T_ARG(0);
 
-        helpers::clipByNormBP(*input, *epsNext, *output, *block.getIArguments(), clipNorm); 
+        helpers::clipByNormBP(*input, *gradO, *gradI, *block.getIArguments(), clipNorm); 
 
         return Status::OK();
     }

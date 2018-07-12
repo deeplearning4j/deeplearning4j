@@ -1117,4 +1117,22 @@ TEST_F(DeclarableOpsTests9, concat_test13) {
 }
 
 
+// ////////////////////////////////////////////////////////////////////////////////
+// TEST_F(DeclarableOpsTests9, clipbynorm_bp_test1) {
+    
+//     NDArray<double> x('c', {3, 5}, {0.7044955, 0.55606544, 0.15833677, 0.001874401, 0.61595726, 0.3924779, 0.7414847, 0.4127324, 0.24026828, 0.26093036, 0.46741188, 0.01863421, 0.08528871, 0.529365, 0.5510694});
+//     NDArray<double> gradO('c', {3, 5});
+//     NDArray<double> exp('c', {3, 5}, {0.405392, 0.319980, 0.091113, 0.001079, 0.354444, 0.225846, 0.426676, 0.237501, 0.138259, 0.150149, 0.268965, 0.010723, 0.049078, 0.304615, 0.317105});    
+
+//     gradO.linspace(0.1, 0.1);
+
+//     nd4j::ops::clipbynorm_bp<double> op;
+//     auto result = op.execute({&x, &gradO}, {1.f}, {});
+//     auto gradI = result->at(0);
+        
+//     ASSERT_TRUE(exp.isSameShape(gradI));
+//     ASSERT_TRUE(exp.equalsTo(gradI));
+
+//     delete result;
+// }
  

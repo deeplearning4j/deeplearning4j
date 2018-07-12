@@ -613,15 +613,14 @@ void mergeAdd(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output) {
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& dimensions, const T clipNorm, const bool isInplace) {
-    
+void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& dimensions, const T clipNorm, const bool isInplace) {    
         
     const int rank = input.rankOf();
     NDArray<T> norm2 = input.template reduceAlongDims<simdOps::Norm2<T>>(dimensions);
 
     if (isInplace) {
 
-        if(dimensions.empty() || dimensions.size() == rank) {
+        if(norm2.lengthOf() == 1) {
 
             if(norm2(0) > clipNorm)
                 input *= (clipNorm / norm2(0));
@@ -640,7 +639,7 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
     }
     else {
         
-        if(dimensions.empty() || dimensions.size() == rank) {
+        if(norm2.lengthOf() == 1) {
 
             if(norm2(0) > clipNorm)
                 output.assign( input * (clipNorm / norm2(0)));
@@ -669,25 +668,47 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void clipByNormBP(NDArray<T>& input, NDArray<T>& epsNext, NDArray<T>& output, const std::vector<int>& dimensions, const T clipNorm) {
-    NDArray<T> norm2 = input.template reduceAlongDims<simdOps::Norm2<T>>(dimensions, true);
+void clipByNormBP(const NDArray<T>& input, const NDArray<T>& gradO, NDArray<T>& gradI /*output*/, const std::vector<int>& dimensions, const T clipNorm) {
+    
+    const int rank = input.rankOf();
 
-    if (dimensions.empty()) {
-        if (norm2(0) > clipNorm)
-            output.assign(epsNext * (clipNorm / norm2(0)));
-        else
-            output.assign(epsNext);
-    } else {
-        ResultSet<T>* inTads  = input.allTensorsAlongDimension(dimensions);
-        ResultSet<T>* epsTads  = epsNext.allTensorsAlongDimension(dimensions);
-        ResultSet<T>* outTads = output.allTensorsAlongDimension(dimensions);
-        const int numTads = inTads->size();
-        for (int e = 0; e < numTads; e++) {
-            if (norm2(e) > clipNorm)
-                outTads->at(e)->assign(*epsTads->at(e) * (clipNorm / norm2(e)));
-            else
-                outTads->at(e)->assign(epsTads->at(e));
+    NDArray<T> norm2 = input.template reduceAlongDims<simdOps::Norm2<T>>(dimensions);    
+
+    if(norm2.lengthOf() == 1) {        
+
+        const T factor = norm2(0);
+        if(factor > clipNorm) {            
+            const T factor2 = factor  * factor;
+            const T factor3 = factor2 * factor;
+            auto lambda = LAMBDA_TT(elem1, elem2, clipNorm, factor2, factor3) { return elem2 * clipNorm * (factor2 - elem1 * elem1) / factor3; };
+            const_cast<NDArray<T>&>(input).applyPairwiseLambda(&gradO, lambda, &gradI);
         }
+        else 
+            gradI.assign(gradO);
+    }
+    else {
+            
+        std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(rank, dimensions);
+        const Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
+        std::vector<Nd4jLong> idxRanges(rank * 2);
+
+#pragma omp parallel for schedule(guided) firstprivate(idxRanges)
+        for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
+
+            ShapeUtils<T>::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
+            T factor = norm2(i);
+            if (factor > clipNorm) {
+                const T factor2 = factor  * factor;
+                const T factor3 = factor2 * factor;
+                auto lambda = LAMBDA_TT(elem1, elem2, clipNorm, factor2, factor3) { return elem2 * clipNorm * (factor2 - elem1 * elem1) / factor3; };                
+                NDArray<T> gradOSubArr = gradO(idxRanges.data());
+                NDArray<T> gradISubArr = gradI(idxRanges.data());
+                NDArray<T> inputSubArr = input(idxRanges.data());
+                inputSubArr.applyPairwiseLambda(&gradOSubArr, lambda, &gradISubArr);
+            }
+            else
+                gradI(idxRanges.data()).assign( gradO(idxRanges.data()) );     
+        }           
     }
 }
 
@@ -921,9 +942,9 @@ template void clipByNorm<float>(NDArray<float>& input, NDArray<float>& output, c
 template void clipByNorm<float16>(NDArray<float16>& input, NDArray<float16>& output, const std::vector<int>& dimensions, const float16 clipNorm, const bool isInplace);
 template void clipByNorm<double>(NDArray<double>& input, NDArray<double>& output, const std::vector<int>& dimensions, const double clipNorm, const bool isInplace);
 
-template void clipByNormBP<float>(NDArray<float>& input, NDArray<float>& eps, NDArray<float>& output, const std::vector<int>& dimensions, const float clipNorm);
-template void clipByNormBP<float16>(NDArray<float16>& input, NDArray<float16>& eps, NDArray<float16>& output, const std::vector<int>& dimensions, const float16 clipNorm);
-template void clipByNormBP<double>(NDArray<double>& input, NDArray<double>& eps, NDArray<double>& output, const std::vector<int>& dimensions, const double clipNorm);
+template void clipByNormBP<float>(const NDArray<float>& input, const NDArray<float>& gradO, NDArray<float>& gradI, const std::vector<int>& dimensions, const float clipNorm);
+template void clipByNormBP<float16>(const NDArray<float16>& input, const NDArray<float16>& gradO, NDArray<float16>& gradI, const std::vector<int>& dimensions, const float16 clipNorm);
+template void clipByNormBP<double>(const NDArray<double>& input, const NDArray<double>& gradO, NDArray<double>& gradI, const std::vector<int>& dimensions, const double clipNorm);
 
 template void clipByAveraged<float>(NDArray<float>& input, NDArray<float>& output, const std::vector<int>& dimensions, const float clipNorm, const bool isInplace);
 template void clipByAveraged<float16>(NDArray<float16>& input, NDArray<float16>& output, const std::vector<int>& dimensions, const float16 clipNorm, const bool isInplace);

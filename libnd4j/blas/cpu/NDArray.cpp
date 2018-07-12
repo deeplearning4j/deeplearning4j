@@ -368,7 +368,7 @@ template <typename T>
     }
 
     template<typename T>
-    void NDArray<T>::applyPairwiseLambda(NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target) {
+    void NDArray<T>::applyPairwiseLambda(const NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target) {
         if (target == nullptr)
             target = this;
 
@@ -405,6 +405,7 @@ template <typename T>
             }
         }
     }
+
 
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
