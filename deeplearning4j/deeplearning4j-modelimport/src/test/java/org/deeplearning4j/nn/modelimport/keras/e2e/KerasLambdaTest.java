@@ -84,6 +84,7 @@ public class KerasLambdaTest {
         INDArray input = Nd4j.create(new int[]{10, 100});
 
         model.output(input);
+        KerasLayer.clearLambdaLayers();
     }
 
     @Test
@@ -105,6 +106,7 @@ public class KerasLambdaTest {
         INDArray input = Nd4j.create(new int[]{10, 784});
 
         model.output(input);
+        KerasLayer.clearLambdaLayers(); // Clear all lambdas, so other tests aren't affected.
     }
 
 }
