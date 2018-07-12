@@ -768,7 +768,7 @@ TEST_F(JavaInteropTests, Test_NLP_Aggregations_1) {
     auto maxShapes = 0;
     auto maxIntArrays = 2;
     auto maxIntArraySize = 40;
-    auto maxIndexArguments = 9;
+    auto maxIndexArguments = 10;
     auto maxRealArguments = 2;
 
     std::array<int, 100000> pointer;
@@ -795,7 +795,8 @@ TEST_F(JavaInteropTests, Test_NLP_Aggregations_1) {
     int realArgsSize = 2;
     int intArraysSize = 2;
 
-    for (int e = 0; e < numAggregates; e++) {
+    int e = 0;
+
         auto idx = e * maxTypes;
 
         // numbers of arguments
@@ -816,7 +817,7 @@ TEST_F(JavaInteropTests, Test_NLP_Aggregations_1) {
         int bsize = maxIntArrays * maxIntArraySize;
         for (int f = 0; f < intArraysSize; f++) {
             int step = (e * bsize) + (f * maxIntArraySize);
-            auto intArr = e == 0 ? intArray0 : intArray1;
+            auto intArr = f == 0 ? intArray0 : intArray1;
             for (int x = 0; x < intArr.size(); x++) {
                 idx = intArraysPos + step + x;
                 pointer[idx] = intArr[x];
@@ -836,7 +837,6 @@ TEST_F(JavaInteropTests, Test_NLP_Aggregations_1) {
         ptrptr[idx] = reinterpret_cast<void*>(syn0);
         ptrptr[idx+1] = reinterpret_cast<void*>(syn1);
         ptrptr[idx+2] = reinterpret_cast<void*>(exp);
-    }
 
 
     ops.execAggregateBatchFloat(nullptr, numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIndexArguments, maxRealArguments, pointer.data());
