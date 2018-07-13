@@ -1,5 +1,7 @@
 package org.deeplearning4j.nn.dataimport.solr.client.solrj.io.stream;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.ThreadFilter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,10 +19,45 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+import org.nd4j.linalg.memory.provider.BasicWorkspaceManager;
+import org.nd4j.rng.deallocator.NativeRandomDeallocator;
 
+@ThreadLeakFilters(defaultFilters = true, filters = {
+  TupleStreamDataSetIteratorTest.PrivateDeallocatorThreadsFilter.class
+})
 public class TupleStreamDataSetIteratorTest extends SolrCloudTestCase {
+
+  public static class PrivateDeallocatorThreadsFilter implements ThreadFilter {
+    /**
+     * Reject deallocator threads over whose cleanup this test has no control.
+     */
+    @Override
+    public boolean reject(Thread thread) {
+      final ThreadGroup threadGroup = thread.getThreadGroup();
+      final String threadGroupName = (threadGroup == null ? null : threadGroup.getName());
+
+      if (threadGroupName != null &&
+          threadGroupName.endsWith(TupleStreamDataSetIteratorTest.class.getSimpleName())) {
+
+        final String threadName = thread.getName();
+/*
+        if (threadName.startsWith(NativeRandomDeallocator.DeallocatorThreadNamePrefix) ||
+            threadName.equals("JavaCPP Deallocator") ||
+            threadName.equals(BasicWorkspaceManager.WorkspaceDeallocatorThreadName)) {
+          return true;
+        }
+*/
+        if (threadName.startsWith("NativeRandomDeallocator thread ") ||
+            threadName.equals("JavaCPP Deallocator") ||
+            threadName.equals("Workspace deallocator thread")) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+  }
 
   private static int numDocs = 0;
 
@@ -181,8 +218,6 @@ public class TupleStreamDataSetIteratorTest extends SolrCloudTestCase {
       assertEquals("numIterationsDone="+listener.numIterationsDone()+" numDocs="+numDocs+" batch="+batch,
                    (numDocs+(batch-1))/batch, listener.numIterationsDone());
     }
-
-    Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread(); // TODO: seems to have no effect?
   }
 
 }
