@@ -18,10 +18,7 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
@@ -342,22 +339,24 @@ public class WordVectorSerializer {
      */
     public static <T extends SequenceElement> void writeWordVectors(WeightLookupTable<T> lookupTable,
                     OutputStream stream) throws IOException {
-        VocabCache<T> vocabCache = lookupTable.getVocabCache();
+        val vocabCache = lookupTable.getVocabCache();
 
         try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(stream, StandardCharsets.UTF_8))) {
             // saving header as "NUM_WORDS VECTOR_SIZE NUM_DOCS"
-            String str = vocabCache.numWords() + " " + lookupTable.layerSize() + " " + vocabCache.totalNumberOfDocs();
+            val str = vocabCache.numWords() + " " + lookupTable.layerSize() + " " + vocabCache.totalNumberOfDocs();
             log.debug("Saving header: {}", str);
             writer.println(str);
 
             // saving vocab content
-            for (int x = 0; x < vocabCache.numWords(); x++) {
+            val num = vocabCache.numWords();
+            for (int x = 0; x < num; x++) {
                 T element = vocabCache.elementAtIndex(x);
 
-                StringBuilder builder = new StringBuilder();
+                val builder = new StringBuilder();
 
-                builder.append(encodeB64(element.getLabel())).append(" ");
-                INDArray vec = lookupTable.vector(element.getLabel());
+                val l = element.getLabel();
+                builder.append(encodeB64(l)).append(" ");
+                val vec = lookupTable.vector(element.getLabel());
                 for (int i = 0; i < vec.length(); i++) {
                     builder.append(vec.getDouble(i));
                     if (i < vec.length() - 1)

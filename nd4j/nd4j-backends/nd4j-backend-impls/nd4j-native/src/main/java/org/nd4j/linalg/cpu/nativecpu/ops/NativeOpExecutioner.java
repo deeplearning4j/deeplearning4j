@@ -1029,7 +1029,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public <T extends Aggregate> void exec(Batch<T> batch) {
         //profilingHookIn(batch);
-        log.info("strting on batch");
 
         IntPointer pointer = (IntPointer) getPointer(batch);
 

@@ -50,7 +50,6 @@ public class Word2VecTestsSmall {
 
     @Test
     public void testUnkSerialization_1() throws Exception {
-        log.info("DataType: {}", Nd4j.dataType());
         val inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
 
         val iter = new BasicLineIterator(inputFile);
@@ -64,7 +63,7 @@ public class Word2VecTestsSmall {
                 .limitVocabularySize(1) // Limit the vocab size to 2 words
                 .windowSize(5)
                 .allowParallelTokenization(true)
-                .batchSize(1)
+                .batchSize(512)
                 .learningRate(0.025)
                 .minLearningRate(0.0001)
                 .negativeSample(0.0)
@@ -83,7 +82,7 @@ public class Word2VecTestsSmall {
         val tmpFile = File.createTempFile("temp","temp");
         tmpFile.deleteOnExit();
 
-        WordVectorSerializer.writeWord2VecModel(vec, tmpFile); // NullPointerException thrown here
+        WordVectorSerializer.writeWord2VecModel(vec, tmpFile); // NullPointerException was thrown here
     }
 
     @Test

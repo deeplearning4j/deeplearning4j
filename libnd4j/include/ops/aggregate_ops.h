@@ -101,44 +101,6 @@ namespace aggregateOps {
 #endif
     };
 
-    template <typename T>
-    aggregate_def T _dot(T *a, T *b, int length);
-
-    template<>
-    float _dot(float *a, float *b, int length){
-        float c = 0.0f;
-//#pragma omp simd reduction(+:c)
-        for (int e = 0; e < length; e++) {
-            c += a[e] * b[e];
-        }
-
-        return c;
-    }
-
-    template<>
-    double _dot(double *a, double *b, int length){
-        double c = 0.0f;
-#pragma omp simd reduction(+:c)
-        for (int e = 0; e < length; e++) {
-            c += a[e] * b[e];
-        }
-
-        return c;
-    }
-
-    template<>
-    float16 _dot(float16 *a, float16 *b, int length){
-        float16 c(0.0f);
-#pragma omp simd reduction(sumT:c)
-        for (int e = 0; e < length; e++) {
-            c += a[e] * b[e];
-        }
-
-        return c;
-    }
-
-
-
     /**
      * We don't include this class into ops directly, since it won't be ever used directly,
      * Only as part of SkipGram or CBOW
@@ -161,6 +123,7 @@ namespace aggregateOps {
             T *neu1e = arguments[3];
 
 
+            T dot(0.0f);
             T g(0.0f);
             T f(0.0f);
             T alpha = realArguments[0];
@@ -174,10 +137,9 @@ namespace aggregateOps {
 
             // dot
 //#pragma omp simd reduction(sumT:dot)
-            //for (int x = 0; x < vectorLength; x++) {
-            //    dot += syn0[x] * syn1[x];
-            //}
-            T dot = _dot<T>(syn0, syn1, vectorLength);
+            for (int x = 0; x < vectorLength; x++) {
+                dot += syn0[x] * syn1[x];
+            }
 
             // gradient
             if (dot < (T) - HS_MAX_EXP || dot >= (T) HS_MAX_EXP) {
