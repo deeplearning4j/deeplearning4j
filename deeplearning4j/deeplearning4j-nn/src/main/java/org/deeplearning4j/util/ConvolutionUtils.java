@@ -27,7 +27,9 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.LegacyPooling2D;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -534,5 +536,52 @@ public class ConvolutionUtils {
                             + " Got: " + inputType);
         }
         return new int[]{inH, inW, inDepth};
+    }
+
+    /**
+     * Given a mask array for a 1D CNN layer of shape [minibatch, sequenceLength], reduce the mask according to the 1D CNN layer configuration.
+     * Unlike RNN layers, 1D CNN layers may down-sample the data; consequently, we need to down-sample the mask array
+     * in the same way, to maintain the correspondence between the masks and the output activations
+     *
+     * @param in       Input size
+     * @param kernel   Kernel size
+     * @param stride   Stride
+     * @param padding  Padding
+     * @param dilation Dilation
+     * @param cm       Convolution mode
+     * @return Reduced mask
+     */
+    public static INDArray cnn1dMaskReduction(INDArray in, int kernel, int stride, int padding, int dilation, ConvolutionMode cm){
+        Preconditions.checkState(in.rank()==2, "Rank must be 2 for cnn1d mask array - shape ", in.shape());
+        if(cm == ConvolutionMode.Same && stride == 1 && padding == 0){
+            return in;
+        }
+
+        if(!Shape.hasDefaultStridesForShape(in)){
+            in = in.dup();
+        }
+
+        INDArray reshaped4d = in.reshape(in.size(0), 1, in.size(1), 1);
+
+        int[] outSize;
+        int[] pad;
+        int[] k = new int[]{kernel,1};
+        int[] s = new int[]{stride, 1};
+        int[] d = new int[]{dilation, 1};
+        if (cm == ConvolutionMode.Same) {
+            outSize = ConvolutionUtils.getOutputSize(reshaped4d, k, s, null, cm, d); //Also performs validation
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {(int)in.size(1), 1}, k, s, d);
+        } else {
+            pad = new int[]{padding, 0};
+            outSize = ConvolutionUtils.getOutputSize(reshaped4d, k, s, pad, cm, d); //Also performs validation
+        }
+        int outH = outSize[0];
+
+        INDArray output = Nd4j.createUninitialized(new int[]{(int)in.size(0), 1, outH, 1}, 'c');
+
+        Op op = new LegacyPooling2D(reshaped4d, kernel, 1, stride, 1, padding, 0, dilation, 1,
+                cm == ConvolutionMode.Same, LegacyPooling2D.Pooling2DType.MAX, 0.0, output);
+        Nd4j.getExecutioner().exec(op);
+        return output.reshape('c', in.size(0), outH);
     }
 }
