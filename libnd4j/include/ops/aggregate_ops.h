@@ -270,7 +270,7 @@ namespace aggregateOps {
             T alpha = realArguments[0];
 
             // dot
-#pragma omp simd reduction(sumT:dot)
+//#pragma omp simd reduction(sumT:dot)
             for (int x = 0; x < vectorLength; x++) {
                 dot += syn0[x] * syn1Neg[x];
             }
