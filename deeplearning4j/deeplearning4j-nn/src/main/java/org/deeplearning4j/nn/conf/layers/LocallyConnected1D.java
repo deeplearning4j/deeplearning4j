@@ -85,7 +85,6 @@ public class LocallyConnected1D extends SameDiffLayer {
         this.dilation = builder.dilation;
         this.hasBias = builder.hasBias;
         this.inputSize = builder.inputSize;
-        computeOutputSize();
         this.featureDim = kernel * (int) nIn;
     }
 
@@ -95,7 +94,9 @@ public class LocallyConnected1D extends SameDiffLayer {
 
     public void computeOutputSize() {
         int nIn = (int) getNIn();
-        // TODO: check if input size is set
+        if (inputSize == 0) {
+            throw new IllegalArgumentException("Input size has to be set for Locally connected layers");
+        }
         int[] inputShape = new int[] {1, nIn, inputSize};
         INDArray dummyInputForShapeInference = Nd4j.ones(inputShape);
 
@@ -111,6 +112,15 @@ public class LocallyConnected1D extends SameDiffLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
+        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
+            throw new IllegalArgumentException("Provided input type for locally connected 1D layers has to be " +
+                    "of CNN1D/RNN type, got: " + inputType);
+        }
+        // dynamically compute input size from input type
+        InputType.InputTypeRecurrent rnnType = (InputType.InputTypeRecurrent) inputType;
+        this.inputSize = (int) rnnType.getTimeSeriesLength();
+        computeOutputSize();
+
         return InputTypeUtil.getOutputTypeCnn1DLayers(inputType, kernel, stride, padding, 1,
                 cm, nOut, layerIndex, getLayerName(), LocallyConnected1D.class);
     }
@@ -118,14 +128,14 @@ public class LocallyConnected1D extends SameDiffLayer {
     @Override
     public void setNIn(InputType inputType, boolean override) {
         if (nIn <= 0 || override) {
-            InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-            this.nIn = c.getChannels();
+            InputType.InputTypeRecurrent c = (InputType.InputTypeRecurrent) inputType;
+            this.nIn = c.getSize();
         }
     }
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
     }
 
     @Override
@@ -158,7 +168,8 @@ public class LocallyConnected1D extends SameDiffLayer {
     @Override
     public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable) {
 
-        SDVariable w = paramTable.get(ConvolutionParamInitializer.WEIGHT_KEY);
+        SDVariable w = paramTable.get(ConvolutionParamInitializer.WEIGHT_KEY); // (outH, featureDim, nOut)
+        // System.out.println(Arrays.toString(w.getShape()));
 
         long[] inputShape = layerInput.getShape();
         long miniBatch = inputShape[0];
@@ -168,15 +179,22 @@ public class LocallyConnected1D extends SameDiffLayer {
 
         SDVariable[] inputArray = new SDVariable[outH];
         for (int i = 0; i < outH; i++) {
-                SDVariable slice = layerInput.get(SDIndex.all(), SDIndex.all(),
-                        SDIndex.interval(i * sH, i * sH + kH));
+                SDVariable slice = layerInput.get(
+                        SDIndex.all(), // miniBatch
+                        SDIndex.all(), // nIn
+                        SDIndex.interval(i * sH, i * sH + kH) // kernel
+                );
                 inputArray[i] = sameDiff.reshape(slice, 1, miniBatch, featureDim);
         }
-        SDVariable concatOutput = sameDiff.concat(0, inputArray);
-        SDVariable mmulResult = sameDiff.mmul(concatOutput, w);
+        SDVariable concatOutput = sameDiff.concat(0, inputArray); // (outH, miniBatch, featureDim)
+        sameDiff.exec();
 
-        SDVariable permutedResult = sameDiff.permute(mmulResult,1,0,2);
-        SDVariable result = sameDiff.reshape(permutedResult, miniBatch, nOut, outH);
+        System.out.println(Arrays.toString(concatOutput.getShape()));
+
+        SDVariable mmulResult = sameDiff.mmul(concatOutput, w); // (outH, miniBatch, nOut)
+        System.out.println(Arrays.toString(mmulResult.getShape()));
+
+        SDVariable result = sameDiff.permute(mmulResult,1, 2, 0); // (miniBatch, nOut, outH)
 
         SDVariable b = sameDiff.zero("bias", new long[] {1, nOut});
         if(hasBias){
@@ -208,7 +226,7 @@ public class LocallyConnected1D extends SameDiffLayer {
         private int dilation = 1;
         private int inputSize;
         private ConvolutionMode cm = ConvolutionMode.Same;
-        private boolean hasBias = true;
+        private boolean hasBias = false;
 
         public Builder nIn(int nIn) {
             this.nIn = nIn;

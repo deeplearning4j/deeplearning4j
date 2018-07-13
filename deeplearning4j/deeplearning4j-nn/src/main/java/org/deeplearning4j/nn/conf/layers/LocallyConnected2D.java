@@ -97,6 +97,13 @@ public class LocallyConnected2D extends SameDiffLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
+        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
+            throw new IllegalArgumentException("Provided input type for locally connected 2D layers has to be " +
+                    "of CNN type, got: " + inputType);
+        }
+        // dynamically compute input size from input type
+        InputType.InputTypeConvolutional cnnType = (InputType.InputTypeConvolutional) inputType;
+        this.inputSize = new int[] { (int) cnnType.getHeight(), (int) cnnType.getWidth()};
         computeOutputSize();
 
         return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding, new int[]{1, 1},
@@ -160,24 +167,28 @@ public class LocallyConnected2D extends SameDiffLayer {
         SDVariable[] inputArray = new SDVariable[outH * outW];
         for (int i = 0; i < outH; i++) {
             for (int j = 0; j < outW; j++) {
-                SDVariable slice = layerInput.get(SDIndex.all(), SDIndex.all(),
-                        SDIndex.interval(i * sH, i * sH + kH),
-                        SDIndex.interval(j * sW, j * sW + kW));
+                SDVariable slice = layerInput.get(
+                        SDIndex.all(), // miniBatch
+                        SDIndex.all(), // nIn
+                        SDIndex.interval(i * sH, i * sH + kH), // kernel height
+                        SDIndex.interval(j * sW, j * sW + kW) // kernel width
+                );
                 inputArray[i * outH + j] = sameDiff.reshape(slice, 1, miniBatch, featureDim);
             }
         }
-        SDVariable concatOutput = sameDiff.concat(0, inputArray);
+        SDVariable concatOutput = sameDiff.concat(0, inputArray); // (outH * outW, miniBatch, featureDim)
 
-        SDVariable mmulResult = sameDiff.mmul(concatOutput, w);
+        SDVariable mmulResult = sameDiff.mmul(concatOutput, w); // (outH * outW, miniBatch, nOut)
 
-        SDVariable permutedResult = sameDiff.permute(mmulResult,1,0,2);
-        SDVariable result = sameDiff.reshape(permutedResult, miniBatch, nOut, outH, outW);
+        SDVariable reshapeResult = sameDiff.reshape(mmulResult, outH, outW, miniBatch, nOut);
+
+        SDVariable permutedResult = sameDiff.permute(reshapeResult,2, 3, 0, 1); // (mb, nOut, outH, outW)
 
         SDVariable b = sameDiff.zero("bias", new long[] {1, nOut});
         if(hasBias){
             b = paramTable.get(ConvolutionParamInitializer.BIAS_KEY);
         }
-        SDVariable biasAddedResult = sameDiff.biasAdd(result, b);
+        SDVariable biasAddedResult = sameDiff.biasAdd(permutedResult, b);
         return activation.asSameDiff("out", sameDiff, biasAddedResult);
 
     }
@@ -203,7 +214,7 @@ public class LocallyConnected2D extends SameDiffLayer {
         private int[] dilation = new int[]{1, 1};
         private int[] inputSize;
         private ConvolutionMode cm = ConvolutionMode.Same;
-        private boolean hasBias = true;
+        private boolean hasBias = false;
 
         public Builder nIn(int nIn) {
             this.nIn = nIn;
