@@ -2123,6 +2123,13 @@ public interface INDArray extends Serializable {
     int getInt(int... indices);
 
     /**
+     * Get an long value at the specified indices. Result will be cast to an integer, precision loss is possible.
+     * @param indices Indices to get the integer at. Number of indices must match the array rank.
+     * @return Long value at the specified index
+     */
+    long getLong(long... indices);
+
+    /**
      * Get a double value at the specified indices.
      * @param indices Indices to get the double at. Number of indices must match the array rank.
      * @return Double value at the specified index

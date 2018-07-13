@@ -1959,7 +1959,50 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public int getInt(int... indices) {
-        return (int) getDouble(indices);
+        autoProcessScalarCall();
+        Nd4j.getCompressor().autoDecompress(this);
+
+        for (int i = 0; i < indices.length; i++) {
+            if (indices[i] < 0)
+                indices[i] += rank();
+        }
+        if (indices.length == 1) {
+            if (rank() == 1)
+                return Shape.getInt(this, indices[0]);
+            else if (isRowVector())
+                return Shape.getInt(this, 0, indices[0]);
+            else if (isColumnVector())
+                return Shape.getInt(this, indices[0], 0);
+            else if (isScalar() && indices[0] == 0)
+                return data().getInt(0);
+            else
+                throw new IllegalStateException("Indexes length must be > 1 for non vectors and scalars");
+        }
+        return Shape.getInt(this, indices);
+    }
+
+    @Override
+    public long getLong(long... indices) {
+        autoProcessScalarCall();
+        Nd4j.getCompressor().autoDecompress(this);
+
+        for (int i = 0; i < indices.length; i++) {
+            if (indices[i] < 0)
+                indices[i] += rank();
+        }
+        if (indices.length == 1) {
+            if (rank() == 1)
+                return Shape.getLong(this, indices[0]);
+            else if (isRowVector())
+                return Shape.getLong(this, 0, indices[0]);
+            else if (isColumnVector())
+                return Shape.getLong(this, indices[0], 0);
+            else if (isScalar() && indices[0] == 0)
+                return data().getLong(0);
+            else
+                throw new IllegalStateException("Indexes length must be > 1 for non vectors and scalars");
+        }
+        return Shape.getLong(this, indices);
     }
 
     /**
