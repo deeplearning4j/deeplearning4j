@@ -754,7 +754,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 };
             }
             ret.limit(ret.limit() - offset());
-            ret.capacity(ret.limit() - capacity());
+            ret.capacity(ret.capacity() - offset());
             return ret;
         }
         return pointer();
