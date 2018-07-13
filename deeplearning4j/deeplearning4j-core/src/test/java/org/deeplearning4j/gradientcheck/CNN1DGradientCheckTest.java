@@ -35,6 +35,76 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
     }
 
     @Test
+    public void testCnn1DWithLocallyConnected1D() {
+        Nd4j.getRandom().setSeed(1337);
+
+        int[] minibatchSizes = {2, 3};
+        int length = 7;
+        int convNIn = 2;
+        int convNOut1 = 3;
+        int convNOut2 = 4;
+        int finalNOut = 4;
+
+        int[] kernels = {1};
+        int stride = 1;
+        int padding = 0;
+
+        Activation[] activations = {Activation.SIGMOID};
+
+        for (Activation afn : activations) {
+            for (int minibatchSize : minibatchSizes) {
+                for (int kernel : kernels) {
+                    INDArray input = Nd4j.rand(new int[]{minibatchSize, convNIn, length});
+                    INDArray labels = Nd4j.zeros(minibatchSize, finalNOut, length);
+                    for (int i = 0; i < minibatchSize; i++) {
+                        for (int j = 0; j < length; j++) {
+                            labels.putScalar(new int[]{i, i % finalNOut, j}, 1.0);
+                        }
+                    }
+
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                            .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list()
+                            .layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
+                                    .stride(stride).padding(padding).nIn(convNIn).nOut(convNOut1)
+                                    .build())
+                            .layer(new LocallyConnected1D.Builder().activation(afn).kernelSize(kernel)
+                                    .stride(stride).padding(padding).nIn(convNOut1).nOut(convNOut2).hasBias(false)
+                                    .build())
+                            .layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                    .activation(Activation.SOFTMAX).nOut(finalNOut).build())
+                            .setInputType(InputType.recurrent(convNIn, length)).build();
+
+                    String json = conf.toJson();
+                    MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
+                    assertEquals(conf, c2);
+
+                    MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                    net.init();
+
+                    String msg = "Minibatch=" + minibatchSize + ", activationFn="
+                            + afn + ", kernel = " + kernel;
+
+                    if (PRINT_RESULTS) {
+                        System.out.println(msg);
+                        for (int j = 0; j < net.getnLayers(); j++)
+                            System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
+                    }
+
+                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+                    assertTrue(msg, gradOK);
+
+                    TestUtils.testModelSerialization(net);
+                }
+
+            }
+        }
+    }
+
+
+    @Test
     public void testCnn1DWithCropping1D() {
         Nd4j.getRandom().setSeed(1337);
 
@@ -55,18 +125,18 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
 
         Activation[] activations = {Activation.SIGMOID};
         SubsamplingLayer.PoolingType[] poolingTypes =
-                new SubsamplingLayer.PoolingType[] {SubsamplingLayer.PoolingType.MAX,
+                new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX,
                         SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
 
         for (Activation afn : activations) {
             for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
                 for (int minibatchSize : minibatchSizes) {
                     for (int kernel : kernels) {
-                        INDArray input = Nd4j.rand(new int[] {minibatchSize, convNIn, length});
+                        INDArray input = Nd4j.rand(new int[]{minibatchSize, convNIn, length});
                         INDArray labels = Nd4j.zeros(minibatchSize, finalNOut, croppedLength);
                         for (int i = 0; i < minibatchSize; i++) {
                             for (int j = 0; j < croppedLength; j++) {
-                                labels.putScalar(new int[] {i, i % finalNOut, j}, 1.0);
+                                labels.putScalar(new int[]{i, i % finalNOut, j}, 1.0);
                             }
                         }
 
@@ -135,18 +205,18 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
 
         Activation[] activations = {Activation.SIGMOID};
         SubsamplingLayer.PoolingType[] poolingTypes =
-                new SubsamplingLayer.PoolingType[] {SubsamplingLayer.PoolingType.MAX,
+                new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX,
                         SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
 
         for (Activation afn : activations) {
             for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
                 for (int minibatchSize : minibatchSizes) {
                     for (int kernel : kernels) {
-                        INDArray input = Nd4j.rand(new int[] {minibatchSize, convNIn, length});
+                        INDArray input = Nd4j.rand(new int[]{minibatchSize, convNIn, length});
                         INDArray labels = Nd4j.zeros(minibatchSize, finalNOut, paddedLength);
                         for (int i = 0; i < minibatchSize; i++) {
                             for (int j = 0; j < paddedLength; j++) {
-                                labels.putScalar(new int[] {i, i % finalNOut, j}, 1.0);
+                                labels.putScalar(new int[]{i, i % finalNOut, j}, 1.0);
                             }
                         }
 
@@ -213,35 +283,35 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
 
         Activation[] activations = {Activation.SIGMOID, Activation.TANH};
         SubsamplingLayer.PoolingType[] poolingTypes =
-                        new SubsamplingLayer.PoolingType[] {SubsamplingLayer.PoolingType.MAX,
-                                        SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
+                new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX,
+                        SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
 
         for (Activation afn : activations) {
             for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
                 for (int minibatchSize : minibatchSizes) {
                     for (int kernel : kernels) {
-                        INDArray input = Nd4j.rand(new int[] {minibatchSize, convNIn, length});
+                        INDArray input = Nd4j.rand(new int[]{minibatchSize, convNIn, length});
                         INDArray labels = Nd4j.zeros(minibatchSize, finalNOut, length);
                         for (int i = 0; i < minibatchSize; i++) {
                             for (int j = 0; j < length; j++) {
-                                labels.putScalar(new int[] {i, i % finalNOut, j}, 1.0);
+                                labels.putScalar(new int[]{i, i % finalNOut, j}, 1.0);
                             }
                         }
 
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                                        .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
-                                        .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list()
-                                        .layer(0, new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
-                                                        .stride(stride).padding(padding).nIn(convNIn).nOut(convNOut1)
-                                                        .build())
-                                        .layer(1, new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
-                                                        .stride(stride).padding(padding).nIn(convNOut1).nOut(convNOut2)
-                                                        .build())
-                                        .layer(2, new Subsampling1DLayer.Builder(poolingType).kernelSize(kernel)
-                                                        .stride(stride).padding(padding).pnorm(pnorm).build())
-                                        .layer(3, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                                        .activation(Activation.SOFTMAX).nOut(finalNOut).build())
-                                        .setInputType(InputType.recurrent(convNIn, length)).build();
+                                .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                                .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list()
+                                .layer(0, new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
+                                        .stride(stride).padding(padding).nIn(convNIn).nOut(convNOut1)
+                                        .build())
+                                .layer(1, new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
+                                        .stride(stride).padding(padding).nIn(convNOut1).nOut(convNOut2)
+                                        .build())
+                                .layer(2, new Subsampling1DLayer.Builder(poolingType).kernelSize(kernel)
+                                        .stride(stride).padding(padding).pnorm(pnorm).build())
+                                .layer(3, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX).nOut(finalNOut).build())
+                                .setInputType(InputType.recurrent(convNIn, length)).build();
 
                         String json = conf.toJson();
                         MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
@@ -251,7 +321,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                         net.init();
 
                         String msg = "PoolingType=" + poolingType + ", minibatch=" + minibatchSize + ", activationFn="
-                                        + afn + ", kernel = " + kernel;
+                                + afn + ", kernel = " + kernel;
 
                         if (PRINT_RESULTS) {
                             System.out.println(msg);
@@ -260,7 +330,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                         }
 
                         boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                         assertTrue(msg, gradOK);
                         TestUtils.testModelSerialization(net);

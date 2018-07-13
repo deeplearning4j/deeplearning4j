@@ -393,7 +393,6 @@ public class ConvolutionUtils {
         }
     }
 
-
     /**
      * Perform validation on the CNN layer kernel/stride/padding. Expect 2d int[], with values > 0 for kernel size and
      * stride, and values >= 0 for padding.

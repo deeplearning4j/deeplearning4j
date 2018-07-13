@@ -118,7 +118,7 @@ public abstract class InputType implements Serializable {
 
     /**
      * Input type for convolutional (CNN) data, that is 4d with shape [miniBatchSize, channels, height, width].
-     * For CNN data that has been flattened, use {@link #convolutionalFlat(int, int, int)}
+     * For CNN data that has been flattened, use {@link #convolutionalFlat(long, long, long)}
      *
      * @param height height of the input
      * @param width  Width of the input
@@ -145,7 +145,8 @@ public abstract class InputType implements Serializable {
 
     /**
      * Input type for convolutional (CNN) data, where the data is in flattened (row vector) format.
-     * Expect data with shape [miniBatchSize, height * width * channels]. For CNN data in 4d format, use {@link #convolutional(int, int, int)}
+     * Expect data with shape [miniBatchSize, height * width * channels]. For CNN data in 4d format,
+     * use {@link #convolutional(long, long, long)}
      *
      * @param height Height of the (unflattened) data represented by this input type
      * @param width  Width of the (unflattened) data represented by this input type
