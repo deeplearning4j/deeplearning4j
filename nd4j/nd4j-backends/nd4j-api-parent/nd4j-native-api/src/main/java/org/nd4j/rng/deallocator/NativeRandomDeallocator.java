@@ -54,6 +54,9 @@ public class NativeRandomDeallocator {
     }
 
 
+    @Deprecated // For test use within the github.com/deeplearning4j/deeplearning4j repo only.
+    public static final String DeallocatorThreadNamePrefix = "NativeRandomDeallocator thread ";
+
     /**
      * This class provides garbage collection for NativeRandom state memory. It's not too big amount of memory used, but we don't want any leaks.
      *
@@ -66,7 +69,7 @@ public class NativeRandomDeallocator {
                         Map<Long, GarbageStateReference> referenceMap) {
             this.queue = queue;
             this.referenceMap = referenceMap;
-            this.setName("NativeRandomDeallocator thread " + threadId);
+            this.setName(DeallocatorThreadNamePrefix + threadId);
             this.setDaemon(true);
         }
 
