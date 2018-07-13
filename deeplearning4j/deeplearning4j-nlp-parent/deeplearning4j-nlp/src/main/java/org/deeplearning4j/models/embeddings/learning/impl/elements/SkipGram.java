@@ -275,7 +275,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
         if (!isInference) {
             batches.get().add(sg);
-            if (batches.get().size() > 0) {
+            if (batches.get().size() > 4096) {
                 Nd4j.getExecutioner().exec(batches.get());
                 batches.get().clear();
             }

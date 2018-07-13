@@ -60,7 +60,7 @@ public class Word2VecTestsSmall {
         val vec = new Word2Vec.Builder()
                 .minWordFrequency(1)
                 .epochs(1)
-                .layerSize(20)
+                .layerSize(300)
                 .limitVocabularySize(1) // Limit the vocab size to 2 words
                 .windowSize(5)
                 .allowParallelTokenization(true)
@@ -75,7 +75,7 @@ public class Word2VecTestsSmall {
                 .useUnknown(true) // Using UNK with limited vocab size causes the issue
                 .seed(42)
                 .iterate(iter)
-                .workers(1)
+                .workers(4)
                 .tokenizerFactory(t).build();
 
         vec.fit();
