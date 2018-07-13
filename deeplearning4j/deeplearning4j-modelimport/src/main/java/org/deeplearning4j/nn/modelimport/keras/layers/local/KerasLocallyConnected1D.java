@@ -22,7 +22,7 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.LocallyConnected2D;
+import org.deeplearning4j.nn.conf.layers.LocallyConnected1D;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution;
@@ -38,20 +38,18 @@ import java.util.Map;
 import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.*;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getActivationFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.removeDefaultWeights;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.*;
 
 
 /**
- * Imports a 2D locally connected layer from Keras.
+ * Imports a 1D locally connected layer from Keras.
  *
  * @author Max Pumperla
  */
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class KerasLocallyConnected2D extends KerasConvolution {
+public class KerasLocallyConnected1D extends KerasConvolution {
 
     /**
      * Pass-through constructor from KerasLayer
@@ -59,7 +57,7 @@ public class KerasLocallyConnected2D extends KerasConvolution {
      * @param kerasVersion major keras version
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasLocallyConnected2D(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
+    public KerasLocallyConnected1D(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
         super(kerasVersion);
     }
 
@@ -70,7 +68,7 @@ public class KerasLocallyConnected2D extends KerasConvolution {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasLocallyConnected2D(Map<String, Object> layerConfig)
+    public KerasLocallyConnected1D(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
@@ -83,13 +81,13 @@ public class KerasLocallyConnected2D extends KerasConvolution {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasLocallyConnected2D(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+    public KerasLocallyConnected1D(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
         hasBias = getHasBiasFromConfig(layerConfig, conf);
         numTrainableParams = hasBias ? 2 : 1;
-        int[] dilationRate = getDilationRate(layerConfig, 2, conf, false);
+        int[] dilationRate = getDilationRate(layerConfig, 1, conf, false);
 
         Pair<WeightInit, Distribution> init = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
                 enforceTrainingConfig, conf, kerasMajorVersion);
@@ -102,20 +100,20 @@ public class KerasLocallyConnected2D extends KerasConvolution {
         LayerConstraint weightConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_W_CONSTRAINT(), conf, kerasMajorVersion);
 
-        LocallyConnected2D.Builder builder = new LocallyConnected2D.Builder().name(this.layerName)
+        LocallyConnected1D.Builder builder = new LocallyConnected1D.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(weightInit)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
-                .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
+                .kernelSize(getKernelSizeFromConfig(layerConfig, 1, conf, kerasMajorVersion)[0])
                 .hasBias(hasBias)
-                .stride(getStrideFromConfig(layerConfig, 2, conf));
-        int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);
+                .stride(getStrideFromConfig(layerConfig, 1, conf)[0]);
+        int[] padding = getPaddingFromBorderModeConfig(layerConfig, 1, conf, kerasMajorVersion);
         if (padding != null)
-            builder.padding(padding);
+            builder.padding(padding[0]);
         if (dilationRate != null)
-            builder.dilation(dilationRate);
+            builder.dilation(dilationRate[0]);
         if (biasConstraint != null)
             builder.constrainBias(biasConstraint);
         if (weightConstraint != null)
@@ -124,12 +122,12 @@ public class KerasLocallyConnected2D extends KerasConvolution {
     }
 
     /**
-     * Get DL4J LocallyConnected2D layer.
+     * Get DL4J LocallyConnected1D layer.
      *
-     * @return Locally connected 2D layer.
+     * @return Locally connected 1D layer.
      */
-    public LocallyConnected2D getLocallyConnected2DLayer() {
-        return (LocallyConnected2D) this.layer;
+    public LocallyConnected1D getLocallyConnected1DLayer() {
+        return (LocallyConnected1D) this.layer;
     }
 
     /**
@@ -144,24 +142,23 @@ public class KerasLocallyConnected2D extends KerasConvolution {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras Convolution layer accepts only one input (received " + inputType.length + ")");
-        InputType.InputTypeConvolutional convType = (InputType.InputTypeConvolutional) inputType[0];
+        InputType.InputTypeRecurrent rnnType = (InputType.InputTypeRecurrent) inputType[0];
 
         // Override input/output shape and input channels dynamically. This works since getOutputType will always
         // be called when initializing the model.
-        ((LocallyConnected2D) this.layer).setInputSize(new int[] {(int) convType.getHeight(),(int) convType.getWidth()});
-        ((LocallyConnected2D) this.layer).setNIn(convType.getChannels());
-        ((LocallyConnected2D) this.layer).computeOutputSize();
+        ((LocallyConnected1D) this.layer).setInputSize((int) rnnType.getTimeSeriesLength());
+        ((LocallyConnected1D) this.layer).setNIn(rnnType.getSize());
+        ((LocallyConnected1D) this.layer).computeOutputSize();
 
         InputPreProcessor preprocessor = getInputPreprocessor(inputType[0]);
         if (preprocessor != null) {
-            return this.getLocallyConnected2DLayer().getOutputType(-1, preprocessor.getOutputType(inputType[0]));
+            return this.getLocallyConnected1DLayer().getOutputType(-1, preprocessor.getOutputType(inputType[0]));
         }
-        return this.getLocallyConnected2DLayer().getOutputType(-1, inputType[0]);
+        return this.getLocallyConnected1DLayer().getOutputType(-1, inputType[0]);
     }
 
-
     /**
-     * Set weights for 2D locally connected layer.
+     * Set weights for 1D locally connected layer.
      *
      * @param weights Map from parameter name to INDArray.
      */
@@ -184,4 +181,5 @@ public class KerasLocallyConnected2D extends KerasConvolution {
         }
         removeDefaultWeights(weights, conf);
     }
+
 }
