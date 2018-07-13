@@ -491,11 +491,16 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
-    public INDArray (INDArray x) {
+    public INDArray ravelCooIndices(INDArray x, char clipMode) {
         //TODO
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public INDArray unravelCooIndices(INDArray x, DataBuffer shapeInfo) {
+        //TODO
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public INDArray create(float[] data, long[] shape, long offset, Character order) {

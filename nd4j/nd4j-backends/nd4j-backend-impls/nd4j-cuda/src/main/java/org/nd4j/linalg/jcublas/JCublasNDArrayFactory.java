@@ -2004,4 +2004,14 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     public INDArray sortCooIndices(INDArray x) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public INDArray ravelCooIndices(INDArray x, char clipMode) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray unravelCooIndices(INDArray x, DataBuffer shapeInfo) {
+        throw new UnsupportedOperationException();
+    }
 }
