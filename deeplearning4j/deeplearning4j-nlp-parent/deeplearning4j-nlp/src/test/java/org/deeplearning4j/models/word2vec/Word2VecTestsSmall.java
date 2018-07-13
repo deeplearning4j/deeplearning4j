@@ -1,9 +1,11 @@
 package org.deeplearning4j.models.word2vec;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
@@ -16,6 +18,7 @@ import java.util.Collection;
 import static org.junit.Assert.assertEquals;
 
 
+@Slf4j
 public class Word2VecTestsSmall {
     WordVectors word2vec;
 
@@ -47,6 +50,7 @@ public class Word2VecTestsSmall {
 
     @Test
     public void testUnkSerialization_1() throws Exception {
+        log.info("DataType: {}", Nd4j.dataType());
         val inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
 
         val iter = new BasicLineIterator(inputFile);
@@ -56,7 +60,7 @@ public class Word2VecTestsSmall {
         val vec = new Word2Vec.Builder()
                 .minWordFrequency(1)
                 .epochs(1)
-                .layerSize(300)
+                .layerSize(20)
                 .limitVocabularySize(1) // Limit the vocab size to 2 words
                 .windowSize(5)
                 .allowParallelTokenization(true)

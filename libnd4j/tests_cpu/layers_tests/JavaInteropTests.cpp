@@ -752,17 +752,21 @@ TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
 TEST_F(JavaInteropTests, Test_NLP_Aggregations_1) {
     NativeOps ops;
 
-    auto syn0 = new float[3 * 300];
-    auto syn1 = new float[3 * 300];
-    auto exp = new float[100000];
+    std::array<float, 60> syn0 = {-0.022756476f, 0.0126427775f, 0.011029151f, -0.013542821f, -0.012327666f, -0.0032439455f, -0.008405109f, -0.016651405f, 0.0015980572f, -0.007442479f, 0.019937921f, -0.016222188f, -0.016541665f, 0.013372547f, 0.006625724f, 0.0058958204f, -0.01281835f, -6.2343775E-4f, 0.0019826533f, 0.010253737f, -0.010291531f, 0.0019767822f, 0.018071089f, -0.0117441565f, 0.023176769f, 0.0032820583f, 0.0061427564f, -0.01696018f, 0.0054971874f, 0.0043818625f, 0.019323621f, 0.0036080598f, 0.024376748f, -0.0024499625f, 0.019496754f, 0.010563821f, -2.0503551E-4f, -0.0146056535f, 0.009949291f, 0.017604528f, -0.0050302492f, -0.022060446f, 0.016468976f, -0.0034482107f, 0.010270384f, -0.0063356445f, -0.019934833f, -0.02325993f, 0.016109904f, -0.0031106502f, -0.0020592287f, 0.024031803f, 0.005184144f, -0.024887865f, 0.02100272f, 3.395051E-4f, 0.018432347f, 5.673498E-4f, -0.020073576f, 0.010949242f};
+    std::array<float, 60> syn1;
+    std::array<float, 100000> exp;
 
-    for (int e = 0; e < 100000; e++) {
-        auto tmp = nd4j::math::nd4j_exp<float>((e / (100000 * 2.0f - 1.0f) * 6.0));
-        exp[e] = tmp / (tmp + 1.0f);
+    for (int e = 0; e < syn1.size(); e++)
+        syn1[e] = 0.0f;
+
+    for (int e = 0; e < exp.size(); e++) {
+        auto f = static_cast<double>(e);
+        auto tmp = nd4j::math::nd4j_exp<double>((f / 100000.0 * 2.0 - 1.0) * 6.0);
+        exp[e] = static_cast<float>(tmp / (tmp + 1.0));
     }
 
     auto maxTypes = 5;
-    auto numAggregates = 2;
+    auto numAggregates = 1;
     auto opNum = 3;
     auto maxArgs = 6;
     auto maxShapes = 0;
@@ -784,8 +788,8 @@ TEST_F(JavaInteropTests, Test_NLP_Aggregations_1) {
     std::vector<int> intArray0({0, 0, 0, 0, 0});
     std::vector<int> intArray1({1, 0, 0, 0, 0});
 
-    std::vector<int> indexingArgs0({1, 300, 5, 0, 100000, 3, 0, 0, 0});
-    std::vector<int> indexingArgs1({0, 300, 5, 0, 100000, 3, 1, 0, 0});
+    std::vector<int> indexingArgs0({1, 20, 5, 0, 100000, 3, 0, 0, 0});
+    std::vector<int> indexingArgs1({0, 20, 5, 0, 100000, 3, 1, 0, 0});
 
     std::vector<float> realArgs0({0.024964055335354007f, 3.0768702268737162E18f});
 
@@ -834,14 +838,10 @@ TEST_F(JavaInteropTests, Test_NLP_Aggregations_1) {
         //
         auto ptrptr = reinterpret_cast<void **>(pointer.data());
         idx = argsPos + e * maxArgs;
-        ptrptr[idx] = reinterpret_cast<void*>(syn0);
-        ptrptr[idx+1] = reinterpret_cast<void*>(syn1);
-        ptrptr[idx+2] = reinterpret_cast<void*>(exp);
+        ptrptr[idx] = reinterpret_cast<void*>(syn0.data());
+        ptrptr[idx+1] = reinterpret_cast<void*>(syn1.data());
+        ptrptr[idx+2] = reinterpret_cast<void*>(exp.data());
 
 
     ops.execAggregateBatchFloat(nullptr, numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIndexArguments, maxRealArguments, pointer.data());
-
-    delete[] syn0;
-    delete[] syn1;
-    delete[] exp;
 }

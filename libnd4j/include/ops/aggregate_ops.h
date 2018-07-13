@@ -120,10 +120,17 @@ namespace aggregateOps {
             T *expTable = arguments[2];
             T *neu1e = arguments[3];
 
-            T dot = (T) 0.0f;
-            T g = (T) 0.0f;
-            T f = (T) 0.0f;
+            T dot(0.0f);
+            T g(0.0f);
+            T f(0.0f);
             T alpha = realArguments[0];
+
+            //nd4j_printf("Vector length: [%i]; expLength: [%i]; Code: [%i]; Inf: [%i]\n", vectorLength, expLength, code, isInference);
+
+
+//            shape::printArray<T>(syn0, vectorLength, "syn0");
+//            shape::printArray<T>(syn1, vectorLength, "syn1");
+//            shape::printArray<T>(neu1e, vectorLength, "neu1e");
 
             // dot
 #pragma omp simd reduction(sumT:dot)
@@ -136,14 +143,16 @@ namespace aggregateOps {
                 return;
             }
 
-            int idx = (int) ((dot + HS_MAX_EXP) * ((T) expLength / HS_MAX_EXP / 2.0));
+            int idx = 50000; //static_cast<int>((dot + HS_MAX_EXP) * ((T) expLength / HS_MAX_EXP / 2.0));
 
             if (idx >= expLength || idx < 0) {
                 return;
             }
 
             f = expTable[idx];
-            g = ((T) 1.0f - (T)code - f) * alpha;
+            g = (static_cast<T>(1.0f) - static_cast<T>(code) - f) * alpha;
+
+            //nd4j_printf("dot: [%f]; idx: [%i]; f: [%f]; g: [%f]\n", (float) dot, idx, (float) f, (float) g);
 
             // axpy1
 #pragma omp simd
@@ -475,7 +484,7 @@ namespace aggregateOps {
             int isInference = indexArguments[8];
 
 
-            T *neu1e = new T[vectorLength];
+            auto neu1e = new T[vectorLength];
             std::memset(neu1e, 0, sizeof(T) * vectorLength);
 
             T *args[4];
@@ -501,17 +510,18 @@ namespace aggregateOps {
             int *idxSyn1 = intArrays[0];
             int *codes = intArrays[1];
 
-            unsigned long long next_random = (unsigned long long) realArguments[1];
+            //nd4j_printf("syn0Row: [%i]; vecLen: [%i]; hsRounds: [%i]; ngRounds: [%i]; expLength: [%i]; vocabSize: [%i]; ngStarter: [%i]; negTableLength: [%i]; isInf: [%i]\n", syn0Row, vectorLength, hsRounds, ngRounds, expLength, vocabSize, ngStarter, negTableLength, isInference);
+
+            auto next_random = static_cast<unsigned long long>(realArguments[1]);
 
             if (hsRounds > 0) {
                 for (int r = 0; r < hsRounds; r++) {
                     args[1] = arguments[1] + (idxSyn1[r] * vectorLength); // syn1 row
                     idxArgs[2] = codes[r];  // code for row
 
-                    //printf("idx syn1: [%i]; code: [%i]\n", idxArgs[1], idxArgs[4]);
+                    //nd4j_printf("idx syn1: [%i]; code: [%i]\n", idxSyn1[r], idxArgs[2]);
 
-                    HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, nullptr, 0, realArguments,
-                                                           1);
+                    HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, nullptr, 0, realArguments, 1);
                 }
             }
 
@@ -538,6 +548,8 @@ namespace aggregateOps {
                     NegativeSampling<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, nullptr, 0, realArguments, 1);
                 }
             }
+
+            //nd4j_printf("applying...\n","");
 
             if (!isInference) {
 #pragma omp simd

@@ -304,6 +304,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
             double tmp = FastMath.exp((i / (double) expTable.length * 2 - 1) * MAX_EXP);
             expTable[i] = tmp / (tmp + 1.0);
         }
+        log.info("sss");
     }
 
 

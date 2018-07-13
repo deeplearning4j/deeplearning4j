@@ -274,7 +274,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             }
         }
 
-
+        log.info("Model syn0: {}", ((InMemoryLookupTable<VocabWord>) lookupTable).getSyn0().data());
+        log.info("Model syn1: {}", ((InMemoryLookupTable<VocabWord>) lookupTable).getSyn1().data());
 
         initLearners();
 
