@@ -1599,6 +1599,10 @@ public interface NDArrayFactory {
 
     INDArray createUninitialized(long[] shape, char ordering);
 
+    INDArray createUninitialized(int[] shape, char ordering, DataBuffer.Type dType);
+
+    INDArray createUninitialized(long[] shape, char ordering, DataBuffer.Type dType);
+
     /**
      * Cretes uninitialized INDArray detached from any (if any) workspace
      * @param shape

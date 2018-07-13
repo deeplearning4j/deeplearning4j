@@ -315,6 +315,16 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
+    public INDArray createUninitialized(int[] shape, char ordering, DataBuffer.Type dType) {
+        return new NDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false, dType);
+    }
+
+    @Override
+    public INDArray createUninitialized(long[] shape, char ordering, DataBuffer.Type dType) {
+        return new NDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false, dType);
+    }
+
+    @Override
     public INDArray createUninitializedDetached(int[] shape, char ordering) {
         MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
@@ -785,6 +795,15 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         if (toConcat.length == 1)
             return toConcat[0];
 
+        DataBuffer.Type dType = toConcat[0].dataType();
+        for (int i = 1; i < toConcat.length; ++i){
+            INDArray arr = toConcat[i];
+            if (!arr.dataType().equals(dType)){
+                throw new IllegalArgumentException(String.format("Data type mismatch between arrays to be concatenated. Array 0 is of type %s, %d is " +
+                        "is of type %s", dType.toString(), i, arr.dataType().toString()));
+            }
+        }
+
         // if reusable var wasn't created for this thread, or is smaller then needed - set it to new value
         if (extrazA.get() == null || extrazB.get() == null || extrazSize.get() == null || extrazSize.get() < toConcat.length) {
             extrazA.set(new PointerPointer(toConcat.length));
@@ -821,9 +840,9 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         //PointerPointer dummy = new PointerPointer(new Pointer[] {null});
 
-        INDArray ret = Nd4j.createUninitialized(outputShape, Nd4j.order());
+        INDArray ret = createUninitialized(outputShape, Nd4j.order(), dType);
 
-        switch (ret.data().dataType()){
+        switch (dType){
             case DOUBLE: {
             nativeOps.concatDouble(null, dimension, toConcat.length, dataPointers, shapeInfoPointers,
                     (DoublePointer) ret.data().addressPointer(),

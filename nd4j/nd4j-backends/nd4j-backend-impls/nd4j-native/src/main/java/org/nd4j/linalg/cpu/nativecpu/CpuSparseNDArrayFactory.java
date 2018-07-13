@@ -130,6 +130,16 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
+    public INDArray createUninitialized(int[] shape, char ordering, DataBuffer.Type dType) {
+        return null;
+    }
+
+    @Override
+    public INDArray createUninitialized(long[] shape, char ordering, DataBuffer.Type dType) {
+        return null;
+    }
+
+    @Override
     public INDArray createUninitializedDetached(long[] shape, char ordering) {
         return null;
     }

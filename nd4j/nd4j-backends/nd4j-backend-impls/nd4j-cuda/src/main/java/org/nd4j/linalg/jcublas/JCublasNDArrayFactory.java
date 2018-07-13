@@ -267,6 +267,16 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
+    public INDArray createUninitialized(int[] shape, char ordering, DataBuffer.Type dType) {
+        return new JCublasNDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false, dType);
+    }
+
+    @Override
+    public INDArray createUninitialized(long[] shape, char ordering, DataBuffer.Type dType) {
+        return new JCublasNDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false, dType);
+    }
+
+    @Override
     public INDArray createUninitializedDetached(int[] shape, char ordering) {
         MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         Nd4j.getMemoryManager().setCurrentWorkspace(null);

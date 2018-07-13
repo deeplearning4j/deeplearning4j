@@ -127,6 +127,16 @@ public class JCublasNDArray extends BaseNDArray {
         super(shape, stride, offset, ordering, initialize);
     }
 
+    public JCublasNDArray(int[] shape, int[] stride, long offset, char ordering, boolean initialize, DataBuffer.Type dType) {
+        super(shape, stride, offset, ordering, initialize, dType);
+    }
+
+    public JCublasNDArray(long[] shape, long[] stride, long offset, char ordering, boolean initialize, DataBuffer.Type dType) {
+        super(shape, stride, offset, ordering, initialize, dType);
+    }
+
+
+
     /**
      * Create the JCublasNDArray with
      * the specified shape and stride and an offset of 0
