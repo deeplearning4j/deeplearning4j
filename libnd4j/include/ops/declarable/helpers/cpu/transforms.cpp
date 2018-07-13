@@ -632,9 +632,12 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
             std::vector<Nd4jLong> idxRanges(rank * 2);
 
 #pragma omp parallel for schedule(guided) firstprivate(idxRanges)
-            for(Nd4jLong i = 0; i < numOfSubArrs; ++i)
-                if (norm2(i) > clipNorm) 
+            for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
+                if (norm2(i) > clipNorm) {
+                    ShapeUtils<T>::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
                     input(idxRanges.data()) *= (clipNorm / norm2(i));
+                }
+            }
         }
     }
     else {
@@ -672,7 +675,7 @@ void clipByNormBP(const NDArray<T>& input, const NDArray<T>& gradO, NDArray<T>& 
     
     const int rank = input.rankOf();
 
-    NDArray<T> norm2 = input.template reduceAlongDims<simdOps::Norm2<T>>(dimensions);    
+    NDArray<T> norm2 = input.template reduceAlongDims<simdOps::Norm2<T>>(dimensions);
 
     if(norm2.lengthOf() == 1) {        
 

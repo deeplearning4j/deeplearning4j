@@ -1117,22 +1117,42 @@ TEST_F(DeclarableOpsTests9, concat_test13) {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////////////
-// TEST_F(DeclarableOpsTests9, clipbynorm_bp_test1) {
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, clipbynorm_test12) {
     
-//     NDArray<double> x('c', {3, 5}, {0.7044955, 0.55606544, 0.15833677, 0.001874401, 0.61595726, 0.3924779, 0.7414847, 0.4127324, 0.24026828, 0.26093036, 0.46741188, 0.01863421, 0.08528871, 0.529365, 0.5510694});
-//     NDArray<double> gradO('c', {3, 5});
-//     NDArray<double> exp('c', {3, 5}, {0.405392, 0.319980, 0.091113, 0.001079, 0.354444, 0.225846, 0.426676, 0.237501, 0.138259, 0.150149, 0.268965, 0.010723, 0.049078, 0.304615, 0.317105});    
+    const int bS   = 5;
+    const int nOut = 4;
+    const int axis = 0;
+    const double clip = 2.;
+    
+    NDArray<double> x('c', {bS, nOut}, {0.412 ,0.184 ,0.961 ,0.897 ,0.173 ,0.931 ,0.736 ,0.540 ,0.953 ,0.278 ,0.573 ,0.787 ,0.320 ,0.776 ,0.338 ,0.311 ,0.835 ,0.909 ,0.890 ,0.290});    // uniform random in range [0,1]
+    NDArray<double> colVect('c', {bS, 1}, {0.9, 0.95, 1.00, 1.05, 1.1});
+    NDArray<double> expect('c', {bS, nOut});
 
-//     gradO.linspace(0.1, 0.1);
+    NDArray<double> norm2 = x.template reduceAlongDims<simdOps::Norm2<double>>({axis}, true); // norm2 has shape [1, nOut]
+    
+    NDArray<double> y = ( (x / norm2) * clip) * colVect ;    
+    NDArray<double> temp = (x / norm2) * clip;
+    for (int j = 0; j < nOut; ++j) {
+        printf("true norm2 %f \n", norm2(j));
+        printf("temp       %f \n", temp({{},{j,j+1}}).template reduceNumber<simdOps::Norm2<double>>());
+    }    
 
-//     nd4j::ops::clipbynorm_bp<double> op;
-//     auto result = op.execute({&x, &gradO}, {1.f}, {});
-//     auto gradI = result->at(0);
-        
-//     ASSERT_TRUE(exp.isSameShape(gradI));
-//     ASSERT_TRUE(exp.equalsTo(gradI));
+    for (int j = 0; j < nOut; ++j) {
+        NDArray<double> yCol = y({{}, {j, j+1}});
+        const double norm2Col = yCol.template reduceNumber<simdOps::Norm2<double>>();
+        if (norm2Col <= clip) 
+            expect({{}, {j,j+1}}).assign(yCol);
+        else 
+            expect({{}, {j,j+1}}).assign ( yCol * (clip / norm2Col) );
+    }
+    
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&y}, {clip}, {axis});
+    auto outFF = result->at(0);        
+    
+    ASSERT_TRUE(expect.isSameShape(outFF));
+    ASSERT_TRUE(expect.equalsTo(outFF));
 
-//     delete result;
-// }
- 
+    delete result;
+}
