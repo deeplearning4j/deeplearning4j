@@ -1012,7 +1012,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             batchPointers.set(new HashMap<Integer, Pointer>());
 
         if (!batchPointers.get().containsKey(batch.opNum())) {
-            IntPointer pointer = new IntPointer(1000000 );
+            val pointer = new IntPointer(batch.getSample().getRequiredBatchMemorySize() / 4 );
             batchPointers.get().put(batch.opNum(), pointer);
             return pointer;
         }
