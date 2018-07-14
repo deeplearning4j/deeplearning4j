@@ -22,9 +22,11 @@ package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import lombok.var;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.imports.TFGraphs.NodeReader;
 import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -6653,6 +6655,71 @@ public class Nd4jTestsC extends BaseNd4jTest {
         val tE = System.nanoTime();
 
         log.info("Average time: {}", ((tE - tS) / iterations));
+    }
+
+
+    @Test
+    public void testIndexesIteration_1() {
+        val arrayC = Nd4j.linspace(1,  60,  60).reshape(3, 4, 5);
+        val arrayF = arrayC.dup('f');
+
+        val iter = new NdIndexIterator(arrayC.ordering(), arrayC.shape());
+        while (iter.hasNext()) {
+            val idx = iter.next();
+
+            val c = arrayC.getDouble(idx);
+            val f = arrayF.getDouble(idx);
+
+            assertEquals(c, f, 1e-5);
+        }
+    }
+
+
+    @Test
+    public void testIndexesIteration_2() {
+        val arrayC = Nd4j.linspace(1,  60,  60).reshape(3, 4, 5);
+        val arrayF = arrayC.dup('f');
+
+        val iter = new NdIndexIterator(arrayC.ordering(), arrayC.shape());
+        while (iter.hasNext()) {
+            val idx = iter.next();
+
+            var c = arrayC.getDouble(idx);
+            var f = arrayF.getDouble(idx);
+
+            arrayC.putScalar(idx,  c + 1.0);
+            arrayF.putScalar(idx, f + 1.0);
+
+            c = arrayC.getDouble(idx);
+            f = arrayF.getDouble(idx);
+
+            assertEquals(c, f, 1e-5);
+        }
+    }
+
+    @Test
+    public void testMatmul_vs_tf() throws Exception {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+
+        // uncomment this line to initialize & propagate sgemm/dgemm pointer
+        //Nd4j.getBlasWrapper().level3();
+
+        val arrayA = NodeReader.readArray("mnist_00", "input.placeholder");
+        val arrayB = NodeReader.readArray("mnist_00", "Variable.0");
+        val arrayC = Nd4j.create(100, 10);
+        val exp = NodeReader.readArray("mnist_00", "MatMul.0");
+        val badExp = Nd4j.create(100, 10);
+
+        val op = new Mmul(arrayA, arrayB, arrayC, null);
+        Nd4j.getExecutioner().exec(op);
+
+
+        Nd4j.getExecutioner().enableDebugMode(false);
+        Nd4j.getExecutioner().enableVerboseMode(false);
+
+        assertEquals(exp, arrayC);
+        assertNotEquals(badExp, arrayC);
     }
 
     ///////////////////////////////////////////////////////

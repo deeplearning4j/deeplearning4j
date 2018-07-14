@@ -337,6 +337,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_firas_sparse.class,
         float_clipbyvalue.class,
         float_clipbynorm.class,
+        float_clipbynorm_bp.class,
         float_clipbyavgnorm.class,
         float_cumsum.class,
         float_cumprod.class,
@@ -697,6 +698,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_firas_sparse.class,
         half_clipbyvalue.class,
         half_clipbynorm.class,
+        half_clipbynorm_bp.class,
         half_clipbyavgnorm.class,
         half_cumsum.class,
         half_cumprod.class,
@@ -1057,6 +1059,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_firas_sparse.class,
         double_clipbyvalue.class,
         double_clipbynorm.class,
+        double_clipbynorm_bp.class,
         double_clipbyavgnorm.class,
         double_cumsum.class,
         double_cumprod.class,
@@ -25992,6 +25995,51 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
+        @Name("nd4j::ops::clipbynorm_bp<float>") public static class float_clipbynorm_bp extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_clipbynorm_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_clipbynorm_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_clipbynorm_bp position(long position) {
+                return (float_clipbynorm_bp)super.position(position);
+            }
+        
+                                                                                    public float_clipbynorm_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::clipbynorm_bp<float16>") public static class half_clipbynorm_bp extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_clipbynorm_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_clipbynorm_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_clipbynorm_bp position(long position) {
+                return (half_clipbynorm_bp)super.position(position);
+            }
+        
+                                                                                    public half_clipbynorm_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::clipbynorm_bp<double>") public static class double_clipbynorm_bp extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_clipbynorm_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_clipbynorm_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_clipbynorm_bp position(long position) {
+                return (double_clipbynorm_bp)super.position(position);
+            }
+        
+                                                                                    public double_clipbynorm_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
 //         #endif
 
 //         #if NOT_EXCLUDED(OP_clipbyavgnorm)
@@ -27449,8 +27497,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
-//         #if NOT_EXCLUDED(OP_cumsum_bp)
-        @Name("nd4j::ops::cumsum_bp<float>") public static class float_cumsum_bp extends FloatDeclarableOp {
+//         #if NOT_EXCLUDED(OP_cumsum)
+        @Name("nd4j::ops::cumsum_bp<float>") public static class float_cumsum_bp extends FloatDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public float_cumsum_bp(Pointer p) { super(p); }
@@ -27465,7 +27513,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
-        @Name("nd4j::ops::cumsum_bp<float16>") public static class half_cumsum_bp extends HalfDeclarableOp {
+        @Name("nd4j::ops::cumsum_bp<float16>") public static class half_cumsum_bp extends HalfDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public half_cumsum_bp(Pointer p) { super(p); }
@@ -27480,7 +27528,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
-        @Name("nd4j::ops::cumsum_bp<double>") public static class double_cumsum_bp extends DoubleDeclarableOp {
+        @Name("nd4j::ops::cumsum_bp<double>") public static class double_cumsum_bp extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public double_cumsum_bp(Pointer p) { super(p); }
@@ -27498,7 +27546,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
 //         #if NOT_EXCLUDED(OP_cumprod)
-        @Name("nd4j::ops::cumprod_bp<float>") public static class float_cumprod_bp extends FloatDeclarableOp {
+        @Name("nd4j::ops::cumprod_bp<float>") public static class float_cumprod_bp extends FloatDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public float_cumprod_bp(Pointer p) { super(p); }
@@ -27513,7 +27561,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
-        @Name("nd4j::ops::cumprod_bp<float16>") public static class half_cumprod_bp extends HalfDeclarableOp {
+        @Name("nd4j::ops::cumprod_bp<float16>") public static class half_cumprod_bp extends HalfDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public half_cumprod_bp(Pointer p) { super(p); }
@@ -27528,7 +27576,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
-        @Name("nd4j::ops::cumprod_bp<double>") public static class double_cumprod_bp extends DoubleDeclarableOp {
+        @Name("nd4j::ops::cumprod_bp<double>") public static class double_cumprod_bp extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public double_cumprod_bp(Pointer p) { super(p); }

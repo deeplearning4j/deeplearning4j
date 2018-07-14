@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -78,7 +79,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testScalarOps() {
-        OpValidationSuite.ignoreFailing();
         int d0 = 2;
         int d1 = 3;
         int d2 = 4;
@@ -201,14 +201,12 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testCross() {
-        OpValidationSuite.ignoreFailing();
-
         INDArray a = Nd4j.create(new float[]{4, 2, 1}, new int[]{1, 3});
         INDArray b = Nd4j.create(new float[]{1, 3, 4}, new int[]{1, 3});
 
         INDArray expOut = Nd4j.create(1, 3);
 
-        DynamicCustomOp op = new Cross(a, b, expOut);
+        val op = new Cross(a, b, expOut);
         Nd4j.getExecutioner().exec(op);
 
         SameDiff sd = SameDiff.create();
@@ -798,8 +796,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     boolean exclusive = false;
                     boolean reverseBool = false;
 
-                    SDVariable dimArg = sd.var("dim", Nd4j.trueScalar(dim));
-                    t = sd.cumsum(in, dimArg, exclusive, reverseBool);
+                    t = sd.cumsum(in, exclusive, reverseBool, dim);
                     INDArray expOut51 = Nd4j.create(ia.shape());
                     DynamicCustomOp cumsum = DynamicCustomOp.builder("cumsum")
                             .addIntegerArguments((exclusive) ? 1 : 0, (reverseBool) ? 1 : 0, dim)
@@ -811,8 +808,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     dim = 0;
                     boolean ex = false;
                     boolean revBool = false;
-                    SDVariable dimArg2 = sd.var("dim", Nd4j.trueScalar(dim));
-                    t = sd.cumprod(in, dimArg2, ex, revBool);
+                    t = sd.cumprod(in, ex, revBool, 0);
                     INDArray expOut52 = Nd4j.create(ia.shape());
                     for( int s0=0; s0<ia.size(0); s0++){
                         for( int s1=0; s1<ia.size(1); s1++ ){
@@ -996,7 +992,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testPairwiseTransforms() {
-        OpValidationSuite.ignoreFailing();
         /*
         add, sub, mul, div, rsub, rdiv
         eq, neq, gt, lt, gte, lte, or, and, xor

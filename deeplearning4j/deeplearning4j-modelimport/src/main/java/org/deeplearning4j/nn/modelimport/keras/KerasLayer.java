@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLambdaLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfigurationFactory;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
@@ -44,6 +45,8 @@ public class KerasLayer {
 
     private static final String LAYER_FIELD_KERAS_VERSION = "keras_version";
     static final Map<String, Class<? extends KerasLayer>> customLayers = new HashMap<>();
+    static final Map<String, SameDiffLambdaLayer> lambdaLayers = new HashMap<>();
+
 
     public enum DimOrder {NONE, THEANO, TENSORFLOW}
 
@@ -143,13 +146,39 @@ public class KerasLayer {
     }
 
     /**
+     * Register a lambda layer
+     *
+     * @param lambdaLayerName   name of the lambda layer in the serialized Keras model
+     * @param sameDiffLambdaLayer SameDiffLambdaLayer instance to map to Keras Lambda layer
+     */
+    public static void registerLambdaLayer(String lambdaLayerName, SameDiffLambdaLayer sameDiffLambdaLayer) {
+        lambdaLayers.put(lambdaLayerName, sameDiffLambdaLayer);
+    }
+
+    /**
+     * Clear all lambda layers
+     *
+     */
+    public static void clearLambdaLayers() {
+        lambdaLayers.clear();
+    }
+
+    /**
      * Register a custom layer
      *
-     * @param layerName   name of custom layer
+     * @param layerName   name of custom layer class
      * @param configClass class of custom layer
      */
     public static void registerCustomLayer(String layerName, Class<? extends KerasLayer> configClass) {
         customLayers.put(layerName, configClass);
+    }
+
+    /**
+     * Clear all custom layers
+     *
+     */
+    public static void clearCustomLayers() {
+        customLayers.clear();
     }
 
     /**
@@ -355,6 +384,42 @@ public class KerasLayer {
     public boolean isInputPreProcessor() {
         return false;
     }
+
+
+
+    /**
+     * Some DL4J layers need explicit specification of number of inputs, which Keras does infer.
+     * This method searches through previous layers until a FeedForwardLayer is found. These layers
+     * have nOut values that subsequently correspond to the nIn value of this layer.
+     *
+     * @param previousLayers
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
+    protected long getNInFromConfig(Map<String, ? extends KerasLayer> previousLayers) throws UnsupportedKerasConfigurationException {
+        int size = previousLayers.size();
+        int count = 0;
+        long nIn;
+        String inboundLayerName = inboundLayerNames.get(0);
+        while (count <= size) {
+            if (previousLayers.containsKey(inboundLayerName)) {
+                KerasLayer inbound = previousLayers.get(inboundLayerName);
+                try {
+                    FeedForwardLayer ffLayer = (FeedForwardLayer) inbound.getLayer();
+                    nIn = ffLayer.getNOut();
+                    if (nIn > 0)
+                        return nIn;
+                    count++;
+                    inboundLayerName = inbound.getInboundLayerNames().get(0);
+                } catch (Exception e) {
+                    inboundLayerName = inbound.getInboundLayerNames().get(0);
+                }
+            }
+        }
+        throw new UnsupportedKerasConfigurationException("Could not determine number of input channels for" +
+                "depthwise convolution.");
+    }
+
 
     /**
      * Gets appropriate DL4J InputPreProcessor for given InputTypes.

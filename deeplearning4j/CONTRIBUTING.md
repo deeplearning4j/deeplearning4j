@@ -35,6 +35,8 @@ main tree or given feedback for changes that would be required.
   it, you can @-reply a reviewer asking for a review in the pull request or a
   comment.
 
+- Work-in-progress pull requests are welcome. Please prefix them with `[WIP]` to tell the continuous integration (CI) backend not to run tests/checks on them (until that tag is removed and another commit is pushed up).
+
 - Add tests relevant to the fixed bug or new feature.  
 
 ## Conduct & License

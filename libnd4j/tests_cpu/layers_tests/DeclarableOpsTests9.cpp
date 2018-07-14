@@ -24,14 +24,14 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, reduceStDevBP_test3) {
 
-    NDArray<float> x('c', {3,4});
-    NDArray<float> gradO1('c', {3,1}, {1.,2.,3.});
-    NDArray<float> gradO2('c', {3}, {1.,2.,3.});
-    NDArray<float> exp('c', {3,4}, {-0.335410, -0.111803, 0.111803, 0.335410, -0.670820, -0.223607, 0.223607, 0.670820, -1.006231, -0.335410, 0.335410, 1.006231});         
+    NDArray<double> x('c', {3,4});
+    NDArray<double> gradO1('c', {3,1}, {1.,2.,3.});
+    NDArray<double> gradO2('c', {3}, {1.,2.,3.});
+    NDArray<double> exp('c', {3,4}, {-0.335410, -0.111803, 0.111803, 0.335410, -0.670820, -0.223607, 0.223607, 0.670820, -1.006231, -0.335410, 0.335410, 1.006231});
 
     x.linspace(1);
 
-    nd4j::ops::reduce_stdev_bp<float> op;
+    nd4j::ops::reduce_stdev_bp<double> op;
 
     auto result = op.execute({&x, &gradO2}, {0,0}, {1});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
@@ -170,6 +170,16 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {
 
     nativeOps.destroyRandom((Nd4jPointer) rng);
     delete[] buffer;
+}
+
+TEST_F(DeclarableOpsTests9, ScalarOpTest_MixedOrders_1) {
+    NDArray<double> x('f', {2, 2}, {1.0, 3.0, 2.0, 4.0});
+    NDArray<double> e('c', {2, 2}, {2.0, 3.0, 4.0, 5.0});
+    NDArray<double> z('c', {2, 2}, {0.0, 0.0, 0.0, 0.0});
+
+    x.template applyScalar<simdOps::Add<double>>(1.0, &z);
+
+    ASSERT_EQ(e, z);
 }
 
 //////////////////////////////////////////////////////////////////////

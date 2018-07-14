@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.modelimport.keras.utils;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLambdaLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
@@ -40,11 +41,13 @@ import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling3D;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLstm;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasSimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.layers.wrappers.KerasBidirectional;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Utility functionality to import keras models
@@ -155,9 +158,10 @@ public class KerasLayerUtils {
     public static KerasLayer getKerasLayerFromConfig(Map<String, Object> layerConfig,
                                                      KerasLayerConfiguration conf,
                                                      Map<String, Class<? extends KerasLayer>> customLayers,
+                                                     Map<String, SameDiffLambdaLayer> lambdaLayers,
                                                      Map<String, ? extends KerasLayer> previousLayers)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        return getKerasLayerFromConfig(layerConfig, false, conf, customLayers, previousLayers);
+        return getKerasLayerFromConfig(layerConfig, false, conf, customLayers, lambdaLayers, previousLayers);
     }
 
     /**
@@ -175,6 +179,7 @@ public class KerasLayerUtils {
                                                      boolean enforceTrainingConfig,
                                                      KerasLayerConfiguration conf,
                                                      Map<String, Class<? extends KerasLayer>> customLayers,
+                                                     Map<String, SameDiffLambdaLayer> lambdaLayers,
                                                      Map<String, ? extends KerasLayer> previousLayers
     )
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -289,6 +294,16 @@ public class KerasLayerUtils {
             layer = new KerasCropping2D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CROPPING_1D())) {
             layer = new KerasCropping1D(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LAMBDA()) && !lambdaLayers.isEmpty()) {
+            String lambdaLayerName = KerasLayerUtils.getLayerNameFromConfig(layerConfig, conf);
+            SameDiffLambdaLayer lambdaLayer;
+            if (lambdaLayers.containsKey(lambdaLayerName)) {
+                lambdaLayer = lambdaLayers.get(lambdaLayerName);
+            } else {
+                throw new UnsupportedKerasConfigurationException("No SameDiff Lambda layer found for Lambda" +
+                        "layer " + lambdaLayerName);
+            }
+            layer = new KerasLambda(layerConfig, enforceTrainingConfig, lambdaLayer);
         } else {
             Class<? extends KerasLayer> customConfig = customLayers.get(layerClassName);
             if (customConfig == null)
@@ -548,6 +563,23 @@ public class KerasLayerUtils {
             hasZeroMasking = (boolean) innerConfig.get(conf.getLAYER_FIELD_MASK_ZERO());
         }
         return hasZeroMasking;
+    }
+
+    /**
+     * Remove weights from config after weight setting.
+     *
+     * @param weights layer weights
+     * @param conf Keras layer configuration
+     */
+    public static void removeDefaultWeights(Map<String, INDArray> weights, KerasLayerConfiguration conf) {
+        if (weights.size() > 2) {
+            Set<String> paramNames = weights.keySet();
+            paramNames.remove(conf.getKERAS_PARAM_NAME_W());
+            paramNames.remove(conf.getKERAS_PARAM_NAME_B());
+            String unknownParamNames = paramNames.toString();
+            log.warn("Attemping to set weights for unknown parameters: "
+                    + unknownParamNames.substring(1, unknownParamNames.length() - 1));
+        }
     }
 
 }

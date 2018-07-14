@@ -21,6 +21,8 @@ import org.deeplearning4j.spark.parameterserver.networking.messages.SilentIntrod
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingResult;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingWorker;
 import org.deeplearning4j.spark.parameterserver.util.BlockingObserver;
+import org.deeplearning4j.spark.parameterserver.util.CountingIterator;
+import org.deeplearning4j.spark.util.SparkUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -34,10 +36,12 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
 import org.nd4j.parameterserver.distributed.util.NetworkOrganizer;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class maintains ParallelWrapper instance in Spark environment, and provides primitives for inter-executor
@@ -57,7 +61,10 @@ public class SharedTrainingWrapper {
 
 
     protected AtomicBoolean isFirst = new AtomicBoolean(false);
+    protected AtomicBoolean exceptionEncountered = new AtomicBoolean(false);
+    protected Throwable exception;
 
+    protected ThreadLocal<AtomicInteger> iteratorDataSetCount = new ThreadLocal<>();    //Using AtomicInteger because it's mutable, not because it's atomic
     protected ThreadLocal<BlockingObserver> observer = new ThreadLocal<>();
     protected EncodedGradientsAccumulator accumulator;
     protected Model originalModel;
@@ -87,14 +94,19 @@ public class SharedTrainingWrapper {
      * @param iterator
      */
     public void attachDS(Iterator<DataSet> iterator) {
-
         log.info("Attaching thread...");
 
+        //Count the number of minibatches - used for reporting/debugging purposes
+        if(iteratorDataSetCount.get() == null)
+            iteratorDataSetCount.set(new AtomicInteger(0));
+        AtomicInteger count = iteratorDataSetCount.get();
+        count.set(0);
+
         // we're creating our Observable wrapper
-        VirtualIterator<DataSet> wrapped = new VirtualIterator<>(iterator);
+        VirtualIterator<DataSet> wrapped = new VirtualIterator<>(new CountingIterator<>(iterator, count));
 
         // and creating Observer which will be used to monitor progress within iterator
-        BlockingObserver obs = new BlockingObserver();
+        BlockingObserver obs = new BlockingObserver(exceptionEncountered);
         wrapped.addObserver(obs);
 
         // putting that "somewhere"
@@ -112,11 +124,17 @@ public class SharedTrainingWrapper {
     public void attachMDS(Iterator<MultiDataSet> iterator) {
         log.info("Attaching thread...");
 
+        //Count the number of minibatches - used for reporting/debugging purposes
+        if(iteratorDataSetCount.get() == null)
+            iteratorDataSetCount.set(new AtomicInteger(0));
+        AtomicInteger count = iteratorDataSetCount.get();
+        count.set(0);
+
         // we're creating our Observable wrapper
-        VirtualIterator<MultiDataSet> wrapped = new VirtualIterator<>(iterator);
+        VirtualIterator<MultiDataSet> wrapped = new VirtualIterator<>(new CountingIterator<>(iterator, count));
 
         // and creating Observer which will be used to monitor progress within iterator
-        BlockingObserver obs = new BlockingObserver();
+        BlockingObserver obs = new BlockingObserver(exceptionEncountered);
         wrapped.addObserver(obs);
 
         // putting that "somewhere"
@@ -131,6 +149,10 @@ public class SharedTrainingWrapper {
             first call instantiates pw, messenger etc, and gets in charge here.
          */
         if (isFirst.compareAndSet(false, true)) {
+            //Reset past exception encountered in case we're doing correct fit after incorrect...
+            exceptionEncountered.set(false);
+            exception = null;
+
             SharedTrainingConfiguration trainingConfiguration = worker.getBroadcastConfiguration().getValue();
             VoidConfiguration voidConfiguration = worker.getBroadcastConfiguration().getValue().getVoidConfiguration();
 
@@ -262,7 +284,9 @@ public class SharedTrainingWrapper {
                     wrapper = new ParallelWrapper.Builder<>(originalModel).workers(numWorkers)
                                     .workspaceMode(trainingConfiguration.getWorkspaceMode())
                                     .trainingMode(ParallelWrapper.TrainingMode.CUSTOM).gradientsAccumulator(accumulator)
-                                    .prefetchBuffer(trainingConfiguration.getPrefetchSize()).build();
+                                    .prefetchBuffer(trainingConfiguration.getPrefetchSize())
+                                    .build();
+                    wrapper.setExceptionEncountered(exceptionEncountered);
                 } else {
                     log.info("Using standalone model instead...");
 
@@ -289,25 +313,35 @@ public class SharedTrainingWrapper {
             driver.bypassMode(false);
 
             // now we're just calling for fit
-            if (wrapper != null) {
-                if (iteratorDS != null)
-                    wrapper.fit(iteratorDS);
-                else if (iteratorMDS != null)
-                    wrapper.fit(iteratorMDS);
-                else
-                    throw new DL4JInvalidConfigException("No iterators were defined for training");
-            } else {
-                // if wrapper is null, we're fitting standalone model then
-                if (iteratorDS != null) {
-                    if (model instanceof ComputationGraph) {
-                        ((ComputationGraph) originalModel).fit(iteratorDS);
-                    } else if (model instanceof MultiLayerNetwork) {
-                        ((MultiLayerNetwork) originalModel).fit(iteratorDS);
+            if(iteratorDS == null && iteratorMDS == null)
+                throw new DL4JInvalidConfigException("No iterators were defined for training");
+
+            try {
+                if (wrapper != null) {
+                    if (iteratorDS != null)
+                        wrapper.fit(iteratorDS);
+                    else
+                        wrapper.fit(iteratorMDS);
+                } else {
+                    // if wrapper is null, we're fitting standalone model then
+                    if (iteratorDS != null) {
+                        if (model instanceof ComputationGraph) {
+                            ((ComputationGraph) originalModel).fit(iteratorDS);
+                        } else if (model instanceof MultiLayerNetwork) {
+                            ((MultiLayerNetwork) originalModel).fit(iteratorDS);
+                        }
+                    } else {
+                        if (model instanceof ComputationGraph) {
+                            ((ComputationGraph) originalModel).fit(iteratorMDS);
+                        } else if (model instanceof MultiLayerNetwork) {
+                            ((MultiLayerNetwork) originalModel).fit(iteratorMDS);
+                        }
                     }
-                } else if (iteratorMDS != null) {
-                    ((ComputationGraph) originalModel).fit(iteratorMDS);
-                } else
-                    throw new DL4JInvalidConfigException("No iterators were defined for training");
+                }
+            } catch (Throwable t){
+                log.warn("Exception encountered during fit operation", t);
+                exceptionEncountered.set(true);
+                exception = t;
             }
 
 
@@ -341,7 +375,9 @@ public class SharedTrainingWrapper {
             // FIXME: fill stats here
             return SharedTrainingResult.builder().aggregationsCount(1).scoreSum(originalModel.score())
                             .updaterStateArray(updaterState).listenerMetaData(new ArrayList<>())
-                            .listenerStaticInfo(new ArrayList<>()).listenerUpdates(new ArrayList<>()).build();
+                            .listenerStaticInfo(new ArrayList<>()).listenerUpdates(new ArrayList<>())
+                            .minibatchesPerExecutor(Collections.singletonMap(SparkUtils.getSparkExecutorId(), iteratorDataSetCount.get().get()))
+                    .build();
         } else {
             // blocking call right here, all non-master threads will be blocked here
             try {
@@ -350,8 +386,20 @@ public class SharedTrainingWrapper {
 
                 log.info("Feeder thread done...");
 
-                //  nothing to do here, just give away empty result
-                return new SharedTrainingResult();
+                if(exceptionEncountered.get()){
+                    //Propagate exception
+                    Throwable t;
+                    if(wrapper == null || exception != null) {
+                        t = exception;
+                    } else {
+                        t = wrapper.getException();
+                    }
+
+                    throw new RuntimeException("Training failed due to exception in ParallelWrapper fit operation", t);
+                }
+
+                //  nothing to do here, just give away empty result (other than iterator count)
+                return SharedTrainingResult.builder().minibatchesPerExecutor(Collections.singletonMap(SparkUtils.getSparkExecutorId(), iteratorDataSetCount.get().get())).build();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 // FIXME: we don't really need to throw it again, it's here only for debugging purposes
