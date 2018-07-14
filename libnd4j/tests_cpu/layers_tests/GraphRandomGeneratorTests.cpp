@@ -49,3 +49,9 @@ TEST_F(GraphRandomGeneratorTests, Reproducibility_Test_4) {
 
     ASSERT_NE(i0, i1);
 }
+
+TEST_F(GraphRandomGeneratorTests, Sequential_Test_1) {
+    nd4j::graph::RandomGenerator g0(119, 5);
+
+    auto v0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
+}

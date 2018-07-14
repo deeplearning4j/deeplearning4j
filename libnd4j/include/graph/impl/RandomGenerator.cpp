@@ -72,7 +72,7 @@ namespace nd4j {
         uint32_t RandomGenerator::xoroshiro(Nd4jLong index) {
             u64 v;
             // TODO: improve this
-            v._long = _rootState._long ^ _nodeState._long & index;
+            v._long = _rootState._long ^ _nodeState._long ^ index;
 
             return rotl(v._du32._v0 * 0x9E3779BB, 5) * 5;
         }
