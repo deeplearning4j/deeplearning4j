@@ -7,7 +7,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>deeplearning4j-nearestneighbor-server_2.11</artifactId>
+    <artifactId>deeplearning4j-nearestneighbor-server_2.10</artifactId>
     <packaging>jar</packaging>
 
     <name>deeplearning4j-nearestneighbor-server_2.11</name>
@@ -56,7 +56,7 @@
 
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-java_2.11</artifactId>
+            <artifactId>play-java_2.10</artifactId>
             <version>${playframework.version}</version>
             <exclusions>
               <exclusion>
@@ -88,17 +88,17 @@
         </dependency>
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-json_2.11</artifactId>
+            <artifactId>play-json_2.10</artifactId>
             <version>${playframework.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-server_2.11</artifactId>
+            <artifactId>play-server_2.10</artifactId>
             <version>${playframework.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play_2.11</artifactId>
+            <artifactId>play_2.10</artifactId>
             <version>${playframework.version}</version>
         </dependency>
         <dependency>
@@ -108,12 +108,12 @@
         </dependency>
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-netty-server_2.11</artifactId>
+            <artifactId>play-netty-server_2.10</artifactId>
             <version>${playframework.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-cluster_2.11</artifactId>
+            <artifactId>akka-cluster_2.10</artifactId>
             <version>${akka.version}</version>
         </dependency>
 

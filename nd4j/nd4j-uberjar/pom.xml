@@ -189,7 +189,7 @@
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-kryo_2.11</artifactId>
+        <artifactId>nd4j-kryo_2.10</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -199,7 +199,7 @@
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-kafka_2.11</artifactId>
+        <artifactId>nd4j-kafka_2.10</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -244,7 +244,7 @@
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-parameter-server-status_2.11</artifactId>
+        <artifactId>nd4j-parameter-server-status_2.10</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -254,7 +254,7 @@
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-parameter-server-node_2.11</artifactId>
+        <artifactId>nd4j-parameter-server-node_2.10</artifactId>
         <version>${project.version}</version>
       </dependency>
     </dependencies>

@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.deeplearning4j</groupId>
-    <artifactId>dl4j-streaming_2.11</artifactId>
+    <artifactId>dl4j-streaming_2.10</artifactId>
     <packaging>jar</packaging>
     <version>1.0.0_spark_1-SNAPSHOT</version>
 
@@ -44,12 +44,12 @@
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>dl4j-spark_2.11</artifactId>
+            <artifactId>dl4j-spark_2.10</artifactId>
             <version>${project.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.spark</groupId>
-                    <artifactId>spark-core_2.11</artifactId>
+                    <artifactId>spark-core_2.10</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -60,7 +60,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-streaming_2.11</artifactId>
+            <artifactId>spark-streaming_2.10</artifactId>
             <version>${spark.version}</version>
             <exclusions>
               <exclusion>
@@ -71,7 +71,7 @@
         </dependency>
         <dependency>
             <groupId>org.datavec</groupId>
-            <artifactId>datavec-spark_2.11</artifactId>
+            <artifactId>datavec-spark_2.10</artifactId>
             <version>${datavec.spark.version}</version>
         </dependency>
 
@@ -94,7 +94,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_2.11</artifactId>
+            <artifactId>kafka_2.10</artifactId>
             <version>${kafka.version}</version>
             <scope>test</scope>
             <exclusions>

@@ -18,12 +18,12 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>spark_2.11</artifactId>
+        <artifactId>spark_2.10</artifactId>
         <groupId>org.deeplearning4j</groupId>
         <version>1.0.0_spark_1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>dl4j-spark_2.11</artifactId>
+    <artifactId>dl4j-spark_2.10</artifactId>
     <packaging>jar</packaging>
 
     <name>dl4j-spark</name>
@@ -52,7 +52,7 @@
 
         <dependency>
             <groupId>org.datavec</groupId>
-            <artifactId>datavec-spark_2.11</artifactId>
+            <artifactId>datavec-spark_2.10</artifactId>
             <version>${datavec.spark.version}</version>
         </dependency>
 
@@ -77,14 +77,14 @@
 
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-play_2.11</artifactId>
+            <artifactId>deeplearning4j-play_2.10</artifactId>
             <version>${deeplearning4j.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-kryo_2.11</artifactId>
+            <artifactId>nd4j-kryo_2.10</artifactId>
             <version>${nd4j.version}</version>
             <scope>test</scope>
         </dependency>
