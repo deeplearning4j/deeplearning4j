@@ -24,6 +24,10 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.rdd.RDD;
+import org.deeplearning4j.api.loader.DataSetLoader;
+import org.deeplearning4j.api.loader.MultiDataSetLoader;
+import org.deeplearning4j.api.loader.impl.SerializedDataSetLoader;
+import org.deeplearning4j.api.loader.impl.SerializedMultiDataSetLoader;
 import org.deeplearning4j.eval.*;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
@@ -206,7 +210,11 @@ public class SparkComputationGraph extends SparkListenable {
      * @return trained network
      */
     public ComputationGraph fitPaths(JavaRDD<String> paths) {
-        trainingMaster.executeTrainingPaths(this, paths);
+        return fitPaths(paths, new SerializedDataSetLoader());
+    }
+
+    public ComputationGraph fitPaths(JavaRDD<String> paths, DataSetLoader loader) {
+        trainingMaster.executeTrainingPaths(null,this, paths, loader, null);
         network.incrementEpochCount();
         return network;
     }
@@ -264,7 +272,11 @@ public class SparkComputationGraph extends SparkListenable {
      * @return trained network
      */
     public ComputationGraph fitPathsMultiDataSet(JavaRDD<String> paths) {
-        trainingMaster.executeTrainingPathsMDS(this, paths);
+        return fitPaths(paths, new SerializedMultiDataSetLoader());
+    }
+
+    public ComputationGraph fitPaths(JavaRDD<String> paths, MultiDataSetLoader loader) {
+        trainingMaster.executeTrainingPaths(null, this, paths, null, loader);
         network.incrementEpochCount();
         return network;
     }

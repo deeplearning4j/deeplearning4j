@@ -26,6 +26,10 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.input.PortableDataStream;
 import org.apache.spark.storage.StorageLevel;
+import org.deeplearning4j.api.loader.DataSetLoader;
+import org.deeplearning4j.api.loader.MultiDataSetLoader;
+import org.deeplearning4j.api.loader.impl.SerializedDataSetLoader;
+import org.deeplearning4j.api.loader.impl.SerializedMultiDataSetLoader;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.StatsStorageRouterProvider;
@@ -330,7 +334,7 @@ public class ParameterAveragingTrainingMaster
         } else {
             //Export data if required (or, use cached export)
             JavaRDD<String> paths = exportIfRequired(network.getSparkContext(), trainingData);
-            executeTrainingPathsHelper(network, paths, batchSizePerWorker); //Originally (pre-export): had rddDataSetNumExamples per DataSet. Now we have batchSizePerWorker per exported DataSet
+            executeTrainingPathsHelper(network, null, paths, new SerializedDataSetLoader(), null, batchSizePerWorker); //Originally (pre-export): had rddDataSetNumExamples per DataSet. Now we have batchSizePerWorker per exported DataSet
         }
     }
 
@@ -425,12 +429,12 @@ public class ParameterAveragingTrainingMaster
     }
 
     @Override
-    public void executeTrainingPaths(SparkDl4jMultiLayer network, JavaRDD<String> trainingDataPaths) {
-        executeTrainingPathsHelper(network, trainingDataPaths, rddDataSetNumExamples);
+    public void executeTrainingPaths(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<String> trainingDataPaths, DataSetLoader dsLoader, MultiDataSetLoader mdsLoader){
+        executeTrainingPathsHelper(network, graph, trainingDataPaths, dsLoader, mdsLoader, rddDataSetNumExamples);
     }
 
-    protected void executeTrainingPathsHelper(SparkDl4jMultiLayer network, JavaRDD<String> trainingDataPaths,
-                    int dataSetObjectsNumExamples) {
+    protected void executeTrainingPathsHelper(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<String> trainingDataPaths,
+                                              DataSetLoader dsLoader, MultiDataSetLoader mdsLoader, int dataSetObjectsNumExamples) {
         if (numWorkers == null)
             numWorkers = network.getSparkContext().defaultParallelism();
 
@@ -445,7 +449,7 @@ public class ParameterAveragingTrainingMaster
 
         int splitNum = 1;
         for (JavaRDD<String> split : splits) {
-            doIterationPaths(network, null, split, splitNum++, splits.length, dataSetObjectsNumExamples);
+            doIterationPaths(network, graph, split, splitNum++, splits.length, dataSetObjectsNumExamples, dsLoader, mdsLoader);
         }
 
         if (collectTrainingStats)
@@ -472,7 +476,7 @@ public class ParameterAveragingTrainingMaster
         } else {
             //Export data if required (or, use cached export)
             JavaRDD<String> paths = exportIfRequiredMDS(graph.getSparkContext(), trainingData);
-            executeTrainingPathsMDSHelper(graph, paths, batchSizePerWorker);
+            executeTrainingPathsHelper(null, graph, paths, null, new SerializedMultiDataSetLoader(), batchSizePerWorker);
         }
     }
 
@@ -562,57 +566,6 @@ public class ParameterAveragingTrainingMaster
     }
 
     @Override
-    public void executeTrainingPaths(SparkComputationGraph network, JavaRDD<String> trainingDataPaths) {
-        if (numWorkers == null)
-            numWorkers = network.getSparkContext().defaultParallelism();
-
-        if (collectTrainingStats)
-            stats.logFitStart();
-        if (storageLevelStreams != null)
-            trainingDataPaths.persist(storageLevelStreams);
-        long totalDataSetObjectCount = getTotalDataSetObjectCount(trainingDataPaths);
-        JavaRDD<String>[] splits =
-                        getSplitRDDs(trainingDataPaths, (int) totalDataSetObjectCount, rddDataSetNumExamples);
-
-        int splitNum = 1;
-        for (JavaRDD<String> split : splits) {
-            doIterationPaths(null, network, split, splitNum++, splits.length, rddDataSetNumExamples);
-        }
-
-        if (collectTrainingStats)
-            stats.logFitEnd((int) totalDataSetObjectCount);
-    }
-
-    @Override
-    public void executeTrainingPathsMDS(SparkComputationGraph network, JavaRDD<String> trainingMultiDataPaths) {
-        executeTrainingPathsMDSHelper(network, trainingMultiDataPaths, rddDataSetNumExamples);
-    }
-
-    protected void executeTrainingPathsMDSHelper(SparkComputationGraph network, JavaRDD<String> trainingMultiDataPaths,
-                    int dataSetObjectsNumExamples) {
-        if (numWorkers == null)
-            numWorkers = network.getSparkContext().defaultParallelism();
-
-        if (collectTrainingStats)
-            stats.logFitStart();
-        if (storageLevelStreams != null)
-            trainingMultiDataPaths.persist(storageLevelStreams);
-
-        long totalDataSetObjectCount = getTotalDataSetObjectCount(trainingMultiDataPaths);
-
-        JavaRDD<String>[] splits =
-                        getSplitRDDs(trainingMultiDataPaths, (int) totalDataSetObjectCount, dataSetObjectsNumExamples);
-
-        int splitNum = 1;
-        for (JavaRDD<String> split : splits) {
-            doIterationPathsMDS(network, split, splitNum++, splits.length, dataSetObjectsNumExamples);
-        }
-
-        if (collectTrainingStats)
-            stats.logFitEnd((int) totalDataSetObjectCount);
-    }
-
-    @Override
     public void setCollectTrainingStats(boolean collectTrainingStats) {
         this.collectTrainingStats = collectTrainingStats;
         if (collectTrainingStats) {
@@ -673,6 +626,7 @@ public class ParameterAveragingTrainingMaster
             stats.logMapPartitionsEnd(nPartitions);
     }
 
+    @Deprecated
     protected void doIterationPDS(SparkDl4jMultiLayer network, SparkComputationGraph graph,
                     JavaRDD<PortableDataStream> split, int splitNum, int numSplits) {
         log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
@@ -703,7 +657,7 @@ public class ParameterAveragingTrainingMaster
     }
 
     protected void doIterationPaths(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<String> split,
-                    int splitNum, int numSplits, int dataSetObjectNumExamples) {
+                    int splitNum, int numSplits, int dataSetObjectNumExamples, DataSetLoader dsLoader, MultiDataSetLoader mdsLoader) {
         log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
                         splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
         if (collectTrainingStats)
@@ -719,40 +673,22 @@ public class ParameterAveragingTrainingMaster
             stats.logRepartitionEnd();
 
         FlatMapFunction<Iterator<String>, ParameterAveragingTrainingResult> function;
-        if (network != null)
-            function = new ExecuteWorkerPathFlatMap<>(getWorkerInstance(network));
-        else
-            function = new ExecuteWorkerPathFlatMap<>(getWorkerInstance(graph));
+        if (network != null) {
+            if(dsLoader != null){
+                function = new ExecuteWorkerPathFlatMap<>(getWorkerInstance(network), dsLoader);
+            } else {
+                function = new ExecuteWorkerPathMDSFlatMap<>(getWorkerInstance(network), mdsLoader);
+            }
+        } else {
+            if(dsLoader != null){
+                function = new ExecuteWorkerPathFlatMap<>(getWorkerInstance(graph), dsLoader);
+            } else {
+                function = new ExecuteWorkerPathMDSFlatMap<>(getWorkerInstance(graph), mdsLoader);
+            }
+        }
 
         JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
         processResults(network, graph, result, splitNum, numSplits);
-
-        if (collectTrainingStats)
-            stats.logMapPartitionsEnd(nPartitions);
-    }
-
-    protected void doIterationPathsMDS(SparkComputationGraph graph, JavaRDD<String> split, int splitNum, int numSplits,
-                    int dataSetObjectNumExamples) {
-        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
-                        splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
-        if (collectTrainingStats)
-            stats.logMapPartitionsStart();
-
-        JavaRDD<String> splitData = split;
-        if (collectTrainingStats)
-            stats.logRepartitionStart();
-        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy,
-                        numObjectsEachWorker(dataSetObjectNumExamples), numWorkers);
-        int nPartitions = splitData.partitions().size();
-        if (collectTrainingStats && repartition != Repartition.Never)
-            stats.logRepartitionEnd();
-
-
-        FlatMapFunction<Iterator<String>, ParameterAveragingTrainingResult> function =
-                        new ExecuteWorkerPathMDSFlatMap<>(getWorkerInstance(graph));
-
-        JavaRDD<ParameterAveragingTrainingResult> result = splitData.mapPartitions(function);
-        processResults(null, graph, result, splitNum, numSplits);
 
         if (collectTrainingStats)
             stats.logMapPartitionsEnd(nPartitions);

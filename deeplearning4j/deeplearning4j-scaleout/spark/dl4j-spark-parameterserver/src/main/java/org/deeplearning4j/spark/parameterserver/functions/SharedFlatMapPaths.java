@@ -18,6 +18,7 @@ package org.deeplearning4j.spark.parameterserver.functions;
 
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
+import org.deeplearning4j.api.loader.DataSetLoader;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.iterator.PathSparkDataSetIterator;
@@ -34,8 +35,8 @@ import java.util.Iterator;
  */
 public class SharedFlatMapPaths<R extends TrainingResult> extends BaseFlatMapFunctionAdaptee<Iterator<String>, R> {
 
-    public SharedFlatMapPaths(TrainingWorker<R> worker) {
-        super(new SharedFlatMapPathsAdapter<R>(worker));
+    public SharedFlatMapPaths(TrainingWorker<R> worker, DataSetLoader loader) {
+        super(new SharedFlatMapPathsAdapter<R>(worker, loader));
     }
 }
 
@@ -43,10 +44,12 @@ public class SharedFlatMapPaths<R extends TrainingResult> extends BaseFlatMapFun
 class SharedFlatMapPathsAdapter<R extends TrainingResult> implements FlatMapFunctionAdapter<Iterator<String>, R> {
 
     protected final SharedTrainingWorker worker;
+    protected final DataSetLoader loader;
 
-    public SharedFlatMapPathsAdapter(TrainingWorker<R> worker) {
+    public SharedFlatMapPathsAdapter(TrainingWorker<R> worker, DataSetLoader loader) {
         // we're not going to have anything but Shared classes here ever
         this.worker = (SharedTrainingWorker) worker;
+        this.loader = loader;
     }
 
     @Override
@@ -59,7 +62,7 @@ class SharedFlatMapPathsAdapter<R extends TrainingResult> implements FlatMapFunc
         // PathSparkDataSetIterator does that for us
 
         // iterator should be silently attached to VirtualDataSetIterator, and used appropriately
-        SharedTrainingWrapper.getInstance().attachDS(new PathSparkDataSetIterator(dataSetIterator));
+        SharedTrainingWrapper.getInstance().attachDS(new PathSparkDataSetIterator(dataSetIterator, loader));
 
         // first callee will become master, others will obey and die
         SharedTrainingResult result = SharedTrainingWrapper.getInstance().run(worker);

@@ -22,6 +22,8 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.input.PortableDataStream;
+import org.deeplearning4j.api.loader.DataSetLoader;
+import org.deeplearning4j.api.loader.MultiDataSetLoader;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
@@ -104,14 +106,12 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
 
 
     /**
-     * <b>EXPERIMENTAL method, may be removed in a future release.</b><br>
      * Fit the network using a list of paths for serialized DataSet objects.
      *
      * @param network           Current network state
      * @param trainingDataPaths Data to train on
      */
-    @Experimental
-    void executeTrainingPaths(SparkDl4jMultiLayer network, JavaRDD<String> trainingDataPaths);
+    void executeTrainingPaths(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<String> trainingDataPaths, DataSetLoader dsLoader, MultiDataSetLoader mdsLoader);
 
     /**
      * Train the SparkComputationGraph with the specified data set
@@ -133,25 +133,23 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
     @Deprecated
     void executeTraining(SparkComputationGraph network, JavaPairRDD<String, PortableDataStream> trainingData);
 
-    /**
-     * <b>EXPERIMENTAL method, may be removed in a future release.</b><br>
-     * Fit the network using a list of paths for serialized DataSet objects.
-     *
-     * @param network           Current network state
-     * @param trainingDataPaths Data to train on
-     */
-    @Experimental
-    void executeTrainingPaths(SparkComputationGraph network, JavaRDD<String> trainingDataPaths);
-
-    /**
-     * <b>EXPERIMENTAL method, may be removed in a future release.</b><br>
-     * Fit the network using a list of paths for serialized MultiDataSet objects.
-     *
-     * @param network                   Current network state
-     * @param trainingMultiDataSetPaths Data to train on
-     */
-    @Experimental
-    void executeTrainingPathsMDS(SparkComputationGraph network, JavaRDD<String> trainingMultiDataSetPaths);
+//    /**
+//     * Fit the network using a list of paths for serialized DataSet objects.
+//     *
+//     * @param network           Current network state
+//     * @param trainingDataPaths Data to train on
+//     */
+//    void executeTrainingPaths(SparkComputationGraph network, JavaRDD<String> trainingDataPaths);
+//
+//    /**
+//     * <b>EXPERIMENTAL method, may be removed in a future release.</b><br>
+//     * Fit the network using a list of paths for serialized MultiDataSet objects.
+//     *
+//     * @param network                   Current network state
+//     * @param trainingMultiDataSetPaths Data to train on
+//     */
+//    @Experimental
+//    void executeTrainingPathsMDS(SparkComputationGraph network, JavaRDD<String> trainingMultiDataSetPaths);
 
     /**
      * Train the SparkComputationGraph with the specified data set
