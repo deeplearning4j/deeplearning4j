@@ -57,7 +57,7 @@ namespace nd4j {
             T relativeT(Nd4jLong index);
 
 
-            void rewindH();
+            void rewindH(Nd4jLong steps);
         };
     }
 }

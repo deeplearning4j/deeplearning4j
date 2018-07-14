@@ -77,8 +77,16 @@ namespace nd4j {
             return rotl(v._du32._v0 * 0x9E3779BB, 5) * 5;
         }
 
-        void RandomGenerator::rewindH() {
-            //
+        void RandomGenerator::rewindH(Nd4jLong steps) {
+            auto s0 = _nodeState._du32._v0;
+            auto s1 = _nodeState._du32._v1;
+
+            s1 ^= s0;
+	        _nodeState._du32._v0 = rotl(s0, 26) ^ s1 ^ (s1 << 9); // a, b
+	        _nodeState._du32._v1 = rotl(s1, 13); // c
+
+            // TODO: improve this
+            _nodeState._long ^= steps;
         }
 
 
