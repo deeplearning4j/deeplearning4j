@@ -7,6 +7,11 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * Loads DataSets using {@link MultiDataSet#load(InputStream)}
+ *
+ * @author Alex Black
+ */
 public class SerializedMultiDataSetLoader implements MultiDataSetLoader {
     @Override
     public MultiDataSet load(Source source) throws IOException {

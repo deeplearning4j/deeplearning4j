@@ -17,7 +17,6 @@
 package org.deeplearning4j.spark.api;
 
 import org.apache.spark.SparkContext;
-import org.apache.spark.annotation.Experimental;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -132,24 +131,6 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
      */
     @Deprecated
     void executeTraining(SparkComputationGraph network, JavaPairRDD<String, PortableDataStream> trainingData);
-
-//    /**
-//     * Fit the network using a list of paths for serialized DataSet objects.
-//     *
-//     * @param network           Current network state
-//     * @param trainingDataPaths Data to train on
-//     */
-//    void executeTrainingPaths(SparkComputationGraph network, JavaRDD<String> trainingDataPaths);
-//
-//    /**
-//     * <b>EXPERIMENTAL method, may be removed in a future release.</b><br>
-//     * Fit the network using a list of paths for serialized MultiDataSet objects.
-//     *
-//     * @param network                   Current network state
-//     * @param trainingMultiDataSetPaths Data to train on
-//     */
-//    @Experimental
-//    void executeTrainingPathsMDS(SparkComputationGraph network, JavaRDD<String> trainingMultiDataSetPaths);
 
     /**
      * Train the SparkComputationGraph with the specified data set
