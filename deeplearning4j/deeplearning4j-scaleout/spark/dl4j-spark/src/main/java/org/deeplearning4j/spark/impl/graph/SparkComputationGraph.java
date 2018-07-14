@@ -40,6 +40,7 @@ import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
 import org.deeplearning4j.spark.impl.graph.dataset.DataSetToMultiDataSetFn;
 import org.deeplearning4j.spark.impl.graph.dataset.PairDataSetToMultiDataSetFn;
 import org.deeplearning4j.spark.impl.graph.evaluation.IEvaluateMDSFlatMapFunction;
+import org.deeplearning4j.spark.impl.graph.evaluation.IEvaluateMDSPathsFlatMapFunction;
 import org.deeplearning4j.spark.impl.graph.scoring.*;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateAggregateFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateFlatMapFunction;
@@ -752,5 +753,21 @@ public class SparkComputationGraph extends SparkListenable {
         JavaRDD<T[]> evaluations = data.mapPartitions(evalFn);
         return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<T>(),
                         new IEvaluateAggregateFunction<T>());
+    }
+
+
+    public IEvaluation[] doEvaluation(JavaRDD<String> data, int evalBatchSize, DataSetLoader loader, IEvaluation... emptyEvaluations) {
+        return doEvaluation(data, evalBatchSize, loader, null, emptyEvaluations);
+    }
+
+    public IEvaluation[] doEvaluation(JavaRDD<String> data, int evalBatchSize, MultiDataSetLoader loader, IEvaluation... emptyEvaluations) {
+        return doEvaluation(data, evalBatchSize, null, loader, emptyEvaluations);
+    }
+
+    protected IEvaluation[] doEvaluation(JavaRDD<String> data, int evalBatchSize, DataSetLoader loader, MultiDataSetLoader mdsLoader, IEvaluation... emptyEvaluations){
+        IEvaluateMDSPathsFlatMapFunction evalFn = new IEvaluateMDSPathsFlatMapFunction(sc.broadcast(conf.toJson()),
+                sc.broadcast(network.params()), evalBatchSize, loader, mdsLoader, emptyEvaluations);
+        JavaRDD<IEvaluation[]> evaluations = data.mapPartitions(evalFn);
+        return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<>(), new IEvaluateAggregateFunction<>());
     }
 }

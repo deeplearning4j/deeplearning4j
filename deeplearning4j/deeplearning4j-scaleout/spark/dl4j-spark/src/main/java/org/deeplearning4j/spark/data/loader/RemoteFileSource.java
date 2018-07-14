@@ -11,10 +11,15 @@ import java.io.InputStream;
 
 @AllArgsConstructor
 public class RemoteFileSource implements Source {
+    public static final int DEFAULT_BUFFER_SIZE = 4*1024*2014;
     @Getter
     private String path;
     private final FileSystem fileSystem;
     private final int bufferSize;
+
+    public RemoteFileSource(String path, FileSystem fileSystem){
+        this(path, fileSystem, DEFAULT_BUFFER_SIZE);
+    }
 
     @Override
     public InputStream getInputStream() throws IOException {
