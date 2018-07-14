@@ -45,10 +45,16 @@ namespace nd4j {
             
 
             /**
-             * This method returns integer value between from and to
+             * This method returns T value between from and to
              */
             template <typename T>
             T relativeT(Nd4jLong index, T from, T to);
+
+            /**
+             * This method returns T value between 0 and MAX_T
+             */
+            template <typename T>
+            T relativeT(Nd4jLong index);
 
 
             void rewindH();

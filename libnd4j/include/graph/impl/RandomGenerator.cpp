@@ -2,14 +2,15 @@
 //
 //
 
+#include <op_boilerplate.h>
 #include <pointercast.h>
 #include <graph/RandomGenerator.h>
 #include <chrono>
+#include <array/DataTypeUtils.h>
 
 namespace nd4j {
     namespace graph {
         RandomGenerator::RandomGenerator(Nd4jLong rootSeed, Nd4jLong nodeSeed) {
-            
             this->setStates(rootSeed, nodeSeed);
         }
         
@@ -26,6 +27,7 @@ namespace nd4j {
             _rootState._long = rootSeed;
 
             // used to build second, node state
+
         }
 
 
@@ -36,16 +38,21 @@ namespace nd4j {
         }
 
         template <>
-        int RandomGenerator::relativeT(Nd4jLong index, int from, int to) {
-            return 0;
+        int RandomGenerator::relativeT<int>(Nd4jLong index) {
+            auto x = this->xoroshiro(index);
+            auto r = static_cast<int>(x % DataTypeUtils::max<uint32_t>());
+            return r;
         }
 
         template <typename T>
         T RandomGenerator::relativeT(Nd4jLong index, T from, T to) {
-            return static_cast<T>(0);
+            return from + (this->relativeT<T>(index) * (to - from));
         }
 
-
+        template <typename T>
+        T RandomGenerator::relativeT(Nd4jLong index) {
+            return static_cast<T>(0);
+        }
 
 
 
@@ -62,5 +69,10 @@ namespace nd4j {
         void RandomGenerator::rewindH() {
             //
         }
+
+
+        template int RandomGenerator::relativeT(Nd4jLong, int, int);
+        template float RandomGenerator::relativeT(Nd4jLong, float, float);
+        template double RandomGenerator::relativeT(Nd4jLong, double, double);
     }
 }

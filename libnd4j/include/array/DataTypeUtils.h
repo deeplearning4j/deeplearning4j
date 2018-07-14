@@ -58,6 +58,11 @@ FORCEINLINE _CUDA_HD uint64_t DataTypeUtils::min<uint64_t>() {
 }
 
 template<>
+FORCEINLINE _CUDA_HD uint32_t DataTypeUtils::min<uint32_t>() {
+    return 1;
+}
+
+template<>
 FORCEINLINE _CUDA_HD float DataTypeUtils::min<float>() {         
     return 1.175494e-38;    
 }
@@ -82,6 +87,11 @@ FORCEINLINE _CUDA_HD int DataTypeUtils::max<int>() {
 template <>
 FORCEINLINE _CUDA_HD Nd4jLong DataTypeUtils::max<Nd4jLong>() {
     return 9223372036854775807LL;
+}
+
+template <>
+FORCEINLINE _CUDA_HD uint32_t DataTypeUtils::max<uint32_t>() {
+    return ((uint32_t)-1);
 }
 
 template <>
