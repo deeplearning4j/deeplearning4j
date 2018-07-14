@@ -22,9 +22,9 @@ namespace nd4j {
     {
         double _double;
         Nd4jLong _long;
+        uint64_t _ulong;
         di32 _di32;
         du32 _du32;
-
     } u64;
 }
 

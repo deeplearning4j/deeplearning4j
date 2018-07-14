@@ -113,6 +113,49 @@ TEST_F(GraphRandomGeneratorTests, Sequential_Test_3) {
     ASSERT_EQ(r1, r0);
 }
 
+TEST_F(GraphRandomGeneratorTests, Long_Test_1) {
+    nd4j::graph::RandomGenerator g0(119, 5);
+    nd4j::graph::RandomGenerator g1(119, 5);
+
+    std::array<Nd4jLong, 10000> z0, z1, z2, z3; 
+
+    for (int e = 0; e < z0.size(); e++) {
+        z0[e] = g0.relativeT<Nd4jLong>(e);
+        z1[e] = g1.relativeT<Nd4jLong>(e);
+    }
+
+    g0.rewindH(z0.size());
+    g1.rewindH(z0.size());
+
+    for (int e = 0; e < z0.size(); e++) {
+        z2[e] = g0.relativeT<Nd4jLong>(e);
+        z3[e] = g1.relativeT<Nd4jLong>(e);
+    }
+
+    // these sequences should be equal
+    ASSERT_EQ(z0, z1);
+    ASSERT_EQ(z2, z3);
+
+    // these sequences should be different due to rewind
+    ASSERT_NE(z0, z3);
+
+    // we'll be counting values > MAX_INT here
+    int maxes = 0;
+
+    for (int e = 0; e < z0.size(); e++) {
+        auto v = z0[e];
+
+        // we don't want any negatives here
+        ASSERT_TRUE(v > 0);
+
+        if (v > DataTypeUtils::max<int>())
+            maxes++;
+    }
+
+    // and now we're ensuring there ARE values above MAX_INT
+    ASSERT_NE(0, maxes);
+}
+
 
 TEST_F(GraphRandomGeneratorTests, FloatingPoint_Test_1) {
     nd4j::graph::RandomGenerator g0(119, 5);
@@ -155,5 +198,9 @@ TEST_F(GraphRandomGeneratorTests, FloatingPoint_Test_1) {
             negs++;
     }
 
+    // there should be negatives 
     ASSERT_TRUE(negs > 0);
+
+    // and positives
+    ASSERT_NE(z0.size(), negs);
 }

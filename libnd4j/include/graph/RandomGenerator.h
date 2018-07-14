@@ -25,7 +25,8 @@ namespace nd4j {
             Nd4jLong currentMilliseconds();
 
 
-            uint32_t xoroshiro(Nd4jLong index);
+            uint32_t xoroshiro32(Nd4jLong index);
+            uint64_t xoroshiro64(Nd4jLong index);
 
             /**
              * This method returns integer value between 0 and MAX_UINT

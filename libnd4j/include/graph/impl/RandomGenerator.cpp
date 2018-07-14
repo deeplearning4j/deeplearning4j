@@ -1,6 +1,7 @@
 //
+// @author raver119@protonmail.com
 //
-//
+// relies on xoroshiro 64** and xoroshiro128 implementations
 
 #include <op_boilerplate.h>
 #include <pointercast.h>
@@ -39,9 +40,26 @@ namespace nd4j {
         }
 
         template <>
+        uint64_t RandomGenerator::relativeT<uint64_t>(Nd4jLong index) {
+            return this->xoroshiro64(index);
+        }
+
+        template <>
+        uint32_t RandomGenerator::relativeT<uint32_t>(Nd4jLong index) {
+            return this->xoroshiro32(index);
+        }
+
+        template <>
         int RandomGenerator::relativeT<int>(Nd4jLong index) {
-            auto x = this->xoroshiro(index);
-            auto r = static_cast<int>(x % DataTypeUtils::max<uint32_t>());
+            auto x = this->relativeT<uint32_t>(index);
+            auto r = static_cast<int>(x % DataTypeUtils::max<int>());
+            return r;
+        }
+
+        template <>
+        Nd4jLong RandomGenerator::relativeT<Nd4jLong>(Nd4jLong index) {
+            auto x = this->relativeT<uint64_t>(index);
+            auto r = static_cast<Nd4jLong>(x % DataTypeUtils::max<Nd4jLong>());
             return r;
         }
 
@@ -58,8 +76,6 @@ namespace nd4j {
             return static_cast<T>(r);
         }
 
-
-
         //////
         static FORCEINLINE uint32_t rotl(const uint32_t x, int k) {
 	        return (x << k) | (x >> (32 - k));
@@ -69,12 +85,27 @@ namespace nd4j {
             return (x << k) | (x >> (64 - k));
         }
 
-        uint32_t RandomGenerator::xoroshiro(Nd4jLong index) {
+        uint32_t RandomGenerator::xoroshiro32(Nd4jLong index) {
             u64 v;
             // TODO: improve this
             v._long = _rootState._long ^ _nodeState._long ^ index;
 
             return rotl(v._du32._v0 * 0x9E3779BB, 5) * 5;
+        }
+
+        uint64_t RandomGenerator::xoroshiro64(Nd4jLong index) {
+            auto s0 = _rootState._ulong;
+            auto s1 = _nodeState._ulong;
+
+            // xor by idx
+            _nodeState._long ^= index;
+
+            // since we're not modifying state - do rotl step right here
+            s1 ^= s0;
+            s0 = rotl(s0, 55) ^ s1 ^ (s1 << 14);
+            s1 = rotl(s1, 36);
+
+            return s0 + s1;
         }
 
         void RandomGenerator::rewindH(Nd4jLong steps) {
@@ -94,5 +125,6 @@ namespace nd4j {
         template float16 RandomGenerator::relativeT(Nd4jLong, float16, float16);
         template float RandomGenerator::relativeT(Nd4jLong, float, float);
         template double RandomGenerator::relativeT(Nd4jLong, double, double);
+        template Nd4jLong RandomGenerator::relativeT(Nd4jLong, Nd4jLong, Nd4jLong);
     }
 }
