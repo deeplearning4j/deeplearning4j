@@ -7,6 +7,7 @@
 #include <graph/RandomGenerator.h>
 #include <chrono>
 #include <array/DataTypeUtils.h>
+#include <helpers/logger.h>
 
 namespace nd4j {
     namespace graph {
@@ -27,7 +28,7 @@ namespace nd4j {
             _rootState._long = rootSeed;
 
             // used to build second, node state
-
+            _nodeState._long = nodeSeed;
         }
 
 
@@ -51,7 +52,10 @@ namespace nd4j {
 
         template <typename T>
         T RandomGenerator::relativeT(Nd4jLong index) {
-            return static_cast<T>(0);
+            // This is default implementation for floating point types
+            auto i = static_cast<float>(this->relativeT<int>(index));
+            auto r = i / static_cast<float>(DataTypeUtils::max<int>());
+            return static_cast<T>(r);
         }
 
 
@@ -61,9 +65,16 @@ namespace nd4j {
 	        return (x << k) | (x >> (32 - k));
         }
 
+        static FORCEINLINE uint64_t rotl(const uint64_t x, int k) {
+            return (x << k) | (x >> (64 - k));
+        }
+
         uint32_t RandomGenerator::xoroshiro(Nd4jLong index) {
             u64 v;
-            v._long = index;
+            // TODO: improve this
+            v._long = _rootState._long ^ _nodeState._long ^ index;
+
+            return rotl(v._du32._v0 * 0x9E3779BB, 5) * 5;
         }
 
         void RandomGenerator::rewindH() {
@@ -72,6 +83,7 @@ namespace nd4j {
 
 
         template int RandomGenerator::relativeT(Nd4jLong, int, int);
+        template float16 RandomGenerator::relativeT(Nd4jLong, float16, float16);
         template float RandomGenerator::relativeT(Nd4jLong, float, float);
         template double RandomGenerator::relativeT(Nd4jLong, double, double);
     }

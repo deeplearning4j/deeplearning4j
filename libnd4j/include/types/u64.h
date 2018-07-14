@@ -9,15 +9,22 @@
 
 namespace nd4j {
     typedef struct {
-        int _i0;
-        int _i1;
-    } di;
+        int _v0;
+        int _v1;
+    } di32;
+
+    typedef struct {
+        uint32_t _v0;
+        uint32_t _v1;
+    } du32;
 
     typedef union
     {
         double _double;
         Nd4jLong _long;
-        di _di;
+        di32 _di32;
+        du32 _du32;
+
     } u64;
 }
 
