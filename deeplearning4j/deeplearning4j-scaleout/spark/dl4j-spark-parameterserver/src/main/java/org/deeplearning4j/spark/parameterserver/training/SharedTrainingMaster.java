@@ -366,8 +366,13 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     protected void executeTrainingPathsHelper(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<String> trainingDataPaths,
                                               DataSetLoader dsLoader, MultiDataSetLoader mdsLoader, int dataSetObjectsNumExamples) {
-        if (numWorkers == null)
-            numWorkers = network.getSparkContext().defaultParallelism();
+        if (numWorkers == null) {
+            if(network != null){
+                numWorkers = network.getSparkContext().defaultParallelism();
+            } else {
+                numWorkers = graph.getSparkContext().defaultParallelism();
+            }
+        }
 
         if (collectTrainingStats)
             stats.logFitStart();
@@ -377,7 +382,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         long totalDataSetObjectCount = getTotalDataSetObjectCount(trainingDataPaths);
 
-        doIterationPaths(network, null, trainingDataPaths, 1, 1, dsLoader, mdsLoader, dataSetObjectsNumExamples);
+        doIterationPaths(network, graph, trainingDataPaths, 1, 1, dsLoader, mdsLoader, dataSetObjectsNumExamples);
 
         if (collectTrainingStats)
             stats.logFitEnd((int) totalDataSetObjectCount);
