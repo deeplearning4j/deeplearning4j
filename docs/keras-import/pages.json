@@ -4,10 +4,6 @@
   ],
   "indices": [
     {
-      "page": "models/index.md",
-      "module_index": "models"
-    },
-    {
       "page": "layers/index.md",
       "module_index": "layers"
     }
