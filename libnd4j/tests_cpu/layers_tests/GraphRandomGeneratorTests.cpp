@@ -113,6 +113,43 @@ TEST_F(GraphRandomGeneratorTests, Sequential_Test_3) {
     ASSERT_EQ(r1, r0);
 }
 
+TEST_F(GraphRandomGeneratorTests, Sequential_Test_4) {
+    nd4j::graph::RandomGenerator g0(119, 5);
+    nd4j::graph::RandomGenerator g1(119, 5);
+
+    auto v0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
+    auto v1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
+    g0.rewindH(200);
+    g1.rewindH(200);
+    auto r0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
+    auto r1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
+    g0.rewindH(200);
+    g1.rewindH(200);
+    auto z0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
+    auto z1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
+    g0.rewindH(201);
+    g1.rewindH(199);
+    auto y0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
+    auto y1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
+
+    // values after rewind aren't equal
+    ASSERT_NE(r0, v0);
+
+    // two generators must give the same output
+    ASSERT_EQ(v0, v1);
+
+    // and here output must be equal as well
+    ASSERT_EQ(r0, r1);
+
+    ASSERT_EQ(z0, z1);
+
+    ASSERT_NE(r0, z0);
+    ASSERT_NE(r1, z1);
+
+    ASSERT_NE(y0, z0);
+    ASSERT_NE(y1, z1);
+}
+
 TEST_F(GraphRandomGeneratorTests, Long_Test_1) {
     nd4j::graph::RandomGenerator g0(119, 5);
     nd4j::graph::RandomGenerator g1(119, 5);
