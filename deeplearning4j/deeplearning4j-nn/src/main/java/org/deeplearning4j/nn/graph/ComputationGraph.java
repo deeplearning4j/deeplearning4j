@@ -4286,6 +4286,25 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
+     * Returns the number of iterations (parameter updates) that the ComputationGraph has done
+     * @return Number of iterations
+     */
+    public int getIterationCount(){
+        return configuration.getIterationCount();
+    }
+
+    /**
+     * Returns the number of epochs that the ComputationGraph has done.
+     * Note that the epoch count is incremented only when {@link #fit(DataSetIterator)}, {@link #fit(MultiDataSetIterator)},
+     * {@link #fit(DataSetIterator, int)} or {@link #fit(MultiDataSetIterator, int)} are used.
+     * The epoch count can also be manually incremented using {@link #incrementEpochCount()}
+     * @return Number of epochs
+     */
+    public int getEpochCount(){
+        return configuration.getEpochCount();
+    }
+
+    /**
      * Save the ComputationGraph to a file. Restore using {@link #load(File, boolean)}.
      * Note that this saves the updater (i.e., the state array for momentum/Adam/rmsprop etc), which is desirable
      * if further training will be undertaken.

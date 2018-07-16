@@ -7,13 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Splits a dataset into k folds.
+ * Splits a dataset (represented as a single DataSet object) into k folds.
  * DataSet is duplicated in memory once
  * call .next() to get the k-1 folds to train on and call .testfold() to get the corresponding kth fold for testing
  * @author Susan Eraly
  */
 public class KFoldIterator implements DataSetIterator {
-    private DataSet singleFold;
+    private DataSet allData;
     private int k;
     private int batch;
     private int lastBatch;
@@ -22,33 +22,33 @@ public class KFoldIterator implements DataSetIterator {
     private DataSet train;
     protected DataSetPreProcessor preProcessor;
 
-    public KFoldIterator(DataSet singleFold) {
-        this(10, singleFold);
+    public KFoldIterator(DataSet allData) {
+        this(10, allData);
     }
 
     /**Create an iterator given the dataset and a value of k (optional, defaults to 10)
      * If number of samples in the dataset is not a multiple of k, the last fold will have less samples with the rest having the same number of samples.
      *
      * @param k number of folds (optional, defaults to 10)
-     * @param singleFold DataSet to split into k folds
+     * @param allData DataSet to split into k folds
      */
 
-    public KFoldIterator(int k, DataSet singleFold) {
+    public KFoldIterator(int k, DataSet allData) {
         this.k = k;
-        this.singleFold = singleFold.copy();
+        this.allData = allData.copy();
         if (k <= 1)
             throw new IllegalArgumentException();
-        if (singleFold.numExamples() % k != 0) {
+        if (allData.numExamples() % k != 0) {
             if (k != 2) {
-                this.batch = singleFold.numExamples() / (k - 1);
-                this.lastBatch = singleFold.numExamples() % (k - 1);
+                this.batch = allData.numExamples() / (k - 1);
+                this.lastBatch = allData.numExamples() % (k - 1);
             } else {
-                this.lastBatch = singleFold.numExamples() / 2;
+                this.lastBatch = allData.numExamples() / 2;
                 this.batch = this.lastBatch + 1;
             }
         } else {
-            this.batch = singleFold.numExamples() / k;
-            this.lastBatch = singleFold.numExamples() / k;
+            this.batch = allData.numExamples() / k;
+            this.lastBatch = allData.numExamples() / k;
         }
     }
 
@@ -64,19 +64,19 @@ public class KFoldIterator implements DataSetIterator {
      */
     public int totalExamples() {
         // FIXME: int cast
-        return (int) singleFold.getLabels().size(0);
+        return (int) allData.getLabels().size(0);
     }
 
     @Override
     public int inputColumns() {
         // FIXME: int cast
-        return (int) singleFold.getFeatures().size(1);
+        return (int) allData.getFeatures().size(1);
     }
 
     @Override
     public int totalOutcomes() {
         // FIXME: int cast
-        return (int) singleFold.getLabels().size(1);
+        return (int) allData.getLabels().size(1);
     }
 
     @Override
@@ -97,7 +97,7 @@ public class KFoldIterator implements DataSetIterator {
     @Override
     public void reset() {
         //shuffle and return new k folds
-        singleFold.shuffle();
+        allData.shuffle();
         kCursor = 0;
     }
 
@@ -134,7 +134,7 @@ public class KFoldIterator implements DataSetIterator {
 
     @Override
     public List<String> getLabels() {
-        return singleFold.getLabelNamesList();
+        return allData.getLabelNamesList();
     }
 
     @Override
@@ -167,14 +167,14 @@ public class KFoldIterator implements DataSetIterator {
         List<DataSet> kMinusOneFoldList = new ArrayList<DataSet>();
         if (right < totalExamples()) {
             if (left > 0) {
-                kMinusOneFoldList.add((DataSet) singleFold.getRange(0, left));
+                kMinusOneFoldList.add((DataSet) allData.getRange(0, left));
             }
-            kMinusOneFoldList.add((DataSet) singleFold.getRange(right, totalExamples()));
+            kMinusOneFoldList.add((DataSet) allData.getRange(right, totalExamples()));
             train = DataSet.merge(kMinusOneFoldList);
         } else {
-            train = (DataSet) singleFold.getRange(0, left);
+            train = (DataSet) allData.getRange(0, left);
         }
-        test = (DataSet) singleFold.getRange(left, right);
+        test = (DataSet) allData.getRange(left, right);
 
         kCursor++;
 
