@@ -55,7 +55,7 @@
             </dependency>
             <dependency>
                 <groupId>org.nd4j</groupId>
-                <artifactId>nd4j-cuda-9.2</artifactId>
+                <artifactId>nd4j-cuda-9.1</artifactId>
                 <version>${nd4j.version}</version>
                 <scope>test</scope>
             </dependency>
@@ -76,11 +76,6 @@
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-datavec-iterators</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>nearestneighbor-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -184,10 +179,6 @@
             <artifactId>deeplearning4j-ui-components</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-        </dependency>
     </dependencies>
 
     <profiles>
@@ -195,7 +186,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-9.2</id>
+            <id>test-nd4j-cuda-9.1</id>
         </profile>
     </profiles>
 

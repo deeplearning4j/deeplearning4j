@@ -109,12 +109,6 @@
             <version>${project.parent.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.clearspring.analytics</groupId>
-            <artifactId>stream</artifactId>
-            <version>${stream.analytics.version}</version>
-        </dependency>
-
         <!-- For map/sequence file integrations -->
         <dependency>
             <groupId>org.datavec</groupId>
@@ -151,13 +145,6 @@
             <version>${nd4j.version}</version>
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>org.datavec</groupId>
-            <artifactId>datavec-local</artifactId>
-            <version>${project.parent.version}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
 
@@ -166,7 +153,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-9.2</id>
+            <id>test-nd4j-cuda-9.1</id>
         </profile>
     </profiles>
 </project>

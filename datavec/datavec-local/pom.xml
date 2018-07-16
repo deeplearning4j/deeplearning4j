@@ -46,11 +46,6 @@
 </build>
     <dependencies>
         <dependency>
-            <groupId>com.codepoetics</groupId>
-            <artifactId>protonpack</artifactId>
-            <version>${protonpack.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native</artifactId>
             <version>${nd4j.version}</version>
@@ -60,11 +55,6 @@
             <groupId>org.datavec</groupId>
             <artifactId>datavec-api</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>tech.tablesaw</groupId>
-            <artifactId>tablesaw-core</artifactId>
-            <version>${tablesaw.version}</version>
         </dependency>
         <dependency>
             <groupId>org.datavec</groupId>
@@ -101,7 +91,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-9.2</id>
+            <id>test-nd4j-cuda-9.1</id>
         </profile>
     </profiles>
 </project>

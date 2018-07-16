@@ -33,12 +33,6 @@
             <artifactId>nd4j-common</artifactId>
             <version>${nd4j.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>${commons-codec.version}</version>
-        </dependency>
     </dependencies>
 
     <profiles>
@@ -46,7 +40,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-9.2</id>
+            <id>test-nd4j-cuda-9.1</id>
         </profile>
     </profiles>
 
