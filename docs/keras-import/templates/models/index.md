@@ -9,6 +9,15 @@ uses the so called `Model` API.
 Keras model import maps `Sequential` models to `MultiLayerNetwork`s and `Model`s to
 `ComputationGraph`s.
 
+
+To use this, you would save the model in Keras to a JSON file, 
+the DeepLearning4J options available are.
+
+* Sequential Model
+* Sequential Model with updater to allow further training
+* Functional Model
+* Functional Model with updater for further training
+
 ----
 
 - [Model Import API](./model-import)
