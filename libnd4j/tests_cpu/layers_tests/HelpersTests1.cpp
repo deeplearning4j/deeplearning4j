@@ -10,6 +10,7 @@
 #include <ops/declarable/helpers/rnn.h>
 #include <MmulHelper.h>
 #include <OpArgsHolder.h>
+#include <ops/declarable/CustomOperations.h>
 
 
 using namespace nd4j;
@@ -1666,7 +1667,7 @@ TEST_F(HelpersTests1, tensordot_test_6) {
     ASSERT_TRUE(c.equalsTo(expected));
 }
 
-
+////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, mmmulHelperAgain) {
     NDArray<float> x('c', {128, 156});
     NDArray<float> y('c', {156, 256});
@@ -1683,7 +1684,7 @@ TEST_F(HelpersTests1, mmmulHelperAgain) {
     ASSERT_TRUE(e.equalsTo(z));
 }
 
-
+////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, OpArgsHolder_test1) {
 
     NDArray<float> x1('c', {1, 1});
@@ -1700,6 +1701,69 @@ TEST_F(HelpersTests1, OpArgsHolder_test1) {
     ASSERT_TRUE(holder2.getNumInArrs() == 3);
     ASSERT_TRUE(holder2.getNumTArgs()  == 2);
     ASSERT_TRUE(holder2.getNumIArgs()  == 1);
-    
+
+    const std::vector<bool>& isArrAlloc1 = holder1.getAllocInfo();
+    ASSERT_TRUE(isArrAlloc1.size() == 0);
+
+    const std::vector<bool>& isArrAlloc2 = holder2.getAllocInfo();
+    for(int i = 0; i < holder2.getNumInArrs(); ++i)
+        ASSERT_TRUE(isArrAlloc2[i]  == false);   
 }
 
+////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, OpArgsHolder_test2) {
+
+    NDArray<float> x1('c', {1, 1});
+    NDArray<float> x2('c', {2, 2});
+    NDArray<float> x3('c', {3, 3});
+    NDArray<float> grad('c', {2, 3});
+    
+    OpArgsHolder<float> holderFF({&x1,&x2,&x3}, {4.f, 5.f}, {6});
+    OpArgsHolder<float> holderBP1 = holderFF.createArgsHolderForBP({&grad});
+    OpArgsHolder<float> holderBP2 = holderFF.createArgsHolderForBP({&grad}, true);
+    
+    ASSERT_TRUE(holderBP1.getNumInArrs() == 4);
+    ASSERT_TRUE(holderBP1.getNumTArgs()  == 2);
+    ASSERT_TRUE(holderBP1.getNumIArgs()  == 1);
+    ASSERT_TRUE(holderBP2.getNumInArrs() == 4);
+    ASSERT_TRUE(holderBP2.getNumTArgs()  == 2);
+    ASSERT_TRUE(holderBP2.getNumIArgs()  == 1);
+
+    const std::vector<bool>& isArrAllocBP1 = holderBP1.getAllocInfo();
+    for(int i = 0; i < holderBP1.getNumInArrs(); ++i)
+        ASSERT_TRUE(isArrAllocBP1[i] == false);   
+
+    const std::vector<bool>& isArrAllocBP2 = holderBP2.getAllocInfo();
+    for(int i = 0; i < holderFF.getNumInArrs(); ++i)
+        ASSERT_TRUE(isArrAllocBP2[i] == true);       
+    ASSERT_TRUE(isArrAllocBP2[holderFF.getNumInArrs()+1] == false);
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, OpArgsHolder_test3) {
+
+    NDArray<double> input   ('c', {2, 3}, {1.,2.,3.,4.,5.,6.});
+    NDArray<double> gradO   ('c', {4, 9});
+    NDArray<double> exp     ('c', {4, 9}, {1, 2, 3, 1, 2, 3, 1, 2, 3,4, 5, 6, 4, 5, 6, 4, 5, 6,1, 2, 3, 1, 2, 3, 1, 2, 3,4, 5, 6, 4, 5, 6, 4, 5, 6});
+    NDArray<double> gradIExp('c', {2, 3}, {0.78, 0.84, 0.9,1.32, 1.38, 1.44});
+
+    gradO.linspace(0.01, 0.01);
+
+    OpArgsHolder<double> holderFF({&input}, {}, {2, 3});
+    nd4j::ops::tile<double> opFF;                                              // the kind of op doesn't matter, we simply check here whether op.execute() works with OpArgsHolder correctly
+    ResultSet<double>* results = opFF.execute(holderFF);
+    NDArray<double>* tiled = results->at(0);
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(tiled));
+    ASSERT_TRUE(exp.equalsTo(tiled));
+    delete results;
+
+    OpArgsHolder<double> holderBP = holderFF.createArgsHolderForBP({&gradO}, true);
+    nd4j::ops::tile_bp<double> opBP;
+    results = opBP.execute(holderBP);
+    NDArray<double>* gradI = results->at(0);
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(gradIExp.isSameShape(gradI));
+    ASSERT_TRUE(gradIExp.equalsTo(gradI));
+    delete results;
+}
