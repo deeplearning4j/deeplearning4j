@@ -2,6 +2,7 @@ package org.deeplearning4j.models.word2vec.wordstore;
 
 import lombok.Data;
 import lombok.NonNull;
+import lombok.val;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
@@ -325,22 +326,22 @@ public class VocabConstructor<T extends SequenceElement> {
         }
 
         if (buildHuffmanTree) {
-            Huffman huffman = new Huffman(cache.vocabWords());
-            huffman.build();
-            huffman.applyIndexes(cache);
-            //topHolder.updateHuffmanCodes();
-
             if (limit > 0) {
-                LinkedBlockingQueue<String> labelsToRemove = new LinkedBlockingQueue<>();
-                for (T element : cache.vocabWords()) {
-                    if (element.getIndex() > limit && !element.isSpecial() && !element.isLabel())
-                        labelsToRemove.add(element.getLabel());
-                }
+                // we want to sort labels before truncating them, so we'll keep most important words
+                val words = new ArrayList<T>(cache.vocabWords());
+                Collections.sort(words);
 
-                for (String label : labelsToRemove) {
-                    cache.removeElement(label);
+                // now rolling through them
+                for (val element : words) {
+                    if (element.getIndex() > limit && !element.isSpecial() && !element.isLabel())
+                        cache.removeElement(element.getLabel());
                 }
             }
+
+            // and now we're building Huffman tree
+            val huffman = new Huffman(cache.vocabWords());
+            huffman.build();
+            huffman.applyIndexes(cache);
         }
 
         executorService.shutdown();

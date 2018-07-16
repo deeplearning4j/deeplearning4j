@@ -7,6 +7,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.indexer.IntIndexer;
 import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -1011,7 +1012,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             batchPointers.set(new HashMap<Integer, Pointer>());
 
         if (!batchPointers.get().containsKey(batch.opNum())) {
-            IntPointer pointer = new IntPointer(batch.getSample().getRequiredBatchMemorySize() / 4);
+            val pointer = new IntPointer(batch.getSample().getRequiredBatchMemorySize() / 4 );
             batchPointers.get().put(batch.opNum(), pointer);
             return pointer;
         }

@@ -6504,7 +6504,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         Nd4j.getExecutioner().exec(op);
 
-        INDArray exp = arr.transpose();
+        val exp = arr.transpose();
         assertEquals(exp, out);
     }
 

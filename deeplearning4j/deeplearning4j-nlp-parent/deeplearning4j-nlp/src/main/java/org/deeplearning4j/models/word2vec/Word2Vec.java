@@ -582,6 +582,9 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.enableScavenger = this.enableScavenger;
             ret.vocabLimit = this.vocabLimit;
 
+            if (ret.unknownElement == null)
+                ret.unknownElement = new VocabWord(1.0,SequenceVectors.DEFAULT_UNK);
+
 
             ret.iterator = this.iterator;
             ret.lookupTable = this.lookupTable;
@@ -626,6 +629,8 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.trainElementsVectors = true;
 
             ret.eventListeners = this.vectorsListeners;
+
+
 
             return ret;
         }

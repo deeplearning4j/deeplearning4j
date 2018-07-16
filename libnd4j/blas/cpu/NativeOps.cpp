@@ -2624,6 +2624,8 @@ void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers,
                                         int maxReals,
                                         void *ptrToArguments) {
 
+    //nd4j_printf("numAggregates: [%i]; opNum: [%i]; maxArgs: [%i]; maxShapes: [%i]; maxIntArrays: [%i]; maxIntArraySize: [%i]; maxIdx: [%i]; maxReals: [%i];\n", numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals);
+
     // probably, we don't want too much threads as usually
     int _threads = nd4j::math::nd4j_min<int>(numAggregates, omp_get_max_threads());
 
@@ -2637,7 +2639,7 @@ void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers,
                                        maxReals);
 
     // special case here, we prefer spread arrangement here, all threads are detached from each other
-#pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(spread) default(shared)
+#pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(close) default(shared)
     for (int i = 0; i < numAggregates; i++) {
         auto intArrays = new int *[maxIntArrays];
 

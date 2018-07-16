@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -109,9 +110,10 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     public void buildVocab() {
 
 
-        VocabConstructor<T> constructor = new VocabConstructor.Builder<T>().addSource(iterator, minWordFrequency)
+        val constructor = new VocabConstructor.Builder<T>().addSource(iterator, minWordFrequency)
                         .setTargetVocabCache(vocab).fetchLabels(trainSequenceVectors).setStopWords(stopWords)
                         .enableScavenger(enableScavenger).setEntriesLimit(vocabLimit)
+                        .allowParallelTokenization(configuration.isAllowParallelTokenization())
                         .setUnk(useUnknown && unknownElement != null ? unknownElement : null).build();
 
         if (existingModel != null && lookupTable instanceof InMemoryLookupTable
@@ -191,7 +193,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
      * Starts training over
      */
     public void fit() {
-        Properties props = Nd4j.getExecutioner().getEnvironmentInformation();
+        val props = Nd4j.getExecutioner().getEnvironmentInformation();
         if (props.getProperty("backend").equals("CUDA")) {
             if (Nd4j.getAffinityManager().getNumberOfDevices() > 1)
                 throw new IllegalStateException("Multi-GPU word2vec/doc2vec isn't available atm");
@@ -232,18 +234,18 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 iterator.reset();
 
                 while (iterator.hasMoreSequences()) {
-                    Sequence<T> sequence = iterator.nextSequence();
+                    val sequence = iterator.nextSequence();
 
                     // initializing elements, only once
                     for (T element : sequence.getElements()) {
                         T realElement = vocab.tokenFor(element.getLabel());
 
                         if (realElement != null && !realElement.isInit()) {
-                            Random rng = Nd4j.getRandomFactory().getNewRandomInstance(
+                            val rng = Nd4j.getRandomFactory().getNewRandomInstance(
                                             configuration.getSeed() * realElement.hashCode(),
                                             configuration.getLayersSize() + 1);
 
-                            INDArray randArray = Nd4j.rand(new int[] {1, configuration.getLayersSize()}, rng).subi(0.5)
+                            val randArray = Nd4j.rand(new int[] {1, configuration.getLayersSize()}, rng).subi(0.5)
                                             .divi(configuration.getLayersSize());
 
                             lookupTable.getWeights().getRow(realElement.getIndex()).assign(randArray);
@@ -272,8 +274,6 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             }
         }
 
-
-
         initLearners();
 
         log.info("Starting learning process...");
@@ -281,21 +281,20 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         if (this.stopWords == null)
             this.stopWords = new ArrayList<>();
 
-        final AtomicLong wordsCounter = new AtomicLong(0);
+        val wordsCounter = new AtomicLong(0);
         for (int currentEpoch = 1; currentEpoch <= numEpochs; currentEpoch++) {
-            final AtomicLong linesCounter = new AtomicLong(0);
+            val linesCounter = new AtomicLong(0);
 
 
-            AsyncSequencer sequencer = new AsyncSequencer(this.iterator, this.stopWords);
+            val sequencer = new AsyncSequencer(this.iterator, this.stopWords);
             sequencer.start();
 
 
             //final VectorCalculationsThread[] threads = new VectorCalculationsThread[workers];
-            final AtomicLong timer = new AtomicLong(System.currentTimeMillis());
-            final List<VectorCalculationsThread> threads = new ArrayList<>();
+            val timer = new AtomicLong(System.currentTimeMillis());
+            val threads = new ArrayList<VectorCalculationsThread>();
             for (int x = 0; x < workers; x++) {
-                threads.add(x, new VectorCalculationsThread(x, currentEpoch, wordsCounter, vocab.totalWordOccurrences(),
-                                linesCounter, sequencer, timer, numEpochs));
+                threads.add(x, new VectorCalculationsThread(x, currentEpoch, wordsCounter, vocab.totalWordOccurrences(), linesCounter, sequencer, timer, numEpochs));
                 threads.get(x).start();
             }
 
