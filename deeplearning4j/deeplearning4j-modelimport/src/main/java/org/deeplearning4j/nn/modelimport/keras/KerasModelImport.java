@@ -31,9 +31,10 @@ import java.io.InputStream;
 
 /**
  * Reads stored Keras configurations and weights from one of two archives:
- * either (1) a single HDF5 file storing model and training JSON configurations
- * and weights or (2) separate text file storing model JSON configuration and
- * HDF5 file storing weights.
+ * either as
+ *
+ * - a single HDF5 file storing model and training JSON configurations and weights
+ * - separate text file storing model JSON configuration and HDF5 file storing weights.
  *
  * @author dave@skymind.io
  */

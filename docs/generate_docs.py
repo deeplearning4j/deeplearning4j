@@ -136,8 +136,6 @@ class DocumentationGenerator:
         # Exclude all 'exclude' methods
         method_strings = [m for m in method_strings if m not in excludes]
 
-        print(method_strings)
-
         methods = []
         for method in method_strings:
             # print("Processing doc string for method {}".format(method))

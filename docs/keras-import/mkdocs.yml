@@ -14,8 +14,8 @@ pages:
   - Guide to KerasSequentialModel: getting-started/keras-sequential-guide.md
   - Guide to KerasModel: getting-started/keras-model-guide.md
 - Models:
-  - Sequential: models/sequential.md
-  - Model (functional API): models/model.md
+  - KerasSequentialModel: models/sequential.md
+  - KerasModel (functional API): models/model.md
 - Layers:
   - About Keras import layers: layers/about-importing-layers.md
   - Core Layers: layers/core.md

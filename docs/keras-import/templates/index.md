@@ -125,3 +125,7 @@ into the DL4J ecosphere for either further training or evaluation purposes.
 You should use this module when the experimentation phase of your 
 project is completed and you need to ship your models to production. [Skymind](https://skymind.ai) 
 commercial support for Keras implementations in enterprise.
+
+<p align="center">
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">KERAS FOR PRODUCTION</a>
+</p>
