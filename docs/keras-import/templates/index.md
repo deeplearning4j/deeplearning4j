@@ -32,8 +32,8 @@ If you put this model file (`simple_mlp.h5`) into the base of your resource fold
 project, you can load the Keras model as DL4J `MultiLayerNetwork` as follows
 
 ```java
-String simple_mlp = new ClassPathResource("simple_mlp.h5").getFile().getPath();
-MultiLayerNetwork model = KerasModelImport.importKerasSequentialModelAndWeights(simple_mlp);
+String simpleMlp = new ClassPathResource("simple_mlp.h5").getFile().getPath();
+MultiLayerNetwork model = KerasModelImport.importKerasSequentialModelAndWeights(simpleMlp);
 ```
 
 That's it! The `KerasModelImport` is your main entry point to model import and class takes

@@ -10,7 +10,8 @@ in Keras with a Theano backend, and exported and loaded into Deeplearning4j:
 If you have trouble viewing the video, please click here to 
 [view it on YouTube](https://www.youtube.com/embed/bI1aR1Tj2DM).
 
-To learn more about importing the two types of Keras models into DL4J, see the following guides.
+If you don't feel like watching a tutorial video and want learn more about getting started with 
+importing the two types of Keras models into DL4J, see the following guides.
 
 - [Guide to importing Sequential models](./keras-sequential-guide)
 - [Guide to importing functional API models](./keras-model-guide)

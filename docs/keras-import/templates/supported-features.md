@@ -1,8 +1,14 @@
 # Keras Model Import: Supported Features
 
-Little-known fact: Deeplearning4j's creator, Skymind, has two of the top five [Keras contributors](https://github.com/keras-team/keras/graphs/contributors) on our team, making it the largest contributor to Keras after Keras creator Francois Chollet, who's at Google.
+Little-known fact: Deeplearning4j's creator, Skymind, has two of the top 
+five [Keras contributors](https://github.com/keras-team/keras/graphs/contributors) 
+on our team, making it the largest contributor to Keras after Keras creator Francois 
+Chollet, who's at Google.
 
-While not every concept in DL4J has an equivalent in Keras and vice versa, many of the key concepts can be matched. Importing keras models into DL4J is done in our [deeplearning4j-modelimport](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras) module. Below is a comprehensive list of currently supported features.
+While not every concept in DL4J has an equivalent in Keras and vice versa, many of the 
+key concepts can be matched. Importing keras models into DL4J is done in 
+our [deeplearning4j-modelimport](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras) 
+module. Below is a comprehensive list of currently supported features.
 
 * [Layers](#layers)
 * [Losses](#losses)
