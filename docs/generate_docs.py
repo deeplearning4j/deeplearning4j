@@ -80,7 +80,7 @@ class DocumentationGenerator:
     '''
     def render(self, signature, doc_string, class_name, is_method):
         if is_method:  # Method name from signature
-            method_regex = r'public [static\s]?[a-zA-Z0-9]* ([a-zA-Z0-9]*)\('
+            method_regex = r'public (?:static )?[a-zA-Z0-9]* ([a-zA-Z0-9]*)\('
             name = re.findall(method_regex, signature)[0]
         else:  # Constructor takes class name
             name = class_name
@@ -126,7 +126,7 @@ class DocumentationGenerator:
     in the public API of an object
     '''
     def get_public_method_data(self, class_string, includes, excludes):
-        method_regex = r'public [static\s]?[a-zA-Z0-9]* ([a-zA-Z0-9]*)\('
+        method_regex = r'public (?:static )?[a-zA-Z0-9]* ([a-zA-Z0-9]*)\('
 
         # Either use all methods or use include methods that can be found
         method_strings = re.findall(method_regex, class_string)
@@ -136,11 +136,13 @@ class DocumentationGenerator:
         # Exclude all 'exclude' methods
         method_strings = [m for m in method_strings if m not in excludes]
 
+        print(method_strings)
+
         methods = []
         for method in method_strings:
             # print("Processing doc string for method {}".format(method))
             doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n[\S\s]*?' + \
-                        '(public [static\s]?[a-zA-Z0-9]* ' + method + '[\S\s]*?){'
+                        '(public (?:static )?[a-zA-Z0-9]* ' + method + '[\S\s]*?){'
             # TODO: this will sometimes run forever. fix regex
             result = re.search(doc_regex, class_string)
             if result:
