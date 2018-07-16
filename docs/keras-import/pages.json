@@ -4,10 +4,6 @@
   ],
   "indices": [
     {
-      "page": "models/index.md",
-      "module_index": "models"
-    },
-    {
       "page": "layers/index.md",
       "module_index": "layers"
     }
@@ -42,6 +38,10 @@
     {
       "page": "layers/pooling.md",
       "module": "layers/pooling"
+    },
+    {
+      "page": "layers/local.md",
+      "module": "layers/local"
     },
     {
       "page": "layers/recurrent.md",

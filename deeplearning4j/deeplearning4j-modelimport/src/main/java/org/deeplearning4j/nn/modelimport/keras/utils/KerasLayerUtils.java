@@ -41,11 +41,13 @@ import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling3D;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLstm;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasSimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.layers.wrappers.KerasBidirectional;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Utility functionality to import keras models
@@ -561,6 +563,23 @@ public class KerasLayerUtils {
             hasZeroMasking = (boolean) innerConfig.get(conf.getLAYER_FIELD_MASK_ZERO());
         }
         return hasZeroMasking;
+    }
+
+    /**
+     * Remove weights from config after weight setting.
+     *
+     * @param weights layer weights
+     * @param conf Keras layer configuration
+     */
+    public static void removeDefaultWeights(Map<String, INDArray> weights, KerasLayerConfiguration conf) {
+        if (weights.size() > 2) {
+            Set<String> paramNames = weights.keySet();
+            paramNames.remove(conf.getKERAS_PARAM_NAME_W());
+            paramNames.remove(conf.getKERAS_PARAM_NAME_B());
+            String unknownParamNames = paramNames.toString();
+            log.warn("Attemping to set weights for unknown parameters: "
+                    + unknownParamNames.substring(1, unknownParamNames.length() - 1));
+        }
     }
 
 }

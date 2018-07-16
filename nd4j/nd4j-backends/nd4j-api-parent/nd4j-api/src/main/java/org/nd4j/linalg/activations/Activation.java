@@ -19,7 +19,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
  * Created by susaneraly on 12/8/16.
  */
 public enum Activation {
-    CUBE, ELU, HARDSIGMOID, HARDTANH, IDENTITY, LEAKYRELU, RATIONALTANH, RELU, RRELU, SIGMOID, SOFTMAX, SOFTPLUS, SOFTSIGN, TANH, RECTIFIEDTANH, SELU, SWISH;
+    CUBE, ELU, HARDSIGMOID, HARDTANH, IDENTITY, LEAKYRELU, RATIONALTANH, RELU, RELU6,
+    RRELU, SIGMOID, SOFTMAX, SOFTPLUS, SOFTSIGN, TANH, RECTIFIEDTANH, SELU, SWISH;
 
     /**
      * Creates an instance of the activation function
@@ -46,6 +47,8 @@ public enum Activation {
                 return new ActivationRectifiedTanh();
             case RELU:
                 return new ActivationReLU();
+            case RELU6:
+                return new ActivationReLU6();
             case SELU:
                 return new ActivationSELU();
             case SWISH:
