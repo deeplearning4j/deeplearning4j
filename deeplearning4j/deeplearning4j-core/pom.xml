@@ -55,7 +55,7 @@
             </dependency>
             <dependency>
                 <groupId>org.nd4j</groupId>
-                <artifactId>nd4j-cuda-9.1</artifactId>
+                <artifactId>nd4j-cuda-9.2</artifactId>
                 <version>${nd4j.version}</version>
                 <scope>test</scope>
             </dependency>
@@ -186,7 +186,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-9.1</id>
+            <id>test-nd4j-cuda-9.2</id>
         </profile>
     </profiles>
 

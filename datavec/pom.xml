@@ -115,7 +115,7 @@
                                 <skip>${skipTestResourceEnforcement}</skip>
                                 <rules>
                                     <requireActiveProfile>
-                                        <profiles>test-nd4j-native,test-nd4j-cuda-9.1</profiles>
+                                        <profiles>test-nd4j-native,test-nd4j-cuda-9.2</profiles>
                                         <all>false</all>
                                     </requireActiveProfile>
                                 </rules>
@@ -357,7 +357,7 @@
         </profile>
         <!-- For running unit tests with nd4j-cuda-8.0: "mvn clean test -P test-nd4j-cuda-8.0" -->
         <profile>
-            <id>test-nd4j-cuda-9.1</id>
+            <id>test-nd4j-cuda-9.2</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
@@ -370,7 +370,7 @@
                 </dependency>
                 <dependency>
                     <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-9.1</artifactId>
+                    <artifactId>nd4j-cuda-9.2</artifactId>
                     <version>${nd4j.version}</version>
                     <scope>test</scope>
                 </dependency>
