@@ -19,10 +19,12 @@
 
 package org.nd4j.linalg.api.buffer;
 
+import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -245,6 +247,24 @@ public class FloatDataBufferTest extends BaseNd4jTest {
         assertArrayEquals(old, newBuf, 1e-4F);
         workspace.close();
     }
+
+    @Test
+    public void testAddressPointer(){
+        DataBuffer buffer = Nd4j.createBuffer(new float[] {1, 2, 3, 4});
+        DataBuffer wrappedBuffer = Nd4j.createBuffer(buffer, 1, 2);
+
+        FloatPointer pointer = (FloatPointer) wrappedBuffer.addressPointer();
+        Assert.assertEquals(buffer.getFloat(1), pointer.get(0), 1e-1);
+        Assert.assertEquals(buffer.getFloat(2), pointer.get(1), 1e-1);
+
+        try {
+            pointer.asBuffer().get(3); // Try to access element outside pointer capacity.
+            Assert.fail("Accessing this address should not be allowed!");
+        } catch (IndexOutOfBoundsException e) {
+            // do nothing
+        }
+    }
+
 
     @Override
     public char ordering() {
