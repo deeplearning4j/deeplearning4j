@@ -12,7 +12,7 @@ Please check [here](./supported-features) for a complete list of supported Keras
 ## Getting started: Import a Keras model in 60 seconds
 
 To import a Keras model, you need to create and [serialize](https://keras.io/getting-started/faq/#how-can-i-save-a-keras-model)
-one first. Here's a simple example that you can use. The model is a simple MLP that takes 
+such a model first. Here's a simple example that you can use. The model is a simple MLP that takes 
 mini-batches of vectors of length 100, has two Dense layers and predicts a total of 10 
 categories. After defining the model, we serialize it in HDF5 format.
 
@@ -32,8 +32,8 @@ If you put this model file (`simple_mlp.h5`) into the base of your resource fold
 project, you can load the Keras model as DL4J `MultiLayerNetwork` as follows
 
 ```java
-final String SIMPLE_MLP = new ClassPathResource("simple_mlp.h5").getFile().getPath();
-MultiLayerNetwork model = KerasModelImport.importKerasSequentialModelAndWeights(SIMPLE_MLP);
+String simple_mlp = new ClassPathResource("simple_mlp.h5").getFile().getPath();
+MultiLayerNetwork model = KerasModelImport.importKerasSequentialModelAndWeights(simple_mlp);
 ```
 
 That's it! The `KerasModelImport` is your main entry point to model import and class takes
@@ -72,6 +72,35 @@ dependency to your pom.xml.
 If you need a project to get started in the first place, consider cloning 
 [DL4J examples](https://github.com/deeplearning4j/dl4j-examples) and follow
 the instructions in the repository to build the project.
+
+## Popular models and applications
+
+We support import for a growing number of applications, check [here](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-modelimport/src/test/java/org/deeplearning4j/nn/modelimport/keras/e2e/KerasModelEndToEndTest.java)
+for a full list of currently covered models. These applications include
+
+- Deep convolutional and Wasserstein GANs
+- UNET
+- ResNet50
+- SqueezeNet
+- MobileNet
+- Inception
+- Xception
+
+## Troubleshooting and support
+
+An `IncompatibleKerasConfigurationException` message indicates that you are attempting to 
+import a Keras model configuration that is not currently supported in Deeplearning4j 
+(either because model import does not cover it, or DL4J does not implement the layer, 
+or feature).
+
+Once you have imported your model, we recommend our own `ModelSerializer` class for further 
+saving and reloading of your model.
+
+You can inquire further by visiting the [DL4J gitter channel](https://gitter.im/deeplearning4j/deeplearning4j). You might consider filing 
+a [feature request via Github](https://github.com/deeplearning4j/deeplearning4j/issues) 
+so that this missing functionality can be placed on the DL4J development roadmap or even 
+sending us a pull request with the necessary changes!
+
 
 ## Why Keras model import?
 
