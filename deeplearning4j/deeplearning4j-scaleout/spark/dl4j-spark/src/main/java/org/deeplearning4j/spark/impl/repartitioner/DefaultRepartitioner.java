@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.spark.impl.repartitioner;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.JavaRDD;
 import org.deeplearning4j.spark.api.Repartitioner;
 import org.deeplearning4j.spark.impl.common.CountPartitionsFunction;
@@ -29,6 +30,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@Slf4j
 public class DefaultRepartitioner implements Repartitioner {
     public static final int DEFAULT_MAX_PARTITIONS = 5000;
 
@@ -70,6 +72,18 @@ public class DefaultRepartitioner implements Repartitioner {
         } else {
             numPartitions = (int)Math.ceil(totalObjects / (double)minObjectsPerPartition);
         }
-        return EqualRepartitioner.repartition(rdd, numPartitions, partitionCounts);
+//        return EqualRepartitioner.repartition(rdd, numPartitions, partitionCounts);
+        JavaRDD<T> temp = EqualRepartitioner.repartition(rdd, numPartitions, partitionCounts);
+
+        List<Tuple2<Integer, Integer>> partitionCountsAfter = temp.mapPartitionsWithIndex(new CountPartitionsFunction<T>(), true).collect();
+        log.info("Partition counts: {}", partitionCountsAfter);
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        for(Tuple2<Integer,Integer> t2 : partitionCountsAfter){
+            min = Math.min(min, t2._2());
+            max = Math.max(max, t2._2());
+        }
+        log.info("min={}, max={}", min, max);
+        return temp;
     }
 }
