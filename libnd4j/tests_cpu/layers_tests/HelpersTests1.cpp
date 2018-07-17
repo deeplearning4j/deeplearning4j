@@ -1706,8 +1706,7 @@ TEST_F(HelpersTests1, OpArgsHolder_test1) {
     ASSERT_TRUE(isArrAlloc1.size() == 0);
 
     const std::vector<bool>& isArrAlloc2 = holder2.getAllocInfo();
-    for(int i = 0; i < holder2.getNumInArrs(); ++i)
-        ASSERT_TRUE(isArrAlloc2[i]  == false);   
+    ASSERT_TRUE(isArrAlloc2.size() == 0);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1730,8 +1729,7 @@ TEST_F(HelpersTests1, OpArgsHolder_test2) {
     ASSERT_TRUE(holderBP2.getNumIArgs()  == 1);
 
     const std::vector<bool>& isArrAllocBP1 = holderBP1.getAllocInfo();
-    for(int i = 0; i < holderBP1.getNumInArrs(); ++i)
-        ASSERT_TRUE(isArrAllocBP1[i] == false);   
+    ASSERT_TRUE(isArrAllocBP1.size() == 0);
 
     const std::vector<bool>& isArrAllocBP2 = holderBP2.getAllocInfo();
     for(int i = 0; i < holderFF.getNumInArrs(); ++i)
@@ -1767,3 +1765,5 @@ TEST_F(HelpersTests1, OpArgsHolder_test3) {
     ASSERT_TRUE(gradIExp.equalsTo(gradI));
     delete results;
 }
+
+

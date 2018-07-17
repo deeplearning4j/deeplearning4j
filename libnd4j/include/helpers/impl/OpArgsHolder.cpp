@@ -14,14 +14,17 @@ OpArgsHolder<T> OpArgsHolder<T>::createArgsHolderForBP(const std::vector<NDArray
 	const int numInGradArrs = inGradArrs.size();
 
 	OpArgsHolder<T> result(std::vector<NDArray<T>*>(_numInArrs + numInGradArrs, nullptr), _tArgs, _iArgs);
+	
+	if(isInPlace)
+		result._isArrAlloc = std::vector<bool>(_numInArrs + numInGradArrs, false);
 
 	for (int i = 0; i < _numInArrs; ++i) {
 		
-		if(isInPlace) {
+		if(isInPlace) {			
 			result._inArrs[i] = new NDArray<T>(*_inArrs[i]);		// make copy
 			result._isArrAlloc[i] = true;
 		}
-		else
+		else 
 			result._inArrs[i] = _inArrs[i];	
 	}
 

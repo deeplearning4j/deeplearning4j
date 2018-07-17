@@ -22,7 +22,7 @@ private:
     int _numTArgs  = _tArgs.size();
     int _numIArgs  = _iArgs.size();
 
-    std::vector<bool> _isArrAlloc = std::vector<bool>(_numInArrs, false);
+    std::vector<bool> _isArrAlloc = std::vector<bool>();
 
 public:
 
