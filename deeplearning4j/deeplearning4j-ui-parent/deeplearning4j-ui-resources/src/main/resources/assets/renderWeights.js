@@ -1,100 +1,116 @@
-    var modelSelector = new Array();
-    var magnitudesSelector = new Array();
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
-    // current visible chart, all other charts will be hidden
-    var visibleModel = "";
-    var visibleGradient = "";
-    var visibleMagnitude = "";
+var modelSelector = new Array();
+var magnitudesSelector = new Array();
 
-    var contains = function(needle) {
-        // Per spec, the way to identify NaN is that it is not equal to itself
-        var findNaN = needle !== needle;
-        var indexOf;
+// current visible chart, all other charts will be hidden
+var visibleModel = "";
+var visibleGradient = "";
+var visibleMagnitude = "";
 
-        if(!findNaN && typeof Array.prototype.indexOf === 'function') {
-            indexOf = Array.prototype.indexOf;
-        } else {
-            indexOf = function(needle) {
-                var i = -1, index = -1;
+var contains = function(needle) {
+    // Per spec, the way to identify NaN is that it is not equal to itself
+    var findNaN = needle !== needle;
+    var indexOf;
 
-                for(i = 0; i < this.length; i++) {
-                    var item = this[i];
+    if(!findNaN && typeof Array.prototype.indexOf === 'function') {
+        indexOf = Array.prototype.indexOf;
+    } else {
+        indexOf = function(needle) {
+            var i = -1, index = -1;
 
-                    if((findNaN && item !== item) || item === needle) {
-                        index = i;
-                        break;
-                    }
+            for(i = 0; i < this.length; i++) {
+                var item = this[i];
+
+                if((findNaN && item !== item) || item === needle) {
+                    index = i;
+                    break;
                 }
+            }
 
-                return index;
-            };
-        }
-
-        return indexOf.call(this, needle) > -1;
-    };
-
-
-    function appendHistogram(values,selector) {
-        // A formatter for counts.
-        var formatCount = d3.format(",.0f");
-
-        var margin = {top: 10, right: 30, bottom: 30, left: 30},
-                width = 650 - margin.left - margin.right,
-                height = 350 - margin.top - margin.bottom;
-        var data = values;
-        var min = d3.min(data);
-        var max = d3.max(data);
-        if(isNaN(min)){
-            min = 0.0;
-            max = 1.0;
-        }
-
-        var x = d3.scale.linear()
-                .domain([min, max])
-                .range([0, width]);
-
-        // Generate a histogram using twenty uniformly-spaced bins.
-        var data = d3.layout.histogram()
-                .bins(x.ticks(20))
-                (values);
-
-        var y = d3.scale.linear()
-                .domain([0, d3.max(data, function(d) { return d.y; })])
-                .range([height, 0]);
-
-        var xAxis = d3.svg.axis()
-                .scale(x)
-                .orient("bottom");
-
-        var svg = d3.select(selector).append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-                .append("g")
-                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-        var bar = svg.selectAll(".bar")
-                .data(data)
-                .enter().append("g")
-                .attr("class", "bar")
-                .attr("transform", function(d) { return "translate(" + x(d.x) + "," + y(d.y) + ")"; });
-
-        bar.append("rect")
-                .attr("x", 1)
-                .attr("width", x(min+data[0].dx) -1 )
-                .attr("height", function(d) { return height - y(d.y); });
-
-        bar.append("text")
-                .attr("dy", ".75em")
-                .attr("y", 6)
-                .attr("x", x(min+data[0].dx) / 2)
-                .attr("text-anchor", "middle")
-                .text(function(d) { return formatCount(d.y); });
-
-        svg.append("g")
-                .attr("class", "x axis")
-                .attr("transform", "translate(0," + height + ")")
-                .call(xAxis);
+            return index;
+        };
     }
+
+    return indexOf.call(this, needle) > -1;
+};
+
+
+function appendHistogram(values,selector) {
+    // A formatter for counts.
+    var formatCount = d3.format(",.0f");
+
+    var margin = {top: 10, right: 30, bottom: 30, left: 30},
+            width = 650 - margin.left - margin.right,
+            height = 350 - margin.top - margin.bottom;
+    var data = values;
+    var min = d3.min(data);
+    var max = d3.max(data);
+    if(isNaN(min)){
+        min = 0.0;
+        max = 1.0;
+    }
+
+    var x = d3.scale.linear()
+            .domain([min, max])
+            .range([0, width]);
+
+    // Generate a histogram using twenty uniformly-spaced bins.
+    var data = d3.layout.histogram()
+            .bins(x.ticks(20))
+            (values);
+
+    var y = d3.scale.linear()
+            .domain([0, d3.max(data, function(d) { return d.y; })])
+            .range([height, 0]);
+
+    var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient("bottom");
+
+    var svg = d3.select(selector).append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var bar = svg.selectAll(".bar")
+            .data(data)
+            .enter().append("g")
+            .attr("class", "bar")
+            .attr("transform", function(d) { return "translate(" + x(d.x) + "," + y(d.y) + ")"; });
+
+    bar.append("rect")
+            .attr("x", 1)
+            .attr("width", x(min+data[0].dx) -1 )
+            .attr("height", function(d) { return height - y(d.y); });
+
+    bar.append("text")
+            .attr("dy", ".75em")
+            .attr("y", 6)
+            .attr("x", x(min+data[0].dx) / 2)
+            .attr("text-anchor", "middle")
+            .text(function(d) { return formatCount(d.y); });
+
+    svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + height + ")")
+            .call(xAxis);
+}
 
  function appendLineChart(values,selector){
         // Set the dimensions of the canvas / graph
@@ -354,42 +370,42 @@ var timed = function() {
 setTimeout(timed,2000);
 
 
-    function selectModel() {
-        console.log("Switching off model view: " + visibleModel);
-        if (visibleModel != "") {
-            $("#model" + visibleModel).css("visibility","hidden");
-            $("#model" + visibleModel).css("display","none");
-        }
-
-        visibleModel = $("#modelSelector").val();
-        $("#model" + visibleModel).css("visibility","visible");
-        $("#model" + visibleModel).css("display","block");
-        console.log("Switching on model view:" + visibleModel);
+function selectModel() {
+    console.log("Switching off model view: " + visibleModel);
+    if (visibleModel != "") {
+        $("#model" + visibleModel).css("visibility","hidden");
+        $("#model" + visibleModel).css("display","none");
     }
 
-    function selectGradient() {
-            console.log("Switching off gradient view: " + visibleGradient);
-            if (visibleGradient != "") {
-                $("#gradient" + visibleGradient).css("visibility","hidden");
-                $("#gradient" + visibleGradient).css("display","none");
-            }
+    visibleModel = $("#modelSelector").val();
+    $("#model" + visibleModel).css("visibility","visible");
+    $("#model" + visibleModel).css("display","block");
+    console.log("Switching on model view:" + visibleModel);
+}
 
-            visibleGradient = $("#gradientSelector").val();
-            $("#gradient" + visibleGradient).css("visibility","visible");
-            $("#gradient" + visibleGradient).css("display","block");
-            console.log("Switching on gradient view:" + visibleGradient);
+function selectGradient() {
+    console.log("Switching off gradient view: " + visibleGradient);
+    if (visibleGradient != "") {
+        $("#gradient" + visibleGradient).css("visibility","hidden");
+        $("#gradient" + visibleGradient).css("display","none");
     }
 
-    function selectMagnitude() {
-        console.log("Switching off magnitude view: " + visibleMagnitude);
-        if (visibleMagnitude != "") {
-            $("#" + visibleMagnitude).css("visibility","hidden");
-            $("#" + visibleMagnitude).css("display","none");
-        }
+    visibleGradient = $("#gradientSelector").val();
+    $("#gradient" + visibleGradient).css("visibility","visible");
+    $("#gradient" + visibleGradient).css("display","block");
+    console.log("Switching on gradient view:" + visibleGradient);
+}
 
-        visibleMagnitude = $("#magnitudeSelector").val();
-
-        $("#" + visibleMagnitude).css("visibility","visible");
-        $("#" + visibleMagnitude).css("display","block");
-        console.log("Switching on magnitude view:" + visibleMagnitude);
+function selectMagnitude() {
+    console.log("Switching off magnitude view: " + visibleMagnitude);
+    if (visibleMagnitude != "") {
+        $("#" + visibleMagnitude).css("visibility","hidden");
+        $("#" + visibleMagnitude).css("display","none");
     }
+
+    visibleMagnitude = $("#magnitudeSelector").val();
+
+    $("#" + visibleMagnitude).css("visibility","visible");
+    $("#" + visibleMagnitude).css("display","block");
+    console.log("Switching on magnitude view:" + visibleMagnitude);
+}

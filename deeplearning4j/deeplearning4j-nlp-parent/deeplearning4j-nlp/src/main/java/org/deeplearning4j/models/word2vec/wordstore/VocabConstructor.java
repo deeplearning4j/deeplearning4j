@@ -1,7 +1,24 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.models.word2vec.wordstore;
 
 import lombok.Data;
 import lombok.NonNull;
+import lombok.val;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
@@ -325,22 +342,22 @@ public class VocabConstructor<T extends SequenceElement> {
         }
 
         if (buildHuffmanTree) {
-            Huffman huffman = new Huffman(cache.vocabWords());
-            huffman.build();
-            huffman.applyIndexes(cache);
-            //topHolder.updateHuffmanCodes();
-
             if (limit > 0) {
-                LinkedBlockingQueue<String> labelsToRemove = new LinkedBlockingQueue<>();
-                for (T element : cache.vocabWords()) {
-                    if (element.getIndex() > limit && !element.isSpecial() && !element.isLabel())
-                        labelsToRemove.add(element.getLabel());
-                }
+                // we want to sort labels before truncating them, so we'll keep most important words
+                val words = new ArrayList<T>(cache.vocabWords());
+                Collections.sort(words);
 
-                for (String label : labelsToRemove) {
-                    cache.removeElement(label);
+                // now rolling through them
+                for (val element : words) {
+                    if (element.getIndex() > limit && !element.isSpecial() && !element.isLabel())
+                        cache.removeElement(element.getLabel());
                 }
             }
+
+            // and now we're building Huffman tree
+            val huffman = new Huffman(cache.vocabWords());
+            huffman.build();
+            huffman.applyIndexes(cache);
         }
 
         executorService.shutdown();

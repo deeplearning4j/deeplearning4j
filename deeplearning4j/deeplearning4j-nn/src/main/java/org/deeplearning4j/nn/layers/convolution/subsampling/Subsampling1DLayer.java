@@ -1,9 +1,30 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
 import org.deeplearning4j.exception.DL4JInvalidInputException;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.util.ConvolutionUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Broadcast;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
@@ -42,6 +63,14 @@ public class Subsampling1DLayer extends SubsamplingLayer {
                             + Arrays.toString(epsilon.shape())
                             + ". Expected rank 3 array with shape [minibatchSize, features, length]. " + layerId());
 
+        if(maskArray != null){
+            INDArray maskOut = feedForwardMaskArray(maskArray, MaskState.Active, (int)epsilon.size(0)).getFirst();
+            Preconditions.checkState(epsilon.size(0) == maskOut.size(0) && epsilon.size(2) == maskOut.size(1),
+                    "Activation gradients dimensions (0,2) and mask dimensions (0,1) don't match: Activation gradients %s, Mask %s",
+                    epsilon.shape(), maskOut.shape());
+            Broadcast.mul(epsilon, maskOut, epsilon, 0, 2);
+        }
+
         // add singleton fourth dimension to input and next layer's epsilon
         INDArray origInput = input;
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
@@ -76,6 +105,23 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         input = origInput;
         acts = acts.reshape(acts.size(0), acts.size(1), acts.size(2));
 
+        if(maskArray != null){
+            INDArray maskOut = feedForwardMaskArray(maskArray, MaskState.Active, (int)acts.size(0)).getFirst();
+            Preconditions.checkState(acts.size(0) == maskOut.size(0) && acts.size(2) == maskOut.size(1),
+                    "Activations dimensions (0,2) and mask dimensions (0,1) don't match: Activations %s, Mask %s",
+                    acts.shape(), maskOut.shape());
+            Broadcast.mul(acts, maskOut, acts, 0, 2);
+        }
+
         return acts;
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+                                                          int minibatchSize) {
+        INDArray reduced = ConvolutionUtils.cnn1dMaskReduction(maskArray, layerConf().getKernelSize()[0],
+                layerConf().getStride()[0], layerConf().getPadding()[0], layerConf().getDilation()[0],
+                layerConf().getConvolutionMode());
+        return new Pair<>(reduced, currentMaskState);
     }
 }

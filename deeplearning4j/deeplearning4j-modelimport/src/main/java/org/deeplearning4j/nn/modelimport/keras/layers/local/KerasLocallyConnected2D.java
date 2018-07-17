@@ -1,4 +1,4 @@
-/*
+/*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -13,6 +13,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
+
 package org.deeplearning4j.nn.modelimport.keras.layers.local;
 
 import lombok.Data;
@@ -103,7 +104,6 @@ public class KerasLocallyConnected2D extends KerasConvolution {
                 layerConfig, conf.getLAYER_FIELD_W_CONSTRAINT(), conf, kerasMajorVersion);
 
         LocallyConnected2D.Builder builder = new LocallyConnected2D.Builder().name(this.layerName)
-                .nIn(1) // dummy input channels
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(weightInit)
@@ -111,7 +111,6 @@ public class KerasLocallyConnected2D extends KerasConvolution {
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
                 .hasBias(hasBias)
-                .setInputSize(100, 100) // dummy input size
                 .stride(getStrideFromConfig(layerConfig, 2, conf));
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);
         if (padding != null)
