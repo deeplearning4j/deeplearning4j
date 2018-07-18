@@ -537,7 +537,7 @@ TEST_F(DeclarableOpsTests9, TestDropout_1) {
     //x.printIndexedBuffer("Input is");
     //res->sumNumber();
     float countZero = res->template reduceNumber<simdOps::CountZero<float>>();
-    ASSERT_NEAR(countZero, 80.f, 5.f);
+    ASSERT_NEAR(countZero, 80.f, 10.f);
     auto ress2 = op.execute({&x}, {0.2f}, {113});
 
     ASSERT_EQ(ND4J_STATUS_OK, ress2->status());
