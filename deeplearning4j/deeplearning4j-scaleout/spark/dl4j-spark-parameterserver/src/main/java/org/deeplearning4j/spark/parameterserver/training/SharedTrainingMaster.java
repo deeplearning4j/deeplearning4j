@@ -402,7 +402,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             numWorkers = network != null ? network.getSparkContext().defaultParallelism()
                             : graph.getSparkContext().defaultParallelism();
 
-        // set current box as controller, if field is unset - switch to next stop
+        // set current box as controller, if field is unset - switch to next step
         if (voidConfiguration.getControllerAddress() == null) {
             try {
                 String sparkIp = InetAddress.getByName(System.getenv("SPARK_PUBLIC_DNS")).getHostAddress();

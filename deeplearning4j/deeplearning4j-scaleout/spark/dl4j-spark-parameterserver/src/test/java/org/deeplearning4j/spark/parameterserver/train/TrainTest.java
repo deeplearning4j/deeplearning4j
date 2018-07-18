@@ -117,12 +117,13 @@ public class TrainTest extends BaseSparkTest {
                 ds.add(d);
             }
 
-            //Check accuracy before:
-            DataSetIterator testIter = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(32, false, 12345), 10);
-            Evaluation eBefore = sparkNet.getNetwork().evaluate(testIter);
+            int numIter = 1;
+            double[] acc = new double[numIter+1];
+            for( int i=0; i<numIter; i++ ) {
+                //Check accuracy before:
+                DataSetIterator testIter = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(32, false, 12345), 10);
+                Evaluation eBefore = sparkNet.getNetwork().evaluate(testIter);
 
-
-            for( int i=0; i<3; i++ ) {
                 INDArray paramsBefore = sparkNet.getNetwork().params().dup();
                 ComputationGraph after;
                 switch (s) {
@@ -151,7 +152,13 @@ public class TrainTest extends BaseSparkTest {
                 Evaluation eAfter = after.evaluate(testIter);
 
                 assertTrue(eAfter.accuracy() >= eBefore.accuracy() + 0.01);
+
+                if(i == 0){
+                    acc[0] = eBefore.accuracy();
+                }
+                acc[i+1] = eAfter.accuracy();
             }
+            log.info("Accuracies: {}", Arrays.toString(acc));
         }
     }
 }
