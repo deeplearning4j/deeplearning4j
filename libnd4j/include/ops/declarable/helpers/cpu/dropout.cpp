@@ -6,6 +6,7 @@
 #include <NativeOps.h>
 #include <vector>
 #include <memory>
+#include <graph/RandomGenerator.h>
 
 namespace nd4j {
 namespace ops {
@@ -14,15 +15,28 @@ namespace helpers {
     template <typename T>
     int dropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* output, NDArray<T>* reduceShape, int seed, T probValue) {
         NativeOps native;
+        nd4j::graph::RandomGenerator nodeRng(seed);
 
         native.reSeedBuffer(nullptr, (long)seed, rng);
         //if (newRng )
         if (rng == nullptr)
             return ND4J_STATUS_BAD_RNG;
 
-  
-        if (reduceShape == nullptr)
-            input->template applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, output, &probValue);
+        if (reduceShape == nullptr){
+//            input->template applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, output, &probValue);
+//            auto singleFunctor = LAMBDA_T(_x) {
+//                
+//            }
+#pragma omp parallel for if (input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+            for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
+                T val = nodeRng.relativeT(e, T(0.f), T(1.f));
+//                nd4j_printf("Random value is %f.\n", val);
+
+                if (val < probValue)
+                    (*output)(e) = (*input)(e)/probValue;
+///                else
+            }
+        }
         else {
             REQUIRE_TRUE(reduceShape->lengthOf() <= input->rankOf(), 0, "dropout: Noise shape should be fittable to input");
         
