@@ -43,6 +43,7 @@ import org.deeplearning4j.spark.impl.multilayer.scoring.*;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.util.ModelSerializer;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
@@ -68,10 +69,12 @@ import java.util.List;
 public class SparkDl4jMultiLayer extends SparkListenable {
     public static final int DEFAULT_EVAL_SCORE_BATCH_SIZE = 64;
     public static final int DEFAULT_ROC_THRESHOLD_STEPS = 32;
+    public static final int DEFAULT_EVAL_WORKERS = 4;
     private transient JavaSparkContext sc;
     private MultiLayerConfiguration conf;
     private MultiLayerNetwork network;
     private double lastScore;
+    private int defaultEvaluationWorkers = DEFAULT_EVAL_WORKERS;
 
     /**
      * Instantiate a multi layer spark instance
@@ -151,6 +154,38 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      */
     public void setNetwork(MultiLayerNetwork network) {
         this.network = network;
+    }
+
+
+    /**
+     * Returns the currently set default number of evaluation workers/threads.
+     * Note that when the number of workers is provided explicitly in an evaluation method, the default value
+     * is not used.<br>
+     * In many cases, we may want this to be smaller than the number of Spark threads, to reduce memory requirements.
+     * For example, with 32 Spark threads and a large network, we don't want to spin up 32 instances of the network
+     * to perform evaluation. Better (for memory requirements, and reduced cache thrashing) to use say 4 workers.<br>
+     * If it is not set explicitly, {@link #DEFAULT_EVAL_WORKERS} will be used
+     *
+     * @return Default number of evaluation workers (threads).
+     */
+    public int getDefaultEvaluationWorkers(){
+        return defaultEvaluationWorkers;
+    }
+
+    /**
+     * Set the default number of evaluation workers/threads.
+     * Note that when the number of workers is provided explicitly in an evaluation method, the default value
+     * is not used.<br>
+     * In many cases, we may want this to be smaller than the number of Spark threads, to reduce memory requirements.
+     * For example, with 32 Spark threads and a large network, we don't want to spin up 32 instances of the network
+     * to perform evaluation. Better (for memory requirements, and reduced cache thrashing) to use say 4 workers.<br>
+     * If it is not set explicitly, {@link #DEFAULT_EVAL_WORKERS} will be used
+     *
+     * @return Default number of evaluation workers (threads).
+     */
+    public void setDefaultEvaluationWorkers(int workers){
+        Preconditions.checkArgument(workers > 0, "Number of workers must be > 0: got %s", workers);
+        this.defaultEvaluationWorkers = workers;
     }
 
     /**
@@ -610,8 +645,12 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      */
     @SuppressWarnings("unchecked")
     public <T extends IEvaluation> T[] doEvaluation(JavaRDD<DataSet> data, int evalBatchSize, T... emptyEvaluations) {
+        return doEvaluation(data, getDefaultEvaluationWorkers(), evalBatchSize, emptyEvaluations );
+    }
+
+    public <T extends IEvaluation> T[] doEvaluation(JavaRDD<DataSet> data, int evalNumWorkers, int evalBatchSize, T... emptyEvaluations) {
         IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(false, sc.broadcast(conf.toJson()),
-                        sc.broadcast(network.params()), evalBatchSize, emptyEvaluations);
+                        sc.broadcast(network.params()), evalNumWorkers, evalBatchSize, emptyEvaluations);
         JavaRDD<T[]> evaluations = data.mapPartitions(evalFn);
         return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<T>(), new IEvaluationReduceFunction<T>());
     }

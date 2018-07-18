@@ -46,6 +46,7 @@ import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateAggregateFun
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateFlatMapFunction;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.util.ModelSerializer;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
@@ -72,10 +73,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class SparkComputationGraph extends SparkListenable {
     public static final int DEFAULT_ROC_THRESHOLD_STEPS = 32;
     public static final int DEFAULT_EVAL_SCORE_BATCH_SIZE = 64;
+    public static final int DEFAULT_EVAL_WORKERS = 4;
     private transient JavaSparkContext sc;
     private ComputationGraphConfiguration conf;
     private ComputationGraph network;
     private double lastScore;
+    private int defaultEvaluationWorkers = DEFAULT_EVAL_WORKERS;
 
     private transient AtomicInteger iterationsCount = new AtomicInteger(0);
 
@@ -147,6 +150,37 @@ public class SparkComputationGraph extends SparkListenable {
 
     public void setNetwork(ComputationGraph network) {
         this.network = network;
+    }
+
+    /**
+     * Returns the currently set default number of evaluation workers/threads.
+     * Note that when the number of workers is provided explicitly in an evaluation method, the default value
+     * is not used.<br>
+     * In many cases, we may want this to be smaller than the number of Spark threads, to reduce memory requirements.
+     * For example, with 32 Spark threads and a large network, we don't want to spin up 32 instances of the network
+     * to perform evaluation. Better (for memory requirements, and reduced cache thrashing) to use say 4 workers.<br>
+     * If it is not set explicitly, {@link #DEFAULT_EVAL_WORKERS} will be used
+     *
+     * @return Default number of evaluation workers (threads).
+     */
+    public int getDefaultEvaluationWorkers(){
+        return defaultEvaluationWorkers;
+    }
+
+    /**
+     * Set the default number of evaluation workers/threads.
+     * Note that when the number of workers is provided explicitly in an evaluation method, the default value
+     * is not used.<br>
+     * In many cases, we may want this to be smaller than the number of Spark threads, to reduce memory requirements.
+     * For example, with 32 Spark threads and a large network, we don't want to spin up 32 instances of the network
+     * to perform evaluation. Better (for memory requirements, and reduced cache thrashing) to use say 4 workers.<br>
+     * If it is not set explicitly, {@link #DEFAULT_EVAL_WORKERS} will be used
+     *
+     * @return Default number of evaluation workers (threads).
+     */
+    public void setDefaultEvaluationWorkers(int workers){
+        Preconditions.checkArgument(workers > 0, "Number of workers must be > 0: got %s", workers);
+        this.defaultEvaluationWorkers = workers;
     }
 
     /**
@@ -720,7 +754,8 @@ public class SparkComputationGraph extends SparkListenable {
     /**
      * Perform distributed evaluation on a <i>single output</i> ComputationGraph form DataSet objects using Spark.
      * Can be used to perform multiple evaluations on this single output (for example, {@link Evaluation} and
-     * {@link ROC}) at the same time.
+     * {@link ROC}) at the same time.<br>
+     * Note that the default number of worker threads {@link #getDefaultEvaluationWorkers()} will be used
      *
      * @param data             Data to evaluatie
      * @param evalBatchSize    Minibatch size for evaluation
@@ -728,8 +763,24 @@ public class SparkComputationGraph extends SparkListenable {
      * @return                 Evaluations
      */
     public <T extends IEvaluation> T[] doEvaluation(JavaRDD<DataSet> data, int evalBatchSize, T... emptyEvaluations) {
+        return doEvaluation(data, getDefaultEvaluationWorkers(), evalBatchSize, emptyEvaluations);
+    }
+
+    /**
+     * Perform distributed evaluation on a <i>single output</i> ComputationGraph form DataSet objects using Spark.
+     * Can be used to perform multiple evaluations on this single output (for example, {@link Evaluation} and
+     * {@link ROC}) at the same time.<br>
+     *
+     * @param data             Data to evaluatie
+     * @param evalNumWorkers   Number of worker threads (per machine) to use for evaluation. May want tis to be less than
+     *                         the number of Spark threads per machine/JVM to reduce memory requirements
+     * @param evalBatchSize    Minibatch size for evaluation
+     * @param emptyEvaluations Evaluations to perform
+     * @return                 Evaluations
+     */
+    public <T extends IEvaluation> T[] doEvaluation(JavaRDD<DataSet> data, int evalNumWorkers, int evalBatchSize, T... emptyEvaluations) {
         IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(true, sc.broadcast(conf.toJson()),
-                        sc.broadcast(network.params()), evalBatchSize, emptyEvaluations);
+                        sc.broadcast(network.params()), evalNumWorkers, evalBatchSize, emptyEvaluations);
         JavaRDD<T[]> evaluations = data.mapPartitions(evalFn);
         return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<T>(),
                         new IEvaluateAggregateFunction<T>());
@@ -746,27 +797,32 @@ public class SparkComputationGraph extends SparkListenable {
      * @return                 Evaluations
      */
     @SuppressWarnings("unchecked")
-    public <T extends IEvaluation> T[] doEvaluationMDS(JavaRDD<MultiDataSet> data, int evalBatchSize,
-                    T... emptyEvaluations) {
+    public <T extends IEvaluation> T[] doEvaluationMDS(JavaRDD<MultiDataSet> data, int evalBatchSize, T... emptyEvaluations) {
+        return doEvaluationMDS(data, getDefaultEvaluationWorkers(), evalBatchSize, emptyEvaluations);
+    }
+
+    public <T extends IEvaluation> T[] doEvaluationMDS(JavaRDD<MultiDataSet> data, int evalNumWorkers, int evalBatchSize, T... emptyEvaluations) {
+        Preconditions.checkArgument(evalNumWorkers > 0, "Invalid number of evaulation workers: require at least 1 - got %s", evalNumWorkers);
         IEvaluateMDSFlatMapFunction<T> evalFn = new IEvaluateMDSFlatMapFunction<>(sc.broadcast(conf.toJson()),
-                        sc.broadcast(network.params()), evalBatchSize, emptyEvaluations);
+                        sc.broadcast(network.params()), evalNumWorkers, evalBatchSize, emptyEvaluations);
         JavaRDD<T[]> evaluations = data.mapPartitions(evalFn);
         return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<T>(),
                         new IEvaluateAggregateFunction<T>());
     }
 
 
-    public IEvaluation[] doEvaluation(JavaRDD<String> data, int evalBatchSize, DataSetLoader loader, IEvaluation... emptyEvaluations) {
-        return doEvaluation(data, evalBatchSize, loader, null, emptyEvaluations);
+    public IEvaluation[] doEvaluation(JavaRDD<String> data, int evalNumWorkers, int evalBatchSize, DataSetLoader loader, IEvaluation... emptyEvaluations) {
+        return doEvaluation(data, evalNumWorkers, evalBatchSize, loader, null, emptyEvaluations);
     }
 
-    public IEvaluation[] doEvaluation(JavaRDD<String> data, int evalBatchSize, MultiDataSetLoader loader, IEvaluation... emptyEvaluations) {
-        return doEvaluation(data, evalBatchSize, null, loader, emptyEvaluations);
+    public IEvaluation[] doEvaluation(JavaRDD<String> data, int evalNumWorkers, int evalBatchSize, MultiDataSetLoader loader, IEvaluation... emptyEvaluations) {
+        return doEvaluation(data, evalNumWorkers, evalBatchSize, null, loader, emptyEvaluations);
     }
 
-    protected IEvaluation[] doEvaluation(JavaRDD<String> data, int evalBatchSize, DataSetLoader loader, MultiDataSetLoader mdsLoader, IEvaluation... emptyEvaluations){
+    protected IEvaluation[] doEvaluation(JavaRDD<String> data, int evalNumWorkers, int evalBatchSize, DataSetLoader loader, MultiDataSetLoader mdsLoader, IEvaluation... emptyEvaluations){
         IEvaluateMDSPathsFlatMapFunction evalFn = new IEvaluateMDSPathsFlatMapFunction(sc.broadcast(conf.toJson()),
-                sc.broadcast(network.params()), evalBatchSize, loader, mdsLoader, emptyEvaluations);
+                sc.broadcast(network.params()), evalNumWorkers, evalBatchSize, loader, mdsLoader, emptyEvaluations);
+        Preconditions.checkArgument(evalNumWorkers > 0, "Invalid number of evaulation workers: require at least 1 - got %s", evalNumWorkers);
         JavaRDD<IEvaluation[]> evaluations = data.mapPartitions(evalFn);
         return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<>(), new IEvaluateAggregateFunction<>());
     }

@@ -32,6 +32,7 @@ import org.deeplearning4j.eval.IEvaluation;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.spark.data.loader.RemoteFileSourceFactory;
+import org.deeplearning4j.spark.impl.evaluation.EvaluationRunner;
 import org.deeplearning4j.spark.iterator.SparkAMDSI;
 import org.nd4j.api.loader.SourceFactory;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -40,6 +41,7 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.concurrent.Future;
 
 /**
  * Function to evaluate data (using one or more IEvaluation instances), in a distributed manner
@@ -51,9 +53,9 @@ import java.util.Iterator;
 public class IEvaluateMDSPathsFlatMapFunction
                 extends BaseFlatMapFunctionAdaptee<Iterator<String>, IEvaluation[]> {
 
-    public IEvaluateMDSPathsFlatMapFunction(Broadcast<String> json, Broadcast<INDArray> params, int evalBatchSize,
+    public IEvaluateMDSPathsFlatMapFunction(Broadcast<String> json, Broadcast<INDArray> params, int evalNumWorkers, int evalBatchSize,
                                             DataSetLoader dsLoader, MultiDataSetLoader mdsLoader, IEvaluation... evaluations) {
-        super(new IEvaluateMDSPathsFlatMapFunctionAdapter(json, params, evalBatchSize, dsLoader, mdsLoader, evaluations));
+        super(new IEvaluateMDSPathsFlatMapFunctionAdapter(json, params, evalNumWorkers, evalBatchSize, dsLoader, mdsLoader, evaluations));
     }
 }
 
@@ -70,10 +72,10 @@ class IEvaluateMDSPathsFlatMapFunctionAdapter implements FlatMapFunctionAdapter<
 
     protected Broadcast<String> json;
     protected Broadcast<INDArray> params;
+    protected int evalNumWorkers;
     protected int evalBatchSize;
     protected DataSetLoader dsLoader;
     protected MultiDataSetLoader mdsLoader;
-    protected SourceFactory sourceFactory;
     protected IEvaluation[] evaluations;
 
     /**
@@ -83,10 +85,11 @@ class IEvaluateMDSPathsFlatMapFunctionAdapter implements FlatMapFunctionAdapter<
      *                              this. Used to avoid doing too many at once (and hence memory issues)
      * @param evaluations Initial evaulation instance (i.e., empty Evaluation or RegressionEvaluation instance)
      */
-    public IEvaluateMDSPathsFlatMapFunctionAdapter(Broadcast<String> json, Broadcast<INDArray> params, int evalBatchSize,
+    public IEvaluateMDSPathsFlatMapFunctionAdapter(Broadcast<String> json, Broadcast<INDArray> params, int evalNumWorkers, int evalBatchSize,
                                                    DataSetLoader dsLoader, MultiDataSetLoader mdsLoader, IEvaluation[] evaluations) {
         this.json = json;
         this.params = params;
+        this.evalNumWorkers = evalNumWorkers;
         this.evalBatchSize = evalBatchSize;
         this.dsLoader = dsLoader;
         this.mdsLoader = mdsLoader;
@@ -99,14 +102,6 @@ class IEvaluateMDSPathsFlatMapFunctionAdapter implements FlatMapFunctionAdapter<
             return Collections.emptyList();
         }
 
-        INDArray val = params.value().unsafeDuplication();
-        ComputationGraph graph = new ComputationGraph(ComputationGraphConfiguration.fromJson(json.getValue()));
-        graph.init();
-        if (val.length() != graph.numParams(false))
-            throw new IllegalStateException(
-                            "Network did not have same number of parameters as the broadcast set parameters");
-        graph.setParams(val);
-
         MultiDataSetIterator iter;
         if(dsLoader != null){
             DataSetIterator dsIter = new DataSetLoaderIterator(paths, dsLoader, new RemoteFileSourceFactory());
@@ -115,7 +110,12 @@ class IEvaluateMDSPathsFlatMapFunctionAdapter implements FlatMapFunctionAdapter<
             iter = new MultiDataSetLoaderIterator(paths, mdsLoader, new RemoteFileSourceFactory());
         }
 
-        IEvaluation[] eval = graph.doEvaluation(new SparkAMDSI(iter, 2, true),evaluations);
-        return Collections.singletonList(eval);
+        Future<IEvaluation[]> f = EvaluationRunner.getInstance().execute(evaluations, evalNumWorkers, evalBatchSize, null, iter, true, json, params);
+        IEvaluation[] result = f.get();
+        if(result == null){
+            return Collections.emptyList();
+        } else {
+            return Collections.singletonList(result);
+        }
     }
 }

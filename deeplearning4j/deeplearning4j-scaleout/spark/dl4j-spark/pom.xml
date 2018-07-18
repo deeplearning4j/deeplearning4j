@@ -86,13 +86,6 @@
             <version>${nd4j.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-parallel-wrapper_2.11</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
-        </dependency>
-
-
     </dependencies>
 
     <profiles>
