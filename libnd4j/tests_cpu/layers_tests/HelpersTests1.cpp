@@ -25,7 +25,7 @@
 #include <ops/declarable/helpers/activations.h>
 #include <ops/declarable/helpers/rnn.h>
 #include <MmulHelper.h>
-#include <OpArgsHolder.h>
+#include <GradCheck.h>
 #include <ops/declarable/CustomOperations.h>
 
 
@@ -1782,4 +1782,134 @@ TEST_F(HelpersTests1, OpArgsHolder_test3) {
     delete results;
 }
 
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, checkGrad_test1) {
+
+    NDArray<double>     x('c', {2, 3}, {0.1, 0.2, 0.3, 0.4, 0.5 ,0.6});
+    NDArray<double> gradO('c', {2, 3});
+
+    const OpArgsHolder<double> argsHolderFF({&x}, {}, {});
+    const OpArgsHolder<double> argsHolderBP({&x, &gradO}, {}, {});
+
+    nd4j::ops::sigmoid<double> opFF;
+    nd4j::ops::sigmoid_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, checkGrad_test2) {
+
+    NDArray<double>       x('c', {1, 1, 3, 3});
+    NDArray<double> weights('c', {2, 1, 2, 2});
+    NDArray<double>   gradO('c', {1, 2, 3, 3});
+
+    x.linspace(1);
+    weights.linspace(0.1, 0.1);    
+
+    const OpArgsHolder<double> argsHolderFF({&x, &weights},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
+    const OpArgsHolder<double> argsHolderBP({&x, &weights, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
+
+    nd4j::ops::conv2d<double> opFF;
+    nd4j::ops::conv2d_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, checkGrad_test3) {
+
+    NDArray<double>       x('c', {1, 1, 3, 3});
+    NDArray<double> weights('c', {2, 1, 2, 2});
+    NDArray<double>    bias('c', {2, 1});
+    NDArray<double>   gradO('c', {1, 2, 3, 3});
+
+    x.linspace(1);
+    weights.linspace(0.1, 0.1);    
+    bias = 0.5;
+
+    const OpArgsHolder<double> argsHolderFF({&x, &weights, &bias},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
+    const OpArgsHolder<double> argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
+
+    nd4j::ops::conv2d<double> opFF;
+    nd4j::ops::conv2d_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, checkGrad_test4) {
+
+    NDArray<double>       x('c', {1, 1, 3, 3});
+    NDArray<double> weights('c', {2, 1, 2, 2});
+    NDArray<double>    bias('c', {2, 1});
+    NDArray<double>   gradO('c', {1, 2, 3, 3});
+
+    x.linspace(1);
+    weights.linspace(0.1, 0.1);    
+    bias = 0.5;
+
+    const OpArgsHolder<double> argsHolderFF({&x, &weights, &bias},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
+    const OpArgsHolder<double> argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
+
+    nd4j::ops::conv2d<double> opFF;
+    nd4j::ops::conv2d_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 0, 1});
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, checkGrad_test5) {
+
+    NDArray<double>       x('c', {1, 1, 3, 3});
+    NDArray<double> weights('c', {2, 1, 2, 2});
+    NDArray<double>    bias('c', {2, 1});
+    NDArray<double>   gradO('c', {1, 2, 3, 3});
+
+    x.linspace(1);
+    weights.linspace(0.1, 0.1);    
+    bias = 0.5;
+
+    const OpArgsHolder<double> argsHolderFF({&x, &weights, &bias},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
+    const OpArgsHolder<double> argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
+
+    nd4j::ops::conv2d<double> opFF;
+    nd4j::ops::conv2d_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 1, 1}, {0.5, 1});
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, checkGrad_test6) {
+
+    NDArray<double>       x('c', {1, 1, 3, 3});
+    NDArray<double> weights('c', {2, 1, 2, 2});
+    NDArray<double>    bias('c', {2, 1});
+    NDArray<double>   gradO('c', {1, 2, 3, 3});
+
+    x.linspace(1);
+    weights.linspace(0.1, 0.1);    
+    bias = 0.5;
+
+    const OpArgsHolder<double> argsHolderFF({&x, &weights, &bias},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
+    const OpArgsHolder<double> argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
+
+    nd4j::ops::conv2d<double> opFF;
+    nd4j::ops::conv2d_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 0, 1}, {0.5, 1}, GradCheck::MEAN);
+
+    ASSERT_TRUE(isGradCorrect);
+}
 
