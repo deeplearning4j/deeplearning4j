@@ -166,6 +166,11 @@ public class KerasSequentialModel extends KerasModel {
                     "MultiLayerNetwork expects only 1 output (found " + this.outputLayerNames.size() + ")");
 
         NeuralNetConfiguration.Builder modelBuilder = new NeuralNetConfiguration.Builder();
+
+        if (optimizer != null) {
+            modelBuilder.updater(optimizer);
+        }
+
         NeuralNetConfiguration.ListBuilder listBuilder = modelBuilder.list();
 
         /* Add layers one at a time. */

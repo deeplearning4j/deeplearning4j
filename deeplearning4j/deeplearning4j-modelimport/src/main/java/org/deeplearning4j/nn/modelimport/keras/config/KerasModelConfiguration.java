@@ -46,5 +46,6 @@ public class KerasModelConfiguration {
     private final String trainingWeightsRoot = "model_weights";
     private final String trainingModelConfigAttribute = "model_config";
     private final String trainingTrainingConfigAttribute = "training_config";
+    private final String optimizerConfig = "optimizer_config";
 
 }
