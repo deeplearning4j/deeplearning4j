@@ -1,20 +1,19 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2017 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.modelimport.keras.config;
 
 import lombok.Data;
@@ -39,7 +38,7 @@ public class KerasLayerConfiguration {
     // Missing Layers: ActivityRegularization, Masking
     // Conv3DTranspose, SeparableConv1D, ConvRNN2D, ConvLSTM2D
     // CuDNNGRU, CuDNNLSTM (TF only)
-    // LocallyConnected1D-2D
+    // LocallyConnected1D
     // Missing layers from keras 1: Highway, MaxoutDense
     private final String LAYER_CLASS_NAME_ACTIVATION = "Activation";
     private final String LAYER_CLASS_NAME_INPUT = "InputLayer";
@@ -120,6 +119,11 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D = ""; // 1: SeparableConvolution2D, 2: SeparableConv2D
     private final String LAYER_CLASS_NAME_DECONVOLUTION_2D = ""; // 1: Deconvolution2D, 2: Conv2DTranspose
     private final String LAYER_CLASS_NAME_DECONVOLUTION_3D = "Conv2DTranspose"; // Keras 2 only
+
+    // Locally connected layers
+    private final String LAYER_CLASS_NAME_LOCALLY_CONNECTED_2D = "LocallyConnected2D";
+    private final String LAYER_CLASS_NAME_LOCALLY_CONNECTED_1D = "LocallyConnected1D";
+
 
     /* Partially shared layer configurations. */
     private final String LAYER_FIELD_INPUT_SHAPE = "input_shape";
