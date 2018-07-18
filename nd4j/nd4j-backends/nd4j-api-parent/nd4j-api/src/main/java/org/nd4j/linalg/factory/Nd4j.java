@@ -406,7 +406,7 @@ public class Nd4j {
         long[] indexes = new long[input.rank() + 1];
         for (int i = 0; i < indexes.length; i++)
             indexes[i] = i < dimension ? shape[i] : i == dimension ? 1 : shape[i - 1];
-        return input.reshape(indexes);
+        return input.reshape(input.ordering(), indexes);
     }
 
     /**
@@ -420,16 +420,10 @@ public class Nd4j {
             dimension += input.rank();
         }
         long[] shape = input.shape();
-        if (shape[dimension] != 1){
-            throw new ND4JIllegalStateException("Can squeeze only dimensions of size 1.");
-        }
-        long[] newShape = new long[shape.length - 1];
-        for(int i=0; i < dimension; i++){
-            newShape[i] = shape[i];
-        }
-        for(int i = dimension + 1; i < shape.length; i++){
-            newShape[i - 1] = shape[i];
-        }
+        Preconditions.checkState(shape[dimension] == 1, String.format("Squeeze: Only dimension of size 1 can be squeezed. " +
+                "Attempted to squeeze dimension %d of array with shape %s (size %d).", dimension, ArrayUtils.toString(shape), shape[dimension]));
+
+        long[] newShape = ArrayUtil.removeIndex(shape, dimension);
         return input.reshape(newShape);
     }
 
