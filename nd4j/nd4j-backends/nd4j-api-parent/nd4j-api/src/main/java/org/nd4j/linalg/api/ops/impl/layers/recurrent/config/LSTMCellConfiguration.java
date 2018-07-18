@@ -28,8 +28,8 @@ import java.util.Map;
 @Data
 public class LSTMCellConfiguration {
     /**
-     *   NDArray<T>* xt   = INPUT_VARIABLE(0);                   // input [batchSize x inSize]
-     NDArray<T>* ht_1 = INPUT_VARIABLE(1);                   // previous cell output [batchSize x numProj],  that is at previous time step t-1, in case of projection=false -> numProj=numUnits!!!
+     *   NDArray<T>* x   = INPUT_VARIABLE(0);                   // input [batchSize x inSize]
+     NDArray<T>* h0 = INPUT_VARIABLE(1);                   // previous cell output [batchSize x numProj],  that is at previous time step t-1, in case of projection=false -> numProj=numUnits!!!
      NDArray<T>* ct_1 = INPUT_VARIABLE(2);                   // previous cell state  [batchSize x numUnits], that is at previous time step t-1
 
      NDArray<T>* Wx   = INPUT_VARIABLE(3);                   // input-to-hidden  weights, [inSize  x 4*numUnits]

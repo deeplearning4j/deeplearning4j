@@ -27,8 +27,8 @@ import java.util.Map;
 @Builder
 public class GRUCellConfiguration {
     /**
-     *     NDArray<T>* xt   = INPUT_VARIABLE(0);                   // input [batchSize x inSize]
-     NDArray<T>* ht_1 = INPUT_VARIABLE(1);                   // previous cell output [batchSize x numUnits],  that is at previous time step t-1
+     *     NDArray<T>* x   = INPUT_VARIABLE(0);                   // input [batchSize x inSize]
+     NDArray<T>* h0 = INPUT_VARIABLE(1);                   // previous cell output [batchSize x numUnits],  that is at previous time step t-1
 
      NDArray<T>* Wx   = INPUT_VARIABLE(2);                   // input-to-hidden  weights, [inSize   x 3*numUnits]
      NDArray<T>* Wh   = INPUT_VARIABLE(3);                   // hidden-to-hidden weights, [numUnits x 3*numUnits]

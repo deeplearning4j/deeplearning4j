@@ -25,7 +25,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 public class SRUCellConfiguration {
     /**
      *
-     NDArray<T>* xt   = INPUT_VARIABLE(0);               // input [batchSize x inSize], batchSize - batch size, inSize - number of features
+     NDArray<T>* x   = INPUT_VARIABLE(0);               // input [batchSize x inSize], batchSize - batch size, inSize - number of features
      NDArray<T>* ct_1 = INPUT_VARIABLE(1);               // previous cell state ct  [batchSize x inSize], that is at previous time step t-1
      NDArray<T>* w    = INPUT_VARIABLE(2);               // weights [inSize x 3*inSize]
      NDArray<T>* b    = INPUT_VARIABLE(3);               // biases [1 × 2*inSize]
