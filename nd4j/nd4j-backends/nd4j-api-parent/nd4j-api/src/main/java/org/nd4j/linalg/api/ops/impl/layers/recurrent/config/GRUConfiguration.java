@@ -42,7 +42,7 @@ public class GRUConfiguration {
 
 
     public SDVariable[] args() {
-        return new SDVariable[] {x, h0,Wx,Wh,b};
+        return new SDVariable[] {x, h0, Wx, Wh, b};
     }
 
 }

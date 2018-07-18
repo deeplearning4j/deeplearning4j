@@ -48,7 +48,7 @@ public class GRU extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "gru";
+        return "gruCell";
     }
 
 

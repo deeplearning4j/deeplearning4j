@@ -35,6 +35,8 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BiasAddGrad;
 import org.nd4j.linalg.api.ops.impl.indexaccum.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRU;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.GRUConfiguration;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
 import org.nd4j.linalg.api.ops.impl.scatter.*;
@@ -242,6 +244,28 @@ public class DifferentialFunctionFactory {
                 .build();
 
         return lrn.outputVariable();
+    }
+
+
+    /**
+     * Gated recursive unit (GRU)
+     *
+     * @param input layer input
+     * @param initialState initial recurrent state
+     * @param weights input-to-hidden weights
+     * @param recurrentWeights hidden-to-hidden weights
+     * @param bias bias term
+     * @return output of GRU operation
+     */
+    public SDVariable gru(SDVariable input, SDVariable initialState, SDVariable weights, SDVariable recurrentWeights,
+                          SDVariable bias) {
+        GRUConfiguration gruConfiguration = GRUConfiguration.builder()
+                .x(input).h0(initialState).Wx(weights).Wh(recurrentWeights).b(bias)
+                .build();
+
+        GRU gru = new GRU(sameDiff, gruConfiguration);
+
+        return gru.outputVariable();
     }
 
     /**

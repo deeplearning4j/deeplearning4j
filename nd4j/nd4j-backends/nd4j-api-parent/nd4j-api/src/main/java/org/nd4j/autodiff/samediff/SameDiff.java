@@ -54,14 +54,8 @@ import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMCell;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRUCell;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.GRUCellConfiguration;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMCellConfiguration;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUCellConfiguration;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUConfiguration;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.*;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.*;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
@@ -6710,7 +6704,7 @@ public class SameDiff {
     }
 
     /**
-     * @see #cumsum(String, SDVariable, SDVariable, boolean, boolean)
+     * @see #cumsum(String, SDVariable, boolean, boolean, int...)
      */
     public SDVariable cumsum(SDVariable in, boolean exclusive, boolean reverse, int... axis) {
         return cumsum(null, in, exclusive, reverse, axis);
@@ -6737,7 +6731,7 @@ public class SameDiff {
     }
 
     /**
-     * @see #cumprod(String, SDVariable, SDVariable, boolean, boolean)
+     * @see #cumprod(String, SDVariable, boolean, boolean, int...)
      */
     public SDVariable cumprod(SDVariable in, boolean exclusive, boolean reverse, int... axis) {
         return cumprod(null, in, exclusive, reverse, axis);
@@ -8384,13 +8378,47 @@ public class SameDiff {
         return new SRU(this, configuration).outputVariables()[0];
     }
 
+
+    /**
+     * Gated recursive unit (GRU)
+     *
+     * @param name layer name
+     * @param input layer input
+     * @param initialState initial recurrent state
+     * @param weights input-to-hidden weights
+     * @param recurrentWeights hidden-to-hidden weights
+     * @param bias bias term
+     * @return output of GRU operation
+     */
+    public SDVariable gru(String name, SDVariable input, SDVariable initialState, SDVariable weights, SDVariable recurrentWeights,
+                          SDVariable bias) {
+        SDVariable ret = f().gru(input, initialState, weights, recurrentWeights, bias);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Gated recursive unit (GRU)
+     *
+     * @param input layer input
+     * @param initialState initial recurrent state
+     * @param weights input-to-hidden weights
+     * @param recurrentWeights hidden-to-hidden weights
+     * @param bias bias term
+     * @return output of GRU operation
+     */
+    public SDVariable gru(SDVariable input, SDVariable initialState, SDVariable weights, SDVariable recurrentWeights,
+                          SDVariable bias) {
+        return gru(null, input, initialState, weights, recurrentWeights, bias);
+    }
+
+
     /**
      * The gru cell
      *
      * @param configuration teh configuration to use
      * @return
      */
-    public SDVariable gru(GRUCellConfiguration configuration) {
+    public SDVariable gruCell(GRUCellConfiguration configuration) {
         return new GRUCell(this, configuration).outputVariables()[0];
     }
 
@@ -8421,11 +8449,11 @@ public class SameDiff {
     /**
      * The gru cell
      *
-     * @param baseName      the base name for the gru cell
+     * @param baseName      the base name for the gruCell cell
      * @param configuration teh configuration to use
      * @return
      */
-    public SDVariable gru(String baseName, GRUCellConfiguration configuration) {
+    public SDVariable gruCell(String baseName, GRUCellConfiguration configuration) {
         return new GRUCell(this, configuration).outputVariables(baseName)[0];
     }
 

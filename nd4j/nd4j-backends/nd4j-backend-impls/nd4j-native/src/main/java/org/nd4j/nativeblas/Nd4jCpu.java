@@ -25592,7 +25592,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        *    0: cell outputs [time x batchSize x numUnits], that is per each time step    
        */                  
 //         #if NOT_EXCLUDED(OP_gru)
-        @Name("nd4j::ops::gru<float>") public static class float_gru extends FloatDeclarableCustomOp {
+        @Name("nd4j::ops::gruCell<float>") public static class float_gru extends FloatDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public float_gru(Pointer p) { super(p); }
@@ -25607,7 +25607,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
-        @Name("nd4j::ops::gru<float16>") public static class half_gru extends HalfDeclarableCustomOp {
+        @Name("nd4j::ops::gruCell<float16>") public static class half_gru extends HalfDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public half_gru(Pointer p) { super(p); }
@@ -25622,7 +25622,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
-        @Name("nd4j::ops::gru<double>") public static class double_gru extends DoubleDeclarableCustomOp {
+        @Name("nd4j::ops::gruCell<double>") public static class double_gru extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public double_gru(Pointer p) { super(p); }
