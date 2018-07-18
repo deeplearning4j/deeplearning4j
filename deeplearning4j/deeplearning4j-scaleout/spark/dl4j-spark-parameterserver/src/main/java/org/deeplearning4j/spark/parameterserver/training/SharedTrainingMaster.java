@@ -51,6 +51,7 @@ import org.deeplearning4j.spark.parameterserver.functions.*;
 import org.deeplearning4j.spark.parameterserver.networking.SilentTrainingDriver;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.util.UIDProvider;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -116,6 +117,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     protected transient Broadcast<SharedTrainingConfiguration> broadcastConfiguration;
     protected transient Transport transport;
     protected transient SilentTrainingDriver trainingDriver;
+
+    protected boolean setupDone;
 
     protected SharedTrainingMaster() {
         // just a stub for ser/de
@@ -361,11 +364,13 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     @Override
     public void executeTrainingPaths(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<String> trainingDataPaths,
                                               DataSetLoader dsLoader, MultiDataSetLoader mdsLoader) {
+        prepareNetworkAndStuff(null, graph);
         executeTrainingPathsHelper(network, graph, trainingDataPaths, dsLoader, mdsLoader, rddDataSetNumExamples);
     }
 
     protected void executeTrainingPathsHelper(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<String> trainingDataPaths,
                                               DataSetLoader dsLoader, MultiDataSetLoader mdsLoader, int dataSetObjectsNumExamples) {
+
         if (numWorkers == null) {
             if(network != null){
                 numWorkers = network.getSparkContext().defaultParallelism();
@@ -445,6 +450,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                                             : graph.getNetwork().getOptimizer().getStepFunction());
             VoidParameterServer.getInstance().init(voidConfiguration, transport, trainingDriver);
         }
+
+        setupDone = true;
     }
 
     protected void finalizeTraining() {
@@ -456,8 +463,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
          */
 
         // applying non-applied updates, if any :)
-        if (trainingDriver != null)
+        if (trainingDriver != null) {
             trainingDriver.finishTraining(0L, 0L);
+        }
     }
 
     @Override
@@ -568,11 +576,10 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     protected void processResults(SparkDl4jMultiLayer network, SparkComputationGraph graph,
                     JavaRDD<SharedTrainingResult> results) {
-        if (network == null && graph == null)
-            throw new IllegalStateException("Both MLN & CG are null");
+        Preconditions.checkState(network != null || graph != null, "Both MLN & CG are null");
+        Preconditions.checkState(setupDone, "Setup was not completed before trying to process results");
 
 
-        finalizeTraining();
 
         if (collectTrainingStats)
             stats.logAggregateStartTime();
@@ -582,6 +589,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         SparkTrainingStats aggregatedStats = finalResult.getSparkTrainingStats();
         if (collectTrainingStats)
             stats.logAggregationEndTime();
+
+        //finalizeTraining has to be *after* training has completed, otherwise the RDD (via tree aggregate)
+        finalizeTraining();
 
 
         if (collectTrainingStats)
