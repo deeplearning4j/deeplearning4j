@@ -810,11 +810,30 @@ public class SparkComputationGraph extends SparkListenable {
                         new IEvaluateAggregateFunction<T>());
     }
 
-
+    /**
+     * Perform evaluation on serialized DataSet objects on disk, (potentially in any format), that are loaded using an {@link DataSetLoader}
+     * @param data             List of paths to the data (that can be loaded as / converted to DataSets)
+     * @param evalNumWorkers   Number of workers to perform evaluation with. To reduce memory requirements and cache thrashing,
+     *                         it is common to set this to a lower value than the number of spark threads per JVM/executor
+     * @param evalBatchSize    Batch size to use when performing evaluation
+     * @param loader           Used to load DataSets from their paths
+     * @param emptyEvaluations Evaluations to perform
+     * @return Evaluation
+     */
     public IEvaluation[] doEvaluation(JavaRDD<String> data, int evalNumWorkers, int evalBatchSize, DataSetLoader loader, IEvaluation... emptyEvaluations) {
         return doEvaluation(data, evalNumWorkers, evalBatchSize, loader, null, emptyEvaluations);
     }
 
+    /**
+     * Perform evaluation on serialized MultiDataSet objects on disk, (potentially in any format), that are loaded using an {@link MultiDataSetLoader}
+     * @param data             List of paths to the data (that can be loaded as / converted to DataSets)
+     * @param evalNumWorkers   Number of workers to perform evaluation with. To reduce memory requirements and cache thrashing,
+     *                         it is common to set this to a lower value than the number of spark threads per JVM/executor
+     * @param evalBatchSize    Batch size to use when performing evaluation
+     * @param loader           Used to load MultiDataSets from their paths
+     * @param emptyEvaluations Evaluations to perform
+     * @return Evaluation
+     */
     public IEvaluation[] doEvaluation(JavaRDD<String> data, int evalNumWorkers, int evalBatchSize, MultiDataSetLoader loader, IEvaluation... emptyEvaluations) {
         return doEvaluation(data, evalNumWorkers, evalBatchSize, null, loader, emptyEvaluations);
     }

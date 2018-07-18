@@ -83,21 +83,22 @@ public class EvaluationRunner {
                         try {
                             doEval(m, evals, e.getDs(), e.getMds(), evalBatchSize);
                         } catch (Throwable t){
-                            f.setException(t);
+                            e.getFuture().setException(t);
                         } finally {
-                            f.getSemaphore().release(1);
+                            e.getFuture().getSemaphore().release(1);
                         }
                     }
                 } finally {
                     workerCount.decrementAndGet();
+                    log.debug("Finished evaluation in thread {}", Thread.currentThread().getId());
                 }
 
                 return f;
             }
         }
 
-        //At this point: not a worker thread (otherwise, would have returned already
-        log.debug("Submitting evaluation for thread {}", Thread.currentThread().getId());
+        //At this point: not a worker thread (otherwise, would have returned already)
+        log.debug("Submitting evaluation from thread {} for processing in evaluation thread", Thread.currentThread().getId());
         EvaluationFuture f = new EvaluationFuture();
         queue.add(new Eval(ds, mds, evals, f));
         return f;
