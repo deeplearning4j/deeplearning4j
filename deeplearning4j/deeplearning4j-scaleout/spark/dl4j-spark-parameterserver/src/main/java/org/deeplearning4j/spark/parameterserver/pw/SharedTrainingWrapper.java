@@ -333,24 +333,28 @@ public class SharedTrainingWrapper {
                 throw new DL4JInvalidConfigException("No iterators were defined for training");
 
             try {
-                if (wrapper != null) {
-                    if (iteratorDS != null)
-                        wrapper.fit(iteratorDS);
-                    else
-                        wrapper.fit(iteratorMDS);
-                } else {
-                    // if wrapper is null, we're fitting standalone model then
-                    if (iteratorDS != null) {
-                        if (model instanceof ComputationGraph) {
-                            ((ComputationGraph) originalModel).fit(iteratorDS);
-                        } else if (model instanceof MultiLayerNetwork) {
-                            ((MultiLayerNetwork) originalModel).fit(iteratorDS);
-                        }
+                while((iteratorDS != null && iteratorDS.hasNext()) || (iteratorMDS != null && iteratorMDS.hasNext())) {
+                    //Loop as a guard against concurrent modifications and RCs
+
+                    if (wrapper != null) {
+                        if (iteratorDS != null)
+                            wrapper.fit(iteratorDS);
+                        else
+                            wrapper.fit(iteratorMDS);
                     } else {
-                        if (model instanceof ComputationGraph) {
-                            ((ComputationGraph) originalModel).fit(iteratorMDS);
-                        } else if (model instanceof MultiLayerNetwork) {
-                            ((MultiLayerNetwork) originalModel).fit(iteratorMDS);
+                        // if wrapper is null, we're fitting standalone model then
+                        if (iteratorDS != null) {
+                            if (model instanceof ComputationGraph) {
+                                ((ComputationGraph) originalModel).fit(iteratorDS);
+                            } else if (model instanceof MultiLayerNetwork) {
+                                ((MultiLayerNetwork) originalModel).fit(iteratorDS);
+                            }
+                        } else {
+                            if (model instanceof ComputationGraph) {
+                                ((ComputationGraph) originalModel).fit(iteratorMDS);
+                            } else if (model instanceof MultiLayerNetwork) {
+                                ((MultiLayerNetwork) originalModel).fit(iteratorMDS);
+                            }
                         }
                     }
                 }
