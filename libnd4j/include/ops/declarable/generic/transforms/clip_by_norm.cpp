@@ -33,7 +33,7 @@ namespace ops  {
 
         const T clipNorm = T_ARG(0);
         const bool isInplace = block.isInplace();
-
+        
         helpers::clipByNorm(*input, *output, *block.getIArguments(), clipNorm, isInplace);
 
         return Status::OK();

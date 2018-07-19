@@ -23,6 +23,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <NDArray.h>
 #include <ops/ops.h>
+#include <GradCheck.h>
 
 
 using namespace nd4j;
@@ -1172,3 +1173,28 @@ TEST_F(DeclarableOpsTests9, clipbynorm_test12) {
 
     delete result;
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, clipbynorm_bp_test1) {
+    
+    const int bS   = 2;
+    const int nOut = 3;
+    const int axis = 0;
+    const double clip = 0.7;
+    
+    NDArray<double> x('c', {bS, nOut}, {0.412 ,0.184 ,0.961 ,0.173 ,0.736 ,0.540 });    // uniform random in range [0,1]
+    NDArray<double> gradO('c', {bS, nOut});
+
+    const OpArgsHolder<double> argsHolderFF({&x}, {clip}, {});
+    const OpArgsHolder<double> argsHolderBP({&x, &gradO}, {clip}, {});
+
+    nd4j::ops::clipbynorm<double> opFF;
+    nd4j::ops::clipbynorm_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+

@@ -129,6 +129,7 @@ void gruCellBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray
     // h is current cell output [bS, nU], that is at current time step t    
 
     const int nU = h0->sizeAt(1);
+
     // ***** feed forward step ***** //    
     // gates = sigmoid(x*Wx + h0*Wh + b)
     NDArray<T> gates = sigmoid<T>(mmul(*x, (*Wx)({{},{0,2*nU}})) + mmul(*h0, (*Wh)({{},{0,2*nU}})) + (*b)({{0,2*nU}}));       // [bS, 2*nU] + [bS, 2*nU] + [1, 2*nU] = [bS, 2*nU]    
@@ -139,7 +140,6 @@ void gruCellBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray
     // ◦ means element-wise product or so called Hadamard product
     // n = activation(x*Wx + (r◦h0)*Wh + b)
     NDArray<T> n = activation<T>(mmul(*x, (*Wx)({{},{2*nU, 3*nU}})) + mmul((*h0)*r, (*Wh)({{},{2*nU,3*nU}})) + (*b)({{2*nU,3*nU}}));     // [bS, nU]
-
 
     // ***** back prop step ***** // 
     NDArray<T> Wxr  = (*Wx)({{}, {0,   nU}});
@@ -165,9 +165,9 @@ void gruCellBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray
     NDArray<T> dLdWhu = (*dLdWh)({{}, {nU,  2*nU}});    
     NDArray<T> dLdWhn = (*dLdWh)({{}, {2*nU,3*nU}});
 
-    NDArray<T> dldbr = (*dLdb)({{0,     nU}});
-    NDArray<T> dldbu = (*dLdb)({{nU,  2*nU}});
-    NDArray<T> dldbn = (*dLdb)({{2*nU,3*nU}});
+    NDArray<T> dLdbr = (*dLdb)({{0,     nU}});
+    NDArray<T> dLdbu = (*dLdb)({{nU,  2*nU}});
+    NDArray<T> dLdbn = (*dLdb)({{2*nU,3*nU}});
 
     NDArray<T> dhdu   = *h0  - n;               // [bS, nU]
     NDArray<T> dhdn   = (T)1 - u;               // [bS, nU]    
@@ -181,46 +181,31 @@ void gruCellBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray
     NDArray<T> dLdu = (*dLdh) * dhdu;
     NDArray<T> dLdr = dLdn * dndr;
 
-
     dLdx->assign( mmul(dLdu * dSigdu, WxuT) + mmul(dLdr * dSigdr, WxrT) + mmul(dLdn * dActdn, WxnT) );      // [bS,iS]
-
     dLdh0->assign( mmul(dLdu * dSigdu, WhuT) + mmul(dLdn * dActdn * (r + drdh0), WhnT) + (*dLdh)*u );       // [bS,nU]
 
     dLdWxr.assign( mmul(xT, dSigdr * dLdr) );                                                               //  [iS,nU]
-    if(dLdWx0 != nullptr)
-        dLdWxr += (*dLdWx0)({{}, {0,   nU}});
-
     dLdWhr.assign( mmul(h0T, dSigdr * dLdr) );                                                              //  [nU,nU]
-    if(dLdWh0 != nullptr)
-        dLdWhr += (*dLdWh0)({{}, {0,   nU}});
-
+    
     dLdWxu.assign( mmul(xT, dSigdu * dLdu) );                                                               //  [iS,nU]
-    if(dLdWx0 != nullptr)
-        dLdWxu += (*dLdWx0)({{}, {nU,2*nU}});
-
-    dLdWhu.assign( mmul(h0T, dSigdu * dLdu) );                                                               //  [nU,nU]
-    if(dLdWh0 != nullptr)
-        dLdWhu += (*dLdWh0)({{}, {nU,2*nU}});
-
+    dLdWhu.assign( mmul(h0T, dSigdu * dLdu) );                                                              //  [nU,nU]
+    
     dLdWxn.assign( mmul(xT, dActdn * dLdn) );                                                               //  [iS,nU]
-    if(dLdWx0 != nullptr)
-        dLdWxn += (*dLdWx0)({{}, {2*nU,3*nU}});
-
     dLdWhn.assign( mmul((r*(*h0)).transp(), dActdn * dLdn) );                                               //  [nU,nU]
+    
+    dLdbr.assign( (dSigdr * dLdr).template reduceAlongDims<simdOps::Sum<T>>({0}));                          // [nU]
+    dLdbu.assign( (dSigdu * dLdu).template reduceAlongDims<simdOps::Sum<T>>({0}));                          // [nU]
+    dLdbn.assign( (dActdn * dLdn).template reduceAlongDims<simdOps::Sum<T>>({0}));                          // [nU]
+
+    if(dLdWx0 != nullptr) 
+        *dLdWx += *dLdWx0;
+
     if(dLdWh0 != nullptr)
-        dLdWhn += (*dLdWh0)({{}, {2*nU,3*nU}});
-
-    dldbr.assign( (dSigdr * dLdr).template reduceAlongDims<simdOps::Sum<T>>({0}));                          // [nU]
+        *dLdWh += *dLdWh0;    
+        
     if(dLdb0 != nullptr)
-        dldbr += (*dLdb0)({{0, nU}});
+        *dLdb += *dLdb0;
 
-    dldbu.assign( (dSigdu * dLdu).template reduceAlongDims<simdOps::Sum<T>>({0}));                          // [nU]
-    if(dLdb0 != nullptr)
-        dldbu += (*dLdb0)({{nU, 2*nU}});
-
-    dldbn.assign( (dActdn * dLdn).template reduceAlongDims<simdOps::Sum<T>>({0}));                          // [nU]
-    if(dLdb0 != nullptr)
-        dldbn += (*dLdb0)({{2*nU, 3*nU}});    
 }
 
 

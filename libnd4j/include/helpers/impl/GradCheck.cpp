@@ -45,7 +45,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp<double>& opFF, ops::DeclarableOp<dou
 	fillGradArrays(loss, std::vector<NDArray<double>*>(&inArrsBP[numInArrsFF], &inArrsBP[numInArrsFF + numInGradArrsBP]));
 
 	// beck prop pass	
-	ResultSet<double>* bpOutArrs = opBP.execute(argsHolderBP);		// number of output arrays in back prop = numInArrsFF;
+	ResultSet<double>* outArrsBP = opBP.execute(argsHolderBP);		// number of output arrays in back prop = numInArrsFF;
 
 	for(int i = 0; i < numInArrsFF; ++i) {							// loop through input array
 		
@@ -62,20 +62,20 @@ bool GradCheck::checkGrad(ops::DeclarableOp<double>& opFF, ops::DeclarableOp<dou
 
 			// add epsilon, feed forward
 			elem = orig + EPSILON;
-			ResultSet<double>* ffOutArrs = opFF.execute(argsHolderFF);
-			int numOutArrs = ffOutArrs->size();
+			ResultSet<double>* outArrsFF = opFF.execute(argsHolderFF);
+			int numOutArrs = outArrsFF->size();
 			double scorePlus = 0.;
 			for(int k = 0; k < numOutArrs; ++k)				// loop through output array
-				scorePlus += NativeOpExcutioner<double>::execReduceScalar(loss, ffOutArrs->at(k)->getBuffer(), ffOutArrs->at(k)->getShapeInfo(), nullptr);
-			delete ffOutArrs;
+				scorePlus += NativeOpExcutioner<double>::execReduceScalar(loss, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr);
+			delete outArrsFF;
 
 			// subtract epsilon, feed forward
 			elem = orig - EPSILON;
-			ffOutArrs = opFF.execute(argsHolderFF);
+			outArrsFF = opFF.execute(argsHolderFF);
 			double scoreMinus = 0.;
 			for(int k = 0; k < numOutArrs; ++k)				// loop through output array
-				scoreMinus += NativeOpExcutioner<double>::execReduceScalar(loss, ffOutArrs->at(k)->getBuffer(), ffOutArrs->at(k)->getShapeInfo(), nullptr);
-			delete ffOutArrs;
+				scoreMinus += NativeOpExcutioner<double>::execReduceScalar(loss, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr);
+			delete outArrsFF;
 
 			// restore initial element value
 			elem = orig;
@@ -88,7 +88,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp<double>& opFF, ops::DeclarableOp<dou
 			}
 
 			// get analytical gradient 
-			const double analyticGrad = (*bpOutArrs->at(i))(j);
+			const double analyticGrad = (*outArrsBP->at(i))(j);
 			if(std::isnan(analyticGrad) || std::isinf(analyticGrad)) {
 				printf("GradCheck::checkGrad: got wrong value for analytical gradient for input array # %i and its element at position %lld ! \n", i, j);
 				throw std::runtime_error("");
@@ -106,15 +106,15 @@ bool GradCheck::checkGrad(ops::DeclarableOp<double>& opFF, ops::DeclarableOp<dou
 
             	if(math::nd4j_abs<double>(analyticGrad - numericalGrad) < MINABSERR)
             		continue;
-
+            	printf("numericalGrad = %f,  analyticGrad = %f \n", numericalGrad, analyticGrad);
             	printf("GradCheck::checkGrad: got RELERROR = %f > MAXRELERROR(%f) for input array # %i and its element at position %lld ! \n", relError, MAXRELERR, i, j);
-            	delete bpOutArrs;
+            	delete outArrsBP;
             	return false;
             }
 		}
 	}
 	
-	delete bpOutArrs;
+	delete outArrsBP;
 	return true;
 }
 
