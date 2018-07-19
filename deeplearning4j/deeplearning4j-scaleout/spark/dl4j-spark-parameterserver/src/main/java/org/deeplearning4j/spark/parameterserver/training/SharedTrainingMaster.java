@@ -959,8 +959,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         /**
          * This parameter defines when repartition is applied (if applied)
-         * @param repartition
-         * @return
+         * @param repartition Repartition setting
          * @deprecated Use {@link #repartitioner(Repartitioner)}
          */
         @Deprecated
@@ -1040,10 +1039,11 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         /**
-         * Threshold for updates encoding
+         * Threshold for updates encoding. Lower values might improve convergence, but increase amount of network
+         * communication.
          *
          * Default value: 1e-3
-         * @param threshold
+         * @param threshold Threshold to use
          * @return
          */
         public Builder updatesThreshold(double threshold) {
@@ -1052,7 +1052,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         /**
-         * Once update with given threshold become too sparse, threshold will be decreased by thresholdStep, but not below minimum threshold
+         * Once update with given threshold become too sparse, threshold will be decreased by thresholdStep, but not below minimum threshold.
+         * This method is used to set that minimum threshold
          *
          * Default value: 1e-5
          * @param threshold
@@ -1064,16 +1065,14 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         /**
-         * Step size for threshold decay
+         * Step size for threshold decay. When sparsity is less than
          *
          * Default value: 1e-5
-         * @param step
+         * @param step Step size
          * @return
          */
         public Builder thresholdStep(double step) {
-            if (step < 0.0)
-                throw new DL4JInvalidConfigException("shakeFrequency should be non-negative value");
-
+            Preconditions.checkArgument(step >= 0, "Threshold step size should be positive. Got: %s", step);
             this.thresholdStep = step;
             return this;
         }
@@ -1088,7 +1087,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         public Builder stepTrigger(double step) {
             if (step < 0.0 || step > 100.0)
                 throw new DL4JInvalidConfigException("stepTrigger value should be in range of 0..100");
-
+            this.stepTrigger = step;
             return this;
         }
 
@@ -1106,7 +1105,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         /**
          * During NN training, each X iterations, executors will send encoded dense updates with lower threshold.
-         * Please note: If you'll set this value too low (i.e. 1) - it might lead to worse performance
+         * Please note: If you'll set this value too low (i.e. 1) - it might lead to worse training performance
          *
          * Default value: 0 (disabled)
          * @param frequency
