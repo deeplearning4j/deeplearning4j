@@ -314,11 +314,12 @@ class DocumentationGenerator:
             for file_name in file_names:
                 if file_name[-3:] == '.md':
                     file_path = os.path.join(subdir, file_name)
-                    header = '---\ntitle: {}\nlayout: default\n---\n'.format(file_name.replace('.md', ''))
+                    header = '---\ntitle: {}\n---\n'.format(file_name.replace('.md', ''))
                     with open(file_path, 'r+') as f:
                         content = f.read()
                         f.seek(0, 0)
-                        f.write(header.rstrip('\r\n') + '\n' + content)
+                        if not content.startswith('---'):
+                            f.write(header.rstrip('\r\n') + '\n' + content)
 
 
 if __name__ == '__main__':

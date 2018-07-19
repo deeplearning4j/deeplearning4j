@@ -1,0 +1,53 @@
+{
+  "excludes": [
+    "abstract"
+  ],
+  "indices": [
+  ],
+  "pages": [
+    {
+      "page": "records.md",
+      "class": [
+        "datavec-api/src/main/java/org/datavec/api/records/impl/Record.java",
+        "datavec-api/src/main/java/org/datavec/api/records/impl/SequenceRecord.java"
+      ]
+    },
+    {
+      "page": "readers.md",
+      "class": [
+        "datavec-data/datavec-data-image/src/main/java/org/datavec/image/recordreader/ImageRecordReader.java",
+        "datavec-data/datavec-data-image/src/main/java/org/datavec/image/recordreader/VideoRecordReader.java",
+        "datavec-data/datavec-data-audio/src/main/java/org/datavec/audio/recordreader/NativeAudioRecordReader.java",
+        "datavec-data/datavec-data-audio/src/main/java/org/datavec/audio/recordreader/WavFileRecordReader.java",
+        "datavec-data/datavec-data-nlp/src/main/java/org/datavec/nlp/reader/TfidfRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/FileRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/LineRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/ComposableRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVNLinesRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVRegexRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVSequenceRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVVariableSlidingWindowRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/ConcatenatingRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/transform/TransformProcessRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/transform/TransformProcessSequenceRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/collection/CollectionRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/collection/CollectionSequenceRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/collection/ListStringRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/misc/LibSvmRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/misc/MatlabRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/misc/SVMLightRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/misc/regex/RegexLineRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/misc/regex/RegexSequenceRecordReader.java",
+      ]
+    },
+    {
+      "page": "executors.md",
+      "class": [
+        "datavec-local/src/main/java/org/datavec/local/transforms/LocalTransformExecutor.java",
+        "datavec-spark/src/main/java/org/datavec/spark/transform/SparkTransformExecutor.java"
+      ]
+    }
+  ]
+}
+

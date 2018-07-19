@@ -16,6 +16,13 @@
 # SPDX-License-Identifier: Apache-2.0
 ################################################################################
 
+# Generate DataVec docs
+python generate_docs.py \
+    --project datavec \
+    --language java \
+    --code ../deeplearning4j/datavec/datavec-api/src/main/java/org/datavec \
+    --docs_root deeplarning4j.org/datavec \
+    --out_language en
 
 # Generate Keras docs
 python generate_docs.py \
