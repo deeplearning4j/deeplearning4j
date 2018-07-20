@@ -16,7 +16,7 @@ class OpArgsHolder {
 private: 
 	std::vector<NDArray<T>*> _inArrs = std::vector<NDArray<T>*>();
     std::vector<T>           _tArgs  = std::vector<T>();
-    std::vector<Nd4jLong>    _iArgs  = std::vector<int>();
+    std::vector<Nd4jLong>    _iArgs  = std::vector<Nd4jLong>();
 
     int _numInArrs = _inArrs.size();
     int _numTArgs  = _tArgs.size();
