@@ -1,4 +1,21 @@
 # -*- coding: utf-8 -*-
+
+################################################################################
+# Copyright (c) 2015-2018 Skymind, Inc.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache License, Version 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+################################################################################
+
 import re
 import os
 import shutil
@@ -80,7 +97,7 @@ class DocumentationGenerator:
     '''
     def render(self, signature, doc_string, class_name, is_method):
         if is_method:  # Method name from signature
-            method_regex = r'public [static\s]?[a-zA-Z0-9]* ([a-zA-Z0-9]*)\('
+            method_regex = r'public (?:static )?[a-zA-Z0-9]* ([a-zA-Z0-9]*)\('
             name = re.findall(method_regex, signature)[0]
         else:  # Constructor takes class name
             name = class_name
@@ -126,7 +143,7 @@ class DocumentationGenerator:
     in the public API of an object
     '''
     def get_public_method_data(self, class_string, includes, excludes):
-        method_regex = r'public [static\s]?[a-zA-Z0-9]* ([a-zA-Z0-9]*)\('
+        method_regex = r'public (?:static )?[a-zA-Z0-9]* ([a-zA-Z0-9]*)\('
 
         # Either use all methods or use include methods that can be found
         method_strings = re.findall(method_regex, class_string)
@@ -140,7 +157,7 @@ class DocumentationGenerator:
         for method in method_strings:
             # print("Processing doc string for method {}".format(method))
             doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n[\S\s]*?' + \
-                        '(public [static\s]?[a-zA-Z0-9]* ' + method + '[\S\s]*?){'
+                        '(public (?:static )?[a-zA-Z0-9]* ' + method + '[\S\s]*?){'
             # TODO: this will sometimes run forever. fix regex
             result = re.search(doc_regex, class_string)
             if result:
