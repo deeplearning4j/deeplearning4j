@@ -16,12 +16,12 @@
 
 package org.deeplearning4j.perf.listener;
 
+import lombok.NonNull;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.TrainingListener;
-import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import oshi.json.SystemInfo;
 
@@ -47,7 +47,7 @@ public class SystemInfoFilePrintListener implements TrainingListener {
     private boolean printOnGradientCalculation;
     private File printFileTarget;
 
-    public SystemInfoFilePrintListener(boolean printOnEpochStart, boolean printOnEpochEnd, boolean printOnForwardPass, boolean printOnBackwardPass, boolean printOnGradientCalculation, @NotNull File printFileTarget) {
+    public SystemInfoFilePrintListener(boolean printOnEpochStart, boolean printOnEpochEnd, boolean printOnForwardPass, boolean printOnBackwardPass, boolean printOnGradientCalculation, @NonNull File printFileTarget) {
         this.printOnEpochStart = printOnEpochStart;
         this.printOnEpochEnd = printOnEpochEnd;
         this.printOnForwardPass = printOnForwardPass;

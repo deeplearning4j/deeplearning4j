@@ -62,11 +62,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>tech.tablesaw</groupId>
-            <artifactId>tablesaw-core</artifactId>
-            <version>${tablesaw.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-arrow</artifactId>
             <version>${project.version}</version>

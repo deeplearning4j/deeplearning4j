@@ -80,11 +80,6 @@
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>nearestneighbor-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-modelimport</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -183,10 +178,6 @@
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-ui-components</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
         </dependency>
     </dependencies>
 
