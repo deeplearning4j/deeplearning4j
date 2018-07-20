@@ -452,9 +452,10 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         // this instance will be SilentWorker - it'll accept and apply messages, but won't contribute to training. And we init it only once
         if (isFirstRun.compareAndSet(false, true) || LAST_TRAINING_INSTANCE.get() != instanceId) {
             if(LAST_TRAINING_INSTANCE.get() >= 0 && LAST_TRAINING_INSTANCE.get() != instanceId){
-                log.info("Detected changed training instance - setting up new parameter server");
+                log.debug("Detected changed training instance - setting up new parameter server - old instance {}, new instance {}",
+                        LAST_TRAINING_INSTANCE, instanceId);
                 VoidParameterServer.getInstance().shutdown();
-                try{
+                try{    //TODO is this required?
                     Thread.sleep(3000);
                 } catch (Exception e){
                     throw new RuntimeException(e);
@@ -466,7 +467,6 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                             network != null ? network.getNetwork().getOptimizer().getStepFunction()
                                             : graph.getNetwork().getOptimizer().getStepFunction());
             VoidParameterServer.getInstance().init(voidConfiguration, transport, trainingDriver);
-            VoidParameterServer vps = VoidParameterServer.getInstance();
             LAST_TRAINING_INSTANCE.set(instanceId);
         }
 

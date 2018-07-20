@@ -104,7 +104,8 @@ public class SharedTrainingWrapper {
 
     public static synchronized SharedTrainingWrapper getInstance(long id) {
         if(LAST_INSTANCE_ID.get() != Long.MIN_VALUE && LAST_INSTANCE_ID.get() != id){
-            log.info("Shutting down existing SharedTrainingWrapper instances; resetting state");
+            log.info("Shutting down existing SharedTrainingWrapper instances; resetting state - previous instance ID {}," +
+                    " new instance ID {}", LAST_INSTANCE_ID.get(), id);
             if(INSTANCE.wrapper != null){
                 INSTANCE.wrapper.shutdown();
                 INSTANCE.wrapper = null;
