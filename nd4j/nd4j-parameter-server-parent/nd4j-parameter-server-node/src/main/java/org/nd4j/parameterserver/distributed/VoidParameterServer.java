@@ -391,6 +391,7 @@ public class VoidParameterServer {
             executor.shutdown();
             initFinished.set(false);
             initLocker.set(false);
+            shutdownLocker.set(false);
         }
     }
 
