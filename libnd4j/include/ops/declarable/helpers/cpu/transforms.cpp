@@ -695,11 +695,15 @@ void clipByNormBP(const NDArray<T>& input, const NDArray<T>& gradO, NDArray<T>& 
 
     if(norm2.lengthOf() == 1) {        
 
-        const T factor = norm2(0);
-        if(factor > clipNorm) {            
-            const T factor2 = factor  * factor;
-            const T factor3 = factor2 * factor;
-            auto lambda = LAMBDA_TT(elem1, elem2, clipNorm, factor2, factor3) { return elem2 * clipNorm * (factor2 - elem1 * elem1) / factor3; };
+        const T N = norm2(0);
+        
+        if(N > clipNorm) {            
+
+            const T sumOfProd = (input * gradO).template reduceNumber<simdOps::Sum<T>>();    // reduce to scalar
+            const T factor1 = static_cast<T>(1.f) / N;
+            const T factor3 = factor1 / (N * N) ;                                            // 1 / (N*N*N)
+            
+            auto lambda = LAMBDA_TT(elem1, elem2, clipNorm, sumOfProd, factor1, factor3) { return clipNorm * (factor1 * elem2 - factor3 * elem1 * sumOfProd); };
             const_cast<NDArray<T>&>(input).applyPairwiseLambda(&gradO, lambda, &gradI);
         }
         else 
@@ -715,14 +719,19 @@ void clipByNormBP(const NDArray<T>& input, const NDArray<T>& gradO, NDArray<T>& 
         for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
 
             ShapeUtils<T>::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
-            T factor = norm2(i);
-            if (factor > clipNorm) {
-                const T factor2 = factor  * factor;
-                const T factor3 = factor2 * factor;
-                auto lambda = LAMBDA_TT(elem1, elem2, clipNorm, factor2, factor3) { return elem2 * clipNorm * (factor2 - elem1 * elem1) / factor3; };                
+            T N = norm2(i);
+            
+            if (N > clipNorm) {
+                
                 NDArray<T> gradOSubArr = gradO(idxRanges.data());
-                NDArray<T> gradISubArr = gradI(idxRanges.data());
+                NDArray<T> gradISubArr = gradI(idxRanges.data());                
                 NDArray<T> inputSubArr = input(idxRanges.data());
+                
+                const T sumOfProd = (inputSubArr * gradOSubArr).template reduceNumber<simdOps::Sum<T>>();    // reduce to scalar
+                const T factor1 = static_cast<T>(1.f) / N;
+                const T factor3 = factor1 / (N * N) ;                                            // 1 / (N*N*N)
+
+                auto lambda = LAMBDA_TT(elem1, elem2, clipNorm, sumOfProd, factor1, factor3) { return clipNorm * (factor1 * elem2 - factor3 * elem1 * sumOfProd); };
                 inputSubArr.applyPairwiseLambda(&gradOSubArr, lambda, &gradISubArr);
             }
             else
