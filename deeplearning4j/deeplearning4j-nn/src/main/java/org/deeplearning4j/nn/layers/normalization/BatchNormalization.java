@@ -316,14 +316,13 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                             + " not supported " + layerId());
             }
 
-
-            var.addi(layerConf.getEps());
+            std = Transforms.sqrt(workspaceMgr.dup(ArrayType.INPUT, var).addi(layerConf().getEps()), false);
         } else {
             // Global mean and variance estimate - used after training
             mean = getParam(BatchNormalizationParamInitializer.GLOBAL_MEAN);
             var = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
+            std = Transforms.sqrt(workspaceMgr.dup(ArrayType.INPUT, var).addi(layerConf().getEps()), false);
         }
-        std = Transforms.sqrt(workspaceMgr.dup(ArrayType.INPUT, var).addi(layerConf().getEps()), false);
 
         // BN(xk) = gamma*xˆ + β (applying gamma and beta for each activation)
         if (x.rank() == 2) {
