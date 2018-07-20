@@ -675,10 +675,14 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
 
                 ShapeUtils<T>::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
+
+                NDArray<T> outputSubArr = output(idxRanges.data());                
+                NDArray<T> inputSubArr  = input(idxRanges.data());
+                
                 if (norm2(i) > clipNorm) 
-                    output(idxRanges.data()).assign( input(idxRanges.data()) * (clipNorm / norm2(i)) );
+                    outputSubArr.assign(inputSubArr * (clipNorm / norm2(i)));
                 else
-                    output(idxRanges.data()).assign( input(idxRanges.data()) );     
+                    outputSubArr.assign(inputSubArr);
             }           
         }
     }
@@ -720,11 +724,12 @@ void clipByNormBP(const NDArray<T>& input, const NDArray<T>& gradO, NDArray<T>& 
 
             ShapeUtils<T>::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
             T N = norm2(i);
+
+            NDArray<T> gradOSubArr = gradO(idxRanges.data());
+            NDArray<T> gradISubArr = gradI(idxRanges.data());                
             
             if (N > clipNorm) {
                 
-                NDArray<T> gradOSubArr = gradO(idxRanges.data());
-                NDArray<T> gradISubArr = gradI(idxRanges.data());                
                 NDArray<T> inputSubArr = input(idxRanges.data());
                 
                 const T sumOfProd = (inputSubArr * gradOSubArr).template reduceNumber<simdOps::Sum<T>>();    // reduce to scalar
@@ -735,7 +740,7 @@ void clipByNormBP(const NDArray<T>& input, const NDArray<T>& gradO, NDArray<T>& 
                 inputSubArr.applyPairwiseLambda(&gradOSubArr, lambda, &gradISubArr);
             }
             else
-                gradI(idxRanges.data()).assign( gradO(idxRanges.data()) );     
+                gradISubArr.assign(gradOSubArr);
         }           
     }
 }
