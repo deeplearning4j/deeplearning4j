@@ -59,6 +59,12 @@
             <artifactId>deeplearning4j-nn</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-datasets</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
 
