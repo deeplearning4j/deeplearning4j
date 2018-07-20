@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package org.deeplearning4j.spark.parameterserver.train;
 
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +43,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 
 import java.io.File;
+import java.net.Inet4Address;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -35,7 +52,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 @Slf4j
-public class TrainTest extends BaseSparkTest {
+public class GradientSharingTrainingTest extends BaseSparkTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
@@ -44,7 +61,6 @@ public class TrainTest extends BaseSparkTest {
     public void trainSanityCheck() throws Exception {
 
         for(String s : new String[]{"direct", "export", "paths"}) {
-//        for(String s : new String[]{"direct"}) {
             log.info("Starting: {}", s);
             boolean isPaths = "paths".equals(s);
 
@@ -66,9 +82,9 @@ public class TrainTest extends BaseSparkTest {
             File temp = testDir.newFolder();
 
 
-
-            String networkMask = "192.168.2.0/16";
-            String controller = "192.168.2.21";
+            //TODO this probably won't work everywhere...
+            String controller = Inet4Address.getLocalHost().getHostAddress();
+            String networkMask = controller.substring(0, controller.lastIndexOf('.')) + ".0" + "/16";
 
             VoidConfiguration voidConfiguration = VoidConfiguration.builder()
                     .unicastPort(40123) // Should be open for IN/OUT communications on all Spark nodes

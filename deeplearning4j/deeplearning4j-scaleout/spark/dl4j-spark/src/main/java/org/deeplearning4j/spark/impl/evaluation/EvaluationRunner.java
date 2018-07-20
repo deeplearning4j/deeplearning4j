@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package org.deeplearning4j.spark.impl.evaluation;
 
 import lombok.AllArgsConstructor;
@@ -25,6 +41,12 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Singleton evaluation hrunner class for performing evaluation on Spark.
+ * Allows fewer evaluation networks (and hence memory/cache thrashing) than one network per spark thread
+ *
+ * @author Alex Black
+ */
 @Slf4j
 public class EvaluationRunner {
 
@@ -34,15 +56,28 @@ public class EvaluationRunner {
         return INSTANCE;
     }
 
-    private final AtomicBoolean isFirst = new AtomicBoolean(false);
     private final AtomicInteger workerCount = new AtomicInteger(0);
     private Queue<Eval> queue = new ConcurrentLinkedQueue<>();
 
     private EvaluationRunner(){ }
 
+    /**
+     * Evaluate the data using the specified evaluations
+     * @param evals         Evaluations to perform
+     * @param evalWorkers   Number of concurrent workers
+     * @param evalBatchSize Evaluation batch size to use
+     * @param ds            DataSet iterator
+     * @param mds           MultiDataSet iterator
+     * @param isCG          True if ComputationGraph, false otherwise
+     * @param json          JSON for the network
+     * @param params        Parameters for the network
+     * @return Future for the results
+     */
     public Future<IEvaluation[]> execute(IEvaluation[] evals, int evalWorkers, int evalBatchSize, Iterator<DataSet> ds, Iterator<MultiDataSet> mds,
                                          boolean isCG, Broadcast<String> json, Broadcast<INDArray> params){
         Preconditions.checkArgument(evalWorkers > 0, "Invalid number of evaluation workers: must be > 0. Got: %s", evalWorkers);
+        Preconditions.checkState(ds != null || mds != null, "No data provided - both DataSet and MultiDataSet iterators were null");
+
         int currentWorkerCount;
         while((currentWorkerCount = workerCount.get()) < evalWorkers){
             if(workerCount.compareAndSet(currentWorkerCount, currentWorkerCount+1)){

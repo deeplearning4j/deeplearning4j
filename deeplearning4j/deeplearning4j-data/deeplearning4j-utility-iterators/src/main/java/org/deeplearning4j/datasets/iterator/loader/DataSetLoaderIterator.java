@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package org.deeplearning4j.datasets.iterator.loader;
 
 import lombok.Data;
@@ -15,7 +31,7 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * A DataSetLoader that loads DataSets from a path, using a {@code Loader<DataSet>} such as {@link SerializedDataSetLoader}.
+ * A DataSetLoader that loads DataSets from a path, using a {@code Loader<DataSet>} such as SerializedDataSetLoader.
  * Paths are converted to input streams using {@link SourceFactory} such as {@link org.nd4j.api.loader.LocalFileSourceFactory}.
  * Note that this iterator does not implement any sort of merging/batching functionality - it simply returns the DataSets
  * as-is from the path/loader.
