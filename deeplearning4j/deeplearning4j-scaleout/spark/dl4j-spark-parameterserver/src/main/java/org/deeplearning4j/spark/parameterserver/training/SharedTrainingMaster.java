@@ -24,7 +24,6 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.apache.spark.input.PortableDataStream;
 import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.api.loader.DataSetLoader;
 import org.deeplearning4j.api.loader.MultiDataSetLoader;
@@ -72,6 +71,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author raver119@gmail.com
@@ -80,6 +80,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Data
 public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResult, SharedTrainingWorker>
                 implements TrainingMaster<SharedTrainingResult, SharedTrainingWorker> {
+    //Static counter/id fields used to determine which training master last set up the singleton param servers, etc
+    protected static final AtomicInteger INSTANCE_COUNTER = new AtomicInteger();
+    protected static final AtomicInteger LAST_TRAINING_INSTANCE = new AtomicInteger(-1);
+
     protected List<TrainingHook> trainingHooks;
     protected VoidConfiguration voidConfiguration;
 
@@ -113,6 +117,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     protected AtomicBoolean isFirstRun;
 
     // better ignore
+    protected final transient int instanceId;
     protected transient Broadcast<NetBroadcastTuple> broadcastModel;
     protected transient Broadcast<SharedTrainingConfiguration> broadcastConfiguration;
     protected transient Transport transport;
@@ -122,6 +127,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     protected SharedTrainingMaster() {
         // just a stub for ser/de
+        instanceId = INSTANCE_COUNTER.getAndIncrement();
     }
 
     public SharedTrainingMaster(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers,
@@ -159,6 +165,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         String jvmuid = UIDProvider.getJVMUID();
         this.trainingMasterUID =
                         System.currentTimeMillis() + "_" + (jvmuid.length() <= 8 ? jvmuid : jvmuid.substring(0, 8));
+        instanceId = INSTANCE_COUNTER.getAndIncrement();
     }
 
     @Override
@@ -252,7 +259,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats)
             stats.logBroadcastEnd();
 
-        SharedTrainingWorker worker = new SharedTrainingWorker(broadcastModel, broadcastConfiguration);
+        SharedTrainingWorker worker = new SharedTrainingWorker(instanceId, broadcastModel, broadcastConfiguration);
 
         return worker;
     }
@@ -281,7 +288,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats)
             stats.logBroadcastEnd();
 
-        SharedTrainingWorker worker = new SharedTrainingWorker(broadcastModel, broadcastConfiguration);
+        SharedTrainingWorker worker = new SharedTrainingWorker(instanceId, broadcastModel, broadcastConfiguration);
 
         return worker;
     }
@@ -364,7 +371,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     @Override
     public void executeTrainingPaths(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<String> trainingDataPaths,
                                               DataSetLoader dsLoader, MultiDataSetLoader mdsLoader) {
-        prepareNetworkAndStuff(null, graph);
+        prepareNetworkAndStuff(network, graph);
         executeTrainingPathsHelper(network, graph, trainingDataPaths, dsLoader, mdsLoader, rddDataSetNumExamples);
     }
 
@@ -443,12 +450,24 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             graph.getNetwork().init();
 
         // this instance will be SilentWorker - it'll accept and apply messages, but won't contribute to training. And we init it only once
-        if (isFirstRun.compareAndSet(false, true)) {
+        if (isFirstRun.compareAndSet(false, true) || LAST_TRAINING_INSTANCE.get() != instanceId) {
+            if(LAST_TRAINING_INSTANCE.get() >= 0 && LAST_TRAINING_INSTANCE.get() != instanceId){
+                log.debug("Detected changed training instance - setting up new parameter server - old instance {}, new instance {}",
+                        LAST_TRAINING_INSTANCE, instanceId);
+                VoidParameterServer.getInstance().shutdown();
+                try{    //TODO is this required?
+                    Thread.sleep(3000);
+                } catch (Exception e){
+                    throw new RuntimeException(e);
+                }
+            }
+
             trainingDriver = new SilentTrainingDriver(
                             network != null ? network.getNetwork().params() : graph.getNetwork().params(),
                             network != null ? network.getNetwork().getOptimizer().getStepFunction()
                                             : graph.getNetwork().getOptimizer().getStepFunction());
             VoidParameterServer.getInstance().init(voidConfiguration, transport, trainingDriver);
+            LAST_TRAINING_INSTANCE.set(instanceId);
         }
 
         setupDone = true;
@@ -496,13 +515,6 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     }
 
     @Override
-    public void executeTraining(SparkDl4jMultiLayer network, JavaPairRDD<String, PortableDataStream> trainingData) {
-        prepareNetworkAndStuff(network, null);
-
-        doIterationPDS(network, null, trainingData.values(), 1, 1);
-    }
-
-    @Override
     public void executeTraining(SparkComputationGraph graph, JavaRDD<DataSet> trainingData) {
         prepareNetworkAndStuff(null, graph);
 
@@ -519,12 +531,6 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     }
 
     @Override
-    public void executeTraining(SparkComputationGraph network, JavaPairRDD<String, PortableDataStream> trainingData) {
-        prepareNetworkAndStuff(null, network);
-        doIterationPDS(null, network, trainingData.values(), 1, 1);
-    }
-
-    @Override
     public void executeTrainingMDS(SparkComputationGraph graph, JavaRDD<MultiDataSet> trainingData) {
         prepareNetworkAndStuff(null, graph);
 
@@ -538,14 +544,6 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         } else
             throw new DL4JInvalidConfigException(
                             "Unknown RDDtrainingApproach [" + rddTrainingApproach + "] was specified!");
-    }
-
-    @Override
-    public void executeTrainingMDS(SparkComputationGraph network,
-                    JavaPairRDD<String, PortableDataStream> trainingData) {
-        prepareNetworkAndStuff(null, network);
-
-        doIterationMultiPDS(network, trainingData.values(), 1, 1);
     }
 
     @Override
@@ -802,82 +800,6 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         JavaRDD<SharedTrainingResult> result = data.mapPartitions(function);
 
         processResults(network, graph, result);
-
-        if (collectTrainingStats)
-            stats.logMapPartitionsEnd(nPartitions);
-    }
-
-    @Deprecated
-    protected void doIterationPDS(SparkDl4jMultiLayer network, SparkComputationGraph graph,
-                    JavaRDD<PortableDataStream> data, int splitNum, int numSplits) {
-        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, updatesThreshold={}, Configured for {} workers",
-                        splitNum, numSplits, batchSizePerWorker, threshold, numWorkers);
-
-        if (collectTrainingStats)
-            stats.logMapPartitionsStart();
-
-        if (collectTrainingStats)
-            stats.logRepartitionStart();
-
-        if(repartitioner != null){
-            log.info("Repartitioning training data using repartitioner: {}", repartitioner);
-            int minPerWorker = Math.max(1, batchSizePerWorker/rddDataSetNumExamples);
-            data = repartitioner.repartition(data, minPerWorker, numWorkers);
-        } else {
-            log.info("Repartitioning training data using SparkUtils repartitioner");
-            data = SparkUtils.repartitionEqually(data, repartition, numWorkers);
-        }
-
-        int nPartitions = data.partitions().size();
-
-        if (collectTrainingStats && repartition != Repartition.Never)
-            stats.logRepartitionEnd();
-
-        FlatMapFunction<Iterator<PortableDataStream>, SharedTrainingResult> function =
-                        new SharedFlatMapPDS<>(getWorkerInstance(network));
-
-
-        JavaRDD<SharedTrainingResult> result = data.mapPartitions(function);
-
-        processResults(network, graph, result);
-
-        if (collectTrainingStats)
-            stats.logMapPartitionsEnd(nPartitions);
-    }
-
-
-    protected void doIterationMultiPDS(SparkComputationGraph graph, JavaRDD<PortableDataStream> data, int splitNum,
-                    int numSplits) {
-        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, updatesThreshold={}, Configured for {} workers",
-                        splitNum, numSplits, batchSizePerWorker, threshold, numWorkers);
-
-        if (collectTrainingStats)
-            stats.logMapPartitionsStart();
-
-        if (collectTrainingStats)
-            stats.logRepartitionStart();
-
-        if(repartitioner != null){
-            log.info("Repartitioning training data using repartitioner: {}", repartitioner);
-            int minPerWorker = Math.max(1, batchSizePerWorker/rddDataSetNumExamples);
-            data = repartitioner.repartition(data, minPerWorker, numWorkers);
-        } else {
-            log.info("Repartitioning training data using SparkUtils repartitioner");
-            data = SparkUtils.repartitionEqually(data, repartition, numWorkers);
-        }
-
-        int nPartitions = data.partitions().size();
-
-        if (collectTrainingStats && repartition != Repartition.Never)
-            stats.logRepartitionEnd();
-
-        FlatMapFunction<Iterator<PortableDataStream>, SharedTrainingResult> function =
-                        new SharedFlatMapMultiPDS<>(getWorkerInstance(graph));
-
-
-        JavaRDD<SharedTrainingResult> result = data.mapPartitions(function);
-
-        processResults(null, graph, result);
 
         if (collectTrainingStats)
             stats.logMapPartitionsEnd(nPartitions);

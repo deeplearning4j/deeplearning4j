@@ -370,5 +370,11 @@ public class ParameterAveragingTrainingWorker extends BaseTrainingWorker<Paramet
         return configuration;
     }
 
+    @Override
+    public long getInstanceId() {
+        //Not used for parameter averaging
+        return 0;
+    }
+
 
 }
