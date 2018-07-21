@@ -126,7 +126,6 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
 
     @Override
     public void startTraining(SilentUpdatesMessage message) {
-        System.out.println(">>> SilentTrainingDriver: processing message");
         /*
             this method will be invoked on master, and will do 2 things:
             1) silently update params via given StepFunction
@@ -181,7 +180,6 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
 
                 // we apply updates every X iterations, and we don't really need X to be small here
                 if (updatesCount.incrementAndGet() % Math.max(transport.numberOfKnownClients(), 5) == 0) {
-                    System.out.println("<<< Applied update to parameters: " + params.hashCode() + " - instance " + this);
                     stepFunction.step(params, updates);
 
                     // once accumulated updates are applied - reset storage, and wait for other messsages

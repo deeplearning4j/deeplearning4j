@@ -390,7 +390,6 @@ public class SharedTrainingWrapper {
 
             // conditionally shutdown & reset ParallelWrapper
             if (trainingConfiguration.isEpochReset()) {
-                System.out.println("SHUTTING DOWN WRAPPER");
                 wrapper.shutdown();
                 wrapper = null;
             }
