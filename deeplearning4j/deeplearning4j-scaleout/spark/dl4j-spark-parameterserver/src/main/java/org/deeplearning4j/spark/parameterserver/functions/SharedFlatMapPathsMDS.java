@@ -18,6 +18,7 @@ package org.deeplearning4j.spark.parameterserver.functions;
 
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
+import org.deeplearning4j.api.loader.MultiDataSetLoader;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.iterator.PathSparkMultiDataSetIterator;
@@ -33,8 +34,8 @@ import java.util.Iterator;
  */
 public class SharedFlatMapPathsMDS<R extends TrainingResult> extends BaseFlatMapFunctionAdaptee<Iterator<String>, R> {
 
-    public SharedFlatMapPathsMDS(TrainingWorker<R> worker) {
-        super(new SharedFlatMapPathsMDSAdapter<R>(worker));
+    public SharedFlatMapPathsMDS(TrainingWorker<R> worker, MultiDataSetLoader loader) {
+        super(new SharedFlatMapPathsMDSAdapter<R>(worker, loader));
     }
 }
 
@@ -42,10 +43,12 @@ public class SharedFlatMapPathsMDS<R extends TrainingResult> extends BaseFlatMap
 class SharedFlatMapPathsMDSAdapter<R extends TrainingResult> implements FlatMapFunctionAdapter<Iterator<String>, R> {
 
     protected final SharedTrainingWorker worker;
+    protected final MultiDataSetLoader loader;
 
-    public SharedFlatMapPathsMDSAdapter(TrainingWorker<R> worker) {
+    public SharedFlatMapPathsMDSAdapter(TrainingWorker<R> worker, MultiDataSetLoader loader) {
         // we're not going to have anything but Shared classes here ever
         this.worker = (SharedTrainingWorker) worker;
+        this.loader = loader;
     }
 
     @Override
@@ -58,7 +61,7 @@ class SharedFlatMapPathsMDSAdapter<R extends TrainingResult> implements FlatMapF
         // PathSparkDataSetIterator does that for us
 
         // iterator should be silently attached to VirtualDataSetIterator, and used appropriately
-        SharedTrainingWrapper.getInstance().attachMDS(new PathSparkMultiDataSetIterator(dataSetIterator));
+        SharedTrainingWrapper.getInstance().attachMDS(new PathSparkMultiDataSetIterator(dataSetIterator, loader));
 
         // first callee will become master, others will obey and die
         SharedTrainingResult result = SharedTrainingWrapper.getInstance().run(worker);

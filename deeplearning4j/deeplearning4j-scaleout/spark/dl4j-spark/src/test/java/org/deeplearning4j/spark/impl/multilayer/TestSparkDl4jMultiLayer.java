@@ -47,74 +47,78 @@ public class TestSparkDl4jMultiLayer extends BaseSparkTest {
 
     @Test
     public void testEvaluationSimple() throws Exception {
-        //Simple test to validate DL4J issue 4099 is fixed...
 
-        int numEpochs = 1;
-        int batchSizePerWorker = 8;
+        for( int evalWorkers : new int[]{1, 4, 8}) {
+            //Simple test to validate DL4J issue 4099 is fixed...
 
-        //Load the data into memory then parallelize
-        //This isn't a good approach in general - but is simple to use for this example
-        DataSetIterator iterTrain = new MnistDataSetIterator(batchSizePerWorker, true, 12345);
-        DataSetIterator iterTest = new MnistDataSetIterator(batchSizePerWorker, false, 12345);
-        List<DataSet> trainDataList = new ArrayList<>();
-        List<DataSet> testDataList = new ArrayList<>();
-        int count = 0;
-        while (iterTrain.hasNext() && count++ < 30) {
-            trainDataList.add(iterTrain.next());
+            int numEpochs = 1;
+            int batchSizePerWorker = 8;
+
+            //Load the data into memory then parallelize
+            //This isn't a good approach in general - but is simple to use for this example
+            DataSetIterator iterTrain = new MnistDataSetIterator(batchSizePerWorker, true, 12345);
+            DataSetIterator iterTest = new MnistDataSetIterator(batchSizePerWorker, false, 12345);
+            List<DataSet> trainDataList = new ArrayList<>();
+            List<DataSet> testDataList = new ArrayList<>();
+            int count = 0;
+            while (iterTrain.hasNext() && count++ < 30) {
+                trainDataList.add(iterTrain.next());
+            }
+            while (iterTest.hasNext()) {
+                testDataList.add(iterTest.next());
+            }
+
+            JavaRDD<DataSet> trainData = sc.parallelize(trainDataList);
+            JavaRDD<DataSet> testData = sc.parallelize(testDataList);
+
+
+            //----------------------------------
+            //Create network configuration and conduct network training
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                    .activation(Activation.LEAKYRELU)
+                    .weightInit(WeightInit.XAVIER)
+                    .updater(new Nesterovs(0.02, 0.9))
+                    .l2(1e-4)
+                    .list()
+                    .layer(0, new DenseLayer.Builder().nIn(28 * 28).nOut(500).build())
+                    .layer(1, new DenseLayer.Builder().nIn(500).nOut(100).build())
+                    .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                            .activation(Activation.SOFTMAX).nIn(100).nOut(10).build())
+                    .pretrain(false).backprop(true)
+                    .build();
+
+            //Configuration for Spark training: see https://deeplearning4j.org/distributed for explanation of these configuration options
+
+            TrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(batchSizePerWorker)
+                    .averagingFrequency(2)
+                    .build();
+
+            //Create the Spark network
+            SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, conf, tm);
+            sparkNet.setDefaultEvaluationWorkers(evalWorkers);
+
+            //Execute training:
+            for (int i = 0; i < numEpochs; i++) {
+                sparkNet.fit(trainData);
+            }
+
+            //Perform evaluation (distributed)
+            Evaluation evaluation = sparkNet.evaluate(testData);
+            log.info("***** Evaluation *****");
+            log.info(evaluation.stats());
+
+            //Delete the temp training files, now that we are done with them
+            tm.deleteTempFiles(sc);
+
+            assertEquals(10000, evaluation.getNumRowCounter()); //10k test set
+            assertTrue(!Double.isNaN(evaluation.accuracy()));
+            assertTrue(evaluation.accuracy() >= 0.10);
+            assertTrue(evaluation.precision() >= 0.10);
+            assertTrue(evaluation.recall() >= 0.10);
+            assertTrue(evaluation.f1() >= 0.10);
         }
-        while (iterTest.hasNext()) {
-            testDataList.add(iterTest.next());
-        }
-
-        JavaRDD<DataSet> trainData = sc.parallelize(trainDataList);
-        JavaRDD<DataSet> testData = sc.parallelize(testDataList);
-
-
-        //----------------------------------
-        //Create network configuration and conduct network training
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .activation(Activation.LEAKYRELU)
-                .weightInit(WeightInit.XAVIER)
-                .updater(new Nesterovs(0.02, 0.9))
-                .l2(1e-4)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(28 * 28).nOut(500).build())
-                .layer(1, new DenseLayer.Builder().nIn(500).nOut(100).build())
-                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .activation(Activation.SOFTMAX).nIn(100).nOut(10).build())
-                .pretrain(false).backprop(true)
-                .build();
-
-        //Configuration for Spark training: see https://deeplearning4j.org/distributed for explanation of these configuration options
-
-        TrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(batchSizePerWorker)
-                .averagingFrequency(2)
-                .build();
-
-        //Create the Spark network
-        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, conf, tm);
-
-        //Execute training:
-        for (int i = 0; i < numEpochs; i++) {
-            sparkNet.fit(trainData);
-        }
-
-        //Perform evaluation (distributed)
-        Evaluation evaluation = sparkNet.evaluate(testData);
-        log.info("***** Evaluation *****");
-        log.info(evaluation.stats());
-
-        //Delete the temp training files, now that we are done with them
-        tm.deleteTempFiles(sc);
-
-        assertEquals(10000, evaluation.getNumRowCounter()); //10k test set
-        assertTrue(!Double.isNaN(evaluation.accuracy()));
-        assertTrue(evaluation.accuracy() >= 0.10);
-        assertTrue(evaluation.precision() >= 0.10);
-        assertTrue(evaluation.recall() >= 0.10);
-        assertTrue(evaluation.f1() >= 0.10);
     }
 
 
