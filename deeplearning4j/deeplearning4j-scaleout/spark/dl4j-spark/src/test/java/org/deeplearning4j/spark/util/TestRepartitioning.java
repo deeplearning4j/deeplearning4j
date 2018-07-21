@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.spark.util;
 
 import org.apache.spark.Partitioner;
@@ -9,6 +25,7 @@ import org.deeplearning4j.spark.api.RepartitionStrategy;
 import org.deeplearning4j.spark.impl.common.CountPartitionsFunction;
 import org.deeplearning4j.spark.impl.common.repartition.AssignIndexFunction;
 import org.deeplearning4j.spark.impl.common.repartition.MapTupleToPairFlatMap;
+import org.deeplearning4j.spark.impl.repartitioner.DefaultRepartitioner;
 import org.junit.Assert;
 import org.junit.Test;
 import scala.Tuple2;
@@ -167,6 +184,41 @@ public class TestRepartitioning extends BaseSparkTest {
             assertEquals(2, (int)t2._2());
         }
     }
+
+    @Test
+    public void testRepartitioning4(){
+        List<Integer> ints = new ArrayList<>();
+        for( int i=0; i<7040; i++ ){
+            ints.add(i);
+        }
+
+        JavaRDD<Integer> rdd = sc.parallelize(ints);
+
+        JavaRDD<Integer> afterRepartition = new DefaultRepartitioner().repartition(rdd, 1, 32);
+        List<Tuple2<Integer, Integer>> partitionCountsAfter = afterRepartition.mapPartitionsWithIndex(new CountPartitionsFunction<Integer>(), true).collect();
+
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        int minIdx = 0;
+        int maxIdx = 0;
+        for(Tuple2<Integer,Integer> t2 : partitionCountsAfter){
+            min = Math.min(min, t2._2());
+            max = Math.max(max, t2._2());
+            if(min == t2._2()){
+                minIdx = t2._1();
+            }
+            if(max == t2._2()){
+                maxIdx = t2._1();
+            }
+        }
+
+        System.out.println("min: " + min + "\t@\t" + minIdx);
+        System.out.println("max: " + max + "\t@\t" + maxIdx);
+
+        assertEquals(1, min);
+        assertEquals(2, max);
+    }
+
 
     @Test
     public void testRepartitioningApprox() {
