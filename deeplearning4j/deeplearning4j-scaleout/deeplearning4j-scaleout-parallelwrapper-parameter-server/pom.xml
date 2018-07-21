@@ -54,7 +54,7 @@
     <dependencies>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-parallel-wrapper_2.11</artifactId>
+            <artifactId>deeplearning4j-parallel-wrapper_2.10</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -75,7 +75,7 @@
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-parameter-server-node_2.11</artifactId>
+            <artifactId>nd4j-parameter-server-node_2.10</artifactId>
             <version>${nd4j.version}</version>
         </dependency>
         <dependency>
@@ -87,7 +87,7 @@
         <!-- Akka/Play seems to require these to be manually set to avoid class not found exception issues -->
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-cluster_2.11</artifactId>
+            <artifactId>akka-cluster_2.10</artifactId>
             <version>${akka.version}</version>
         </dependency>
         <dependency>

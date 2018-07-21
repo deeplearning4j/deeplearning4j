@@ -22,7 +22,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nd4j-kafka_2.11</artifactId>
+    <artifactId>nd4j-kafka_2.10</artifactId>
     <packaging>jar</packaging>
 
     <name>nd4j-kafka</name>
