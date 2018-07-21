@@ -164,7 +164,6 @@
         <freemarker.version>2.3.23</freemarker.version>
         <geoip2.version>2.8.1</geoip2.version>
         <stream.analytics.version>2.7.0</stream.analytics.version>
-        <tablesaw.version>0.11.4</tablesaw.version>
         <opencsv.version>2.3</opencsv.version>
         <tdigest.version>3.2</tdigest.version>
         <jtransforms.version>3.1</jtransforms.version>

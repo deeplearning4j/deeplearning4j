@@ -64,7 +64,6 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
 
     @Test
     public void trainSanityCheck() throws Exception {
-
         INDArray last = null;
         INDArray lastDup = null;
         for (String s : new String[]{"direct", "export", "paths"}) {
@@ -142,8 +141,8 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
             }
 
             int numIter = 1;
-            double[] acc = new double[numIter + 1];
-            for (int i = 0; i < numIter; i++) {
+            double[] acc = new double[numIter+1];
+            for( int i=0; i<numIter; i++ ) {
                 //Check accuracy before:
                 DataSetIterator testIter = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(32, false, 12345), 10);
                 Evaluation eBefore = sparkNet.getNetwork().evaluate(testIter);
@@ -174,7 +173,6 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
 
                 testIter = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(32, false, 12345), 10);
                 Evaluation eAfter = after.evaluate(testIter);
-
                 double accAfter = eAfter.accuracy();
                 double accBefore = eBefore.accuracy();
                 assertTrue("after: " + accAfter + ", before=" + accBefore, accAfter >= accBefore + 0.005);

@@ -20,6 +20,10 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+<<<<<<< HEAD
+=======
+import org.apache.spark.input.PortableDataStream;
+>>>>>>> master
 import org.deeplearning4j.api.loader.DataSetLoader;
 import org.deeplearning4j.api.loader.MultiDataSetLoader;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
