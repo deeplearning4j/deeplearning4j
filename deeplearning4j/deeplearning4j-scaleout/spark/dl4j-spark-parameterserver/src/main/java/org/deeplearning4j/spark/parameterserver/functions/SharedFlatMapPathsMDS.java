@@ -61,10 +61,10 @@ class SharedFlatMapPathsMDSAdapter<R extends TrainingResult> implements FlatMapF
         // PathSparkDataSetIterator does that for us
 
         // iterator should be silently attached to VirtualDataSetIterator, and used appropriately
-        SharedTrainingWrapper.getInstance().attachMDS(new PathSparkMultiDataSetIterator(dataSetIterator, loader));
+        SharedTrainingWrapper.getInstance(worker.getInstanceId()).attachMDS(new PathSparkMultiDataSetIterator(dataSetIterator, loader));
 
         // first callee will become master, others will obey and die
-        SharedTrainingResult result = SharedTrainingWrapper.getInstance().run(worker);
+        SharedTrainingResult result = SharedTrainingWrapper.getInstance(worker.getInstanceId()).run(worker);
 
         return Collections.singletonList((R) result);
     }
