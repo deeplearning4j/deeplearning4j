@@ -175,7 +175,6 @@ public class SameDiff {
     private Map<String, List<String[]>> placeHolderMap;
     private Map<String, long[]> placeHolderOriginalShapes;
     private Set<String> placeHolderVarNames;
-    private IdentityHashMap<INDArray, SDVariable> reverseArrayLookup;
     private MemoryWorkspace workspace;
     private Map<String, SameDiffFunctionDefinition> sameDiffFunctionDefinitionMap;
     private Map<String, SameDiff> sameDiffFunctionInstances;
@@ -448,10 +447,6 @@ public class SameDiff {
             sameDiff.functionInstancesById.put(function.getOwnName(), function);
         }
 
-        for (val reverseArrayEntry : reverseArrayLookup.entrySet()) {
-            sameDiff.reverseArrayLookup.put(reverseArrayEntry.getKey(), sameDiff.getVariable(reverseArrayEntry.getValue().getVarName()));
-        }
-
         return sameDiff.variables().get(sameDiff.variables().size() - 1);
 
     }
@@ -582,7 +577,6 @@ public class SameDiff {
         }
 
         variableNameToArr.put(varName, arr);
-        reverseArrayLookup.put(arr, getVariable(varName));
     }
 
     /**
@@ -800,7 +794,6 @@ public class SameDiff {
             throw new ND4JIllegalArgumentException("Array must not be null");
         }
 
-        reverseArrayLookup.put(arr, variable);
         variableNameToArr.put(variable.getVarName(), arr);
         putOrUpdateShapeForVarName(variable.getVarName(), arr.shape(), true);
         // invalidate exec cache
@@ -873,20 +866,6 @@ public class SameDiff {
         throw new ND4JIllegalStateException("Illegal method opName " + op.opName());
     }
 
-
-    /**
-     * Get an {@link SDVariable} for an array reference.
-     * Internally samediff associates array references with variables. This will typically be a shortcut
-     * for the array associated with {@link SDVariable#getArr()}
-     *
-     * @param arr the array reference
-     * @return the variable if one exists
-     */
-    public SDVariable getVariableForArray(INDArray arr) {
-        return reverseArrayLookup.get(arr);
-    }
-
-
     /**
      * The set of defined SameDiff function names. SameDiff function instances should not be confused
      * with DifferentialFunction ops; an example of a SameDiff function instance is the gradient "grad" function
@@ -926,7 +905,6 @@ public class SameDiff {
         gradients = new LinkedHashMap<>();
         forwardVarForGrad = new LinkedHashMap<>();
         opsForResult = new IntArrayKeyMap<>();
-        reverseArrayLookup = new IdentityHashMap<>();
         variableNameToArr = new LinkedHashMap<>();
         variableNameToShape = new LinkedHashMap<>();
         placeHolderMap = new LinkedHashMap<>();
@@ -1853,7 +1831,6 @@ public class SameDiff {
             putShapeForVarName(name, arr.shape());
         //ensure there is a reference to the array in the integer index
         //this is used later for op creation
-        reverseArrayLookup.put(arr, ret);
         variableMap.put(name, ret);
         return ret;
 
