@@ -170,43 +170,17 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 // [minibatch, channels, 1, X] or [minibatch, channels, X, 1] data
                 // with a mask array of shape [minibatch, X]
 
-                if (maskArray.rank() != 2) {
+                if (maskArray.rank() != 4) {
                     throw new UnsupportedOperationException(
-                            "Only 2d mask arrays are currently supported for masked global reductions "
+                            "Only 4d mask arrays are currently supported for masked global reductions "
                                     + "on CNN data. Got 4d activations array (shape "
                                     + Arrays.toString(input.shape()) + ") and " + maskArray.rank()
                                     + "d mask array (shape " + Arrays.toString(maskArray.shape()) + ") "
+                                    + " - 4d masks should have shape [batchSize,1,h,1] or [batchSize,1,w,1]"
                                     + layerId());
                 }
 
-                // FIXME: int cast
-                int h = (int) input.size(2);
-                int w = (int) input.size(3);
-                int maskLength = (int) maskArray.size(1);
-                if ((h != 1 && w != 1) || (h != maskLength && w != maskLength)) {
-                    throw new UnsupportedOperationException(
-                            "Masked global pooling with on CNN data currently only supports data with h=1 or w=1:\n"
-                                    + " input activations must have shape [minibatchSize,channels,height=1,width] or [minibatchSize,channels,height,width=1] with "
-                                    + " mask array of shape [minibatchSize,width] or [minibatchSize,height] respectively.\n"
-                                    + " Got 4d activations array (shape "
-                                    + Arrays.toString(input.shape()) + ") and " + maskArray.rank()
-                                    + "d mask array (shape " + Arrays.toString(maskArray.shape()) + ") "
-                                    + layerId());
-                }
-
-                //Valid combinations of global pooling + masking for CNNs:
-                //dimensinos [2,3] with or without reduction
-                if (DEFAULT_CNN_POOL_DIMS != poolDim && !Arrays.equals(DEFAULT_CNN_POOL_DIMS, poolDim)) {
-                    throw new UnsupportedOperationException(
-                            "Masked global pooling with on CNN data currently only supports poolling over dimensions "
-                                    + "[2,3] (i.e., width and height - both required). Got pooling dimensions "
-                                    + Arrays.toString(poolDim) + ") " + layerId());
-                }
-
-                boolean maskAlongHeight = (h == maskLength); //At this point: can't confuse w and h, as one has to be 1...
-
-                reduced2d = MaskedReductionUtil.maskedPoolingConvolution(poolingType, input, maskArray, maskAlongHeight,
-                        pNorm);
+                reduced2d = MaskedReductionUtil.maskedPoolingConvolution(poolingType, input, maskArray, pNorm);
             } else {
                 throw new UnsupportedOperationException("Invalid input: is rank " + input.rank() + " " + layerId());
             }

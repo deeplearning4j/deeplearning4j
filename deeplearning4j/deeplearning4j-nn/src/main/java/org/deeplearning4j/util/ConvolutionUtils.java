@@ -550,7 +550,7 @@ public class ConvolutionUtils {
      */
     public static INDArray cnn1dMaskReduction(INDArray in, int kernel, int stride, int padding, int dilation, ConvolutionMode cm){
         Preconditions.checkState(in.rank()==2, "Rank must be 2 for cnn1d mask array - shape ", in.shape());
-        if(cm == ConvolutionMode.Same && stride == 1 && padding == 0){
+        if(cm == ConvolutionMode.Same && stride == 1 ){
             return in;
         }
 
@@ -567,7 +567,6 @@ public class ConvolutionUtils {
         int[] d = new int[]{dilation, 1};
         if (cm == ConvolutionMode.Same) {
             outSize = ConvolutionUtils.getOutputSize(reshaped4d, k, s, null, cm, d); //Also performs validation
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {(int)in.size(1), 1}, k, s, d);
         } else {
             pad = new int[]{padding, 0};
             outSize = ConvolutionUtils.getOutputSize(reshaped4d, k, s, pad, cm, d); //Also performs validation
@@ -580,5 +579,70 @@ public class ConvolutionUtils {
                 cm == ConvolutionMode.Same, LegacyPooling2D.Pooling2DType.MAX, 0.0, output);
         Nd4j.getExecutioner().exec(op);
         return output.reshape('c', in.size(0), outH);
+    }
+
+    public static INDArray cnn2dMaskReduction(INDArray inMask, int[] kernel, int[] stride, int[] padding, int[] dilation, ConvolutionMode convolutionMode ){
+        //Mask array should be broadcastable with CNN activations. Thus should have shape [mb,x,y,z]
+        //where:
+        // x == 1 OR channels
+        // y == 1 OR height
+        // z == 1 OR width
+
+        if(inMask.rank() != 4){
+            //TODO BETTER ERROR MESSAGE EXPLAINING FORMAT
+            //TODO ALSO HANDLE LEGACY FORMAT WITH WARNING WHERE POSSIBLE
+            throw new IllegalStateException("Expected rank 4 mask array for CNN activations. Mask arrays for 2D CNN layers " +
+                    "must have shape [mb,1,X,Y] where X = (1 or activationsHeight) and Y = (1 or activationsWidth): " +
+                    "Got rank " + inMask.rank() + " array with shape " + Arrays.toString(inMask.shape()));
+        }
+
+        if(convolutionMode == ConvolutionMode.Same && stride[0] == 1 && stride[1] == 1){
+            //Output activations size same as input activations size
+            return inMask;
+        }
+
+        int[] k;
+        int[] s;
+        int[] p;
+        int[] d;
+        if(inMask.size(3) == 1){
+            //[mb,x,y,1] case -> pool mask along height
+            k = new int[]{kernel[0],1};
+            s = new int[]{stride[0], 1};
+            p = new int[]{padding[0], 0};
+            d = new int[]{dilation[0], 1};
+        } else if(inMask.size(2) == 1){
+            //[mb,x,1,z] case -> pool mask along width
+            k = new int[]{1, kernel[1]};
+            s = new int[]{1, stride[1]};
+            p = new int[]{0, padding[1]};
+            d = new int[]{1, dilation[1]};
+        } else {
+            //[mb,x,y,z] -> pool mask along height and width
+            k = kernel;
+            s = stride;
+            p = padding;
+            d = dilation;
+        }
+
+        int[] outSize = ConvolutionUtils.getOutputSize(inMask, k, s, p, convolutionMode, d); //Also performs validation
+        boolean allEq = true;
+        for( int i=0; i<outSize.length; i++ ){
+            if(outSize[i] != inMask.size(i)){
+                allEq = false;
+                break;
+            }
+        }
+        if(allEq){
+            //Same output size -> same mask size
+            return inMask;
+        }
+
+        long[] outArraySize = new long[]{inMask.size(0), inMask.size(1), outSize[0], outSize[1]};
+        INDArray outMask = Nd4j.createUninitialized(outArraySize);
+        Op op = new LegacyPooling2D(inMask, kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], dilation[0], dilation[1],
+                convolutionMode == ConvolutionMode.Same, LegacyPooling2D.Pooling2DType.MAX, 0.0, outMask);
+        Nd4j.getExecutioner().exec(op);
+        return outMask;
     }
 }
