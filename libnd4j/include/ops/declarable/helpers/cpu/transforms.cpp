@@ -651,7 +651,8 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
                 if (norm2(i) > clipNorm) {
                     ShapeUtils<T>::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
-                    input(idxRanges.data()) *= (clipNorm / norm2(i));
+                    NDArray<T> inputSubArr  = input(idxRanges.data());
+                    inputSubArr *= (clipNorm / norm2(i));
                 }
             }
         }
@@ -678,11 +679,10 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
 
                 NDArray<T> outputSubArr = output(idxRanges.data());                
                 NDArray<T> inputSubArr  = input(idxRanges.data());
+                outputSubArr.assign(inputSubArr);
                 
                 if (norm2(i) > clipNorm) 
-                    outputSubArr.assign(inputSubArr * (clipNorm / norm2(i)));
-                else
-                    outputSubArr.assign(inputSubArr);
+                    outputSubArr *= clipNorm / norm2(i);                
             }           
         }
     }

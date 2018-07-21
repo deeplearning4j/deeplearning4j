@@ -1149,11 +1149,7 @@ TEST_F(DeclarableOpsTests9, clipbynorm_test12) {
     NDArray<double> norm2 = x.template reduceAlongDims<simdOps::Norm2<double>>({axis}, true); // norm2 has shape [1, nOut]
     
     NDArray<double> y = ( (x / norm2) * clip) * colVect ;    
-    NDArray<double> temp = (x / norm2) * clip;
-    for (int j = 0; j < nOut; ++j) {
-        printf("true norm2 %f \n", norm2(j));
-        printf("temp       %f \n", temp({{},{j,j+1}}).template reduceNumber<simdOps::Norm2<double>>());
-    }    
+    NDArray<double> temp = (x / norm2) * clip;    
 
     for (int j = 0; j < nOut; ++j) {
         NDArray<double> yCol = y({{}, {j, j+1}});
