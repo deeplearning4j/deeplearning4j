@@ -40,12 +40,15 @@ public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResul
                 implements TrainingWorker<SharedTrainingResult> {
 
     @Getter
+    private final long instanceId;
+    @Getter
     private final Broadcast<NetBroadcastTuple> broadcastModel;
     @Getter
     private final Broadcast<SharedTrainingConfiguration> broadcastConfiguration;
 
-    public SharedTrainingWorker(Broadcast<NetBroadcastTuple> broadcastModel,
+    public SharedTrainingWorker(long instanceId, Broadcast<NetBroadcastTuple> broadcastModel,
                     Broadcast<SharedTrainingConfiguration> broadcastConfiguration) {
+        this.instanceId = instanceId;
         // our initial model is stored here.
         this.broadcastModel = broadcastModel;
         this.broadcastConfiguration = broadcastConfiguration;

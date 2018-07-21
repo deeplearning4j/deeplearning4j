@@ -65,7 +65,8 @@ public class TFGraphTestSubDir {
             log.info("\n\tSKIPPED MODEL: " + modelName);
             return;
         }
-        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, modelDir, EXECUTE_WITH);
+        Double precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
+        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, modelDir, EXECUTE_WITH, precisionOverride);
         TFGraphTestAllHelper.checkIntermediate(inputs,modelName,modelDir,EXECUTE_WITH);
     }
 }

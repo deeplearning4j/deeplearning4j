@@ -20,11 +20,14 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.deeplearning4j.api.loader.MultiDataSetLoader;
+import org.deeplearning4j.spark.data.loader.RemoteFileSource;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.Collection;
@@ -44,15 +47,18 @@ public class PathSparkMultiDataSetIterator implements MultiDataSetIterator {
     private MultiDataSetPreProcessor preprocessor;
     private Iterator<String> iter;
     private FileSystem fileSystem;
+    private final MultiDataSetLoader loader;
 
-    public PathSparkMultiDataSetIterator(Iterator<String> iter) {
+    public PathSparkMultiDataSetIterator(Iterator<String> iter, MultiDataSetLoader loader) {
         this.dataSetStreams = null;
         this.iter = iter;
+        this.loader = loader;
     }
 
-    public PathSparkMultiDataSetIterator(Collection<String> dataSetStreams) {
+    public PathSparkMultiDataSetIterator(Collection<String> dataSetStreams, MultiDataSetLoader loader) {
         this.dataSetStreams = dataSetStreams;
         iter = dataSetStreams.iterator();
+        this.loader = loader;
     }
 
     @Override
@@ -116,14 +122,11 @@ public class PathSparkMultiDataSetIterator implements MultiDataSetIterator {
             }
         }
 
-        MultiDataSet ds = new org.nd4j.linalg.dataset.MultiDataSet();
-        try (FSDataInputStream inputStream = fileSystem.open(new Path(path), BUFFER_SIZE)) {
-            ds.load(inputStream);
+        try{
+            return loader.load(new RemoteFileSource(path, fileSystem, BUFFER_SIZE));
         } catch (IOException e) {
             throw new RuntimeException("Error loading MultiDataSet at path " + path + " - DataSet may be corrupt or invalid." +
                     " Spark MultiDataSets can be validated using org.deeplearning4j.spark.util.data.SparkDataValidation", e);
         }
-
-        return ds;
     }
 }

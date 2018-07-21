@@ -58,6 +58,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This class maintains ParallelWrapper instance in Spark environment, and provides primitives for inter-executor
@@ -67,7 +68,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Slf4j
 public class SharedTrainingWrapper {
-    public static SharedTrainingWrapper INSTANCE = new SharedTrainingWrapper();
+    private static SharedTrainingWrapper INSTANCE = new SharedTrainingWrapper();
+    private static AtomicLong LAST_INSTANCE_ID = new AtomicLong(Long.MIN_VALUE);
     protected ParallelWrapper wrapper;
     protected VirtualDataSetIterator iteratorDS;
     protected VirtualMultiDataSetIterator iteratorMDS;
@@ -100,7 +102,28 @@ public class SharedTrainingWrapper {
         iteratorDS = new VirtualDataSetIterator(iteratorsDS);
     }
 
-    public static SharedTrainingWrapper getInstance() {
+    public static synchronized SharedTrainingWrapper getInstance(long id) {
+        if(LAST_INSTANCE_ID.get() != Long.MIN_VALUE && LAST_INSTANCE_ID.get() != id){
+            log.info("Shutting down existing SharedTrainingWrapper instances; resetting state - previous instance ID {}," +
+                    " new instance ID {}", LAST_INSTANCE_ID.get(), id);
+            if(INSTANCE.wrapper != null){
+                INSTANCE.wrapper.shutdown();
+                INSTANCE.wrapper = null;
+            }
+            INSTANCE.iteratorsDS.clear();
+            INSTANCE.iteratorsMDS.clear();
+            INSTANCE.exceptionEncountered.set(false);
+            INSTANCE.iteratorDataSetCount = new ThreadLocal<>();
+            INSTANCE.accumulator = null;
+            INSTANCE.originalModel = null;
+            INSTANCE.driver = null;
+            LAST_INSTANCE_ID.set(id);
+        }
+
+        if(LAST_INSTANCE_ID.get() == Long.MIN_VALUE){
+            LAST_INSTANCE_ID.set(id);
+        }
+
         return INSTANCE;
     }
 
@@ -333,24 +356,28 @@ public class SharedTrainingWrapper {
                 throw new DL4JInvalidConfigException("No iterators were defined for training");
 
             try {
-                if (wrapper != null) {
-                    if (iteratorDS != null)
-                        wrapper.fit(iteratorDS);
-                    else
-                        wrapper.fit(iteratorMDS);
-                } else {
-                    // if wrapper is null, we're fitting standalone model then
-                    if (iteratorDS != null) {
-                        if (model instanceof ComputationGraph) {
-                            ((ComputationGraph) originalModel).fit(iteratorDS);
-                        } else if (model instanceof MultiLayerNetwork) {
-                            ((MultiLayerNetwork) originalModel).fit(iteratorDS);
-                        }
+                while((iteratorDS != null && iteratorDS.hasNext()) || (iteratorMDS != null && iteratorMDS.hasNext())) {
+                    //Loop as a guard against concurrent modifications and RCs
+
+                    if (wrapper != null) {
+                        if (iteratorDS != null)
+                            wrapper.fit(iteratorDS);
+                        else
+                            wrapper.fit(iteratorMDS);
                     } else {
-                        if (model instanceof ComputationGraph) {
-                            ((ComputationGraph) originalModel).fit(iteratorMDS);
-                        } else if (model instanceof MultiLayerNetwork) {
-                            ((MultiLayerNetwork) originalModel).fit(iteratorMDS);
+                        // if wrapper is null, we're fitting standalone model then
+                        if (iteratorDS != null) {
+                            if (model instanceof ComputationGraph) {
+                                ((ComputationGraph) originalModel).fit(iteratorDS);
+                            } else if (model instanceof MultiLayerNetwork) {
+                                ((MultiLayerNetwork) originalModel).fit(iteratorDS);
+                            }
+                        } else {
+                            if (model instanceof ComputationGraph) {
+                                ((ComputationGraph) originalModel).fit(iteratorMDS);
+                            } else if (model instanceof MultiLayerNetwork) {
+                                ((MultiLayerNetwork) originalModel).fit(iteratorMDS);
+                            }
                         }
                     }
                 }

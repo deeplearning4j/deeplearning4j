@@ -64,11 +64,11 @@ class SharedFlatMapDataSetAdapter<R extends TrainingResult> implements FlatMapFu
          */
 
         // iterator should be silently attached to VirtualDataSetIterator, and used appropriately
-        SharedTrainingWrapper.getInstance().attachDS(dataSetIterator);
+        SharedTrainingWrapper.getInstance(worker.getInstanceId()).attachDS(dataSetIterator);
 
         // first callee will become master, others will obey and die
         // all threads in this executor will be blocked here until training finished
-        SharedTrainingResult result = SharedTrainingWrapper.getInstance().run(worker);
+        SharedTrainingResult result = SharedTrainingWrapper.getInstance(worker.getInstanceId()).run(worker);
 
         return Collections.singletonList((R) result);
     }

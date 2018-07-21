@@ -678,7 +678,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testMmulWithTranspose() {
-        OpValidationSuite.ignoreFailing();
 
         //Here: [x,3]^T * [x,4] = [3,4]
 
@@ -714,6 +713,38 @@ public class MiscOpValidation extends BaseOpValidation {
 
             assertNull(err);
         }
+    }
+
+    @Test
+    public void testMmulOutputSizeCalculation(){
+        //[3,2] x [2,4] with result transpose: output shape [4,3]
+        INDArray a = Nd4j.create(3,2);
+        INDArray b = Nd4j.create(2,4);
+        INDArray z = Nd4j.create(4,3);
+        Mmul m = new Mmul(a,b,z,MMulTranspose.builder()
+                .transposeA(false)
+                .transposeB(false)
+                .transposeResult(true)
+        .build());
+
+        List<long[]> outShapes = Nd4j.getExecutioner().calculateOutputShape(m);
+        assertArrayEquals(new long[]{4,3}, outShapes.get(0));
+        Nd4j.getExecutioner().exec(m);
+
+        //Another case: ([3,4]*[2,4]T)T = [2,3]     -   tA=false, tB=true, tR=true
+        a = Nd4j.create(3,4);
+        b = Nd4j.create(2,4);
+        z = Nd4j.create(2,3);
+        m = new Mmul(a,b,z,MMulTranspose.builder()
+                .transposeA(false)
+                .transposeB(true)
+                .transposeResult(true)
+                .build());
+
+        outShapes = Nd4j.getExecutioner().calculateOutputShape(m);
+        assertArrayEquals(new long[]{2,3}, outShapes.get(0));
+        Nd4j.getExecutioner().exec(m);
+
     }
 
     @Test

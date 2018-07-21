@@ -20,7 +20,6 @@ import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -89,7 +88,6 @@ public class KerasBatchNormalizationTest {
 
     }
 
-    @NotNull
     private Map<String, INDArray> weightsWithoutGamma() {
         Map<String, INDArray> weights = new HashMap<>();
         weights.put(conf2.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE(), Nd4j.ones(1));
