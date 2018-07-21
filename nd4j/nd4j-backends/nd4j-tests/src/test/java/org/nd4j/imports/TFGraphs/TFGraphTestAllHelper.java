@@ -45,6 +45,7 @@ import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.nd4j.imports.TFGraphs.TFGraphsSkipNodes.skipNode;
 
 /**
@@ -104,12 +105,12 @@ public class TFGraphTestAllHelper {
         return modelParams;
     }
 
-    protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, ExecuteWith execType) throws IOException {
+    protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, ExecuteWith execType, Double precisionOverride) throws IOException {
         log.info("Running model " + modelName + " only output");
-        checkOnlyOutput(inputs, predictions, modelName, execType.getDefaultBaseDir(), execType);
+        checkOnlyOutput(inputs, predictions, modelName, execType.getDefaultBaseDir(), execType, precisionOverride);
     }
 
-    protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, String baseDir, ExecuteWith execType) throws IOException {
+    protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, String baseDir, ExecuteWith execType, Double precisionOverride) throws IOException {
         Nd4j.EPS_THRESHOLD = 1e-3;
         Nd4j.getExecutioner().enableDebugMode(true);
         Nd4j.getExecutioner().enableVerboseMode(true);
@@ -142,7 +143,12 @@ public class TFGraphTestAllHelper {
                 assertNotNull(nd4jPred);
                 assertNotNull(tfPred);
 
-                assertEquals("Predictions do not match on " + modelName, tfPred, nd4jPred);
+                if(precisionOverride == null) {
+                    assertEquals("Predictions do not match on " + modelName + ", node " + outputNode, tfPred, nd4jPred);
+                } else {
+                    boolean eq = tfPred.equalsWithEps(nd4jPred, precisionOverride);
+                    assertTrue("Predictions do not match on " + modelName + ", node " + outputNode + " - precision " + precisionOverride, eq);
+                }
             }
             log.info("\n\tTEST " + modelName + " PASSED...");
             log.info("\n========================================================\n");
@@ -311,5 +317,14 @@ public class TFGraphTestAllHelper {
             }
         }
         return varMap;
+    }
+
+
+    public static Double testPrecisionOverride(String testName){
+        if("conv_4".equalsIgnoreCase(testName)){
+            //Most values: around 1k. So this is the 6th significant figure, which is OK
+            return 1e-2;
+        }
+        return null;
     }
 }
