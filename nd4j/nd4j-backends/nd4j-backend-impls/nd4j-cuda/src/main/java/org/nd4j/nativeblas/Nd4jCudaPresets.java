@@ -59,6 +59,7 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         "ops/InputType.h",
                         "ops/declarable/OpDescriptor.h",
                         "ops/declarable/BroadcastableOp.h",
+                        "helpers/OpArgsHolder.h"
                         "ops/declarable/DeclarableOp.h",
                         "ops/declarable/DeclarableListOp.h",
                         "ops/declarable/DeclarableReductionOp.h",
