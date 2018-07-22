@@ -1,4 +1,4 @@
-/*
+/*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -12,7 +12,7 @@
  * under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
- */
+ ******************************************************************************/
 
 package org.deeplearning4j.api.loader.impl;
 
