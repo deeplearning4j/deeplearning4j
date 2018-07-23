@@ -667,7 +667,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        nd4j::ResultSet<T>* nd4j::ops::DeclarableOp<T>::execute(const OpArgsHolder<T>& holder, bool isInplace) {
+        nd4j::ResultSet<T>* nd4j::ops::DeclarableOp<T>::execute(const nd4j::OpArgsHolder<T>& holder, bool isInplace) {
             
             return execute(holder.getInArrs(), holder.getTArgs(), holder.getIArgs(), isInplace);    
         }

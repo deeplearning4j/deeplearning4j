@@ -1707,10 +1707,10 @@ TEST_F(HelpersTests1, OpArgsHolder_test1) {
     NDArray<float> x2('c', {2, 2});
     NDArray<float> x3('c', {3, 3});
 
-    OpArgsHolder<float> holder1;
+    OpArgsHolder<float> holder1({&x1});
     OpArgsHolder<float> holder2({&x1,&x2,&x3}, {4.f, 5.f}, {6});
 
-    ASSERT_TRUE(holder1.getNumInArrs() == 0);
+    ASSERT_TRUE(holder1.getNumInArrs() == 1);
     ASSERT_TRUE(holder1.getNumTArgs()  == 0);
     ASSERT_TRUE(holder1.getNumIArgs()  == 0);
 

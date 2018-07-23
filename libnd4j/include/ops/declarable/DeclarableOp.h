@@ -30,8 +30,8 @@
 #include <helpers/helper_hash.h>
 #include <array/ShapeList.h>
 #include <array/ResultSet.h>
+#include <helpers/OpArgsHolder.h>
 #include <dll.h>
-#include <OpArgsHolder.h>
 //#include <ops/declarable/declarable_ops.h>
 
 #include <chrono>
@@ -168,7 +168,7 @@ namespace nd4j {
             Nd4jStatus execute(std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& outputs , std::vector<T>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace = false);
             Nd4jStatus execute(nd4j::random::RandomBuffer *rng, std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& outputs , std::vector<T>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace = false);
 
-            nd4j::ResultSet<T>* execute(const OpArgsHolder<T>& holder, bool isInplace = false);
+            nd4j::ResultSet<T>* execute(const nd4j::OpArgsHolder<T>& holder, bool isInplace = false);
 
             // There methods provide various validation options
             Nd4jStatus validateNonEmptyInput(Context<T>& block);

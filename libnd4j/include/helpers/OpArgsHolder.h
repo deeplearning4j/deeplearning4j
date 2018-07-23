@@ -26,7 +26,9 @@ private:
 
 public:
 
-	OpArgsHolder(const std::vector<NDArray<T>*>& inArrs = std::vector<NDArray<T>*>(), const std::vector<T>& tArgs = std::vector<T>(), const std::vector<Nd4jLong>& iArgs = std::vector<Nd4jLong>())
+	OpArgsHolder() = delete;
+
+    OpArgsHolder(const std::vector<NDArray<T>*>& inArrs, const std::vector<T>& tArgs = std::vector<T>(), const std::vector<Nd4jLong>& iArgs = std::vector<Nd4jLong>())
     			: _inArrs(inArrs), _tArgs(tArgs), _iArgs(iArgs) { }
 
     const std::vector<NDArray<T>*>& getInArrs() const
