@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.layers.pooling;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -27,6 +28,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -36,6 +38,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.List;
 import java.util.Random;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -372,8 +375,8 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
         for (PoolingType pt : poolingTypes) {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
                     .convolutionMode(ConvolutionMode.Same).seed(12345L).list()
-                    .layer(0, new ConvolutionLayer.Builder().nIn(depthIn).nOut(depthOut).kernelSize(2, width)
-                            .stride(1, width).activation(Activation.TANH).build())
+                    .layer(0, new ConvolutionLayer.Builder().nIn(depthIn).nOut(depthOut).kernelSize(2, 2)
+                            .stride(1, 1).activation(Activation.TANH).build())
                     .layer(1, new org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer.Builder().poolingType(pt)
                             .build())
                     .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -399,6 +402,8 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
             INDArray outMasked = net.output(inToBeMasked);
             net.clearLayerMaskArrays();
 
+            net.setLayerMaskArrays(maskArray, null);
+
             for (int i = 0; i < minibatch; i++) {
                 INDArray subset;
                 if(i == 0){
@@ -407,6 +412,8 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
                     subset = inToBeMasked.get(interval(i, i, true), all(), interval(0,3), interval(0,2));
                 }
 
+                net.clear();
+                net.clearLayerMaskArrays();
                 INDArray outSubset = net.output(subset);
                 INDArray outMaskedSubset = outMasked.getRow(i);
 
