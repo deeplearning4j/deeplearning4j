@@ -62,7 +62,6 @@ import java.util.Map;
  * @author Alex Black
  */
 @Data
-@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class GlobalPoolingLayer extends NoParamLayer {
 
