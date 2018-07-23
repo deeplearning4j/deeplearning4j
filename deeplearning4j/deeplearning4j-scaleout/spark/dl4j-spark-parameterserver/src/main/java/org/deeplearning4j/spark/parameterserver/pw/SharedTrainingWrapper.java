@@ -19,6 +19,8 @@ package org.deeplearning4j.spark.parameterserver.pw;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.Loader;
+import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -236,6 +238,14 @@ public class SharedTrainingWrapper {
                 List<TrainingListener> listeners = worker.getListeners();
                 if(listeners != null){
                     model.setListeners(listeners);
+                    StatsStorageRouter r = worker.getRouter();
+                    if(r != null){
+                        for(TrainingListener l : listeners){
+                            if(l instanceof RoutingIterationListener){
+                                ((RoutingIterationListener) l).setStorageRouter(r);
+                            }
+                        }
+                    }
                 }
 
                 MessageHandler handler = new WiredEncodingHandler(trainingConfiguration.getThreshold(),

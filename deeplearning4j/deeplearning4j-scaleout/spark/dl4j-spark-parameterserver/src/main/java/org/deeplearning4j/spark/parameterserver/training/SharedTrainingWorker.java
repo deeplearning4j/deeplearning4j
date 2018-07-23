@@ -18,6 +18,7 @@ package org.deeplearning4j.spark.parameterserver.training;
 
 import lombok.Getter;
 import org.apache.spark.broadcast.Broadcast;
+import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -47,14 +48,17 @@ public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResul
     private final Broadcast<NetBroadcastTuple> broadcastModel;
     private final Broadcast<SharedTrainingConfiguration> broadcastConfiguration;
     private final List<TrainingListener> listeners;
+    private final StatsStorageRouter router;
 
     public SharedTrainingWorker(long instanceId, Broadcast<NetBroadcastTuple> broadcastModel,
-                                Broadcast<SharedTrainingConfiguration> broadcastConfiguration, List<TrainingListener> listeners) {
+                                Broadcast<SharedTrainingConfiguration> broadcastConfiguration,
+                                List<TrainingListener> listeners, StatsStorageRouter router) {
         this.instanceId = instanceId;
         // our initial model is stored here.
         this.broadcastModel = broadcastModel;
         this.broadcastConfiguration = broadcastConfiguration;
         this.listeners = listeners;
+        this.router = router;
     }
 
     @Override
