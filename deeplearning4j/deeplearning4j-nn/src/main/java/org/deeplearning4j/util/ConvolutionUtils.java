@@ -581,6 +581,18 @@ public class ConvolutionUtils {
         return output.reshape('c', in.size(0), outH);
     }
 
+    /**
+     * Reduce a 2d CNN layer mask array (of 0s and 1s) according to the layer configuration. Note that when a CNN layer
+     * changes the shape of the activations (for example, stride > 1) the corresponding mask array needs to change shape
+     * also (as there is a correspondence between the two). This method performs the forward pass for the mask.
+     * @param inMask          Input mask array - rank 4, shape [mb,c,h,1] or [mb,c,w,1] or [mb,c,h,w]
+     * @param kernel          Kernel configuration for the layer
+     * @param stride          Stride
+     * @param padding         Padding
+     * @param dilation        Dilation
+     * @param convolutionMode Convolution mode
+     * @return The mask array corresponding to the network output
+     */
     public static INDArray cnn2dMaskReduction(INDArray inMask, int[] kernel, int[] stride, int[] padding, int[] dilation, ConvolutionMode convolutionMode ){
         //Mask array should be broadcastable with CNN activations. Thus should have shape [mb,x,y,z]
         //where:
@@ -589,10 +601,8 @@ public class ConvolutionUtils {
         // z == 1 OR width
 
         if(inMask.rank() != 4){
-            //TODO BETTER ERROR MESSAGE EXPLAINING FORMAT
-            //TODO ALSO HANDLE LEGACY FORMAT WITH WARNING WHERE POSSIBLE
-            throw new IllegalStateException("Expected rank 4 mask array for CNN activations. Mask arrays for 2D CNN layers " +
-                    "must have shape [mb,1,X,Y] where X = (1 or activationsHeight) and Y = (1 or activationsWidth): " +
+            throw new IllegalStateException("Expected rank 4 mask array for 2D CNN layers. Mask arrays for 2D CNN layers " +
+                    "must have shape [batchSize,channels,X,Y] where X = (1 or activationsHeight) and Y = (1 or activationsWidth): " +
                     "Got rank " + inMask.rank() + " array with shape " + Arrays.toString(inMask.shape()));
         }
 
