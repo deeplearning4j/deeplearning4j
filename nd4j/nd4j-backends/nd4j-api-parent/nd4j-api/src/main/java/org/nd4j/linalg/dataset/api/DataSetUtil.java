@@ -19,6 +19,7 @@ package org.nd4j.linalg.dataset.api;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -194,6 +195,7 @@ public class DataSetUtil {
      */
     public static Pair<INDArray, INDArray> mergeFeatures(@NonNull INDArray[] featuresToMerge,
                     INDArray[] featureMasksToMerge) {
+        Preconditions.checkNotNull(featuresToMerge[0], "Encountered null feature array when merging");
         int rankFeatures = featuresToMerge[0].rank();
 
         switch (rankFeatures) {
@@ -231,6 +233,7 @@ public class DataSetUtil {
      * @return Merged features and mask. Mask may be null
      */
     public static Pair<INDArray, INDArray> mergeLabels(INDArray[] labelsToMerge, INDArray[] labelMasksToMerge) {
+        Preconditions.checkNotNull(labelsToMerge[0], "Cannot merge data: Encountered null labels array");
         int rankFeatures = labelsToMerge[0].rank();
 
         switch (rankFeatures) {
@@ -302,6 +305,7 @@ public class DataSetUtil {
         INDArray[] temp = new INDArray[arrays.length];
         boolean hasMasks = false;
         for (int i = 0; i < arrays.length; i++) {
+            Preconditions.checkNotNull(arrays[i], "Encountered null array at position %s when merging data", i);
             if (arrays[i].columns() != cols) {
                 throw new IllegalStateException("Cannot merge 2d arrays with different numbers of columns (firstNCols="
                                 + cols + ", ithNCols=" + arrays[i].columns() + ")");
@@ -576,6 +580,7 @@ public class DataSetUtil {
         boolean hasMasks = false;
         int maskRank = -1;
         for (int i = 0; i < arrays.length; i++) {
+            Preconditions.checkNotNull(arrays[i], "Encountered null array when merging data at position %s", i);
             nExamples += arrays[i].size(0);
             long[] thisShape = arrays[i].shape();
             if (thisShape.length != 4) {
