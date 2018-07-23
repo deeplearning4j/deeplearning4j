@@ -259,7 +259,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats)
             stats.logBroadcastEnd();
 
-        SharedTrainingWorker worker = new SharedTrainingWorker(instanceId, broadcastModel, broadcastConfiguration);
+        SharedTrainingWorker worker = new SharedTrainingWorker(instanceId, broadcastModel, broadcastConfiguration, listeners);
 
         return worker;
     }
@@ -288,7 +288,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats)
             stats.logBroadcastEnd();
 
-        SharedTrainingWorker worker = new SharedTrainingWorker(instanceId, broadcastModel, broadcastConfiguration);
+        SharedTrainingWorker worker = new SharedTrainingWorker(instanceId, broadcastModel, broadcastConfiguration, listeners);
 
         return worker;
     }
@@ -563,12 +563,13 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     @Override
     public void setListeners(Collection<TrainingListener> listeners) {
-        // optional stuff actually
+        setListeners(null, listeners);
     }
 
     @Override
     public void setListeners(StatsStorageRouter router, Collection<TrainingListener> listeners) {
-        // optional stuff actually
+        this.statsStorage = router;
+        this.listeners = (listeners == null ? null : new ArrayList<>(listeners));
     }
 
 
