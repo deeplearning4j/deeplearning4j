@@ -8,9 +8,9 @@ weight: 2
 
 ## Why readers?
 
-Readers help users iterate over a dataset in storage. The usefulness of readers beyond individual entries in a dataset: what if you wanted to train a text generator on a corpus? Or programmatically compose two entries together to form a new record? Reader implementations are useful for complex file types or distributed storage mechanisms.
+Readers iterate records from a dataset in storage and load the data into DataVec. The usefulness of readers beyond individual entries in a dataset includes: what if you wanted to train a text generator on a corpus? Or programmatically compose two entries together to form a new record? Reader implementations are useful for complex file types or distributed storage mechanisms.
 
-Readers return `Writable` classes that describe each entry in a dataset. These classes are used to convert each record to a tensor/ND-Array format.
+Readers return `Writable` classes that describe each column in a `Record`. These classes are used to convert each record to a tensor/ND-Array format.
 
 ## Usage
 
