@@ -77,7 +77,7 @@ public class Conv1D extends DynamicCustomOp {
                 config.getS(),
                 config.getP(),
                 ArrayUtil.fromBoolean(config.isSameMode()),
-                ArrayUtil.fromBoolean(config.isNHWC()));
+                ArrayUtil.fromBoolean(config.isNHC()));
     }
 
     @Override
@@ -137,10 +137,10 @@ public class Conv1D extends DynamicCustomOp {
         val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
 
 
-        tfMappings.put("kH", new ConditionalFieldValueNDArrayShapeAdapter("NCHW", 2, 0, fields.get("dataFormat")));
-        tfMappings.put("kW", new ConditionalFieldValueNDArrayShapeAdapter("NCHW", 3, 1, fields.get("dataFormat")));
-        tfMappings.put("sH", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 2, 1, fields.get("dataFormat")));
-        tfMappings.put("sW", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 3, 2, fields.get("dataFormat")));
+        tfMappings.put("kH", new ConditionalFieldValueNDArrayShapeAdapter("NHW", 2, 0, fields.get("dataFormat")));
+        tfMappings.put("kW", new ConditionalFieldValueNDArrayShapeAdapter("NHW", 3, 1, fields.get("dataFormat")));
+        tfMappings.put("sH", new ConditionalFieldValueIntIndexArrayAdapter("NHW", 2, 1, fields.get("dataFormat")));
+        tfMappings.put("sW", new ConditionalFieldValueIntIndexArrayAdapter("NHW", 3, 2, fields.get("dataFormat")));
         tfMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
         tfMappings.put("isNHWC", new StringEqualsAdapter("NHWC"));
 
@@ -153,7 +153,7 @@ public class Conv1D extends DynamicCustomOp {
         onnxMappings.put("sH", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
         onnxMappings.put("sW", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
         onnxMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
-        onnxMappings.put("isNHWC", new StringEqualsAdapter("NHWC"));
+        onnxMappings.put("isNHWC", new StringEqualsAdapter("NHC"));
 
         ret.put(tensorflowName(), tfMappings);
         ret.put(onnxName(), onnxMappings);
