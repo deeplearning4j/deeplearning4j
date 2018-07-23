@@ -80,6 +80,10 @@ public class GlobalPoolingLayer extends NoParamLayer {
         this.layerName = builder.layerName;
     }
 
+    public GlobalPoolingLayer(){
+        this(PoolingType.MAX);
+    }
+
     public GlobalPoolingLayer(PoolingType poolingType){
         this(new GlobalPoolingLayer.Builder().poolingType(poolingType));
     }
