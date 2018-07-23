@@ -24,7 +24,6 @@
         "datavec-api/src/main/java/org/datavec/api/records/reader/impl/LineRecordReader.java",
         "datavec-api/src/main/java/org/datavec/api/records/reader/impl/ComposableRecordReader.java",
         "datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVRecordReader.java",
-        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVNLinesRecordReader.java",
         "datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVRegexRecordReader.java",
         "datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVSequenceRecordReader.java",
         "datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVVariableSlidingWindowRecordReader.java",
@@ -37,8 +36,8 @@
         "datavec-api/src/main/java/org/datavec/api/records/reader/impl/misc/LibSvmRecordReader.java",
         "datavec-api/src/main/java/org/datavec/api/records/reader/impl/misc/MatlabRecordReader.java",
         "datavec-api/src/main/java/org/datavec/api/records/reader/impl/misc/SVMLightRecordReader.java",
-        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/misc/regex/RegexLineRecordReader.java",
-        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/misc/regex/RegexSequenceRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/regex/RegexLineRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/regex/RegexSequenceRecordReader.java"
       ]
     },
     {

@@ -424,7 +424,7 @@ public class Nd4j {
                 "Attempted to squeeze dimension %d of array with shape %s (size %d).", dimension, ArrayUtils.toString(shape), shape[dimension]));
 
         long[] newShape = ArrayUtil.removeIndex(shape, dimension);
-        return input.reshape(newShape);
+        return input.reshape(input.ordering(), newShape);
     }
 
 
