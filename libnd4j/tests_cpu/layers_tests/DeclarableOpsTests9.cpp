@@ -23,6 +23,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <NDArray.h>
 #include <ops/ops.h>
+#include <GradCheck.h>
 
 
 using namespace nd4j;
@@ -1133,4 +1134,109 @@ TEST_F(DeclarableOpsTests9, concat_test13) {
 }
 
 
- 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, clipbynorm_test12) {
+    
+    const int bS   = 5;
+    const int nOut = 4;
+    const int axis = 0;
+    const double clip = 2.;
+    
+    NDArray<double> x('c', {bS, nOut}, {0.412 ,0.184 ,0.961 ,0.897 ,0.173 ,0.931 ,0.736 ,0.540 ,0.953 ,0.278 ,0.573 ,0.787 ,0.320 ,0.776 ,0.338 ,0.311 ,0.835 ,0.909 ,0.890 ,0.290});    // uniform random in range [0,1]
+    NDArray<double> colVect('c', {bS, 1}, {0.9, 0.95, 1.00, 1.05, 1.1});
+    NDArray<double> expect('c', {bS, nOut});
+
+    NDArray<double> norm2 = x.template reduceAlongDims<simdOps::Norm2<double>>({axis}, true); // norm2 has shape [1, nOut]
+    
+    NDArray<double> y = ( (x / norm2) * clip) * colVect ;    
+    NDArray<double> temp = (x / norm2) * clip;    
+
+    for (int j = 0; j < nOut; ++j) {
+        NDArray<double> yCol = y({{}, {j, j+1}});
+        const double norm2Col = yCol.template reduceNumber<simdOps::Norm2<double>>();
+        if (norm2Col <= clip) 
+            expect({{}, {j,j+1}}).assign(yCol);
+        else 
+            expect({{}, {j,j+1}}).assign ( yCol * (clip / norm2Col) );
+    }
+    
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&y}, {clip}, {axis});
+    auto outFF = result->at(0);        
+    
+    ASSERT_TRUE(expect.isSameShape(outFF));
+    ASSERT_TRUE(expect.equalsTo(outFF));
+
+    delete result;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, clipbynorm_bp_test1) {
+    
+    const int bS   = 2;
+    const int nOut = 3;
+    const int axis = 0;
+    const double clip = 0.7;
+    
+    NDArray<double> x('c', {bS, nOut}, {0.412 ,0.184 ,0.961 ,0.173 ,0.736 ,0.540 });    // uniform random in range [0,1]
+    NDArray<double> gradO('c', {bS, nOut});
+
+    const OpArgsHolder<double> argsHolderFF({&x}, {clip}, {});
+    const OpArgsHolder<double> argsHolderBP({&x, &gradO}, {clip}, {});
+
+    nd4j::ops::clipbynorm<double> opFF;
+    nd4j::ops::clipbynorm_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, clipbynorm_bp_test2) {
+    
+    const int bS   = 2;
+    const int nOut = 3;
+    const int axis = 0;
+    const double clip = 0.7;
+    
+    NDArray<double> x('c', {bS, nOut}, {0.412 ,0.184 ,0.961 ,0.173 ,0.736 ,0.540 });    // uniform random in range [0,1]
+    NDArray<double> gradO('c', {bS, nOut});
+
+    const OpArgsHolder<double> argsHolderFF({&x}, {clip}, {axis});
+    const OpArgsHolder<double> argsHolderBP({&x, &gradO}, {clip}, {axis});
+
+    nd4j::ops::clipbynorm<double> opFF;
+    nd4j::ops::clipbynorm_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, clipbynorm_bp_test3) {
+    
+    const int bS   = 2;
+    const int nOut = 3;
+    const int axis = 1;
+    const double clip = 1.;
+    
+    NDArray<double> x('c', {bS, nOut}, {0.412 ,0.184 ,0.961 ,0.173 ,0.736 ,0.540 });    // uniform random in range [0,1]
+    NDArray<double> gradO('c', {bS, nOut});
+
+    const OpArgsHolder<double> argsHolderFF({&x}, {clip}, {axis});
+    const OpArgsHolder<double> argsHolderBP({&x, &gradO}, {clip}, {axis});
+
+    nd4j::ops::clipbynorm<double> opFF;
+    nd4j::ops::clipbynorm_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+
+

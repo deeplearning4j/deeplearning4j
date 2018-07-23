@@ -540,7 +540,7 @@ namespace nd4j {
         *  func - what pairwise operation to apply
         *  target - where to store result
         */ 
-        void applyPairwiseLambda(NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target = nullptr);
+        void applyPairwiseLambda(const NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target = nullptr);
 
         void applyIndexedPairwiseLambda(NDArray<T>* other, const std::function<T(Nd4jLong, T, T)>& func, NDArray<T>* target = nullptr);
 
@@ -560,7 +560,8 @@ namespace nd4j {
         /**
         *   apply transpose operation to the copy of this array, that is this array remains unaffected 
         */
-        NDArray<T> *transpose() const;
+        NDArray<T>* transpose() const;
+        NDArray<T>  transp() const;
 
         /**
         *  perform transpose operation and store result in target, this array remains unaffected 
