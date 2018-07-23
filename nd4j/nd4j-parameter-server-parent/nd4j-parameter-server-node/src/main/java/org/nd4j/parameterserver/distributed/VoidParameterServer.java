@@ -389,7 +389,9 @@ public class VoidParameterServer {
             transport.shutdown();
 
             executor.shutdown();
-
+            initFinished.set(false);
+            initLocker.set(false);
+            shutdownLocker.set(false);
         }
     }
 

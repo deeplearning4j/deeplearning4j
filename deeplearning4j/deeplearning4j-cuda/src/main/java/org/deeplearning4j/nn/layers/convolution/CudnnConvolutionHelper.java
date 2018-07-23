@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.AlgoMode;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.BwdDataAlgo;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.BwdFilterAlgo;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.FwdAlgo;
+import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseCudnnHelper;
@@ -144,7 +145,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         val kH = weights.size(2);
         val kW = weights.size(3);
 
-        CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode);
+        CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode, null);
         input = args.getInput();
         val inH = input.size(2);
         val inW = input.size(3);
@@ -360,7 +361,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         val kH = weights.size(2);
         val kW = weights.size(3);
 
-        CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode);
+        CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode, null);
         input = args.getInput();
         val inH = input.size(2);
         val inW = input.size(3);
@@ -590,8 +591,12 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         return activation;
     }
 
+    /**
+     * @param poolingType     Used when preparing data for subsampling layers ONLY. Null for convolution layers
+     * @return
+     */
     public static CudnnForwardArgs getCudnnForwardArgs(INDArray input, int[] kernel, int[] strides, int[] padding, int[] dilation,
-                                                   ConvolutionMode convolutionMode){
+                                                       ConvolutionMode convolutionMode, PoolingType poolingType){
         INDArray origInput = input;
 
         //Check if we need to dup the input: views, non-contiguous, etc. CuDNN also seems to have has issues if strides
@@ -627,7 +632,15 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                 val newShape = new long[]{input.size(0), input.size(1),
                         input.size(2) + (manualPadBottom ? 1 : 0),
                         input.size(3) + (manualPadRight ? 1 : 0)};
-                INDArray newInput = Nd4j.create(newShape);
+                INDArray newInput;
+                if(poolingType == null || poolingType != PoolingType.MAX){
+                    newInput = Nd4j.create(newShape);
+                } else {
+                    //For max pooling, we don't want to include the padding in the maximum values. But, CuDNN doesn't knowm
+                    // that these values are padding and hence should be excluded. Instead: We'll use -infinity so that,
+                    // if the 'real' (non-padding) values are all < 0, we take the real value, not the padding value
+                    newInput = Nd4j.valueArrayOf(newShape, Double.NEGATIVE_INFINITY);
+                }
                 newInput.put(new INDArrayIndex[]{all(), all(), interval(0,input.size(2)),
                         interval(0, input.size(3))}, input);
                 input = newInput;

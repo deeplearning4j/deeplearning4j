@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.layers.convolution.subsampling;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
@@ -447,5 +448,17 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     @Override
     public void setParams(INDArray params) {
 
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+        if (maskArray == null) {
+            //For same mode (with stride 1): output activations size is always same size as input activations size -> mask array is same size
+            return new Pair<>(maskArray, currentMaskState);
+        }
+
+        INDArray outMask = ConvolutionUtils.cnn2dMaskReduction(maskArray, layerConf().getKernelSize(), layerConf().getStride(),
+                layerConf().getPadding(), layerConf().getDilation(), layerConf().getConvolutionMode());
+        return super.feedForwardMaskArray(outMask, currentMaskState, minibatchSize);
     }
 }

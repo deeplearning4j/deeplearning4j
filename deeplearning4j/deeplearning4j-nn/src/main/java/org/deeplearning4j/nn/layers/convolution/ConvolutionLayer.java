@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -465,6 +466,18 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     public void setParams(INDArray params) {
         //Override, as base layer does f order parameter flattening by default
         setParams(params, 'c');
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+        if (maskArray == null) {
+            //For same mode (with stride 1): output activations size is always same size as input activations size -> mask array is same size
+            return new Pair<>(maskArray, currentMaskState);
+        }
+
+        INDArray outMask = ConvolutionUtils.cnn2dMaskReduction(maskArray, layerConf().getKernelSize(), layerConf().getStride(),
+                layerConf().getPadding(), layerConf().getDilation(), layerConf().getConvolutionMode());
+        return new Pair<>(outMask, currentMaskState);
     }
 
 }
