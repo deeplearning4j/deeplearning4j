@@ -24,9 +24,11 @@ import java.util.Map;
 
 /**
  * DataProvider interface abstracts out the providing of data
+ * @deprecated Use {@link DataSource}
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+@Deprecated
 public interface DataProvider extends Serializable {
 
     /**
