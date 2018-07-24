@@ -27,8 +27,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.List;
 
 /**
- *
+ * @deprecated To be replaced by {@link SoftmaxBp}
  */
+@Deprecated
 public class SoftMaxDerivative extends BaseGradientOp  {
     public SoftMaxDerivative(INDArray x, INDArray z) {
         super(x, z);

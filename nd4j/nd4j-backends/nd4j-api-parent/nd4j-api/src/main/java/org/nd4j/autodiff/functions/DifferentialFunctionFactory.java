@@ -1439,9 +1439,9 @@ public class DifferentialFunctionFactory {
     }
 
 
-    public SDVariable softmaxDerivative(SDVariable functionInput, SDVariable wrt) {
+    public SDVariable softmaxDerivative(SDVariable functionInput, SDVariable wrt, Integer dimension) {
         validateDifferentialFunctionsameDiff(functionInput);
-        return new SoftMaxDerivative(sameDiff(), functionInput, wrt).outputVariable();
+        return new SoftmaxBp(sameDiff(), functionInput, wrt, dimension).outputVariable();
     }
 
 

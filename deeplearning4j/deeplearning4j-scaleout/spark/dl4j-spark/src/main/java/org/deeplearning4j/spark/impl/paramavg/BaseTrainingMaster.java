@@ -50,6 +50,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -76,7 +77,7 @@ public abstract class BaseTrainingMaster<R extends TrainingResult, W extends Tra
     protected StatsStorageRouter statsStorage;
 
     //Listeners etc
-    protected Collection<TrainingListener> listeners;
+    protected List<TrainingListener> listeners;
 
 
     protected Repartition repartition;

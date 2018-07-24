@@ -208,7 +208,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         INDArray firstDerivVBroadcast = Nd4j.createUninitialized(shape);
 
         INDArray mulResult = firstVertDerivV.broadcast(firstDerivVBroadcast);
-        int[] bcDims = Shape.getBroadcastDimensions(mulResult.shape(), secondTermDerivV.shape());
+        int[] bcDims = {0,1};
         Broadcast.mul(mulResult, secondTermDerivV, mulResult, bcDims);
 
         INDArray derivV = mulResult

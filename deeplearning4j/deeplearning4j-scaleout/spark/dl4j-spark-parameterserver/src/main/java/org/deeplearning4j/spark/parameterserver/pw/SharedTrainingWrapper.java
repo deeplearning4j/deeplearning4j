@@ -19,10 +19,13 @@ package org.deeplearning4j.spark.parameterserver.pw;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.Loader;
+import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.SleepyTrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodedGradientsAccumulator;
 import org.deeplearning4j.optimize.solvers.accumulation.MessageHandler;
@@ -225,11 +228,25 @@ public class SharedTrainingWrapper {
                 log.info("Starting ParallelWrapper at thread {}", Thread.currentThread().getId());
 
                 model = worker.getInitialModel();
-                if (model == null)
+                if (model == null) {
                     model = worker.getInitialModelGraph();
+                }
 
                 if (model == null)
                     throw new DL4JInvalidConfigException("No model was defined for training");
+
+                List<TrainingListener> listeners = worker.getListeners();
+                if(listeners != null){
+                    model.setListeners(listeners);
+                    StatsStorageRouter r = worker.getRouter();
+                    if(r != null){
+                        for(TrainingListener l : listeners){
+                            if(l instanceof RoutingIterationListener){
+                                ((RoutingIterationListener) l).setStorageRouter(r);
+                            }
+                        }
+                    }
+                }
 
                 MessageHandler handler = new WiredEncodingHandler(trainingConfiguration.getThreshold(),
                                 trainingConfiguration.getMinThreshold(), trainingConfiguration.getThresholdStep(),
