@@ -210,16 +210,6 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     }
 
     @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
-    public Layer clone() {
-        return new Subsampling3DLayer(conf.clone());
-    }
-
-    @Override
     public boolean isPretrainLayer() {
         return false;
     }

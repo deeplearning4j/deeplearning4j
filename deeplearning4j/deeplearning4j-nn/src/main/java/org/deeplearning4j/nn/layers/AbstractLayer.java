@@ -112,9 +112,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public abstract Layer clone();
-
-    @Override
     public void setInput(INDArray input, LayerWorkspaceMgr workspaceMgr) {
         this.input = workspaceMgr.leverageTo(ArrayType.INPUT, input);
         dropoutApplied = false;
@@ -349,11 +346,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     @Override
     public INDArray input() {
         return input;
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override

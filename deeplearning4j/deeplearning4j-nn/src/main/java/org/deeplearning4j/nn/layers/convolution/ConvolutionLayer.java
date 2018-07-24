@@ -432,11 +432,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not supported - " + layerId());
-    }
-
-    @Override
     public boolean hasBias() {
         return layerConf().hasBias();
     }

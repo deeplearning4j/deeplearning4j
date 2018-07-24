@@ -218,16 +218,6 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Cannot transpose layer");
-    }
-
-    @Override
-    public Layer clone() {
-        throw new UnsupportedOperationException("Clone not supported");
-    }
-
-    @Override
     public Collection<TrainingListener> getListeners() {
         return fwd.getListeners();
     }

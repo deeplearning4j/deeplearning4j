@@ -801,16 +801,6 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not supported " + layerId());
-    }
-
-    @Override
-    public Layer clone() {
-        throw new UnsupportedOperationException("Not yet implemented " + layerId());
-    }
-
-    @Override
     public Collection<TrainingListener> getListeners() {
         if (trainingListeners == null) {
             return null;

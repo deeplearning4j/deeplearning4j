@@ -1001,16 +1001,6 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public Layer transpose() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Layer clone() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public Collection<TrainingListener> getListeners() {
             return null;
         }

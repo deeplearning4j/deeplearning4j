@@ -407,54 +407,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public Layer transpose() {
-        if (!(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.FeedForwardLayer))
-            throw new UnsupportedOperationException(
-                    "Unsupported layer type: " + conf.getLayer().getClass().getName() + " - " + layerId());
-
-        INDArray w = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
-        INDArray vb = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
-        Layer layer;
-        try {
-            NeuralNetConfiguration clone = conf.clone(); // assume a deep clone here
-
-            org.deeplearning4j.nn.conf.layers.FeedForwardLayer clonedLayerConf =
-                    (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) clone.getLayer();
-            val nIn = clonedLayerConf.getNOut();
-            val nOut = clonedLayerConf.getNIn();
-            clonedLayerConf.setNIn(nIn);
-            clonedLayerConf.setNOut(nOut);
-
-            //Need to swap the hidden and visible biases for pretrain layers
-            INDArray newB;
-            INDArray newVB = null;
-
-            long totalParams = w.length();
-            if (vb != null) {
-                newB = vb.dup();
-                newVB = b.dup();
-                totalParams += newB.length() + newVB.length();
-            } else {
-                newB = Nd4j.create(1, nOut);
-                totalParams += newB.length();
-            }
-
-            INDArray paramsView = Nd4j.create(1, totalParams);
-            layer = clone.getLayer().instantiate(clone, trainingListeners, this.index, paramsView, true);
-
-            layer.setParam(DefaultParamInitializer.WEIGHT_KEY, w.transpose().dup());
-            layer.setParam(DefaultParamInitializer.BIAS_KEY, newB);
-            if (vb != null)
-                layer.setParam(PretrainParamInitializer.VISIBLE_BIAS_KEY, newVB);
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to construct transposed layer: " + layerId(), e);
-        }
-
-        return layer;
-    }
-
-    @Override
     public void accumulateScore(double accum) {
         score += accum;
     }

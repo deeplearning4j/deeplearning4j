@@ -2286,42 +2286,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         log.info(sb.toString());
     }
 
-
-    /**
-     * Assigns the parameters of this model to the ones specified by this
-     * network. This is used in loading from input streams, factory methods, etc
-     *
-     * @param network the network to get parameters from
-     */
-    public void update(MultiLayerNetwork network) {
-        this.defaultConfiguration =
-                (network.defaultConfiguration != null ? network.defaultConfiguration.clone() : null);
-        if (network.input != null)
-            setInput(network.input.dup()); //Dup in case of dropout etc
-        this.labels = network.labels;
-        if (network.layers != null) {
-            layers = new Layer[network.layers.length];
-            for (int i = 0; i < layers.length; i++) {
-                layers[i] = network.layers[i].clone();
-            }
-        } else {
-            this.layers = null;
-        }
-        if (network.solver != null) {
-            //Network updater state: should be cloned over also
-            INDArray updaterView = network.getUpdater().getStateViewArray();
-            if (updaterView != null) {
-                //                Updater newUpdater = new MultiLayerUpdater(this, updaterView.dup());
-                Updater newUpdater = new MultiLayerUpdater(this);
-                newUpdater.setStateViewArray(this, updaterView.dup(), false);
-                this.setUpdater(newUpdater);
-            }
-        } else {
-            this.solver = null;
-        }
-    }
-
-
     /**
      * Sets the input and labels and returns a score for the prediction
      * wrt true labels
@@ -2806,11 +2770,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     public INDArray activate(INDArray input, TrainingMode training) {
         return output(input, training == TrainingMode.TRAIN);
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException();
     }
 
     @Override

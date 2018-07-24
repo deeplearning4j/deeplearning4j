@@ -174,16 +174,6 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
-    public Layer clone() {
-        return new Upsampling3D(conf.clone());
-    }
-
-    @Override
     public boolean isPretrainLayer() {
         return false;
     }

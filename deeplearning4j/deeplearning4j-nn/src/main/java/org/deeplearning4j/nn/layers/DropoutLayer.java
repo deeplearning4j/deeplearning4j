@@ -102,11 +102,6 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
     }
 
     @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not supported - " + layerId());
-    }
-
-    @Override
     public boolean isPretrainLayer() {
         return false;
     }

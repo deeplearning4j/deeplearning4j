@@ -86,16 +86,6 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not supported");   //If required, implement in subtype (so traspose is wrapped)
-    }
-
-    @Override
-    public Layer clone() {
-        throw new UnsupportedOperationException("Clone not supported");
-    }
-
-    @Override
     public Collection<TrainingListener> getListeners() {
         return underlying.getListeners();
     }

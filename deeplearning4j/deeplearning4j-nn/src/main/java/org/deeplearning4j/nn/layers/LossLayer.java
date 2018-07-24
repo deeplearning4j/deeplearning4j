@@ -203,11 +203,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not applicable " + layerId());
-    }
-
-    @Override
     public boolean isPretrainLayer() {
         return false;
     }
