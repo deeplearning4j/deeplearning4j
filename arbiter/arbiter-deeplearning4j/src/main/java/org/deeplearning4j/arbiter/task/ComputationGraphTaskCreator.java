@@ -234,7 +234,11 @@ public class ComputationGraphTaskCreator implements TaskCreator {
 
             Double score = null;
             if (net != null) {
-                score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
+                if(dataSource != null){
+                    score = scoreFunction.score(net, dataSource, dataSourceProperties);
+                } else {
+                    score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
+                }
                 ci.setScore(score);
             }
 
