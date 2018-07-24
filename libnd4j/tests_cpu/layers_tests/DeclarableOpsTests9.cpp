@@ -1252,7 +1252,7 @@ TEST_F(DeclarableOpsTests9, cumprod_bp_check_1) {
     nd4j::ops::cumprod<double> opFF;
     nd4j::ops::cumprod_bp<double> opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 1}, {1, 1},GradCheck::MEAN);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -1271,7 +1271,7 @@ TEST_F(DeclarableOpsTests9, cumprod_bp_check_2) {
     nd4j::ops::cumprod<double> opFF;
     nd4j::ops::cumprod_bp<double> opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 1}, {1, 1},GradCheck::MEAN);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -1290,7 +1290,7 @@ TEST_F(DeclarableOpsTests9, cumprod_bp_check_3) {
     nd4j::ops::cumprod<double> opFF;
     nd4j::ops::cumprod_bp<double> opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 1}, {1, 1},GradCheck::MEAN);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -1309,7 +1309,7 @@ TEST_F(DeclarableOpsTests9, cumprod_bp_check_4) {
     nd4j::ops::cumprod<double> opFF;
     nd4j::ops::cumprod_bp<double> opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 1}, {1, 1},GradCheck::MEAN);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -1329,7 +1329,7 @@ TEST_F(DeclarableOpsTests9, cumsum_bp_check_2) {
     nd4j::ops::cumsum<double> opFF;
     nd4j::ops::cumsum_bp<double> opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 1}, {1, 1},GradCheck::MEAN);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -1358,7 +1358,7 @@ TEST_F(DeclarableOpsTests9, cumprod_test1) {
     nd4j::ops::cumprod<double> opFF;
     nd4j::ops::cumprod_bp<double> opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 1}, {1, 1},GradCheck::MEAN);
 
     ASSERT_TRUE(isGradCorrect);
 
@@ -1415,7 +1415,7 @@ TEST_F(DeclarableOpsTests9, cumprod_test2) {
     nd4j::ops::cumprod<double> opFF;
     nd4j::ops::cumprod_bp<double> opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 1, 1, 1}, {1, 1},GradCheck::MEAN);
 
     ASSERT_TRUE(isGradCorrect);
 }
