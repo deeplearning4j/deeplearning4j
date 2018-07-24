@@ -878,144 +878,63 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     private void pretrainLayerHelper(String layerName, MultiDataSetIterator iter, int numEpochs){
-        if (!configuration.isPretrain())
-            return;
         if (flattenedGradients == null) {
             initGradientsView();
         }
 
         if (!verticesMap.containsKey(layerName)) {
-            throw new IllegalStateException("Invalid vertex name: " + layerName);
+            throw new IllegalStateException("Invalid vertex name: " + layerName + " - all vertex names: " +
+                    verticesMap.keySet());
         }
         if (!verticesMap.get(layerName).hasLayer()) {
             //No op
             return;
         }
 
-        LayerWorkspaceMgr workspaceMgr = null;      //TODO
+        GraphVertex toTrain = verticesMap.get(layerName);
+        int idx = toTrain.getVertexIndex();
 
-        throw new UnsupportedOperationException("Not yet re-implemented");
-        /*
-
-        int layerIndex = verticesMap.get(layerName).getVertexIndex();
-
-        //Need to do partial forward pass. Simply folowing the topological ordering won't be efficient, as we might
-        // end up doing forward pass on layers we don't need to.
-        //However, we can start with the topological order, and prune out any layers we don't need to do
-
-        LinkedList<Integer> partialTopoSort = new LinkedList<>();
-        Set<Integer> seenSoFar = new HashSet<>();
-        partialTopoSort.add(topologicalOrder[layerIndex]);
-        seenSoFar.add(topologicalOrder[layerIndex]);
-        for (int j = layerIndex - 1; j >= 0; j--) {
-            //Do we need to do forward pass on this GraphVertex?
-            //If it is input to any other layer we need, then yes. Otherwise: no
-            VertexIndices[] outputsTo = vertices[topologicalOrder[j]].getOutputVertices();
-            boolean needed = false;
-            for (VertexIndices vi : outputsTo) {
-                if (seenSoFar.contains(vi.getVertexIndex())) {
-                    needed = true;
-                    break;
-                }
-            }
-            if (needed) {
-                partialTopoSort.addFirst(topologicalOrder[j]);
-                seenSoFar.add(topologicalOrder[j]);
-            }
+        LayerWorkspaceMgr workspaceMgr;
+        if(configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE){
+            workspaceMgr = LayerWorkspaceMgr.noWorkspaces();
+        } else {
+            workspaceMgr = LayerWorkspaceMgr.builder()
+                    .with(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.BP_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
+                    .with(ArrayType.RNN_BP_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
+                    //Use FF/BP working memory for updater also
+                    .with(ArrayType.UPDATER_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .build();
         }
+        workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
-        int[] fwdPassOrder = new int[partialTopoSort.size()];
-        int k = 0;
-        for (Integer g : partialTopoSort)
-            fwdPassOrder[k++] = g;
-
-        GraphVertex gv = vertices[fwdPassOrder[fwdPassOrder.length - 1]];
-        Layer layer = gv.getLayer();
-
-        if (!iter.hasNext() && iter.resetSupported()) {
+        if(!iter.hasNext() && iter.resetSupported())
             iter.reset();
-        }
 
-        MemoryWorkspace workspace =
-                configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        ComputationGraph.workspaceConfigurationExternal,
-                        ComputationGraph.WORKSPACE_EXTERNAL);
-        MemoryWorkspace cache =
-                configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        ComputationGraph.workspaceConfigurationCache,
-                        ComputationGraph.WORKSPACE_CACHE);
+        MultiDataSetIterator withAsync = iter.asyncSupported() ? new AsyncMultiDataSetIterator(iter) : iter;
 
-        MemoryWorkspace wsFF;
-        MemoryWorkspace wsPTR;
-        switch (configuration.getTrainingWorkspaceMode()){
-            case NONE:
-                wsFF = new DummyWorkspace();
-                wsPTR = new DummyWorkspace();
-                break;
-            case SINGLE:
-                wsFF = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(WORKSPACE_EXTERNAL);
-                wsPTR = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(WORKSPACE_EXTERNAL);
-                break;
-            case SEPARATE:
-                wsFF = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, WORKSPACE_FEED_FORWARD);
-                wsPTR = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, WORKSPACE_PRETRAIN);
-                break;
-            default:
-                throw new RuntimeException();
-        }
+        while(withAsync.hasNext()) {
+            MultiDataSet mds = withAsync.next();
+            try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
+                //FF - note should be using TEST mode here for the layers that feed into the specified layer
+                Map<String, INDArray> activations = ffToLayerActivationsInWS(false, idx, new int[]{idx}, FwdPassType.STANDARD,
+                        false, mds.getFeatures(), mds.getFeaturesMaskArrays(), mds.getLabelsMaskArrays(), true);
 
-        while (iter.hasNext()) {
-            MultiDataSet multiDataSet = iter.next();
-
-            try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
-                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                    try (MemoryWorkspace wP = wsPTR.notifyScopeEntered()) {
-
-                        setInputs(multiDataSet.getFeatures());
-
-                        for (int j = 0; j < fwdPassOrder.length - 1; j++) {
-                            try (MemoryWorkspace wF = wsFF.notifyScopeEntered()) {
-                                GraphVertex current = vertices[fwdPassOrder[j]];
-                                if (current.isInputVertex()) {
-                                    VertexIndices[] inputsTo = current.getOutputVertices();
-                                    INDArray input = inputs[current.getVertexIndex()];
-
-                                    for (VertexIndices v : inputsTo) {
-                                        int vIdx = v.getVertexIndex();
-                                        int vIdxInputNum = v.getVertexEdgeNumber();
-                                        //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
-                                        vertices[vIdx].setInput(vIdxInputNum,
-                                                input.dup().leverageTo(WORKSPACE_PRETRAIN), workspaceMgr );
-                                    }
-
-                                } else {
-                                    //Do forward pass:
-                                    INDArray out = current.doForward(true, workspaceMgr);
-
-                                    //Now, set the inputs for the next vertices:
-                                    VertexIndices[] outputsTo = current.getOutputVertices();
-                                    if (outputsTo != null) {
-                                        for (VertexIndices v : outputsTo) {
-                                            int vIdx = v.getVertexIndex();
-                                            int inputNum = v.getVertexEdgeNumber();
-                                            //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-                                            vertices[vIdx].setInput(inputNum, out, workspaceMgr);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        //At this point: have done all of the required forward pass stuff. Can now pretrain layer on current input
-
-                        layer.fit(gv.getInputs()[0], workspaceMgr);
-                        layer.conf().setPretrain(false);
-                    }
+                //Get input to the current layer
+                VertexIndices[] inputsToLayer = toTrain.getInputVertices();
+                for (VertexIndices vi : inputsToLayer) {
+                    String inName = vertices[vi.getVertexIndex()].getVertexName();
+                    INDArray act = activations.get(inName);
+                    toTrain.setInput(vi.getVertexEdgeNumber(), act, workspaceMgr);
                 }
+
+                Layer layer = toTrain.getLayer();
+                layer.fit(layer.input(), workspaceMgr);
             }
         }
-        */
     }
 
     /**
