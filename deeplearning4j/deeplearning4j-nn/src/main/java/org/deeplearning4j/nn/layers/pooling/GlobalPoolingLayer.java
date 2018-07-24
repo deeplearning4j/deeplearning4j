@@ -280,12 +280,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 epsilonNd = MaskedReductionUtil.maskedPoolingEpsilonTimeSeries(poolingType, input, maskArray, epsilon,
                         pNorm);
             } else if (input.rank() == 4) {
-                // FIXME: int cast
-                int h = (int) input.size(2);
-
-                boolean maskAlongHeight = (h == maskArray.size(1));
-                epsilonNd = MaskedReductionUtil.maskedPoolingEpsilonCnn(poolingType, input, maskArray, epsilon,
-                        maskAlongHeight, pNorm);
+                epsilonNd = MaskedReductionUtil.maskedPoolingEpsilonCnn(poolingType, input, maskArray, epsilon, pNorm);
             } else {
                 throw new UnsupportedOperationException(layerId());
             }

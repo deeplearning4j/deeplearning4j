@@ -611,6 +611,11 @@ public class ConvolutionUtils {
             return inMask;
         }
 
+        if(inMask.size(2) == 1 && inMask.size(3) == 1){
+            //per-example mask - broadcast along all channels/x/y
+            return inMask;
+        }
+
         int[] k;
         int[] s;
         int[] p;
