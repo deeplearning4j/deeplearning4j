@@ -18,6 +18,7 @@ package org.deeplearning4j.arbiter.scoring.impl;
 
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSource;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -25,9 +26,11 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIteratorFactory;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Created by Alex on 23/07/2017.
@@ -39,6 +42,24 @@ public abstract class BaseNetScoreFunction implements ScoreFunction {
     @Override
     public double score(Object model, DataProvider dataProvider, Map<String, Object> dataParameters) {
         Object testData = dataProvider.testData(dataParameters);
+        return score(model, testData);
+    }
+
+    @Override
+    public double score(Object model, Class<? extends DataSource> dataSource, Properties dataSourceProperties) {
+        DataSource ds;
+        try{
+            ds = dataSource.newInstance();
+            if (dataSourceProperties != null) {
+                ds.configure(dataSourceProperties);
+            }
+        } catch (Exception e){
+            throw new RuntimeException(e);
+        }
+        return score(model, ds.testData());
+    }
+
+    protected double score(Object model, Object testData){
         if (model instanceof MultiLayerNetwork) {
             if (testData instanceof DataSetIterator) {
                 return score((MultiLayerNetwork) model, (DataSetIterator) testData);

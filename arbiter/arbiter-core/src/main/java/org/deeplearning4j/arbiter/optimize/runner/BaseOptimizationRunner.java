@@ -24,16 +24,14 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSource;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultReference;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.TerminationCondition;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -149,8 +147,12 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
                     status = processFailedCandidates(candidate);
                 } else {
                     long created = System.currentTimeMillis();
-                    ListenableFuture<OptimizationResult> f =
-                            execute(candidate, config.getDataProvider(), config.getScoreFunction());
+                    ListenableFuture<OptimizationResult> f;
+                    if(config.getDataSource() != null){
+                        f = execute(candidate, config.getDataSource(), config.getDataSourceProperties(), config.getScoreFunction());
+                    } else {
+                        f = execute(candidate, config.getDataProvider(), config.getScoreFunction());
+                    }
                     f.addListener(new OnCompletionListener(f), futureListenerExecutor);
                     queuedFutures.add(f);
                     totalCandidateCount.getAndIncrement();
@@ -366,9 +368,16 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
 
     protected abstract int maxConcurrentTasks();
 
+    @Deprecated
     protected abstract ListenableFuture<OptimizationResult> execute(Candidate candidate, DataProvider dataProvider,
                                                                     ScoreFunction scoreFunction);
-
+    @Deprecated
     protected abstract List<ListenableFuture<OptimizationResult>> execute(List<Candidate> candidates,
                                                                           DataProvider dataProvider, ScoreFunction scoreFunction);
+
+    protected abstract ListenableFuture<OptimizationResult> execute(Candidate candidate, Class<? extends DataSource> dataSource,
+                                                                    Properties dataSourceProperties, ScoreFunction scoreFunction);
+
+    protected abstract List<ListenableFuture<OptimizationResult>> execute(List<Candidate> candidates, Class<? extends DataSource> dataSource,
+                                                                          Properties dataSourceProperties, ScoreFunction scoreFunction);
 }
