@@ -1996,37 +1996,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         setListeners(cListeners);
     }
 
-
-    /**
-     * Run SGD based on the given labels
-     */
-    public void finetune() {
-        if (!layerWiseConfigurations.isBackprop()) {
-            log.warn("Warning: finetune is not applied.");
-            return;
-        }
-        if (!(getOutputLayer() instanceof IOutputLayer)) {
-            log.warn("Output layer not instance of output layer returning.");
-            return;
-        }
-        if (flattenedGradients == null) {
-            initGradientsView();
-        }
-
-        if (labels == null)
-            throw new IllegalStateException("No labels found");
-
-        log.info("Finetune phase");
-        IOutputLayer output = (IOutputLayer) getOutputLayer();
-        if (output.conf().getOptimizationAlgo() != OptimizationAlgorithm.HESSIAN_FREE) {
-            feedForward();
-            output.fit(output.input(), labels);
-        } else {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-
     /**
      * Returns the predictions for each example in the dataset
      *

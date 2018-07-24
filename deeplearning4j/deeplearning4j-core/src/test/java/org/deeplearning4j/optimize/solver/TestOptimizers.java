@@ -75,9 +75,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
         OptimizationAlgorithm[] toTest =
                         {OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT, OptimizationAlgorithm.LINE_GRADIENT_DESCENT,
-                                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS
-                        //OptimizationAlgorithm.HESSIAN_FREE	//Known to not work
-                        };
+                                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS};
 
         for (OptimizationAlgorithm oa : toTest) {
             MultiLayerNetwork network = new MultiLayerNetwork(getMLPConfigIris(oa));
@@ -96,9 +94,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
         OptimizationAlgorithm[] toTest =
                         {OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT, OptimizationAlgorithm.LINE_GRADIENT_DESCENT,
-                                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS
-                        //OptimizationAlgorithm.HESSIAN_FREE	//Known to not work
-                        };
+                                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS};
 
         DataSet ds = iter.next();
         ds.normalizeZeroMeanZeroUnitVariance();
