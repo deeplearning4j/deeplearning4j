@@ -170,6 +170,27 @@ namespace nd4j {
          * relu_layer = relu(x*w + b)
          */
         DECLARE_CUSTOM_OP(relu_layer, 3, 1, false, 0, 0);
+
+        /**
+         * Parametric Rectified Linear Unit
+         * f(x) = alpha * x for x < 0, f(x) = x for x >= 0
+         */
+        #if NOT_EXCLUDED(OP_prelu)
+        DECLARE_CONFIGURABLE_OP(prelu, 2, 1, true, 0, 0);
+        DECLARE_CONFIGURABLE_OP(prelu_bp, 3, 2, true, 0, 0);
+        #endif
+
+        /**
+         * Thresholded Rectified Linear Unit
+         * f(x) = x for x > theta, f(x) = 0 otherwise
+         * theta must be >= 0
+         */
+        #if NOT_EXCLUDED(OP_thresholdedrelu)
+        DECLARE_CONFIGURABLE_OP(thresholdedrelu, 2, 1, true, 1, 0);
+        DECLARE_CONFIGURABLE_OP(thresholdedrelu_bp, 3, 2, true, 0, 0);
+        #endif
+
+
     }
 }
 

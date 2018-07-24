@@ -1238,5 +1238,25 @@ TEST_F(DeclarableOpsTests9, clipbynorm_bp_test3) {
     ASSERT_TRUE(isGradCorrect);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, prelu_test1) {
+    
+    NDArray<float> x('c', {2, 3, 4}, {-12.f, -11.f, -10.f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f});    
+    NDArray<float> alpha('c', {2, 3, 4}, {1.2f, 1.1f, 1.f, 0.9f, 0.8f, -0.7f, -0.6f, -0.5f, -0.4f, -0.3f, -0.2f, -0.1f, 0.f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, -0.9f, -1.0f, -1.1f});    
+    NDArray<float> exp('c', {2, 3, 4}, {-14.4f, -12.1f, -10.f, -8.1f, -6.4f, 4.9f, 3.6f, 2.5f, 1.6f, 0.9f, 0.4f,  0.1f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f});    
+
+    nd4j::ops::prelu<float> op;
+
+    auto result = op.execute({&x, &alpha}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+
 
 
