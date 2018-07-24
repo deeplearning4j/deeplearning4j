@@ -58,7 +58,7 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        CUSTOM_OP_IMPL(cumprod_bp, 2, -1, false, 0, 2) {
+        CUSTOM_OP_IMPL(cumprod_bp, 2, 1, false, 0, 2) {
             auto input = INPUT_VARIABLE(0);
             auto axis = block.width() == 3 ? INPUT_VARIABLE(1) : nullptr;
             auto gradOut = block.width() == 3 ? INPUT_VARIABLE(2) : INPUT_VARIABLE(1);
@@ -86,28 +86,28 @@ namespace nd4j {
             val->template applyPairwiseTransform<simdOps::Divide<T>>(input, val.get(), nullptr);
             if (!exclusive && !reverse) {
                 if (dims.size())
-                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val.get(), output, dims, false, true);
+                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val.get(), output, dims, true, false);
                 else
-                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val->buffer(), gradOut->shapeInfo(), output->buffer(), output->shapeInfo(), false, true);
+                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val->buffer(), output->shapeInfo(), output->buffer(), output->shapeInfo(), false, true);
     
             }
             else if (!exclusive && reverse){
                 if (dims.size())
                     nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val.get(), output, dims, false, false);
                 else
-                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val->buffer(), gradOut->shapeInfo(), output->buffer(), output->shapeInfo(), false, false);
+                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val->buffer(), output->shapeInfo(), output->buffer(), output->shapeInfo(), false, false);
             }
             else if (exclusive && !reverse) {
                 if (dims.size())
                     nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val.get(), output, dims, true, true);
                 else
-                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val->buffer(), gradOut->shapeInfo(), output->buffer(), output->shapeInfo(), true, true);
+                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val->buffer(), output->shapeInfo(), output->buffer(), output->shapeInfo(), true, true);
             }
             else {
                 if (dims.size())
                     nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val.get(), output, dims, true, false);
                 else
-                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val->buffer(), gradOut->shapeInfo(), output->buffer(), output->shapeInfo(), true, false);
+                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val->buffer(), output->shapeInfo(), output->buffer(), output->shapeInfo(), true, false);
             }
                 
             return ND4J_STATUS_OK;
