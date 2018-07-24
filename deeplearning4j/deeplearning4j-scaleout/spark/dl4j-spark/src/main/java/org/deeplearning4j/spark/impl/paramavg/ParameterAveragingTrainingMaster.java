@@ -501,7 +501,7 @@ public class ParameterAveragingTrainingMaster
     @Override
     public void setListeners(StatsStorageRouter statsStorage, Collection<TrainingListener> listeners) {
         this.statsStorage = statsStorage;
-        this.listeners = listeners;
+        this.listeners = listeners == null ? null : new ArrayList<>(listeners);
     }
 
 

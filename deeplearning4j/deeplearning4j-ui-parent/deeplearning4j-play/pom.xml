@@ -25,7 +25,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>deeplearning4j-play_2.10</artifactId>
+    <artifactId>deeplearning4j-play_2.11</artifactId>
     <name>deeplearning4j-play</name>
 
     <profiles>
@@ -110,7 +110,7 @@
 
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-java_2.10</artifactId>
+            <artifactId>play-java_2.11</artifactId>
             <version>${playframework.version}</version>
             <exclusions>
                 <exclusion>
@@ -130,13 +130,13 @@
 
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-netty-server_2.10</artifactId>
+            <artifactId>play-netty-server_2.11</artifactId>
             <version>${playframework.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-contrib_2.10</artifactId>
+            <artifactId>akka-contrib_2.11</artifactId>
             <version>${akka.version}</version>
         </dependency>
 
@@ -165,7 +165,7 @@
         <!-- Jackson Module -->
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-scala_2.10</artifactId>
+            <artifactId>jackson-module-scala_2.11</artifactId>
             <version>${spark.jackson.version}</version>
             <exclusions>
                 <exclusion>
@@ -201,7 +201,7 @@
 
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-cluster_2.10</artifactId>
+            <artifactId>akka-cluster_2.11</artifactId>
             <version>2.3.13</version>
         </dependency>
 

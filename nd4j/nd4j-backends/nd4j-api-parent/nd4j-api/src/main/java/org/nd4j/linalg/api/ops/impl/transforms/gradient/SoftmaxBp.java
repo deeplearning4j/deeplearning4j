@@ -14,36 +14,37 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.spark.data.loader;
+package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.nd4j.api.loader.Source;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.util.List;
 
 /**
- * Generate a {@link Source} from a Hadoop-compatible filesystem
+ * Softmax backpropagation op - dL/dIn from in and dL/dOut
  *
  * @author Alex Black
  */
-@AllArgsConstructor
-public class RemoteFileSource implements Source {
-    public static final int DEFAULT_BUFFER_SIZE = 4*1024*2014;
-    @Getter
-    private String path;
-    private final FileSystem fileSystem;
-    private final int bufferSize;
+public class SoftmaxBp extends DynamicCustomOp {
 
-    public RemoteFileSource(String path, FileSystem fileSystem){
-        this(path, fileSystem, DEFAULT_BUFFER_SIZE);
+    public SoftmaxBp(){ }
+
+    public SoftmaxBp(SameDiff sd, SDVariable input, SDVariable grad, Integer dimension){
+        super(null, sd, new SDVariable[]{input, grad});
+        if(dimension != null)
+            addIArgument(dimension);
     }
 
     @Override
-    public InputStream getInputStream() throws IOException {
-        return fileSystem.open(new Path(path), bufferSize);
+    public String opName() {
+        return "softmax_bp";
     }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> grad){
+        throw new UnsupportedOperationException("Differentiating op softmax_bp not supported");
+    }
+
 }

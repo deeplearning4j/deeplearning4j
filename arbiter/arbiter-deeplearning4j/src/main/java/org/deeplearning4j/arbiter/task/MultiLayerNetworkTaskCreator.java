@@ -29,6 +29,7 @@ import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 import org.deeplearning4j.arbiter.optimize.api.TaskCreator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSource;
 import org.deeplearning4j.arbiter.optimize.api.evaluation.ModelEvaluator;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultReference;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultSaver;
@@ -50,6 +51,7 @@ import org.nd4j.util.StringUtils;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.Callable;
 
 /**
@@ -77,7 +79,12 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
                                                IOptimizationRunner runner) {
 
         return new DL4JLearningTask(candidate, dataProvider, scoreFunction, modelEvaluator, statusListeners, taskListener, runner);
+    }
 
+    @Override
+    public Callable<OptimizationResult> create(Candidate candidate, Class<? extends DataSource> dataSource, Properties dataSourceProperties,
+                                               ScoreFunction scoreFunction, List<StatusListener> statusListeners, IOptimizationRunner runner) {
+        return new DL4JLearningTask(candidate, dataSource, dataSourceProperties, scoreFunction, modelEvaluator, statusListeners, taskListener, runner);
     }
 
 
@@ -85,6 +92,8 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
 
         private Candidate candidate;
         private DataProvider dataProvider;
+        private Class<? extends DataSource> dataSource;
+        private Properties dataSourceProperties;
         private ScoreFunction scoreFunction;
         private ModelEvaluator modelEvaluator;
         private List<StatusListener> listeners;
@@ -98,6 +107,19 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
                                 IOptimizationRunner runner) {
             this.candidate = candidate;
             this.dataProvider = dataProvider;
+            this.scoreFunction = scoreFunction;
+            this.modelEvaluator = modelEvaluator;
+            this.listeners = listeners;
+            this.taskListener = taskListener;
+            this.runner = runner;
+        }
+
+        public DL4JLearningTask(Candidate candidate, Class<? extends DataSource> dataSource, Properties dataSourceProperties,
+                                ScoreFunction scoreFunction, ModelEvaluator modelEvaluator, List<StatusListener> listeners, TaskListener taskListener,
+                                IOptimizationRunner runner) {
+            this.candidate = candidate;
+            this.dataSource = dataSource;
+            this.dataSourceProperties = dataSourceProperties;
             this.scoreFunction = scoreFunction;
             this.modelEvaluator = modelEvaluator;
             this.listeners = listeners;
@@ -163,8 +185,20 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
             }
 
             //Early stopping or fixed number of epochs:
-            DataSetIterator dataSetIterator =
-                            ScoreUtil.getIterator(dataProvider.trainData(candidate.getDataParameters()));
+            DataSetIterator dataSetIterator;
+            if(dataSource != null){
+                DataSource dsInstance;
+                try{
+                    dsInstance = dataSource.newInstance();
+                } catch (Exception e){
+                    throw new RuntimeException("Error instantiating instance of DataSource for class " + dataSource.getName());
+                }
+                if(dataSourceProperties != null)
+                    dsInstance.configure(dataSourceProperties);
+                dataSetIterator = ScoreUtil.getIterator(dsInstance.trainData());
+            } else {
+                dataSetIterator = ScoreUtil.getIterator(dataProvider.trainData(candidate.getDataParameters()));
+            }
 
 
             EarlyStoppingConfiguration<MultiLayerNetwork> esConfig =
@@ -203,7 +237,11 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
 
             Double score = null;
             if (net != null) {
-                score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
+                if(dataSource != null){
+                    score = scoreFunction.score(net, dataSource, dataSourceProperties);
+                } else {
+                    score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
+                }
                 ci.setScore(score);
             }
 

@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -161,7 +162,7 @@ public class OldSoftMax extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().softmaxDerivative(arg(), i_v.get(0));
-        return Arrays.asList(ret);
+        SDVariable ret = f().softmaxDerivative(arg(), i_v.get(0), 1);
+        return Collections.singletonList(ret);
     }
 }

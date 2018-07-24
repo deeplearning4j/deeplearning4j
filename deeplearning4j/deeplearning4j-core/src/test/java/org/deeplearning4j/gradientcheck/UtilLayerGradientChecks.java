@@ -69,11 +69,21 @@ public class UtilLayerGradientChecks extends BaseDL4JTest {
                     if (inputMask) {
                         switch (inputRank) {
                             case 2:
-                            case 4:
                                 if(minibatch == 1){
                                     inMask = Nd4j.ones(1,1);
                                 } else {
                                     inMask = Nd4j.create(minibatch, 1);
+                                    Nd4j.getExecutioner().exec(new BernoulliDistribution(inMask, 0.5));
+                                    int count = inMask.sumNumber().intValue();
+                                    assertTrue(count >= 0 && count <= minibatch);   //Sanity check on RNG seed
+                                }
+                                break;
+                            case 4:
+                                //Per-example mask (broadcast along all channels/x/y)
+                                if(minibatch == 1){
+                                    inMask = Nd4j.ones(1,1, 1, 1);
+                                } else {
+                                    inMask = Nd4j.create(minibatch, 1, 1, 1);
                                     Nd4j.getExecutioner().exec(new BernoulliDistribution(inMask, 0.5));
                                     int count = inMask.sumNumber().intValue();
                                     assertTrue(count >= 0 && count <= minibatch);   //Sanity check on RNG seed

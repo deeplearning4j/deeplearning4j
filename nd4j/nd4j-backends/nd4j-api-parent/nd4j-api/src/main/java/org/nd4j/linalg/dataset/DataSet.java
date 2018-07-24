@@ -178,13 +178,13 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
             if (ds.getFeaturesMaskArray() != null) {
                 if (featuresMasksToMerge == null) {
-                    featuresMasksToMerge = new INDArray[data.size()];
+                    featuresMasksToMerge = new INDArray[nonEmpty];
                 }
                 featuresMasksToMerge[count] = ds.getFeaturesMaskArray();
             }
             if (ds.getLabelsMaskArray() != null) {
                 if (labelsMasksToMerge == null) {
-                    labelsMasksToMerge = new INDArray[data.size()];
+                    labelsMasksToMerge = new INDArray[nonEmpty];
                 }
                 labelsMasksToMerge[count] = ds.getLabelsMaskArray();
             }
