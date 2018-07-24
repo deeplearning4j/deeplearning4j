@@ -29,14 +29,14 @@ namespace ops  {
 
 
 ////////////////////////////////////////////////////////////////////////
-CONFIGURABLE_OP_IMPL(thresholdedrelu, 1, 1, true, 1, 0) {
+CONFIGURABLE_OP_IMPL(thresholdedrelu, 1, 1, true, 0, 0) {
     
     NDArray<T>* input  = INPUT_VARIABLE(0);    
     NDArray<T>* output = OUTPUT_VARIABLE(0);
 
-    const T theta = T_ARG(0);
+    const T theta = block.getTArguments()->size() == 0 ? static_cast<T>(1) : T_ARG(0);
 
-    REQUIRE_TRUE(theta >= static_cast<T>(0), 0, "THRESHOLDED_RELU OP: input float argument theta must be >= 0, but got %f instead !", theta);
+    // REQUIRE_TRUE(theta >= static_cast<T>(0), 0, "THRESHOLDED_RELU OP: input float argument theta must be >= 0, but got %f instead !", theta);
 
     auto func = LAMBDA_T(i, theta) { if (i > theta) return i; else return static_cast<T>(0); };
 
@@ -47,21 +47,21 @@ CONFIGURABLE_OP_IMPL(thresholdedrelu, 1, 1, true, 1, 0) {
 
 
 ////////////////////////////////////////////////////////////////////////
-CONFIGURABLE_OP_IMPL(thresholdedrelu_bp, 2, 1, true, 1, 0) {
+CONFIGURABLE_OP_IMPL(thresholdedrelu_bp, 2, 1, true, 0, 0) {
     
     NDArray<T>* input = INPUT_VARIABLE(0);
     NDArray<T>* dLdO  = INPUT_VARIABLE(1);
     
     NDArray<T>* dLdI = OUTPUT_VARIABLE(0);
 
-    const T theta = T_ARG(0);
+    const T theta = block.getTArguments()->size() == 0 ? static_cast<T>(1) : T_ARG(0);
 
-    REQUIRE_TRUE(theta >= static_cast<T>(0), 0, "THRESHOLDED_RELU_BP OP: input float argument theta must be >= 0, but got %f instead !", theta);
+    // REQUIRE_TRUE(theta >= static_cast<T>(0), 0, "THRESHOLDED_RELU_BP OP: input float argument theta must be >= 0, but got %f instead !", theta);
 
-    auto derivative = LAMBDA_TT(i, grO, theta) {if (i > theta) return grO; else static_cast<T>(0); };
+    auto derivative = LAMBDA_TT(i, grO, theta) {if (i > theta) return grO; else return static_cast<T>(0); };
 
-    input->applyPairwiseLambda(dLdO, derivative, dLdI);    
-    
+    input->applyPairwiseLambda(dLdO, derivative, dLdI);
+
     return Status::OK();
 }
 
