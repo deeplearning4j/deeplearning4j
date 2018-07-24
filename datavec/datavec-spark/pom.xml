@@ -145,6 +145,13 @@
             <version>${nd4j.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-local</artifactId>
+            <version>${datavec.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
 
