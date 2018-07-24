@@ -318,8 +318,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (flattenedGradients == null) {
             initGradientsView();
         }
-        if (!layerWiseConfigurations.isPretrain())
-            return;
         if (layerIdx >= layers.length) {
             throw new IllegalArgumentException(
                     "Cannot pretrain layer: layerIdx (" + layerIdx + ") >= numLayers (" + layers.length + ")");
@@ -366,8 +364,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (flattenedGradients == null) {
             initGradientsView();
         }
-        if (!layerWiseConfigurations.isPretrain())
-            return;
         if (layerIdx >= layers.length) {
             throw new IllegalArgumentException(
                     "Cannot pretrain layer: layerIdx (" + layerIdx + ") >= numLayers (" + layers.length + ")");

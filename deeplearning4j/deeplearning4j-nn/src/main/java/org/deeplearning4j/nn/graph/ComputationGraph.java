@@ -932,7 +932,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
 
                 Layer layer = toTrain.getLayer();
+                layer.getConfig().setPretrain(true);
                 layer.fit(layer.input(), workspaceMgr);
+                layer.getConfig().setPretrain(false);
             }
         }
     }
