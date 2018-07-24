@@ -8014,7 +8014,11 @@ public class SameDiff {
      * @return
      */
     public SDVariable softmaxDerivative(String name, SDVariable x, SDVariable wrt) {
-        SDVariable result = functionFactory.softmaxDerivative(x, wrt);
+        return softmaxDerivative(name, x, wrt, null);
+    }
+
+    public SDVariable softmaxDerivative(String name, SDVariable x, SDVariable wrt, Integer dimension) {
+        SDVariable result = functionFactory.softmaxDerivative(x, wrt, dimension);
         return updateVariableNameAndReference(result, name);
     }
 

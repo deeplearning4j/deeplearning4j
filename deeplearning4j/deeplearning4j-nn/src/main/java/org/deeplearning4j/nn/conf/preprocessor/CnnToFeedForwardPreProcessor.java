@@ -143,7 +143,17 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
                     int minibatchSize) {
-        //Pass-through, unmodified (assuming here that it's a 1d mask array - one value per example)
-        return new Pair<>(maskArray, currentMaskState);
+        if(maskArray == null || maskArray.rank() == 2)
+            return new Pair<>(maskArray, currentMaskState);
+
+        if (maskArray.rank() != 4 || maskArray.size(2) != 1 || maskArray.size(3) != 1) {
+            throw new UnsupportedOperationException(
+                    "Expected rank 4 mask array for 2D CNN layer activations. Got rank " + maskArray.rank() + " mask array (shape " +
+                            Arrays.toString(maskArray.shape()) + ")  - when used in conjunction with input data of shape" +
+                            " [batch,channels,h,w] 4d masks passing through CnnToFeedForwardPreProcessor should have shape" +
+                            " [batchSize,1,1,1]");
+        }
+
+        return new Pair<>(maskArray.reshape(maskArray.ordering(), maskArray.size(0), maskArray.size(1)), currentMaskState);
     }
 }

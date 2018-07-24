@@ -30,6 +30,7 @@
 #include <helpers/helper_hash.h>
 #include <array/ShapeList.h>
 #include <array/ResultSet.h>
+#include <helpers/OpArgsHolder.h>
 #include <dll.h>
 //#include <ops/declarable/declarable_ops.h>
 
@@ -163,9 +164,11 @@ namespace nd4j {
             Nd4jStatus execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<NDArray<T>*> outputs , std::initializer_list<T> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace = false);
             Nd4jStatus execute(nd4j::random::RandomBuffer *rng, std::initializer_list<NDArray<T>*> inputs, std::initializer_list<NDArray<T>*> outputs , std::initializer_list<T> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace = false);
 
-            nd4j::ResultSet<T>* execute(std::vector<NDArray<T>*>& inputs, std::vector<T>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace = false);
+            nd4j::ResultSet<T>* execute(const std::vector<NDArray<T>*>& inputs, const std::vector<T>& tArgs, const std::vector<Nd4jLong>& iArgs, bool isInplace = false);
             Nd4jStatus execute(std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& outputs , std::vector<T>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace = false);
             Nd4jStatus execute(nd4j::random::RandomBuffer *rng, std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& outputs , std::vector<T>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace = false);
+
+            nd4j::ResultSet<T>* execute(const nd4j::OpArgsHolder<T>& holder, bool isInplace = false);
 
             // There methods provide various validation options
             Nd4jStatus validateNonEmptyInput(Context<T>& block);

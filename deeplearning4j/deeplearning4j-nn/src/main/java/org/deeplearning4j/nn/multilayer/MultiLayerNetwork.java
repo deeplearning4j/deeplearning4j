@@ -268,14 +268,23 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     /**
-     * Perform layerwise pretraining on all pre-trainable layers in the network (VAEs, Autoencoders, etc)<br>
+     * Perform layerwise pretraining for one epoch - see {@link #pretrain(DataSetIterator, int)}
+     */
+    public void pretrain(DataSetIterator iter) {
+        pretrain(iter, 1);
+    }
+
+    /**
+     * Perform layerwise pretraining on all pre-trainable layers in the network (VAEs, Autoencoders, etc), for the specified
+     * number of epochs each. For example, if numEpochs=3, then layer 0 will be fit for 3 epochs, followed by layer 1
+     * for 3 epochs, and so on.<br>
      * Note that pretraining will be performed on one layer after the other, resetting the DataSetIterator between iterations.<br>
      * For multiple epochs per layer, appropriately wrap the iterator (for example, a MultipleEpochsIterator) or train
      * each layer manually using {@link #pretrainLayer(int, DataSetIterator)}
      *
      * @param iter Training data
      */
-    public void pretrain(DataSetIterator iter) {
+    public void pretrain(DataSetIterator iter, int numEpochs){
         if (flattenedGradients == null) {
             initGradientsView();
         }
@@ -283,18 +292,29 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             return;
 
         for (int i = 0; i < getnLayers(); i++) {
-            pretrainLayer(i, iter);
+            pretrainLayer(i, iter, numEpochs);
         }
     }
 
     /**
-     * Perform layerwise unsupervised training on a single pre-trainable layer in the network (VAEs, Autoencoders, etc)<br>
-     * If the specified layer index (0 to numLayers - 1) is not a pretrainable layer, this is a no-op.
-     *
-     * @param layerIdx Index of the layer to train (0 to numLayers-1)
-     * @param iter Training data
+     * Fit for one epoch - see {@link #pretrainLayer(int, DataSetIterator, int)}
      */
     public void pretrainLayer(int layerIdx, DataSetIterator iter) {
+        pretrainLayer(layerIdx, iter, 1);
+    }
+
+    /**
+     * Perform layerwise unsupervised training on a single pre-trainable layer in the network (VAEs, Autoencoders, etc)
+     * for the specified number of epochs<br>
+     * If the specified layer index (0 to numLayers - 1) is not a pretrainable layer, this is a no-op.
+     *
+     * @param layerIdx  Index of the layer to train (0 to numLayers-1)
+     * @param iter      Training data
+     * @param numEpochs Number of epochs to fit the specified layer for
+     */
+    public void pretrainLayer(int layerIdx, DataSetIterator iter, int numEpochs) {
+        Preconditions.checkState(numEpochs > 0, "Number of epochs (%s) must be a positive number", numEpochs);
+
         if (flattenedGradients == null) {
             initGradientsView();
         }
@@ -309,15 +329,23 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (!layer.isPretrainLayer())
             return;
 
+        if(numEpochs > 1 && iter.resetSupported())
+            throw new IllegalStateException("Cannot fit multiple epochs (" + numEpochs + ") on an iterator that doesn't support resetting");
+
         if (!iter.hasNext() && iter.resetSupported()) {
             iter.reset();
         }
 
-        log.info("Starting unsupervised training on layer " + layerIdx);
-        while (iter.hasNext()) {
-            DataSet next = iter.next();
-            input = next.getFeatureMatrix();
-            pretrainLayer(layerIdx, input);
+        log.info("Starting unsupervised training on layer " + layerIdx + " for " + numEpochs + " epochs");
+        for(int i=0; i<numEpochs; i++ ) {
+            if(i > 0)
+                iter.reset();
+
+            while (iter.hasNext()) {
+                DataSet next = iter.next();
+                input = next.getFeatureMatrix();
+                pretrainLayer(layerIdx, input);
+            }
         }
 
         int ec = getLayer(layerIdx).conf().getEpochCount() + 1;

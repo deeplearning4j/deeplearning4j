@@ -384,7 +384,7 @@ template <typename T>
     }
 
     template<typename T>
-    void NDArray<T>::applyPairwiseLambda(NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target) {
+    void NDArray<T>::applyPairwiseLambda(const NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target) {
         if (target == nullptr)
             target = this;
 
@@ -421,6 +421,7 @@ template <typename T>
             }
         }
     }
+
 
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
@@ -1412,6 +1413,26 @@ template <typename T>
     return result;
         */
 }
+
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+NDArray<T> NDArray<T>::transp() const {
+        
+    int shapeInfoLength = shape::shapeInfoLength(rankOf());
+    Nd4jLong* newShapeInfo;
+
+    ALLOCATE(newShapeInfo , _workspace, shapeInfoLength, Nd4jLong);
+    memcpy(newShapeInfo, _shapeInfo, shapeInfoLength*sizeof(Nd4jLong));
+
+    NDArray<T> newArr(_buffer, newShapeInfo, _workspace);
+    newArr._isShapeAlloc = true;
+    newArr._isBuffAlloc  = false;
+
+    newArr.transposei();
+
+    return newArr;
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // method performs transpose operation based on this array and store result in target, this array remains unaffected 

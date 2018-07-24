@@ -777,32 +777,57 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * Pretrain network with a single input and single output. DataSetIterators can only be used if the number of input
-     * arrays for the ComputationGraph is 1.
-     * For networks with more than one input use {@link #pretrain(MultiDataSetIterator)}
+     * Perform layerwise pretraining for one epoch - see {@link #pretrain(DataSetIterator, int)}
      */
     public void pretrain(DataSetIterator iter) {
+        pretrain(iter, 1);
+    }
+
+    /**
+     * Pretrain network with a single input and single output. DataSetIterators can only be used if the number of input
+     * arrays for the ComputationGraph is 1.<br>
+     * This method performs layerwise pretraining on all pre-trainable layers in the network (VAEs, Autoencoders, etc), for the specified
+     * number of epochs each. For example, if numEpochs=3, then layer 0 will be fit for 3 epochs, followed by layer 1
+     * for 3 epochs, and so on.<br>
+     * For networks with more than one input use {@link #pretrain(MultiDataSetIterator)}
+     */
+    public void pretrain(DataSetIterator iter, int numEpochs) {
         if (numInputArrays != 1) {
             throw new UnsupportedOperationException(
                     "Cannot train ComputationGraph network with  multiple inputs using a DataSetIterator");
         }
 
-        pretrain(ComputationGraphUtil.toMultiDataSetIterator(iter));
+        pretrain(ComputationGraphUtil.toMultiDataSetIterator(iter), numEpochs);
     }
 
     /**
      * Pretrain network with multiple inputs and/or outputs
      */
     public void pretrain(MultiDataSetIterator iter) {
+        pretrain(iter, 1);
+    }
+
+    /**
+     * Pretrain network with multiple inputs and/or outputs<br>
+     * This method performs layerwise pretraining on all pre-trainable layers in the network (VAEs, Autoencoders, etc), for the specified
+     * number of epochs each. For example, if numEpochs=3, then layer 0 will be fit for 3 epochs, followed by layer 1
+     * for 3 epochs, and so on.<br>
+     * Non-pretrainable layers are ignored
+     *
+     * @param iter      Training data
+     * @param numEpochs Number of epochs to fit each layer with
+     * @see #pretrainLayer(String, MultiDataSetIterator)
+     */
+    public void pretrain(MultiDataSetIterator iter, int numEpochs) {
         try{
-            pretrainHelper(iter);
+            pretrainHelper(iter, numEpochs);
         } catch (OutOfMemoryError e){
             CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
 
-    private void pretrainHelper(MultiDataSetIterator iter){
+    private void pretrainHelper(MultiDataSetIterator iter, int numEpochs){
         if (!configuration.isPretrain())
             return;
         if (flattenedGradients == null) {
@@ -818,7 +843,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             if (!vertices[i].getLayer().isPretrainLayer())
                 continue; //Skip layers that aren't pretrainable
 
-            pretrainLayer(vertices[i].getVertexName(), iter);
+            pretrainLayerHelper(vertices[i].getVertexName(), iter, numEpochs);
         }
     }
 
@@ -845,14 +870,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public void pretrainLayer(String layerName, MultiDataSetIterator iter) {
         try{
-            pretrainLayerHelper(layerName, iter);
+            pretrainLayerHelper(layerName, iter, 1);
         } catch (OutOfMemoryError e){
             CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
 
-    private void pretrainLayerHelper(String layerName, MultiDataSetIterator iter){
+    private void pretrainLayerHelper(String layerName, MultiDataSetIterator iter, int numEpochs){
         if (!configuration.isPretrain())
             return;
         if (flattenedGradients == null) {
