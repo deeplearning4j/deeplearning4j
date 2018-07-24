@@ -292,11 +292,6 @@ public class BarnesHutTsne implements Model {
     }
 
     @Override
-    public void validateInput() {
-
-    }
-
-    @Override
     public ConvexOptimizer getOptimizer() {
         return null;
     }
@@ -304,11 +299,6 @@ public class BarnesHutTsne implements Model {
     @Override
     public INDArray getParam(String param) {
         return null;
-    }
-
-    @Override
-    public void initParams() {
-
     }
 
     @Override

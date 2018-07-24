@@ -243,11 +243,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public void initParams() {
-        throw new UnsupportedOperationException("Deprecated - no longer used - " + layerId());
-    }
-
-    @Override
     public Map<String, INDArray> paramTable() {
         return paramTable(false);
     }
@@ -354,11 +349,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     @Override
     public INDArray input() {
         return input;
-    }
-
-    @Override
-    public void validateInput() {
-
     }
 
     @Override

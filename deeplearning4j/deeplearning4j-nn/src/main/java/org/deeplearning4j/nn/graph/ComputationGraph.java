@@ -3173,11 +3173,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
-    public void validateInput() {
-
-    }
-
-    @Override
     public ConvexOptimizer getOptimizer() {
         return solver.getOptimizer();
     }
@@ -3192,11 +3187,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         String paramType = paramName.substring(idx + 1);
         return getLayer(layerName).getParam(paramType);
 
-    }
-
-    @Override
-    public void initParams() {
-        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override

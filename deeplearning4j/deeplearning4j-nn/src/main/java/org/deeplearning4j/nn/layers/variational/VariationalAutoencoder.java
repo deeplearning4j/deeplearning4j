@@ -573,11 +573,6 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public void validateInput() {
-        throw new UnsupportedOperationException("Not supported " + layerId());
-    }
-
-    @Override
     public ConvexOptimizer getOptimizer() {
         return optimizer;
     }
@@ -585,11 +580,6 @@ public class VariationalAutoencoder implements Layer {
     @Override
     public INDArray getParam(String param) {
         return params.get(param);
-    }
-
-    @Override
-    public void initParams() {
-        throw new UnsupportedOperationException("Deprecated " + layerId());
     }
 
     @Override

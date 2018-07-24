@@ -960,9 +960,6 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void validateInput() {}
-
-        @Override
         public ConvexOptimizer getOptimizer() {
             throw new UnsupportedOperationException();
         }
@@ -970,11 +967,6 @@ public class TestOptimizers extends BaseDL4JTest {
         @Override
         public INDArray getParam(String param) {
             return parameters;
-        }
-
-        @Override
-        public void initParams() {
-            throw new UnsupportedOperationException();
         }
 
         @Override

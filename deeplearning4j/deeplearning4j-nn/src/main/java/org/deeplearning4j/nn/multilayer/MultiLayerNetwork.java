@@ -432,11 +432,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     @Override
-    public void validateInput() {
-
-    }
-
-    @Override
     public ConvexOptimizer getOptimizer() {
         return solver.getOptimizer();
     }
@@ -451,11 +446,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         String newKey = param.substring(idx + 1);
 
         return layers[layerIdx].getParam(newKey);
-    }
-
-    @Override
-    public void initParams() {
-        throw new UnsupportedOperationException();
     }
 
     @Override

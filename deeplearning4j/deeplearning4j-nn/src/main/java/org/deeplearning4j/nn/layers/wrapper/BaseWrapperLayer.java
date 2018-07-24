@@ -211,11 +211,6 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public void validateInput() {
-        underlying.validateInput();
-    }
-
-    @Override
     public ConvexOptimizer getOptimizer() {
         return underlying.getOptimizer();
     }
@@ -223,11 +218,6 @@ public abstract class BaseWrapperLayer implements Layer {
     @Override
     public INDArray getParam(String param) {
         return underlying.getParam(param);
-    }
-
-    @Override
-    public void initParams() {
-        underlying.initParams();
     }
 
     @Override

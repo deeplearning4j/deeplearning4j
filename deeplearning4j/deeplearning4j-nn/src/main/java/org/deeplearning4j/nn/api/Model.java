@@ -190,14 +190,6 @@ public interface Model {
      */
     INDArray input();
 
-
-    /**
-     * Validate the input
-     * @deprecated As of 0.7.3 - Feb 2017. No longer used, most implementations are unsupported or no-op.
-     */
-    @Deprecated
-    void validateInput();
-
     /**
      * Returns this models optimizer
      * @return this models optimizer
@@ -210,14 +202,6 @@ public interface Model {
      * @return the parameter vector/matrix with that particular key
      */
     INDArray getParam(String param);
-
-    /**
-     * Initialize the parameters
-     * @deprecated As of 0.7.3 - Feb 2017. Not used; neural network params are initialized by the parameter initializaters.
-     *  Furthermore, most implementations are unsupported or no-op.
-     */
-    @Deprecated
-    void initParams();
 
     /**
      * The param table

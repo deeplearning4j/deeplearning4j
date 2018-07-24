@@ -364,11 +364,6 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public void validateInput() {
-        //no op
-    }
-
-    @Override
     public ConvexOptimizer getOptimizer() {
         return null;
     }
@@ -381,11 +376,6 @@ public class BidirectionalLayer implements RecurrentLayer {
         } else {
             return bwd.getParam(sub);
         }
-    }
-
-    @Override
-    public void initParams() {
-        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override
