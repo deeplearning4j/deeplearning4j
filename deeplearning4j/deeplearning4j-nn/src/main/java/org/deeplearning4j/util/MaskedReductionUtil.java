@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.util;
 
-import com.sun.prism.impl.shape.ShapeUtil;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
