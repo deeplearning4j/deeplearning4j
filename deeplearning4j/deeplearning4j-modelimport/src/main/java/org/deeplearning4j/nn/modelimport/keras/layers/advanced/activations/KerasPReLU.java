@@ -16,16 +16,24 @@
 
 package org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations;
 
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ActivationLayer;
+import org.deeplearning4j.nn.conf.layers.PReLULayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationLReLU;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Map;
+
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
 
 /**
  * Imports PReLU layer from Keras
@@ -58,9 +66,25 @@ public class KerasPReLU extends KerasLayer {
     public KerasPReLU(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        //TODO shared axes
-        //IActivation leakyReLU = new ActivationLReLU(alpha);
-        //this.layer = new ActivationLayer.Builder().name(this.layerName).activation(leakyReLU).build();
+
+        // TODO: read alpha_regularizer, infer and use shared axes
+        LayerConstraint weightConstraint = KerasConstraintUtils.getConstraintsFromConfig(
+                layerConfig, "alpha_constraint", conf, kerasMajorVersion);
+
+        Pair<WeightInit, Distribution> init = getWeightInitFromConfig(layerConfig, "alpha_initializer",
+                enforceTrainingConfig, conf, kerasMajorVersion);
+        WeightInit weightInit = init.getFirst();
+        Distribution distribution = init.getSecond();
+
+
+        PReLULayer.Builder builder = new PReLULayer.Builder().weightInit(weightInit);
+        if (distribution != null) {
+            builder.dist(distribution);
+        }
+        if (weightConstraint != null){
+            builder.constrainWeights(weightConstraint);
+        }
+        this.layer = builder.build();
     }
 
     /**
@@ -73,8 +97,15 @@ public class KerasPReLU extends KerasLayer {
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                    "Keras Activation layer accepts only one input (received " + inputType.length + ")");
-        return this.getActivationLayer().getOutputType(-1, inputType[0]);
+                    "Keras PReLU layer accepts only one input (received " + inputType.length + ")");
+        InputType inType = inputType[0];
+
+        // Dynamically infer input shape of PReLU layer from input type
+        PReLULayer shapedLayer = (PReLULayer) this.layer;
+        shapedLayer.setInputShape(inType.getShape());
+        this.layer = shapedLayer;
+
+        return this.getPReLULayer().getOutputType(-1, inputType[0]);
     }
 
     /**
@@ -82,8 +113,8 @@ public class KerasPReLU extends KerasLayer {
      *
      * @return ActivationLayer
      */
-    public ActivationLayer getActivationLayer() {
-        return (ActivationLayer) this.layer;
+    public PReLULayer getPReLULayer() {
+        return (PReLULayer) this.layer;
     }
 
 }
