@@ -1621,7 +1621,26 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Output activations (order: same as defined in network configuration)
      */
     public INDArray[] output(boolean train, INDArray... input) {
-        return output(train, input, inputMaskArrays, labelMaskArrays);
+        return output(train, (MemoryWorkspace)null, input);
+    }
+
+    /**
+     * Return an array of network outputs (predictions), given the specified network inputs
+     * Network outputs are for output layers only.<br>
+     * If no memory workspace is provided, the output will be detached (not in any workspace).<br>
+     * If a memory workspace is provided, the output activation array (i.e., the INDArray returned by this method)
+     * will be placed in the specified workspace. This workspace must be opened by the user before calling this method -
+     * and the user is responsible for (a) closing this workspace, and (b) ensuring the output array is not used out
+     * of scope (i.e., not used after closing the workspace to which it belongs - as this is likely to cause either
+     * an exception when used, or a crash).
+     *
+     * @param train           If true: do forward pass at training time; false: do forward pass at test time
+     * @param outputWorkspace May be null. If not null: the workspace MUST be opened before calling this method.
+     * @param input           Inputs to the network
+     * @return Output activations (order: same as defined in network configuration)
+     */
+    public INDArray[] output(boolean train, MemoryWorkspace outputWorkspace, INDArray... input) {
+        return output(train, input, inputMaskArrays, labelMaskArrays, outputWorkspace);
     }
 
     /**
@@ -1647,10 +1666,31 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param labelMasks Optional label mask arrays (may be null
      * @return           Network output activations
      */
-    public INDArray[] output(boolean train, @NonNull INDArray[] input, INDArray[] inputMasks, INDArray[] labelMasks){
+    public INDArray[] output(boolean train, @NonNull INDArray[] input, INDArray[] inputMasks, INDArray[] labelMasks) {
+        return output(train, input, inputMasks, labelMasks, null);
+    }
+
+    /**
+     * Return an array of network outputs (predictions), given the specified network inputs
+     * Network outputs are for output layers only.<br>
+     * If no memory workspace is provided, the output will be detached (not in any workspace).<br>
+     * If a memory workspace is provided, the output activation array (i.e., the INDArray returned by this method)
+     * will be placed in the specified workspace. This workspace must be opened by the user before calling this method -
+     * and the user is responsible for (a) closing this workspace, and (b) ensuring the output array is not used out
+     * of scope (i.e., not used after closing the workspace to which it belongs - as this is likely to cause either
+     * an exception when used, or a crash).
+     *
+     * @param train           If true: forward pass for training mode. False: test mode
+     * @param input           Input arrays to the netwonk
+     * @param inputMasks      Optional input mask arrays (may be null)
+     * @param labelMasks      Optional label mask arrays (may be null
+     * @param outputWorkspace May be null. If not null: the workspace MUST be opened before calling this method.
+     * @return Network output activations
+     */
+    public INDArray[] output(boolean train, @NonNull INDArray[] input, INDArray[] inputMasks, INDArray[] labelMasks, MemoryWorkspace outputWorkspace){
         try {
             setLayerMaskArrays(inputMasks, labelMasks);
-            INDArray[] out = outputOfLayersDetached(train, FwdPassType.STANDARD, getOutputLayerIndices(), input, inputMasks, labelMasks, true, false);
+            INDArray[] out = outputOfLayersDetached(train, FwdPassType.STANDARD, getOutputLayerIndices(), input, inputMasks, labelMasks, true, false, outputWorkspace);
             clearLayerMaskArrays();
             clearLayersStates();
             return out;
@@ -1702,7 +1742,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     public INDArray[] output(boolean train, boolean clearInputs, INDArray... input){
         boolean detachedInputs = !clearInputs;  //If !clearInputs, then inputs should be detached (otherwise: will be out of scope)
         try {
-            return outputOfLayersDetached(train, FwdPassType.STANDARD, getOutputLayerIndices(), input, null, null, clearInputs, detachedInputs);
+            return outputOfLayersDetached(train, FwdPassType.STANDARD, getOutputLayerIndices(), input, null, null, clearInputs, detachedInputs, null);
         } catch (OutOfMemoryError e){
             CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
@@ -2066,10 +2106,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param lMasks            Labels mask array. May be null
      * @param clearLayerInputs  If true: the layer input fields will be cleared
      * @param detachedInputs    If true: the layer input fields will be detached. Usually used for external errors cases
+     * @param outputWorkspace   Optional - if provided, outputs should be placed in this workspace. NOTE: this workspace
+     *                          must be open
      * @return                  Output of the specified layers, detached from any workspace
      */
     protected INDArray[] outputOfLayersDetached(boolean train, @NonNull FwdPassType fwdPassType, @NonNull int[] layerIndexes, @NonNull INDArray[] features,
-                                                INDArray[] fMask, INDArray[] lMasks, boolean clearLayerInputs, boolean detachedInputs){
+                                                INDArray[] fMask, INDArray[] lMasks, boolean clearLayerInputs, boolean detachedInputs, MemoryWorkspace outputWorkspace){
         if(features.length != numInputArrays){
             throw new IllegalArgumentException("Invalid number of input arrays: network has " + numInputArrays
                     + " inputs, got " + features.length + " input arrays");
@@ -2083,8 +2125,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         setInputs(features);
         setLayerMaskArrays(fMask, lMasks);
 
-        //Verify that no workspace is open externally
-        WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active before call to outputOfLayersDetached");
+        MemoryWorkspace outputPrevious = null;
+        if(outputWorkspace == null) {
+            //Verify that no workspace is open externally
+            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active before call to outputOfLayersDetached");
+        } else {
+            Preconditions.checkState(outputWorkspace.isScopeActive(), "Workspace \"" + outputWorkspace.getId() +
+                    "\" was provided for the network/layer outputs. When provided, this workspace must be opened before" +
+                    "calling the output method; furthermore, closing the workspace is the responsibility of the user");
+            outputPrevious = outputWorkspace.getParentWorkspace();
+        }
 
 
         //First: for each vertex, determine the highest index of the vertex that consumes it's output
@@ -2179,11 +2229,20 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 WorkspaceConfiguration origWSActConf = null;
                 if (ArrayUtils.contains(layerIndexes, vIdx)) {
                     isRequiredOutput = true;
-                    if(!workspaceMgr.isScopedOut(ArrayType.ACTIVATIONS)) {
-                        //Activations/output to return: don't want this in any workspace
+
+                    if(outputWorkspace != null){
+                        //Place activations in user-specified workspace
                         origWSAct = workspaceMgr.getWorkspaceName(ArrayType.ACTIVATIONS);
                         origWSActConf = workspaceMgr.getConfiguration(ArrayType.ACTIVATIONS);
-                        workspaceMgr.setScopedOutFor(ArrayType.ACTIVATIONS);
+                        workspaceMgr.setWorkspace(ArrayType.ACTIVATIONS, outputWorkspace.getId(), outputWorkspace.getWorkspaceConfiguration());
+                    } else {
+                        //Standard case
+                        if (!workspaceMgr.isScopedOut(ArrayType.ACTIVATIONS)) {
+                            //Activations/output to return: don't want this in any workspace
+                            origWSAct = workspaceMgr.getWorkspaceName(ArrayType.ACTIVATIONS);
+                            origWSActConf = workspaceMgr.getConfiguration(ArrayType.ACTIVATIONS);
+                            workspaceMgr.setScopedOutFor(ArrayType.ACTIVATIONS);
+                        }
                     }
                 }
 
@@ -2285,7 +2344,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
             Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
 
-            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at end of call to outputOfLayersDetached");
+            if(outputWorkspace == null) {
+                WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerDetached");
+            } else {
+                Preconditions.checkState(outputWorkspace.isScopeActive(), "Expected output workspace to still be open" +
+                        "at end of outputOfLayerDetached, but ");
+                outputWorkspace.setPreviousWorkspace(outputPrevious);
+            }
         }
 
         return outputs;
@@ -3288,7 +3353,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
         }
 
-        INDArray[] outputs = outputOfLayersDetached(false, FwdPassType.RNN_TIMESTEP, getOutputLayerIndices(), inputs, null, null, true, false);
+        INDArray[] outputs = outputOfLayersDetached(false, FwdPassType.RNN_TIMESTEP, getOutputLayerIndices(), inputs, null, null, true, false, null);
 
         //As per MultiLayerNetwork.rnnTimeStep(): if inputs are all 2d, then outputs are all 2d
         if (inputIs2d) {
@@ -3929,7 +3994,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 INDArray[] labelMasks = next.getLabelsMaskArrays();
 
                 //TODO in principle, we could keep these output arrays in a workspace...
-                INDArray[] out = outputOfLayersDetached(false, FwdPassType.STANDARD, getOutputLayerIndices(), features, featuresMasks, labelMasks, true, false);
+                INDArray[] out = outputOfLayersDetached(false, FwdPassType.STANDARD, getOutputLayerIndices(), features, featuresMasks, labelMasks, true, false, null);
 
                 for(Integer i : evaluations.keySet()){
                     IEvaluation[] evalsThisOutput = evaluations.get(i);

@@ -392,7 +392,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         } else {
             //Yes, this part of training - but we'll do forward psas as inference mode when doing layerwise training
             // to effectively freeze earlier layers and not apply dropout etc
-            outputOfPrevLayer = outputOfLayerDetached(false, FwdPassType.STANDARD, layerIndex-1, features, null, null);
+            outputOfPrevLayer = outputOfLayerDetached(false, FwdPassType.STANDARD, layerIndex-1, features, null, null, null);
         }
 
         try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
@@ -1072,10 +1072,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param input             Input to the network
      * @param featureMask       Input/feature mask array. May be null.
      * @param labelsMask        Labels mask array. May be null
+     * @param outputWorkspace   Optional - if provided, outputs should be placed in this workspace. NOTE: this workspace
+     *                          must be open
      * @return                  Output of the specified layer, detached from any workspace
      */
     protected INDArray outputOfLayerDetached(boolean train, @NonNull FwdPassType fwdPassType, int layerIndex, @NonNull INDArray input,
-                                             INDArray featureMask, INDArray labelsMask){
+                                             INDArray featureMask, INDArray labelsMask, MemoryWorkspace outputWorkspace){
         setInput(input);
         setLayerMaskArrays(featureMask, labelsMask);
 
@@ -1091,8 +1093,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         Additionally, we'll reconfigure the workspace manager for the *final* layer, so that we don't have to detach
          */
-
-        WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in outputOfLayerDetached");
+        if(outputWorkspace == null) {
+            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in outputOfLayerDetached");
+        } else {
+            Preconditions.checkState(outputWorkspace.isScopeActive(), "Workspace \"" + outputWorkspace.getId() +
+                    "\" was provided for the network/layer outputs. When provided, this workspace must be opened before" +
+                    "calling the output method; furthermore, closing the workspace is the responsibility of the user");
+        }
 
         LayerWorkspaceMgr mgrEven;
         LayerWorkspaceMgr mgrOdd;
@@ -1101,6 +1108,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if(wsm == WorkspaceMode.NONE){
             mgrEven = LayerWorkspaceMgr.noWorkspaces();
             mgrOdd = mgrEven;
+
+            //Check for external workspace - doesn't make sense to have one with workspace mode NONE
+            if(outputWorkspace != null){
+                throw new IllegalStateException("Workspace \"" + outputWorkspace.getId() +
+                        "\" was provided for the network/layer outputs, however " + (train ? "training" : "inference") +
+                        " workspace mode is set to NONE. Cannot put output activations into the specified workspace if" +
+                        "workspaces are disabled for the network. use getConfiguration().setTraining/InferenceWorkspaceMode(WorkspaceMode.ENABLED)");
+            }
         } else {
             mgrEven = LayerWorkspaceMgr.builder()
                     .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
@@ -1156,8 +1171,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     }
 
                     if ( i == layerIndex ) {
-                        //Final activations: should be detached
-                        mgr.setScopedOutFor(ArrayType.ACTIVATIONS);
+                        if(outputWorkspace != null){
+                            //Place activations in user-specified workspace
+                            mgr.setWorkspace(ArrayType.ACTIVATIONS, outputWorkspace.getId(), outputWorkspace.getWorkspaceConfiguration());
+                        } else {
+                            //Final activations: should be detached
+                            mgr.setScopedOutFor(ArrayType.ACTIVATIONS);
+                        }
                     }
 
                     if(fwdPassType == FwdPassType.STANDARD){
@@ -1208,7 +1228,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
             Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
 
-            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerDetached");
+            if(outputWorkspace == null) {
+                WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerDetached");
+            } else {
+                Preconditions.checkState(outputWorkspace.isScopeActive(), "Expected output workspace to still be open" +
+                        "at end of outputOfLayerDetached, but ");
+            }
         }
 
         return input;
@@ -2197,8 +2222,44 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * of varying lengths within the same minibatch.
      */
     public INDArray output(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask) {
+        return output(input, train, featuresMask, labelsMask, null);
+    }
+
+    /**
+     * Get the network output, which is optionally placed in the specified memory workspace.<br>
+     * If no memory workspace is provided, the output will be detached (not in any workspace).<br>
+     * If a memory workspace is provided, the output activation array (i.e., the INDArray returned by this method)
+     * will be placed in the specified workspace. This workspace must be opened by the user before calling this method -
+     * and the user is responsible for (a) closing this workspace, and (b) ensuring the output array is not used out
+     * of scope (i.e., not used after closing the workspace to which it belongs - as this is likely to cause either
+     * an exception when used, or a crash).
+     *
+     * @param input           Input to the network
+     * @param train           True for train, false otherwise
+     * @param outputWorkspace May be null. If not null: the workspace MUST be opened before calling this method.
+     * @return The output/activations from the network (either detached or in the specified workspace if provided)
+     */
+    public INDArray output(INDArray input, boolean train, MemoryWorkspace outputWorkspace) {
+        return output(input, train, null, null, outputWorkspace);
+    }
+
+    /**
+     * Get the network output, which is optionally placed in the specified memory workspace.<br>
+     * If no memory workspace is provided, the output will be detached (not in any workspace).<br>
+     * If a memory workspace is provided, the output activation array (i.e., the INDArray returned by this method)
+     * will be placed in the specified workspace. This workspace must be opened by the user before calling this method -
+     * and the user is responsible for (a) closing this workspace, and (b) ensuring the output array is not used out
+     * of scope (i.e., not used after closing the workspace to which it belongs - as this is likely to cause either
+     * an exception when used, or a crash).
+     *
+     * @param input           Input to the network
+     * @param train           True for train, false otherwise
+     * @param outputWorkspace May be null. If not null: the workspace MUST be opened before calling this method.
+     * @return The output/activations from the network (either detached or in the specified workspace if provided)
+     */
+    public INDArray output(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask, MemoryWorkspace outputWorkspace) {
         try {
-            return outputOfLayerDetached(train, FwdPassType.STANDARD, layers.length - 1, input, featuresMask, labelsMask);
+            return outputOfLayerDetached(train, FwdPassType.STANDARD, layers.length - 1, input, featuresMask, labelsMask, outputWorkspace);
         } catch (OutOfMemoryError e) {
             CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
@@ -2364,7 +2425,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         mgr.setHelperWorkspacePointers(helperWorkspaces);
 
         INDArray inputToOutputLayer = outputOfLayerDetached(training, FwdPassType.STANDARD,layers.length-2, data.getFeatures(),
-                data.getFeaturesMaskArray(), data.getLabelsMaskArray());
+                data.getFeaturesMaskArray(), data.getLabelsMaskArray(), null);
 
         // FIXME: int cast
         IOutputLayer ol = (IOutputLayer) getOutputLayer();
@@ -2414,7 +2475,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     private INDArray scoreExamplesHelper(DataSet data, boolean addRegularizationTerms){
         INDArray inputLast = outputOfLayerDetached(false, FwdPassType.STANDARD,layers.length-2, data.getFeatures(),
-                data.getFeaturesMaskArray(), data.getLabelsMaskArray());
+                data.getFeaturesMaskArray(), data.getLabelsMaskArray(), null);
         setLabels(data.getLabels());
         setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
 
@@ -2897,7 +2958,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     public INDArray rnnTimeStep(INDArray input) {
         try {
             boolean inputIs2d = input.rank() == 2;
-            INDArray out = outputOfLayerDetached(false, FwdPassType.RNN_TIMESTEP, layers.length - 1, input, null, null);
+            INDArray out = outputOfLayerDetached(false, FwdPassType.RNN_TIMESTEP, layers.length - 1, input, null, null, null);
             if (inputIs2d && out.rank() == 3 && layers[layers.length - 1].type() == Type.RECURRENT) {
                 //Return 2d output with shape [miniBatchSize,nOut]
                 // instead of 3d output with shape [miniBatchSize,nOut,1]
@@ -3157,7 +3218,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
             if (!useRnnSegments) {
                 //Standard/non-RNN case:
-                INDArray out = outputOfLayerDetached(false, FwdPassType.STANDARD,layers.length - 1, features, fMask, lMask);
+                INDArray out = outputOfLayerDetached(false, FwdPassType.STANDARD,layers.length - 1, features, fMask, lMask, null);
 
                 try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                     for (T evaluation : evaluations)
