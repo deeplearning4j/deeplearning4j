@@ -70,6 +70,6 @@ public class ActivationThresholdedReLU extends BaseActivationFunction {
 
     @Override
     public String toString() {
-        return "thresholdedrelu(a=" + theta + ")";
+        return "thresholdedrelu(theta=" + theta + ")";
     }
 }
