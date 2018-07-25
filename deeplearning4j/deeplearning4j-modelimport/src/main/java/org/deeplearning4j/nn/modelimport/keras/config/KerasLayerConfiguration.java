@@ -34,10 +34,6 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_CLASS_NAME = "class_name";
     private final String LAYER_FIELD_LAYER = "layer";
 
-    /* Basic layer names */
-    // Missing Layers: ActivityRegularization, Masking
-    // Conv3DTranspose, SeparableConv1D,
-    // ConvRNN2D, ConvLSTM2D
     private final String LAYER_CLASS_NAME_ACTIVATION = "Activation";
     private final String LAYER_CLASS_NAME_INPUT = "InputLayer";
     private final String LAYER_CLASS_NAME_PERMUTE = "Permute";
