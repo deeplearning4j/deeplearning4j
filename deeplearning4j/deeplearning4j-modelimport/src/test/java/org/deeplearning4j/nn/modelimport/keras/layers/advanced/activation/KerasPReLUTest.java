@@ -16,50 +16,68 @@
 
 package org.deeplearning4j.nn.modelimport.keras.layers.advanced.activation;
 
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ActivationLayer;
+import org.deeplearning4j.nn.conf.layers.PReLULayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
-import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasThresholdedReLU;
+import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasLeakyReLU;
+import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasPReLU;
+import org.deeplearning4j.nn.modelimport.keras.layers.local.KerasLocallyConnected2D;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
  * @author Max Pumperla
  */
-public class KerasThresholdedReLUTest {
+public class KerasPReLUTest {
 
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
+    private final String INIT_KERAS = "glorot_normal";
+    private final WeightInit INIT_DL4J = WeightInit.XAVIER;
+
     @Test
-    public void testThresholdedReLULayer() throws Exception {
+    public void testPReLULayer() throws Exception {
         Integer keras1 = 1;
-        buildThresholdedReLULayer(conf1, keras1);
+        buildPReLULayer(conf1, keras1);
         Integer keras2 = 2;
-        buildThresholdedReLULayer(conf2, keras2);
+        buildPReLULayer(conf2, keras2);
     }
 
-    private void buildThresholdedReLULayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
-
-        double theta = 0.5;
+    private void buildPReLULayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
 
         Map<String, Object> layerConfig = new HashMap<>();
-        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_THRESHOLDED_RELU());
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_LEAKY_RELU());
         Map<String, Object> config = new HashMap<>();
-        String LAYER_FIELD_THRESHOLD = "theta";
-        config.put(LAYER_FIELD_THRESHOLD, theta);
-        String layerName = "thresholded_relu";
+        String layerName = "prelu";
         config.put(conf.getLAYER_FIELD_NAME(), layerName);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
+        if (kerasVersion == 1) {
+            config.put("alpha_initializer", INIT_KERAS);
+        } else {
+            Map<String, Object> init = new HashMap<>();
+            init.put("class_name", conf.getINIT_GLOROT_NORMAL());
+            config.put("alpha_initializer", init);
+        }
 
-        ActivationLayer layer = new KerasThresholdedReLU(layerConfig).getActivationLayer();
-        assertEquals("thresholdedrelu(theta=0.5)", layer.getActivationFn().toString());
+        KerasPReLU kerasPReLU = new KerasPReLU(layerConfig);
+
+        kerasPReLU.getOutputType(InputType.convolutional(5,4,3));
+
+        PReLULayer layer = kerasPReLU.getPReLULayer();
+        assertArrayEquals(layer.getInputShape(), new long[] {3, 5, 4});
+        assertEquals(INIT_DL4J, layer.getWeightInit());
+
         assertEquals(layerName, layer.getLayerName());
     }
 }

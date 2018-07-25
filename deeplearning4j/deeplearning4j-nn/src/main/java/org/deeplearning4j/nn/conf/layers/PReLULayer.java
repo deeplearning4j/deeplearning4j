@@ -49,16 +49,12 @@ public class PReLULayer extends FeedForwardLayer {
     private PReLULayer(Builder builder) {
         super(builder);
         this.inputShape = builder.inputShape;
-        this.nOut = inputShape[0]; // mostly here for layer validation
-        this.nIn = inputShape[0];
         initializeConstraints(builder);
     }
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                     int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        LayerValidation.assertNInNOutSet("PReLULayer", getLayerName(), layerIndex, getNIn(), getNOut());
-
         org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer ret =
                         new org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer(conf);
         ret.setListeners(trainingListeners);

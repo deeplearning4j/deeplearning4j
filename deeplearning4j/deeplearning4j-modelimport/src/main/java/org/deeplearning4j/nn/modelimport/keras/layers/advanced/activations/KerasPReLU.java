@@ -77,7 +77,7 @@ public class KerasPReLU extends KerasLayer {
         Distribution distribution = init.getSecond();
 
 
-        PReLULayer.Builder builder = new PReLULayer.Builder().weightInit(weightInit);
+        PReLULayer.Builder builder = new PReLULayer.Builder().weightInit(weightInit).name(layerName);
         if (distribution != null) {
             builder.dist(distribution);
         }
