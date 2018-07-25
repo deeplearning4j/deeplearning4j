@@ -64,7 +64,7 @@ public class WeightInitUtil {
 
     /**
      * Initializes a matrix with the given weight initialization scheme.
-     * Note: Defaults to fortran ('f') order arrays for the weights. Use {@link #initWeights(int[], WeightInit, Distribution, char, INDArray)}
+     * Note: Defaults to fortran ('f') order arrays for the weights. Use {@link #initWeights(long[], WeightInit, Distribution, char, INDArray)}
      * to control this
      *
      * @param shape      the shape of the matrix

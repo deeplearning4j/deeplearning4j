@@ -49,6 +49,10 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_relu6.class,
         float_relu6_bp.class,
         float_relu_layer.class,
+        float_prelu.class,
+        float_prelu_bp.class,
+        float_thresholdedrelu.class,
+        float_thresholdedrelu_bp.class,
         float_toggle_bits.class,
         float_matmul.class,
         float_tensormmul.class,
@@ -410,6 +414,10 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_relu6.class,
         half_relu6_bp.class,
         half_relu_layer.class,
+        half_prelu.class,
+        half_prelu_bp.class,
+        half_thresholdedrelu.class,
+        half_thresholdedrelu_bp.class,
         half_toggle_bits.class,
         half_matmul.class,
         half_tensormmul.class,
@@ -771,6 +779,10 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_relu6.class,
         double_relu6_bp.class,
         double_relu_layer.class,
+        double_prelu.class,
+        double_prelu_bp.class,
+        double_thresholdedrelu.class,
+        double_thresholdedrelu_bp.class,
         double_toggle_bits.class,
         double_matmul.class,
         double_tensormmul.class,
@@ -7593,6 +7605,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *   apply transpose operation to the copy of this array, that is this array remains unaffected 
         */
         public native FloatNDArray transpose();
+        public native @ByVal FloatNDArray transp();
 
         /**
         *  perform transpose operation and store result in target, this array remains unaffected 
@@ -8764,6 +8777,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *   apply transpose operation to the copy of this array, that is this array remains unaffected 
         */
         public native HalfNDArray transpose();
+        public native @ByVal HalfNDArray transp();
 
         /**
         *  perform transpose operation and store result in target, this array remains unaffected 
@@ -9935,6 +9949,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *   apply transpose operation to the copy of this array, that is this array remains unaffected 
         */
         public native DoubleNDArray transpose();
+        public native @ByVal DoubleNDArray transp();
 
         /**
         *  perform transpose operation and store result in target, this array remains unaffected 
@@ -15160,6 +15175,135 @@ public static final int PREALLOC_SIZE = 33554432;
 // #endif /* SHAPE_H_ */
         
 
+// Parsed from helpers/OpArgsHolder.h
+
+//
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 15.07.2018
+//
+
+// #ifndef LIBND4J_OPARGSHOLDER_H
+// #define LIBND4J_OPARGSHOLDER_H
+
+
+// #include <NDArray.h>
+ 
+@Name("nd4j::OpArgsHolder<float>") @NoOffset public static class FloatOpArgsHolder extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public FloatOpArgsHolder(Pointer p) { super(p); }
+
+
+	
+
+    public FloatOpArgsHolder(@Const @ByRef FloatNDArrayVector inArrs, @StdVector FloatPointer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
+    private native void allocate(@Const @ByRef FloatNDArrayVector inArrs, @StdVector FloatPointer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/);
+    public FloatOpArgsHolder(@Const @ByRef FloatNDArrayVector inArrs) { super((Pointer)null); allocate(inArrs); }
+    private native void allocate(@Const @ByRef FloatNDArrayVector inArrs);
+    public FloatOpArgsHolder(@Const @ByRef FloatNDArrayVector inArrs, @StdVector FloatBuffer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
+    private native void allocate(@Const @ByRef FloatNDArrayVector inArrs, @StdVector FloatBuffer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/);
+    public FloatOpArgsHolder(@Const @ByRef FloatNDArrayVector inArrs, @StdVector float[] tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
+    private native void allocate(@Const @ByRef FloatNDArrayVector inArrs, @StdVector float[] tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/);
+
+    public native @Const @ByRef FloatNDArrayVector getInArrs();
+
+    public native @StdVector FloatPointer getTArgs();
+
+    public native @Cast("Nd4jLong*") @StdVector LongPointer getIArgs();
+
+    public native @Cast("bool*") @StdVector BoolPointer getAllocInfo();
+
+    public native int getNumInArrs();
+
+    public native int getNumTArgs();
+
+    public native int getNumIArgs();
+
+    public native @ByVal FloatOpArgsHolder createArgsHolderForBP(@Const @ByRef FloatNDArrayVector inGradArrs, @Cast("const bool") boolean isInPlace/*=false*/);
+    public native @ByVal FloatOpArgsHolder createArgsHolderForBP(@Const @ByRef FloatNDArrayVector inGradArrs); 
+    
+}
+ 
+@Name("nd4j::OpArgsHolder<float16>") @NoOffset public static class HalfOpArgsHolder extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public HalfOpArgsHolder(Pointer p) { super(p); }
+
+
+	
+
+    public HalfOpArgsHolder(@Const @ByRef HalfNDArrayVector inArrs, @Cast("float16*") @StdVector ShortPointer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
+    private native void allocate(@Const @ByRef HalfNDArrayVector inArrs, @Cast("float16*") @StdVector ShortPointer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/);
+    public HalfOpArgsHolder(@Const @ByRef HalfNDArrayVector inArrs) { super((Pointer)null); allocate(inArrs); }
+    private native void allocate(@Const @ByRef HalfNDArrayVector inArrs);
+    public HalfOpArgsHolder(@Const @ByRef HalfNDArrayVector inArrs, @Cast("float16*") @StdVector ShortBuffer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
+    private native void allocate(@Const @ByRef HalfNDArrayVector inArrs, @Cast("float16*") @StdVector ShortBuffer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/);
+    public HalfOpArgsHolder(@Const @ByRef HalfNDArrayVector inArrs, @Cast("float16*") @StdVector short[] tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
+    private native void allocate(@Const @ByRef HalfNDArrayVector inArrs, @Cast("float16*") @StdVector short[] tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/);
+
+    public native @Const @ByRef HalfNDArrayVector getInArrs();
+
+    public native @Cast("float16*") @StdVector ShortPointer getTArgs();
+
+    public native @Cast("Nd4jLong*") @StdVector LongPointer getIArgs();
+
+    public native @Cast("bool*") @StdVector BoolPointer getAllocInfo();
+
+    public native int getNumInArrs();
+
+    public native int getNumTArgs();
+
+    public native int getNumIArgs();
+
+    public native @ByVal HalfOpArgsHolder createArgsHolderForBP(@Const @ByRef HalfNDArrayVector inGradArrs, @Cast("const bool") boolean isInPlace/*=false*/);
+    public native @ByVal HalfOpArgsHolder createArgsHolderForBP(@Const @ByRef HalfNDArrayVector inGradArrs); 
+    
+}
+ 
+@Name("nd4j::OpArgsHolder<double>") @NoOffset public static class DoubleOpArgsHolder extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public DoubleOpArgsHolder(Pointer p) { super(p); }
+
+
+	
+
+    public DoubleOpArgsHolder(@Const @ByRef DoubleNDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
+    private native void allocate(@Const @ByRef DoubleNDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/);
+    public DoubleOpArgsHolder(@Const @ByRef DoubleNDArrayVector inArrs) { super((Pointer)null); allocate(inArrs); }
+    private native void allocate(@Const @ByRef DoubleNDArrayVector inArrs);
+    public DoubleOpArgsHolder(@Const @ByRef DoubleNDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
+    private native void allocate(@Const @ByRef DoubleNDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/);
+    public DoubleOpArgsHolder(@Const @ByRef DoubleNDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
+    private native void allocate(@Const @ByRef DoubleNDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/);
+
+    public native @Const @ByRef DoubleNDArrayVector getInArrs();
+
+    public native @StdVector DoublePointer getTArgs();
+
+    public native @Cast("Nd4jLong*") @StdVector LongPointer getIArgs();
+
+    public native @Cast("bool*") @StdVector BoolPointer getAllocInfo();
+
+    public native int getNumInArrs();
+
+    public native int getNumTArgs();
+
+    public native int getNumIArgs();
+
+    public native @ByVal DoubleOpArgsHolder createArgsHolderForBP(@Const @ByRef DoubleNDArrayVector inGradArrs, @Cast("const bool") boolean isInPlace/*=false*/);
+    public native @ByVal DoubleOpArgsHolder createArgsHolderForBP(@Const @ByRef DoubleNDArrayVector inGradArrs); 
+    
+}
+
+
+
+
+
+
+
+// #endif //LIBND4J_OPARGSHOLDER_H
+
+
 // Parsed from array/ShapeList.h
 
 /*******************************************************************************
@@ -17078,6 +17222,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <helpers/helper_hash.h>
 // #include <array/ShapeList.h>
 // #include <array/ResultSet.h>
+// #include <helpers/OpArgsHolder.h>
 // #include <dll.h>
 //#include <ops/declarable/declarable_ops.h>
 
@@ -17142,12 +17287,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
              */
             public native @Cast("Nd4jStatus") int execute(FloatContext block);
 
-            public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector FloatPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
-            public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector FloatPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
-            public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector FloatBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
-            public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector FloatBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
-            public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector float[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
-            public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector float[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
+            public native FloatResultSet execute(@Const @ByRef FloatNDArrayVector inputs, @StdVector FloatPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native FloatResultSet execute(@Const @ByRef FloatNDArrayVector inputs, @StdVector FloatPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
+            public native FloatResultSet execute(@Const @ByRef FloatNDArrayVector inputs, @StdVector FloatBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native FloatResultSet execute(@Const @ByRef FloatNDArrayVector inputs, @StdVector FloatBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
+            public native FloatResultSet execute(@Const @ByRef FloatNDArrayVector inputs, @StdVector float[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native FloatResultSet execute(@Const @ByRef FloatNDArrayVector inputs, @StdVector float[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
             public native @Cast("Nd4jStatus") int execute(@ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector FloatPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
             public native @Cast("Nd4jStatus") int execute(@ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector FloatPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
             public native @Cast("Nd4jStatus") int execute(@ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector FloatBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
@@ -17160,6 +17305,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector FloatBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
             public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector float[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
             public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector float[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
+
+            public native FloatResultSet execute(@Const @ByRef FloatOpArgsHolder holder, @Cast("bool") boolean isInplace/*=false*/);
+            public native FloatResultSet execute(@Const @ByRef FloatOpArgsHolder holder);
 
             // There methods provide various validation options
             public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef FloatContext block);
@@ -17239,12 +17387,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
              */
             public native @Cast("Nd4jStatus") int execute(HalfContext block);
 
-            public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
-            public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
-            public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
-            public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
-            public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector short[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
-            public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector short[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
+            public native HalfResultSet execute(@Const @ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native HalfResultSet execute(@Const @ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
+            public native HalfResultSet execute(@Const @ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native HalfResultSet execute(@Const @ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
+            public native HalfResultSet execute(@Const @ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector short[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native HalfResultSet execute(@Const @ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector short[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
             public native @Cast("Nd4jStatus") int execute(@ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector ShortPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
             public native @Cast("Nd4jStatus") int execute(@ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector ShortPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
             public native @Cast("Nd4jStatus") int execute(@ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
@@ -17257,6 +17405,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
             public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector short[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
             public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector short[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
+
+            public native HalfResultSet execute(@Const @ByRef HalfOpArgsHolder holder, @Cast("bool") boolean isInplace/*=false*/);
+            public native HalfResultSet execute(@Const @ByRef HalfOpArgsHolder holder);
 
             // There methods provide various validation options
             public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef HalfContext block);
@@ -17336,12 +17487,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
              */
             public native @Cast("Nd4jStatus") int execute(DoubleContext block);
 
-            public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
-            public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
-            public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
-            public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
-            public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
-            public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
+            public native DoubleResultSet execute(@Const @ByRef DoubleNDArrayVector inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native DoubleResultSet execute(@Const @ByRef DoubleNDArrayVector inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
+            public native DoubleResultSet execute(@Const @ByRef DoubleNDArrayVector inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native DoubleResultSet execute(@Const @ByRef DoubleNDArrayVector inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
+            public native DoubleResultSet execute(@Const @ByRef DoubleNDArrayVector inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native DoubleResultSet execute(@Const @ByRef DoubleNDArrayVector inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
             public native @Cast("Nd4jStatus") int execute(@ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
             public native @Cast("Nd4jStatus") int execute(@ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
             public native @Cast("Nd4jStatus") int execute(@ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
@@ -17354,6 +17505,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
             public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
             public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
+
+            public native DoubleResultSet execute(@Const @ByRef DoubleOpArgsHolder holder, @Cast("bool") boolean isInplace/*=false*/);
+            public native DoubleResultSet execute(@Const @ByRef DoubleOpArgsHolder holder);
 
             // There methods provide various validation options
             public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef DoubleContext block);
@@ -19784,6 +19938,203 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
+
+        /**
+         * Parametric Rectified Linear Unit
+         * f(x) = alpha * x for x < 0, f(x) = x for x >= 0
+         */
+//         #if NOT_EXCLUDED(OP_prelu)
+        @Name("nd4j::ops::prelu<float>") public static class float_prelu extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_prelu(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_prelu(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_prelu position(long position) {
+                return (float_prelu)super.position(position);
+            }
+        
+                                                                                    public float_prelu() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::prelu<float16>") public static class half_prelu extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_prelu(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_prelu(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_prelu position(long position) {
+                return (half_prelu)super.position(position);
+            }
+        
+                                                                                    public half_prelu() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::prelu<double>") public static class double_prelu extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_prelu(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_prelu(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_prelu position(long position) {
+                return (double_prelu)super.position(position);
+            }
+        
+                                                                                    public double_prelu() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+        @Name("nd4j::ops::prelu_bp<float>") public static class float_prelu_bp extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_prelu_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_prelu_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_prelu_bp position(long position) {
+                return (float_prelu_bp)super.position(position);
+            }
+        
+                                                                                    public float_prelu_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::prelu_bp<float16>") public static class half_prelu_bp extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_prelu_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_prelu_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_prelu_bp position(long position) {
+                return (half_prelu_bp)super.position(position);
+            }
+        
+                                                                                    public half_prelu_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::prelu_bp<double>") public static class double_prelu_bp extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_prelu_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_prelu_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_prelu_bp position(long position) {
+                return (double_prelu_bp)super.position(position);
+            }
+        
+                                                                                    public double_prelu_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+//         #endif
+
+        /**
+         * Thresholded Rectified Linear Unit
+         * f(x) = x for x > theta, f(x) = 0 otherwise
+         * theta must be >= 0
+         */
+//         #if NOT_EXCLUDED(OP_thresholdedrelu)
+        @Name("nd4j::ops::thresholdedrelu<float>") public static class float_thresholdedrelu extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_thresholdedrelu(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_thresholdedrelu(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_thresholdedrelu position(long position) {
+                return (float_thresholdedrelu)super.position(position);
+            }
+        
+                                                                                    public float_thresholdedrelu() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::thresholdedrelu<float16>") public static class half_thresholdedrelu extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_thresholdedrelu(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_thresholdedrelu(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_thresholdedrelu position(long position) {
+                return (half_thresholdedrelu)super.position(position);
+            }
+        
+                                                                                    public half_thresholdedrelu() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::thresholdedrelu<double>") public static class double_thresholdedrelu extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_thresholdedrelu(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_thresholdedrelu(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_thresholdedrelu position(long position) {
+                return (double_thresholdedrelu)super.position(position);
+            }
+        
+                                                                                    public double_thresholdedrelu() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+        @Name("nd4j::ops::thresholdedrelu_bp<float>") public static class float_thresholdedrelu_bp extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_thresholdedrelu_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_thresholdedrelu_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_thresholdedrelu_bp position(long position) {
+                return (float_thresholdedrelu_bp)super.position(position);
+            }
+        
+                                                                                    public float_thresholdedrelu_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::thresholdedrelu_bp<float16>") public static class half_thresholdedrelu_bp extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_thresholdedrelu_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_thresholdedrelu_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_thresholdedrelu_bp position(long position) {
+                return (half_thresholdedrelu_bp)super.position(position);
+            }
+        
+                                                                                    public half_thresholdedrelu_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::thresholdedrelu_bp<double>") public static class double_thresholdedrelu_bp extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_thresholdedrelu_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_thresholdedrelu_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_thresholdedrelu_bp position(long position) {
+                return (double_thresholdedrelu_bp)super.position(position);
+            }
+        
+                                                                                    public double_thresholdedrelu_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+//         #endif
+
+
     
 
 
