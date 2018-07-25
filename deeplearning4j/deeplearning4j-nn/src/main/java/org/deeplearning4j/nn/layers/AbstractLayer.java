@@ -397,12 +397,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
                         "Not supported for this layer, or should be overridden for layers requiring it");
     }
 
-    @Override
-    public void accumulateScore(double accum) {
-        throw new UnsupportedOperationException(
-                        "Not supported for this layer, or should be overridden for layers requiring it");
-    }
-
 
     @Override
     public void applyConstraints(int iteration, int epoch){

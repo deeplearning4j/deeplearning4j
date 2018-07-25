@@ -3052,11 +3052,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
-    public void accumulateScore(double accum) {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    @Override
     public INDArray params() {
         return params(true);
     }

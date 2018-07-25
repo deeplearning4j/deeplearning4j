@@ -705,11 +705,6 @@ public class BarnesHutTsne implements Model {
     }
 
     @Override
-    public void accumulateScore(double accum) {
-
-    }
-
-    @Override
     public INDArray params() {
         return null;
     }

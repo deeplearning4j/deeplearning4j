@@ -2549,11 +2549,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         getOutputLayer().clearNoiseWeightParams();
     }
 
-    @Override
-    public void accumulateScore(double accum) {
-
-    }
-
     /**
      * Clear the inputs. Clears optimizer state.
      */

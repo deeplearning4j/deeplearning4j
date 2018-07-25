@@ -126,11 +126,6 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public void accumulateScore(double accum) {
-        underlying.accumulateScore(accum);
-    }
-
-    @Override
     public INDArray params() {
         return underlying.params();
     }

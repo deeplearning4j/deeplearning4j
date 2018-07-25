@@ -407,11 +407,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public void accumulateScore(double accum) {
-        score += accum;
-    }
-
-    @Override
     public void clear(){
         super.clear();
         weightNoiseParams.clear();

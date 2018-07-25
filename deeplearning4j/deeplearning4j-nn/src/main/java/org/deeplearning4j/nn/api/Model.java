@@ -91,14 +91,6 @@ public interface Model {
     void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr);
 
     /**
-     * Sets a rolling tally for the score. This is useful for mini batch learning when
-     * you are accumulating error across a dataset.
-     * @param accum the amount to accum
-     */
-    void accumulateScore(double accum);
-
-
-    /**
      * Parameters of the model (if any)
      * @return the parameters of the model
      */

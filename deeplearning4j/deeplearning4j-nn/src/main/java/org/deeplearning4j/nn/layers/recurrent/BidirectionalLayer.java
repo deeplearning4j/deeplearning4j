@@ -261,12 +261,6 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public void accumulateScore(double accum) {
-        fwd.accumulateScore(accum);
-        bwd.accumulateScore(accum);
-    }
-
-    @Override
     public INDArray params() {
         return paramsView;
     }
