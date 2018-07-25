@@ -238,23 +238,6 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
 
     }
 
-    @Test(expected = Exception.class)
-    public void testBackTrackLineHessian() {
-        OptimizationAlgorithm optimizer = OptimizationAlgorithm.HESSIAN_FREE;
-        DataSet data = irisIter.next();
-
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.RELU, optimizer));
-        network.init();
-        TrainingListener listener = new ScoreIterationListener(1);
-        network.setListeners(Collections.singletonList(listener));
-
-        for( int i=0; i<100; i++ ) {
-            network.fit(data.getFeatureMatrix(), data.getLabels());
-        }
-    }
-
-
-
     private static MultiLayerConfiguration getIrisMultiLayerConfig(Activation activationFunction, OptimizationAlgorithm optimizer) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(optimizer)
                         .miniBatch(false).updater(new Nesterovs(0.9)).seed(12345L).list()

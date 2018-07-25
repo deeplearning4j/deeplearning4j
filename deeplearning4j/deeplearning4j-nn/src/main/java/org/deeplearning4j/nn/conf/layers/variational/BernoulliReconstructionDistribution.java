@@ -23,7 +23,6 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationHardSigmoid;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldLessThan;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -49,16 +48,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
      * Create a BernoulliReconstructionDistribution with the default Sigmoid activation function
      */
     public BernoulliReconstructionDistribution() {
-        this("sigmoid");
-    }
-
-    /**
-     * @param activationFn    Activation function. Sigmoid generally; must be bounded in range 0 to 1
-     * @deprecated Use {@link #BernoulliReconstructionDistribution(Activation)}
-     */
-    @Deprecated
-    public BernoulliReconstructionDistribution(String activationFn) {
-        this(Activation.fromString(activationFn));
+        this(Activation.SIGMOID);
     }
 
     /**

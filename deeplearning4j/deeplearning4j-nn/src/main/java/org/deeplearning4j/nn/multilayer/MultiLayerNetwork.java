@@ -318,8 +318,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (flattenedGradients == null) {
             initGradientsView();
         }
-        if (!layerWiseConfigurations.isPretrain())
-            return;
         if (layerIdx >= layers.length) {
             throw new IllegalArgumentException(
                     "Cannot pretrain layer: layerIdx (" + layerIdx + ") >= numLayers (" + layers.length + ")");
@@ -366,8 +364,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (flattenedGradients == null) {
             initGradientsView();
         }
-        if (!layerWiseConfigurations.isPretrain())
-            return;
         if (layerIdx >= layers.length) {
             throw new IllegalArgumentException(
                     "Cannot pretrain layer: layerIdx (" + layerIdx + ") >= numLayers (" + layers.length + ")");
@@ -436,11 +432,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     @Override
-    public void validateInput() {
-
-    }
-
-    @Override
     public ConvexOptimizer getOptimizer() {
         return solver.getOptimizer();
     }
@@ -455,11 +446,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         String newKey = param.substring(idx + 1);
 
         return layers[layerIdx].getParam(newKey);
-    }
-
-    @Override
-    public void initParams() {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -2010,37 +1996,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         setListeners(cListeners);
     }
 
-
-    /**
-     * Run SGD based on the given labels
-     */
-    public void finetune() {
-        if (!layerWiseConfigurations.isBackprop()) {
-            log.warn("Warning: finetune is not applied.");
-            return;
-        }
-        if (!(getOutputLayer() instanceof IOutputLayer)) {
-            log.warn("Output layer not instance of output layer returning.");
-            return;
-        }
-        if (flattenedGradients == null) {
-            initGradientsView();
-        }
-
-        if (labels == null)
-            throw new IllegalStateException("No labels found");
-
-        log.info("Finetune phase");
-        IOutputLayer output = (IOutputLayer) getOutputLayer();
-        if (output.conf().getOptimizationAlgo() != OptimizationAlgorithm.HESSIAN_FREE) {
-            feedForward();
-            output.fit(output.input(), labels);
-        } else {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-
     /**
      * Returns the predictions for each example in the dataset
      *
@@ -2331,42 +2286,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         log.info(sb.toString());
     }
 
-
-    /**
-     * Assigns the parameters of this model to the ones specified by this
-     * network. This is used in loading from input streams, factory methods, etc
-     *
-     * @param network the network to get parameters from
-     */
-    public void update(MultiLayerNetwork network) {
-        this.defaultConfiguration =
-                (network.defaultConfiguration != null ? network.defaultConfiguration.clone() : null);
-        if (network.input != null)
-            setInput(network.input.dup()); //Dup in case of dropout etc
-        this.labels = network.labels;
-        if (network.layers != null) {
-            layers = new Layer[network.layers.length];
-            for (int i = 0; i < layers.length; i++) {
-                layers[i] = network.layers[i].clone();
-            }
-        } else {
-            this.layers = null;
-        }
-        if (network.solver != null) {
-            //Network updater state: should be cloned over also
-            INDArray updaterView = network.getUpdater().getStateViewArray();
-            if (updaterView != null) {
-                //                Updater newUpdater = new MultiLayerUpdater(this, updaterView.dup());
-                Updater newUpdater = new MultiLayerUpdater(this);
-                newUpdater.setStateViewArray(this, updaterView.dup(), false);
-                this.setUpdater(newUpdater);
-            }
-        } else {
-            this.solver = null;
-        }
-    }
-
-
     /**
      * Sets the input and labels and returns a score for the prediction
      * wrt true labels
@@ -2630,11 +2549,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         getOutputLayer().clearNoiseWeightParams();
     }
 
-    @Override
-    public void accumulateScore(double accum) {
-
-    }
-
     /**
      * Clear the inputs. Clears optimizer state.
      */
@@ -2851,11 +2765,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     public INDArray activate(INDArray input, TrainingMode training) {
         return output(input, training == TrainingMode.TRAIN);
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException();
     }
 
     @Override

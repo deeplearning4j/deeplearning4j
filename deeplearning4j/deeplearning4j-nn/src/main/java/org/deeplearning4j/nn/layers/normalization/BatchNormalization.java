@@ -414,18 +414,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException(layerId());
-
-    }
-
-    @Override
-    public Layer clone() {
-        throw new UnsupportedOperationException(layerId());
-
-    }
-
-    @Override
     public Collection<TrainingListener> getListeners() {
         return listeners;
     }
