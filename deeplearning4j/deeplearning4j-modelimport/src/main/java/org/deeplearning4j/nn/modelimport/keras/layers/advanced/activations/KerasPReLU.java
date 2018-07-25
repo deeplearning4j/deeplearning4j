@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -26,20 +27,27 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.params.PReLUParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationLReLU;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.removeDefaultWeights;
 
 /**
  * Imports PReLU layer from Keras
  *
  * @author Max Pumperla
  */
+@Slf4j
 public class KerasPReLU extends KerasLayer {
 
 
@@ -115,6 +123,27 @@ public class KerasPReLU extends KerasLayer {
      */
     public PReLULayer getPReLULayer() {
         return (PReLULayer) this.layer;
+    }
+
+    /**
+     * Set weights for layer.
+     *
+     * @param weights Dense layer weights
+     */
+    @Override
+    public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
+        this.weights = new HashMap<>();
+        if (weights.containsKey("alpha"))
+            this.weights.put(PReLUParamInitializer.WEIGHT_KEY, weights.get("alpha"));
+        else
+            throw new InvalidKerasConfigurationException("Parameter alpha does not exist in weights");
+        if (weights.size() > 1) {
+            Set<String> paramNames = weights.keySet();
+            paramNames.remove("alpha");
+            String unknownParamNames = paramNames.toString();
+            log.warn("Attemping to set weights for unknown parameters: "
+                    + unknownParamNames.substring(1, unknownParamNames.length() - 1));
+        }
     }
 
 }
