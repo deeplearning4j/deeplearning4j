@@ -19,7 +19,6 @@ package org.deeplearning4j.parallelism.factory;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.optimize.api.TrainingListener;
-import org.deeplearning4j.parallelism.MagicQueue;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.deeplearning4j.parallelism.trainer.DefaultTrainer;
 import org.deeplearning4j.parallelism.trainer.Trainer;
