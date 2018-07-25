@@ -33,6 +33,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
@@ -45,6 +51,7 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @Slf4j
 public class WorkspaceTests extends BaseDL4JTest {
@@ -471,6 +478,46 @@ public class WorkspaceTests extends BaseDL4JTest {
 
             WSTestDataSetIterator iterator = new WSTestDataSetIterator();
             computationGraph.fit(iterator);
+        }
+    }
+
+
+
+    @Test
+    public void testMLNOutputWorkspace(){
+
+        String wsName = "ExternalTestWorkspace";
+        WorkspaceConfiguration conf = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .overallocationLimit(0.02)
+                .policyLearning(LearningPolicy.OVER_TIME)
+                .cyclesBeforeInitialization(1)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .policySpill(SpillPolicy.REALLOCATE)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .build();
+
+        MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(conf, wsName);
+
+        MultiLayerConfiguration netConf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(new DenseLayer.Builder().nIn(4).nOut(3).activation(Activation.TANH).build())
+                .layer(new OutputLayer.Builder().nIn(3).nOut(3).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(netConf);
+        net.init();
+
+        INDArray in = Nd4j.rand(3,4);
+
+
+        try(MemoryWorkspace ws = workspace.notifyScopeEntered()){
+            INDArray out = net.output(in, false, ws);
+
+            assertTrue(out.isAttached());
+            assertEquals(wsName, out.data().getParentWorkspace().getId());
         }
     }
 }
