@@ -211,7 +211,8 @@ public class TestConvolution extends BaseDL4JTest {
 
     @Test
     public void testCudnnDilation(){
-        int[] k = new int[]{2,3,4};
+        //Sanity check on dilated conv execution
+        int[] k = new int[]{2,3,4,5};
         int[] d = new int[]{1,2,3,4};
 
         for( int[] inputSize : new int[][]{{10,1,28,28}, {3,3,224,224}}) {
@@ -231,7 +232,7 @@ public class TestConvolution extends BaseDL4JTest {
                     net.init();
 
                     INDArray in = Nd4j.create(inputSize);
-                    INDArray out = net.output(in);
+                    net.output(in);
                 }
             }
         }
