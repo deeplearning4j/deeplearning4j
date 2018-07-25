@@ -56,6 +56,12 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- For unit tests -->
         <dependency>
             <groupId>junit</groupId>

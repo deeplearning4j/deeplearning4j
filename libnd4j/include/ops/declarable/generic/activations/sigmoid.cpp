@@ -44,7 +44,7 @@ namespace nd4j {
 
             auto lambda = LAMBDA_TT(_x, _e) {
                 T s = nd4j::math::nd4j_sigmoid<T>(_x);
-                return  _e * (s * ((T) 1.0f - s));
+                return _e * (s * ((T) 1.0f - s));
             };
 
             input->applyPairwiseLambda(epsilon, lambda, z);  

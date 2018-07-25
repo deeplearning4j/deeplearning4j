@@ -27,6 +27,8 @@ import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSource;
+import org.deeplearning4j.arbiter.optimize.api.saving.ResultReference;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxTimeCondition;
 import org.deeplearning4j.arbiter.optimize.generator.GridSearchCandidateGenerator;
@@ -41,7 +43,9 @@ import org.deeplearning4j.arbiter.saver.local.FileModelSaver;
 import org.deeplearning4j.arbiter.scoring.impl.TestSetLossScoreFunction;
 import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
 import org.deeplearning4j.arbiter.util.TestDataFactoryProviderMnist;
+import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
 import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
@@ -50,71 +54,158 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @Slf4j
 public class TestDL4JLocalExecution {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
-    @org.junit.Ignore
     public void testLocalExecution() throws Exception {
 
-        //Define: network config (hyperparameter space)
-        MultiLayerSpace mls = new MultiLayerSpace.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.1)))
-                        .l2(new ContinuousParameterSpace(0.0001, 0.01))
-                        .addLayer(
-                                        new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
-                                                        .activation(new DiscreteParameterSpace<>(Activation.RELU,
-                                                                        Activation.TANH))
-                                                        .build(),
-                                        new IntegerParameterSpace(1, 2), true) //1-2 identical layers (except nIn)
-                        .addLayer(new OutputLayerSpace.Builder().nOut(3).activation(Activation.SOFTMAX)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .numEpochs(3).pretrain(false).backprop(true).build();
+        for( int dataApproach = 0; dataApproach<3; dataApproach++ ) {
+            log.info("////////////////// Starting Test: {} ///////////////////", dataApproach);
 
-        //Define configuration:
-        Map<String, Object> commands = new HashMap<>();
-        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, TestDataFactoryProviderMnist.class.getCanonicalName());
+            //Define: network config (hyperparameter space)
+            MultiLayerSpace mls = new MultiLayerSpace.Builder()
+                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                    .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.1)))
+                    .l2(new ContinuousParameterSpace(0.0001, 0.01))
+                    .addLayer(
+                            new DenseLayerSpace.Builder().nIn(784).nOut(new IntegerParameterSpace(10, 20))
+                                    .activation(new DiscreteParameterSpace<>(Activation.RELU,
+                                            Activation.TANH))
+                                    .build()) //1-2 identical layers (except nIn)
+                    .addLayer(new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
+                            .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                    .numEpochs(3).pretrain(false).backprop(true).build();
 
-        CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, commands);
-        DataProvider dataProvider = new DataSetIteratorFactoryProvider();
+            DataProvider dp = null;
+            Class<? extends DataSource> ds = null;
+            Properties dsP = null;
+            CandidateGenerator candidateGenerator;
 
+            if(dataApproach == 0){
+                ds = MnistDataSource.class;
+                dsP = new Properties();
+                dsP.setProperty("minibatch", "8");
+                candidateGenerator = new RandomSearchGenerator(mls);
+            } else if(dataApproach == 1) {
+                //DataProvider approach
+                dp = new MnistDataProvider();
+                candidateGenerator = new RandomSearchGenerator(mls);
+            } else {
+                //Factory approach
+                Map<String, Object> commands = new HashMap<>();
+                commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, TestDataFactoryProviderMnist.class.getCanonicalName());
 
-        //        String modelSavePath = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest/");
-        String modelSavePath = new File(System.getProperty("java.io.tmpdir"), "ArbiterDL4JTest/").getAbsolutePath();
+                candidateGenerator = new RandomSearchGenerator(mls, commands);
+                dp = new DataSetIteratorFactoryProvider();
+            }
 
-        File f = new File(modelSavePath);
-        if (f.exists())
-            f.delete();
-        f.mkdir();
-        f.deleteOnExit();
-        if (!f.exists())
-            throw new RuntimeException();
+            File f = testDir.newFolder();
+            File modelSave = new File(f, "modelSaveDir");
 
-        OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
-                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
-                        .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(new TestSetLossScoreFunction())
-                        .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
-                                        new MaxCandidatesCondition(100))
-                        .build();
+            OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
+                    .candidateGenerator(candidateGenerator)
+                    .dataProvider(dp)
+                    .dataSource(ds, dsP)
+                    .modelSaver(new FileModelSaver(modelSave))
+                    .scoreFunction(new TestSetLossScoreFunction())
+                    .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
+                            new MaxCandidatesCondition(5))
+                    .build();
 
-        IOptimizationRunner runner = new LocalOptimizationRunner(configuration,
-                        new MultiLayerNetworkTaskCreator(new ClassificationEvaluator()));
+            IOptimizationRunner runner = new LocalOptimizationRunner(configuration,
+                    new MultiLayerNetworkTaskCreator(new ClassificationEvaluator()));
 
-        runner.execute();
+            runner.execute();
 
+            List<ResultReference> results = runner.getResults();
+            assertEquals(5, results.size());
 
-        System.out.println("----- COMPLETE -----");
+            System.out.println("----- COMPLETE - " + results.size() + " results -----");
+        }
+    }
+
+    public static class MnistDataSource implements DataSource {
+        private int minibatch;
+
+        public MnistDataSource(){
+
+        }
+
+        @Override
+        public void configure(Properties properties) {
+            this.minibatch = Integer.parseInt(properties.getProperty("minibatch", "16"));
+        }
+
+        @Override
+        public Object trainData() {
+            try {
+                return new EarlyTerminationDataSetIterator(new MnistDataSetIterator(minibatch, true, 12345), 3);
+            } catch (Exception e){
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public Object testData() {
+            try {
+                return new EarlyTerminationDataSetIterator(new MnistDataSetIterator(minibatch, true, 12345), 3);
+            } catch (Exception e){
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public Class<?> getDataType() {
+            return DataSetIterator.class;
+        }
+    }
+
+    public static class MnistDataProvider implements DataProvider {
+        private int minibatch = 8;
+
+        @Override
+        public Object trainData(Map<String, Object> dataParameters) {
+            try {
+                return new EarlyTerminationDataSetIterator(new MnistDataSetIterator(minibatch, true, 12345), 3);
+            } catch (Exception e){
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public Object testData(Map<String, Object> dataParameters) {
+            try {
+                return new EarlyTerminationDataSetIterator(new MnistDataSetIterator(minibatch, true, 12345), 3);
+            } catch (Exception e){
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public Class<?> getDataType() {
+            return DataSetIterator.class;
+        }
     }
 
     @Test

@@ -18,6 +18,7 @@ package org.deeplearning4j.spark.api.worker;
 
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
+import org.deeplearning4j.api.loader.DataSetLoader;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
@@ -38,8 +39,8 @@ import java.util.List;
 public class ExecuteWorkerPathFlatMap<R extends TrainingResult>
                 extends BaseFlatMapFunctionAdaptee<Iterator<String>, R> {
 
-    public ExecuteWorkerPathFlatMap(TrainingWorker<R> worker) {
-        super(new ExecuteWorkerPathFlatMapAdapter<>(worker));
+    public ExecuteWorkerPathFlatMap(TrainingWorker<R> worker, DataSetLoader loader) {
+        super(new ExecuteWorkerPathFlatMapAdapter<>(worker, loader));
     }
 }
 
@@ -53,10 +54,12 @@ public class ExecuteWorkerPathFlatMap<R extends TrainingResult>
  */
 class ExecuteWorkerPathFlatMapAdapter<R extends TrainingResult> implements FlatMapFunctionAdapter<Iterator<String>, R> {
     private final FlatMapFunctionAdapter<Iterator<DataSet>, R> workerFlatMap;
+    private final DataSetLoader dataSetLoader;
     private final int maxDataSetObjects;
 
-    public ExecuteWorkerPathFlatMapAdapter(TrainingWorker<R> worker) {
+    public ExecuteWorkerPathFlatMapAdapter(TrainingWorker<R> worker, DataSetLoader dataSetLoader) {
         this.workerFlatMap = new ExecuteWorkerFlatMapAdapter<>(worker);
+        this.dataSetLoader = dataSetLoader;
 
         //How many dataset objects of size 'dataSetObjectNumExamples' should we load?
         //Only pass on the required number, not all of them (to avoid async preloading data that won't be used)
@@ -84,6 +87,6 @@ class ExecuteWorkerPathFlatMapAdapter<R extends TrainingResult> implements FlatM
             list.add(iter.next());
         }
 
-        return workerFlatMap.call(new PathSparkDataSetIterator(list.iterator()));
+        return workerFlatMap.call(new PathSparkDataSetIterator(list.iterator(), dataSetLoader));
     }
 }

@@ -110,7 +110,8 @@ public class MNISTOptimizationTest {
             throw new RuntimeException();
 
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
-                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
+                        .candidateGenerator(candidateGenerator)
+                        .dataProvider(dataProvider)
                         .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(new TestSetLossScoreFunction(true))
                         .terminationConditions(new MaxTimeCondition(120, TimeUnit.MINUTES),
                                         new MaxCandidatesCondition(100))

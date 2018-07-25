@@ -46,7 +46,6 @@ public interface Layer extends Serializable, Cloneable, Model, Trainable {
         TRAIN, TEST
     }
 
-
     /**
      * This method sets given CacheMode for current layer
      *
@@ -118,24 +117,6 @@ public interface Layer extends Serializable, Cloneable, Model, Trainable {
      * {@link org.deeplearning4j.nn.workspace.ArrayType#ACTIVATIONS} workspace via the workspace manager
      */
     INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr mgr);
-
-    /**
-     * Return a transposed copy of the weights/bias
-     * (this means reverse the number of inputs and outputs on the weights)
-     *
-     * @return the transposed layer
-     */
-    @Deprecated
-    Layer transpose();
-
-    /**
-     * Clone the layer
-     *
-     * @return
-     */
-    @Deprecated
-    Layer clone();
-
 
     /**
      * Get the iteration listeners for this layer.

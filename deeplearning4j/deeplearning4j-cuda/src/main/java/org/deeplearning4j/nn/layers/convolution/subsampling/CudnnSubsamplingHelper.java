@@ -120,7 +120,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         val miniBatch = input.size(0);
         val depth = input.size(1);
 
-        CudnnConvolutionHelper.CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode);
+        CudnnConvolutionHelper.CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode, poolingType);
         input = args.getInput();
         val inH = input.size(2);
         val inW = input.size(3);
@@ -211,7 +211,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         val miniBatch = input.size(0);
         val inDepth = input.size(1);
 
-        CudnnConvolutionHelper.CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode);
+        CudnnConvolutionHelper.CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode, poolingType);
         input = args.getInput();
         val inH = input.size(2);
         val inW = input.size(3);

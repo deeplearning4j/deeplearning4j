@@ -336,6 +336,8 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
         int i=0;
         for(Long l : m.keySet()){
             ret[i++] = l;
+            if(i >= ret.length)
+                break;  //Map "m" can in principle be modified concurrently while iterating here - resulting in an array index exception
         }
         Arrays.sort(ret);
         return ret;

@@ -32,6 +32,7 @@ import java.util.Iterator;
  *
  * @author Alex Black
  */
+@Deprecated
 public class ExecuteWorkerPDSFlatMap<R extends TrainingResult>
                 extends BaseFlatMapFunctionAdaptee<Iterator<PortableDataStream>, R> {
 
@@ -47,6 +48,7 @@ public class ExecuteWorkerPDSFlatMap<R extends TrainingResult>
  *
  * @author Alex Black
  */
+@Deprecated
 class ExecuteWorkerPDSFlatMapAdapter<R extends TrainingResult>
                 implements FlatMapFunctionAdapter<Iterator<PortableDataStream>, R> {
     private final FlatMapFunctionAdapter<Iterator<DataSet>, R> workerFlatMap;

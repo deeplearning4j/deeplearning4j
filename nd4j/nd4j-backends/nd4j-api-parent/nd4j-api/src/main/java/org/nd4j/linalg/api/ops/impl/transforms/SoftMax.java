@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -72,7 +73,7 @@ public class SoftMax extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().softmaxDerivative(arg(), i_v.get(0));
-        return Arrays.asList(ret);
+        SDVariable ret = f().softmaxDerivative(arg(), i_v.get(0), 1);
+        return Collections.singletonList(ret);
     }
 }

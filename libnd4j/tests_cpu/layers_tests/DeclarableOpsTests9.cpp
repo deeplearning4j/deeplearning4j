@@ -21,8 +21,9 @@
 
 #include "testlayers.h"
 #include <ops/declarable/CustomOperations.h>
-//#include <NDArray.h>
-//#include <ops/ops.h>
+#include <NDArray.h>
+#include <ops/ops.h>
+#include <GradCheck.h>
 
 
 using namespace nd4j;
@@ -77,9 +78,9 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test1) {
     NDArray<double> x('c', {N});
     double extraParams[] = {lambda};
 
-    auto buffer = new Nd4jLong[N];
+    Nd4jLong *buffer = new Nd4jLong[N];
     NativeOps nativeOps;
-    auto rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
+    nd4j::random::RandomBuffer* rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);    
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistributionInv_test1: RNG initialization failed !");
     
@@ -1386,4 +1387,223 @@ TEST_F(DeclarableOpsTests9, concat_test13) {
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, clipbynorm_test12) {
+    
+    const int bS   = 5;
+    const int nOut = 4;
+    const int axis = 0;
+    const double clip = 2.;
+    
+    NDArray<double> x('c', {bS, nOut}, {0.412 ,0.184 ,0.961 ,0.897 ,0.173 ,0.931 ,0.736 ,0.540 ,0.953 ,0.278 ,0.573 ,0.787 ,0.320 ,0.776 ,0.338 ,0.311 ,0.835 ,0.909 ,0.890 ,0.290});    // uniform random in range [0,1]
+    NDArray<double> colVect('c', {bS, 1}, {0.9, 0.95, 1.00, 1.05, 1.1});
+    NDArray<double> expect('c', {bS, nOut});
+
+    NDArray<double> norm2 = x.template reduceAlongDims<simdOps::Norm2<double>>({axis}, true); // norm2 has shape [1, nOut]
+    
+    NDArray<double> y = ( (x / norm2) * clip) * colVect ;    
+    NDArray<double> temp = (x / norm2) * clip;    
+
+    for (int j = 0; j < nOut; ++j) {
+        NDArray<double> yCol = y({{}, {j, j+1}});
+        const double norm2Col = yCol.template reduceNumber<simdOps::Norm2<double>>();
+        if (norm2Col <= clip) 
+            expect({{}, {j,j+1}}).assign(yCol);
+        else 
+            expect({{}, {j,j+1}}).assign ( yCol * (clip / norm2Col) );
+    }
+    
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&y}, {clip}, {axis});
+    auto outFF = result->at(0);        
+    
+    ASSERT_TRUE(expect.isSameShape(outFF));
+    ASSERT_TRUE(expect.equalsTo(outFF));
+
+    delete result;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, clipbynorm_bp_test1) {
+    
+    const int bS   = 2;
+    const int nOut = 3;
+    const int axis = 0;
+    const double clip = 0.7;
+    
+    NDArray<double> x('c', {bS, nOut}, {0.412 ,0.184 ,0.961 ,0.173 ,0.736 ,0.540 });    // uniform random in range [0,1]
+    NDArray<double> gradO('c', {bS, nOut});
+
+    const OpArgsHolder<double> argsHolderFF({&x}, {clip}, {});
+    const OpArgsHolder<double> argsHolderBP({&x, &gradO}, {clip}, {});
+
+    nd4j::ops::clipbynorm<double> opFF;
+    nd4j::ops::clipbynorm_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, clipbynorm_bp_test2) {
+    
+    const int bS   = 2;
+    const int nOut = 3;
+    const int axis = 0;
+    const double clip = 0.7;
+    
+    NDArray<double> x('c', {bS, nOut}, {0.412 ,0.184 ,0.961 ,0.173 ,0.736 ,0.540 });    // uniform random in range [0,1]
+    NDArray<double> gradO('c', {bS, nOut});
+
+    const OpArgsHolder<double> argsHolderFF({&x}, {clip}, {axis});
+    const OpArgsHolder<double> argsHolderBP({&x, &gradO}, {clip}, {axis});
+
+    nd4j::ops::clipbynorm<double> opFF;
+    nd4j::ops::clipbynorm_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, clipbynorm_bp_test3) {
+    
+    const int bS   = 2;
+    const int nOut = 3;
+    const int axis = 1;
+    const double clip = 1.;
+    
+    NDArray<double> x('c', {bS, nOut}, {0.412 ,0.184 ,0.961 ,0.173 ,0.736 ,0.540 });    // uniform random in range [0,1]
+    NDArray<double> gradO('c', {bS, nOut});
+
+    const OpArgsHolder<double> argsHolderFF({&x}, {clip}, {axis});
+    const OpArgsHolder<double> argsHolderBP({&x, &gradO}, {clip}, {axis});
+
+    nd4j::ops::clipbynorm<double> opFF;
+    nd4j::ops::clipbynorm_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, prelu_test1) {
+    
+    NDArray<float> x('c', {2, 3, 4}, {-12.f, -11.f, -10.f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f});    
+    NDArray<float> alpha('c', {2, 3, 4}, {1.2f, 1.1f, 1.f, 0.9f, 0.8f, -0.7f, -0.6f, -0.5f, -0.4f, -0.3f, -0.2f, -0.1f, 0.f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, -0.9f, -1.0f, -1.1f});
+    NDArray<float> exp('c', {2, 3, 4}, {-14.4f, -12.1f, -10.f, -8.1f, -6.4f, 4.9f, 3.6f, 2.5f, 1.6f, 0.9f, 0.4f,  0.1f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f});    
+
+    nd4j::ops::prelu<float> op;
+
+    auto result = op.execute({&x, &alpha}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, prelu_test2) {
+    
+    NDArray<float> x('c', {2, 3, 4}, {0.f, -4.f, -10.f, -8.f, 0.f, -9.f, -8.f, 5.f, 6.f, 6.f, 9.f, 6.f, -8.f, 5.f, 10.f, -2.f, 3.f, -7.f, 4.f, -8.f, -4.f, -9.f, -9.f, 3.f});    
+    NDArray<float> alpha('c', {2, 3, 4}, {-9.f, 9.f, 2.f, 3.f, -2.f, -3.f, -9.f, -1.f, -1.f, 9.f, -4.f, 6.f, 0.f, -3.f, 4.f, -6.f, -4.f, 7.f, -1.f, 0.f, -10.f, 8.f, -9.f, 0.f});
+    NDArray<float> exp('c', {2, 3, 4}, {0.f, -36.f, -20.f, -24.f, 0.f, 27.f, 72.f, 5.f, 6.f, 6.f, 9.f, 6.f, 0.f, 5.f, 10.f, 12.f, 3.f, -49.f, 4.f, 0.f,40.f,-72.f, 81.f, 3.f});
+
+    nd4j::ops::prelu<float> op;
+
+    auto result = op.execute({&x, &alpha}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, thresholdedrelu_test1) {
+    
+    const float theta = 2.f;
+    NDArray<float> x('c', {2, 3, 4}, {-12.f, -11.f, -10.f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f});    
+    NDArray<float> exp('c', {2, 3, 4}, {0.f, 0.f, 0.f, 0.f,0.f, 0.f, 0.f, 0.f,0.f, 0.f, 0.f, 0.f,0.f, 0.f, 0.f, 3.f,4.f, 5.f, 6.f, 7.f,8.f, 9.f,10.f,11.f});
+
+    nd4j::ops::thresholdedrelu<float> op;
+
+    auto result = op.execute({&x}, {theta}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
  
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, thresholdedrelu_test2) {
+    
+    const float theta = -2.f;
+    NDArray<float> x('c', {2, 3, 4}, {0.f,-4.f, -10.f, -8.f, 0.f, -9.f, -8.f, 5.f, 6.f, 6.f, 9.f, 6.f, -8.f, 5.f, 10.f, -2.f, 3.f, -7.f, 4.f, -8.f, -4.f, -9.f, -9.f, 3.f});
+    NDArray<float> exp('c', {2, 3, 4}, {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 5.f, 6.f, 6.f, 9.f, 6.f, 0.f, 5.f, 10.f, 0.f, 3.f, 0.f, 4.f, 0.f, 0.f, 0.f, 0.f, 3.f});
+
+    nd4j::ops::thresholdedrelu<float> op;
+
+    auto result = op.execute({&x}, {theta}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, prelu_bp_test1) {
+    
+    NDArray<double> x('c', {2, 3, 4},     {-12., -11., -10., -9., -8., -7., -6., -5., -4., -3., -2., -1., 0.5, 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11.});    
+    NDArray<double> alpha('c', {2, 3, 4}, {1.2,   1.1,  1., 0.9, 0.8, -0.7, -0.6,-0.5,-0.4,-0.3,-0.2,-0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, -0.9, -1.0, -1.1});    
+    NDArray<double> dLdO('c', {2, 3, 4});
+
+    const OpArgsHolder<double> argsHolderFF({&x, &alpha}, {}, {});
+    const OpArgsHolder<double> argsHolderBP({&x, &alpha, &dLdO}, {}, {});
+
+    nd4j::ops::prelu<double> opFF;
+    nd4j::ops::prelu_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, thresholdedrelu_bp_test1) {
+        
+    const double theta = 0.15;
+
+    NDArray<double> x('c', {2, 3, 4}, {1.2, 1.1, 1., 0.9, 0.8, -0.7, -0.6,-0.5,-0.4,-0.3,-0.2,-0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, -0.9, -1.0, -1.1});    
+    NDArray<double> dLdO('c', {2, 3, 4});
+
+    const OpArgsHolder<double> argsHolderFF({&x}, {theta}, {});
+    const OpArgsHolder<double> argsHolderBP({&x, &dLdO}, {theta}, {});
+
+    nd4j::ops::thresholdedrelu<double> opFF;
+    nd4j::ops::thresholdedrelu_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+
+

@@ -410,6 +410,25 @@ public class Nd4j {
     }
 
     /**
+     * Squeeze : removes a dimension of size 1
+     * @param input the input array
+     * @param dimension the dimension to remove
+     * @return the array with dimension removed
+     */
+    public static INDArray squeeze(INDArray input, int dimension) {
+        if (dimension < 0){
+            dimension += input.rank();
+        }
+        long[] shape = input.shape();
+        Preconditions.checkState(shape[dimension] == 1, String.format("Squeeze: Only dimension of size 1 can be squeezed. " +
+                "Attempted to squeeze dimension %d of array with shape %s (size %d).", dimension, ArrayUtils.toString(shape), shape[dimension]));
+
+        long[] newShape = ArrayUtil.removeIndex(shape, dimension);
+        return input.reshape(input.ordering(), newShape);
+    }
+
+
+    /**
      * Backend specific:
      * Returns whether specifying the order
      * for the blas impl is allowed (cblas)

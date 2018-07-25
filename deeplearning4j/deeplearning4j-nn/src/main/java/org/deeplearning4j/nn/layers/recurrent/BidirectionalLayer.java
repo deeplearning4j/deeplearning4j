@@ -218,16 +218,6 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Cannot transpose layer");
-    }
-
-    @Override
-    public Layer clone() {
-        throw new UnsupportedOperationException("Clone not supported");
-    }
-
-    @Override
     public Collection<TrainingListener> getListeners() {
         return fwd.getListeners();
     }
@@ -268,12 +258,6 @@ public class BidirectionalLayer implements RecurrentLayer {
     public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         fwd.computeGradientAndScore(workspaceMgr);
         bwd.computeGradientAndScore(workspaceMgr);
-    }
-
-    @Override
-    public void accumulateScore(double accum) {
-        fwd.accumulateScore(accum);
-        bwd.accumulateScore(accum);
     }
 
     @Override
@@ -364,11 +348,6 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public void validateInput() {
-        //no op
-    }
-
-    @Override
     public ConvexOptimizer getOptimizer() {
         return null;
     }
@@ -381,11 +360,6 @@ public class BidirectionalLayer implements RecurrentLayer {
         } else {
             return bwd.getParam(sub);
         }
-    }
-
-    @Override
-    public void initParams() {
-        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override

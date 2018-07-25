@@ -23,17 +23,17 @@ import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.Convolution1DLayer;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -48,7 +48,8 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -192,39 +193,6 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
                                                         .activation(Activation.SOFTMAX).build())
                                         .backprop(true).pretrain(false)
                                         .setInputType(InputType.convolutional(imageHeight, imageWidth, nChannels));
-
-        MultiLayerConfiguration conf = builder.build();
-        MultiLayerNetwork model = new MultiLayerNetwork(conf);
-        model.init();
-
-        INDArray emptyFeatures = Nd4j.zeros(numSamples, imageWidth * imageHeight * nChannels);
-        INDArray emptyLables = Nd4j.zeros(numSamples, classes);
-
-        trainInput = new DataSet(emptyFeatures, emptyLables);
-        model.fit(trainInput);
-    }
-
-    @Test(expected = Exception.class)
-    @Ignore //Test is based on the assumption that there is no default kernel size. Needs to be revisited.
-    public void testCNNKernelNoSize() {
-        int imageHeight = 20;
-        int imageWidth = 23;
-        int nChannels = 1;
-        int classes = 2;
-        int numSamples = 200;
-
-        int kernelHeight = 3;
-        int kernelWidth = 3;
-
-        DataSet trainInput;
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(123).list()
-                        .layer(0, new ConvolutionLayer.Builder().nOut(2).activation(Activation.RELU)
-                                        .weightInit(WeightInit.XAVIER).build())
-                        .layer(1, new SubsamplingLayer.Builder().poolingType(SubsamplingLayer.PoolingType.MAX).build())
-                        .layer(2, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER)
-                                        .activation(Activation.SOFTMAX).build())
-                        .setInputType(InputType.convolutionalFlat(imageHeight, imageWidth, nChannels)).backprop(true)
-                        .pretrain(false);
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
@@ -692,5 +660,41 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
         model.init();
 
         return model;
+    }
+
+
+
+    @Test
+    public void test1dInputType(){
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .convolutionMode(ConvolutionMode.Same)
+                .list()
+                .layer(new Convolution1DLayer.Builder().nOut(3).kernelSize(2).activation(Activation.TANH).build())
+                .layer(new Subsampling1DLayer.Builder().kernelSize(2).stride(2).build())
+                .layer(new Upsampling1D.Builder().size(2).build())
+                .layer(new RnnOutputLayer.Builder().nOut(7).build())
+                .setInputType(InputType.recurrent(10))
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        List<InputType> l = conf.getLayerActivationTypes(InputType.recurrent(10));
+        assertEquals(InputType.recurrent(3, -1), l.get(0));
+        assertEquals(InputType.recurrent(3, -1), l.get(1));
+        assertEquals(InputType.recurrent(3, -1), l.get(2));
+        assertEquals(InputType.recurrent(7, -1), l.get(3));
+
+        List<InputType> l2 = conf.getLayerActivationTypes(InputType.recurrent(10, 6));
+        assertEquals(InputType.recurrent(3, 6), l2.get(0));
+        assertEquals(InputType.recurrent(3, 3), l2.get(1));
+        assertEquals(InputType.recurrent(3, 6), l2.get(2));
+        assertEquals(InputType.recurrent(7, 6), l2.get(3));
+
+
+        INDArray in = Nd4j.create(2, 10, 6);
+        INDArray out = net.output(in);
+        assertArrayEquals(new long[]{2,7,6}, out.shape());
     }
 }
