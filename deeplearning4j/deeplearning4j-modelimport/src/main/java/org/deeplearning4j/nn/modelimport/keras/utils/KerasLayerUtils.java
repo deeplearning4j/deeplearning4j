@@ -26,6 +26,8 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
 import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasLeakyReLU;
+import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasPReLU;
+import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasThresholdedReLU;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.core.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
@@ -193,6 +195,10 @@ public class KerasLayerUtils {
             layer = new KerasActivation(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LEAKY_RELU())) {
             layer = new KerasLeakyReLU(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_THRESHOLDED_RELU())) {
+            layer = new KerasThresholdedReLU(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_PRELU())) {
+            layer = new KerasPReLU(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_DROPOUT())) {
             layer = new KerasDropout(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SPATIAL_DROPOUT_1D())
