@@ -35,7 +35,9 @@ namespace helpers {
 
 	template <typename T>
 	void softmax(const NDArray<T>& input, NDArray<T>& output, const int dimension);
-	    
+
+	template <typename T>
+	void prelu(const NDArray<T>& input, const NDArray<T>& alpha, NDArray<T>& output);
 
 }
 }

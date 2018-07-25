@@ -19,7 +19,8 @@
 // @author raver119@gmail.com
 //
 
-#include<ops/declarable/helpers/activations.h>
+#include <ops/declarable/helpers/activations.h>
+#include <ShapeUtils.h>
 
 
 namespace nd4j    {
@@ -157,6 +158,25 @@ void softmax(const NDArray<T>& input, NDArray<T>& output, const int dimension) {
     }
 }
 
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+void prelu(const NDArray<T>& input, const NDArray<T>& alpha, NDArray<T>& output) {
+
+    const Nd4jLong inputLen = input.lengthOf();    
+    const Nd4jLong* inputShapeInfo = input.getShapeInfo(); 
+    const Nd4jLong* alphaShapeInfo = alpha.getShapeInfo();
+
+#pragma omp parallel for if(inputLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+    for(Nd4jLong i = 0; i < inputLen; ++i) {
+        T x = input(i);
+        if(x < static_cast<T>(0)) 
+            output(i) = x * alpha(ShapeUtils<T>::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i));
+        else
+            output(i) = x;
+    }
+}
+
+
 
 template void softMaxForVector<float>  (const NDArray<float  >& input, NDArray<float  >& output);
 template void softMaxForVector<float16>(const NDArray<float16>& input, NDArray<float16>& output);
@@ -170,6 +190,9 @@ template void softmax<float>(const NDArray<float>& input, NDArray<float>& output
 template void softmax<float16>(const NDArray<float16>& input, NDArray<float16>& output, const int dimension);
 template void softmax<double>(const NDArray<double>& input, NDArray<double>& output, const int dimension);
 
+template void prelu<float16>(const NDArray<float16>& input, const NDArray<float16>& alpha, NDArray<float16>& output);
+template void prelu<float>(const NDArray<float>& input, const NDArray<float>& alpha, NDArray<float>& output);
+template void prelu<double>(const NDArray<double>& input, const NDArray<double>& alpha, NDArray<double>& output);
 
 }
 }
