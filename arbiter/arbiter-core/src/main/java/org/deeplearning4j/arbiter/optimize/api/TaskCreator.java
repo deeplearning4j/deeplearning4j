@@ -17,11 +17,13 @@
 package org.deeplearning4j.arbiter.optimize.api;
 
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSource;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.Callable;
 
 /**
@@ -41,6 +43,20 @@ public interface TaskCreator {
      * @param statusListeners Status listeners, that can be used for callbacks (to UI, for example)
      * @return A callable that returns an OptimizationResult, once optimization is complete
      */
+    @Deprecated
     Callable<OptimizationResult> create(Candidate candidate, DataProvider dataProvider, ScoreFunction scoreFunction,
                                         List<StatusListener> statusListeners, IOptimizationRunner runner);
+
+    /**
+     * Generate a callable that can be executed to conduct the training of this model (given the model configuration)
+     *
+     * @param candidate            Candidate (model) configuration to be trained
+     * @param dataSource           Data source
+     * @param dataSourceProperties Properties (may be null) for the data source
+     * @param scoreFunction        Score function to be used to evaluate the model
+     * @param statusListeners      Status listeners, that can be used for callbacks (to UI, for example)
+     * @return A callable that returns an OptimizationResult, once optimization is complete
+     */
+    Callable<OptimizationResult> create(Candidate candidate, Class<? extends DataSource> dataSource, Properties dataSourceProperties,
+                                        ScoreFunction scoreFunction, List<StatusListener> statusListeners, IOptimizationRunner runner);
 }

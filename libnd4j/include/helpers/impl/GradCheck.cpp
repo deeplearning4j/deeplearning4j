@@ -94,6 +94,8 @@ bool GradCheck::checkGrad(ops::DeclarableOp<double>& opFF, ops::DeclarableOp<dou
 				throw std::runtime_error("");
 			}
 
+			// printf("num = %.5f, ana = %.5f\n", numericalGrad, analyticGrad);
+			
 			// calculate relative error
 			double relError;
 			if(numericalGrad == 0. && analyticGrad == 0.)
