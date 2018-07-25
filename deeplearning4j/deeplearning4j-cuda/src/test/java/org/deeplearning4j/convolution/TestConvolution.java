@@ -207,4 +207,33 @@ public class TestConvolution extends BaseDL4JTest {
             assertEquals(s, withCudnn.get(s), noCudnn.get(s));
         }
     }
+
+
+    @Test
+    public void testCudnnDilation(){
+        int[] k = new int[]{2,3,4};
+        int[] d = new int[]{1,2,3,4};
+
+        for( int[] inputSize : new int[][]{{10,1,28,28}, {3,3,224,224}}) {
+            for (int i = 0; i < k.length; i++) {
+                for(ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Same, ConvolutionMode.Truncate}) {
+
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .convolutionMode(ConvolutionMode.Same)
+                            .list()
+                            .layer(new ConvolutionLayer.Builder().kernelSize(k[i], k[i]).dilation(d[i], d[i]).nOut(3).build())
+                            .layer(new SubsamplingLayer.Builder().kernelSize(k[i], k[i]).dilation(d[i], d[i]).build())
+                            .layer(new OutputLayer.Builder().nOut(10).build())
+                            .setInputType(InputType.convolutional(inputSize[3], inputSize[2], inputSize[1]))
+                            .build();
+
+                    MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                    net.init();
+
+                    INDArray in = Nd4j.create(inputSize);
+                    INDArray out = net.output(in);
+                }
+            }
+        }
+    }
 }
