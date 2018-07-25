@@ -1172,6 +1172,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
                     if ( i == layerIndex ) {
                         if(outputWorkspace != null){
+                            //Place activations in user-specified workspace
                             mgr.setWorkspace(ArrayType.ACTIVATIONS, outputWorkspace.getId(), outputWorkspace.getWorkspaceConfiguration());
                         } else {
                             //Final activations: should be detached

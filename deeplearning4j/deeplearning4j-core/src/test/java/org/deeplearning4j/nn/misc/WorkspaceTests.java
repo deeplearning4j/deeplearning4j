@@ -49,9 +49,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @Slf4j
 public class WorkspaceTests extends BaseDL4JTest {
@@ -484,7 +482,7 @@ public class WorkspaceTests extends BaseDL4JTest {
 
 
     @Test
-    public void testMLNOutputWorkspace(){
+    public void testOutputWorkspace(){
 
         String wsName = "ExternalTestWorkspace";
         WorkspaceConfiguration conf = WorkspaceConfiguration.builder()
@@ -510,14 +508,42 @@ public class WorkspaceTests extends BaseDL4JTest {
         MultiLayerNetwork net = new MultiLayerNetwork(netConf);
         net.init();
 
-        INDArray in = Nd4j.rand(3,4);
+        INDArray in = Nd4j.rand(3, 4);
 
+        for (int i = 0; i < 3; i++) {
+            try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                System.out.println("MLN - " + i);
+                INDArray out = net.output(in, false, ws);
 
-        try(MemoryWorkspace ws = workspace.notifyScopeEntered()){
-            INDArray out = net.output(in, false, ws);
-
-            assertTrue(out.isAttached());
-            assertEquals(wsName, out.data().getParentWorkspace().getId());
+                assertTrue(out.isAttached());
+                assertEquals(wsName, out.data().getParentWorkspace().getId());
+            } catch (Throwable t){
+                fail();
+                throw new RuntimeException(t);
+            }
+            System.out.println("MLN SCOPE ACTIVE: " + i + " - " + workspace.isScopeActive());
+            assertFalse(workspace.isScopeActive());
         }
+
+
+        //Same test for ComputationGraph:
+        ComputationGraph cg = net.toComputationGraph();
+
+        for (int i = 0; i < 3; i++) {
+            try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                System.out.println("CG - " + i);
+                INDArray out = cg.output(false, ws, in)[0];
+
+                assertTrue(out.isAttached());
+                assertEquals(wsName, out.data().getParentWorkspace().getId());
+            } catch (Throwable t){
+                fail();
+                throw new RuntimeException(t);
+            }
+            System.out.println("CG SCOPE ACTIVE: " + i + " - " + workspace.isScopeActive());
+            assertFalse(workspace.isScopeActive());
+        }
+
+        Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
     }
 }
