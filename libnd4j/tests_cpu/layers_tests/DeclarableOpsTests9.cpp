@@ -1424,7 +1424,7 @@ TEST_F(DeclarableOpsTests9, prelu_test10) {
 TEST_F(DeclarableOpsTests9, prelu_test11) {
     
     NDArray<float> x('c', {2, 3, 4, 5});    
-    x.linspace(-50);
+    x.linspace(-50.);
     NDArray<float> alpha('c', {4}, {0.f, -0.5f, 0.5f, -1.f});
     NDArray<float> exp('c', {2, 3, 4, 5}, {0.f,   0.f,   0.f,   0.f,   0.f, 22.5f,  22.f,  21.5f,  21.f,  20.5f, -20.f, -19.5f, -19.f, -18.5f, -18.f, 35.f,  34.f,  33.f,  
                                            32.f,  31.f, 0.f,   0.f,   0.f,   0.f,   0.f, 12.5f,  12.f,  11.5f,  11.f,  10.5f, -10.f,  -9.5f,  -9.f,  -8.5f,  -8.f, 15.f,  
@@ -1449,7 +1449,7 @@ TEST_F(DeclarableOpsTests9, prelu_test11) {
 TEST_F(DeclarableOpsTests9, prelu_test12) {
     
     NDArray<float> x('c', {2, 3, 4, 5});    
-    x.linspace(-50);
+    x.linspace(-50.);
     NDArray<float> alpha('c', {3,5}, {-0.7f, -0.6f, -0.5f, -0.4f, -0.3f, -0.2f, -0.1f, 0.f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f});
     NDArray<float> exp('c', {2, 3, 4, 5}, {35.f, 29.4f, 24.f, 18.8f, 13.8f, 31.5f, 26.4f, 21.5f, 16.8f, 12.3f, 28.f, 23.4f, 19.f, 14.8f, 10.8f, 24.5f, 20.4f, 16.5f, 12.8f,  
                                            9.3f, 6.f,  2.9f,  0.f, -2.7f, -5.2f, 5.f,  2.4f,  0.f, -2.2f, -4.2f, 4.f,  1.9f,  0.f, -1.7f, -3.2f, 3.f,  1.4f,  0.f, -1.2f, 
@@ -1473,7 +1473,7 @@ TEST_F(DeclarableOpsTests9, prelu_test12) {
 TEST_F(DeclarableOpsTests9, prelu_test13) {
     
     NDArray<float> x('c', {2, 3, 4, 5});    
-    x.linspace(-50);
+    x.linspace(-50.);
     NDArray<float> alpha('c', {5,3}, {-0.7f, -0.6f, -0.5f, -0.4f, -0.3f, -0.2f, -0.1f, 0.f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f});
     NDArray<float> exp('c', {2, 3, 4, 5}, {35.f, 29.4f, 24.f, 18.8f, 13.8f, 31.5f, 26.4f, 21.5f, 16.8f, 12.3f, 28.f, 23.4f, 19.f, 14.8f, 10.8f, 24.5f, 20.4f, 16.5f, 12.8f,  
                                            9.3f, 6.f,  2.9f,  0.f, -2.7f, -5.2f, 5.f,  2.4f,  0.f, -2.2f, -4.2f, 4.f,  1.9f,  0.f, -1.7f, -3.2f, 3.f,  1.4f,  0.f, -1.2f, 
@@ -1497,7 +1497,7 @@ TEST_F(DeclarableOpsTests9, prelu_test13) {
 TEST_F(DeclarableOpsTests9, prelu_test14) {
     
     NDArray<float> x('c', {2, 3, 4, 5});    
-    x.linspace(-50);
+    x.linspace(-50.);
     NDArray<float> alpha('c', {2,10}, {-0.7f, -0.6f, -0.5f, -0.4f, -0.3f, -0.2f, -0.1f, 0.f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.f, 1.1f, 1.2f});
     NDArray<float> exp('c', {2, 3, 4, 5}, {35.f,  29.4f,  24.f,  18.8f,  13.8f, 9.f,   4.4f,   0.f,  -4.2f,  -8.2f, -12.f, -15.6f, -19.f, -22.2f, -25.2f, -28.f, -30.6f, 
                                            -33.f,-35.2f, -37.2f, 21.f,  17.4f,  14.f,  10.8f,   7.8f, 5.f,   2.4f,   0.f,  -2.2f,  -4.2f, -6.f,  -7.6f,  -9.f, -10.2f, 
@@ -1559,8 +1559,8 @@ TEST_F(DeclarableOpsTests9, thresholdedrelu_test2) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, prelu_bp_test1) {
     
-    NDArray<double> x('c', {2, 3, 4},     {-12., -11., -10., -9., -8., -7., -6., -5., -4., -3., -2., -1., 0.5, 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11.});    
-    NDArray<double> alpha('c', {2, 3, 4}, {1.2,   1.1,  1., 0.9, 0.8, -0.7, -0.6,-0.5,-0.4,-0.3,-0.2,-0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, -0.9, -1.0, -1.1});    
+    NDArray<double> x('c', {2, 3, 4}, {-12., -11., -10., -9., -8., -7., -6., -5., -4., -3., -2., -1., 0.5, 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11.});
+    NDArray<double> alpha('c', {3, 4}, {-0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.5, 0.1, 0.2, 0.3, 0.4, 0.5});
     NDArray<double> dLdO('c', {2, 3, 4});
 
     const OpArgsHolder<double> argsHolderFF({&x, &alpha}, {}, {});
@@ -1574,6 +1574,63 @@ TEST_F(DeclarableOpsTests9, prelu_bp_test1) {
     ASSERT_TRUE(isGradCorrect);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, prelu_bp_test2) {
+    
+    NDArray<double> x('c', {2, 3, 4}, {-12., -11., -10., -9., -8., -7., -6., -5., -4., -3., -2., -1., 0.5, 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11.});    
+    NDArray<double> alpha('c', {4}, {-0.6, 2., 4., -1.});
+    NDArray<double> dLdO('c', {2, 3, 4});
+
+    const OpArgsHolder<double> argsHolderFF({&x, &alpha}, {}, {1});
+    const OpArgsHolder<double> argsHolderBP({&x, &alpha, &dLdO}, {}, {1});
+
+    nd4j::ops::prelu<double> opFF;
+    nd4j::ops::prelu_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, prelu_bp_test3) {
+    
+    NDArray<double> x('c', {2, 3, 2, 5});    
+    x.linspace(-30.);
+    x(30) = 0.5;   // avoid zero, since it is points of discontinuity for prelu
+    NDArray<double> alpha('c', {5,3}, {-0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.5, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7});
+    NDArray<double> dLdO('c', {2, 3, 2, 5});
+
+    const OpArgsHolder<double> argsHolderFF({&x, &alpha}, {}, {-1, 2});
+    const OpArgsHolder<double> argsHolderBP({&x, &alpha, &dLdO}, {}, {-1, 2});
+
+    nd4j::ops::prelu<double> opFF;
+    nd4j::ops::prelu_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, prelu_bp_test4) {
+    
+    NDArray<double> x('c', {2, 3, 4, 5});    
+    x.linspace(-50.);
+    x(50) = 0.5;   // avoid zero, since it is points of discontinuity for prele
+    NDArray<double> alpha('c', {2,10}, {-0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.25, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2});
+    NDArray<double> dLdO('c', {2, 3, 4, 5});
+
+    const OpArgsHolder<double> argsHolderFF({&x, &alpha}, {}, {-2});
+    const OpArgsHolder<double> argsHolderBP({&x, &alpha, &dLdO}, {}, {-2});
+
+    nd4j::ops::prelu<double> opFF;
+    nd4j::ops::prelu_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, thresholdedrelu_bp_test1) {

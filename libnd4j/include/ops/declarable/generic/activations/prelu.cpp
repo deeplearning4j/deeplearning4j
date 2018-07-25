@@ -69,7 +69,7 @@ CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
 
     helpers::prelu(*input, *alpha, *output);
 
-    if(alpha != INPUT_VARIABLE(1))
+    if(alphaShape != expectedAlphaShape)
         delete alpha;
     
     return Status::OK();
@@ -85,12 +85,45 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
     
     NDArray<T>* dLdI = OUTPUT_VARIABLE(0);
     NDArray<T>* dLdA = OUTPUT_VARIABLE(1);
+
+    std::vector<int> sharedAxes = *block.getIArguments();
     
-    auto derivI = LAMBDA_TTT(i, a, grO) {if (i < static_cast<T>(0)) return a * grO; else return grO; };
-    auto derivA = LAMBDA_TTT(i, a, grO) {if (i < static_cast<T>(0)) return i * grO; else return static_cast<T>(0); };
-        
-    input->applyTriplewiseLambda(alpha, dLdO, derivI, dLdI);
-    input->applyTriplewiseLambda(alpha, dLdO, derivA, dLdA);    
+    const int inputRank     = input->rankOf();
+    const int alphaRank     = alpha->rankOf();
+    const int numSharedAxes = sharedAxes.size();            // can be zero as well
+    const Nd4jLong inputLen = input->lengthOf();
+    const Nd4jLong alphaLen = alpha->lengthOf();
+    const std::vector<Nd4jLong> inputShape = input->getShapeAsVector();
+    const std::vector<Nd4jLong> alphaShape = alpha->getShapeAsVector();
+
+    //***** input validation *****//
+    std::vector<Nd4jLong> expectedAlphaShape(&inputShape[1], &inputShape[inputRank]);
+
+    REQUIRE_TRUE(inputRank > 1, 0, "PRELU_BP OP: wrong rank of input array, expected rank should be > 1, but got %i instead !", inputRank);   
+    
+    for(int i = 0; i < numSharedAxes; ++i) {
+        if(sharedAxes[i] <= 0)
+            sharedAxes[i] += inputRank - 1;
+        REQUIRE_TRUE(1 <= sharedAxes[i] && sharedAxes[i] <= inputRank - 1, 0, "PRELU_BP OP: wrong axis value %i in sharedAxes at position %i, axis value must be within range [1, input_rank-1] !", sharedAxes[i], i);            
+        expectedAlphaShape[sharedAxes[i] - 1] = 1;
+    }
+
+    const Nd4jLong expectedAlphaLen = std::accumulate(expectedAlphaShape.begin(), expectedAlphaShape.end(), 1, std::multiplies<T>());        
+
+    REQUIRE_TRUE(alphaLen == expectedAlphaLen, 0, "PRELU_BP OP: wrong shape of alpha array, expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils<T>::shapeAsString(alphaShape).c_str());   
+    // ***** end of validation ***** //
+    
+    if(alphaShape != expectedAlphaShape) {
+        alpha = alpha->reshape(alpha->ordering(), expectedAlphaShape);
+        dLdA  = dLdA->reshape(dLdA->ordering(), expectedAlphaShape);
+    }
+
+    helpers::preluBP(*input, *alpha, *dLdO, *dLdI, *dLdA);
+
+    if(alphaShape != expectedAlphaShape) {        
+        delete alpha;
+        delete dLdA;
+    }
     
     return Status::OK();
 }

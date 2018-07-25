@@ -39,6 +39,9 @@ namespace helpers {
 	template <typename T>
 	void prelu(const NDArray<T>& input, const NDArray<T>& alpha, NDArray<T>& output);
 
+	template <typename T>
+	void preluBP(const NDArray<T>& input, const NDArray<T>& alpha, const NDArray<T>& dLdO, NDArray<T>& dLdI, NDArray<T>& dLdA);
+
 }
 }
 }

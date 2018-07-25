@@ -176,6 +176,30 @@ void prelu(const NDArray<T>& input, const NDArray<T>& alpha, NDArray<T>& output)
     }
 }
 
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+void preluBP(const NDArray<T>& input, const NDArray<T>& alpha, const NDArray<T>& dLdO, NDArray<T>& dLdI, NDArray<T>& dLdA) {
+
+    const Nd4jLong inputLen = input.lengthOf();    
+    const Nd4jLong* inputShapeInfo = input.getShapeInfo(); 
+    const Nd4jLong* alphaShapeInfo = alpha.getShapeInfo();
+
+    dLdA = static_cast<T>(0);
+
+#pragma omp parallel for if(inputLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+    for(Nd4jLong i = 0; i < inputLen; ++i) {
+        T x   = input(i);
+        T grO = dLdO(i);
+        if(x < static_cast<T>(0)) {
+            
+            Nd4jLong alphaInd = ShapeUtils<T>::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i);
+            dLdI(i) = grO * alpha(alphaInd);
+            dLdA(alphaInd) += grO * x;
+        }
+        else
+            dLdI(i) = grO;
+    }
+}
 
 
 template void softMaxForVector<float>  (const NDArray<float  >& input, NDArray<float  >& output);
@@ -193,6 +217,10 @@ template void softmax<double>(const NDArray<double>& input, NDArray<double>& out
 template void prelu<float16>(const NDArray<float16>& input, const NDArray<float16>& alpha, NDArray<float16>& output);
 template void prelu<float>(const NDArray<float>& input, const NDArray<float>& alpha, NDArray<float>& output);
 template void prelu<double>(const NDArray<double>& input, const NDArray<double>& alpha, NDArray<double>& output);
+
+template void preluBP<float16>(const NDArray<float16>& input, const NDArray<float16>& alpha, const NDArray<float16>& dLdO, NDArray<float16>& dLdI, NDArray<float16>& dLdA);
+template void preluBP<float>(const NDArray<float>& input, const NDArray<float>& alpha, const NDArray<float>& dLdO, NDArray<float>& dLdI, NDArray<float>& dLdA);
+template void preluBP<double>(const NDArray<double>& input, const NDArray<double>& alpha, const NDArray<double>& dLdO, NDArray<double>& dLdI, NDArray<double>& dLdA);
 
 }
 }
