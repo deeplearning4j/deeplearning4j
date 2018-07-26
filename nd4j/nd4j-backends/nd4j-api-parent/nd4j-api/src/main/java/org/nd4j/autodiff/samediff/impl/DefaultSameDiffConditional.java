@@ -14,27 +14,21 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.autodiff.samediff;
+package org.nd4j.autodiff.samediff.impl;
 
-import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.SameDiffConditional;
+import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
 
-import java.util.Map;
+import java.util.ArrayList;
 
-public class LogisticPredictions implements SameDiffFunctionDefinition {
-    /**
-     * @param sameDiff
-     * @param inputs
-     * @param variableInputs
-     * @return
-     */
+public class DefaultSameDiffConditional implements SameDiffConditional {
+
     @Override
-    public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-        SDVariable input = sameDiff.var("x",inputs.get("x"));
-        SDVariable w = sameDiff.var("w",inputs.get("w"));
-        SDVariable y = sameDiff.var("y",inputs.get("y"));
-        SDVariable preOutput = sameDiff.mmul(input,w);
-        SDVariable sigmoid = sameDiff.sigmoid(preOutput);
-
-        return new SDVariable[]{sigmoid};
+    public SDVariable eval(SameDiff context, SameDiffFunctionDefinition body, SDVariable[] inputVars) {
+        context.defineFunction("eval", body, inputVars);
+        context.invokeFunctionOn("eval", context);
+        return new ArrayList<>(context.getFunctionInstancesById().values()).get(context.getFunctionInstancesById().size() - 1).outputVariables()[0];
     }
 }

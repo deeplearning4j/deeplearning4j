@@ -23,6 +23,7 @@ import org.nd4j.autodiff.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
@@ -551,7 +552,7 @@ public class MiscOpValidation extends BaseOpValidation {
         inputs.put("x", sumInput);
         inputs.put("y", sumInput.dup());
 
-        sameDiff.defineFunction("mmulGradient", new SameDiff.SameDiffFunctionDefinition() {
+        sameDiff.defineFunction("mmulGradient", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable input = sameDiff.var("x", inputs.get("x"));
@@ -1380,7 +1381,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SameDiff sameDiffOuter = SameDiff.create();
         Map<String, INDArray> params = new HashMap<>();
         params.put("x", Nd4j.ones(4));
-        sameDiffOuter.defineFunction("inplacesubi", new SameDiff.SameDiffFunctionDefinition() {
+        sameDiffOuter.defineFunction("inplacesubi", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable inplace = sameDiff.var("x", inputs.get("x"));

@@ -25,6 +25,7 @@ import org.nd4j.autodiff.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -1318,7 +1319,7 @@ public class TransformOpValidation extends BaseOpValidation {
         INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         Map<String, INDArray> inputs = new HashMap<>();
         inputs.put("x", sumInput);
-        sameDiff.defineFunction("expGradient", new SameDiff.SameDiffFunctionDefinition() {
+        sameDiff.defineFunction("expGradient", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable input = sameDiff.var("x", inputs.get("x"));
@@ -1359,7 +1360,7 @@ public class TransformOpValidation extends BaseOpValidation {
         INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         Map<String, INDArray> inputs = new HashMap<>();
         inputs.put("x", sumInput);
-        sameDiff.defineFunction("tanhGradient", new SameDiff.SameDiffFunctionDefinition() {
+        sameDiff.defineFunction("tanhGradient", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable input = sameDiff.var("x", inputs.get("x"));
