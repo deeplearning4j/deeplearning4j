@@ -87,7 +87,6 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testZeroCount() {
-        OpValidationSuite.ignoreFailing();
         List<String> allFailed = new ArrayList<>();
         for( int i=0; i<2; i++ ) {
             SameDiff sd = SameDiff.create();
@@ -122,8 +121,6 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testZeroFraction() {
-        OpValidationSuite.ignoreFailing();
-
         List<String> allFailed = new ArrayList<>();
         for( int i=0; i<2; i++ ) {
             SameDiff sd = SameDiff.create();
@@ -953,8 +950,6 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testReductionsBackwards() {
-        OpValidationSuite.ignoreFailing();
-
         for (int i = 0; i < 7; i++) {
 
             SameDiff sd = SameDiff.create();

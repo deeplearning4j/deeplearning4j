@@ -454,7 +454,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testDiag() {
-        OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
 
         INDArray ia = Nd4j.create(new float[]{4, 2}, new int[] {2});
@@ -476,7 +475,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testDiagPart() {
-        OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
 
         INDArray input = Nd4j.linspace(1,16,16).reshape(4,4);
@@ -525,8 +523,9 @@ public class TransformOpValidation extends BaseOpValidation {
 
             String err = OpValidation.validate(new TestCase(sd)
                     .expectedOutput("e", expOut[i])
+                    .gradCheckSkipVariables("e")
                     .gradientCheck(true));
-            assertNull(err, err);
+            assertNull(err);
         }
 
     }

@@ -121,7 +121,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testReduceSumAlongDim1BP() {
-        OpValidationSuite.ignoreFailing();
         //Reduction along dimension
         //Inputs/outputs as before - but note that the output is no longer a scalar
 
@@ -194,7 +193,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testMeanAlongDim0BP() {
-        OpValidationSuite.ignoreFailing();
         //Reduction along dimension
         //Inputs/outputs as before - but note that the output is no longer a scalar
 
@@ -223,7 +221,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testMeanAlongDim1BP() {
-        OpValidationSuite.ignoreFailing();
         //Reduction along dimension
         //Inputs/outputs as before - but note that the output is no longer a scalar
 
@@ -440,7 +437,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testProdAlongDimensionBP() {
-        OpValidationSuite.ignoreFailing();
         //dL/dIn_i  = dL/dOut * dOut/dIn_i
         //          = dL/dOut * d(prod(in))/dIn_i
         //          = dL/dOut * (prod(in) / in_i)
@@ -497,8 +493,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testStdevBP() {
-        OpValidationSuite.ignoreFailing();
-
         //If out = stdev(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
         //dOut/dIn_i = (in_i-mean)/(stdev * (n-1))
@@ -535,8 +529,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testStdevBP_Rank1() {
-        OpValidationSuite.ignoreFailing();
-        //fail(); //https://github.com/deeplearning4j/deeplearning4j/issues/5582
         INDArray dLdOut = Nd4j.trueScalar(0.5);
         INDArray preReduceInput = Nd4j.create(new double[]{2,3,4}, new long[]{3});
         double stdev = preReduceInput.stdNumber(true).doubleValue();
@@ -558,7 +550,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testStdevAlongDimensionBP() {
-        OpValidationSuite.ignoreFailing();
         //If out = stdev(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
         //dOut/dIn_i = (in_i-mean)/(stdev * (n-1))
@@ -640,7 +631,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testVarianceAlongDimensionBP() {
-        OpValidationSuite.ignoreFailing();
         //If out = variance(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
         //dOut/dIn_i = 2*(in_i-mean)/(n-1)
@@ -750,7 +740,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testNorm2Bp(){
-        OpValidationSuite.ignoreFailing();
         //dL/dIn = dL/dOut * dOut/dIn
         //       = dL/dOut * x/|x|_2
 
@@ -778,7 +767,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testNorm2AlongDimensionBP() {
-        OpValidationSuite.ignoreFailing();
         //dL/dIn = dL/dOut * dOut/dIn
         //       = dL/dOut * x/|x|_2
 
@@ -812,7 +800,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testNorm1Bp(){
-        OpValidationSuite.ignoreFailing();
         //dL/dIn = dL/dOut * dOut/dIn
         //       = dL/dOut * sgn(in)
 
@@ -840,7 +827,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testNorm1AlongDimensionBP() {
-        OpValidationSuite.ignoreFailing();
         //dL/dIn = dL/dOut * dOut/dIn
         //       = dL/dOut * sgn(in)
 
