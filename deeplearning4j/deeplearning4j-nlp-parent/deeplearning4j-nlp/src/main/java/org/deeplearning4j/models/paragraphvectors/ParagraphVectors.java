@@ -1055,12 +1055,6 @@ public class ParagraphVectors extends Word2Vec {
             return this;
         }
 
-        @Override
-        public Builder index(@NonNull InvertedIndex<VocabWord> index) {
-            super.index(index);
-            return this;
-        }
-
         /**
          * This method used to feed SequenceIterator, that contains training corpus, into ParagraphVectors
          *

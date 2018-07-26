@@ -1347,4 +1347,24 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         assertArrayEquals(new long[]{2, 3, 28, 28}, ds.getFeatures().shape());
         assertArrayEquals(new long[]{2, 2}, ds.getLabels().shape());
     }
+
+
+
+    @Test
+    public void testSeqRRDSINoLabels(){
+        List<List<Writable>> sequence1 = new ArrayList<>();
+        sequence1.add(Arrays.asList((Writable) new DoubleWritable(1), new DoubleWritable(2)));
+        sequence1.add(Arrays.asList((Writable) new DoubleWritable(3), new DoubleWritable(4)));
+        sequence1.add(Arrays.asList((Writable) new DoubleWritable(5), new DoubleWritable(6)));
+        List<List<Writable>> sequence2 = new ArrayList<>();
+        sequence2.add(Arrays.asList((Writable) new DoubleWritable(10), new DoubleWritable(20)));
+        sequence2.add(Arrays.asList((Writable) new DoubleWritable(30), new DoubleWritable(40)));
+        SequenceRecordReader rrFeatures = new CollectionSequenceRecordReader(Arrays.asList(sequence1, sequence2));
+
+        SequenceRecordReaderDataSetIterator iter = new SequenceRecordReaderDataSetIterator(rrFeatures, 2, -1, -1);
+
+        DataSet ds = iter.next();
+        assertNotNull(ds.getFeatures());
+        assertNull(ds.getLabels());
+    }
 }

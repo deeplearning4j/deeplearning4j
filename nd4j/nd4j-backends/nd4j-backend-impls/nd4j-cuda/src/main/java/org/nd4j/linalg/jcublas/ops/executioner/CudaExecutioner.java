@@ -601,6 +601,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 val xT = op.x().tensorssAlongDimension(dimension);
                 val yT = op.y().tensorssAlongDimension(dimension);
 
+                // we intentionally want to set it to 0.0
                 ret = Nd4j.create(xT, yT);
             } else {
                 if (op.y() != null) {
@@ -611,7 +612,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         throw new ND4JIllegalStateException("Number of TADs along dimension doesn't match");
                 }
 
-
+                /*
                 if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
                     ret = Nd4j.zeros(retShape);
                 } else {
@@ -622,13 +623,17 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     else if (op.x().data().dataType() == DataBuffer.Type.HALF)
                         ret = Nd4j.valueArrayOf(retShape, op.zeroHalf());
                 }
+                */
+
+                // in case of regular accumulation we don't care about array state before op
+                ret = Nd4j.createUninitialized(retShape);
             }
             op.setZ(ret);
         } else {
             // compare length
             if (op.z().lengthLong() != ArrayUtil.prodLong(retShape))
                 throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
-
+/*
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 op.z().assign(op.zeroDouble());
             } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
@@ -638,6 +643,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
 
             ret = op.z();
+            */
         }
 
         naiveExec(op, dimension);
@@ -693,7 +699,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             retShape = new long[] {1, 1};
         }
 
-        INDArray ret = null;
+        INDArray ret = Nd4j.createUninitialized(retShape);
+        /*
         if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
             ret = Nd4j.zeros(retShape);
         } else {
@@ -704,6 +711,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             else if (op.x().data().dataType() == DataBuffer.Type.HALF)
                 ret = Nd4j.valueArrayOf(retShape, op.zeroHalf());
         }
+        */
 
         op.setZ(ret);
         //do op along all dimensions
@@ -1100,7 +1108,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
             return null;
 
-        INDArray ret = null;
+        val ret = Nd4j.createUninitialized(retShape);
+        /*
         if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
             ret = Nd4j.zeros(retShape);
         } else {
@@ -1111,6 +1120,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             else if (op.x().data().dataType() == DataBuffer.Type.HALF)
                 ret = Nd4j.valueArrayOf(retShape, op.zeroHalf());
         }
+        */
         op.setZ(ret);
 
         if (op.z().isScalar()) {

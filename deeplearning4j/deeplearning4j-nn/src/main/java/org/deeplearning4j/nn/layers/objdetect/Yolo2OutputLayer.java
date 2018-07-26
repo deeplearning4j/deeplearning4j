@@ -98,12 +98,12 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
-        INDArray epsOut = computeBackpropGradientAndScore(workspaceMgr, false);
+        INDArray epsOut = computeBackpropGradientAndScore(workspaceMgr, false, false);
 
         return new Pair<>(EMPTY_GRADIENT, epsOut);
     }
 
-    private INDArray computeBackpropGradientAndScore(LayerWorkspaceMgr workspaceMgr, boolean scoreOnly){
+    private INDArray computeBackpropGradientAndScore(LayerWorkspaceMgr workspaceMgr, boolean scoreOnly, boolean computeScoreForExamples){
         assertInputSet(true);
         Preconditions.checkState(labels != null, "Cannot calculate gradients/score: labels are null");
         Preconditions.checkState(labels.rank() == 4, "Expected rank 4 labels array with shape [minibatch, 4+numClasses, h, w]" +
@@ -235,6 +235,26 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Calculate the loss:
         ILossFunction lossConfidence = new LossL2();
         IActivation identity = new ActivationIdentity();
+
+
+        if(computeScoreForExamples){
+            INDArray positionLoss = layerConf().getLossPositionScale().computeScoreArray(labelXYCenter2d, predictedXYCenter2d, identity, mask1_ij_obj_2d );
+            INDArray sizeScaleLoss = layerConf().getLossPositionScale().computeScoreArray(labelWHSqrt2d, predictedWHSqrt2d, identity, mask1_ij_obj_2d);
+            INDArray confidenceLossPt1 = lossConfidence.computeScoreArray(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d);
+            INDArray confidenceLossPt2 = lossConfidence.computeScoreArray(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d).muli(lambdaNoObj);
+            INDArray classPredictionLoss = layerConf().getLossClassPredictions().computeScoreArray(classLabels2d, classPredictionsPreSoftmax2d, new ActivationSoftmax(), mask1_ij_obj_2d);
+
+            INDArray scoreForExamples = positionLoss.addi(sizeScaleLoss).muli(lambdaCoord)
+                    .addi(confidenceLossPt1).addi(confidenceLossPt2.muli(lambdaNoObj))
+                    .addi(classPredictionLoss)
+                    .dup('c');
+
+            scoreForExamples = scoreForExamples.reshape('c', mb, b*h*w).sum(1).addi(fullNetworkL1 + fullNetworkL2);
+
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, scoreForExamples);
+        }
+
+
         double positionLoss = layerConf().getLossPositionScale().computeScore(labelXYCenter2d, predictedXYCenter2d, identity, mask1_ij_obj_2d, false );
         double sizeScaleLoss = layerConf().getLossPositionScale().computeScore(labelWHSqrt2d, predictedWHSqrt2d, identity, mask1_ij_obj_2d, false);
         double confidenceLoss = lossConfidence.computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d, false)
@@ -366,7 +386,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
 
-        computeBackpropGradientAndScore(workspaceMgr, true);
+        computeBackpropGradientAndScore(workspaceMgr, true, false);
         return score();
     }
 
@@ -530,7 +550,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
-        throw new UnsupportedOperationException();
+        this.fullNetworkL1 = fullNetworkL1;
+        this.fullNetworkL2 = fullNetworkL2;
+        return computeBackpropGradientAndScore(workspaceMgr, false, true);
     }
 
     @Override
