@@ -98,6 +98,10 @@ public class Keras2ModelConfigurationTest {
         runSequentialConfigTest("modelimport/keras/configs/keras2/simple_rnn_tf_keras_2_config.json");
     }
 
+    @Test
+    public void simplePreluConfigTest() throws Exception {
+        runSequentialConfigTest("modelimport/keras/configs/keras2/prelu_config_tf_keras_2.json");
+    }
 
     @Test
     public void mnistMlpTfSequentialConfigTest() throws Exception {

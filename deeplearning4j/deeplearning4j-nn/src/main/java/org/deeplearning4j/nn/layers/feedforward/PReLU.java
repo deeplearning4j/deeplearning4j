@@ -42,6 +42,9 @@ import org.nd4j.linalg.primitives.Pair;
  */
 public class PReLU extends BaseLayer<org.deeplearning4j.nn.conf.layers.PReLULayer> {
 
+    long[] axes = layerConf().getSharedAxes();
+
+
     public PReLU(NeuralNetConfiguration conf) {
         super(conf);
     }
@@ -69,7 +72,7 @@ public class PReLU extends BaseLayer<org.deeplearning4j.nn.conf.layers.PReLULaye
 
         INDArray alpha = getParam(PReLUParamInitializer.WEIGHT_KEY);
 
-        return new ActivationPReLU(alpha).getActivation(in, training);
+        return new ActivationPReLU(alpha, axes).getActivation(in, training);
     }
 
     @Override
@@ -78,7 +81,7 @@ public class PReLU extends BaseLayer<org.deeplearning4j.nn.conf.layers.PReLULaye
         INDArray layerInput = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, input, input.ordering());
 
         INDArray alpha = getParam(PReLUParamInitializer.WEIGHT_KEY);
-        IActivation prelu = new ActivationPReLU(alpha);
+        IActivation prelu = new ActivationPReLU(alpha, axes);
 
         Pair<INDArray, INDArray> deltas = prelu.backprop(layerInput, epsilon);
         INDArray delta = deltas.getFirst();
