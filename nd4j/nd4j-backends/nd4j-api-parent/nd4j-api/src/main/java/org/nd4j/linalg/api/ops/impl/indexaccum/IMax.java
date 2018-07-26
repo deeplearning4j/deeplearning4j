@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -93,7 +94,6 @@ public class IMax extends BaseIndexAccumulation {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         //Not differentiable, but (assuming no ties) output does not change for a given infinitesimal change in the input
-
-        return Arrays.asList(f().zerosLike(arg()));
+        return Collections.singletonList(f().zerosLike(arg()));
     }
 }

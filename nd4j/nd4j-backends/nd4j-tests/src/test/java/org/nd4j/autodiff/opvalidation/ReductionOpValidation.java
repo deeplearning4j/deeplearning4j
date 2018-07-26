@@ -768,14 +768,11 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testIndexAccum(){
-        OpValidationSuite.ignoreFailing();
-
         List<String> failed = new ArrayList<>();
         List<int[]> dims = Arrays.asList(new int[]{0}, new int[]{1}, new int[]{0,1}, new int[0]);
 
         INDArray in = Nd4j.rand(3,4);
 
-//        for(int[] d : dims){
         for( int t=0; t<4; t++ ){
             int[] d = dims.get(t);
             for( int i=0; i<7; i++ ){
@@ -816,15 +813,15 @@ public class ReductionOpValidation extends BaseOpValidation {
                         break;
                     case 5:
                         reduce = sd.lastIndex(s, Conditions.greaterThan(0), dim);
-                        if(t == 0) exp = Nd4j.create(new double[]{2,2,2});
-                        else if(t == 1) exp = Nd4j.create(new double[]{3,3,3,3});
+                        if(t == 0) exp = Nd4j.create(new double[]{2,2,2,2});
+                        else if(t == 1) exp = Nd4j.create(new double[]{3,3,3});
                         else exp = Nd4j.create(new double[]{11});
                         name = "lastindex";
                         break;
                     case 6:
                         reduce = sd.matchConditionCount("count", s, Conditions.greaterThan(0), false, dim);
-                        if(t == 0) exp = Nd4j.create(new double[]{2,2,2});
-                        else if(t == 1) exp = Nd4j.create(new double[]{3,3,3,3});
+                        if(t == 0) exp = Nd4j.create(new double[]{3,3,3,3});
+                        else if(t == 1) exp = Nd4j.create(new double[]{4,4,4});
                         else exp = Nd4j.create(new double[]{12});
                         name = "matchConditionCount";
                         break;
