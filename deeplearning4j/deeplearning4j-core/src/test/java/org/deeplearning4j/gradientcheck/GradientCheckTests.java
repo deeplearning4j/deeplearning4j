@@ -320,6 +320,44 @@ public class GradientCheckTests extends BaseDL4JTest {
     }
 
     @Test
+    public void testEmbeddingLayerPreluSimple() {
+        Random r = new Random(12345);
+        int nExamples = 5;
+        INDArray input = Nd4j.zeros(nExamples, 1);
+        INDArray labels = Nd4j.zeros(nExamples, 3);
+        for (int i = 0; i < nExamples; i++) {
+            input.putScalar(i, r.nextInt(4));
+            labels.putScalar(new int[] {i, r.nextInt(3)}, 1.0);
+        }
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.1)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345L)
+                .list().layer(new EmbeddingLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
+                                .dist(new NormalDistribution(0, 1))
+                                .updater(new NoOp()).build())
+                .layer(new PReLULayer.Builder().inputShape(3).updater(new NoOp()).build())
+                .layer(new OutputLayer.Builder(LossFunction.MCXENT).nIn(3).nOut(3)
+                        .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
+                        .updater(new NoOp()).activation(Activation.SOFTMAX).build())
+                .pretrain(false).backprop(true).build();
+
+        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+        mln.init();
+
+        if (PRINT_RESULTS) {
+            System.out.println("testEmbeddingLayerSimple");
+            for (int j = 0; j < mln.getnLayers(); j++)
+                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+        }
+
+        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+        String msg = "testEmbeddingLayerSimple";
+        assertTrue(msg, gradOK);
+    }
+
+    @Test
     public void testEmbeddingLayerSimple() {
         Random r = new Random(12345);
         int nExamples = 5;

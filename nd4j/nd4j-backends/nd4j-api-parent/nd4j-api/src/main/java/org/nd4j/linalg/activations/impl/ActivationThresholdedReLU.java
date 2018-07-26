@@ -50,22 +50,20 @@ public class ActivationThresholdedReLU extends BaseActivationFunction {
 
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
-        INDArray activation = Nd4j.create(in.shape());
         DynamicCustomOp threshRelu = DynamicCustomOp.builder("thresholdedrelu")
-                .addOutputs(activation).addInputs(in)
+                .addOutputs(in).addInputs(in)
                 .addFloatingPointArguments(theta).build();
         Nd4j.getExecutioner().exec(threshRelu);
-        return activation;
+        return in;
     }
 
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
-        INDArray dLdz = Nd4j.create(in.shape());
         DynamicCustomOp threshReluBp = DynamicCustomOp.builder("thresholdedrelu_bp")
-                .addInputs(in, epsilon).addOutputs(dLdz).addFloatingPointArguments(theta).build();
+                .addInputs(in, epsilon).addOutputs(in).addFloatingPointArguments(theta).build();
         Nd4j.getExecutioner().exec(threshReluBp);
-        return new Pair<>(dLdz, null);
+        return new Pair<>(in, null);
     }
 
     @Override

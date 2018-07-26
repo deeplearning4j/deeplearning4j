@@ -51,26 +51,23 @@ public class ActivationPReLU extends BaseActivationFunction {
 
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
-        INDArray activation = Nd4j.create(in.shape());
-
         DynamicCustomOp.DynamicCustomOpsBuilder prelu = DynamicCustomOp.builder("prelu")
-                .addOutputs(activation).addInputs(in, alpha);
+                .addOutputs(in).addInputs(in, alpha);
         if (sharedAxes != null) {
             for (long axis: sharedAxes) {
                 prelu.addIntegerArguments(axis);
             }
         }
         Nd4j.getExecutioner().exec(prelu.build());
-        return activation;
+        return in;
     }
 
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
-        INDArray dLdz = Nd4j.create(in.shape());
         INDArray dLdalpha = Nd4j.create(in.shape());
         DynamicCustomOp.DynamicCustomOpsBuilder preluBp = DynamicCustomOp.builder("prelu_bp")
-                .addInputs(in, alpha, epsilon).addOutputs(dLdz, dLdalpha);
+                .addInputs(in, alpha, epsilon).addOutputs(in, dLdalpha);
 
         if (sharedAxes != null) {
             for (long axis: sharedAxes) {
@@ -78,7 +75,7 @@ public class ActivationPReLU extends BaseActivationFunction {
             }
         }
         Nd4j.getExecutioner().exec(preluBp.build());
-        return new Pair<>(dLdz, dLdalpha);
+        return new Pair<>(in, dLdalpha);
     }
 
     @Override
