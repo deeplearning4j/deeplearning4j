@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.computationgraph;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.arbiter.ComputationGraphSpace;
 import org.deeplearning4j.arbiter.conf.updater.AdamSpace;
 import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
@@ -23,9 +24,12 @@ import org.deeplearning4j.arbiter.evaluator.multilayer.ClassificationEvaluator;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
 import org.deeplearning4j.arbiter.multilayernetwork.MnistDataSetIteratorFactory;
+import org.deeplearning4j.arbiter.multilayernetwork.TestDL4JLocalExecution;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSource;
+import org.deeplearning4j.arbiter.optimize.api.saving.ResultReference;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxTimeCondition;
@@ -38,6 +42,7 @@ import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.saver.local.FileModelSaver;
 import org.deeplearning4j.arbiter.scoring.ScoreFunctions;
+import org.deeplearning4j.arbiter.scoring.impl.TestSetLossScoreFunction;
 import org.deeplearning4j.arbiter.task.ComputationGraphTaskCreator;
 import org.deeplearning4j.arbiter.util.TestDataFactoryProviderMnist;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
@@ -54,7 +59,9 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -66,14 +73,90 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-
+@Slf4j
 public class TestGraphLocalExecution {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
+    @Test
+    public void testLocalExecutionDataSources() throws Exception {
+
+        for( int dataApproach = 0; dataApproach<3; dataApproach++ ) {
+            log.info("////////////////// Starting Test: {} ///////////////////", dataApproach);
+
+            //Define: network config (hyperparameter space)
+            ComputationGraphSpace mls = new ComputationGraphSpace.Builder()
+                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                    .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.1)))
+                    .l2(new ContinuousParameterSpace(0.0001, 0.01))
+                    .addInputs("in")
+                    .addLayer("0",
+                            new DenseLayerSpace.Builder().nIn(784).nOut(new IntegerParameterSpace(10, 20))
+                                    .activation(new DiscreteParameterSpace<>(Activation.RELU,
+                                            Activation.TANH))
+                                    .build(), "in") //1-2 identical layers (except nIn)
+                    .addLayer("1", new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
+                            .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "0")
+                    .setOutputs("1")
+                    .setInputTypes(InputType.feedForward(784))
+                    .numEpochs(3).pretrain(false).backprop(true).build();
+
+            DataProvider dp = null;
+            Class<? extends DataSource> ds = null;
+            Properties dsP = null;
+            CandidateGenerator candidateGenerator;
+
+            if(dataApproach == 0){
+                ds = TestDL4JLocalExecution.MnistDataSource.class;
+                dsP = new Properties();
+                dsP.setProperty("minibatch", "8");
+                candidateGenerator = new RandomSearchGenerator(mls);
+            } else if(dataApproach == 1) {
+                //DataProvider approach
+                dp = new TestDL4JLocalExecution.MnistDataProvider();
+                candidateGenerator = new RandomSearchGenerator(mls);
+            } else {
+                //Factory approach
+                Map<String, Object> commands = new HashMap<>();
+                commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, TestDataFactoryProviderMnist.class.getCanonicalName());
+
+                candidateGenerator = new RandomSearchGenerator(mls, commands);
+                dp = new DataSetIteratorFactoryProvider();
+            }
+
+            File f = testDir.newFolder();
+            File modelSave = new File(f, "modelSaveDir");
+
+            OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
+                    .candidateGenerator(candidateGenerator)
+                    .dataProvider(dp)
+                    .dataSource(ds, dsP)
+                    .modelSaver(new FileModelSaver(modelSave))
+                    .scoreFunction(new TestSetLossScoreFunction())
+                    .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
+                            new MaxCandidatesCondition(5))
+                    .build();
+
+            IOptimizationRunner runner = new LocalOptimizationRunner(configuration,new ComputationGraphTaskCreator(new ClassificationEvaluator()));
+
+            runner.execute();
+
+            List<ResultReference> results = runner.getResults();
+            assertEquals(5, results.size());
+
+            System.out.println("----- COMPLETE - " + results.size() + " results -----");
+        }
+    }
+
 
     @Test
     public void testLocalExecution() throws Exception {

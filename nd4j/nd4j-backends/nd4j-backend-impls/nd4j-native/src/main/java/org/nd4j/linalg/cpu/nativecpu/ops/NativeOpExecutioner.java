@@ -193,11 +193,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
         if(op.z() == null || op.x() == op.z()) {
-            INDArray ret;
-            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
-                ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-            else
-                ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
+            val ret = Nd4j.createUninitialized(retShape);
 
             op.setZ(ret);
         } else if(!Arrays.equals(retShape, op.z().shape())){
@@ -342,10 +338,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     }
                 }
 
-                if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
-                    ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-                else
-                    ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
+                ret = Nd4j.createUninitialized(retShape);
 
             }
             op.setZ(ret);

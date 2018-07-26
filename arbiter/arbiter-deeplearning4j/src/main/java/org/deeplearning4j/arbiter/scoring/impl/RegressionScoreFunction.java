@@ -17,6 +17,7 @@
 package org.deeplearning4j.arbiter.scoring.impl;
 
 import lombok.*;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSource;
 import org.deeplearning4j.arbiter.scoring.RegressionValue;
 import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
@@ -25,6 +26,8 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+
+import java.util.Properties;
 
 /**
  * Score function for regression (including multi-label regression) for a MultiLayerNetwork or ComputationGraph

@@ -17,12 +17,14 @@
 package org.deeplearning4j.arbiter.optimize.api.score;
 
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSource;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * ScoreFunction defines the objective of hyperparameter optimization.
@@ -43,6 +45,16 @@ public interface ScoreFunction extends Serializable {
      * @return Calculated score
      */
     double score(Object model, DataProvider dataProvider, Map<String, Object> dataParameters);
+
+    /**
+     * Calculate and return the score, for the given model and data provider
+     *
+     * @param model                Model to score
+     * @param dataSource           Data source
+     * @param dataSourceProperties data source properties
+     * @return Calculated score
+     */
+    double score(Object model, Class<? extends DataSource> dataSource, Properties dataSourceProperties);
 
     /**
      * Should this score function be minimized or maximized?

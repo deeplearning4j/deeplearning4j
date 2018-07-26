@@ -21,6 +21,7 @@ import lombok.Data;
 import org.deeplearning4j.arbiter.optimize.api.*;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSource;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.generator.GridSearchCandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
@@ -173,6 +174,11 @@ public class TestGridSearch {
         }
 
         @Override
+        public double score(Object model, Class<? extends DataSource> dataSource, Properties dataSourceProperties) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public boolean minimize() {
             return true;
         }
@@ -200,7 +206,7 @@ public class TestGridSearch {
 
                     BraninConfig candidate = (BraninConfig) c.getValue();
 
-                    double score = scoreFunction.score(candidate, null, null);
+                    double score = scoreFunction.score(candidate, null, (Map)null);
                     System.out.println(candidate.getX1() + "\t" + candidate.getX2() + "\t" + score);
 
                     Thread.sleep(20);
@@ -217,6 +223,11 @@ public class TestGridSearch {
                     return new OptimizationResult(c, score, c.getIndex(), null, ci, null);
                 }
             };
+        }
+
+        @Override
+        public Callable<OptimizationResult> create(Candidate candidate, Class<? extends DataSource> dataSource, Properties dataSourceProperties, ScoreFunction scoreFunction, List<StatusListener> statusListeners, IOptimizationRunner runner) {
+            throw new UnsupportedOperationException();
         }
     }
 }

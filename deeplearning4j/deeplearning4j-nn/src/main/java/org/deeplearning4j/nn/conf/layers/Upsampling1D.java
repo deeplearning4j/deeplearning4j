@@ -80,7 +80,10 @@ public class Upsampling1D extends BaseUpsamplingLayer {
                     + inputType);
         }
         InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
-        return InputType.recurrent(recurrent.getSize(), recurrent.getTimeSeriesLength());
+        long outLength = recurrent.getTimeSeriesLength();
+        if(outLength > 0)
+            outLength *= size[0];
+        return InputType.recurrent(recurrent.getSize(), outLength);
     }
 
     @Override

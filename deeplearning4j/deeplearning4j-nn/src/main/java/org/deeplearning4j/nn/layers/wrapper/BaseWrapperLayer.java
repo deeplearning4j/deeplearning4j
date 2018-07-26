@@ -86,16 +86,6 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not supported");   //If required, implement in subtype (so traspose is wrapped)
-    }
-
-    @Override
-    public Layer clone() {
-        throw new UnsupportedOperationException("Clone not supported");
-    }
-
-    @Override
     public Collection<TrainingListener> getListeners() {
         return underlying.getListeners();
     }
@@ -133,11 +123,6 @@ public abstract class BaseWrapperLayer implements Layer {
     @Override
     public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         underlying.computeGradientAndScore(workspaceMgr);
-    }
-
-    @Override
-    public void accumulateScore(double accum) {
-        underlying.accumulateScore(accum);
     }
 
     @Override
@@ -211,11 +196,6 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public void validateInput() {
-        underlying.validateInput();
-    }
-
-    @Override
     public ConvexOptimizer getOptimizer() {
         return underlying.getOptimizer();
     }
@@ -223,11 +203,6 @@ public abstract class BaseWrapperLayer implements Layer {
     @Override
     public INDArray getParam(String param) {
         return underlying.getParam(param);
-    }
-
-    @Override
-    public void initParams() {
-        underlying.initParams();
     }
 
     @Override

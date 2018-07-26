@@ -72,7 +72,9 @@ public class TFGraphTestAllSameDiff {
             log.info("\n\tSKIPPED MODEL: " + modelName);
             return;
         }
-        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, EXECUTE_WITH);
+        Double precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
+
+        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, EXECUTE_WITH, precisionOverride);
         //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
     }
 

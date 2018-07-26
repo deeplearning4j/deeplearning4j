@@ -33,12 +33,6 @@
             <artifactId>nd4j-common</artifactId>
             <version>${nd4j.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>${commons-codec.version}</version>
-        </dependency>
     </dependencies>
 
     <profiles>

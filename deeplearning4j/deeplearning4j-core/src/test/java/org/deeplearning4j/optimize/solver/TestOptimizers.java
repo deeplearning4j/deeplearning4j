@@ -75,9 +75,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
         OptimizationAlgorithm[] toTest =
                         {OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT, OptimizationAlgorithm.LINE_GRADIENT_DESCENT,
-                                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS
-                        //OptimizationAlgorithm.HESSIAN_FREE	//Known to not work
-                        };
+                                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS};
 
         for (OptimizationAlgorithm oa : toTest) {
             MultiLayerNetwork network = new MultiLayerNetwork(getMLPConfigIris(oa));
@@ -96,9 +94,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
         OptimizationAlgorithm[] toTest =
                         {OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT, OptimizationAlgorithm.LINE_GRADIENT_DESCENT,
-                                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS
-                        //OptimizationAlgorithm.HESSIAN_FREE	//Known to not work
-                        };
+                                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS};
 
         DataSet ds = iter.next();
         ds.normalizeZeroMeanZeroUnitVariance();
@@ -906,11 +902,6 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void accumulateScore(double accum) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public INDArray params() {
             return parameters;
         }
@@ -960,9 +951,6 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void validateInput() {}
-
-        @Override
         public ConvexOptimizer getOptimizer() {
             throw new UnsupportedOperationException();
         }
@@ -970,11 +958,6 @@ public class TestOptimizers extends BaseDL4JTest {
         @Override
         public INDArray getParam(String param) {
             return parameters;
-        }
-
-        @Override
-        public void initParams() {
-            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -1009,16 +992,6 @@ public class TestOptimizers extends BaseDL4JTest {
 
         @Override
         public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr mgr) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Layer transpose() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Layer clone() {
             throw new UnsupportedOperationException();
         }
 

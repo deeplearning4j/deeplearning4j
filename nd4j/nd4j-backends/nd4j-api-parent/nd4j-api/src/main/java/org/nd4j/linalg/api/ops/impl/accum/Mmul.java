@@ -57,7 +57,7 @@ public class Mmul extends DynamicCustomOp {
                 MMulTranspose mt) {
         super(null,sameDiff,new SDVariable[]{i_v1,i_v2});
         this.mt = mt;
-        addIArgument(ArrayUtil.fromBoolean(mt.isTransposeA()), ArrayUtil.fromBoolean(mt.isTransposeB()));
+        addIArgument(ArrayUtil.fromBoolean(mt.isTransposeA()), ArrayUtil.fromBoolean(mt.isTransposeB()), ArrayUtil.fromBoolean(mt.isTransposeResult()));
     }
 
 
@@ -87,7 +87,8 @@ public class Mmul extends DynamicCustomOp {
         if (mt != null) {
           this.mt = mt;
           addIArgument(ArrayUtil.fromBoolean(mt.isTransposeA()),
-                       ArrayUtil.fromBoolean(mt.isTransposeB()));
+                       ArrayUtil.fromBoolean(mt.isTransposeB()),
+                       ArrayUtil.fromBoolean(mt.isTransposeResult()));
         }
     }
 
@@ -208,11 +209,11 @@ public class Mmul extends DynamicCustomOp {
         SDVariable dLdOut = i_v1.get(0);
         /*
         In: x=[a,b], y=[b,c]
-        tX  tY  tZ  x       y       z       dz          dLdx
-        F   F   F   [a,b]   [b,c]   [a,c]   [a,c]       [a,c]*[b,c]T = [a,b]
-        T   F   F   [b,a]   [b,c]   [a,c]   [a,c]       ([a,c]*[b,c]T)T = [b,a]
-        F   T   F   [a,b]   [c,b]   [a,c]   [a,c]       ([a,c]*[c,b]) = [a,b]
-        T   T   F   [b,a]   [c,b]   [a,c]   [a,c]       ([a,c]*[c,b])T = [b,a]
+        tX  tY  tZ  x       y       z       dz          dLdx                                    dLdy
+        F   F   F   [a,b]   [b,c]   [a,c]   [a,c]       [a,c]*[b,c]T = [a,b]        x*yT        [a,b]T*[a,c] = [b,c]        xT*y
+        T   F   F   [b,a]   [b,c]   [a,c]   [a,c]       ([a,c]*[b,c]T)T = [b,a]     (x*yT)T     [b,a]*[a,c] = [b,c]         x*y
+        F   T   F   [a,b]   [c,b]   [a,c]   [a,c]       ([a,c]*[c,b]) = [a,b]       x*y         [a,b]T*[a,c] = [b,c] ->T    xT*y
+        T   T   F   [b,a]   [c,b]   [a,c]   [a,c]       ([a,c]*[c,b])T = [b,a]      (x*y)T      [b,a]*[a,c] = [b,c]  ->T    x*y
         F   F   T   [a,b]   [b,c]   [c,a]   [c,a]
 
          */

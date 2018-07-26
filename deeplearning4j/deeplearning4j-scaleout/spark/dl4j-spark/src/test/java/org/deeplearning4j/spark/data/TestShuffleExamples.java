@@ -20,7 +20,6 @@ import org.apache.spark.HashPartitioner;
 import org.apache.spark.Partitioner;
 import org.apache.spark.api.java.JavaRDD;
 import org.deeplearning4j.spark.BaseSparkTest;
-import org.deeplearning4j.spark.data.shuffle.IntPartitioner;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -66,28 +65,5 @@ public class TestShuffleExamples extends BaseSparkTest {
         }
 
         assertEquals(100, totalExampleCount);
-    }
-
-    @Test
-    public void testIntPartitioner() {
-        int nTest = 10000;
-        int nPartitions = 42;
-
-        Partitioner intPartitioner = new IntPartitioner(nPartitions);
-        Partitioner hashPartitioner = new HashPartitioner(nPartitions);
-
-        Random r = new Random();
-
-        List<Integer> samples = new ArrayList();
-        for (int i = 0; i < nTest; i++) {
-            samples.add(Math.abs(r.nextInt()));
-        }
-
-        for (int i : samples) {
-            assertTrue("Found intPartitioner " + intPartitioner.getPartition(i) + " for value " + i
-                            + " with hashPartitioner " + hashPartitioner.getPartition(i),
-                            intPartitioner.getPartition(i) == hashPartitioner.getPartition(i));
-        }
-
     }
 }

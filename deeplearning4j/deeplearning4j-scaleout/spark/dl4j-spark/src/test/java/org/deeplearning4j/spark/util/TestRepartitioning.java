@@ -23,8 +23,7 @@ import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.RepartitionStrategy;
 import org.deeplearning4j.spark.impl.common.CountPartitionsFunction;
-import org.deeplearning4j.spark.impl.common.repartition.AssignIndexFunction;
-import org.deeplearning4j.spark.impl.common.repartition.MapTupleToPairFlatMap;
+import org.deeplearning4j.spark.impl.repartitioner.DefaultRepartitioner;
 import org.junit.Assert;
 import org.junit.Test;
 import scala.Tuple2;
@@ -35,7 +34,6 @@ import java.util.List;
 import java.util.Random;
 
 import static junit.framework.TestCase.assertEquals;
-import static org.deeplearning4j.spark.util.SparkUtils.indexedRDD;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -183,6 +181,41 @@ public class TestRepartitioning extends BaseSparkTest {
             assertEquals(2, (int)t2._2());
         }
     }
+
+    @Test
+    public void testRepartitioning4(){
+        List<Integer> ints = new ArrayList<>();
+        for( int i=0; i<7040; i++ ){
+            ints.add(i);
+        }
+
+        JavaRDD<Integer> rdd = sc.parallelize(ints);
+
+        JavaRDD<Integer> afterRepartition = new DefaultRepartitioner().repartition(rdd, 1, 32);
+        List<Tuple2<Integer, Integer>> partitionCountsAfter = afterRepartition.mapPartitionsWithIndex(new CountPartitionsFunction<Integer>(), true).collect();
+
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        int minIdx = 0;
+        int maxIdx = 0;
+        for(Tuple2<Integer,Integer> t2 : partitionCountsAfter){
+            min = Math.min(min, t2._2());
+            max = Math.max(max, t2._2());
+            if(min == t2._2()){
+                minIdx = t2._1();
+            }
+            if(max == t2._2()){
+                maxIdx = t2._1();
+            }
+        }
+
+        System.out.println("min: " + min + "\t@\t" + minIdx);
+        System.out.println("max: " + max + "\t@\t" + maxIdx);
+
+        assertEquals(1, min);
+        assertEquals(2, max);
+    }
+
 
     @Test
     public void testRepartitioningApprox() {

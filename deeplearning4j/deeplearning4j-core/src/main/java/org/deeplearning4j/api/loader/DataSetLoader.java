@@ -14,31 +14,16 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.spark.data.shuffle;
+package org.deeplearning4j.api.loader;
 
-import lombok.AllArgsConstructor;
-import org.apache.spark.Partitioner;
+import org.nd4j.api.loader.Loader;
+import org.nd4j.linalg.dataset.DataSet;
 
 /**
- * A very simple partitioner that assumes integer keys.
- * Maps each value to key % numPartitions
+ * An interface for loading DataSets from a {@link org.nd4j.api.loader.Source}
  *
  * @author Alex Black
- * @deprecated Use {@link org.apache.spark.HashPartitioner} instead
  */
-@Deprecated
-@AllArgsConstructor
-public class IntPartitioner extends Partitioner {
+public interface DataSetLoader extends Loader<DataSet> {
 
-    private final int numPartitions;
-
-    @Override
-    public int numPartitions() {
-        return numPartitions;
-    }
-
-    @Override
-    public int getPartition(Object key) {
-        return (Integer) key % numPartitions;
-    }
 }

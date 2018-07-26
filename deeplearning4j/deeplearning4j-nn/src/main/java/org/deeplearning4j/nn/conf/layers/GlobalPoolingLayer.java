@@ -62,7 +62,6 @@ import java.util.Map;
  * @author Alex Black
  */
 @Data
-@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class GlobalPoolingLayer extends NoParamLayer {
 
@@ -78,6 +77,10 @@ public class GlobalPoolingLayer extends NoParamLayer {
         this.collapseDimensions = builder.collapseDimensions;
         this.pnorm = builder.pnorm;
         this.layerName = builder.layerName;
+    }
+
+    public GlobalPoolingLayer(){
+        this(PoolingType.MAX);
     }
 
     public GlobalPoolingLayer(PoolingType poolingType){

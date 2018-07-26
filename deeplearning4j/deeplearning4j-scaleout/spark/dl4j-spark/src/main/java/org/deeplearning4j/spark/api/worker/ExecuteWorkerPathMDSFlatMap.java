@@ -18,6 +18,7 @@ package org.deeplearning4j.spark.api.worker;
 
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
+import org.deeplearning4j.api.loader.MultiDataSetLoader;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
@@ -38,8 +39,8 @@ import java.util.List;
 public class ExecuteWorkerPathMDSFlatMap<R extends TrainingResult>
                 extends BaseFlatMapFunctionAdaptee<Iterator<String>, R> {
 
-    public ExecuteWorkerPathMDSFlatMap(TrainingWorker<R> worker) {
-        super(new ExecuteWorkerPathMDSFlatMapAdapter<>(worker));
+    public ExecuteWorkerPathMDSFlatMap(TrainingWorker<R> worker, MultiDataSetLoader loader) {
+        super(new ExecuteWorkerPathMDSFlatMapAdapter<>(worker, loader));
     }
 }
 
@@ -54,10 +55,12 @@ public class ExecuteWorkerPathMDSFlatMap<R extends TrainingResult>
 class ExecuteWorkerPathMDSFlatMapAdapter<R extends TrainingResult>
                 implements FlatMapFunctionAdapter<Iterator<String>, R> {
     private final FlatMapFunctionAdapter<Iterator<MultiDataSet>, R> workerFlatMap;
+    private MultiDataSetLoader loader;
     private final int maxDataSetObjects;
 
-    public ExecuteWorkerPathMDSFlatMapAdapter(TrainingWorker<R> worker) {
+    public ExecuteWorkerPathMDSFlatMapAdapter(TrainingWorker<R> worker, MultiDataSetLoader loader) {
         this.workerFlatMap = new ExecuteWorkerMultiDataSetFlatMapAdapter<>(worker);
+        this.loader = loader;
 
         //How many dataset objects of size 'dataSetObjectNumExamples' should we load?
         //Only pass on the required number, not all of them (to avoid async preloading data that won't be used)
@@ -85,6 +88,6 @@ class ExecuteWorkerPathMDSFlatMapAdapter<R extends TrainingResult>
             list.add(iter.next());
         }
 
-        return workerFlatMap.call(new PathSparkMultiDataSetIterator(list.iterator()));
+        return workerFlatMap.call(new PathSparkMultiDataSetIterator(list.iterator(), loader));
     }
 }
