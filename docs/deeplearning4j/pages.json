@@ -1,0 +1,50 @@
+{
+  "excludes": [
+    "abstract"
+  ],
+  "indices": [
+  ],
+  "pages": [
+    {
+      "page": "quickstart.md",
+      "class": []
+    },
+    {
+      "page": "quickstart-java.md",
+      "class": []
+    },
+    {
+      "page": "benchmark.md",
+      "class": []
+    },
+    {
+      "page": "build-from-source.md",
+      "class": []
+    },
+    {
+      "page": "concepts.md",
+      "class": []
+    },
+    {
+      "page": "contribute.md",
+      "class": []
+    },
+    {
+      "page": "config-buildtools.md",
+      "class": []
+    },
+    {
+      "page": "config-maven.md",
+      "class": []
+    },
+    {
+      "page": "config-memory.md",
+      "class": []
+    },
+    {
+      "page": "config-workspaces.md",
+      "class": []
+    }
+  ]
+}
+
