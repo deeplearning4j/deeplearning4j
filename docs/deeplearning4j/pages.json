@@ -44,6 +44,18 @@
     {
       "page": "config-workspaces.md",
       "class": []
+    },
+    {
+      "page": "troubleshooting-training.md",
+      "class": []
+    },
+    {
+      "page": "model-computationgraph.md",
+      "class": []
+    },
+    {
+      "page": "model-rnn.md",
+      "class": []
     }
   ]
 }

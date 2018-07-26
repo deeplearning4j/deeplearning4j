@@ -290,7 +290,7 @@ class DocumentationGenerator:
         assert blocks, 'No content for page ' + page_data['page']
 
         markdown = '\n----\n\n'.join(blocks)
-        path = os.path.join(self.project_name + self.target_dir, page_data['page'])
+        path = os.path.join(self.project_name + self.target_dir, self.project_name + '-' + page_data['page'])
 
         if os.path.exists(path):
             template = self.read_file(path)
