@@ -532,7 +532,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testTransforms() {
-        OpValidationSuite.ignoreFailing();
         //Test transforms (non-pairwise)
         Nd4j.getRandom().setSeed(12345);
 
@@ -821,7 +820,9 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.getVarName(), expOut51);
                     break;
                 case 52:
-                    dim = 0;
+                    if(OpValidationSuite.IGNORE_FAILING){
+                        continue;
+                    }
                     boolean ex = false;
                     boolean revBool = false;
                     t = sd.cumprod(in, ex, revBool, 0);
@@ -838,6 +839,9 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.getVarName(), expOut52);
                     break;
                 case 53:
+                    if(OpValidationSuite.IGNORE_FAILING){
+                        continue;
+                    }
                     t = sd.diag(in);
                     ia = Nd4j.create(new float[]{4, 2});
                     in = sd.var("in", new int[]{1, 2});
@@ -938,6 +942,9 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expected(t, ia.gte(1.0));
                     break;
                 case 74:
+                    if(OpValidationSuite.IGNORE_FAILING){
+                        continue;
+                    }
                     t = sd.f().noop(in);
                     tc.expected(t, ia.dup());
                     break;
@@ -954,8 +961,9 @@ public class TransformOpValidation extends BaseOpValidation {
                 case 77:
                     ia = Nd4j.rand(ia.shape());
                     t = sd.matchCondition(in, Conditions.lessThan(0.5));
-                    INDArray exp = Nd4j.getExecutioner().exec(new MatchCondition(ia.dup(), Conditions.lessThan(0.5))).z();
+                    INDArray exp = ia.dup().lt(0.5);
                     tc.expected(t, exp);
+                    break;
                 case 78:
                     ia = Nd4j.rand(ia.shape()).muli(2).subi(1);
                     t = sd.f().tanhRational(in);

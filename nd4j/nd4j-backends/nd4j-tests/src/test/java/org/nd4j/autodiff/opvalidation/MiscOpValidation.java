@@ -62,7 +62,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testGradientAutoBroadcast1() {
-        OpValidationSuite.ignoreFailing();
 
         Nd4j.getRandom().setSeed(12345);
 
@@ -114,6 +113,9 @@ public class MiscOpValidation extends BaseOpValidation {
                     case 7:
                         bcOp = sd.f().floorMod(in3, in2);
                         name = "floormod";
+                        if(OpValidationSuite.IGNORE_FAILING){
+                            continue;
+                        }
                         break;
                     default:
                         throw new RuntimeException();

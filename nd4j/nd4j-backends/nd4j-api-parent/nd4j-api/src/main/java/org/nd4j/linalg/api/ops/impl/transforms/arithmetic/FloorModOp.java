@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.List;
 
@@ -28,72 +29,16 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class FloorModOp extends BaseTransformOp {
+public class FloorModOp extends DynamicCustomOp {
     public FloorModOp() {}
 
-    public FloorModOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
-        super(sameDiff, i_v1, i_v2);
-    }
-
-    public FloorModOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
-        super(sameDiff, i_v1, i_v2, inPlace);
-    }
-
-    public FloorModOp(SameDiff sameDiff) {
-        super(sameDiff);
-    }
-
-    public FloorModOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-    }
-
-    public FloorModOp(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
-    }
-
-    public FloorModOp(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public FloorModOp(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
-    public FloorModOp(INDArray x, INDArray z) {
-        super(x, z);
-    }
-
-    public FloorModOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public FloorModOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public FloorModOp(INDArray x) {
-        super(x);
-    }
-
-
-    @Override
-    public int opNum() {
-        return 21;
+    public FloorModOp(SameDiff sameDiff, SDVariable x, SDVariable y) {
+        super(null, sameDiff, new SDVariable[]{x, y});
     }
 
     @Override
     public String opName() {
         return "floormod";
-    }
-
-    @Override
-    public String onnxName() {
-        return "FloorMod";
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "FloorMod";
     }
 
     @Override

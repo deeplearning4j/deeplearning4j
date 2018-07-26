@@ -999,7 +999,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable floorMod(SDVariable x, SDVariable y) {
-        return new FModOp(sameDiff(), x, y).outputVariable();
+        return new FloorModOp(sameDiff(), x, y).outputVariable();
     }
 
     public List<SDVariable> floorModBp(SDVariable x, SDVariable y, SDVariable grad) {
