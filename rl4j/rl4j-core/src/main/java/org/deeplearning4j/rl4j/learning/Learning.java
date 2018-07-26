@@ -18,6 +18,7 @@ package org.deeplearning4j.rl4j.learning;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.gym.StepReply;
@@ -45,13 +46,11 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
                 implements ILearning<O, A, AS>, NeuralNetFetchable<NN> {
     @Getter
     final private Random random;
-
-    @Getter
+    @Getter @Setter
     private int stepCounter = 0;
-    @Getter
+    @Getter @Setter
     private int epochCounter = 0;
-
-    @Getter
+    @Getter @Setter
     private IHistoryProcessor historyProcessor = null;
 
     public Learning(LConfiguration conf) {
@@ -140,8 +139,12 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
         return epochCounter++;
     }
 
-    protected void setHistoryProcessor(HistoryProcessor.Configuration conf) {
+    public void setHistoryProcessor(HistoryProcessor.Configuration conf) {
         historyProcessor = new HistoryProcessor(conf);
+    }
+
+    public void setHistoryProcessor(IHistoryProcessor historyProcessor) {
+        this.historyProcessor = historyProcessor;
     }
 
     public INDArray getInput(O obs) {
