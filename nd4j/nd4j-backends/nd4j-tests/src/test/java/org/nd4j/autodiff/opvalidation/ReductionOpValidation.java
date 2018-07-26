@@ -671,8 +671,6 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testMoments(){
-        OpValidationSuite.ignoreFailing();
-
         for( int[] axes : new int[][]{{0}, {1}, {0,1}}) {
             INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4);
 
@@ -683,7 +681,13 @@ public class ReductionOpValidation extends BaseOpValidation {
             INDArray expMean = input.mean(axes);
             INDArray expVar = input.var(false, axes);
 
-            SDVariable loss = moments[0].add(moments[1]).std(true);
+            SDVariable loss;
+            if(axes.length < 2){
+                loss = moments[0].add(moments[1]).std(true);
+            } else {
+                loss = moments[0].add(moments[1]).mean();
+            }
+
 
             String msg = Arrays.toString(axes);
 
