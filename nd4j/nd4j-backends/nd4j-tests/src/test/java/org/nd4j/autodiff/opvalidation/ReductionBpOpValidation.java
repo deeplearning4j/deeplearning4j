@@ -249,7 +249,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testMinBP() {
-        OpValidationSuite.ignoreFailing();
         //Full array min reduction
 
         //dL/dIn_i  = dL/dOut * dOut/dIn_i
@@ -289,7 +288,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testMinAlongDimensionBP() {
-        OpValidationSuite.ignoreFailing();
         //Full array min reduction
 
         //dL/dIn_i  = dL/dOut * dOut/dIn_i
@@ -333,7 +331,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testMaxBP() {
-        OpValidationSuite.ignoreFailing();
         //Full array max reduction
 
         //dL/dIn_i  = dL/dOut * dOut/dIn_i
@@ -364,7 +361,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testMaxAlongDimensionBP() {
-        OpValidationSuite.ignoreFailing();
         //Full array min reduction
 
         //dL/dIn_i  = dL/dOut * dOut/dIn_i
@@ -859,7 +855,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testNormMaxBp(){
-        OpValidationSuite.ignoreFailing();
         //out = max_i (|in_i|)
         //dL/dIn = dL/dOut * dOut/dIn
         //       = dL/dOut * (0 if |x_i| is not max; or sgn(x_i) otherwise)
@@ -890,14 +885,13 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testNormMaxAlongDimensionBP() {
-        OpValidationSuite.ignoreFailing();
         //out = max_i (|in_i|)
         //dL/dIn = dL/dOut * dOut/dIn
         //       = dL/dOut * (0 if |x_i| is not max; or sgn(x_i) otherwise)
 
         for (boolean keepDims : new boolean[]{false, true}) {
 
-            long[] reducedShape_0 = (keepDims ? new long[]{3, 4} : new long[]{4});
+            long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
             INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
             INDArray sgn = Transforms.sign(preReduceInput, true);
             INDArray max_0 = Nd4j.create(3,4);
