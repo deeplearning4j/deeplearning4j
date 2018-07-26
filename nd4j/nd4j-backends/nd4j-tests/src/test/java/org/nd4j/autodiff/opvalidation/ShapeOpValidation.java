@@ -1114,8 +1114,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testMeshGrid(){
-        OpValidationSuite.ignoreFailing();
-
         List<String> failed = new ArrayList<>();
 
         for( int rank=2; rank<=4; rank++ ){
@@ -1158,7 +1156,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                 if(i == 0)
                     loss = meshgrid[i].std(true);
                 else {
-                    loss = loss.add(meshgrid[i].std(true));
+                    loss = loss.add("loss-" + i, meshgrid[i].std(true));
                 }
             }
 
