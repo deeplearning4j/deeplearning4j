@@ -31,7 +31,7 @@ namespace helpers {
     template <typename T>
     int dropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* output, NDArray<T>* reduceShape, int seed, T probValue) {
         NativeOps native;
-        nd4j::graph::RandomGenerator nodeRng(seed);
+        nd4j::graph::RandomGenerator nodeRng(0, seed);
 
         native.reSeedBuffer(nullptr, (long)seed, rng);
         //if (newRng )

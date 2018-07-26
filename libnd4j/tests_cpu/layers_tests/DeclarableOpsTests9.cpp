@@ -517,7 +517,7 @@ TEST_F(DeclarableOpsTests9, TestDropout_BP_1) {
     auto ress = op.execute({&x, &errs, &shape}, {0.2f}, {113});
 
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
-//    ress->at(0)->printIndexedBuffer("Result is ");
+    ress->at(0)->printIndexedBuffer("Result is ");
     //x.printIndexedBuffer("Input is");
 
     delete ress;
