@@ -38,19 +38,29 @@ import org.nd4j.linalg.primitives.Pair;
 public class ActivationPReLU extends BaseActivationFunction {
 
     private INDArray alpha;
-
-    public ActivationPReLU() {}
+    private long[] sharedAxes = null;
 
     public ActivationPReLU(INDArray alpha) {
         this.alpha = alpha;
     }
 
+    public ActivationPReLU(INDArray alpha, long[] sharedAxes) {
+        this.alpha = alpha;
+        this.sharedAxes = sharedAxes;
+    }
+
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
         INDArray activation = Nd4j.create(in.shape());
-        DynamicCustomOp prelu = DynamicCustomOp.builder("prelu")
-                .addOutputs(activation).addInputs(in, alpha).build();
-        Nd4j.getExecutioner().exec(prelu);
+
+        DynamicCustomOp.DynamicCustomOpsBuilder prelu = DynamicCustomOp.builder("prelu")
+                .addOutputs(activation).addInputs(in, alpha);
+        if (sharedAxes != null) {
+            for (long axis: sharedAxes) {
+                prelu.addIntegerArguments(axis);
+            }
+        }
+        Nd4j.getExecutioner().exec(prelu.build());
         return activation;
     }
 
@@ -59,9 +69,15 @@ public class ActivationPReLU extends BaseActivationFunction {
         assertShape(in, epsilon);
         INDArray dLdz = Nd4j.create(in.shape());
         INDArray dLdalpha = Nd4j.create(in.shape());
-        DynamicCustomOp threshReluBp = DynamicCustomOp.builder("prelu_bp")
-                .addInputs(in, alpha, epsilon).addOutputs(dLdz, dLdalpha).build();
-        Nd4j.getExecutioner().exec(threshReluBp);
+        DynamicCustomOp.DynamicCustomOpsBuilder preluBp = DynamicCustomOp.builder("prelu_bp")
+                .addInputs(in, alpha, epsilon).addOutputs(dLdz, dLdalpha);
+
+        if (sharedAxes != null) {
+            for (long axis: sharedAxes) {
+                preluBp.addIntegerArguments(axis);
+            }
+        }
+        Nd4j.getExecutioner().exec(preluBp.build());
         return new Pair<>(dLdz, dLdalpha);
     }
 

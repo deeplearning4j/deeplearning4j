@@ -34,8 +34,10 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationLReLU;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -50,6 +52,10 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.remo
 @Slf4j
 public class KerasPReLU extends KerasLayer {
 
+    private final String ALPHA = "alpha";
+    private final String ALPHA_INIT = "alpha_initializer";
+    private final String ALPHA_CONSTRAINT = "alpha_constraint";
+    private final String SHARED_AXES = "shared_axes";
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
@@ -75,17 +81,17 @@ public class KerasPReLU extends KerasLayer {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
-        // TODO: read alpha_regularizer, infer and use shared axes
         LayerConstraint weightConstraint = KerasConstraintUtils.getConstraintsFromConfig(
-                layerConfig, "alpha_constraint", conf, kerasMajorVersion);
+                layerConfig, ALPHA_CONSTRAINT, conf, kerasMajorVersion);
 
-        Pair<WeightInit, Distribution> init = getWeightInitFromConfig(layerConfig, "alpha_initializer",
+        Pair<WeightInit, Distribution> init = getWeightInitFromConfig(layerConfig, ALPHA_INIT,
                 enforceTrainingConfig, conf, kerasMajorVersion);
         WeightInit weightInit = init.getFirst();
         Distribution distribution = init.getSecond();
+        long[] axes = getSharedAxes(layerConfig);
 
-
-        PReLULayer.Builder builder = new PReLULayer.Builder().weightInit(weightInit).name(layerName);
+        PReLULayer.Builder builder = new PReLULayer.Builder().sharedAxes(axes)
+        .weightInit(weightInit).name(layerName);
         if (distribution != null) {
             builder.dist(distribution);
         }
@@ -93,6 +99,23 @@ public class KerasPReLU extends KerasLayer {
             builder.constrainWeights(weightConstraint);
         }
         this.layer = builder.build();
+    }
+
+    private long[] getSharedAxes(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
+        long[] axes = null;
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
+        try {
+            @SuppressWarnings("unchecked")
+            List<Integer> axesList = (List<Integer>) innerConfig.get(SHARED_AXES);
+            int[] intAxes = ArrayUtil.toArray(axesList);
+            axes = new long[intAxes.length];
+            for (int i = 0; i < intAxes.length; i++) {
+                axes[i] = (long) intAxes[i];
+            }
+        } catch (Exception e) {
+            // no shared axes
+        }
+        return axes;
     }
 
     /**
@@ -133,13 +156,13 @@ public class KerasPReLU extends KerasLayer {
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
         this.weights = new HashMap<>();
-        if (weights.containsKey("alpha"))
-            this.weights.put(PReLUParamInitializer.WEIGHT_KEY, weights.get("alpha"));
+        if (weights.containsKey(ALPHA))
+            this.weights.put(PReLUParamInitializer.WEIGHT_KEY, weights.get(ALPHA));
         else
-            throw new InvalidKerasConfigurationException("Parameter alpha does not exist in weights");
+            throw new InvalidKerasConfigurationException("Parameter " + ALPHA + " does not exist in weights");
         if (weights.size() > 1) {
             Set<String> paramNames = weights.keySet();
-            paramNames.remove("alpha");
+            paramNames.remove(ALPHA);
             String unknownParamNames = paramNames.toString();
             log.warn("Attemping to set weights for unknown parameters: "
                     + unknownParamNames.substring(1, unknownParamNames.length() - 1));

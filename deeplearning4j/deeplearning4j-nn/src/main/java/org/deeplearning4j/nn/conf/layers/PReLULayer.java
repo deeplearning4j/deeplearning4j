@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.params.PReLUParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -45,18 +46,20 @@ import java.util.Map;
 public class PReLULayer extends FeedForwardLayer {
 
     private long[] inputShape = null;
+    private long[] sharedAxes = null;
 
     private PReLULayer(Builder builder) {
         super(builder);
         this.inputShape = builder.inputShape;
+        this.sharedAxes = builder.sharedAxes;
         initializeConstraints(builder);
     }
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                     int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer ret =
-                        new org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer(conf);
+        org.deeplearning4j.nn.layers.feedforward.PReLU ret =
+                        new org.deeplearning4j.nn.layers.feedforward.PReLU(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -75,7 +78,7 @@ public class PReLULayer extends FeedForwardLayer {
 
     @Override
     public ParamInitializer initializer() {
-        return DefaultParamInitializer.getInstance();
+        return PReLUParamInitializer.getInstance(inputShape, sharedAxes);
     }
 
     @Override
@@ -96,17 +99,34 @@ public class PReLULayer extends FeedForwardLayer {
     public static class Builder extends FeedForwardLayer.Builder<PReLULayer.Builder> {
 
         private long[] inputShape = null;
-
+        private long[] sharedAxes = null;
 
         /**
          * Explicitly set input shape of incoming activations so that parameters
-         * can be initialized properly.
+         * can be initialized properly. This explicitly excludes the mini-batch
+         * dimension.
          *
-         * @param shape
+         * @param shape shape of input data
          * @return
          */
         public Builder inputShape(long... shape){
             this.inputShape = shape;
+            return this;
+        }
+
+        /**
+         * Set the broadcasting axes of PReLU's alpha parameter.
+         *
+         * For instance, given input data of shape
+         * [mb, channels, height, width], setting axes to [2,3] will
+         * set alpha to shape [channels, 1, 1] and broadcast alpha across
+         * height and width dimensions of each channel.
+         *
+         * @param axes shared/broadcasting axes
+         * @return Builder
+         */
+        public Builder sharedAxes(long... axes) {
+            this.sharedAxes = axes;
             return this;
         }
 

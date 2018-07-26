@@ -40,14 +40,22 @@ public class PReLUParamInitializer implements ParamInitializer {
 
     public final static String WEIGHT_KEY = "W";
     private long[] weightShape;
+    private long[] sharedAxes;
 
-    public PReLUParamInitializer(long[] shape) {
+    public PReLUParamInitializer(long[] shape, long[] sharedAxes) {
         this.weightShape = shape;
+        this.sharedAxes = sharedAxes;
+        // Set shared axes to 1, broadcasting will take place on c++ level.
+        if (sharedAxes != null) {
+            for (long axis: sharedAxes) {
+                weightShape[(int)axis - 1] = 1;
+            }
+        }
     }
 
 
-    public static PReLUParamInitializer getInstance(long[] shape) {
-        return new PReLUParamInitializer(shape);
+    public static PReLUParamInitializer getInstance(long[] shape, long[] sharedAxes) {
+        return new PReLUParamInitializer(shape, sharedAxes);
     }
 
 
@@ -58,8 +66,6 @@ public class PReLUParamInitializer implements ParamInitializer {
 
     @Override
     public long numParams(Layer l) {
-        PReLULayer layerConf = (PReLULayer) l;
-        weightShape = layerConf.getInputShape();
         return numParams(weightShape);
     }
 
@@ -118,13 +124,10 @@ public class PReLUParamInitializer implements ParamInitializer {
 
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
-        FeedForwardLayer layerConf =
-                        (FeedForwardLayer) conf.getLayer();
-        val length = numParams(conf);
 
+        val length = numParams(conf);
         INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, length))
                         .reshape('f', weightShape);
-
         Map<String, INDArray> out = new LinkedHashMap<>();
         out.put(WEIGHT_KEY, weightGradientView);
 
@@ -134,13 +137,11 @@ public class PReLUParamInitializer implements ParamInitializer {
 
     protected INDArray createWeightMatrix(NeuralNetConfiguration conf, INDArray weightParamView,
                     boolean initializeParameters) {
-        FeedForwardLayer layerConf =
-                        (FeedForwardLayer) conf.getLayer();
 
+        FeedForwardLayer layerConf = (FeedForwardLayer) conf.getLayer();
         if (initializeParameters) {
             Distribution dist = Distributions.createDistribution(layerConf.getDist());
-            return WeightInitUtil.initWeights(layerConf.getNIn(), //Fan in
-                    layerConf.getNOut(), //Fan out
+            return WeightInitUtil.initWeights(layerConf.getNIn(), layerConf.getNOut(),
                     weightShape, layerConf.getWeightInit(), dist, weightParamView);
         } else {
             return WeightInitUtil.reshapeWeights(weightShape, weightParamView);
