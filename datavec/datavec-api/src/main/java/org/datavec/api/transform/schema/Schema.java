@@ -407,6 +407,78 @@ public class Schema implements Serializable {
         }
 
         /**
+         * Add a Float column with the specified restrictions (and no NaN/Infinite values allowed)
+         *
+         * @param name            Name of the column
+         * @param minAllowedValue Minimum allowed value (inclusive). If null: no restriction
+         * @param maxAllowedValue Maximum allowed value (inclusive). If null: no restriction
+         * @return
+         */
+        public Builder addColumnFloat(String name, Float minAllowedValue, Float maxAllowedValue) {
+            return addColumnFloat(name, minAllowedValue, maxAllowedValue, false, false);
+        }
+
+        /**
+         * Add a Float column with the specified restrictions
+         *
+         * @param name            Name of the column
+         * @param minAllowedValue Minimum allowed value (inclusive). If null: no restriction
+         * @param maxAllowedValue Maximum allowed value (inclusive). If null: no restriction
+         * @param allowNaN        If false: don't allow NaN values. If true: allow.
+         * @param allowInfinite   If false: don't allow infinite values. If true: allow
+         */
+        public Builder addColumnFloat(String name, Float minAllowedValue, Float maxAllowedValue, boolean allowNaN,
+                                       boolean allowInfinite) {
+            return addColumn(new FloatMetaData(name, minAllowedValue, maxAllowedValue, allowNaN, allowInfinite));
+        }
+
+        /**
+         * Add multiple Float columns with no restrictions on the allowable values of the columns (other than no NaN/Infinite)
+         *
+         * @param columnNames Names of the columns to add
+         */
+        public Builder addColumnsFloat(String... columnNames) {
+            for (String s : columnNames)
+                addColumnFloat(s);
+            return this;
+        }
+
+        /**
+         * A convenience method for adding multiple Float columns.
+         * For example, to add columns "myFloatCol_0", "myFloatCol_1", "myFloatCol_2", use
+         * {@code addColumnsFloat("myFloatCol_%d",0,2)}
+         *
+         * @param pattern         Pattern to use (via String.format). "%d" is replaced with column numbers
+         * @param minIdxInclusive Minimum column index to use (inclusive)
+         * @param maxIdxInclusive Maximum column index to use (inclusive)
+         */
+        public Builder addColumnsFloat(String pattern, int minIdxInclusive, int maxIdxInclusive) {
+            return addColumnsFloat(pattern, minIdxInclusive, maxIdxInclusive, null, null, false, false);
+        }
+
+        /**
+         * A convenience method for adding multiple Float columns, with additional restrictions that apply to all columns
+         * For example, to add columns "myFloatCol_0", "myFloatCol_1", "myFloatCol_2", use
+         * {@code addColumnsFloat("myFloatCol_%d",0,2,null,null,false,false)}
+         *
+         * @param pattern         Pattern to use (via String.format). "%d" is replaced with column numbers
+         * @param minIdxInclusive Minimum column index to use (inclusive)
+         * @param maxIdxInclusive Maximum column index to use (inclusive)
+         * @param minAllowedValue Minimum allowed value (inclusive). If null: no restriction
+         * @param maxAllowedValue Maximum allowed value (inclusive). If null: no restriction
+         * @param allowNaN        If false: don't allow NaN values. If true: allow.
+         * @param allowInfinite   If false: don't allow infinite values. If true: allow
+         */
+        public Builder addColumnsFloat(String pattern, int minIdxInclusive, int maxIdxInclusive,
+                                        Float minAllowedValue, Float maxAllowedValue, boolean allowNaN, boolean allowInfinite) {
+            for (int i = minIdxInclusive; i <= maxIdxInclusive; i++) {
+                addColumnFloat(String.format(pattern, i), minAllowedValue, maxAllowedValue, allowNaN, allowInfinite);
+            }
+            return this;
+        }
+
+
+        /**
          * Add a Double column with no restrictions on the allowable values, except for no NaN/infinite values allowed
          *
          * @param name Name of the column
