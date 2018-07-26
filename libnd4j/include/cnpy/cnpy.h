@@ -217,6 +217,13 @@ namespace cnpy {
     NpyArray loadNpyFromPointer(char *data);
 
     /**
+   *
+   * @param data
+   * @return
+   */
+    NpyArray loadNpyFromHeader(char *data);
+
+    /**
      *
      * @tparam T
      * @param lhs

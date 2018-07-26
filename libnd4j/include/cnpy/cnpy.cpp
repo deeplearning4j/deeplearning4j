@@ -144,8 +144,10 @@ void cnpy::parseNpyHeaderStr(std::string header,
 
     int loc1, loc2;
 
+
+    printf("Length of string %d with string %s\n",header.size(),header);
     //fortran order
-    loc1 = header.find("fortranOrder") + 16;
+    loc1 = header.find("fortran_order") + 16;
     fortranOrder = (header.substr(loc1,5) == "True" ? true : false);
 
     //shape
@@ -273,9 +275,19 @@ cnpy::NpyArray cnpy::loadNpyFromPointer(char *data)  {
     //move the pointer forward by 11 immitating
     //the seek in loading directly from a file
     data += 11;
+    return cnpy::loadNpyFromHeader(data);
+}
+
+/**
+*
+* @param data
+* @return
+*/
+cnpy::NpyArray cnpy::loadNpyFromHeader(char *data) {
     unsigned int *shape;
     unsigned int ndims, wordSize;
     bool fortranOrder;
+    printf(data);
     cnpy::parseNpyHeaderStr(std::string(data),
                             wordSize,
                             shape,
@@ -300,8 +312,10 @@ cnpy::NpyArray cnpy::loadNpyFromPointer(char *data)  {
     delete[] shape;
     arr.data = cursor;
     arr.fortranOrder = fortranOrder;
+    printf("Returning numpy array from header\n");
     return arr;
 }
+
 
 
 /**
@@ -363,7 +377,6 @@ cnpy::NpyArray cnpy::npzLoad(std::string fname, std::string varname) {
 
     if(!fp) {
         printf("npz_load: Error! Unable to open file %s!\n",fname.c_str());
-        abort();
     }
 
     while(1) {
@@ -401,7 +414,6 @@ cnpy::NpyArray cnpy::npzLoad(std::string fname, std::string varname) {
 
     fclose(fp);
     printf("npz_load: Error! Variable name %s not found in %s!\n",varname.c_str(),fname.c_str());
-    abort();
 }
 
 
@@ -417,7 +429,6 @@ cnpy::NpyArray cnpy::npyLoad(std::string fname) {
 
     if(!fp) {
         printf("npy_load: Error! Unable to open file %s!\n",fname.c_str());
-        abort();
     }
 
     NpyArray arr = cnpy::loadNpyFromFile(fp);

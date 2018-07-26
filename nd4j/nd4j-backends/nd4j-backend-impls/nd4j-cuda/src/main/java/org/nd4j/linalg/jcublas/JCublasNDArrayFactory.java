@@ -1618,6 +1618,76 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         return ret;
     }
 
+    @Override
+    public INDArray createFromNpyHeaderPointer(Pointer pointer) {
+        Pointer dataPointer = nativeOps.dataPointForNumpyHeader(pointer);
+        int dataBufferElementSize = nativeOps.elementSizeForNpyArrayHeader(pointer);
+        DataBuffer data = null;
+        Pointer shapeBufferPointer = nativeOps.shapeBufferForNumpyHeader(pointer);
+        int length = nativeOps.lengthForShapeBufferPointer(shapeBufferPointer);
+        shapeBufferPointer.capacity(8 * length);
+        shapeBufferPointer.limit(8 * length);
+        shapeBufferPointer.position(0);
+
+
+        val intPointer = new LongPointer(shapeBufferPointer);
+        val newPointer = new LongPointer(length);
+
+        val perfD = PerformanceTracker.getInstance().helperStartTransaction();
+
+        Pointer.memcpy(newPointer, intPointer, shapeBufferPointer.limit());
+
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, shapeBufferPointer.limit(), MemcpyDirection.HOST_TO_HOST);
+
+        DataBuffer shapeBuffer = Nd4j.createBuffer(
+                newPointer,
+                DataBuffer.Type.LONG,
+                length,
+                LongRawIndexer.create(newPointer));
+
+        dataPointer.position(0);
+        dataPointer.limit(dataBufferElementSize * Shape.length(shapeBuffer));
+        dataPointer.capacity(dataBufferElementSize * Shape.length(shapeBuffer));
+
+
+        if(dataBufferElementSize == (Float.SIZE / 8)) {
+            FloatPointer dPointer = new FloatPointer(dataPointer.limit() / dataBufferElementSize);
+
+            val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+
+            Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+            PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
+
+            data = Nd4j.createBuffer(dPointer,
+                    DataBuffer.Type.FLOAT,
+                    Shape.length(shapeBuffer),
+                    FloatIndexer.create(dPointer));
+        }
+        else if(dataBufferElementSize == (Double.SIZE / 8)) {
+            DoublePointer dPointer = new DoublePointer(dataPointer.limit() / dataBufferElementSize);
+
+            val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+
+            Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+            PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
+
+            data = Nd4j.createBuffer(dPointer,
+                    DataBuffer.Type.DOUBLE,
+                    Shape.length(shapeBuffer),
+                    DoubleIndexer.create(dPointer));
+        }
+
+        INDArray ret = Nd4j.create(data,
+                Shape.shape(shapeBuffer),
+                Shape.strideArr(shapeBuffer),
+                0,
+                Shape.order(shapeBuffer));
+
+        return ret;
+    }
+
     /**
      * Create from a given numpy file.
      *
@@ -1648,6 +1718,14 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         return result;
     }
 
+    @Override
+    public Pointer convertToNumpy(INDArray array) {
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().numpyFromNd4j(
+                array.data().pointer(),array.data().pointer(),
+                array.data().getElementSize());
+    }
+
+    @Override
     public INDArray[] tear(INDArray tensor, int... dimensions) {
         if (tensor.isCompressed())
             Nd4j.getCompressor().decompressi(tensor);

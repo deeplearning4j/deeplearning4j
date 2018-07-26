@@ -471,7 +471,17 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
+    public INDArray createFromNpyHeaderPointer(Pointer pointer) {
+        return null;
+    }
+
+    @Override
     public INDArray createFromNpyFile(File file) {
+        return null;
+    }
+
+    @Override
+    public Pointer convertToNumpy(INDArray array) {
         return null;
     }
 

@@ -2820,7 +2820,25 @@ public:
                                       float scalarB,
                                       bool scalarReturned);
 
+    /**
+    * Load numpy from a header
+     * based on the cnpy parse from header method.
+    * @param data the header data to parse
+    * @return a pointer to a numpy cnpy:NpyArray struct
+    */
+    Nd4jPointer loadNpyFromHeader(Nd4jPointer data);
 
+
+
+    /**
+     * Create a numpy array from an nd4j
+     * array
+     * @param data a pointer to the data
+     * @param shapeBuffer  the shapebuffer for the nd4j array
+     * @param wordSize  the word size (4 for float, 8 for doubles)
+     * @return a pointer to a numpy array
+     */
+    Nd4jPointer numpyFromNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize);
 
     /**
      * Get the shape buffer from a
@@ -2831,12 +2849,49 @@ public:
      */
     Nd4jPointer shapeBufferForNumpy(Nd4jPointer npyArray);
 
+
+    /**
+    * Get the shape buffer from a
+    * numpy array.
+    * **Warning** this allocates memory
+    * @param npyArray
+    * @return
+    */
+    Nd4jPointer shapeBufferForNumpyHeader(Nd4jPointer npyArray);
+
+
     /**
      * Data buffer for numpy
      * @param npArray
      * @return
      */
     Nd4jPointer dataPointForNumpy(Nd4jPointer npArray);
+
+
+/**
+ *
+ * @param npyArray
+ * @return
+ */
+    Nd4jPointer dataPointForNumpyStruct(Nd4jPointer npyArrayStruct);
+
+    /**
+     * Data buffer for numpy
+     * @param npArray
+     * @return
+     */
+    Nd4jPointer dataPointForNumpyHeader(Nd4jPointer npArrayHeader);
+
+    /**
+     *
+     * @param data
+     * @param shapeBuffer
+     * @param wordSize
+     * @return
+     */
+    Nd4jPointer numpyHeaderForNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize);
+
+
 
     /**
      * Create a pointer to an NDarray struct
@@ -2862,6 +2917,15 @@ public:
      * @return
      */
     int lengthForShapeBufferPointer(Nd4jPointer buffer);
+
+
+    /**
+  * Get the element size for a numpy array
+  * @param npyArray  the numpy array's address
+  * to get the length for
+  * @return
+  */
+    int elementSizeForNpyArrayHeader(Nd4jPointer npyArray);
 
     /**
      * Get the element size for a numpy array

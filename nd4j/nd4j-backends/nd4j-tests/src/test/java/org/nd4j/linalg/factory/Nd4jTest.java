@@ -17,16 +17,24 @@
 package org.nd4j.linalg.factory;
 
 import lombok.val;
+import org.bytedeco.javacpp.CharPointer;
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.CharIndexer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -114,11 +122,11 @@ public class Nd4jTest extends BaseNd4jTest {
         INDArray data = Nd4j.create(new double[] {4., 4., 4., 4., 8., 8., 8., 8., 4., 4., 4., 4., 8., 8., 8., 8., 4.,
                         4., 4., 4., 8., 8., 8., 8., 4., 4., 4., 4., 8., 8., 8., 8, 2., 2., 2., 2., 4., 4., 4., 4., 2.,
                         2., 2., 2., 4., 4., 4., 4., 2., 2., 2., 2., 4., 4., 4., 4., 2., 2., 2., 2., 4., 4., 4., 4.},
-                        new int[] {2, 2, 4, 4});
+                new int[] {2, 2, 4, 4});
 
         INDArray actualResult = data.mean(0);
         INDArray expectedResult = Nd4j.create(new double[] {3., 3., 3., 3., 6., 6., 6., 6., 3., 3., 3., 3., 6., 6., 6.,
-                        6., 3., 3., 3., 3., 6., 6., 6., 6., 3., 3., 3., 3., 6., 6., 6., 6.}, new int[] {2, 4, 4});
+                6., 3., 3., 3., 3., 6., 6., 6., 6., 3., 3., 3., 3., 6., 6., 6., 6.}, new int[] {2, 4, 4});
         assertEquals(getFailureMessage(), expectedResult, actualResult);
     }
 
@@ -128,11 +136,11 @@ public class Nd4jTest extends BaseNd4jTest {
         INDArray data = Nd4j.create(new double[] {4., 4., 4., 4., 8., 8., 8., 8., 4., 4., 4., 4., 8., 8., 8., 8., 4.,
                         4., 4., 4., 8., 8., 8., 8., 4., 4., 4., 4., 8., 8., 8., 8, 2., 2., 2., 2., 4., 4., 4., 4., 2.,
                         2., 2., 2., 4., 4., 4., 4., 2., 2., 2., 2., 4., 4., 4., 4., 2., 2., 2., 2., 4., 4., 4., 4.},
-                        new int[] {2, 2, 4, 4});
+                new int[] {2, 2, 4, 4});
 
         INDArray actualResult = data.var(false, 0);
         INDArray expectedResult = Nd4j.create(new double[] {1., 1., 1., 1., 4., 4., 4., 4., 1., 1., 1., 1., 4., 4., 4.,
-                        4., 1., 1., 1., 1., 4., 4., 4., 4., 1., 1., 1., 1., 4., 4., 4., 4.}, new int[] {2, 4, 4});
+                4., 1., 1., 1., 1., 4., 4., 4., 4., 1., 1., 1., 1., 4., 4., 4., 4.}, new int[] {2, 4, 4});
         assertEquals(getFailureMessage(), expectedResult, actualResult);
     }
 
@@ -196,6 +204,35 @@ public class Nd4jTest extends BaseNd4jTest {
             assertEquals(message, testMatrix.ravel(), squeezed.ravel());
 
         }
+    }
+
+
+    @Test
+    public void testNumpyConversion() {
+        INDArray linspace = Nd4j.linspace(1,4,4);
+        Pointer convert = Nd4j.getNDArrayFactory().convertToNumpy(linspace);
+        convert.position(0);
+        //INDArray convertedFrom = Nd4j.getNDArrayFactory().createFromNpyHeaderPointer(convert);
+        Pointer pointer = NativeOpsHolder.getInstance().getDeviceNativeOps().loadNpyFromHeader(convert);
+        Pointer pointer1 = NativeOpsHolder.getInstance().getDeviceNativeOps().dataPointForNumpyStruct(pointer);
+        DataBuffer dataBuffer = Nd4j.createBuffer(new FloatPointer(pointer1),linspace.length());
+       // System.out.println(dataBuffer);
+        // assertEquals(linspace,convertedFrom);
+
+    }
+
+    private Pointer decrementBy(Pointer original,long decrement) {
+        Pointer pointerWithOffset = new Pointer(original);
+        try {
+            Field addressField = Pointer.class.getDeclaredField("address");
+            addressField.setAccessible(true);
+            addressField.set(original,original.address() - decrement);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return pointerWithOffset;
+
     }
 
 }
