@@ -2946,8 +2946,9 @@ Nd4jPointer NativeOps::numpyHeaderForNd4j(Nd4jPointer data,Nd4jPointer shapeBuff
 
     Nd4jLong length = shape::prodLong(shape,rank);
     auto npHeader = cnpy::createNpyHeader(data,npShape,rank);
-    char *ret = strdup(npHeader.data());
-    return reinterpret_cast<Nd4jPointer>(&ret);
+    char *ret = new char[npHeader.size()]; //strdup(npHeader.data());
+    std::memcpy(ret, npHeader.data(), npHeader.size());
+    return reinterpret_cast<Nd4jPointer>(ret);
 
 }
 

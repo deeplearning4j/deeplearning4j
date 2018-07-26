@@ -221,18 +221,5 @@ public class Nd4jTest extends BaseNd4jTest {
 
     }
 
-    private Pointer decrementBy(Pointer original,long decrement) {
-        Pointer pointerWithOffset = new Pointer(original);
-        try {
-            Field addressField = Pointer.class.getDeclaredField("address");
-            addressField.setAccessible(true);
-            addressField.set(original,original.address() - decrement);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return pointerWithOffset;
-
-    }
 
 }
