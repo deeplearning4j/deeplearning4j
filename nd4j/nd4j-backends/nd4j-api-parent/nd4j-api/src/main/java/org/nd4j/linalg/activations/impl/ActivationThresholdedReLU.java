@@ -36,8 +36,8 @@ import org.nd4j.linalg.primitives.Pair;
 @EqualsAndHashCode
 @Getter
 public class ActivationThresholdedReLU extends BaseActivationFunction {
-    public static final double DEFAULT_THETA = 1.0;
 
+    public static final double DEFAULT_THETA = 1.0;
     private double theta = DEFAULT_THETA;
 
     public ActivationThresholdedReLU() {

@@ -227,7 +227,7 @@ public class GradientCheckTests extends BaseDL4JTest {
         //As above (testGradientMLP2LayerIrisSimple()) but with L2, L1, and both L2/L1 applied
         //Need to run gradient through updater, so that L2 can be applied
 
-        Activation[] activFns = {Activation.SIGMOID, Activation.TANH};
+        Activation[] activFns = {Activation.SIGMOID, Activation.TANH, Activation.THRESHOLDEDRELU};
         boolean[] characteristic = {false, true}; //If true: run some backprop steps first
 
         LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
