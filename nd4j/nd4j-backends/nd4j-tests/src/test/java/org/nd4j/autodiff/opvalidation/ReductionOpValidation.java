@@ -301,7 +301,6 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testReductionGradients1() {
-        OpValidationSuite.ignoreFailing();
         //Test reductions: final, but *not* the only function
         Nd4j.getRandom().setSeed(12345);
 
@@ -367,36 +366,39 @@ public class ReductionOpValidation extends BaseOpValidation {
                         name = "normmax";
                         break;
                     case 10:
-                        loss = sd.countNonZero("loss", input, dim);
+                        loss = sd.countNonZero("loss", msePerEx, dim);
                         name = "countNonZero";
                         break;
                     case 11:
-                        loss = sd.countZero("loss", input, dim);
+                        loss = sd.countZero("loss", msePerEx, dim);
                         name = "countZero";
                         break;
                     case 12:
-                        loss = sd.amax("loss", input, dim);
+                        loss = sd.amax("loss", msePerEx, dim);
                         name = "amax";
                         break;
                     case 13:
-                        loss = sd.amin("loss", input, dim);
+                        loss = sd.amin("loss", msePerEx, dim);
                         name = "amin";
                         break;
                     case 14:
-                        loss = sd.asum("loss", input, dim);
+                        loss = sd.asum("loss", msePerEx, dim);
                         name = "asum";
                         break;
                     case 15:
-                        loss = sd.amean("loss", input, dim);
+                        loss = sd.amean("loss", msePerEx, dim);
                         name = "amean";
                         break;
                     case 16:
-                        loss = sd.entropy("loss", input, dim);
+                        loss = sd.entropy("loss", msePerEx, dim);
                         name = "entropy";
                         break;
                     case 17:
                         name = "logEntropy";
-                        loss = sd.logEntropy("loss", input, dim);
+                        loss = sd.logEntropy("loss", msePerEx, dim);
+                        if(OpValidationSuite.IGNORE_FAILING){
+                            continue;
+                        }
                         break;
                     default:
                         throw new RuntimeException();
