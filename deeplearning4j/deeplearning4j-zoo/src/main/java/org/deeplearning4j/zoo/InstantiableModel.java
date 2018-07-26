@@ -28,6 +28,9 @@ public interface InstantiableModel {
 
     <M extends Model> M init();
 
+    /**
+     * @deprecated No longer used, will be removed in a future release
+     */
     @Deprecated ModelMetaData metaData();
 
     Class<? extends Model> modelType();

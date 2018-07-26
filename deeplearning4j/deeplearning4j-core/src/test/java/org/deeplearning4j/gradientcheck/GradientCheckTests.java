@@ -523,55 +523,74 @@ public class GradientCheckTests extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
 
         for(boolean maskArray : new boolean[]{false, true}){
+            for(int inputRank : new int[]{2,3}) {
 
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .seed(12345)
-                    .updater(new NoOp())
-                    .weightInit(new NormalDistribution(0,1))
-                    .list()
-                    .layer(new EmbeddingSequenceLayer.Builder()
-                            .nIn(8)
-                            .nOut(4)
-                            .build())
-                    .layer(new RnnOutputLayer.Builder().nIn(4).nOut(3).activation(Activation.TANH)
-                            .lossFunction(LossFunction.MSE).build())
-                    .build();
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .seed(12345)
+                        .updater(new NoOp())
+                        .weightInit(new NormalDistribution(0, 1))
+                        .list()
+                        .layer(new EmbeddingSequenceLayer.Builder()
+                                .nIn(8)
+                                .nOut(4)
+                                .build())
+                        .layer(new RnnOutputLayer.Builder().nIn(4).nOut(3).activation(Activation.TANH)
+                                .lossFunction(LossFunction.MSE).build())
+                        .build();
 
-            MultiLayerNetwork net = new MultiLayerNetwork(conf);
-            net.init();
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
 
-            INDArray in = Transforms.floor(Nd4j.rand(3, 6).muli(8));    //Integers 0 to 7 inclusive
-            INDArray label = Nd4j.rand(new int[]{3, 3, 6});
+                INDArray in = Transforms.floor(Nd4j.rand(3, 6).muli(8));    //Integers 0 to 7 inclusive
+                INDArray label = Nd4j.rand(new int[]{3, 3, 6});
 
-            INDArray fMask = null;
-            if(maskArray){
-                fMask = Nd4j.create(new double[][]{{1,1,1,1,1,1},
-                        {1,1,0,0,0,0},
-                        {1,0,0,0,0,0}});
+                if(inputRank == 3){
+                    //Reshape from [3,6] to [3,1,6]
+                    in = in.reshape('c', 3, 1, 6);
+                }
 
-            }
+                INDArray fMask = null;
+                if (maskArray) {
+                    fMask = Nd4j.create(new double[][]{{1, 1, 1, 1, 1, 1},
+                            {1, 1, 0, 0, 0, 0},
+                            {1, 0, 0, 0, 0, 0}});
 
-            String msg = "mask=" + maskArray;
-            boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, label, fMask, null);
-            assertTrue(msg, gradOK);
-            TestUtils.testModelSerialization(net);
+                }
+
+                String msg = "mask=" + maskArray + ", inputRank=" + inputRank;
+                boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, label, fMask, null);
+                assertTrue(msg, gradOK);
+                TestUtils.testModelSerialization(net);
 
 
-            //Also: if mask is present, double check that the masked steps don't impact score
-            if(maskArray){
-                DataSet ds = new DataSet(in, label, fMask, null);
-                double score = net.score(ds);
-                in.putScalar(1,2, 0);
-                in.putScalar(2,1,0);
-                in.putScalar(2,2,0);
-                double score2 = net.score(ds);
-                assertEquals(score, score2,1e-6);
-                in.putScalar(1,2, 1);
-                in.putScalar(2,1,1);
-                in.putScalar(2,2,1);
-                double score3 = net.score(ds);
-                assertEquals(score, score3,1e-6);
+                //Also: if mask is present, double check that the masked steps don't impact score
+                if (maskArray) {
+                    DataSet ds = new DataSet(in, label, fMask, null);
+                    double score = net.score(ds);
+                    if(inputRank == 2){
+                        in.putScalar(1, 2, 0);
+                        in.putScalar(2, 1, 0);
+                        in.putScalar(2, 2, 0);
+                    } else {
+                        in.putScalar(1, 0, 2, 0);
+                        in.putScalar(2, 0, 1, 0);
+                        in.putScalar(2, 0, 2, 0);
+                    }
+                    double score2 = net.score(ds);
+                    assertEquals(score, score2, 1e-6);
+                    if(inputRank == 2){
+                        in.putScalar(1, 2, 1);
+                        in.putScalar(2, 1, 1);
+                        in.putScalar(2, 2, 1);
+                    } else {
+                        in.putScalar(1, 0, 2, 1);
+                        in.putScalar(2, 0, 1, 1);
+                        in.putScalar(2, 0, 2, 1);
+                    }
+                    double score3 = net.score(ds);
+                    assertEquals(score, score3, 1e-6);
+                }
             }
         }
 

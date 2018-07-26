@@ -89,8 +89,9 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
 
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .l2(0.01)
                 .list()
-                .layer(new ConvolutionLayer.Builder().nIn(1).nOut(1).kernelSize(1,1).build())
+                .layer(new ConvolutionLayer.Builder().nIn(depth).nOut(depth).kernelSize(1,1).build())
                 .layer(new Yolo2OutputLayer.Builder()
                         .boundingBoxPriors(bbPrior)
                         .build())
@@ -150,6 +151,16 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         double score2 = y2impl.computeScore(0, 0, true, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(score, score2, 1e-8);
+
+        //Test computeScoreForExamples:
+        INDArray scoreArr1 = net.scoreExamples(new DataSet(input, labels), false);
+        INDArray scoreArr2 = net.scoreExamples(new DataSet(input, labels), true);
+        assertFalse(scoreArr1.isAttached());
+        assertFalse(scoreArr2.isAttached());
+
+        assertArrayEquals(new long[]{mb,1}, scoreArr1.shape());
+        assertArrayEquals(new long[]{mb,1}, scoreArr2.shape());
+        assertNotEquals(scoreArr1, scoreArr2);
     }
 
 

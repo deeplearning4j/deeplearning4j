@@ -22,7 +22,7 @@ import org.apache.spark.Partitioner;
 import java.util.Random;
 
 /**
- * This is a custom partitioner (used in conjunction with {@link AssignIndexFunction} to repartition a RDD.
+ * This is a custom partitioner to repartition a RDD.
  * Unlike a standard .repartition() call (which assigns partitions like [2,3,4,1,2,3,4,1,2,...] for 4 partitions],
  * this function attempts to keep contiguous elements (i.e., those elements originally in the same partition) together
  * much more frequently. Furthermore, it is less prone to producing larger or smaller than expected partitions, as

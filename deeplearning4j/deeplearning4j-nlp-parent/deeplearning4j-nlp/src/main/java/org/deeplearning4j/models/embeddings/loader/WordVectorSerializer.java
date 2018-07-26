@@ -993,6 +993,7 @@ public class WordVectorSerializer {
      *
      * @param path Path to file that contains previously serialized model
      * @return
+     * @deprecated Use readParagraphVectors() method instead
      */
     @Deprecated
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull String path) {
@@ -1006,6 +1007,7 @@ public class WordVectorSerializer {
      *
      * @param file File that contains previously serialized model
      * @return
+     * @deprecated Use readParagraphVectors() method instead
      */
     @Deprecated
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull File file) {
@@ -1024,6 +1026,7 @@ public class WordVectorSerializer {
      *
      * @param stream InputStream that contains previously serialized model
      * @return
+     * @deprecated Use readParagraphVectors() method instead
      */
     @Deprecated
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull InputStream stream) {
@@ -1189,6 +1192,7 @@ public class WordVectorSerializer {
      * @param path
      *            the path to write
      * @throws IOException
+     * @deprecated Use {@link #writeWord2VecModel(Word2Vec, File)} instead
      */
     @Deprecated
     public static void writeWordVectors(InMemoryLookupTable lookupTable, InMemoryLookupCache cache, String path)
@@ -1233,6 +1237,7 @@ public class WordVectorSerializer {
      *
      * @param vec - The Word2Vec instance to be saved
      * @param path - the path for json to be saved
+     * @deprecated Use writeWord2VecModel() method instead
      */
     @Deprecated
     public static void writeFullModel(@NonNull Word2Vec vec, @NonNull String path) {
@@ -1356,6 +1361,7 @@ public class WordVectorSerializer {
      *
      * @param path - path to previously stored w2v json model
      * @return - Word2Vec instance
+     * @deprecated Use readWord2VecModel() or loadStaticModel() method instead
      */
     @Deprecated
     public static Word2Vec loadFullModel(@NonNull String path) throws FileNotFoundException {
@@ -1736,6 +1742,7 @@ public class WordVectorSerializer {
      * @param skipFirstLine Set this TRUE if first line contains csv header, FALSE otherwise
      * @return
      * @throws IOException
+     * @deprecated Use readWord2VecModel() or loadStaticModel() method instead
      */
     @Deprecated
     public static WordVectors loadTxtVectors(@NonNull InputStream stream, boolean skipFirstLine) throws IOException {

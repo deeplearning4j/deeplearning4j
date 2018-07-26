@@ -155,7 +155,7 @@ public class CSVRecordReader extends LineRecordReader {
 
     @Override
     public List<List<Writable>> next(int num) {
-        List<List<Writable>> ret = new ArrayList<>(num);
+        List<List<Writable>> ret = new ArrayList<>(Math.min(num, 10000));
         int recordsRead = 0;
         while(hasNext() && recordsRead++ < num) {
             ret.add(next());

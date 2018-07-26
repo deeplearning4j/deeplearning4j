@@ -150,11 +150,6 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             return this;
         }
 
-        @Deprecated
-        public Builder index(@NonNull InvertedIndex<VocabWord> index) {
-            return this;
-        }
-
         /**
          * This method used to feed SequenceIterator, that contains training corpus, into ParagraphVectors
          *
