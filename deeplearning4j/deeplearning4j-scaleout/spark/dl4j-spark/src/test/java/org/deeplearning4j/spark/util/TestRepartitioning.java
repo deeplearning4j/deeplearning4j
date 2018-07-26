@@ -23,8 +23,6 @@ import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.RepartitionStrategy;
 import org.deeplearning4j.spark.impl.common.CountPartitionsFunction;
-import org.deeplearning4j.spark.impl.common.repartition.AssignIndexFunction;
-import org.deeplearning4j.spark.impl.common.repartition.MapTupleToPairFlatMap;
 import org.deeplearning4j.spark.impl.repartitioner.DefaultRepartitioner;
 import org.junit.Assert;
 import org.junit.Test;
@@ -36,7 +34,6 @@ import java.util.List;
 import java.util.Random;
 
 import static junit.framework.TestCase.assertEquals;
-import static org.deeplearning4j.spark.util.SparkUtils.indexedRDD;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 

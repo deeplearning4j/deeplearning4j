@@ -64,7 +64,7 @@ namespace nd4j {
         // check whether 2 arrays have mutually broadcastable shapes
         // shape comparison starts from the end
         static bool areShapesBroadcastable(const NDArray<T> &arr1, const NDArray<T> &arr2);
-        static bool areShapesBroadcastable(Nd4jLong* shapeX, Nd4jLong * shapeY);
+        static bool areShapesBroadcastable(Nd4jLong* shapeX, Nd4jLong* shapeY);
         static bool areShapesBroadcastable(const std::vector<Nd4jLong>& shape1, const std::vector<Nd4jLong>& shape2);
 
         // check the possibility of broadcast operation, if true then return shapeInfo of resulting array

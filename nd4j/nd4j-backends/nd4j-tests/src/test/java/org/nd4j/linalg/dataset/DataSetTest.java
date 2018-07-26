@@ -18,7 +18,9 @@ package org.nd4j.linalg.dataset;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -44,6 +46,8 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 @RunWith(Parameterized.class)
 public class DataSetTest extends BaseNd4jTest {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
 
     public DataSetTest(Nd4jBackend backend) {
@@ -1065,6 +1069,67 @@ public class DataSetTest extends BaseNd4jTest {
 
         assertEquals(Nd4j.valueArrayOf(new long[]{1, 5, 5}, next1), ds2.getLabels().get(point(0), all(), all(), all()));
         assertEquals(Nd4j.valueArrayOf(new long[]{1, 5, 5}, next2), ds2.getLabels().get(point(1), all(), all(), all()));
+    }
+
+    @Test
+    public void testDataSetMetaDataSerialization() throws IOException {
+
+        for(boolean withMeta : new boolean[]{false, true}) {
+            // create simple data set with meta data object
+            INDArray f = Nd4j.linspace(1, 3, 3).reshape(3, 1);
+            INDArray l = Nd4j.linspace(10, 30, 3).reshape(3, 1);
+            DataSet ds = new DataSet(f, l);
+
+            if(withMeta) {
+                List<String> metaData = Arrays.asList("1", "2", "3");
+                ds.setExampleMetaData(metaData);
+            }
+
+            // check if the meta data was serialized and deserialized
+            File dir = testDir.newFolder();
+            File saved = new File(dir, "ds.bin");
+            ds.save(saved);
+            DataSet loaded = new DataSet();
+            loaded.load(saved);
+            if(withMeta) {
+                List<String> metaData = Arrays.asList("1", "2", "3");
+                assertNotNull(loaded.getExampleMetaData());
+                assertEquals(metaData, loaded.getExampleMetaData());
+            }
+            assertEquals(f, loaded.getFeatures());
+            assertEquals(l, loaded.getLabels());
+        }
+    }
+
+    @Test
+    public void testMultiDataSetMetaDataSerialization() throws IOException {
+
+        for(boolean withMeta : new boolean[]{false, true}) {
+            // create simple data set with meta data object
+            INDArray f = Nd4j.linspace(1, 3, 3).reshape(3, 1);
+            INDArray l = Nd4j.linspace(10, 30, 3).reshape(3, 1);
+            MultiDataSet ds = new MultiDataSet(f, l);
+            if(withMeta) {
+                List<String> metaData = Arrays.asList("1", "2", "3");
+                ds.setExampleMetaData(metaData);
+            }
+
+            // check if the meta data was serialized and deserialized
+            File dir = testDir.newFolder();
+            File saved = new File(dir, "ds.bin");
+            ds.save(saved);
+            MultiDataSet loaded = new MultiDataSet();
+            loaded.load(saved);
+
+            if(withMeta) {
+                List<String> metaData = Arrays.asList("1", "2", "3");
+                assertNotNull(loaded.getExampleMetaData());
+                assertEquals(metaData, loaded.getExampleMetaData());
+            }
+            assertEquals(f, loaded.getFeatures(0));
+            assertEquals(l, loaded.getLabels(0));
+        }
+
     }
 
 
