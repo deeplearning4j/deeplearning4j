@@ -1082,7 +1082,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testSequenceMask() {
-        OpValidationSuite.ignoreFailing();
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Nd4j.create(new float[] {1, 3, 2}).reshape(3);
         SDVariable lengths = sameDiff.var("lengths", arr);
