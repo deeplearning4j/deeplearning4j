@@ -335,7 +335,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                 .list().layer(new EmbeddingLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
                                 .dist(new NormalDistribution(0, 1))
                                 .updater(new NoOp()).build())
-                .layer(new PReLULayer.Builder().inputShape(3).updater(new NoOp()).build())
+                .layer(new PReLULayer.Builder().inputShape(3).sharedAxes(1).updater(new NoOp()).build())
                 .layer(new OutputLayer.Builder(LossFunction.MCXENT).nIn(3).nOut(3)
                         .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
                         .updater(new NoOp()).activation(Activation.SOFTMAX).build())

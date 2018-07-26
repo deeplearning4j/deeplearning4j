@@ -38,26 +38,17 @@ import org.nd4j.linalg.primitives.Pair;
 public class ActivationPReLU extends BaseActivationFunction {
 
     private INDArray alpha;
-    private long[] sharedAxes = null;
 
     public ActivationPReLU(INDArray alpha) {
         this.alpha = alpha;
     }
 
-    public ActivationPReLU(INDArray alpha, long[] sharedAxes) {
-        this.alpha = alpha;
-        this.sharedAxes = sharedAxes;
-    }
 
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
         DynamicCustomOp.DynamicCustomOpsBuilder prelu = DynamicCustomOp.builder("prelu")
                 .addOutputs(in).addInputs(in, alpha);
-        if (sharedAxes != null) {
-            for (long axis: sharedAxes) {
-                prelu.addIntegerArguments(axis);
-            }
-        }
+
         Nd4j.getExecutioner().exec(prelu.build());
         return in;
     }
@@ -65,15 +56,10 @@ public class ActivationPReLU extends BaseActivationFunction {
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
-        INDArray dLdalpha = Nd4j.create(in.shape());
+        INDArray dLdalpha = Nd4j.create(alpha.shape());
         DynamicCustomOp.DynamicCustomOpsBuilder preluBp = DynamicCustomOp.builder("prelu_bp")
-                .addInputs(in, alpha, epsilon).addOutputs(in, dLdalpha);
+                .addInputs(in, alpha, epsilon).addOutputs(in, alpha);
 
-        if (sharedAxes != null) {
-            for (long axis: sharedAxes) {
-                preluBp.addIntegerArguments(axis);
-            }
-        }
         Nd4j.getExecutioner().exec(preluBp.build());
         return new Pair<>(in, dLdalpha);
     }
