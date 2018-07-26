@@ -47,6 +47,9 @@ import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransfo
 import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
 import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransformWithDefault;
 import org.datavec.api.transform.transform.doubletransform.*;
+import org.datavec.api.transform.transform.floattransform.FloatColumnsMathOpTransform;
+import org.datavec.api.transform.transform.floattransform.FloatMathFunctionTransform;
+import org.datavec.api.transform.transform.floattransform.FloatMathOpTransform;
 import org.datavec.api.transform.transform.integer.ConvertToInteger;
 import org.datavec.api.transform.transform.integer.IntegerColumnsMathOpTransform;
 import org.datavec.api.transform.transform.integer.IntegerMathOpTransform;
@@ -767,6 +770,39 @@ public class TransformProcess implements Serializable {
          */
         public Builder longColumnsMathOp(String newColumnName, MathOp mathOp, String... columnNames) {
             return transform(new LongColumnsMathOpTransform(newColumnName, mathOp, columnNames));
+        }
+
+        /**
+         * Perform a mathematical operation (add, subtract, scalar max etc) on the specified double column, with a scalar
+         *
+         * @param columnName The float column to perform the operation on
+         * @param mathOp     The mathematical operation
+         * @param scalar     The scalar value to use in the mathematical operation
+         */
+        public Builder floatMathOp(String columnName, MathOp mathOp, float scalar) {
+            return transform(new FloatMathOpTransform(columnName, mathOp, scalar));
+        }
+
+        /**
+         * Calculate and add a new float column by performing a mathematical operation on a number of existing columns.
+         * New column is added to the end.
+         *
+         * @param newColumnName Name of the new/derived column
+         * @param mathOp        Mathematical operation to execute on the columns
+         * @param columnNames   Names of the columns to use in the mathematical operation
+         */
+        public Builder floatColumnsMathOp(String newColumnName, MathOp mathOp, String... columnNames) {
+            return transform(new FloatColumnsMathOpTransform(newColumnName, mathOp, columnNames));
+        }
+
+        /**
+         * Perform a mathematical operation (such as sin(x), ceil(x), exp(x) etc) on a column
+         *
+         * @param columnName   Column name to operate on
+         * @param mathFunction MathFunction to apply to the column
+         */
+        public Builder floatMathFunction(String columnName, MathFunction mathFunction) {
+            return transform(new FloatMathFunctionTransform(columnName, mathFunction));
         }
 
         /**
