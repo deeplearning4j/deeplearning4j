@@ -42,6 +42,16 @@ public class FloorModOp extends DynamicCustomOp {
     }
 
     @Override
+    public String onnxName() {
+        return "FloorMod";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "FloorMod";
+    }
+
+    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return f().floorModBp(larg(), rarg(), f1.get(0));
     }
