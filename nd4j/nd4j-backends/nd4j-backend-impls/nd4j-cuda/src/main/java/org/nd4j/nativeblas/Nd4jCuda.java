@@ -6509,6 +6509,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *   apply transpose operation to the copy of this array, that is this array remains unaffected 
         */
         public native FloatNDArray transpose();
+        public native @ByVal FloatNDArray transp();
 
         /**
         *  perform transpose operation and store result in target, this array remains unaffected 
@@ -7680,6 +7681,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *   apply transpose operation to the copy of this array, that is this array remains unaffected 
         */
         public native HalfNDArray transpose();
+        public native @ByVal HalfNDArray transp();
 
         /**
         *  perform transpose operation and store result in target, this array remains unaffected 
@@ -8851,6 +8853,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *   apply transpose operation to the copy of this array, that is this array remains unaffected 
         */
         public native DoubleNDArray transpose();
+        public native @ByVal DoubleNDArray transp();
 
         /**
         *  perform transpose operation and store result in target, this array remains unaffected 
@@ -15960,6 +15963,151 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #endif //LIBND4J_BROADCASTABLEOP_H
 
 
+// Parsed from helpers/OpArgsHolder.h
+
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 15.07.2018
+//
+
+// #ifndef LIBND4J_OPARGSHOLDER_H
+// #define LIBND4J_OPARGSHOLDER_H
+
+
+// #include <NDArray.h>
+ 
+@Name("nd4j::OpArgsHolder<float>") @NoOffset public static class FloatOpArgsHolder extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public FloatOpArgsHolder(Pointer p) { super(p); }
+
+
+	
+
+    public FloatOpArgsHolder(@Const @ByRef FloatNDArrayVector inArrs, @StdVector FloatPointer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
+    private native void allocate(@Const @ByRef FloatNDArrayVector inArrs, @StdVector FloatPointer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/);
+    public FloatOpArgsHolder(@Const @ByRef FloatNDArrayVector inArrs) { super((Pointer)null); allocate(inArrs); }
+    private native void allocate(@Const @ByRef FloatNDArrayVector inArrs);
+    public FloatOpArgsHolder(@Const @ByRef FloatNDArrayVector inArrs, @StdVector FloatBuffer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
+    private native void allocate(@Const @ByRef FloatNDArrayVector inArrs, @StdVector FloatBuffer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/);
+    public FloatOpArgsHolder(@Const @ByRef FloatNDArrayVector inArrs, @StdVector float[] tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
+    private native void allocate(@Const @ByRef FloatNDArrayVector inArrs, @StdVector float[] tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/);
+
+    public native @Const @ByRef FloatNDArrayVector getInArrs();
+
+    public native @StdVector FloatPointer getTArgs();
+
+    public native @Cast("Nd4jLong*") @StdVector LongPointer getIArgs();
+
+    public native @Cast("bool*") @StdVector BoolPointer getAllocInfo();
+
+    public native int getNumInArrs();
+
+    public native int getNumTArgs();
+
+    public native int getNumIArgs();
+
+    public native @ByVal FloatOpArgsHolder createArgsHolderForBP(@Const @ByRef FloatNDArrayVector inGradArrs, @Cast("const bool") boolean isInPlace/*=false*/);
+    public native @ByVal FloatOpArgsHolder createArgsHolderForBP(@Const @ByRef FloatNDArrayVector inGradArrs); 
+    
+}
+ 
+@Name("nd4j::OpArgsHolder<float16>") @NoOffset public static class HalfOpArgsHolder extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public HalfOpArgsHolder(Pointer p) { super(p); }
+
+
+	
+
+    public HalfOpArgsHolder(@Const @ByRef HalfNDArrayVector inArrs, @Cast("float16*") @StdVector ShortPointer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
+    private native void allocate(@Const @ByRef HalfNDArrayVector inArrs, @Cast("float16*") @StdVector ShortPointer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/);
+    public HalfOpArgsHolder(@Const @ByRef HalfNDArrayVector inArrs) { super((Pointer)null); allocate(inArrs); }
+    private native void allocate(@Const @ByRef HalfNDArrayVector inArrs);
+    public HalfOpArgsHolder(@Const @ByRef HalfNDArrayVector inArrs, @Cast("float16*") @StdVector ShortBuffer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
+    private native void allocate(@Const @ByRef HalfNDArrayVector inArrs, @Cast("float16*") @StdVector ShortBuffer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/);
+    public HalfOpArgsHolder(@Const @ByRef HalfNDArrayVector inArrs, @Cast("float16*") @StdVector short[] tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
+    private native void allocate(@Const @ByRef HalfNDArrayVector inArrs, @Cast("float16*") @StdVector short[] tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/);
+
+    public native @Const @ByRef HalfNDArrayVector getInArrs();
+
+    public native @Cast("float16*") @StdVector ShortPointer getTArgs();
+
+    public native @Cast("Nd4jLong*") @StdVector LongPointer getIArgs();
+
+    public native @Cast("bool*") @StdVector BoolPointer getAllocInfo();
+
+    public native int getNumInArrs();
+
+    public native int getNumTArgs();
+
+    public native int getNumIArgs();
+
+    public native @ByVal HalfOpArgsHolder createArgsHolderForBP(@Const @ByRef HalfNDArrayVector inGradArrs, @Cast("const bool") boolean isInPlace/*=false*/);
+    public native @ByVal HalfOpArgsHolder createArgsHolderForBP(@Const @ByRef HalfNDArrayVector inGradArrs); 
+    
+}
+ 
+@Name("nd4j::OpArgsHolder<double>") @NoOffset public static class DoubleOpArgsHolder extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public DoubleOpArgsHolder(Pointer p) { super(p); }
+
+
+	
+
+    public DoubleOpArgsHolder(@Const @ByRef DoubleNDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
+    private native void allocate(@Const @ByRef DoubleNDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/);
+    public DoubleOpArgsHolder(@Const @ByRef DoubleNDArrayVector inArrs) { super((Pointer)null); allocate(inArrs); }
+    private native void allocate(@Const @ByRef DoubleNDArrayVector inArrs);
+    public DoubleOpArgsHolder(@Const @ByRef DoubleNDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
+    private native void allocate(@Const @ByRef DoubleNDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/);
+    public DoubleOpArgsHolder(@Const @ByRef DoubleNDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
+    private native void allocate(@Const @ByRef DoubleNDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<T>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/);
+
+    public native @Const @ByRef DoubleNDArrayVector getInArrs();
+
+    public native @StdVector DoublePointer getTArgs();
+
+    public native @Cast("Nd4jLong*") @StdVector LongPointer getIArgs();
+
+    public native @Cast("bool*") @StdVector BoolPointer getAllocInfo();
+
+    public native int getNumInArrs();
+
+    public native int getNumTArgs();
+
+    public native int getNumIArgs();
+
+    public native @ByVal DoubleOpArgsHolder createArgsHolderForBP(@Const @ByRef DoubleNDArrayVector inGradArrs, @Cast("const bool") boolean isInPlace/*=false*/);
+    public native @ByVal DoubleOpArgsHolder createArgsHolderForBP(@Const @ByRef DoubleNDArrayVector inGradArrs); 
+    
+}
+
+
+
+
+
+
+
+// #endif //LIBND4J_OPARGSHOLDER_H
+
+
 // Parsed from ops/declarable/DeclarableOp.h
 
 /*******************************************************************************
@@ -15994,6 +16142,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <helpers/helper_hash.h>
 // #include <array/ShapeList.h>
 // #include <array/ResultSet.h>
+// #include <helpers/OpArgsHolder.h>
 // #include <dll.h>
 //#include <ops/declarable/declarable_ops.h>
 
@@ -16058,12 +16207,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
              */
             public native @Cast("Nd4jStatus") int execute(FloatContext block);
 
-            public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector FloatPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
-            public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector FloatPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
-            public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector FloatBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
-            public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector FloatBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
-            public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector float[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
-            public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector float[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
+            public native FloatResultSet execute(@Const @ByRef FloatNDArrayVector inputs, @StdVector FloatPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native FloatResultSet execute(@Const @ByRef FloatNDArrayVector inputs, @StdVector FloatPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
+            public native FloatResultSet execute(@Const @ByRef FloatNDArrayVector inputs, @StdVector FloatBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native FloatResultSet execute(@Const @ByRef FloatNDArrayVector inputs, @StdVector FloatBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
+            public native FloatResultSet execute(@Const @ByRef FloatNDArrayVector inputs, @StdVector float[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native FloatResultSet execute(@Const @ByRef FloatNDArrayVector inputs, @StdVector float[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
             public native @Cast("Nd4jStatus") int execute(@ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector FloatPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
             public native @Cast("Nd4jStatus") int execute(@ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector FloatPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
             public native @Cast("Nd4jStatus") int execute(@ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector FloatBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
@@ -16076,6 +16225,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector FloatBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
             public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector float[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
             public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector float[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
+
+            public native FloatResultSet execute(@Const @ByRef FloatOpArgsHolder holder, @Cast("bool") boolean isInplace/*=false*/);
+            public native FloatResultSet execute(@Const @ByRef FloatOpArgsHolder holder);
 
             // There methods provide various validation options
             public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef FloatContext block);
@@ -16155,12 +16307,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
              */
             public native @Cast("Nd4jStatus") int execute(HalfContext block);
 
-            public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
-            public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
-            public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
-            public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
-            public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector short[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
-            public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector short[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
+            public native HalfResultSet execute(@Const @ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native HalfResultSet execute(@Const @ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
+            public native HalfResultSet execute(@Const @ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native HalfResultSet execute(@Const @ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
+            public native HalfResultSet execute(@Const @ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector short[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native HalfResultSet execute(@Const @ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector short[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
             public native @Cast("Nd4jStatus") int execute(@ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector ShortPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
             public native @Cast("Nd4jStatus") int execute(@ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector ShortPointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
             public native @Cast("Nd4jStatus") int execute(@ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
@@ -16173,6 +16325,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
             public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector short[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
             public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector short[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
+
+            public native HalfResultSet execute(@Const @ByRef HalfOpArgsHolder holder, @Cast("bool") boolean isInplace/*=false*/);
+            public native HalfResultSet execute(@Const @ByRef HalfOpArgsHolder holder);
 
             // There methods provide various validation options
             public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef HalfContext block);
@@ -16252,12 +16407,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
              */
             public native @Cast("Nd4jStatus") int execute(DoubleContext block);
 
-            public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
-            public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
-            public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
-            public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
-            public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
-            public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
+            public native DoubleResultSet execute(@Const @ByRef DoubleNDArrayVector inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native DoubleResultSet execute(@Const @ByRef DoubleNDArrayVector inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
+            public native DoubleResultSet execute(@Const @ByRef DoubleNDArrayVector inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native DoubleResultSet execute(@Const @ByRef DoubleNDArrayVector inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
+            public native DoubleResultSet execute(@Const @ByRef DoubleNDArrayVector inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native DoubleResultSet execute(@Const @ByRef DoubleNDArrayVector inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
             public native @Cast("Nd4jStatus") int execute(@ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
             public native @Cast("Nd4jStatus") int execute(@ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
             public native @Cast("Nd4jStatus") int execute(@ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
@@ -16270,6 +16425,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
             public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
             public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
+
+            public native DoubleResultSet execute(@Const @ByRef DoubleOpArgsHolder holder, @Cast("bool") boolean isInplace/*=false*/);
+            public native DoubleResultSet execute(@Const @ByRef DoubleOpArgsHolder holder);
 
             // There methods provide various validation options
             public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef DoubleContext block);
