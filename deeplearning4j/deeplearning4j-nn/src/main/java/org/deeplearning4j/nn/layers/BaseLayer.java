@@ -414,7 +414,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public void clearNoiseWeightParams(){
-        weightNoiseParams.clear();;
+        weightNoiseParams.clear();
     }
 
     /**

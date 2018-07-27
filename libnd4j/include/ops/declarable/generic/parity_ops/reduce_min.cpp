@@ -67,6 +67,8 @@ namespace ops {
             auto input = INPUT_VARIABLE(0);
             auto epsilon = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
+			
+			output->assign(0.0);
 
             const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
             T keepDimsT = (keepDims?T(1.f):T(0.f));

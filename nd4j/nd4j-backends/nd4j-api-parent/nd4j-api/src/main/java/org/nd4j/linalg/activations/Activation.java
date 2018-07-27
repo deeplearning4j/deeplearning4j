@@ -36,7 +36,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
  */
 public enum Activation {
     CUBE, ELU, HARDSIGMOID, HARDTANH, IDENTITY, LEAKYRELU, RATIONALTANH, RELU, RELU6,
-    RRELU, SIGMOID, SOFTMAX, SOFTPLUS, SOFTSIGN, TANH, RECTIFIEDTANH, SELU, SWISH;
+    RRELU, SIGMOID, SOFTMAX, SOFTPLUS, SOFTSIGN, TANH, RECTIFIEDTANH, SELU, SWISH,
+    THRESHOLDEDRELU;
 
     /**
      * Creates an instance of the activation function
@@ -81,6 +82,8 @@ public enum Activation {
                 return new ActivationSoftSign();
             case TANH:
                 return new ActivationTanH();
+            case THRESHOLDEDRELU:
+                return new ActivationThresholdedReLU();
             default:
                 throw new UnsupportedOperationException("Unknown or not supported activation function: " + this);
         }

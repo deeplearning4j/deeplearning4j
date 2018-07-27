@@ -19,6 +19,8 @@ package org.deeplearning4j.models;
 import com.google.common.primitives.Doubles;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -64,6 +66,9 @@ import static org.junit.Assert.*;
  */
 public class WordVectorSerializerTest {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     private File textFile, binaryFile, textFile2;
     String pathToWriteto;
 
@@ -75,7 +80,9 @@ public class WordVectorSerializerTest {
             textFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
         }
         if (binaryFile == null) {
-            binaryFile = new ClassPathResource("word2vecserialization/google_news_30.bin.gz").getTempFileFromArchive();
+            File dir = testDir.newFolder();
+            binaryFile = new File(dir, "google_news_30.bin.gz");
+            FileUtils.copyFile(new ClassPathResource("word2vecserialization/google_news_30.bin.gz").getFile(), binaryFile);
         }
         pathToWriteto = new ClassPathResource("word2vecserialization/testing_word2vec_serialization.txt").getFile()
                         .getAbsolutePath();

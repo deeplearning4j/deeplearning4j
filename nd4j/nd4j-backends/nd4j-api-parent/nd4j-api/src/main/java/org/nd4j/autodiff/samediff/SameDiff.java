@@ -182,6 +182,7 @@ public class SameDiff {
     private static Cloner cloner = newCloner();
     private static Map<String, Method> opMethods;
 
+    @Getter
     private Map<String, DifferentialFunction> functionInstancesById;
 
     private Table<String, String, String> fieldVariableResolutionMapping;
@@ -1666,7 +1667,7 @@ public class SameDiff {
      * @return the created variable
      */
     public SDVariable var(String name, long... shape) {
-        Preconditions.checkArgument(shape != null && shape.length > 0, "Invalid shape: %s", shape);
+        Preconditions.checkNotNull(shape != null, "Invalid shape: shape may not be null");
         return var(name, shape, new ZeroInitScheme());
     }
 
@@ -1679,7 +1680,7 @@ public class SameDiff {
      * @return the created variable
      */
     public SDVariable var(String name, int... shape) {
-        Preconditions.checkArgument(shape != null && shape.length > 0, "Invalid shape: %s", shape);
+        Preconditions.checkNotNull(shape != null, "Invalid shape: shape may not be null");
         return var(name, ArrayUtil.toLongArray(shape), new ZeroInitScheme());
     }
 
@@ -8959,31 +8960,6 @@ public class SameDiff {
         lists.put(name, list);
     }
 
-    /**
-     * An interface for representing a conditional statement
-     */
-    public interface SameDiffConditional {
-
-
-        /**
-         * @param context
-         * @param body
-         * @return
-         */
-        SDVariable eval(SameDiff context, SameDiffFunctionDefinition body, SDVariable[] inputVars);
-
-    }
-
-    public static class DefaultSameDiffConditional implements SameDiffConditional {
-
-        @Override
-        public SDVariable eval(SameDiff context, SameDiff.SameDiffFunctionDefinition body, SDVariable[] inputVars) {
-            context.defineFunction("eval", body, inputVars);
-            context.invokeFunctionOn("eval", context);
-            return new ArrayList<>(context.functionInstancesById.values()).get(context.functionInstancesById.size() - 1).outputVariables()[0];
-        }
-    }
-
 
     /**
      * Creates a while statement
@@ -8994,7 +8970,7 @@ public class SameDiff {
      */
     public While whileStatement(SameDiffConditional sameDiffConditional,
                                 SameDiffFunctionDefinition conditionBody,
-                                SameDiff.SameDiffFunctionDefinition loopBody
+                                SameDiffFunctionDefinition loopBody
             , SDVariable[] inputVars) {
         return While.builder()
                 .inputVars(inputVars)
@@ -9031,19 +9007,6 @@ public class SameDiff {
 
     public TensorArrayV3 tensorArray() {
         return new TensorArrayV3(this);
-    }
-
-    /**
-     * A function definition for samediff
-     */
-    public interface SameDiffFunctionDefinition {
-
-        /**
-         * @param inputs
-         * @param variableInputs
-         * @return
-         */
-        SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs);
     }
 
     /**
@@ -10590,7 +10553,7 @@ public class SameDiff {
         int ownId = forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
         reverseMap.put(node.getOwnName(), ownId);
 
-        val dims = node.opType() == Op.Type.REDUCE && inPaired.size() == 1 && node.getDimensions() != null ? node.getDimensions() : new int[]{};
+        val dims = node.opType() == Op.Type.REDUCE && node.getDimensions() != null ? node.getDimensions() : new int[]{};
         // TODO: Adam, just put your props here, instead of empty list, and they will be saved
         List<FunctionProperties> props = new ArrayList<>();
         int properties = FunctionProperties.asFlatProperties(bufferBuilder, props);
