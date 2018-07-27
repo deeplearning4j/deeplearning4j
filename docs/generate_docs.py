@@ -21,11 +21,14 @@ import os
 import shutil
 import json
 import argparse
-
+import sys
 
 class DocumentationGenerator:
 
     def __init__(self, args):
+        reload(sys)  
+        sys.setdefaultencoding('utf8')
+        
         self.out_language = args.out_language
         self.template_dir = args.templates if self.out_language == 'en' else args.templates + '_' + self.out_language
         self.project_name = args.project + '/'
@@ -110,6 +113,7 @@ class DocumentationGenerator:
     '''Returns main doc string of class/object in question.
     '''
     def get_main_doc_string(self, class_string, class_name):
+        print(class_name)
         doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n'  # match "/** ... */" at the top
         doc_string = re.search(doc_regex, class_string)
         try:
@@ -259,7 +263,7 @@ class DocumentationGenerator:
                 if file_name[-3:] == '.md':
                     file_path = os.path.join(subdir, file_name)
                     new_file_path = self.project_name + self.target_dir + '/' + self.project_name.replace('/','') + '-' + file_name
-                    print(new_file_path)
+                    # print(new_file_path)
                     shutil.copy(file_path, new_file_path)
 
 
