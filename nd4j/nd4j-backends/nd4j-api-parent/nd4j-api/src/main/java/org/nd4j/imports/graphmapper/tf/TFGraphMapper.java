@@ -1041,14 +1041,6 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             shape[i] =  tensorShapeProto.getDim(i).getSize();
         }
 
-        //shape should be mapped to a row vector
-        if(shape.length < 2) {
-            if(shape.length == 1)
-                shape = new long[]{1,shape[0]};
-            else
-                shape = new long[]{1,1};
-        }
-
         return shape;
     }
 

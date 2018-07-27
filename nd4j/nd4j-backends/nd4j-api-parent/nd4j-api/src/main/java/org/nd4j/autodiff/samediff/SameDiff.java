@@ -1667,7 +1667,7 @@ public class SameDiff {
      * @return the created variable
      */
     public SDVariable var(String name, long... shape) {
-        Preconditions.checkArgument(shape != null && shape.length > 0, "Invalid shape: %s", shape);
+        Preconditions.checkNotNull(shape != null, "Invalid shape: shape may not be null");
         return var(name, shape, new ZeroInitScheme());
     }
 
@@ -1680,7 +1680,7 @@ public class SameDiff {
      * @return the created variable
      */
     public SDVariable var(String name, int... shape) {
-        Preconditions.checkArgument(shape != null && shape.length > 0, "Invalid shape: %s", shape);
+        Preconditions.checkNotNull(shape != null, "Invalid shape: shape may not be null");
         return var(name, ArrayUtil.toLongArray(shape), new ZeroInitScheme());
     }
 
@@ -10553,7 +10553,7 @@ public class SameDiff {
         int ownId = forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
         reverseMap.put(node.getOwnName(), ownId);
 
-        val dims = node.opType() == Op.Type.REDUCE && inPaired.size() == 1 && node.getDimensions() != null ? node.getDimensions() : new int[]{};
+        val dims = node.opType() == Op.Type.REDUCE && node.getDimensions() != null ? node.getDimensions() : new int[]{};
         // TODO: Adam, just put your props here, instead of empty list, and they will be saved
         List<FunctionProperties> props = new ArrayList<>();
         int properties = FunctionProperties.asFlatProperties(bufferBuilder, props);
