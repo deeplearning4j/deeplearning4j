@@ -566,4 +566,23 @@ public class WorkspaceTests extends BaseDL4JTest {
             computationGraph.output(false, ws, input);
         }
     }
+
+    @Test
+    public void testSimpleOutputWorkspaceMLN() {
+        MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("ExternalTestWorkspace");
+
+        INDArray input = Nd4j.rand(1, 30);
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new OutputLayer.Builder().nIn(30).nOut(1).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+            net.output(input, false, ws);
+        }
+    }
 }
