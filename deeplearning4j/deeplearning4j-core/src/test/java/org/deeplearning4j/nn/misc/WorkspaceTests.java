@@ -537,7 +537,6 @@ public class WorkspaceTests extends BaseDL4JTest {
                 assertTrue(out.isAttached());
                 assertEquals(wsName, out.data().getParentWorkspace().getId());
             } catch (Throwable t){
-                fail();
                 throw new RuntimeException(t);
             }
             System.out.println("CG SCOPE ACTIVE: " + i + " - " + workspace.isScopeActive());
@@ -545,5 +544,26 @@ public class WorkspaceTests extends BaseDL4JTest {
         }
 
         Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
+    }
+
+    @Test
+    public void testSimpleOutputWorkspace() {
+        final MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("ExternalTestWorkspace");
+
+        final INDArray input = Nd4j.rand(1, 30);
+
+        final ComputationGraphConfiguration computationGraphConfiguration = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("state")
+                .addLayer("value_output", new OutputLayer.Builder().nIn(30).nOut(1).build(), "state")
+                .setOutputs("value_output")
+                .build();
+
+        final ComputationGraph computationGraph = new ComputationGraph(computationGraphConfiguration);
+        computationGraph.init();
+
+        try (final MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+            computationGraph.output(false, ws, input);
+        }
     }
 }
