@@ -191,7 +191,8 @@ public class BidirectionalLayer implements RecurrentLayer {
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray out1 = fwd.activate(training, workspaceMgr);
         INDArray out2 = bwd.activate(training, workspaceMgr);
-        out2 = TimeSeriesUtils.reverseTimeSeries(out2, workspaceMgr, ArrayType.FF_WORKING_MEM);
+        //Reverse the output time series. Note: when using LastTimeStepLayer, output can be rank 2
+        out2 = out2.rank() == 2 ? out2 : TimeSeriesUtils.reverseTimeSeries(out2, workspaceMgr, ArrayType.FF_WORKING_MEM);
 
         switch (layerConf.getMode()){
             case ADD:
