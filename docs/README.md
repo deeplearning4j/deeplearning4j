@@ -23,6 +23,8 @@ Each major module or library in Eclipse Deeplearning4j has its own folder. Insid
 
 Note that the folder names don't exactly match up with the modules in the `pom.xml` definitions across DL4J. This is because some of the documentation is consolidated (such as DataVec) or omitted due to its experimental status or because it is low-level in the code.
 
+Templates must maintain a flat file structure. This is to accommodate Jekyll collections when the docs are published. Don't worry about having similarly named files in different doc modules - the module name is prepended when the docs are generated.
+
 ## Creating templates
 
 Each template has a Jekyll header at the top:
