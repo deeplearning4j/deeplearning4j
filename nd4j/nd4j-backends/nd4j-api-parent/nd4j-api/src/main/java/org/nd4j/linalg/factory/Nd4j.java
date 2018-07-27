@@ -1,21 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.factory;
 
@@ -411,6 +408,25 @@ public class Nd4j {
             indexes[i] = i < dimension ? shape[i] : i == dimension ? 1 : shape[i - 1];
         return input.reshape(input.ordering(), indexes);
     }
+
+    /**
+     * Squeeze : removes a dimension of size 1
+     * @param input the input array
+     * @param dimension the dimension to remove
+     * @return the array with dimension removed
+     */
+    public static INDArray squeeze(INDArray input, int dimension) {
+        if (dimension < 0){
+            dimension += input.rank();
+        }
+        long[] shape = input.shape();
+        Preconditions.checkState(shape[dimension] == 1, String.format("Squeeze: Only dimension of size 1 can be squeezed. " +
+                "Attempted to squeeze dimension %d of array with shape %s (size %d).", dimension, ArrayUtils.toString(shape), shape[dimension]));
+
+        long[] newShape = ArrayUtil.removeIndex(shape, dimension);
+        return input.reshape(input.ordering(), newShape);
+    }
+
 
     /**
      * Backend specific:
@@ -3975,7 +3991,11 @@ public class Nd4j {
      * @return
      */
     public static INDArray empty() {
-        val ret = INSTANCE.empty();
+        return empty(Nd4j.dataType());
+    }
+
+    public static INDArray empty(DataBuffer.Type type) {
+        val ret = INSTANCE.empty(type);
         logCreationIfNecessary(ret);
         return ret;
     }

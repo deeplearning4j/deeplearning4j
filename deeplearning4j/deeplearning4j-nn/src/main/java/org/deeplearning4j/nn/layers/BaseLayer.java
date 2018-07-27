@@ -1,20 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.deeplearning4j.nn.layers;
 
@@ -241,11 +239,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public void initParams() {
-        throw new UnsupportedOperationException("Deprecated - no longer used - " + layerId());
-    }
-
-    @Override
     public Map<String, INDArray> paramTable() {
         return paramTable(false);
     }
@@ -414,59 +407,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public Layer transpose() {
-        if (!(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.FeedForwardLayer))
-            throw new UnsupportedOperationException(
-                    "Unsupported layer type: " + conf.getLayer().getClass().getName() + " - " + layerId());
-
-        INDArray w = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
-        INDArray vb = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
-        Layer layer;
-        try {
-            NeuralNetConfiguration clone = conf.clone(); // assume a deep clone here
-
-            org.deeplearning4j.nn.conf.layers.FeedForwardLayer clonedLayerConf =
-                    (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) clone.getLayer();
-            val nIn = clonedLayerConf.getNOut();
-            val nOut = clonedLayerConf.getNIn();
-            clonedLayerConf.setNIn(nIn);
-            clonedLayerConf.setNOut(nOut);
-
-            //Need to swap the hidden and visible biases for pretrain layers
-            INDArray newB;
-            INDArray newVB = null;
-
-            long totalParams = w.length();
-            if (vb != null) {
-                newB = vb.dup();
-                newVB = b.dup();
-                totalParams += newB.length() + newVB.length();
-            } else {
-                newB = Nd4j.create(1, nOut);
-                totalParams += newB.length();
-            }
-
-            INDArray paramsView = Nd4j.create(1, totalParams);
-            layer = clone.getLayer().instantiate(clone, trainingListeners, this.index, paramsView, true);
-
-            layer.setParam(DefaultParamInitializer.WEIGHT_KEY, w.transpose().dup());
-            layer.setParam(DefaultParamInitializer.BIAS_KEY, newB);
-            if (vb != null)
-                layer.setParam(PretrainParamInitializer.VISIBLE_BIAS_KEY, newVB);
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to construct transposed layer: " + layerId(), e);
-        }
-
-        return layer;
-    }
-
-    @Override
-    public void accumulateScore(double accum) {
-        score += accum;
-    }
-
-    @Override
     public void clear(){
         super.clear();
         weightNoiseParams.clear();
@@ -474,7 +414,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public void clearNoiseWeightParams(){
-        weightNoiseParams.clear();;
+        weightNoiseParams.clear();
     }
 
     /**

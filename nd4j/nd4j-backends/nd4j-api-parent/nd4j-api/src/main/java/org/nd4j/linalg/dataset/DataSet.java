@@ -1,21 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.dataset;
 
@@ -59,6 +56,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     private static final byte BITMASK_LABELS_SAME_AS_FEATURES = 1 << 2;
     private static final byte BITMASK_FEATURE_MASK_PRESENT = 1 << 3;
     private static final byte BITMASK_LABELS_MASK_PRESENT = 1 << 4;
+    private static final byte BITMASK_METADATA_PRESET = 1 << 5;
 
     private List<String> columnNames = new ArrayList<>();
     private List<String> labelNames = new ArrayList<>();
@@ -181,13 +179,13 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
             if (ds.getFeaturesMaskArray() != null) {
                 if (featuresMasksToMerge == null) {
-                    featuresMasksToMerge = new INDArray[data.size()];
+                    featuresMasksToMerge = new INDArray[nonEmpty];
                 }
                 featuresMasksToMerge[count] = ds.getFeaturesMaskArray();
             }
             if (ds.getLabelsMaskArray() != null) {
                 if (labelsMasksToMerge == null) {
-                    labelsMasksToMerge = new INDArray[data.size()];
+                    labelsMasksToMerge = new INDArray[nonEmpty];
                 }
                 labelsMasksToMerge[count] = ds.getLabelsMaskArray();
             }
@@ -252,6 +250,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
             boolean hasLabelsSameAsFeatures = (included & BITMASK_LABELS_SAME_AS_FEATURES) != 0;
             boolean hasFeaturesMask = (included & BITMASK_FEATURE_MASK_PRESENT) != 0;
             boolean hasLabelsMask = (included & BITMASK_LABELS_MASK_PRESENT) != 0;
+            boolean hasMetaData = (included & BITMASK_METADATA_PRESET) != 0;
 
             features = (hasFeatures ? Nd4j.read(dis) : null);
             if (hasLabels) {
@@ -264,6 +263,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
             featuresMask = (hasFeaturesMask ? Nd4j.read(dis) : null);
             labelsMask = (hasLabelsMask ? Nd4j.read(dis) : null);
+
+            if(hasMetaData){
+                ObjectInputStream ois = new ObjectInputStream(dis);
+                exampleMetaData = (List<Serializable>)ois.readObject();
+            }
 
             dis.close();
         } catch (Exception e) {
@@ -300,6 +304,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
             included |= BITMASK_FEATURE_MASK_PRESENT;
         if (labelsMask != null)
             included |= BITMASK_LABELS_MASK_PRESENT;
+        if (exampleMetaData != null && exampleMetaData.size() > 0)
+            included |= BITMASK_METADATA_PRESET;
 
 
         try {
@@ -315,6 +321,12 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
                 Nd4j.write(featuresMask, dos);
             if (labelsMask != null)
                 Nd4j.write(labelsMask, dos);
+            if(exampleMetaData != null && exampleMetaData.size() > 0){
+                ObjectOutputStream oos = new ObjectOutputStream(bos);
+                oos.writeObject(exampleMetaData);
+                oos.flush();
+            }
+
 
             dos.flush();
             dos.close();

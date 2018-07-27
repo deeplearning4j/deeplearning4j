@@ -1,9 +1,24 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 //  @author sgazeos@gmail.com
 //
 
 #include <ops/declarable/helpers/roll.h>
-#include <NDArrayFactory.h>
 
 namespace nd4j {
 namespace ops {
@@ -60,8 +75,8 @@ namespace helpers {
         NDArray<T>* source = input;
         for (int axe: axes) {
             if (axe == source->rankOf() - 1) {// last dimension
-                std::unique_ptr<ResultSet<T>> listOfTensors(NDArrayFactory<T>::allTensorsAlongDimension(source, {axe}));
-                std::unique_ptr<ResultSet<T>> listOfOutTensors(NDArrayFactory<T>::allTensorsAlongDimension(output, {axe}));
+                std::unique_ptr<ResultSet<T>> listOfTensors(source->allTensorsAlongDimension({axe}));
+                std::unique_ptr<ResultSet<T>> listOfOutTensors(output->allTensorsAlongDimension({axe}));
                 int fullLen = listOfTensors->size();
                 int theShift = shift;
                 if (theShift > 0) {
@@ -79,8 +94,8 @@ namespace helpers {
                 for (int i = 0; i < dims.size(); ++i)
                     dims[i] = axe + 1 + i;
 
-                std::unique_ptr<ResultSet<T>> listOfTensors(NDArrayFactory<T>::allTensorsAlongDimension(source, {dims}));
-                std::unique_ptr<ResultSet<T>> listOfOutTensors(NDArrayFactory<T>::allTensorsAlongDimension(output, {dims}));
+                std::unique_ptr<ResultSet<T>> listOfTensors(source->allTensorsAlongDimension({dims}));
+                std::unique_ptr<ResultSet<T>> listOfOutTensors(output->allTensorsAlongDimension({dims}));
             
                 int fullLen = listOfTensors->size();
                 int sizeAt = input->sizeAt(axe);

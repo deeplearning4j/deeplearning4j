@@ -90,7 +90,7 @@ Note, be sure to install the ND4J modules you need first, especially the backend
    with two modifications: 120-char column wrap and 4-spaces indentation. You
    can format your code to this format by typing `mvn formatter:format` in the
    subproject you work on, by using the `contrib/formatter.xml` at the root of
-   the repository to configure the Eclipse formatter, or by [using the INtellij
+   the repository to configure the Eclipse formatter, or by [using the Intellij
    plugin](https://github.com/HPI-Information-Systems/Metanome/wiki/Installing-the-google-styleguide-settings-in-intellij-and-eclipse).
 6. Send a pull request and bug us on Gitter until it gets merged and published. :)
 7. Add technical documentation on the [Deeplearning4j website](https://github.com/deeplearning4j/deeplearning4j/tree/gh-pages) and fix any typos you see.

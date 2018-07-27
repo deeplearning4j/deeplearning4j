@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.iterator;
 
 import lombok.AllArgsConstructor;
@@ -49,9 +65,20 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         RemoveWord, UseUnknownVector
     }
 
+    /**
+     * Format of features:<br>
+     * CNN1D: For use with 1d convolution layers: Shape [minibatch, vectorSize, sentenceLength]<br>
+     * CNN2D: For use with 2d convolution layers: Shape [minibatch, 1, vectorSize, sentenceLength] or [minibatch, 1, sentenceLength, vectorSize],
+     * depending on the setting for 'sentencesAlongHeight' configuration.
+     */
+    public enum Format {
+        RNN, CNN1D, CNN2D
+    }
+
     private static final String UNKNOWN_WORD_SENTINEL = "UNKNOWN_WORD_SENTINEL";
 
-    private LabeledSentenceProvider sentenceProvider = null;
+    private Format format;
+    private LabeledSentenceProvider sentenceProvider;
     private WordVectors wordVectors;
     private TokenizerFactory tokenizerFactory;
     private UnknownWordHandling unknownWordHandling;
@@ -70,7 +97,8 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
 
     private Pair<List<String>, String> preLoadedTokens;
 
-    private CnnSentenceDataSetIterator(Builder builder) {
+    protected CnnSentenceDataSetIterator(Builder builder) {
+        this.format = builder.format;
         this.sentenceProvider = builder.sentenceProvider;
         this.wordVectors = builder.wordVectors;
         this.tokenizerFactory = builder.tokenizerFactory;
@@ -108,36 +136,49 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
      */
     public INDArray loadSingleSentence(String sentence) {
         List<String> tokens = tokenizeSentence(sentence);
-
-        int[] featuresShape = new int[] {1, 1, 0, 0};
-        if (sentencesAlongHeight) {
-            featuresShape[2] = Math.min(maxSentenceLength, tokens.size());
-            featuresShape[3] = wordVectorSize;
+        if(format == Format.CNN1D || format == Format.RNN){
+            int[] featuresShape = new int[] {1, wordVectorSize, Math.min(maxSentenceLength, tokens.size())};
+            INDArray features = Nd4j.create(featuresShape, (format == Format.CNN1D ? 'c' : 'f'));
+            INDArrayIndex[] indices = new INDArrayIndex[3];
+            indices[0] = NDArrayIndex.point(0);
+            for (int i = 0; i < featuresShape[2]; i++) {
+                INDArray vector = getVector(tokens.get(i));
+                indices[1] = NDArrayIndex.all();
+                indices[2] = NDArrayIndex.point(i);
+                features.put(indices, vector);
+            }
+            return features;
         } else {
-            featuresShape[2] = wordVectorSize;
-            featuresShape[3] = Math.min(maxSentenceLength, tokens.size());
-        }
+            int[] featuresShape = new int[] {1, 1, 0, 0};
+            if (sentencesAlongHeight) {
+                featuresShape[2] = Math.min(maxSentenceLength, tokens.size());
+                featuresShape[3] = wordVectorSize;
+            } else {
+                featuresShape[2] = wordVectorSize;
+                featuresShape[3] = Math.min(maxSentenceLength, tokens.size());
+            }
 
-        INDArray features = Nd4j.create(featuresShape);
-        int length = (sentencesAlongHeight ? featuresShape[2] : featuresShape[3]);
-        for (int i = 0; i < length; i++) {
-            INDArray vector = getVector(tokens.get(i));
-
+            INDArray features = Nd4j.create(featuresShape);
+            int length = (sentencesAlongHeight ? featuresShape[2] : featuresShape[3]);
             INDArrayIndex[] indices = new INDArrayIndex[4];
             indices[0] = NDArrayIndex.point(0);
             indices[1] = NDArrayIndex.point(0);
-            if (sentencesAlongHeight) {
-                indices[2] = NDArrayIndex.point(i);
-                indices[3] = NDArrayIndex.all();
-            } else {
-                indices[2] = NDArrayIndex.all();
-                indices[3] = NDArrayIndex.point(i);
+            for (int i = 0; i < length; i++) {
+                INDArray vector = getVector(tokens.get(i));
+
+                if (sentencesAlongHeight) {
+                    indices[2] = NDArrayIndex.point(i);
+                    indices[3] = NDArrayIndex.all();
+                } else {
+                    indices[2] = NDArrayIndex.all();
+                    indices[3] = NDArrayIndex.point(i);
+                }
+
+                features.put(indices, vector);
             }
 
-            features.put(indices, vector);
+            return features;
         }
-
-        return features;
     }
 
     private INDArray getVector(String word) {
@@ -272,50 +313,92 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
             labels.putScalar(i, labelIdx, 1.0);
         }
 
-        int[] featuresShape = new int[4];
-        featuresShape[0] = currMinibatchSize;
-        featuresShape[1] = 1;
-        if (sentencesAlongHeight) {
-            featuresShape[2] = maxLength;
-            featuresShape[3] = wordVectorSize;
+        INDArray features;
+        INDArray featuresMask = null;
+        if(format == Format.CNN1D || format == Format.RNN){
+            int[] featuresShape = new int[]{currMinibatchSize, wordVectorSize, maxLength};
+            features = Nd4j.create(featuresShape, (format == Format.CNN1D ? 'c' : 'f'));
+
+            INDArrayIndex[] idxs = new INDArrayIndex[3];
+            idxs[1] = NDArrayIndex.all();
+            for (int i = 0; i < currMinibatchSize; i++) {
+                idxs[0] = NDArrayIndex.point(i);
+                List<String> currSentence = tokenizedSentences.get(i).getFirst();
+                for (int j = 0; j < currSentence.size() && j < maxSentenceLength; j++) {
+                    idxs[2] = NDArrayIndex.point(j);
+                    INDArray vector = getVector(currSentence.get(j));
+                    features.put(idxs, vector);
+                }
+            }
+
+            if (minLength != maxLength) {
+                featuresMask = Nd4j.create(currMinibatchSize, maxLength);
+                for (int i = 0; i < currMinibatchSize; i++) {
+                    int sentenceLength = tokenizedSentences.get(i).getFirst().size();
+                    if (sentenceLength >= maxLength) {
+                        featuresMask.getRow(i).assign(1.0);
+                    } else {
+                        featuresMask.get(NDArrayIndex.point(i), NDArrayIndex.interval(0, sentenceLength)).assign(1.0);
+                    }
+                }
+            }
+
         } else {
-            featuresShape[2] = wordVectorSize;
-            featuresShape[3] = maxLength;
-        }
+            int[] featuresShape = new int[4];
+            featuresShape[0] = currMinibatchSize;
+            featuresShape[1] = 1;
+            if (sentencesAlongHeight) {
+                featuresShape[2] = maxLength;
+                featuresShape[3] = wordVectorSize;
+            } else {
+                featuresShape[2] = wordVectorSize;
+                featuresShape[3] = maxLength;
+            }
 
-        INDArray features = Nd4j.create(featuresShape);
-        for (int i = 0; i < currMinibatchSize; i++) {
-            List<String> currSentence = tokenizedSentences.get(i).getFirst();
-
-            for (int j = 0; j < currSentence.size() && j < maxSentenceLength; j++) {
-                INDArray vector = getVector(currSentence.get(j));
-
-                INDArrayIndex[] indices = new INDArrayIndex[4];
-                //TODO REUSE
+            features = Nd4j.create(featuresShape);
+            INDArrayIndex[] indices = new INDArrayIndex[4];
+            indices[1] = NDArrayIndex.point(0);
+            for (int i = 0; i < currMinibatchSize; i++) {
                 indices[0] = NDArrayIndex.point(i);
-                indices[1] = NDArrayIndex.point(0);
-                if (sentencesAlongHeight) {
-                    indices[2] = NDArrayIndex.point(j);
-                    indices[3] = NDArrayIndex.all();
+                List<String> currSentence = tokenizedSentences.get(i).getFirst();
+                for (int j = 0; j < currSentence.size() && j < maxSentenceLength; j++) {
+                    INDArray vector = getVector(currSentence.get(j));
+
+                    if (sentencesAlongHeight) {
+                        indices[2] = NDArrayIndex.point(j);
+                        indices[3] = NDArrayIndex.all();
+                    } else {
+                        indices[2] = NDArrayIndex.all();
+                        indices[3] = NDArrayIndex.point(j);
+                    }
+
+                    features.put(indices, vector);
+                }
+            }
+
+            if (minLength != maxLength) {
+                int idxSeq;
+                if(sentencesAlongHeight){
+                    featuresMask = Nd4j.create(currMinibatchSize, 1, maxLength, 1);
+                    idxSeq = 2;
                 } else {
-                    indices[2] = NDArrayIndex.all();
-                    indices[3] = NDArrayIndex.point(j);
+                    featuresMask = Nd4j.create(currMinibatchSize, 1, 1, maxLength);
+                    idxSeq = 3;
                 }
 
-                features.put(indices, vector);
-            }
-        }
-
-        INDArray featuresMask = null;
-        if (minLength != maxLength) {
-            featuresMask = Nd4j.create(currMinibatchSize, maxLength);
-
-            for (int i = 0; i < currMinibatchSize; i++) {
-                int sentenceLength = tokenizedSentences.get(i).getFirst().size();
-                if (sentenceLength >= maxLength) {
-                    featuresMask.getRow(i).assign(1.0);
-                } else {
-                    featuresMask.get(NDArrayIndex.point(i), NDArrayIndex.interval(0, sentenceLength)).assign(1.0);
+                INDArrayIndex[] idxs = new INDArrayIndex[4];
+                idxs[1] = NDArrayIndex.all();
+                idxs[2] = NDArrayIndex.all();   //One of [2] and [3] will get replaced, depending on sentencesAlongHeight
+                idxs[3] = NDArrayIndex.all();
+                for (int i = 0; i < currMinibatchSize; i++) {
+                    idxs[0] = NDArrayIndex.point(i);
+                    int sentenceLength = tokenizedSentences.get(i).getFirst().size();
+                    if (sentenceLength >= maxLength) {
+                        idxs[idxSeq] = NDArrayIndex.all();
+                    } else {
+                        idxs[idxSeq] = NDArrayIndex.interval(0,sentenceLength);
+                    }
+                    featuresMask.get(idxs).assign(1.0);
                 }
             }
         }
@@ -378,6 +461,7 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
 
     public static class Builder {
 
+        private Format format;
         private LabeledSentenceProvider sentenceProvider = null;
         private WordVectors wordVectors;
         private TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
@@ -387,6 +471,23 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         private int minibatchSize = 32;
         private boolean sentencesAlongHeight = true;
         private DataSetPreProcessor dataSetPreProcessor;
+
+        /**
+         * @deprecated Due to old default, that will be changed in the future. Use {@link #Builder(Format)} to specify
+         * the {@link Format} of the activations
+         */
+        @Deprecated
+        public Builder(){
+            //Default for backward compatibility
+            this(Format.CNN2D);
+        }
+
+        /**
+         * @param format The format to use for the features - i.e., for 1D or 2D CNNs
+         */
+        public Builder(@NonNull Format format){
+            this.format = format;
+        }
 
         /**
          * Specify how the (labelled) sentences / documents should be provided

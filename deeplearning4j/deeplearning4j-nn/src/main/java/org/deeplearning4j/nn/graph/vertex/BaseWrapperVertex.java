@@ -1,11 +1,30 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.graph.vertex;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+
+import java.util.Map;
 
 /**
  * A base class for wrapper vertices: i.e., those vertices that have another vertex inside.
@@ -138,6 +157,11 @@ public abstract class BaseWrapperVertex implements GraphVertex {
     }
 
     @Override
+    public INDArray getGradientsViewArray() {
+        return underlying.getGradientsViewArray();
+    }
+
+    @Override
     public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
         underlying.setBackpropGradientsViewArray(backpropGradientsViewArray);
     }
@@ -155,5 +179,25 @@ public abstract class BaseWrapperVertex implements GraphVertex {
     @Override
     public void clearVertex() {
         underlying.clearVertex();
+    }
+
+    @Override
+    public Map<String, INDArray> paramTable(boolean backpropOnly) {
+        return underlying.paramTable(backpropOnly);
+    }
+
+    @Override
+    public TrainingConfig getConfig() {
+        return underlying.getConfig();
+    }
+
+    @Override
+    public INDArray params() {
+        return underlying.params();
+    }
+
+    @Override
+    public int numParams() {
+        return underlying.numParams();
     }
 }

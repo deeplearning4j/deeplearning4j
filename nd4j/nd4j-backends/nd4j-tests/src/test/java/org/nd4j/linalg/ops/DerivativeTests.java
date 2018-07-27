@@ -1,26 +1,25 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
-
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.ops;
 
+import lombok.val;
 import org.apache.commons.math3.util.FastMath;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -50,10 +49,22 @@ public class DerivativeTests extends BaseNd4jTest {
     public static final double REL_ERROR_TOLERANCE = 1e-3;
 
 
+    DataBuffer.Type initialType;
+
     public DerivativeTests(Nd4jBackend backend) {
         super(backend);
+        this.initialType = Nd4j.dataType();
     }
 
+    @Before
+    public void before() {
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+    }
+
+    @After
+    public void after() {
+        Nd4j.setDataType(this.initialType);
+    }
 
     @Test
     public void testHardTanhDerivative() {

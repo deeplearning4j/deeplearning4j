@@ -1,7 +1,27 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.datavec.poi.excel;
 
 import org.apache.poi.ss.usermodel.*;
 import org.datavec.api.conf.Configuration;
+import org.datavec.api.records.Record;
+import org.datavec.api.records.metadata.RecordMetaDataIndex;
+import org.datavec.api.records.metadata.RecordMetaDataLine;
+import org.datavec.api.records.metadata.RecordMetaDataURI;
 import org.datavec.api.records.reader.impl.FileRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.BooleanWritable;
@@ -82,9 +102,13 @@ public class ExcelRecordReader extends FileRecordReader {
         return true;
     }
 
-
     @Override
     public List<Writable> next() {
+        return nextRecord().getRecord();
+    }
+
+    @Override
+    public Record nextRecord(){
         //start at top tracking rows
         if(rows != null && rows.hasNext()) {
             Row currRow = rows.next();
@@ -93,14 +117,25 @@ public class ExcelRecordReader extends FileRecordReader {
                 String cellValue = dataFormatter.formatCellValue(cell);
                 ret.add(new Text(cellValue));
             }
-
-            return ret;
+            Record record = new org.datavec.api.records.impl.Record(ret,
+                                    new RecordMetaDataIndex(
+                                            currRow.getRowNum(),
+                                            super.currentFile.toURI(),
+                                            ExcelRecordReader.class));
+            return record;
         }
         // next track sheets
         else if(sheetIterator != null && sheetIterator.hasNext()) {
             Sheet sheet = sheetIterator.next();
             rows = sheet.rowIterator();
-            return rowToRecord(rows.next());
+            Row currRow = rows.next();
+            Record record = new org.datavec.api.records.impl.Record(rowToRecord(currRow),
+                                new RecordMetaDataIndex(
+                                    currRow.getRowNum(),
+                                    super.currentFile.toURI(),
+                                    ExcelRecordReader.class));
+            return record;
+
         }
 
 
@@ -116,7 +151,13 @@ public class ExcelRecordReader extends FileRecordReader {
             this.sheetIterator = currWorkBook.sheetIterator();
             Sheet sheet = sheetIterator.next();
             rows = sheet.rowIterator();
-            return rowToRecord(rows.next());
+            Row currRow = rows.next();
+            Record record = new org.datavec.api.records.impl.Record(rowToRecord(currRow),
+                    new RecordMetaDataIndex(
+                            currRow.getRowNum(),
+                            super.currentFile.toURI(),
+                            ExcelRecordReader.class));
+            return record;
 
         } catch (Exception e) {
             throw new IllegalStateException("Error processing row",e);

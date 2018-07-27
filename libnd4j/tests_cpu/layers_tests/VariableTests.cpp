@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // @author raver119@gmail.com
 //
@@ -9,7 +25,6 @@
 #include <NDArray.h>
 #include <graph/Variable.h>
 #include <flatbuffers/flatbuffers.h>
-#include <NDArrayFactory.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -50,7 +65,7 @@ TEST_F(VariableTests, TestClone_1) {
 TEST_F(VariableTests, Test_FlatVariableDataType_1) {
     flatbuffers::FlatBufferBuilder builder(1024);
     NDArray<float> original('c', {5, 10});
-    NDArrayFactory<float>::linspace(1, original);
+    original.linspace(1);
 
     auto vec = original.asByteVector();
 
@@ -84,7 +99,7 @@ TEST_F(VariableTests, Test_FlatVariableDataType_1) {
 TEST_F(VariableTests, Test_FlatVariableDataType_2) {
     flatbuffers::FlatBufferBuilder builder(1024);
     NDArray<double> original('c', {5, 10});
-    NDArrayFactory<double>::linspace(1, original);
+    original.linspace(1);
 
     auto vec = original.asByteVector();
 
@@ -120,8 +135,8 @@ TEST_F(VariableTests, Test_FlatVariableDataType_3) {
     flatbuffers::FlatBufferBuilder builder(1024);
     NDArray<double> original('c', {5, 10});
     NDArray<float> floating('c', {5, 10});
-    NDArrayFactory<double>::linspace(1, original);
-    NDArrayFactory<float>::linspace(1, floating);
+    original.linspace(1);
+    floating.linspace(1);
 
     auto vec = original.asByteVector();
 

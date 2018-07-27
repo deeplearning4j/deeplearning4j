@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.api.ops.impl.transforms.temp;
 
 import onnx.OnnxProto3;
@@ -15,7 +31,7 @@ import java.util.*;
 
 public class ExternalErrorsFunction extends DifferentialFunction {
 
-    private static final List<long[]> OUT_SHAPE = Collections.singletonList(new long[0]);
+    private static final List<long[]> OUT_SHAPE = Collections.singletonList(new long[]{1});
 
     private Map<String,INDArray> gradients;
     private Map<String,SDVariable> gradVariables;
@@ -33,6 +49,10 @@ public class ExternalErrorsFunction extends DifferentialFunction {
 
     public void updateVariable(String str, INDArray gradient){
         gradients.put(str, gradient);
+        //Update immediately if possible. New shapes might be needed for shape calculation
+        if(gradVariables != null){
+            gradVariables.get(str).setArray(gradient);
+        }
     }
 
     @Override
@@ -100,7 +120,7 @@ public class ExternalErrorsFunction extends DifferentialFunction {
 
     @Override
     public String opName(){
-        return "ExternalErrorFnPrototype";
+        return "ExternalErrorsFn";
     }
 
     @Override

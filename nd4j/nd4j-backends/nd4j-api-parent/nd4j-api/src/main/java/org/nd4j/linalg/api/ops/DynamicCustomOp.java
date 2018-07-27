@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.api.ops;
 
 import com.google.common.collect.Lists;
@@ -212,19 +228,35 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 sameDiff.addOutgoingFor(outputVariables, this);
             return newVars;
         } else {
-            val shape = calculateOutputShape();
-            if (shape != null && !shape.isEmpty()) {
-                Preconditions.checkState(shape.size() == outputVariables.length, "Different number of calculated" +
-                        " shapes (%s) vs. number of output variables (%s) - op %s", shape.size(), outputVariables.length, opName());
-
-                for (int i = 0; i < outputVariables.length; i++) {
-                    val var = outputVariables[i];
-                    if (var.getShape() == null) {
-                        attemptToGetOrCreateArrForVar(var, shape.get(i));
-                    }
+            //Output variables are already defined. Initialize the output arrays if possible
+            boolean missingArray = false;
+            for(SDVariable v : outputVariables){
+                if(v.getArr() == null){
+                    missingArray = true;
+                    break;
                 }
             }
 
+            if(missingArray) {
+                List<long[]> shape;
+                try {
+                    shape = calculateOutputShape();
+                } catch (Exception e) {
+                    throw new RuntimeException("Error calculating shape for op " + opName() + " of type " + getClass().getSimpleName()
+                            + " with name " + getOwnName(), e);
+                }
+                if (shape != null && !shape.isEmpty()) {
+                    Preconditions.checkState(shape.size() == outputVariables.length, "Different number of calculated" +
+                            " shapes (%s) vs. number of output variables (%s) - op %s", shape.size(), outputVariables.length, opName());
+
+                    for (int i = 0; i < outputVariables.length; i++) {
+                        val var = outputVariables[i];
+                        if (var.getShape() == null) {
+                            attemptToGetOrCreateArrForVar(var, shape.get(i));
+                        }
+                    }
+                }
+            }
         }
 
         return outputVariables;

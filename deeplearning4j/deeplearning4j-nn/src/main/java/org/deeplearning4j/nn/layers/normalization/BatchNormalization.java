@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.layers.normalization;
 
 import lombok.extern.slf4j.Slf4j;
@@ -300,14 +316,13 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                             + " not supported " + layerId());
             }
 
-
-            var.addi(layerConf.getEps());
+            std = Transforms.sqrt(workspaceMgr.dup(ArrayType.INPUT, var).addi(layerConf().getEps()), false);
         } else {
             // Global mean and variance estimate - used after training
             mean = getParam(BatchNormalizationParamInitializer.GLOBAL_MEAN);
             var = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
+            std = Transforms.sqrt(workspaceMgr.dup(ArrayType.INPUT, var).addi(layerConf().getEps()), false);
         }
-        std = Transforms.sqrt(workspaceMgr.dup(ArrayType.INPUT, var), false);
 
         // BN(xk) = gamma*xˆ + β (applying gamma and beta for each activation)
         if (x.rank() == 2) {
@@ -396,18 +411,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         activations = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, activations);   //Most of the time this should be a no-op
         return activations;
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException(layerId());
-
-    }
-
-    @Override
-    public Layer clone() {
-        throw new UnsupportedOperationException(layerId());
-
     }
 
     @Override

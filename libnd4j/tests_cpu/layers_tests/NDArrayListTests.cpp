@@ -1,10 +1,25 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // @author raver119@gmail.com
 //
 
 #include <NDArray.h>
 #include <NDArrayList.h>
-#include <NDArrayFactory.h>
 #include "testlayers.h"
 
 using namespace nd4j;
@@ -40,7 +55,7 @@ TEST_F(NDArrayListTests, BasicTests_2) {
 
 TEST_F(NDArrayListTests, Test_Stack_UnStack_1) {
     NDArray<float> input('c', {10, 10});
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
 
     NDArrayList<float> list(false);
 

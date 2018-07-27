@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.schedule;
 
 import org.junit.Test;
@@ -25,7 +41,9 @@ public class TestSchedules {
                 new MapSchedule.Builder(ScheduleType.ITERATION).add(0, 1.0).add(10,0.5).build(),
                 new PolySchedule(ScheduleType.ITERATION, 1.0, 2, 100),
                 new SigmoidSchedule(ScheduleType.ITERATION, 1.0, 0.5, 10),
-                new StepSchedule(ScheduleType.ITERATION, 1.0, 0.9, 100)};
+                new StepSchedule(ScheduleType.ITERATION, 1.0, 0.9, 100),
+                new CycleSchedule(ScheduleType.ITERATION, 1.5, 100)
+        };
 
 
         for(ISchedule s : schedules){
@@ -101,6 +119,20 @@ public class TestSchedules {
                 assertEquals(0.1, schedule.valueAt(i, 0), 1e-6);
             }
         }
+    }
+    @Test
+    public void testCycleSchedule(){
+        ISchedule schedule = new CycleSchedule(ScheduleType.ITERATION, 1.5, 100);
+        assertEquals(0.15, schedule.valueAt(0, 0), 1e-6);
+        assertEquals(1.5, schedule.valueAt(45, 0), 1e-6);
+        assertEquals(0.15, schedule.valueAt(90, 0), 1e-6);
+        assertEquals(0.015, schedule.valueAt(91, 0), 1e-6);
+
+        schedule = new CycleSchedule(ScheduleType.ITERATION, 0.95, 0.85, 100, 10, 1);
+        assertEquals(0.95, schedule.valueAt(0, 0), 1e-6);
+        assertEquals(0.85, schedule.valueAt(45, 0), 1e-6);
+        assertEquals(0.95, schedule.valueAt(90, 0), 1e-6);
+        assertEquals(0.95, schedule.valueAt(91, 0), 1e-6);
     }
 
     private static double calcExponentialDecay(double lr, double decayRate, double iteration) {

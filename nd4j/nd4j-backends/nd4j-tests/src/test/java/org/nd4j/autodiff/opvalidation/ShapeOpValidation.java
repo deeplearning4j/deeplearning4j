@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.autodiff.opvalidation;
 
 import lombok.Builder;
@@ -53,8 +69,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testConcat() {
-        OpValidationSuite.ignoreFailing();
-
 //        int[] concatDim = new int[]{0,0,0,1,1,1,2,2,2};
         int[] concatDim = new int[]{0, 0, 0};
         List<List<int[]>> origShapes = new ArrayList<>();
@@ -95,7 +109,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testReshapeGradient() {
-        OpValidationSuite.ignoreFailing();
         int[] origShape = new int[]{3, 4, 5};
 
         List<String> failed = new ArrayList<>();
@@ -130,7 +143,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testPermuteGradient() {
-        OpValidationSuite.ignoreFailing();
         int[] origShape = new int[]{3, 4, 5};
 
         List<String> failed = new ArrayList<>();
@@ -195,7 +207,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testExpandDimsGradient() {
-        OpValidationSuite.ignoreFailing();
         val origShape = new long[]{3, 4};
 
         List<String> failed = new ArrayList<>();
@@ -407,7 +418,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testStridedSliceGradient() {
-        OpValidationSuite.ignoreFailing();
         Nd4j.getRandom().setSeed(12345);
 
         //Order here: original shape, begin, size
@@ -471,7 +481,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testMerge() {
-        OpValidationSuite.ignoreFailing();
         Nd4j.getRandom().setSeed(12345);
 
         List<String> failed = new ArrayList<>();
@@ -543,7 +552,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testStack() {
-        OpValidationSuite.ignoreFailing();
         Nd4j.getRandom().setSeed(12345);
 
         List<String> failed = new ArrayList<>();
@@ -635,7 +643,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testUnStack() {
-        OpValidationSuite.ignoreFailing();
         Nd4j.getRandom().setSeed(12345);
 
         List<String> failed = new ArrayList<>();
@@ -795,7 +802,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testReshape() {
-        OpValidationSuite.ignoreFailing();
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(-5, 6, 12)).reshape(3, 4);
         SDVariable x = sameDiff.var("x", arr);
@@ -887,8 +893,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testDiagShapeFn() {
-        OpValidationSuite.ignoreFailing();
-
         INDArray i = Nd4j.linspace(1, 16, 16).reshape(4,4);
 
         OpTestCase op = new OpTestCase(new DiagPart(i, null));
@@ -903,8 +907,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testPermute(){
-        OpValidationSuite.ignoreFailing();
-
         INDArray in = Nd4j.linspace(1, 60, 60).reshape(3,4,5);
         INDArray exp = in.permute(0,1,2);   //No op
 
@@ -919,8 +921,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testPermute2(){
-        OpValidationSuite.ignoreFailing();
-
         for (int[] perm : new int[][]{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}) {
             INDArray in = Nd4j.linspace(1, 60, 60).reshape(3,4,5);
             INDArray exp = in.permute(perm);
@@ -967,8 +967,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testUnstackEdgeCase2(){
-        OpValidationSuite.ignoreFailing();
-
         for( int i=0; i<3; i++ ) {
 
             INDArray arr = Nd4j.rand(new long[]{1, 1, 1});
@@ -983,7 +981,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void invertPermutation() {
-        OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
 
         INDArray ia = Nd4j.create(new float[] {3, 4, 0, 2, 1});
@@ -1085,7 +1082,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testSequenceMask() {
-        OpValidationSuite.ignoreFailing();
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Nd4j.create(new float[] {1, 3, 2}).reshape(3);
         SDVariable lengths = sameDiff.var("lengths", arr);
@@ -1117,8 +1113,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testMeshGrid(){
-        OpValidationSuite.ignoreFailing();
-
         List<String> failed = new ArrayList<>();
 
         for( int rank=2; rank<=4; rank++ ){
@@ -1161,7 +1155,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                 if(i == 0)
                     loss = meshgrid[i].std(true);
                 else {
-                    loss = loss.add(meshgrid[i].std(true));
+                    loss = loss.add("loss-" + i, meshgrid[i].std(true));
                 }
             }
 
@@ -1176,7 +1170,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testGather(){
-        OpValidationSuite.ignoreFailing();  //Exception during gradient check
         List<INDArray> inArrs = new ArrayList<>();
         List<Integer> axis = new ArrayList<>();
         List<INDArray> indices = new ArrayList<>();

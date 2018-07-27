@@ -1,12 +1,25 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.optimize.solver;
 
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -62,9 +75,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
         OptimizationAlgorithm[] toTest =
                         {OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT, OptimizationAlgorithm.LINE_GRADIENT_DESCENT,
-                                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS
-                        //OptimizationAlgorithm.HESSIAN_FREE	//Known to not work
-                        };
+                                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS};
 
         for (OptimizationAlgorithm oa : toTest) {
             MultiLayerNetwork network = new MultiLayerNetwork(getMLPConfigIris(oa));
@@ -83,9 +94,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
         OptimizationAlgorithm[] toTest =
                         {OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT, OptimizationAlgorithm.LINE_GRADIENT_DESCENT,
-                                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS
-                        //OptimizationAlgorithm.HESSIAN_FREE	//Known to not work
-                        };
+                                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS};
 
         DataSet ds = iter.next();
         ds.normalizeZeroMeanZeroUnitVariance();
@@ -812,6 +821,11 @@ public class TestOptimizers extends BaseDL4JTest {
             // no-op
         }
 
+        @Override
+        public TrainingConfig getConfig() {
+            return conf.getLayer();
+        }
+
         /**
          * Init the model
          */
@@ -888,11 +902,6 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void accumulateScore(double accum) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public INDArray params() {
             return parameters;
         }
@@ -942,9 +951,6 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void validateInput() {}
-
-        @Override
         public ConvexOptimizer getOptimizer() {
             throw new UnsupportedOperationException();
         }
@@ -952,11 +958,6 @@ public class TestOptimizers extends BaseDL4JTest {
         @Override
         public INDArray getParam(String param) {
             return parameters;
-        }
-
-        @Override
-        public void initParams() {
-            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -991,16 +992,6 @@ public class TestOptimizers extends BaseDL4JTest {
 
         @Override
         public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr mgr) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Layer transpose() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Layer clone() {
             throw new UnsupportedOperationException();
         }
 

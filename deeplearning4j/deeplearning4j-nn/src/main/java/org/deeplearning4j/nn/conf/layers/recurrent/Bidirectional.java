@@ -1,8 +1,25 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.conf.layers.recurrent;
 
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -124,7 +141,7 @@ public class Bidirectional extends Layer {
         org.deeplearning4j.nn.api.Layer b
                 = bwd.instantiate(c2, trainingListeners, layerIndex, bp, initializeParams);
 
-        BidirectionalLayer ret = new BidirectionalLayer(conf, f, b);
+        BidirectionalLayer ret = new BidirectionalLayer(conf, f, b, layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
         ret.setConf(conf);
@@ -173,6 +190,11 @@ public class Bidirectional extends Layer {
     }
 
     @Override
+    public boolean isPretrain() {
+        return fwd.isPretrain();
+    }
+
+    @Override
     public double getL1ByParam(String paramName) {
         //Strip forward/backward prefix from param name
         return fwd.getL1ByParam(paramName.substring(1));
@@ -198,6 +220,16 @@ public class Bidirectional extends Layer {
     public IUpdater getUpdaterByParam(String paramName) {
         String sub = paramName.substring(1);
         return fwd.getUpdaterByParam(sub);
+    }
+
+    @Override
+    public GradientNormalization getGradientNormalization() {
+        return fwd.getGradientNormalization();
+    }
+
+    @Override
+    public double getGradientNormalizationThreshold() {
+        return fwd.getGradientNormalizationThreshold();
     }
 
     @Override

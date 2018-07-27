@@ -1,21 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
@@ -82,7 +79,7 @@ public class BatchMmul extends DynamicCustomOp {
         for (int i = 0; i < batchSize; i++) {
             Preconditions.checkState(Arrays.equals(firstShape, matrices[i].getShape()));
         }
-        SDVariable lastMatrix = matrices[batchSize - 1];
+        SDVariable lastMatrix = matrices[2 * batchSize - 1];
         long[] lastShape = lastMatrix.getShape();
         for (int i = batchSize; i < 2 * batchSize; i++) {
             Preconditions.checkState(Arrays.equals(lastShape, matrices[i].getShape()));
@@ -91,19 +88,22 @@ public class BatchMmul extends DynamicCustomOp {
         this.transposeA = transposeA ? 1 : 0;
         this.transposeB = transposeB ? 1 : 0;
 
-
         this.M = transposeA ? (int) firstShape[1]: (int) firstShape[0];
         this.N = transposeA ? (int) firstShape[0]: (int) firstShape[1];
-        this.K = transposeB ? (int) lastShape[1]: (int) lastShape[2];
-
+        this.K = transposeB ? (int) lastShape[0]: (int) lastShape[1];
 
         addArgs();
     }
 
+    @Override
+    public int getNumOutputs(){
+        return batchSize;
+    }
+
     public void addArgs() {
         addIArgument(transposeA, transposeB,
-                M, N, K,
-                M, N, K, // these three are LDA, LDB and LDC (leading dims / strides) from blas. set to matrix dims here
+                M, K, N, // K and N are swapped in libnd4j
+                M, K, N, // these three are LDA, LDB and LDC (leading dims / strides) from blas. set to matrix dims here
                 batchSize);
     }
 

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by raver119 on 21.11.17.
 //
@@ -26,7 +42,9 @@ namespace nd4j {
                         if (std::is_same<T, float>::value && canKeep) {
                             memcpy(buffer, src, length * sizeof(T));
                         } else {
-                            auto tmp = reinterpret_cast<float *>(src);
+                            auto tmp = new float[length];
+                            memcpy(tmp, src, length * sizeof(float));
+
 
 #if __GNUC__ <= 4
                             if (!canKeep)
@@ -39,6 +57,8 @@ namespace nd4j {
                             for (Nd4jLong e = 0; e < length; e++)
                                 buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
 #endif
+
+                            delete[] tmp;
                         }
                     }
                     break;
@@ -46,7 +66,8 @@ namespace nd4j {
                         if (std::is_same<T, double>::value && canKeep) {
                             memcpy(buffer, src, length * sizeof(T));
                         } else {
-                            auto tmp = reinterpret_cast<double *>(src);
+                            auto tmp = new double[length];
+                            memcpy(tmp, src, length * sizeof(double));
 
 #if __GNUC__ <= 4
                             if (!canKeep)
@@ -61,7 +82,7 @@ namespace nd4j {
                             for (Nd4jLong e = 0; e < length; e++)
                                 buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
 #endif
-
+                            delete[] tmp;
                         }
                     }
                     break;
@@ -70,7 +91,8 @@ namespace nd4j {
                         if (std::is_same<T, float16>::value && canKeep) {
                             memcpy(buffer, src, length * sizeof(T));
                         } else {
-                            auto tmp = reinterpret_cast<float16 *>(src);
+                            auto tmp = new float16[length];
+                            memcpy(tmp, src, length * sizeof(float16));
 
 #if __GNUC__ <= 4
                             if (!canKeep)
@@ -83,6 +105,7 @@ namespace nd4j {
                             for (Nd4jLong e = 0; e < length; e++)
                                 buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
 #endif
+                            delete[] tmp;
                         }
                     }
                     break;

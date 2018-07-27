@@ -1,21 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.api.buffer;
 
@@ -1529,9 +1526,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 pointer = new BytePointer(compressedLength);
                 type = Type.COMPRESSED;
                 val tp = (BytePointer) pointer;
+                val ti = ByteIndexer.create(tp);
 
                 for (long i = 0; i < compressedLength; i++) {
-                    tp.put(i, s.readByte());
+                    ti.put(i, s.readByte());
                 }
 
             } else if (currentType == Type.HALF) {
@@ -1539,13 +1537,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     putByGlobalType(i, toFloat(s.readShort()), globalType);
                 }
             } else if (currentType == Type.LONG) {
-                for (long i = 0; i < length(); i++) {
-                    putByGlobalType(i, s.readLong(), globalType);
-                }
+                val idx = (LongIndexer) indexer;
+                for (long i = 0; i < length(); i++)
+                    idx.put(i, s.readLong());
             } else {
-                for (long i = 0; i < length(); i++) {
-                    putByGlobalType(i, s.readInt(), globalType);
-                }
+                val idx = (IntIndexer) indexer;
+                for (long i = 0; i < length(); i++)
+                    idx.put(i, s.readInt());
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -1554,29 +1552,30 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void write(DataOutputStream out) throws IOException {
-        //if (length() >= Integer.MAX_VALUE)
-         //   throw new IllegalArgumentException("Length of data buffer can not be >= Integer.MAX_VALUE on output");
-        //        log.info("Saving dType: {}", dataType().name());
         out.writeUTF(allocationMode.name());
         out.writeLong(length());
         out.writeUTF(dataType().name());
-        if (dataType() == Type.DOUBLE) {
-            for (long i = 0; i < length(); i++)
-                out.writeDouble(getDouble(i));
-        } else if (dataType() == Type.LONG) {
-            for (long i = 0; i < length(); i++)
-                out.writeLong(getLong(i));
-        } else if (dataType() == Type.INT) {
-            for (long i = 0; i < length(); i++)
-                out.writeInt(getInt(i));
-        } else if (dataType() == Type.HALF) {
-            for (long i = 0; i < length(); i++) {
-                out.writeShort(getShort(i));
-            }
-        } else {
-            for (long i = 0; i < length(); i++) {
-                out.writeFloat(getFloat(i));
-            }
+        switch (dataType()) {
+            case DOUBLE:
+                for (long i = 0; i < length(); i++)
+                    out.writeDouble(getDouble(i));
+                break;
+            case LONG:
+                for (long i = 0; i < length(); i++)
+                    out.writeLong(getLong(i));
+                break;
+            case INT:
+                for (long i = 0; i < length(); i++)
+                    out.writeInt(getInt(i));
+                break;
+            case HALF:
+                for (long i = 0; i < length(); i++)
+                    out.writeShort(getShort(i));
+                break;
+            case FLOAT:
+                for (long i = 0; i < length(); i++)
+                    out.writeFloat(getFloat(i));
+                break;
         }
     }
 

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 #pragma once
 #ifndef OPS_H_
 #define OPS_H_
@@ -1682,40 +1698,40 @@ namespace simdOps {
             T eps = extraParams[1];
 
             auto mode = static_cast<int>(extraParams[2]);
-
-
             //nd4j_printf("value: %f; comp: %f; eps: %f; mode: %i;\n", d1, compare, eps, mode);
 
-            if (mode == 0) // equals
-                return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? 1.0 : 0.0;
-            else if (mode == 1) // not equals
-                return nd4j::math::nd4j_abs<T>(d1 - compare) > eps ? 1.0 : 0.0;
-            else if (mode == 2) // less_than
-                return d1 < compare? 1.0 : 0.0;
-            else if (mode ==3) // greater_than
-                return d1 > compare? 1.0 : 0.0;
-            else if (mode == 4) // less_or_equals_than
-                return d1 <= compare? 1.0 : 0.0;
-            else if (mode == 5) // greater_or_equals_than
-                return d1 >= compare? 1.0 : 0.0;
-            else if (mode == 6) // abs_less_than
-                return nd4j::math::nd4j_abs<T>(d1) < compare? 1.0 : 0.0;
-            else if (mode == 7) // abs_greater_than
-                return nd4j::math::nd4j_abs<T>(d1) > compare? 1.0 : 0.0;
-            else if (mode == 8) // is inf
-                return nd4j::math::nd4j_isinf(d1) ? 1.0 : 0.0;
-            else if (mode == 9) // is nan
-                return nd4j::math::nd4j_isnan(d1) ? 1.0 : 0.0;
-            else if (mode == 10)
-                return (d1 == compare) ? 1.0 : 0.0;
-            else if (mode == 11)
-                return (d1 != compare) ? 1.0 : 0.0;
-			else if (mode == 12) // abs_greater_or_equals_than
-				return nd4j::math::nd4j_abs<T>(d1) >= compare? 1.0 : 0.0;
-			else if (mode == 13) // abs_less_or_equals_than
-				return nd4j::math::nd4j_abs<T>(d1) <= compare? 1.0 : 0.0;
-            else
-                printf("Undefined match condition: [%i]\n", mode);
+			switch (mode) {
+				case 0: // equals
+					return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? 1.0f : 0.0f;
+				case 1: // not equals
+					return nd4j::math::nd4j_abs<T>(d1 - compare) > eps ? 1.0f : 0.0f;
+				case 2: // less_than
+					return d1 < compare ? 1.0f : 0.0f;
+				case 3: // greater_than
+					return d1 > compare ? 1.0f : 0.0f;
+				case 4: // less_or_equals_than
+					return d1 <= compare ? 1.0f : 0.0f;
+				case 5: // greater_or_equals_than
+					return d1 >= compare ? 1.0f : 0.0f;
+				case 6: // abs_less_than
+					return nd4j::math::nd4j_abs<T>(d1) < compare ? 1.0f : 0.0f;
+				case 7: // abs_greater_than
+					return nd4j::math::nd4j_abs<T>(d1) > compare ? 1.0f : 0.0f;
+				case 8: // is inf
+					return nd4j::math::nd4j_isinf(d1) ? 1.0f : 0.0f;
+				case 9: // is nan
+					return nd4j::math::nd4j_isnan(d1) ? 1.0f : 0.0f;
+				case 10:
+					return (d1 == compare) ? 1.0f : 0.0f;
+				case 11:
+					return (d1 != compare) ? 1.0f : 0.0f;
+				case 12: // abs_greater_or_equals_than
+					return nd4j::math::nd4j_abs<T>(d1) >= compare ? 1.0f : 0.0f;
+				case 13: // abs_less_or_equals_than
+					return nd4j::math::nd4j_abs<T>(d1) <= compare ? 1.0f : 0.0f;
+				default:
+					printf("Undefined match condition: [%i]\n", mode);
+			}
 
             return d1;
         }

@@ -1,27 +1,22 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.deeplearning4j.models.embeddings.loader;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
@@ -342,22 +337,24 @@ public class WordVectorSerializer {
      */
     public static <T extends SequenceElement> void writeWordVectors(WeightLookupTable<T> lookupTable,
                     OutputStream stream) throws IOException {
-        VocabCache<T> vocabCache = lookupTable.getVocabCache();
+        val vocabCache = lookupTable.getVocabCache();
 
         try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(stream, StandardCharsets.UTF_8))) {
             // saving header as "NUM_WORDS VECTOR_SIZE NUM_DOCS"
-            String str = vocabCache.numWords() + " " + lookupTable.layerSize() + " " + vocabCache.totalNumberOfDocs();
+            val str = vocabCache.numWords() + " " + lookupTable.layerSize() + " " + vocabCache.totalNumberOfDocs();
             log.debug("Saving header: {}", str);
             writer.println(str);
 
             // saving vocab content
-            for (int x = 0; x < vocabCache.numWords(); x++) {
+            val num = vocabCache.numWords();
+            for (int x = 0; x < num; x++) {
                 T element = vocabCache.elementAtIndex(x);
 
-                StringBuilder builder = new StringBuilder();
+                val builder = new StringBuilder();
 
-                builder.append(encodeB64(element.getLabel())).append(" ");
-                INDArray vec = lookupTable.vector(element.getLabel());
+                val l = element.getLabel();
+                builder.append(encodeB64(l)).append(" ");
+                val vec = lookupTable.vector(element.getLabel());
                 for (int i = 0; i < vec.length(); i++) {
                     builder.append(vec.getDouble(i));
                     if (i < vec.length() - 1)
@@ -736,8 +733,11 @@ public class WordVectorSerializer {
         Word2Vec w2v = readWord2Vec(file);
 
         // and "convert" it to ParaVec model + optionally trying to restore labels information
-        ParagraphVectors vectors = new ParagraphVectors.Builder(w2v.getConfiguration()).vocabCache(w2v.getVocab())
-                        .lookupTable(w2v.getLookupTable()).resetModel(false).build();
+        ParagraphVectors vectors = new ParagraphVectors.Builder(w2v.getConfiguration())
+                .vocabCache(w2v.getVocab())
+                .lookupTable(w2v.getLookupTable())
+                .resetModel(false)
+                .build();
 
         try (ZipFile zipFile = new ZipFile(file)) {
             // now we try to restore labels information
@@ -993,6 +993,7 @@ public class WordVectorSerializer {
      *
      * @param path Path to file that contains previously serialized model
      * @return
+     * @deprecated Use readParagraphVectors() method instead
      */
     @Deprecated
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull String path) {
@@ -1006,6 +1007,7 @@ public class WordVectorSerializer {
      *
      * @param file File that contains previously serialized model
      * @return
+     * @deprecated Use readParagraphVectors() method instead
      */
     @Deprecated
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull File file) {
@@ -1024,6 +1026,7 @@ public class WordVectorSerializer {
      *
      * @param stream InputStream that contains previously serialized model
      * @return
+     * @deprecated Use readParagraphVectors() method instead
      */
     @Deprecated
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull InputStream stream) {
@@ -1189,6 +1192,7 @@ public class WordVectorSerializer {
      * @param path
      *            the path to write
      * @throws IOException
+     * @deprecated Use {@link #writeWord2VecModel(Word2Vec, File)} instead
      */
     @Deprecated
     public static void writeWordVectors(InMemoryLookupTable lookupTable, InMemoryLookupCache cache, String path)
@@ -1233,6 +1237,7 @@ public class WordVectorSerializer {
      *
      * @param vec - The Word2Vec instance to be saved
      * @param path - the path for json to be saved
+     * @deprecated Use writeWord2VecModel() method instead
      */
     @Deprecated
     public static void writeFullModel(@NonNull Word2Vec vec, @NonNull String path) {
@@ -1356,6 +1361,7 @@ public class WordVectorSerializer {
      *
      * @param path - path to previously stored w2v json model
      * @return - Word2Vec instance
+     * @deprecated Use readWord2VecModel() or loadStaticModel() method instead
      */
     @Deprecated
     public static Word2Vec loadFullModel(@NonNull String path) throws FileNotFoundException {
@@ -1736,6 +1742,7 @@ public class WordVectorSerializer {
      * @param skipFirstLine Set this TRUE if first line contains csv header, FALSE otherwise
      * @return
      * @throws IOException
+     * @deprecated Use readWord2VecModel() or loadStaticModel() method instead
      */
     @Deprecated
     public static WordVectors loadTxtVectors(@NonNull InputStream stream, boolean skipFirstLine) throws IOException {

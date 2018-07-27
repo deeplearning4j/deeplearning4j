@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.datavec.arrow;
 
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +34,6 @@ import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.util.ByteArrayReadableSeekableByteChannel;
-import org.datavec.api.records.Buffer;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.*;
 import org.datavec.api.transform.schema.Schema;
@@ -32,6 +47,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.serde.binary.BinarySerde;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -102,12 +118,31 @@ public class ArrowConverter {
                     break;
                 case Long:
                     break;
+                case NDArray:
+                    break;
                 default:
-                    throw new ND4JIllegalArgumentException("Illegal data type found for column " + schema.getName(i));
+                    throw new ND4JIllegalArgumentException("Illegal data type found for column " + schema.getName(i) + " of type " + schema.getType(i));
             }
         }
 
+
         int rows  = arrowWritableRecordBatch.getList().get(0).getValueCount();
+
+        if(schema.numColumns() == 1 && schema.getMetaData(0).getColumnType() == ColumnType.NDArray) {
+            INDArray[] toConcat =  new INDArray[rows];
+            VarBinaryVector valueVectors = (VarBinaryVector) arrowWritableRecordBatch.getList().get(0);
+            for(int i = 0; i < rows; i++) {
+                byte[] bytes = valueVectors.get(i);
+                ByteBuffer direct = ByteBuffer.allocateDirect(bytes.length);
+                direct.put(bytes);
+                INDArray fromTensor = BinarySerde.toArray(direct);
+                toConcat[i] = fromTensor;
+            }
+
+            return Nd4j.concat(0,toConcat);
+
+        }
+
         int cols = schema.numColumns();
         INDArray arr  = Nd4j.create(rows,cols);
         for(int i = 0; i < cols; i++) {
@@ -687,7 +722,8 @@ public class ArrowConverter {
                 case String: ret.add(stringVectorOf(bufferAllocator,schema.getName(i),numRows)); break;
                 case Categorical: ret.add(stringVectorOf(bufferAllocator,schema.getName(i),numRows)); break;
                 case Time: ret.add(timeVectorOf(bufferAllocator,schema.getName(i),numRows)); break;
-                default: throw new IllegalArgumentException("Illegal type found " + schema.getType(i));
+                case NDArray: ret.add(ndarrayVectorOf(bufferAllocator,schema.getName(i),numRows)); break;
+                default: throw new IllegalArgumentException("Illegal type found for creation of field vectors" + schema.getType(i));
 
             }
         }
@@ -751,12 +787,20 @@ public class ArrowConverter {
                 case String:
                     String stringSet = TypeConversion.getInstance().convertString(value);
                     VarCharVector textVector = (VarCharVector) fieldVector;
-                    textVector.set(row, stringSet.getBytes());
+                    textVector.setSafe(row, stringSet.getBytes());
                     break;
                 case Time:
                     //all timestamps are long based, just directly convert it to the super type
                     long timeSet = TypeConversion.getInstance().convertLong(value);
                     setLongInTime(fieldVector, row, timeSet);
+                    break;
+                case NDArray:
+                    NDArrayWritable arr = (NDArrayWritable) value;
+                    VarBinaryVector nd4jArrayVector = (VarBinaryVector) fieldVector;
+                    //slice the databuffer to use only the needed portion of the buffer
+                    //for proper offsets
+                    ByteBuffer byteBuffer = BinarySerde.toByteBuffer(arr.get());
+                    nd4jArrayVector.setSafe(row,byteBuffer,0,byteBuffer.capacity());
                     break;
 
             }
@@ -840,6 +884,28 @@ public class ArrowConverter {
     }
 
 
+    /**
+     * Returns a vector representing a tensor view
+     * of each ndarray.
+     * Each ndarray will be a "row" represented as a tensor object
+     * with in the return {@link VarBinaryVector}
+     * @param bufferAllocator the buffer allocator to use
+     * @param name the name of the column
+     * @param data the input arrays
+     * @return
+     */
+    public static VarBinaryVector vectorFor(BufferAllocator bufferAllocator,String name,INDArray[] data) {
+        VarBinaryVector ret = new VarBinaryVector(name,bufferAllocator);
+        ret.allocateNew();
+        for(int i = 0; i < data.length; i++) {
+            //slice the databuffer to use only the needed portion of the buffer
+            //for proper offset
+            ByteBuffer byteBuffer = BinarySerde.toByteBuffer(data[i]);
+            ret.set(i,byteBuffer,0,byteBuffer.capacity());
+        }
+
+        return ret;
+    }
 
 
 
@@ -862,6 +928,23 @@ public class ArrowConverter {
         return float4Vector;
     }
 
+
+    /**
+     * Create an ndarray vector that stores structs
+     * of {@link INDArray}
+     * based on the {@link org.apache.arrow.flatbuf.Tensor}
+     * format
+     * @param allocator the allocator to use
+     * @param name the name of the vector
+     * @param length the number of vectors to store
+     * @return
+     */
+    public static VarBinaryVector ndarrayVectorOf(BufferAllocator allocator,String name,int length) {
+        VarBinaryVector ret = new VarBinaryVector(name,allocator);
+        ret.allocateNewSafe();
+        ret.setValueCount(length);
+        return ret;
+    }
 
     /**
      *
@@ -1132,6 +1215,13 @@ public class ArrowConverter {
             case Time:
                 //TODO: need to look at closer
                 return new LongWritable(getLongFromFieldVector(item,from));
+            case NDArray:
+                VarBinaryVector valueVector = (VarBinaryVector) from;
+                byte[] bytes = valueVector.get(item);
+                ByteBuffer direct = ByteBuffer.allocateDirect(bytes.length);
+                direct.put(bytes);
+                INDArray fromTensor = BinarySerde.toArray(direct);
+                return new NDArrayWritable(fromTensor);
             default:
                 throw new IllegalArgumentException("Illegal type " + from.getClass().getName());
         }

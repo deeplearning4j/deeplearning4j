@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.cpu.nativecpu.ops;
 
 
@@ -7,6 +23,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.indexer.IntIndexer;
 import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -176,11 +193,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
         if(op.z() == null || op.x() == op.z()) {
-            INDArray ret;
-            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
-                ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-            else
-                ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
+            val ret = Nd4j.create(retShape);
 
             op.setZ(ret);
         } else if(!Arrays.equals(retShape, op.z().shape())){
@@ -325,10 +338,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     }
                 }
 
-                if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
-                    ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-                else
-                    ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
+                ret = Nd4j.create(retShape);
 
             }
             op.setZ(ret);
@@ -626,8 +636,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
 
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().elementWiseStride() >= 1
-                        && !op.isExecSpecial()) {
+                if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().elementWiseStride() >= 1  && !op.isExecSpecial() && op.x().ordering() == op.z().ordering()) {
                     loop.execScalarDouble(null, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
                             op.x().elementWiseStride(),
                             (DoublePointer) op.z().data().addressPointer(),
@@ -643,8 +652,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             op.scalar().doubleValue(),
                             (DoublePointer) getPointerForExtraArgs(op));
             } else {
-                if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().elementWiseStride() >= 1
-                        && !op.isExecSpecial()) {
+                if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.z().ordering()) {
                     loop.execScalarFloat(null, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
                             op.x().elementWiseStride(), (FloatPointer) op.z().data().addressPointer(),
                             op.z().elementWiseStride(), op.scalar().floatValue(),
@@ -1013,7 +1021,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             batchPointers.set(new HashMap<Integer, Pointer>());
 
         if (!batchPointers.get().containsKey(batch.opNum())) {
-            IntPointer pointer = new IntPointer(batch.getSample().getRequiredBatchMemorySize() / 4);
+            val pointer = new IntPointer(batch.getSample().getRequiredBatchMemorySize() / 4 );
             batchPointers.get().put(batch.opNum(), pointer);
             return pointer;
         }
@@ -1427,14 +1435,20 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray thresholdEncode(INDArray input, double threshold, Integer boundary) {
 
-        MatchCondition condition = new MatchCondition(input, Conditions.absGreaterThanOrEqual(threshold));
-        int cntAbs = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+        //val condition = new MatchCondition(input, Conditions.absGreaterThanOrEqual(threshold));
+        //long t1 = System.currentTimeMillis();
+        int cntAbs = input.data().dataType() == DataBuffer.Type.FLOAT ? loop.estimateThresholdFloat(null, input.data().addressPointer(), (int) input.length(), (float) threshold)
+                : input.data().dataType() == DataBuffer.Type.DOUBLE ? loop.estimateThresholdDouble(null, input.data().addressPointer(), (int) input.length(), (float) threshold)
+                : loop.estimateThresholdHalf(null, input.data().addressPointer(), (int) input.length(), (float) threshold);
+        //long t2 = System.currentTimeMillis();
 
         if (cntAbs < 2)
             return null;
 
         if (boundary != null)
             cntAbs = Math.min(cntAbs, boundary);
+
+        //log.info("S: {}; T: {}", cntAbs, t2 - t1);
 
         DataBuffer buffer = input.data();
 
@@ -2112,5 +2126,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         }
         return retShape;
+    }
+
+    @Override
+    public ExecutionerType type() {
+        return ExecutionerType.NATIVE_CPU;
     }
 }

@@ -1,20 +1,19 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2017 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 
 import lombok.Data;
@@ -31,7 +30,6 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
-import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
@@ -51,8 +49,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getActivationFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.mapActivation;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getIActivationFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.mapToIActivation;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
@@ -193,7 +191,7 @@ public class KerasLstm extends KerasLayer {
                 .name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf))
                 .dropOut(this.dropout)
-                .activation(getActivationFromConfig(layerConfig, conf))
+                .activation(getIActivationFromConfig(layerConfig, conf))
                 .weightInit(weightInit)
                 .weightInitRecurrent(recurrentWeightInit)
                 .biasInit(0.0) // TODO: this is incorrect
@@ -478,7 +476,7 @@ public class KerasLstm extends KerasLayer {
         if (!innerConfig.containsKey(conf.getLAYER_FIELD_INNER_ACTIVATION()))
             throw new InvalidKerasConfigurationException(
                     "Keras LSTM layer config missing " + conf.getLAYER_FIELD_INNER_ACTIVATION() + " field");
-        return mapActivation((String) innerConfig.get(conf.getLAYER_FIELD_INNER_ACTIVATION()), conf);
+        return mapToIActivation((String) innerConfig.get(conf.getLAYER_FIELD_INNER_ACTIVATION()), conf);
     }
 
     /**

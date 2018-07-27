@@ -1,34 +1,32 @@
-/*-
- *  * Copyright 2017 Skymind, Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
- */
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.datavec.api.writable;
 
 import com.google.common.collect.Lists;
-import org.datavec.api.records.reader.RecordReader;
-import org.datavec.api.records.reader.impl.collection.CollectionRecordReader;
+import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.util.ndarray.RecordConverter;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.TimeZone;
 
 import static org.junit.Assert.assertEquals;
 
@@ -105,5 +103,35 @@ public class RecordConverterTest {
         INDArray act = RecordConverter.toMatrix(Arrays.asList(l1,l2));
 
         assertEquals(exp, act);
+    }
+
+    @Test
+    public void testToRecordWithListOfObject(){
+        final List<Object> list = Arrays.asList((Object)3, 7.0f, "Foo", "Bar", 1.0, 3f, 3L, 7, 0L);
+        final Schema schema = new Schema.Builder()
+                .addColumnInteger("a")
+                .addColumnFloat("b")
+                .addColumnString("c")
+                .addColumnCategorical("d", "Bar", "Baz")
+                .addColumnDouble("e")
+                .addColumnFloat("f")
+                .addColumnLong("g")
+                .addColumnInteger("h")
+                .addColumnTime("i", TimeZone.getDefault())
+                .build();
+
+        final List<Writable> record = RecordConverter.toRecord(schema, list);
+
+        assertEquals(record.get(0).toInt(), 3);
+        assertEquals(record.get(1).toFloat(), 7f, 1e-6);
+        assertEquals(record.get(2).toString(), "Foo");
+        assertEquals(record.get(3).toString(), "Bar");
+        assertEquals(record.get(4).toDouble(), 1.0, 1e-6);
+        assertEquals(record.get(5).toFloat(), 3f, 1e-6);
+        assertEquals(record.get(6).toLong(), 3L);
+        assertEquals(record.get(7).toInt(), 7);
+        assertEquals(record.get(8).toLong(), 0);
+
+
     }
 }

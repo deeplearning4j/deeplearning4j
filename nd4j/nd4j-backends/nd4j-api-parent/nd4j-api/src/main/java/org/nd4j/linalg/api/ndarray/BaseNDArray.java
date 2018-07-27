@@ -1,21 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.api.ndarray;
 
@@ -2721,7 +2718,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         //null character
         if (ordering() == '\u0000') {
             //Shape.setOrder(shapeInfo(), Nd4j.order());
-            throw new IllegalStateException("setOrder() shouldn't ever happen here");
+            val si = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride, 0,1, Nd4j.order());
+            setShapeInformation(si);
         }
 
     }
@@ -2735,8 +2733,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         //null character
         if (ordering() == '\u0000') {
-            //Shape.setOrder(shapeInfo(), Nd4j.order());
-            throw new IllegalStateException("setOrder() shouldn't ever happen here");
+            val si = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride, 0,1, Nd4j.order());
+            setShapeInformation(si);
         }
 
     }
@@ -3479,6 +3477,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 .transposeB(mMulTranspose.isTransposeB())
                 .transposeResult(mMulTranspose.isTransposeResult())
                 .build();
+        System.out.println(mMulTranspose1.getA());
+        System.out.println(mMulTranspose1.getB());
         return mMulTranspose1.getA().mmul(mMulTranspose1.getB());
     }
 
@@ -6605,5 +6605,27 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public boolean isEmpty() {
         return Shape.isEmpty(jvmShapeInfo.javaShapeInformation);
+    }
+
+
+    @Override
+    public long[] shapeInfoJava() {
+        return jvmShapeInfo.javaShapeInformation;
+    }
+
+    @Override
+    public DataBuffer.Type dataType() {
+        if (data != null)
+            return data.dataType();
+
+        val e = Shape.extras(jvmShapeInfo.javaShapeInformation);
+
+        if (e != 0) {
+            val t = ArrayOptionsHelper.dataType(jvmShapeInfo.javaShapeInformation);
+            if (t != DataBuffer.Type.UNKNOWN)
+                return t;
+        }
+
+        return DataBuffer.Type.UNKNOWN;
     }
 }

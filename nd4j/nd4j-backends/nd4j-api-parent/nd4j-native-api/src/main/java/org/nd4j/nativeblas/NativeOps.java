@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.nativeblas;
 
 import org.bytedeco.javacpp.*;
@@ -1624,6 +1640,10 @@ public abstract class NativeOps extends Pointer {
     public abstract void deleteGraphStateHalf(Pointer state);
     public abstract void deleteGraphStateFloat(Pointer state);
     public abstract void deleteGraphStateDouble(Pointer state);
+
+    public abstract  int estimateThresholdFloat(PointerPointer extraPointers, Pointer x, int N, float threshold);
+    public abstract  int estimateThresholdDouble(PointerPointer extraPointers, Pointer x, int N, float threshold);
+    public abstract  int estimateThresholdHalf(PointerPointer extraPointers, Pointer x, int N, float threshold);
 
     // this method executes op that requires scope to be present: if/while/cond/whatever
     public abstract int execCustomOpWithScopeHalf(PointerPointer extraPointers, Pointer state, long opHash, long[] scopes, int numScopes, PointerPointer inputBuffers, PointerPointer inputShapes, int numInputs, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs);

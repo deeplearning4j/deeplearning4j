@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by agibsonccc on 2/21/16.
 //
@@ -2624,6 +2640,8 @@ void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers,
                                         int maxReals,
                                         void *ptrToArguments) {
 
+    //nd4j_printf("numAggregates: [%i]; opNum: [%i]; maxArgs: [%i]; maxShapes: [%i]; maxIntArrays: [%i]; maxIntArraySize: [%i]; maxIdx: [%i]; maxReals: [%i];\n", numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals);
+
     // probably, we don't want too much threads as usually
     int _threads = nd4j::math::nd4j_min<int>(numAggregates, omp_get_max_threads());
 
@@ -2637,7 +2655,7 @@ void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers,
                                        maxReals);
 
     // special case here, we prefer spread arrangement here, all threads are detached from each other
-#pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(spread) default(shared)
+#pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(close) default(shared)
     for (int i = 0; i < numAggregates; i++) {
         auto intArrays = new int *[maxIntArrays];
 
@@ -3120,6 +3138,45 @@ Nd4jPointer NativeOps::executeProtoGraphFloat(Nd4jPointer *extraPointers, const 
 
 const char* NativeOps::getAllCustomOps() {
     return nd4j::ops::OpRegistrator::getInstance()->getAllCustomOperations();
+}
+
+template <typename T>
+FORCEINLINE int estimateThresholdGeneric(Nd4jPointer *extraPointers, Nd4jPointer x, int N, T threshold) {
+    auto buffer = reinterpret_cast<T *>(x);
+
+    int span = (N / 6) + 8;
+    int cnt = 0;
+
+#pragma omp parallel reduction(+:cnt)
+    {
+        int tid = omp_get_thread_num();
+        int start = span * tid;
+        int stop = span * (tid + 1);
+        if (stop > N)
+            stop = N;
+
+#pragma omp simd
+        for (int e = start; e < stop; e++) {
+            auto v = nd4j::math::nd4j_abs<T>(buffer[e]);
+            if (v >= threshold)
+                cnt++;
+        }
+    }
+
+    return cnt;
+}
+
+int NativeOps::estimateThresholdFloat(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold) {
+    return estimateThresholdGeneric<float>(extraPointers, x, N, threshold);
+}
+
+int NativeOps::estimateThresholdDouble(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold) {
+    return estimateThresholdGeneric<double>(extraPointers, x, N, threshold);
+}
+
+
+int NativeOps::estimateThresholdHalf(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold) {
+    return estimateThresholdGeneric<float16>(extraPointers, x, N, threshold);
 }
 
 

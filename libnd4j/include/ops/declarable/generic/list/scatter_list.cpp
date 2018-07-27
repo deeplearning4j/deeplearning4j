@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by raver119 on 06.11.2017.
 //
@@ -34,7 +50,7 @@ namespace nd4j {
             REQUIRE_TRUE(indices->lengthOf() == array->sizeAt(0), 0, "ScatterList: Indices length should be equal number of TADs along dim0, but got %i instead", indices->lengthOf());
 
             std::vector<int> axis = ShapeUtils<T>::convertAxisToTadTarget(array->rankOf(), {0});
-            auto tads = NDArrayFactory<T>::allTensorsAlongDimension(array, axis);
+            auto tads = array->allTensorsAlongDimension( axis);
             for (int e = 0; e < tads->size(); e++) {
                 auto idx = (int) indices->getIndexedScalar(e);
                 if (idx >= tads->size())

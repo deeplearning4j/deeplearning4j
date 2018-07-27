@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 //  @author raver119@gmail.com
 //
@@ -6,7 +22,6 @@
 #include <pointercast.h>
 #include <op_boilerplate.h>
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 
 
 namespace nd4j {
@@ -44,8 +59,8 @@ namespace nd4j {
                 }
 
                 std::vector<int> tadDimension = ShapeUtils<T>::convertAxisToTadTarget(input->rankOf(), {0});
-                auto tadsOperand = NDArrayFactory<T>::multipleTensorsAlongDimension(output, idc, tadDimension);
-                auto tadsUpdate = NDArrayFactory<T>::multipleTensorsAlongDimension(updates, idcU, tadDimension);
+                auto tadsOperand = output->multipleTensorsAlongDimension(idc, tadDimension);
+                auto tadsUpdate = updates->multipleTensorsAlongDimension(idcU, tadDimension);
 
                 auto z0 = tadsOperand->at(0);
                 auto z1 = tadsUpdate->at(0);
@@ -67,8 +82,8 @@ namespace nd4j {
                 auto _input = input->reshape(input->ordering(), {input->sizeAt(0), -1});
                 auto _updates = updates->reshape(updates->ordering(), {indicesLength, (int) updates->lengthOf() / indicesLength});
 
-                auto tadsOperand = NDArrayFactory<T>::allTensorsAlongDimension(_input, {1});
-                auto tadsUpdates = NDArrayFactory<T>::allTensorsAlongDimension(_updates, {1});
+                auto tadsOperand = _input->allTensorsAlongDimension({1});
+                auto tadsUpdates = _updates->allTensorsAlongDimension({1});
 
                 for (int e = 0; e < indicesLength; e++) {
                     int idx = indices->getScalar(e);

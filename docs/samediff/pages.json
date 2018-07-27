@@ -1,0 +1,60 @@
+{
+  "excludes": [
+    "abstract"
+  ],
+  "indices": [
+    {
+      "page": "samediff/index.md",
+      "module_index": "samediff"
+    },
+    {
+      "page": "functions/index.md",
+      "module_index": "functions"
+    }
+  ],
+  "pages": [
+    {
+      "page": "samediff/variables.md",
+      "class": [
+        "samediff/SDVariable.java"
+      ],
+      "autogen_tag": "sdvars"
+    },
+    {
+      "page": "samediff/samediff.md",
+      "class": [
+        "samediff/SameDiff.java"
+      ],
+      "include": [
+        "gradient",
+        "getGradient",
+        "updateVariableName"
+      ],
+      "constructors": true
+    },
+    {
+      "page": "samediff/ops.md",
+      "class": [
+        "samediff/SameDiff.java"
+      ],
+      "exclude": [
+        "gradient",
+        "updateVariableName"
+      ],
+      "constructors": false
+    },
+    {
+      "page": "samediff/execution.md",
+      "class": [
+        "samediff/SameDiffOpExecutioner.java"
+      ]
+    },
+    {
+      "page": "functions/function-factory.md",
+      "class": [
+        "functions/DifferentialFunctionFactory.java"
+      ]
+    }
+  ]
+}
+

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by raver119 on 02/07/18.
 //
@@ -35,4 +51,16 @@ TEST_F(TypeCastTests, Test_Cast_1) {
     delete[] src;
     delete[] z;
     delete[] exp;
+}
+
+TEST_F(TypeCastTests, Test_ConvertDtype_1) {
+    float src[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+    float16 dst[5];
+    float16 exp[] = {(float16) 1.0f, (float16) 2.0f, (float16) 3.0f, (float16) 4.0f, (float16) 5.0f};
+
+    NativeOps ops;
+    ops.convertTypes(nullptr, ND4J_FLOAT32, src, 5, ND4J_FLOAT16, dst);
+
+    for (int e = 0; e < 5; e++)
+        ASSERT_NEAR(exp[e], dst[e], (float16) 0.01f);
 }

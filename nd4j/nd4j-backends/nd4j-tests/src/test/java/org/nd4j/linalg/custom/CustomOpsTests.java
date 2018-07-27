@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.custom;
 
 import lombok.extern.slf4j.Slf4j;
@@ -7,6 +23,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -215,15 +232,13 @@ public class CustomOpsTests {
         val array0 = Nd4j.create(new int[] {2, 2}, 'c'); //some random array with +ve numbers
         val array1 = array0.dup('c').addi(5);
 
-        Nd4j.getExecutioner().commit();
-
         assertEquals(exp, array1);
     }
 
     @Test
     public void testMergeMaxMixedOrder() {
         val array0 = Nd4j.rand('f', 5, 2).addi(1); //some random array with +ve numbers
-        val array1 = array0.dup().addi(5);
+        val array1 = array0.dup('c').addi(5);
         array1.put(0, 0, 0); //array1 is always bigger than array0 except at 0,0
 
         //expected value of maxmerge
@@ -234,6 +249,7 @@ public class CustomOpsTests {
         CustomOp op = DynamicCustomOp.builder("mergemax")
                 .addInputs(array0, array1)
                 .addOutputs(zF)
+                .callInplace(false)
                 .build();
         Nd4j.getExecutioner().exec(op);
 
@@ -316,6 +332,9 @@ public class CustomOpsTests {
 
     @Test
     public void testRandomStandardNormal_1() {
+        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA)
+            return;
+
         val shape = Nd4j.create(new float[] {5, 10});
         val op = new RandomStandardNormal(shape);
 
@@ -329,6 +348,9 @@ public class CustomOpsTests {
 
     @Test
     public void testRandomStandardNormal_2() {
+        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA)
+            return;
+
         val shape = new long[]{5, 10};
         val op = new RandomStandardNormal(shape);
 

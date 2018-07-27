@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 //  @author raver119@gmail.com
 //
@@ -45,9 +61,10 @@ CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, 2) {
     return ND4J_STATUS_OK;
 }
 
-CONFIGURABLE_OP_IMPL(cumsum_bp, 2, 1, true, 0, 2) {
-//    auto input = INPUT_VARIABLE(0);
-    auto gradOut = INPUT_VARIABLE(1);
+CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, 2) {
+    auto input = INPUT_VARIABLE(0);
+    auto axis = block.width() == 3 ? INPUT_VARIABLE(1) : nullptr;
+    auto gradOut = block.width() == 3 ? INPUT_VARIABLE(2) : INPUT_VARIABLE(1);
     auto output = OUTPUT_VARIABLE(0);
 //    output->assign(gradOut);
     const bool exclusive = INT_ARG(0) == 1;
@@ -55,7 +72,10 @@ CONFIGURABLE_OP_IMPL(cumsum_bp, 2, 1, true, 0, 2) {
 
     std::vector<int> dims;
 
-    if (int newSize = (block.numI() - 2)) {
+    if (block.width() > 2) {
+        dims = axis->template asVectorT<int>();
+        OUTPUT_VARIABLE(1)->assign(static_cast<T>(1.0f));
+    } else if (int newSize = (block.numI() - 2)) {
         dims.resize(newSize);
 
         for (int e = 0; e < newSize; e++)
@@ -89,6 +109,21 @@ CONFIGURABLE_OP_IMPL(cumsum_bp, 2, 1, true, 0, 2) {
         
     return ND4J_STATUS_OK;
 }
+
+    DECLARE_SHAPE_FN(cumsum_bp) {
+        auto inp = inputShape->at(0);
+        Nd4jLong *newShapeX = nullptr;
+        COPY_SHAPE(inp, newShapeX);
+
+        if (block.width() == 2) {
+            return SHAPELIST(newShapeX);
+        } else {
+            Nd4jLong *newShapeA = nullptr;
+            COPY_SHAPE(inputShape->at(1), newShapeA);
+
+            return SHAPELIST(newShapeX, newShapeA);
+        }
+    }
 }
 }
 
