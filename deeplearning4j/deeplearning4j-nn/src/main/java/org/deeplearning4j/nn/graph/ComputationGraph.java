@@ -2248,19 +2248,25 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                 //Open the relevant workspace for the activations.
                 //Note that this will be closed only once the current vertex's activations have been consumed
-                MemoryWorkspace wsActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS);
-                openActivationsWorkspaces.put(wsActivations, workspaceMgr);
+                MemoryWorkspace wsActivations = null;
+                if(outputWorkspace == null || !isRequiredOutput ){    //Open WS if (a) no external/output WS (if present, it's already open), or (b) not being placed in external/output WS
+                    wsActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS);
+                    openActivationsWorkspaces.put(wsActivations, workspaceMgr);
+                }
 
                 //Note that because we're opening activation workspaces not in any defined order (i.e., workspace
                 // use isn't simply nested), we'll manually override the previous workspace setting. Otherwise, when we
                 // close these workspaces, the "current" workspace may be set to the incorrect one
-                wsActivations.setPreviousWorkspace(initialWorkspace);
+                if(wsActivations != null)
+                    wsActivations.setPreviousWorkspace(initialWorkspace);
 
                 int closeableAt = vertexOutputsFullyConsumedByStep[vIdx];
-                if(closeAtEndIteraton[closeableAt] == null){
-                    closeAtEndIteraton[closeableAt] = new ArrayList<>();
+                if(outputWorkspace == null || (wsActivations != null && !outputWorkspace.getId().equals(wsActivations.getId()))) {
+                    if (closeAtEndIteraton[closeableAt] == null) {
+                        closeAtEndIteraton[closeableAt] = new ArrayList<>();
+                    }
+                    closeAtEndIteraton[closeableAt].add(wsActivations);
                 }
-                closeAtEndIteraton[closeableAt].add(wsActivations);
 
 
                 try (MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
