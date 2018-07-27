@@ -122,7 +122,7 @@
       "class": [
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/EarlyStoppingConfiguration.java",
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/EarlyStoppingModelSaver.java",
-        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/EarlyStoppingModelResult.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/EarlyStoppingResult.java",
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/scorecalc/AutoencoderScoreCalculator.java",
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/scorecalc/ClassificationScoreCalculator.java",
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/scorecalc/DataSetLossScoreCalculator.java",
