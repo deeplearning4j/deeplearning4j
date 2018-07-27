@@ -130,7 +130,15 @@
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/scorecalc/ROCScoreCalculator.java",
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/scorecalc/RegressionScoreCalculator.java",
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/scorecalc/VAEReconErrorScoreCalculator.java",
-        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/scorecalc/VAEReconProbScoreCalculator.java"
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/scorecalc/VAEReconProbScoreCalculator.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/termination/ScoreImprovementEpochTerminationCondition.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/termination/BestScoreEpochTerminationCondition.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/termination/EpochTerminationCondition.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/termination/InvalidScoreIterationTerminationCondition.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/termination/IterationTerminationCondition.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/termination/MaxEpochsTerminationCondition.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/termination/MaxScoreIterationTerminationCondition.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/termination/MaxTimeIterationTerminationCondition.java"
       ]
     }
   ]
