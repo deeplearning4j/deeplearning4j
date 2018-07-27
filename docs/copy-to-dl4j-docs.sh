@@ -21,6 +21,13 @@ SOURCE_DIR=$(pwd)
 cd $DL4J_DOCS_DIR
 git checkout gh-pages
 
+# each release is its own jekyll collection located in docs/<version>
+mkdir $DL4J_DOCS_DIR/$DL4J_VERSION
+DOCS_DEST='$DL4J_DOCS_DIR/$DL4J_VERSION'
+
+# recursively find all files in doc_sources and copy
+find $SOURCE_DIR/*/doc_sources -maxdepth 1 -type f -exec cp -t $DOCS_DEST '{}' +
+
 cp -r $SOURCE_DIR/keras-import/doc_sources $DL4J_DOCS_DIR/keras
 cp -r $DL4J_DOCS_DIR/assets $DL4J_DOCS_DIR/keras # workaround, assets are not picked up 2 levels down
 

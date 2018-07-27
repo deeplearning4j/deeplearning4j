@@ -6,6 +6,10 @@
   ],
   "pages": [
     {
+      "page": "overview.md",
+      "class": []
+    },
+    {
       "page": "records.md",
       "class": [
         "datavec-api/src/main/java/org/datavec/api/records/impl/Record.java",

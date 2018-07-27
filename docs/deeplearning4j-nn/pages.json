@@ -21,7 +21,7 @@
       "page": "layers.md",
       "class": [
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/layers/conf/OutputLayer.java",
-        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/layers/conf/DropoutLayer.java",,
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/layers/conf/DropoutLayer.java",
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/layers/conf/ActivationLayer.java",
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/layers/conf/LossLayer.java",
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/layers/conf/DenseLayer.java",
