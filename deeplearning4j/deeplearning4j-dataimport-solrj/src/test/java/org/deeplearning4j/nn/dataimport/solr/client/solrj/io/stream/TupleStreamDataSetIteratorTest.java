@@ -41,16 +41,9 @@ public class TupleStreamDataSetIteratorTest extends SolrCloudTestCase {
           threadGroupName.endsWith(TupleStreamDataSetIteratorTest.class.getSimpleName())) {
 
         final String threadName = thread.getName();
-/*
         if (threadName.startsWith(NativeRandomDeallocator.DeallocatorThreadNamePrefix) ||
             threadName.equals("JavaCPP Deallocator") ||
             threadName.equals(BasicWorkspaceManager.WorkspaceDeallocatorThreadName)) {
-          return true;
-        }
-*/
-        if (threadName.startsWith("NativeRandomDeallocator thread ") ||
-            threadName.equals("JavaCPP Deallocator") ||
-            threadName.equals("Workspace deallocator thread")) {
           return true;
         }
       }
