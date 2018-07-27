@@ -30,10 +30,10 @@ namespace helpers {
 
     template <typename T>
     int dropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* output, NDArray<T>* reduceShape, int seed, T probValue) {
-        NativeOps native;
+        //NativeOps native;
         nd4j::graph::RandomGenerator nodeRng(0, seed);
 
-        native.reSeedBuffer(nullptr, (long)seed, rng);
+        //native.reSeedBuffer(nullptr, (long)seed, rng);
         //if (newRng )
         if (rng == nullptr)
             return ND4J_STATUS_BAD_RNG;
@@ -73,8 +73,18 @@ namespace helpers {
             REQUIRE_TRUE(fit, 0, "dropout: Noise shape should fit to input rank.");
             std::unique_ptr<NDArray<T>> chunk(new NDArray<T>('c', dims));
             chunk->assign(T(1.0));
-            chunk->template applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, chunk.get(), &probValue);
-        
+            //chunk->template applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, chunk.get(), &probValue);
+#pragma omp parallel for if (chunk->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+            for (Nd4jLong e = 0; e < chunk->lengthOf(); ++e) {
+                T val = nodeRng.relativeT(e, T(0.f), T(1.f));
+//                nd4j_printf("Random value is %f.\n", val);
+
+                if (val < probValue)
+                    (*chunk)(e) /= probValue;
+                else
+                    (*chunk)(e) = T(0.f);
+            }
+
             // broadcast chunk to full matrix
             std::unique_ptr<NDArray<T>> dropOutMultiplier(new NDArray<T>(*input));
             dropOutMultiplier->assign(T(0.0));

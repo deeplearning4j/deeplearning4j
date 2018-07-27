@@ -665,15 +665,21 @@ TEST_F(DeclarableOpsTests9, Test_Dropout_BP_2) {
     ASSERT_EQ(ND4J_STATUS_OK, ressX->status());
     auto ressY = op2.execute({&x, &x}, {0.5f}, {119});
     ASSERT_EQ(ND4J_STATUS_OK, ressY->status());
-    ASSERT_TRUE(ressX->at(0)->equalsTo(ressY->at(0)));
-//    ressX->at(0)->printIndexedBuffer("02Dropout result is ");
+
+    //ressX->at(0)->printIndexedBuffer("01 Dropout result is ");
+    //ressY->at(0)->printIndexedBuffer("02 Dropout result is ");
+
+
     float countZero = ressX->at(0)->template reduceNumber<simdOps::CountZero<float>>();
     ASSERT_NEAR(countZero, 50.f, 10.f);
     countZero = ress->at(0)->template reduceNumber<simdOps::CountZero<float>>();
+    //nd4j_printf("X zero count is %f\n", countZero);
     ASSERT_NEAR(countZero, 50.f, 10.f);
     countZero = ressY->at(0)->template reduceNumber<simdOps::CountZero<float>>();
+    //nd4j_printf("Y zero count is %f\n", countZero);
     ASSERT_NEAR(countZero, 50.f, 10.f);
 //    ASSERT_TRUE(exp.equalsTo(ressX->at(0)));
+    ASSERT_FALSE(ressX->at(0)->equalsTo(ressY->at(0)));
     delete ressX;
     delete ressY;
     delete ress;
