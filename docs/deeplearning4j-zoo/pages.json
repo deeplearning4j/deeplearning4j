@@ -20,14 +20,14 @@
         "deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/NASNet.java",
         "deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/ResNet50.java",
         "deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/SimpleCNN.java",
-        "deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/SqueezeNet .java",
+        "deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/SqueezeNet.java",
         "deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/TextGenerationLSTM.java",
         "deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/TinyYOLO.java",
         "deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/UNet.java",
         "deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/VGG16.java",
         "deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/VGG19.java",
         "deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/Xception.java",
-        "deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/YOLO2.java",
+        "deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/YOLO2.java"
       ]
     }
   ]
