@@ -49,8 +49,9 @@ public class MultiThreadedTokenizerTest {
 
     @Test
     public void testMultiThreadedUserDictionary() throws IOException, InterruptedException {
+        ClassPathResource cpr = new ClassPathResource("deeplearning4j-nlp-japanese/userdict.txt");
+
         assertMultiThreadedTokenizedStreamEquals(5, 250, "deeplearning4j-nlp-japanese/jawikisentences-ipadic-features.txt", "/jawikisentences.txt",
-                        new Tokenizer.Builder().userDictionary(
-                                new ClassPathResource("deeplearning4j-nlp-japanese/userdict.txt").getInputStream()).build());
+                        new Tokenizer.Builder().userDictionary(cpr.getInputStream()).build());
     }
 }

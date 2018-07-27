@@ -19,6 +19,8 @@ package org.nd4j.linalg.api.ops.impl.controlflow;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.SameDiffConditional;
+import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.Op;
 
@@ -38,7 +40,7 @@ public class WhileDerivative extends While {
 
 
     @Override
-    public SameDiff.SameDiffFunctionDefinition getTrueBody() {
+    public SameDiffFunctionDefinition getTrueBody() {
         return delegate.trueBody;
     }
 
@@ -48,7 +50,7 @@ public class WhileDerivative extends While {
     }
 
     @Override
-    public SameDiff.SameDiffConditional getPredicate() {
+    public SameDiffConditional getPredicate() {
         return delegate.getPredicate();
     }
 

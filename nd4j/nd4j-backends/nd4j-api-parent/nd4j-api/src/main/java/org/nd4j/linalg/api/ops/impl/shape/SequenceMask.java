@@ -29,9 +29,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by farizrahman4u on 3/28/18.
@@ -99,5 +97,11 @@ public class SequenceMask extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "SequenceMask";
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> grad){
+        //Input is integer indices
+        return Collections.singletonList(f().zerosLike(arg()));
     }
 }

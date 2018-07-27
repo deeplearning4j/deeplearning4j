@@ -23,6 +23,7 @@ import org.nd4j.autodiff.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
@@ -61,7 +62,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testGradientAutoBroadcast1() {
-        OpValidationSuite.ignoreFailing();
 
         Nd4j.getRandom().setSeed(12345);
 
@@ -91,6 +91,10 @@ public class MiscOpValidation extends BaseOpValidation {
                         name = "sub";
                         break;
                     case 2:
+                        if(OpValidationSuite.IGNORE_FAILING){
+                            //https://github.com/deeplearning4j/deeplearning4j/issues/5978
+                            continue;
+                        }
                         bcOp = in3.mul(in2);
                         name = "mul";
                         break;
@@ -113,6 +117,9 @@ public class MiscOpValidation extends BaseOpValidation {
                     case 7:
                         bcOp = sd.f().floorMod(in3, in2);
                         name = "floormod";
+                        if(OpValidationSuite.IGNORE_FAILING){
+                            continue;
+                        }
                         break;
                     default:
                         throw new RuntimeException();
@@ -551,7 +558,7 @@ public class MiscOpValidation extends BaseOpValidation {
         inputs.put("x", sumInput);
         inputs.put("y", sumInput.dup());
 
-        sameDiff.defineFunction("mmulGradient", new SameDiff.SameDiffFunctionDefinition() {
+        sameDiff.defineFunction("mmulGradient", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable input = sameDiff.var("x", inputs.get("x"));
@@ -592,8 +599,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testMmulGradients(){
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/5648
-
         int[] aShape = new int[]{2,3};
         int[] bShape = new int[]{3,4};
         List<String> failed = new ArrayList<>();
@@ -907,7 +912,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testCumSum(){
-        OpValidationSuite.ignoreFailing();
 
         List<String> failing = new ArrayList<>();
         for(char order : new char[]{'c','f'}) {
@@ -975,15 +979,12 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testCumProd(){
-        OpValidationSuite.ignoreFailing();
-
         List<String> failing = new ArrayList<>();
 
         for(char order : new char[]{'c','f'}) {
 
             Nd4j.getRandom().setSeed(12345);
             INDArray arr = Nd4j.linspace(1, 15, 15).reshape(3, 5).dup(order);
-//            System.out.println(arr);
 
             INDArray expFF = Nd4j.create(new double[][]{
                     {1, 2, 6, 24, 120},
@@ -1030,7 +1031,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
                     String err = OpValidation.validate(op);
                     if(err != null){
-//                        System.out.println(err);
                         failing.add(msg);
                     }
                 }
@@ -1042,8 +1042,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testOneHot1(){
-        OpValidationSuite.ignoreFailing();
-        fail(); //JVM crash
         List<String> failed = new ArrayList<>();
 
         //Because it's on the diagonal, should be the same for all axis args...
@@ -1062,6 +1060,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
             String err = OpValidation.validate(new TestCase(sd)
                     .testName(msg)
+                    .gradientCheck(false)
                     .expected(oneHot, exp));
 
             if(err != null){
@@ -1073,8 +1072,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testOneHotOp(){
-        OpValidationSuite.ignoreFailing();
-
         //https://www.tensorflow.org/api_docs/python/tf/one_hot
         //https://github.com/deeplearning4j/deeplearning4j/blob/master/libnd4j/include/ops/declarable/generic/parity_ops/onehot.cpp
 
@@ -1172,7 +1169,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testMergeRank1(){
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/5648
         SameDiff sd = SameDiff.create();
         SDVariable var = sd.var("in", Nd4j.create(new long[]{1}).assign(5));
 
@@ -1191,8 +1187,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testDiagPart() {
-        OpValidationSuite.ignoreFailing();
-
         INDArray i = Nd4j.create(5,5);
 
         SameDiff sd = SameDiff.create();
@@ -1205,8 +1199,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testDiagShapeFn() {
-        OpValidationSuite.ignoreFailing();
-
         INDArray i = Nd4j.create(5,5);
 
         CustomOp op = new DiagPart(i, null);
@@ -1220,7 +1212,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testZerosOnesLike(){
-        OpValidationSuite.ignoreFailing();
         Nd4j.getRandom().setSeed(12345);
 
         List<int[]> shapes = Arrays.asList(new int[0], new int[]{3}, new int[]{3,4}, new int[]{3,4,5});
@@ -1263,7 +1254,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testZerosLikeOp(){
-        OpValidationSuite.ignoreFailing();
 
         INDArray arr = Nd4j.trueScalar(1.0);
         INDArray out = Nd4j.trueScalar(-1);
@@ -1380,7 +1370,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SameDiff sameDiffOuter = SameDiff.create();
         Map<String, INDArray> params = new HashMap<>();
         params.put("x", Nd4j.ones(4));
-        sameDiffOuter.defineFunction("inplacesubi", new SameDiff.SameDiffFunctionDefinition() {
+        sameDiffOuter.defineFunction("inplacesubi", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable inplace = sameDiff.var("x", inputs.get("x"));

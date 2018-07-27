@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.models.word2vec.iterator;
 
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
@@ -40,12 +42,16 @@ import static org.junit.Assert.assertNotEquals;
 public class Word2VecIteratorTest {
     private Word2Vec vec;
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Before
     public void before() throws Exception {
         if (vec == null) {
             ClassPathResource resource = new ClassPathResource("/labeled/");
-            File file = resource.getFile();
-            SentenceIterator iter = UimaSentenceIterator.createWithPath(file.getAbsolutePath());
+            File dir = testDir.newFolder();
+            resource.copyDirectory(dir);
+            SentenceIterator iter = UimaSentenceIterator.createWithPath(dir.getAbsolutePath());
             new File("cache.ser").delete();
 
             TokenizerFactory t = new UimaTokenizerFactory();
@@ -67,8 +73,12 @@ public class Word2VecIteratorTest {
         unk = vec.getWordVectorMatrix("2131241sdasdas");
         assertNotEquals(null, unk);
 
+        ClassPathResource resource = new ClassPathResource("/labeled/");
+        File dir = testDir.newFolder();
+        resource.copyDirectory(dir);
+
         Word2VecDataSetIterator iter = new Word2VecDataSetIterator(vec,
-                        new LabelAwareFileSentenceIterator(null, new ClassPathResource("labeled/").getFile()),
+                        new LabelAwareFileSentenceIterator(null, dir),
                         Arrays.asList("negative", "positive", "neutral"));
         DataSet next = iter.next();
 

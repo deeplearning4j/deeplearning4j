@@ -99,7 +99,6 @@ public class IMin extends BaseIndexAccumulation {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         //Not differentiable, but (assuming no ties) output does not change for a given infinitesimal change in the input
-
         return Collections.singletonList(f().zerosLike(arg()));
     }
 }

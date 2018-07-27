@@ -54,7 +54,7 @@ public class MeshGrid extends DynamicCustomOp {
                     continue;
                 dims[x++] = j;
             }
-            out.add(gradients.get(0).sum(dims));
+            out.add(gradients.get(i).sum(dims));
         }
         return out;
     }

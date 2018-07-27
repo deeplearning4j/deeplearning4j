@@ -50,8 +50,6 @@ public class RandomOpValidation extends BaseOpValidation {
 
     @Test
     public void testRandomOpsSDVarShape() {
-        OpValidationSuite.ignoreFailing();
-
         List<String> failed = new ArrayList<>();
 
         for (double[] shape : Arrays.asList(new double[]{1000.0}, new double[]{100, 10}, new double[]{40, 5, 5})) {
