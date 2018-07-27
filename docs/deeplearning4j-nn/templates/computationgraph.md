@@ -3,7 +3,7 @@ title: Complex Architectures with Computation Graph
 short_title: Computation Graph
 description: How to build complex networks with DL4J computation graph.
 category: Models
-weight: 10
+weight: 3
 ---
 
 ## Building Complex Network Architectures with Computation Graph

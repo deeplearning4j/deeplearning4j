@@ -16,15 +16,43 @@
 # SPDX-License-Identifier: Apache-2.0
 ################################################################################
 
-# Generate DataVec docs
+
+python generate_docs.py \
+    --project deeplearning4j \
+    --language java \
+    --code ../deeplearning4j/deeplearning4j \
+    --out_language en
+
+python generate_docs.py \
+    --project deeplearning4j-nn \
+    --language java \
+    --code ../deeplearning4j/deeplearning4j \
+    --out_language en
+
+python generate_docs.py \
+    --project deeplearning4j-nlp \
+    --language java \
+    --code ../deeplearning4j/deeplearning4j \
+    --out_language en
+
+python generate_docs.py \
+    --project deeplearning4j-spark \
+    --language java \
+    --code ../deeplearning4j/deeplearning4j \
+    --out_language en
+
+python generate_docs.py \
+    --project deeplearning4j-zoo \
+    --language java \
+    --code ../deeplearning4j/deeplearning4j \
+    --out_language en
+
 python generate_docs.py \
     --project datavec \
     --language java \
-    --code ../deeplearning4j/datavec/datavec-api/src/main/java/org/datavec \
-    --docs_root deeplarning4j.org/datavec \
+    --code ../deeplearning4j/datavec \
     --out_language en
 
-# Generate Keras docs
 python generate_docs.py \
     --project keras-import \
     --language java \
@@ -32,14 +60,12 @@ python generate_docs.py \
     --docs_root deeplarning4j.org/keras \
     --out_language en
 
-# Generate ScalNet docs
 python generate_docs.py \
     --project scalnet \
     --language scala \
     --code ../scalnet/src/main/scala/org/deeplearning4j/scalnet/ \
     --docs_root deeplarning4j.org/scalnet
 
-# Generate SameDiff docs
 python generate_docs.py \
     --project samediff \
     --language java \

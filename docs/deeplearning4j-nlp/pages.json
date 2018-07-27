@@ -6,7 +6,27 @@
   ],
   "pages": [
     {
-      "page": "training.md",
+      "page": "index.md",
+      "class": []
+    },
+    {
+      "page": "word2vec.md",
+      "class": []
+    },
+    {
+      "page": "doc2vec.md",
+      "class": []
+    },
+    {
+      "page": "sentence-iterator.md",
+      "class": []
+    },
+    {
+      "page": "tokenization.md",
+      "class": []
+    },
+    {
+      "page": "vocabulary-cache.md",
       "class": []
     }
   ]
