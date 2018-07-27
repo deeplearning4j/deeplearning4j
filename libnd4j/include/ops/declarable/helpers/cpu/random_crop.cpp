@@ -22,6 +22,7 @@
 #include <NativeOps.h>
 #include <vector>
 #include <memory>
+#include <graph/RandomGenerator.h>
 
 namespace nd4j {
 namespace ops {
@@ -29,16 +30,19 @@ namespace helpers {
 
     template <typename T>
     int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* shape, NDArray<T>* output, int seed) {
-        NativeOps native;
-        if (seed)
-            native.reSeedBuffer(nullptr, (long)seed, rng);
+//        NativeOps native;
+//if (seed)
+  //          native.reSeedBuffer(nullptr, (long)seed, rng);
         //if (newRng )
-        if (rng == nullptr){
-            return ND4J_STATUS_BAD_RNG;
-        }
+//        if (rng == nullptr){
+  //          return ND4J_STATUS_BAD_RNG;
+   //     }
         int last = shape->lengthOf() - 1;
-        
-        functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(rng, output->getBuffer(), output->getShapeInfo(), std::vector<T>({T(0.), shape->getScalar(last)}).data());
+        graph::RandomGenerator rngX;
+        //functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(rng, output->getBuffer(), output->getShapeInfo(), std::vector<T>({T(0.), shape->getScalar(last)}).data());
+        for (Nd4jLong e = 0; e < output->lengthOf(); ++e) {
+            (*output)(e) = rngX.relativeT(e, (T)0., (*shape)(last));
+        }
         Nd4jLong maxIndex = output->argMax();
         Nd4jLong startPos = (*output)(maxIndex);
         int lastDim = input->sizeAt(-1);
