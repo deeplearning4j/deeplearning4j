@@ -20,37 +20,49 @@
 python generate_docs.py \
     --project deeplearning4j \
     --language java \
-    --code ../deeplearning4j/deeplearning4j \
+    --code ../deeplearning4j \
     --out_language en
 
 python generate_docs.py \
     --project deeplearning4j-nn \
     --language java \
-    --code ../deeplearning4j/deeplearning4j \
+    --code ../deeplearning4j \
     --out_language en
 
 python generate_docs.py \
     --project deeplearning4j-nlp \
     --language java \
-    --code ../deeplearning4j/deeplearning4j \
+    --code ../deeplearning4j \
     --out_language en
 
 python generate_docs.py \
     --project deeplearning4j-spark \
     --language java \
-    --code ../deeplearning4j/deeplearning4j \
+    --code ../deeplearning4j \
     --out_language en
 
 python generate_docs.py \
     --project deeplearning4j-zoo \
     --language java \
-    --code ../deeplearning4j/deeplearning4j \
+    --code ../deeplearning4j \
     --out_language en
 
 python generate_docs.py \
     --project datavec \
     --language java \
-    --code ../deeplearning4j/datavec \
+    --code ../datavec \
+    --out_language en
+
+python generate_docs.py \
+    --project nd4j \
+    --language java \
+    --code ../nd4j \
+    --out_language en
+
+python generate_docs.py \
+    --project nd4j-nn \
+    --language java \
+    --code ../nd4j \
     --out_language en
 
 python generate_docs.py \

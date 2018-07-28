@@ -1,4 +1,12 @@
-# Deeplearing4j: Keras model import
+---
+title: Keras Import Overview
+short_title: Overview
+description: Overview of model import.
+category: Keras Import
+weight: 0
+---
+
+## Deeplearing4j: Keras model import
 
 [Keras model import](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras) 
 provides routines for importing neural network models originally configured and trained 
@@ -125,7 +133,3 @@ into the DL4J ecosphere for either further training or evaluation purposes.
 You should use this module when the experimentation phase of your 
 project is completed and you need to ship your models to production. [Skymind](https://skymind.ai) 
 commercial support for Keras implementations in enterprise.
-
-<p align="center">
-<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">KERAS FOR PRODUCTION</a>
-</p>

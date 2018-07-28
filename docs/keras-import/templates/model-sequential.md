@@ -1,6 +1,12 @@
-# Getting started with importing Keras Sequential models
+---
+title: Keras Import Sequential Model
+short_title: Sequential Model
+description: Importing the functional model.
+category: Keras Import
+weight: 2
+---
 
-## Persisting your Keras model
+## Getting started with importing Keras Sequential models
 
 Let's say you start with defining a simple MLP using Keras:
 

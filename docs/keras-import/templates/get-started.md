@@ -1,4 +1,12 @@
-# Getting started with Keras model import
+---
+title: Keras Model Import Get Started
+short_title: Get Started
+description: Getting started with model import.
+category: Keras Import
+weight: 1
+---
+
+## Getting started with Keras model import
 
 Below is a [video tutorial](https://www.youtube.com/embed/bI1aR1Tj2DM) demonstrating 
 working code to load a Keras model into Deeplearning4j and validating the working network. 
@@ -9,9 +17,3 @@ in Keras with a Theano backend, and exported and loaded into Deeplearning4j:
 
 If you have trouble viewing the video, please click here to 
 [view it on YouTube](https://www.youtube.com/embed/bI1aR1Tj2DM).
-
-If you don't feel like watching a tutorial video and want learn more about getting started with 
-importing the two types of Keras models into DL4J, see the following guides.
-
-- [Guide to importing Sequential models](./keras-sequential-guide)
-- [Guide to importing functional API models](./keras-model-guide)
