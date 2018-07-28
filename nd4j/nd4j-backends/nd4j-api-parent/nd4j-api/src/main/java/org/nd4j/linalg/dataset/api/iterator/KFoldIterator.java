@@ -42,8 +42,9 @@ public class KFoldIterator implements DataSetIterator {
         this(10, allData);
     }
 
-    /**Create an iterator given the dataset and a value of k (optional, defaults to 10)
-     * If number of samples in the dataset is not a multiple of k, the last fold will have less samples with the rest having the same number of samples.
+/**Create an iterator given the dataset and a value of k (optional, defaults to 10)
+     * If number of samples in the dataset is not a multiple of k, 
+     * all fold will have the same number of examples, except the last fold having up to (k-1) more samples.
      *
      * @param k number of folds (optional, defaults to 10)
      * @param allData DataSet to split into k folds
@@ -54,18 +55,8 @@ public class KFoldIterator implements DataSetIterator {
         this.allData = allData.copy();
         if (k <= 1)
             throw new IllegalArgumentException();
-        if (allData.numExamples() % k != 0) {
-            if (k != 2) {
-                this.batch = allData.numExamples() / (k - 1);
-                this.lastBatch = allData.numExamples() % (k - 1);
-            } else {
-                this.lastBatch = allData.numExamples() / 2;
-                this.batch = this.lastBatch + 1;
-            }
-        } else {
-            this.batch = allData.numExamples() / k;
-            this.lastBatch = allData.numExamples() / k;
-        }
+        this.batch = allData.numExamples() / k;
+        this.lastBatch = this.batch + allData.numExamples() % k;
     }
 
     @Override
