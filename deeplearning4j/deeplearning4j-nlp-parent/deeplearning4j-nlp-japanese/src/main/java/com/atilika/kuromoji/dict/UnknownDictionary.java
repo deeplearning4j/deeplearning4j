@@ -22,14 +22,14 @@ import com.atilika.kuromoji.util.KuromojiBinFilesFetcher;
 import com.atilika.kuromoji.util.ResourceResolver;
 import com.atilika.kuromoji.util.StringUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
 public class UnknownDictionary implements Dictionary {
 
     //    public static final String UNKNOWN_DICTIONARY_FILENAME = "unknownDictionary.bin";
-    public static final String UNKNOWN_DICTIONARY_FILENAME =
-                    KuromojiBinFilesFetcher.getRootPath() + "unknownDictionary.bin";
+    public static final String UNKNOWN_DICTIONARY_FILENAME = new File(KuromojiBinFilesFetcher.getKuromojiRoot(),"unknownDictionary.bin").getAbsolutePath();
 
     private static final String DEFAULT_FEATURE = "*";
 

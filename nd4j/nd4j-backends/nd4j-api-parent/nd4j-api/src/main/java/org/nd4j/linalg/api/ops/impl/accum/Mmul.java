@@ -120,10 +120,13 @@ public class Mmul extends DynamicCustomOp {
         if(mt == null)
             mt = MMulTranspose.allFalse();
 
-        long[] aShape = mt.isTransposeA() ? transposeShapeArray(larg().getShape()) : larg().getShape();
-        long[] bShape = mt.isTransposeB() ? transposeShapeArray(rarg().getShape()) : rarg().getShape();
+
+        long[] aShape = larg().getShape();
+        long[] bShape = rarg().getShape();
         if(Shape.isPlaceholderShape(aShape) || Shape.isPlaceholderShape(bShape))
             return Collections.emptyList();
+        aShape = mt.isTransposeA() ? transposeShapeArray(aShape) : aShape;
+        bShape = mt.isTransposeB() ? transposeShapeArray(bShape) : bShape;
 
         long[] shape =  Shape.getMatrixMultiplyShape(aShape,bShape);
         if(mt.isTransposeResult())

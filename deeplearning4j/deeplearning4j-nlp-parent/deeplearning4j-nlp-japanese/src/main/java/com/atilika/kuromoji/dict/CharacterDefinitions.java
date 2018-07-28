@@ -21,14 +21,14 @@ import com.atilika.kuromoji.io.StringArrayIO;
 import com.atilika.kuromoji.util.KuromojiBinFilesFetcher;
 import com.atilika.kuromoji.util.ResourceResolver;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
 public final class CharacterDefinitions {
 
     //    public static final String CHARACTER_DEFINITIONS_FILENAME = "characterDefinitions.bin";
-    public static final String CHARACTER_DEFINITIONS_FILENAME =
-                    KuromojiBinFilesFetcher.getRootPath() + "characterDefinitions.bin";
+    public static final String CHARACTER_DEFINITIONS_FILENAME = new File(KuromojiBinFilesFetcher.getKuromojiRoot(), "characterDefinitions.bin").getAbsolutePath();
 
     public static final int INVOKE = 0;
 

@@ -22,6 +22,8 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.SameDiffConditional;
+import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
@@ -61,9 +63,9 @@ public class While extends DifferentialFunction implements CustomOp {
 
 
     @Getter
-    protected SameDiff.SameDiffConditional predicate;
+    protected SameDiffConditional predicate;
     @Getter
-    protected SameDiff.SameDiffFunctionDefinition trueBody;
+    protected SameDiffFunctionDefinition trueBody;
 
     @Getter
     protected String blockName,trueBodyName;
@@ -115,9 +117,9 @@ public class While extends DifferentialFunction implements CustomOp {
     public While(String blockName,
                  SameDiff parent,
                  SDVariable[] inputVars,
-                 SameDiff.SameDiffConditional predicate,
-                 SameDiff.SameDiffFunctionDefinition condition,
-                 SameDiff.SameDiffFunctionDefinition trueBody) {
+                 SameDiffConditional predicate,
+                 SameDiffFunctionDefinition condition,
+                 SameDiffFunctionDefinition trueBody) {
         init(blockName,parent,inputVars,predicate,condition,trueBody);
     }
 
@@ -125,9 +127,9 @@ public class While extends DifferentialFunction implements CustomOp {
     private void init(String blockName,
                       SameDiff parent,
                       SDVariable[] inputVars,
-                      SameDiff.SameDiffConditional predicate,
-                      SameDiff.SameDiffFunctionDefinition condition,
-                      SameDiff.SameDiffFunctionDefinition trueBody) {
+                      SameDiffConditional predicate,
+                      SameDiffFunctionDefinition condition,
+                      SameDiffFunctionDefinition trueBody) {
         this.sameDiff = parent;
         this.inputVars = inputVars;
         this.predicate = predicate;

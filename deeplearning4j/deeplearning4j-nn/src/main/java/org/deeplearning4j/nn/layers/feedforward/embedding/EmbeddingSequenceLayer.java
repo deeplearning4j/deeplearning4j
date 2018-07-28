@@ -125,9 +125,8 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
             //Assume shape is [numExamples, inputLength], and each entry is an integer index
             throw new DL4JInvalidInputException("Sequence length of embedding input has to be equal to the specified "
                     + "input length: " + layerConf().getInputLength()
-                    + " i.e. we expect input shape [numExamples, inputDim] with each entry being an integer index, "
-                    + " got [" + in.rows() + ", " + in.columns() + "] instead, "
-                    + "for layer with id: " + layerId());
+                    + " i.e. we expect input shape [numExamples, inputLength] (or [numExamples, 1, inputLength] with each entry being an integer index, "
+                    + " got " + Arrays.toString(input.shape()) + " instead, for layer with id: " + layerId());
         }
 
         val nIn = layerConf().getNIn();

@@ -19,6 +19,8 @@ package org.nd4j.linalg.api.ops.impl.controlflow;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.SameDiffConditional;
+import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
 
 import java.util.List;
 
@@ -39,7 +41,7 @@ public class IfDerivative extends If {
 
 
     @Override
-    public SameDiff.SameDiffFunctionDefinition getFalseBody() {
+    public SameDiffFunctionDefinition getFalseBody() {
         return ifDelegate.falseBody;
     }
 
@@ -64,7 +66,7 @@ public class IfDerivative extends If {
     }
 
     @Override
-    public SameDiff.SameDiffConditional getPredicate() {
+    public SameDiffConditional getPredicate() {
         return ifDelegate.getPredicate();
     }
 

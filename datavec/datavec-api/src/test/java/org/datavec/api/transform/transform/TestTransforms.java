@@ -92,6 +92,8 @@ public class TestTransforms {
             case Double:
                 schema.addColumnDouble("column");
                 break;
+            case Float:
+                schema.addColumnFloat("column");
             case Categorical:
                 schema.addColumnCategorical("column", colNames);
                 break;

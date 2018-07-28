@@ -19,7 +19,9 @@ package org.deeplearning4j.text.sentenceiterator;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,19 +35,23 @@ import static org.junit.Assert.*;
  */
 public class SentenceIteratorTest {
 
-    private static final Logger log = LoggerFactory.getLogger(SentenceIteratorTest.class);
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+    
+    public File testTxt;
+    public File testSingle;
+    public File testMulti;
 
     @Before
     public void before() throws Exception {
-        File test = new File("dir");
-        test.mkdir();
-        File testFile = new File(test, "test.txt");
-        FileUtils.writeLines(testFile, Arrays.asList("Hello", "My", "Name"));
+        testSingle = testDir.newFolder();
+        testTxt = new File(testSingle, "test.txt");
+        FileUtils.writeLines(testTxt, Arrays.asList("Hello", "My", "Name"));
 
 
-        File multiDir = new File("multidir");
+        testMulti = testDir.newFolder();
         for (int i = 0; i < 2; i++) {
-            File newTestFile = new File(multiDir, "testfile-" + i);
+            File newTestFile = new File(testMulti, "testfile-" + i);
             FileUtils.writeLines(newTestFile, Arrays.asList("Sentence 1.", "Sentence 2.", "Sentence 3."));
 
         }
@@ -63,8 +69,8 @@ public class SentenceIteratorTest {
 
     @Test
     public void testFileSentenceIterator() throws Exception {
-        SentenceIterator iter = new FileSentenceIterator(new File("dir"));
-        SentenceIterator multiIter = new FileSentenceIterator(new File("multidir"));
+        SentenceIterator iter = new FileSentenceIterator(testSingle);
+        SentenceIterator multiIter = new FileSentenceIterator(testMulti);
         testSingle(iter);
         testMulti(multiIter, 3);
 
@@ -96,10 +102,10 @@ public class SentenceIteratorTest {
 
     @After
     public void after() throws Exception {
-        File test = new File("dir");
+        File test = testSingle;
         test.mkdir();
         FileUtils.deleteQuietly(test);
-        FileUtils.deleteQuietly(new File("multidir"));
+        FileUtils.deleteQuietly(testMulti);
     }
 
 

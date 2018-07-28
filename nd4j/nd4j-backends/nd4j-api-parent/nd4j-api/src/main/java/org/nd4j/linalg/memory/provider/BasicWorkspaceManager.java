@@ -254,13 +254,16 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     }
 
 
+    @Deprecated // For test use within the github.com/deeplearning4j/deeplearning4j repo only.
+    public static final String WorkspaceDeallocatorThreadName = "Workspace deallocator thread";
+
     protected class WorkspaceDeallocatorThread extends Thread implements Runnable {
         private final ReferenceQueue<MemoryWorkspace> queue;
 
         protected WorkspaceDeallocatorThread(ReferenceQueue<MemoryWorkspace> queue) {
             this.queue = queue;
             this.setDaemon(true);
-            this.setName("Workspace deallocator thread");
+            this.setName(WorkspaceDeallocatorThreadName);
         }
 
         @Override
