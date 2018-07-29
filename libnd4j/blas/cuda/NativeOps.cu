@@ -5489,12 +5489,13 @@ Nd4jPointer NativeOps::numpyFromNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd
  * @param data
  * @param shapeBuffer
  * @param wordSize
+ * @param headerSize
  * @return
  */
-Nd4jPointer NativeOps::numpyHeaderForNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize) {
+Nd4jPointer NativeOps::numpyHeaderForNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize,Nd4jLong *headerSize) {
     Nd4jLong *shapeBufferCast = reinterpret_cast<Nd4jLong *>(shapeBuffer);
     int  rank = shape::rank(shapeBufferCast);
-    printf("Rank of array allocated is %d",rank);
+    printf("Rank of array allocated is %d\n",rank);
     Nd4jLong *shape = shape::shapeOf(shapeBufferCast);
     unsigned int *npShape = new unsigned int[rank];
     for(int i = 0; i < rank; i++) {
@@ -5502,20 +5503,29 @@ Nd4jPointer NativeOps::numpyHeaderForNd4j(Nd4jPointer data,Nd4jPointer shapeBuff
     }
 
     Nd4jLong length = shape::prodLong(shape,rank);
-    auto npHeader = cnpy::createNpyHeader(data,npShape,rank);
+    auto npHeader = cnpy::createNpyHeader(data,npShape,rank,wordSize);
     char *ret = new char[npHeader.size()]; //strdup(npHeader.data());
     std::memcpy(ret, npHeader.data(), npHeader.size());
+    *headerSize = npHeader.size();
     return reinterpret_cast<Nd4jPointer>(ret);
 
 }
+
+
+
 /**
  *
  * @param npyArray
- * @returnd
- */d
+ * @return
+ */
 Nd4jPointer NativeOps::dataPointForNumpyHeader(Nd4jPointer npyArray) {
     cnpy::NpyArray arr = cnpy::loadNpyFromHeader(reinterpret_cast<char *>(npyArray));
-    return dataPointForNumpyStruct(reinterpret_cast<Nd4jPointer>(&arr));
+    cnpy::NpyArray *arrPointer = new cnpy::NpyArray();
+    arrPointer->data = arr.data;
+    arrPointer->shape = arr.shape;
+    arrPointer->fortranOrder = arr.fortranOrder;
+    arrPointer->wordSize = arr.wordSize;
+    return dataPointForNumpyStruct(reinterpret_cast<Nd4jPointer>(arrPointer));
 }
 
 

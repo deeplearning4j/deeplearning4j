@@ -17,6 +17,7 @@
 package org.nd4j.linalg.factory;
 
 import lombok.val;
+import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.CharPointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
@@ -212,11 +213,18 @@ public class Nd4jTest extends BaseNd4jTest {
         INDArray linspace = Nd4j.linspace(1,4,4);
         Pointer convert = Nd4j.getNDArrayFactory().convertToNumpy(linspace);
         convert.position(0);
-        //INDArray convertedFrom = Nd4j.getNDArrayFactory().createFromNpyHeaderPointer(convert);
-        Pointer pointer = NativeOpsHolder.getInstance().getDeviceNativeOps().loadNpyFromHeader(convert);
+        BytePointer bytePointer = new BytePointer(convert);
+        String byteString = bytePointer.getString();
+        String newString = byteString.replace("\0","");
+        BytePointer pass = new BytePointer(newString);
+        System.out.println(byteString);
+        Pointer pointer = NativeOpsHolder.getInstance().getDeviceNativeOps().loadNpyFromHeader(pass);
+
+        //INDArray convertedFrom = Nd4j.getNDArrayFactory().createFromNpyHeaderPointer(pass);
+        // System.out.println(pointer.asByteBuffer());
         Pointer pointer1 = NativeOpsHolder.getInstance().getDeviceNativeOps().dataPointForNumpyStruct(pointer);
         DataBuffer dataBuffer = Nd4j.createBuffer(new FloatPointer(pointer1),linspace.length());
-       // System.out.println(dataBuffer);
+        System.out.println(dataBuffer);
         // assertEquals(linspace,convertedFrom);
 
     }

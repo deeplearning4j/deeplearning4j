@@ -1488,7 +1488,7 @@ public abstract class NativeOps extends Pointer {
      * @param wordSize the word size
      * @return
      */
-    public abstract Pointer numpyHeaderForNd4j(Pointer data,Pointer shapeBuffer,long wordSize);
+    public abstract  Pointer numpyHeaderForNd4j(Pointer data,Pointer shapeBuffer,long wordSize,LongPointer length);
 
     /**
      * Load numpy from a header

@@ -2882,15 +2882,16 @@ public:
      */
     Nd4jPointer dataPointForNumpyHeader(Nd4jPointer npArrayHeader);
 
-    /**
-     *
-     * @param data
-     * @param shapeBuffer
-     * @param wordSize
-     * @return
-     */
-    Nd4jPointer numpyHeaderForNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize);
-
+/**
+ *
+ * @param data
+ * @param shapeBuffer
+ * @param wordSize
+ * @param headerSize
+ * @param wordSize
+ * @return
+ */
+    Nd4jPointer numpyHeaderForNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize,Nd4jLong *headerSize);
 
 
     /**

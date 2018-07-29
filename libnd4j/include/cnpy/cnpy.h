@@ -101,7 +101,8 @@ namespace cnpy {
     std::vector<char> createNpyHeader(const T *data,
                                       const unsigned
                                       int *shape,
-                                      const unsigned int ndims);
+                                      const unsigned int ndims,
+                                       unsigned int wordSize);
     /**
      * Parse the numpy header from
      * the given file
@@ -378,13 +379,15 @@ namespace cnpy {
     template<typename T>
     std::vector<char> createNpyHeader(const T *data,
                                       const unsigned int *shape,
-                                      const unsigned int ndims) {
+                                      const unsigned int ndims,
+                                      unsigned int wordSize) {
 
+        printf("Word size in create numpy header %d\n",wordSize);
         std::vector<char> dict;
         dict += "{'descr': '";
         dict += BigEndianTest();
         dict += mapType(typeid(T));
-        dict += tostring(sizeof(T));
+        dict += tostring(wordSize);
         dict += "', 'fortran_order': False, 'shape': (";
         dict += tostring(shape[0]);
         for(int i = 1; i < ndims;i++) {
@@ -399,6 +402,7 @@ namespace cnpy {
         int remainder = 16 - (10 + dict.size()) % 16;
         dict.insert(dict.end(),remainder,' ');
         dict.back() = '\n';
+        printf("Dict %s\n",dict.data());
 
         std::vector<char> header;
         header += (char) 0x93;
@@ -407,7 +411,7 @@ namespace cnpy {
         header += (char) 0x00; //minor version of numpy format
         header += (unsigned short) dict.size();
         header.insert(header.end(),dict.begin(),dict.end());
-
+        printf("Returning header from createNpyHeader %s  and header size %d\n",header.data(),header.size());
         return header;
     }
 

@@ -1360,19 +1360,29 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public Pointer convertToNumpy(INDArray array) {
-        Pointer header = NativeOpsHolder.getInstance().getDeviceNativeOps()
+        LongPointer size = new LongPointer(1);
+        Pointer header = NativeOpsHolder
+                .getInstance().getDeviceNativeOps()
                 .numpyHeaderForNd4j(
                         array.data().pointer(),
                         array.shapeInfoDataBuffer().pointer(),
-                        array.data().getElementSize());
+                        array.data().getElementSize()
+                        ,size);
+        header.capacity(size.get());
+        header.position(0);
+
+        BytePointer bytePointer = new BytePointer(header);
+        String headerStr = bytePointer.getString();
+
         ByteBuffer dataByteBuffer = array.data().asNio();
-        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(header.asByteBuffer().capacity() + dataByteBuffer.capacity());
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect((int) (size.get() + dataByteBuffer.capacity()))
+                .order(ByteOrder.LITTLE_ENDIAN);
         byteBuffer.put(header.asByteBuffer());
-        byteBuffer.put(dataByteBuffer);
+        byteBuffer.put(dataByteBuffer.order(ByteOrder.LITTLE_ENDIAN));
         byteBuffer.position(0);
-        Pointer ret =  new Pointer(byteBuffer);
-        ret.position(0);
-        return ret;
+        BytePointer wrapperRet = new BytePointer(byteBuffer);
+        wrapperRet.position(0);
+        return wrapperRet;
     }
 
     /**
