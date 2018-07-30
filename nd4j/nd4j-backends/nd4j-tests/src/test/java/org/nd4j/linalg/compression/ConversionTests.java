@@ -25,6 +25,7 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -96,7 +97,7 @@ public class ConversionTests extends BaseNd4jTest {
 
     @Test
     public void testFloatsToHalfs1() {
-        if (!Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
+        if (Nd4j.getExecutioner().type() != OpExecutioner.ExecutionerType.CUDA)
             return;
 
         val dtype = Nd4j.dataType();
@@ -125,7 +126,14 @@ public class ConversionTests extends BaseNd4jTest {
         Nd4j.setDataType(DataBuffer.Type.DOUBLE);
         val exp = Nd4j.linspace(-5, 5, 11);
 
-        for(val t : new DataBuffer.Type[]{DataBuffer.Type.DOUBLE, DataBuffer.Type.FLOAT, DataBuffer.Type.HALF}) {
+        DataBuffer.Type[] types = null;
+        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA) {
+            types = new DataBuffer.Type[]{DataBuffer.Type.DOUBLE, DataBuffer.Type.FLOAT, DataBuffer.Type.HALF};
+        } else {
+            types = new DataBuffer.Type[]{DataBuffer.Type.DOUBLE, DataBuffer.Type.FLOAT};
+        }
+
+        for(val t : types) {
             Nd4j.setDataType(t);
 
             val arr = Nd4j.linspace(-5, 5, 11);
@@ -141,7 +149,14 @@ public class ConversionTests extends BaseNd4jTest {
         Nd4j.setDataType(DataBuffer.Type.FLOAT);
         val exp = Nd4j.linspace(-5, 5, 11);
 
-        for(val t : new DataBuffer.Type[]{DataBuffer.Type.DOUBLE, DataBuffer.Type.FLOAT, DataBuffer.Type.HALF}) {
+        DataBuffer.Type[] types = null;
+        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA) {
+            types = new DataBuffer.Type[]{DataBuffer.Type.DOUBLE, DataBuffer.Type.FLOAT, DataBuffer.Type.HALF};
+        } else {
+            types = new DataBuffer.Type[]{DataBuffer.Type.DOUBLE, DataBuffer.Type.FLOAT};
+        }
+
+        for(val t : types) {
             Nd4j.setDataType(t);
 
             val arr = Nd4j.linspace(-5, 5, 11);
