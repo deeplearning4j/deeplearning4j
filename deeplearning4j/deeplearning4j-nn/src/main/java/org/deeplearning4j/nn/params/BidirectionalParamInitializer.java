@@ -119,13 +119,7 @@ public class BidirectionalParamInitializer implements ParamInitializer {
         c2.setLayer(underlying);
         Map<String, INDArray> origFwd = underlying.initializer().init(c1, forwardView, initializeParams);
         Map<String, INDArray> origBwd = underlying.initializer().init(c2, backwardView, initializeParams);
-
-        Map<String,Double> l1ByParam = addPrefixes(c1.getL1ByParam(), c2.getL1ByParam());
-        Map<String,Double> l2ByParam = addPrefixes(c1.getL2ByParam(), c2.getL2ByParam());
         List<String> variables = addPrefixes(c1.getVariables(), c2.getVariables());
-
-        conf.setL1ByParam(l1ByParam);
-        conf.setL2ByParam(l2ByParam);
         conf.setVariables(variables);
 
         Map<String,INDArray> out = new LinkedHashMap<>();
