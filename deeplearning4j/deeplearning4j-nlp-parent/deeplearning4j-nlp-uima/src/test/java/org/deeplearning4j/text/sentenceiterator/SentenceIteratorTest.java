@@ -1,27 +1,27 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.deeplearning4j.text.sentenceiterator;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,19 +35,23 @@ import static org.junit.Assert.*;
  */
 public class SentenceIteratorTest {
 
-    private static final Logger log = LoggerFactory.getLogger(SentenceIteratorTest.class);
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+    
+    public File testTxt;
+    public File testSingle;
+    public File testMulti;
 
     @Before
     public void before() throws Exception {
-        File test = new File("dir");
-        test.mkdir();
-        File testFile = new File(test, "test.txt");
-        FileUtils.writeLines(testFile, Arrays.asList("Hello", "My", "Name"));
+        testSingle = testDir.newFolder();
+        testTxt = new File(testSingle, "test.txt");
+        FileUtils.writeLines(testTxt, Arrays.asList("Hello", "My", "Name"));
 
 
-        File multiDir = new File("multidir");
+        testMulti = testDir.newFolder();
         for (int i = 0; i < 2; i++) {
-            File newTestFile = new File(multiDir, "testfile-" + i);
+            File newTestFile = new File(testMulti, "testfile-" + i);
             FileUtils.writeLines(newTestFile, Arrays.asList("Sentence 1.", "Sentence 2.", "Sentence 3."));
 
         }
@@ -65,8 +69,8 @@ public class SentenceIteratorTest {
 
     @Test
     public void testFileSentenceIterator() throws Exception {
-        SentenceIterator iter = new FileSentenceIterator(new File("dir"));
-        SentenceIterator multiIter = new FileSentenceIterator(new File("multidir"));
+        SentenceIterator iter = new FileSentenceIterator(testSingle);
+        SentenceIterator multiIter = new FileSentenceIterator(testMulti);
         testSingle(iter);
         testMulti(multiIter, 3);
 
@@ -98,10 +102,10 @@ public class SentenceIteratorTest {
 
     @After
     public void after() throws Exception {
-        File test = new File("dir");
+        File test = testSingle;
         test.mkdir();
         FileUtils.deleteQuietly(test);
-        FileUtils.deleteQuietly(new File("multidir"));
+        FileUtils.deleteQuietly(testMulti);
     }
 
 

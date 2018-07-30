@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -79,10 +95,12 @@ public class Eye extends DynamicCustomOp {
         if(isVariableInput){
             return super.calculateOutputShape();
         }
-        long[] outputShape = new long[2 + batchDimension.length];
-        int i;
-        for(i = 0; i < batchDimension.length; i++){
-            outputShape[i] = batchDimension[i];
+        long[] outputShape = new long[2 + (batchDimension == null ? 0 : batchDimension.length)];
+        int i = 0;
+        if(batchDimension != null) {
+            for (; i < batchDimension.length; i++) {
+                outputShape[i] = batchDimension[i];
+            }
         }
         outputShape[i++] = numRows;
         outputShape[i] = numCols;
@@ -119,7 +137,11 @@ public class Eye extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> outGrad){
-        return Collections.singletonList(sameDiff.onesLike(arg()));
+        if(arg() != null){
+            return Collections.singletonList(sameDiff.onesLike(arg()));
+        } else {
+            return Collections.emptyList();
+        }
     }
 
 }

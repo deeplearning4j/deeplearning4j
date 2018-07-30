@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by raver119 on 11.10.2017.
 //
@@ -11,6 +27,7 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <memory/MemoryReport.h>
 #include <memory/MemoryUtils.h>
+#include <MmulHelper.h>
 
 using namespace nd4j;
 using namespace nd4j::ops;
@@ -140,14 +157,14 @@ TEST_F(OpsArena, TestMmulHelper1) {
     NDArray<float> b('c', {100, 100});
     NDArray<float> c('c', {100, 100});
 
-    nd4j::NDArrayFactory<float>::mmulHelper(&a, &b, &c);
+    nd4j::MmulHelper<float>::mmul(&a, &b, &c);
 
     nd4j::memory::MemoryReport before, after;
 
     nd4j::memory::MemoryUtils::retrieveMemoryStatistics(before);
 
     for (int e = 0; e < numIterations; e++) {
-        nd4j::NDArrayFactory<float>::mmulHelper(&a, &b, &c);
+        nd4j::MmulHelper<float>::mmul(&a, &b, &c);
     }
 
     nd4j::memory::MemoryUtils::retrieveMemoryStatistics(after);
@@ -162,7 +179,7 @@ TEST_F(OpsArena, TestMmulHelper2) {
     NDArray<float> a('c', {100, 100});
     NDArray<float> b('c', {100, 100});
 
-    auto c = nd4j::NDArrayFactory<float>::mmulHelper(&a, &b);
+    auto c = nd4j::MmulHelper<float>::mmul(&a, &b);
     delete c;
 
     nd4j::memory::MemoryReport before, after;
@@ -170,7 +187,7 @@ TEST_F(OpsArena, TestMmulHelper2) {
     nd4j::memory::MemoryUtils::retrieveMemoryStatistics(before);
 
     for (int e = 0; e < numIterations; e++) {
-        c = nd4j::NDArrayFactory<float>::mmulHelper(&a, &b);
+        c = nd4j::MmulHelper<float>::mmul(&a, &b);
         delete c;
     }
 

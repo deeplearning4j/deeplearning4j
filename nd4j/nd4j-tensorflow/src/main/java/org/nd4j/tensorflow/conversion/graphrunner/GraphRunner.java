@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.tensorflow.conversion.graphrunner;
 
 import com.github.os72.protobuf351.ByteString;
@@ -40,8 +56,6 @@ public class GraphRunner implements Closeable {
     //a status object used
     private tensorflow.TF_Status status;
     @Getter
-    private Set<String> inputsForGraph,outputsForGraph;
-    @Getter
     private List<String> inputOrder,outputOrder;
     @Getter
     private org.tensorflow.framework.ConfigProto protoBufConfigProto;
@@ -66,28 +80,57 @@ public class GraphRunner implements Closeable {
      *                                                          things like
      *                                                          graph inputs and outputs
      */
-    public GraphRunner(tensorflow.TF_Graph graph,org.tensorflow.framework.GraphDef graphDef) {
+    public GraphRunner(List<String> inputNames,tensorflow.TF_Graph graph,org.tensorflow.framework.GraphDef graphDef) {
+        this(inputNames,graph,graphDef,null);
+
+    }
+
+    /**
+     * Pass in a graph instance and
+     * the length of the protobuf
+     * that it was instantiated with.
+     * For files this is typically
+     * {@link File#length()},
+     * for byte arrays, this is
+     * byte array.length
+     * and for {@link java.nio.ByteBuffer}
+     * this would be something like the
+     * {@link java.nio.ByteBuffer#capacity()}
+     * @param graph a pointer to the {@link TF_Graph} to use when executing
+     * @param graphDef {@link org.tensorflow.framework.GraphDef} protobuf
+     *                                                          definition containing
+     *                                                          the graph configuration
+     *                                                          for automatically inferring
+     *                                                          things like
+     *                                                          graph inputs and outputs
+     * @param configProto  the session configuration proto to use with this runner
+     */
+    public GraphRunner(List<String> inputNames,tensorflow.TF_Graph graph,org.tensorflow.framework.GraphDef graphDef,ConfigProto configProto) {
         this.graph = graph;
+        this.protoBufConfigProto = configProto;
+        this.inputOrder = inputNames;
         initSessionAndStatusIfNeeded(graphDef);
 
     }
 
     /**
      * Initialize with the graph content to use
+     * @param inputNames the inputs to the graph
      * @param graphToUse the raw byte content
      *                   of a protobuf file saved by tensorflow
      */
-    public GraphRunner(byte[] graphToUse) {
-        this(graphToUse,getAlignedWithNd4j());
+    public GraphRunner(byte[] graphToUse,List<String> inputNames) {
+        this(graphToUse,inputNames,getAlignedWithNd4j());
     }
 
 
     /**
      * Initialize with the graph content to use
      * @param filePath path of a protobuf file saved by tensorflow
+     * @param inputNames the input namesfor the graph
      */
-    public GraphRunner(String filePath) {
-        this(filePath,getAlignedWithNd4j());
+    public GraphRunner(String filePath,List<String> inputNames) {
+        this(filePath,inputNames,getAlignedWithNd4j());
     }
 
 
@@ -95,13 +138,15 @@ public class GraphRunner implements Closeable {
     /**
      * Initialize with the graph content to use
      * @param filePath path of a protobuf file saved by tensorflow
+     * @param inputNames the names of the inputs for the graph
      * @param sessionOptionsConfiguration the session options to use
      *                                    for running sessions
      */
-    public GraphRunner(String filePath,org.tensorflow.framework.ConfigProto sessionOptionsConfiguration) {
+    public GraphRunner(String filePath,List<String> inputNames,org.tensorflow.framework.ConfigProto sessionOptionsConfiguration) {
         byte[] graphToUse = null;
 
         try {
+            this.inputOrder = inputNames;
             graphToUse = IOUtils.toByteArray(new File(filePath).toURI());
             this.graph = conversion.loadGraph(graphToUse);
             this.protoBufConfigProto = sessionOptionsConfiguration;
@@ -119,9 +164,10 @@ public class GraphRunner implements Closeable {
      * @param sessionOptionsConfiguration the session options to use
      *                                    for running sessions
      */
-    public GraphRunner(byte[] graphToUse,org.tensorflow.framework.ConfigProto sessionOptionsConfiguration) {
+    public GraphRunner(byte[] graphToUse,List<String> inputNames,org.tensorflow.framework.ConfigProto sessionOptionsConfiguration) {
         try {
             this.graph = conversion.loadGraph(graphToUse);
+            this.inputOrder = inputNames;
             this.protoBufConfigProto = sessionOptionsConfiguration;
         } catch (Exception e) {
             throw new IllegalArgumentException("Unable to parse protobuf",e);
@@ -158,12 +204,6 @@ public class GraphRunner implements Closeable {
     public Map<String,INDArray> run(Map<String,INDArray> inputs) {
         if(graph == null) {
             throw new IllegalStateException("Graph not initialized.");
-        }
-
-
-
-        if(inputOrder.size() != inputsForGraph.size()) {
-            throw new IllegalArgumentException("Input order specified does not match inferred inputs from graph definition. Missing inputs?");
         }
 
         if(inputs.size() != inputOrder.size()) {
@@ -238,16 +278,11 @@ public class GraphRunner implements Closeable {
 
 
     private void initSessionAndStatusIfNeeded( org.tensorflow.framework.GraphDef graphDef1 ) {
-        inputsForGraph = new LinkedHashSet<>();
-        outputsForGraph = new LinkedHashSet<>();
+        outputOrder = new ArrayList<>();
         //infer the inputs and outputs for the graph
         Set<String> seenAsInput = new LinkedHashSet<>();
         for(int i = 0; i < graphDef1.getNodeCount(); i++) {
             NodeDef node = graphDef1.getNode(i);
-            if(node.getInputCount() < 1) {
-                inputsForGraph.add(node.getName());
-            }
-
             for(int input = 0; input < node.getInputCount(); input++) {
                 seenAsInput.add(node.getInput(input));
             }
@@ -255,13 +290,10 @@ public class GraphRunner implements Closeable {
         //find the nodes that were not inputs to any  nodes: these are the outputs
         for(int i = 0; i < graphDef1.getNodeCount(); i++) {
             if(!seenAsInput.contains(graphDef1.getNode(i).getName())) {
-                outputsForGraph.add(graphDef1.getNode(i).getName());
+                outputOrder.add(graphDef1.getNode(i).getName());
             }
         }
 
-        //used for random access
-        inputOrder = new ArrayList<>(inputsForGraph);
-        outputOrder = new ArrayList<>(outputsForGraph);
 
 
         //setup the status object to be used for all tensorflow calls

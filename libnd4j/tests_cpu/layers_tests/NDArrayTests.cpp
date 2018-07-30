@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by raver119 on 04.08.17.
 //
@@ -5,7 +21,7 @@
 #include "testlayers.h"
 #include <memory>
 #include <NDArray.h>
-#include <NDArrayFactory.h>
+#include <MmulHelper.h>
 
 using namespace nd4j;
 
@@ -766,7 +782,7 @@ TEST_F(NDArrayTest, TestTile6)
     NDArray<double> x('c', {3, 1, 2});    
     NDArray<double> expected(expBuff, 'c', {3, 4, 2});
 
-    NDArrayFactory<double>::linspace(10, x);    
+    x.linspace(10);    
 
     NDArray<double> result = x.tile({1,4,1});
 //    result.printBuffer();
@@ -786,7 +802,7 @@ TEST_F(NDArrayTest, TestMmulHelper1) {
     auto yShape = new Nd4jLong[8] {2, 1, 3, 1, 1, 0, 1, 99};
     auto y = new NDArray<float>(yBuffer, yShape);
 
-    auto z = NDArrayFactory<float>::mmulHelper(x, y);
+    auto z = MmulHelper<float>::mmul(x, y);
 
     ASSERT_EQ(1, z->lengthOf());
     ASSERT_NEAR(28, z->getScalar(0), 1e-5);
@@ -819,7 +835,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul1) {
     x.permutei({1, 0});
     y.permutei({1, 0});
 
-    auto z = NDArrayFactory<float>::mmulHelper(&x, &y);
+    auto z = MmulHelper<float>::mmul(&x, &y);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -848,7 +864,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul2) {
     x_->permutei({1, 0});
     y_->permutei({1, 0});
 
-    auto z = NDArrayFactory<float>::mmulHelper(x_, y_);
+    auto z = MmulHelper<float>::mmul(x_, y_);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -880,7 +896,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul3) {
     x.reshapei('c', {2 * 2 * 2, 3 * 2 * 2});
     y.reshapei('c', {2 * 2 * 3, 2});
 
-    auto z = NDArrayFactory<float>::mmulHelper(&x, &y);
+    auto z = MmulHelper<float>::mmul(&x, &y);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -911,7 +927,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul4) {
     x.reshapei('c', {2 * 2 * 2, 3 * 2 * 2});
     y_->reshapei('c', {2 * 2 * 3, 2});
 
-    auto z = NDArrayFactory<float>::mmulHelper(&x, y_);
+    auto z = MmulHelper<float>::mmul(&x, y_);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -941,7 +957,7 @@ TEST_F(NDArrayTest, TestMmulHelper2) {
 
     //nd4j::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->getBuffer(), y->rows(), y->getBuffer(), 1, 0.0, z->getBuffer(), 1);
 
-    NDArrayFactory<float>::mmulHelper(x, y, z);
+    MmulHelper<float>::mmul(x, y, z);
 
     //z->printBuffer();
 
@@ -970,7 +986,7 @@ TEST_F(NDArrayTest, TestMmulHelper3) {
 
     //nd4j::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->getBuffer(), y->rows(), y->getBuffer(), 1, 0.0, z->getBuffer(), 1);
 
-    NDArrayFactory<float>::mmulHelper(x, y, z);
+    MmulHelper<float>::mmul(x, y, z);
 
     //z->printBuffer();
 
@@ -1003,7 +1019,7 @@ TEST_F(NDArrayTest, TestMmulHelper4) {
     auto expBuffer = new float[9]{7.0, 21.0, 35.0, 10.0, 28.0, 46.0, 13.0, 35.0, 57.0};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
 
-    NDArrayFactory<float>::mmulHelper(x, y, z);
+    MmulHelper<float>::mmul(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
 
     delete[] expBuffer;
@@ -1033,7 +1049,7 @@ TEST_F(NDArrayTest, TestMmulHelper5) {
     auto expBuffer = new float[9]{7.0, 14.0, 21.0, 12.0, 21.0, 30.0, 17.0, 28.0, 39.0};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
 
-    NDArrayFactory<float>::mmulHelper(x, y, z);
+    MmulHelper<float>::mmul(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
 
     delete[] expBuffer;
@@ -1063,7 +1079,7 @@ TEST_F(NDArrayTest, TestMmulHelper6) {
     auto expBuffer = new float[9]{39.0, 54.0, 69.0, 9.0, 18.0, 27.0, 9.0, 12.0, 15.0};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
 
-    NDArrayFactory<float>::mmulHelper(x, y, z);
+    MmulHelper<float>::mmul(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
 
 
@@ -1094,7 +1110,7 @@ TEST_F(NDArrayTest, TestMmulHelper7) {
     auto expBuffer = new float[9]{110.00,  260.00,  410.00};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
 
-    NDArrayFactory<float>::mmulHelper(y, x, z);
+    MmulHelper<float>::mmul(y, x, z);
 
     //z->printBuffer();
     ASSERT_TRUE(z->equalsTo(exp));
@@ -1127,7 +1143,7 @@ TEST_F(NDArrayTest, TestMmulHelper_ND_1) {
     NDArray<float> exp(_expB, _expS);
     exp.triggerAllocationFlag(false, false);
 
-    auto c = NDArrayFactory<float>::mmulHelper(&a, &b);
+    auto c = MmulHelper<float>::mmul(&a, &b);
 
     ASSERT_TRUE(exp.isSameShapeStrict(c));
     //c->printShapeInfo("Result shape");
@@ -1154,7 +1170,7 @@ TEST_F(NDArrayTest, TestMmulHelper_ND_2) {
     NDArray<float> exp(_expB, _expS);
     exp.triggerAllocationFlag(false, false);
 
-    auto c = NDArrayFactory<float>::mmulHelper(&a, &b);
+    auto c = MmulHelper<float>::mmul(&a, &b);
 
     ASSERT_TRUE(exp.isSameShapeStrict(c));
     //c->printShapeInfo("Result shape");
@@ -1237,7 +1253,7 @@ TEST_F(NDArrayTest, RSubScalarTest1) {
 TEST_F(NDArrayTest, BroadcastOpsTest1) {
 
     NDArray<float> x('c', {5, 5});
-    auto row = nd4j::NDArrayFactory<float>::linspace(1.0f, 5.0f, 5);
+    auto row = NDArray<float>::linspace(1.0f, 5.0f, 5);
     float *brow = new float[5]{1,2,3,4,5};
     auto bshape = new Nd4jLong[8]{2, 1, 5, 1, 1, 0, 1, 99};
     float *ebuf = new float[25] {1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5};
@@ -1298,7 +1314,7 @@ TEST_F(NDArrayTest, TestIndexedPut5) {
 TEST_F(NDArrayTest, TestAllTensors1) {
     NDArray<float> matrix('c', {3, 5});
 
-    std::unique_ptr<ResultSet<float>> rows(NDArrayFactory<float>::allTensorsAlongDimension(&matrix, {1}));
+    std::unique_ptr<ResultSet<float>> rows(matrix.allTensorsAlongDimension({1}));
 
     ASSERT_EQ(3, rows->size());
 }
@@ -1763,10 +1779,10 @@ TEST_F(NDArrayTest, TestTensorDotAgain_1) {
     NDArray<double> input('c', {B, iC, iY, iX});
     NDArray<double> weights('c', {iC, oC, kY, kX});
 
-    NDArrayFactory<double>::linspace(1, input);
-    NDArrayFactory<double>::linspace(1, weights);
+    input.linspace(1);
+    weights.linspace(1);
 
-    auto result = NDArrayFactory<double>::tensorDot(&weights, &input, {0}, {1});
+    auto result = MmulHelper<double>::tensorDot(&weights, &input, {0}, {1});
 
     //result->printShapeInfo("result shape");
     ASSERT_TRUE(exp.isSameShape(result));
@@ -1788,7 +1804,7 @@ TEST_F(NDArrayTest, TestBroadcast_1) {
     NDArray<double> input('c',{ 2, 3, 2, 2});
     NDArray<double> bias('c', {1, 3});
 
-    NDArrayFactory<double>::linspace(1, bias);
+    bias.linspace(1);
 
     input.template applyBroadcast<simdOps::Add<double>>({1}, &bias);
 
@@ -1836,10 +1852,10 @@ TEST_F(NDArrayTest, TestMMulMultiDim) {
     expected.setBuffer(expBuff);
     expected.triggerAllocationFlag(false, true);
 
-    NDArrayFactory<double>::linspace(1, input);
-    NDArrayFactory<double>::linspace(1, weights);
+    input.linspace(1);
+    weights.linspace(1);
 
-    auto result = NDArrayFactory<double>::mmulHelper(&weights, &input, nullptr, 1., 0.);
+    auto result = MmulHelper<double>::mmul(&weights, &input, nullptr, 1., 0.);
     //  result must have such shape   [bS x 3K x N]
 
     ASSERT_TRUE(result->isSameShape(&expected));
@@ -1872,15 +1888,15 @@ TEST_F(NDArrayTest, TestMatmMul_Again_1) {
     NDArray<double> a('c', {3, 4, 1});
     NDArray<double> b('c', {3, 1, 5});
 
-    NDArrayFactory<double>::linspace(1, a);
-    NDArrayFactory<double>::linspace(1, b);
+    a.linspace(1);
+    b.linspace(1);
 
     double _expB[] = {1.f,    2.f,    3.f,    4.f,    5.f,    2.f,    4.f,    6.f,    8.f,   10.f,    3.f,    6.f,    9.f,   12.f,   15.f,    4.f,    8.f,   12.f,   16.f,   20.f,   30.f,   35.f,   40.f,   45.f,    50.f,   36.f,   42.f,   48.f,   54.f,   60.f,   42.f,   49.f,   56.f,   63.f,   70.f,   48.f,    56.f,   64.f,   72.f,   80.f,   99.f,  108.f,  117.f,  126.f,  135.f,  110.f,  120.f,  130.f,    140.f,  150.f,  121.f,  132.f,  143.f,  154.f,  165.f,  132.f,  144.f,  156.f,  168.f,  180.f};
     Nd4jLong _expS[] = {3, 3, 4, 5, 20, 5, 1, 0, 1, 99};
     NDArray<double> c(_expB, _expS);
     c.triggerAllocationFlag(false, false);
 
-    auto c_ = NDArrayFactory<double>::mmulHelper(&a, &b);
+    auto c_ = MmulHelper<double>::mmul(&a, &b);
 
     ASSERT_TRUE(c.isSameShape(c_));
     ASSERT_TRUE(c.equalsTo(c_));
@@ -1893,15 +1909,15 @@ TEST_F(NDArrayTest, TestMatmMul_Again_2) {
     NDArray<double> a('c', {2, 5, 4});
     NDArray<double> b('c', {2, 4, 1});
 
-    NDArrayFactory<double>::linspace(1, a);
-    NDArrayFactory<double>::linspace(1, b);
+    a.linspace(1);
+    b.linspace(1);
 
     double _expB[] = {30.f,    70.f,   110.f,   150.f,   190.f,   590.f,   694.f,   798.f,   902.f,  1006.f};
     Nd4jLong _expS[] = {3, 2, 5, 1, 5, 1, 1, 0, 1, 99};
     NDArray<double> c(_expB, _expS);
     c.triggerAllocationFlag(false, false);
 
-    auto c_ = NDArrayFactory<double>::mmulHelper(&a, &b);
+    auto c_ = MmulHelper<double>::mmul(&a, &b);
 
     ASSERT_TRUE(c.isSameShape(c_));
 
@@ -1919,8 +1935,8 @@ TEST_F(NDArrayTest, Operator_Plus_Test_1)
     NDArray<double> y('c',    {2, 1});
     NDArray<double> expected(expBuff, 'c', {3, 2, 2});
 
-    NDArrayFactory<double>::linspace(1, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(1);
+    y.linspace(1);
 
     NDArray<double> result = x + y;
 
@@ -1938,8 +1954,8 @@ TEST_F(NDArrayTest, Operator_Plus_Test_2)
     NDArray<double> y('c',    {1, 2});
     NDArray<double> expected(expBuff, 'c', {3, 2, 2});
 
-    NDArrayFactory<double>::linspace(1, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(1);
+    y.linspace(1);
 
     NDArray<double> result = x + y;
     // result.printIndexedBuffer();
@@ -1958,8 +1974,8 @@ TEST_F(NDArrayTest, Operator_Plus_Test_3)
     NDArray<double> y('c',    {1, 2});
     NDArray<double> expected(expBuff, 'c', {3, 2, 2});
 
-    NDArrayFactory<double>::linspace(1, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(1);
+    y.linspace(1);
 
     NDArray<double> result = x + y;
     // result.printIndexedBuffer();
@@ -1976,8 +1992,8 @@ TEST_F(NDArrayTest, Operator_Plus_Test_4)
     NDArray<double> y('c',    {4, 1});
     NDArray<double> expected(expBuff, 'c', {3, 4, 2});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x + y;
     
@@ -1995,8 +2011,8 @@ TEST_F(NDArrayTest, Operator_Minus_Test_1)
     NDArray<double> y('c',    {4, 1});
     NDArray<double> expected(expBuff, 'c', {3, 4, 2});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x - y;
 
@@ -2014,8 +2030,8 @@ TEST_F(NDArrayTest, Operator_Minus_Test_2)
     NDArray<double> y('c', {1, 2, 4});
     NDArray<double> expected(expBuff, 'c', {3, 2, 4});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x - y;
     
@@ -2032,8 +2048,8 @@ TEST_F(NDArrayTest, Operator_Minus_Test_3)
     NDArray<double> y('c', {2, 4});
     NDArray<double> expected(expBuff, 'c', {3, 2, 4});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x - y;
     
@@ -2050,8 +2066,8 @@ TEST_F(NDArrayTest, Operator_Minus_Test_4)
     NDArray<double> y('c',    {2, 1});
     NDArray<double> expected(expBuff, 'c', {3, 2, 2});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x - y;
     
@@ -2069,8 +2085,8 @@ TEST_F(NDArrayTest, Operator_Minus_Test_5)
     NDArray<double> y('c',    {1, 2});
     NDArray<double> expected(expBuff, 'c', {3, 2, 2});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x - y;    
 
@@ -2088,8 +2104,8 @@ TEST_F(NDArrayTest, Operator_Minus_Test_6)
     NDArray<double> y('c', {1, 1, 2});
     NDArray<double> expected(expBuff, 'c', {3, 4, 2});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x - y;    
 
@@ -2106,8 +2122,8 @@ TEST_F(NDArrayTest, Operator_Multiply_Test_1)
     NDArray<double> y('c',    {4, 1});
     NDArray<double> expected(expBuff, 'c', {3, 4, 2});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x * y;
 
@@ -2124,8 +2140,8 @@ TEST_F(NDArrayTest, Operator_Multiply_Test_2)
     NDArray<double> y('c', {1, 2, 4});
     NDArray<double> expected(expBuff, 'c', {3, 2, 4});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x * y;
     
@@ -2143,8 +2159,8 @@ TEST_F(NDArrayTest, Operator_Multiply_Test_3)
     NDArray<double> y('c', {2, 4});
     NDArray<double> expected(expBuff, 'c', {3, 2, 4});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x * y;
     
@@ -2162,8 +2178,8 @@ TEST_F(NDArrayTest, Operator_Multiply_Test_4)
     NDArray<double> y('c',    {2, 1});
     NDArray<double> expected(expBuff, 'c', {3, 2, 2});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x * y;
     
@@ -2182,8 +2198,8 @@ TEST_F(NDArrayTest, Operator_Multiply_Test_5)
     NDArray<double> y('c',    {1, 2});
     NDArray<double> expected(expBuff, 'c', {3, 2, 2});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x * y;    
 
@@ -2202,8 +2218,8 @@ TEST_F(NDArrayTest, Operator_Multiply_Test_6)
     NDArray<double> y('c', {3, 1, 1});
     NDArray<double> expected(expBuff, 'c', {3, 4, 1});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x * y;    
 
@@ -2221,8 +2237,8 @@ TEST_F(NDArrayTest, Operator_Divide_Test_1)
     NDArray<double> y('c',    {4, 1});
     NDArray<double> expected(expBuff, 'c', {3, 4, 2});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x / y;
 
@@ -2240,8 +2256,8 @@ TEST_F(NDArrayTest, Operator_Divide_Test_2)
     NDArray<double> y('c', {1, 2, 4});
     NDArray<double> expected(expBuff, 'c', {3, 2, 4});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x / y;
     
@@ -2259,8 +2275,8 @@ TEST_F(NDArrayTest, Operator_Divide_Test_3)
     NDArray<double> y('c', {2, 4});
     NDArray<double> expected(expBuff, 'c', {3, 2, 4});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x / y;
     
@@ -2278,8 +2294,8 @@ TEST_F(NDArrayTest, Operator_Divide_Test_4)
     NDArray<double> y('c',    {2, 1});
     NDArray<double> expected(expBuff, 'c', {3, 2, 2});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x / y;
     
@@ -2297,8 +2313,8 @@ TEST_F(NDArrayTest, Operator_Divide_Test_5)
     NDArray<double> y('c',    {1, 2});
     NDArray<double> expected(expBuff, 'c', {3, 2, 2});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x / y;    
 
@@ -2316,8 +2332,8 @@ TEST_F(NDArrayTest, Operator_Divide_Test_6)
     NDArray<double> y('c', {1, 4, 1});
     NDArray<double> expected(expBuff, 'c', {3, 4, 1});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x / y;    
 
@@ -2335,8 +2351,8 @@ TEST_F(NDArrayTest, Operator_Divide_Test_7)
     NDArray<double> y('c', {1, 1, 4});
     NDArray<double> expected(expBuff, 'c', {3, 4, 4});
 
-    NDArrayFactory<double>::linspace(10, x);
-    NDArrayFactory<double>::linspace(1, y);
+    x.linspace(10);
+    y.linspace(1);
 
     NDArray<double> result = x / y;    
 
@@ -2421,7 +2437,7 @@ TEST_F(NDArrayTest, Test_diagonal_2) {
     
     NDArray<double> x('f', {2, 3});
     NDArray<double> exp('f', {2, 1}, {1, 5});    
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     NDArray<double>* diag = x.diagonal('c');            
 
@@ -2435,7 +2451,7 @@ TEST_F(NDArrayTest, Test_diagonal_2) {
 TEST_F(NDArrayTest, Test_diagonal_3) {
     
     NDArray<double> x('c', {2, 2});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
     NDArray<double> exp('c', {1, 2}, {1, 4});    
 
     NDArray<double>* diag = x.diagonal('r');    
@@ -2450,7 +2466,7 @@ TEST_F(NDArrayTest, Test_diagonal_3) {
 TEST_F(NDArrayTest, Test_diagonal_4) {
     
     NDArray<double> x('f', {2, 2});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
     NDArray<double> exp('f', {1, 2}, {1, 4});    
 
     NDArray<double>* diag = x.diagonal('r');    
@@ -2465,7 +2481,7 @@ TEST_F(NDArrayTest, Test_diagonal_4) {
 TEST_F(NDArrayTest, Test_diagonal_5) {
     
     NDArray<double> x('c', {2, 2, 2});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
     NDArray<double> exp('c', {1, 2}, {1, 8});    
 
     NDArray<double>* diag = x.diagonal('r');    
@@ -2480,7 +2496,7 @@ TEST_F(NDArrayTest, Test_diagonal_5) {
 TEST_F(NDArrayTest, Test_diagonal_6) {
     
     NDArray<double> x('f', {2, 2, 2});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
     NDArray<double> exp('f', {1, 2}, {1, 8});    
 
     NDArray<double>* diag = x.diagonal('r');    
@@ -2495,7 +2511,7 @@ TEST_F(NDArrayTest, Test_diagonal_6) {
 TEST_F(NDArrayTest, Test_diagonal_7) {
     
     NDArray<double> x('f', {2, 2, 2});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
     NDArray<double> exp('f', {2, 1}, {1, 8});    
 
     NDArray<double>* diag = x.diagonal('c');    
@@ -2510,7 +2526,7 @@ TEST_F(NDArrayTest, Test_diagonal_7) {
 TEST_F(NDArrayTest, Test_diagonal_8) {
     
     NDArray<double> x('c', {2, 3});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
     NDArray<double> exp('c', {1, 2}, {1, 5});    
 
     NDArray<double>* diag = x.diagonal('r');
@@ -2525,7 +2541,7 @@ TEST_F(NDArrayTest, Test_diagonal_8) {
 TEST_F(NDArrayTest, Test_diagonal_9) {
     
     NDArray<double> x('c', {2, 2});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
     NDArray<double> exp('c', {2, 1}, {1, 4});    
 
     NDArray<double>* diag = x.diagonal('c');    
@@ -2541,7 +2557,7 @@ TEST_F(NDArrayTest, Test_diagonal_9) {
 TEST_F(NDArrayTest, Test_diagonal_10) {
     
     NDArray<double> x('f', {2, 2});
-    NDArrayFactory<double>::linspace(1, x);    
+    x.linspace(1);    
     NDArray<double> exp('f', {2, 1}, {1, 4});    
 
     NDArray<double>* diag = x.diagonal('c');    
@@ -2556,7 +2572,7 @@ TEST_F(NDArrayTest, Test_diagonal_10) {
 TEST_F(NDArrayTest, Test_diagonal_11) {
     
     NDArray<double> x('f', {3, 3});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
     NDArray<double> exp('f', {3, 1}, {1, 5, 9});    
 
     NDArray<double>* diag = x.diagonal('c');        
@@ -2571,7 +2587,7 @@ TEST_F(NDArrayTest, Test_diagonal_11) {
 TEST_F(NDArrayTest, Test_diagonal_12) {
     
     NDArray<double> x('c', {3, 3});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
     NDArray<double> exp('c', {1, 3}, {1, 5, 9});    
 
     NDArray<double>* diag = x.diagonal('r');        
@@ -2586,7 +2602,7 @@ TEST_F(NDArrayTest, Test_diagonal_12) {
 TEST_F(NDArrayTest, Test_diagonal_13) {
     
     NDArray<double> x('c', {3, 3, 4});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
     NDArray<double> exp('c', {3, 1}, {1,18,35});        
     
     NDArray<double>* diag = x.diagonal('c');
@@ -2601,7 +2617,7 @@ TEST_F(NDArrayTest, Test_diagonal_13) {
 TEST_F(NDArrayTest, Test_diagonal_14) {
     
     NDArray<double> x('c', {3, 3, 4});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
     NDArray<double> exp('c', {1, 3}, {1,18,35});        
     
     NDArray<double>* diag = x.diagonal('r');
@@ -2616,7 +2632,7 @@ TEST_F(NDArrayTest, Test_diagonal_14) {
 TEST_F(NDArrayTest, Test_diagonal_15) {
     
     NDArray<double> x('f', {3, 3, 4});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
     NDArray<double> exp('f', {1, 3}, {1,18,35});        
     
     NDArray<double>* diag = x.diagonal('r');
@@ -2631,7 +2647,7 @@ TEST_F(NDArrayTest, Test_diagonal_15) {
 TEST_F(NDArrayTest, Test_diagonal_16) {
     
     NDArray<double> x('f', {1, 5});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
     NDArray<double> exp('f', {1, 1}, {1});        
     
     NDArray<double>* diag = x.diagonal('c');
@@ -2646,7 +2662,7 @@ TEST_F(NDArrayTest, Test_diagonal_16) {
 TEST_F(NDArrayTest, Test_diagonal_17) {
     
     NDArray<double> x('c', {5, 1});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
     NDArray<double> exp('c', {1, 1}, {1});        
     
     NDArray<double>* diag = x.diagonal('r');
@@ -2661,7 +2677,7 @@ TEST_F(NDArrayTest, Test_diagonal_17) {
 TEST_F(NDArrayTest, Test_diagonal_18) {
     
     NDArray<double> x('f', {1, 1});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
     NDArray<double> exp('f', {1, 1}, {1});        
     
     NDArray<double>* diag = x.diagonal('r');

@@ -1,9 +1,23 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by george on 05.04.18.
 //
 #include <ops/declarable/helpers/dynamic.h>
-#include <NDArrayFactory.h>
-//#include <op_boilerplate.h>
 
 namespace nd4j {
     namespace ops {
@@ -20,7 +34,7 @@ namespace nd4j {
                     for (int i = sourceDimsLen; i > 0; i--)
                         sourceDims[sourceDimsLen - i] = input->rankOf() - i;
 
-                    std::unique_ptr<ResultSet<T>> listOfTensors(NDArrayFactory<T>::allTensorsAlongDimension(input, sourceDims));
+                    std::unique_ptr<ResultSet<T>> listOfTensors(input->allTensorsAlongDimension(sourceDims));
 
 #pragma omp parallel for if(outputList.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                     for (unsigned int i = 0; i < outputList.size(); i++) {
@@ -32,7 +46,7 @@ namespace nd4j {
                             outDims[k - 1] = k;
 
                         std::unique_ptr<ResultSet<T>> listOutForCurrent(
-                                NDArrayFactory<T>::allTensorsAlongDimension(outputs[i].first, outDims));
+                                outputs[i].first->allTensorsAlongDimension(outDims));
 
                         outputs[i].second = 0;
 
@@ -81,7 +95,7 @@ namespace nd4j {
                     for (int i = restDims.size(); i > 0;  i--)
                         restDims[restDims.size() - i] = output->rankOf() - i;
 
-                    std::unique_ptr<ResultSet<T>> listOfOutTensors(NDArrayFactory<T>::allTensorsAlongDimension(output, restDims));
+                    std::unique_ptr<ResultSet<T>> listOfOutTensors(output->allTensorsAlongDimension(restDims));
 
                     for (int e = 0; e < numOfData; e++) {
                         NDArray<T>* data = inputs[e];
@@ -90,7 +104,7 @@ namespace nd4j {
                         for (int i = sourceDims.size(); i > 0;  i--)
                             sourceDims[sourceDims.size() - i] = data->rankOf() - i;
 
-                        std::unique_ptr<ResultSet<T>> listOfTensors(NDArrayFactory<T>::allTensorsAlongDimension(data, sourceDims));
+                        std::unique_ptr<ResultSet<T>> listOfTensors(data->allTensorsAlongDimension(sourceDims));
 
                         for (int i = 0; i < index->lengthOf(); i++) {
                             int pos = (*index)(i);

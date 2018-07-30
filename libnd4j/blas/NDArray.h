@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 #ifndef NDARRAY_H
 #define NDARRAY_H
 
@@ -13,6 +29,7 @@
 #include <stdint.h>
 #include <array/ArrayOptions.h>
 #include <array/ArrayType.h>
+#include <array/ResultSet.h>
 
 
 namespace nd4j {
@@ -74,9 +91,18 @@ namespace nd4j {
         DataType _dataType = DataType_FLOAT;
 
         std::string toStringValue(T value);
+    
     public:
 
         static NDArray<T>* createEmpty(nd4j::memory::Workspace* workspace = nullptr);
+
+        static NDArray<T>* valueOf(const std::initializer_list<Nd4jLong>& shape, const T value, const char order = 'c');
+
+        static NDArray<T>* valueOf(const std::vector<Nd4jLong>& shape, const T value, const char order = 'c');
+        
+        static NDArray<T>* linspace(const T from, const T to, const Nd4jLong numElements);
+
+        static NDArray<T>* scalar(const T value);
 
         
         /**
@@ -514,7 +540,7 @@ namespace nd4j {
         *  func - what pairwise operation to apply
         *  target - where to store result
         */ 
-        void applyPairwiseLambda(NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target = nullptr);
+        void applyPairwiseLambda(const NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target = nullptr);
 
         void applyIndexedPairwiseLambda(NDArray<T>* other, const std::function<T(Nd4jLong, T, T)>& func, NDArray<T>* target = nullptr);
 
@@ -534,7 +560,8 @@ namespace nd4j {
         /**
         *   apply transpose operation to the copy of this array, that is this array remains unaffected 
         */
-        NDArray<T> *transpose() const;
+        NDArray<T>* transpose() const;
+        NDArray<T>  transp() const;
 
         /**
         *  perform transpose operation and store result in target, this array remains unaffected 
@@ -784,7 +811,7 @@ namespace nd4j {
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
-        NDArray<T> operator()(const int* idx, bool keepUnitiesInShape = false)  const;
+        NDArray<T> operator()(const Nd4jLong* idx, bool keepUnitiesInShape = false)  const;
 
         /**
         *  addition operator: array + other
@@ -959,6 +986,21 @@ namespace nd4j {
         *  calculates the trace of an array, that is sum of elements on main diagonal = sum array[i, i, i, ...]
         */
         T getTrace() const;
+
+        /**
+        *  fill array linearly as follows: arr[0] = from, arr[1] = from+step, arr[2] = from+2*step, ...
+        */
+        void linspace(const T from, const T step = 1.0f);
+
+        NDArray<T>* createUninitialized() const;
+
+        ResultSet<T>* multipleTensorsAlongDimension(const std::vector<int>& indices, const std::vector<int>& dimensions) const;
+
+        ResultSet<T>* allTensorsAlongDimension(const std::vector<int>& dimensions) const;
+
+        ResultSet<T>* allTensorsAlongDimension(const std::initializer_list<int>& dimensions) const;
+
+        ResultSet<T>* allExamples()const ;        
         
         /**
         *  default destructor
@@ -1554,14 +1596,15 @@ Nd4jLong  NDArray<T>::memoryFootprint() {
 }
 
 //////////////////////////////////////////////////////////////////////////
-// returns true if these two NDArrays have same shape
 // still the definition of inline function must be in header file
 template<typename T>
- bool NDArray<T>::isSameShape(const std::vector<Nd4jLong>& other) const{
-    if (this->rankOf() != (int) other.size())
+bool NDArray<T>::isSameShape(const std::vector<Nd4jLong>& shape) const{    
+    if (this->isScalar() && shape.size() == 1 && shape[0] == 0)
+        return true;
+    if (this->rankOf() != (int) shape.size())
         return false;
     for (int e = 0; e < this->rankOf(); e++) {
-        if (this->shapeOf()[e] != other.at(e) && other.at(e) != -1)
+        if (this->shapeOf()[e] != shape.at(e) && shape.at(e) != -1)
             return false;
     }
     return true;

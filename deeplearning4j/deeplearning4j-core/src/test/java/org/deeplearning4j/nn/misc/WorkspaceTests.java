@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.misc;
 
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +33,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
@@ -27,8 +49,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 @Slf4j
 public class WorkspaceTests extends BaseDL4JTest {
@@ -455,6 +476,113 @@ public class WorkspaceTests extends BaseDL4JTest {
 
             WSTestDataSetIterator iterator = new WSTestDataSetIterator();
             computationGraph.fit(iterator);
+        }
+    }
+
+
+
+    @Test
+    public void testOutputWorkspace(){
+
+        String wsName = "ExternalTestWorkspace";
+        WorkspaceConfiguration conf = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .overallocationLimit(0.02)
+                .policyLearning(LearningPolicy.OVER_TIME)
+                .cyclesBeforeInitialization(1)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .policySpill(SpillPolicy.REALLOCATE)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .build();
+
+        MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(conf, wsName);
+
+        MultiLayerConfiguration netConf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(new DenseLayer.Builder().nIn(4).nOut(3).activation(Activation.TANH).build())
+                .layer(new OutputLayer.Builder().nIn(3).nOut(3).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(netConf);
+        net.init();
+
+        INDArray in = Nd4j.rand(3, 4);
+
+        for (int i = 0; i < 3; i++) {
+            try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                System.out.println("MLN - " + i);
+                INDArray out = net.output(in, false, ws);
+
+                assertTrue(out.isAttached());
+                assertEquals(wsName, out.data().getParentWorkspace().getId());
+            } catch (Throwable t){
+                fail();
+                throw new RuntimeException(t);
+            }
+            System.out.println("MLN SCOPE ACTIVE: " + i + " - " + workspace.isScopeActive());
+            assertFalse(workspace.isScopeActive());
+        }
+
+
+        //Same test for ComputationGraph:
+        ComputationGraph cg = net.toComputationGraph();
+
+        for (int i = 0; i < 3; i++) {
+            try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                System.out.println("CG - " + i);
+                INDArray out = cg.output(false, ws, in)[0];
+
+                assertTrue(out.isAttached());
+                assertEquals(wsName, out.data().getParentWorkspace().getId());
+            } catch (Throwable t){
+                throw new RuntimeException(t);
+            }
+            System.out.println("CG SCOPE ACTIVE: " + i + " - " + workspace.isScopeActive());
+            assertFalse(workspace.isScopeActive());
+        }
+
+        Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
+    }
+
+    @Test
+    public void testSimpleOutputWorkspace() {
+        final MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("ExternalTestWorkspace");
+
+        final INDArray input = Nd4j.rand(1, 30);
+
+        final ComputationGraphConfiguration computationGraphConfiguration = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("state")
+                .addLayer("value_output", new OutputLayer.Builder().nIn(30).nOut(1).build(), "state")
+                .setOutputs("value_output")
+                .build();
+
+        final ComputationGraph computationGraph = new ComputationGraph(computationGraphConfiguration);
+        computationGraph.init();
+
+        try (final MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+            computationGraph.output(false, ws, input);
+        }
+    }
+
+    @Test
+    public void testSimpleOutputWorkspaceMLN() {
+        MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("ExternalTestWorkspace");
+
+        INDArray input = Nd4j.rand(1, 30);
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new OutputLayer.Builder().nIn(30).nOut(1).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+            net.output(input, false, ws);
         }
     }
 }

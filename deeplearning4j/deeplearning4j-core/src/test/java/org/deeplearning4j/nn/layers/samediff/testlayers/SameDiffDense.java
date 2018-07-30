@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.layers.samediff.testlayers;
 
 import lombok.Data;
@@ -5,7 +21,7 @@ import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLayer;
+import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
 import org.deeplearning4j.nn.conf.layers.samediff.SDLayerParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayerUtils;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
@@ -21,7 +37,7 @@ import java.util.*;
 @Data
 @EqualsAndHashCode(callSuper = true, exclude = {"paramShapes"})
 @JsonIgnoreProperties("paramShapes")
-public class SameDiffDense extends BaseSameDiffLayer {
+public class SameDiffDense extends SameDiffLayer {
 
     private static final List<String> W_KEYS = Collections.singletonList(DefaultParamInitializer.WEIGHT_KEY);
     private static final List<String> B_KEYS = Collections.singletonList(DefaultParamInitializer.BIAS_KEY);
@@ -82,13 +98,13 @@ public class SameDiffDense extends BaseSameDiffLayer {
     }
 
     @Override
-    public List<SDVariable> defineLayer(SameDiff sd, SDVariable layerInput, Map<String, SDVariable> paramTable) {
+    public SDVariable defineLayer(SameDiff sd, SDVariable layerInput, Map<String, SDVariable> paramTable) {
         SDVariable weights = paramTable.get(DefaultParamInitializer.WEIGHT_KEY);
         SDVariable bias = paramTable.get(DefaultParamInitializer.BIAS_KEY);
 
         SDVariable mmul = sd.mmul("mmul", layerInput, weights);
         SDVariable z = mmul.add("z", bias);
-        return Collections.singletonList(activation.asSameDiff("out", sd, z));
+        return activation.asSameDiff("out", sd, z);
     }
 
     @Override
@@ -99,11 +115,11 @@ public class SameDiffDense extends BaseSameDiffLayer {
     }
 
     public char paramReshapeOrder(String param){
-        //To match DL4J
+        //To match DL4J for easy comparison
         return 'f';
     }
 
-    public static class Builder extends BaseSameDiffLayer.Builder<Builder> {
+    public static class Builder extends SameDiffLayer.Builder<Builder> {
 
         private int nIn;
         private int nOut;

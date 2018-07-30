@@ -1,4 +1,20 @@
 #!/usr/bin/env bash
+################################################################################
+# Copyright (c) 2015-2018 Skymind, Inc.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache License, Version 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+################################################################################
+
 set -eu
 
 # cd to the directory containing this script
@@ -439,27 +455,8 @@ mkbuilddir() {
         echo "Removing blasbuild"
         rm -Rf blasbuild
     fi
-    mkdir -p blasbuild
-    cd blasbuild
-    CHIP_DIR="$CHIP"
-    if [ -n "$CHIP_EXTENSION" ]; then
-        CHIP_DIR="$CHIP_DIR-$CHIP_EXTENSION"
-    fi
-    if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
-        CHIP_DIR="$CHIP_DIR-$CHIP_VERSION"
-    fi
-
-    # create appropriate directories and links here for ND4J
-    if [ "$CHIP" != "$CHIP_DIR" ]; then
-        mkdir -p "$CHIP_DIR"
-        rm -f "$CHIP"
-        ln -s "$CHIP_DIR" "$CHIP"
-        mkdir -p "$CHIP/blas"
-        cd "$CHIP_DIR"
-    else
-        mkdir -p "$CHIP"
-        cd "$CHIP"
-    fi
+    mkdir -p "blasbuild/$CHIP"
+    cd "blasbuild/$CHIP"
 }
 
 

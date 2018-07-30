@@ -1,18 +1,18 @@
-/*-
- *  * Copyright 2016 Skymind, Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
- */
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.datavec.api.transform.condition;
 
@@ -102,6 +102,31 @@ public class TestConditions {
         assertTrue(condition.condition(Collections.singletonList((Writable) new DoubleWritable(3.0))));
         assertFalse(condition.condition(Collections.singletonList((Writable) new DoubleWritable(1.0))));
         assertFalse(condition.condition(Collections.singletonList((Writable) new DoubleWritable(2.0))));
+    }
+
+
+    @Test
+    public void testFloatCondition() {
+        Schema schema = TestTransforms.getSchema(ColumnType.Float);
+
+        Condition condition =
+                new FloatColumnCondition("column", SequenceConditionMode.Or, ConditionOp.GreaterOrEqual, 0);
+        condition.setInputSchema(schema);
+
+        assertTrue(condition.condition(Collections.singletonList((Writable) new FloatWritable(0.0f))));
+        assertTrue(condition.condition(Collections.singletonList((Writable) new FloatWritable(0.5f))));
+        assertFalse(condition.condition(Collections.singletonList((Writable) new FloatWritable(-0.5f))));
+        assertFalse(condition.condition(Collections.singletonList((Writable) new FloatWritable(-1f))));
+
+        Set<Float> set = new HashSet<Float>();
+        set.add(0.0f);
+        set.add(3.0f);
+        condition = new FloatColumnCondition("column", SequenceConditionMode.Or, ConditionOp.InSet, set);
+        condition.setInputSchema(schema);
+        assertTrue(condition.condition(Collections.singletonList((Writable) new FloatWritable(0.0f))));
+        assertTrue(condition.condition(Collections.singletonList((Writable) new FloatWritable(3.0f))));
+        assertFalse(condition.condition(Collections.singletonList((Writable) new FloatWritable(1.0f))));
+        assertFalse(condition.condition(Collections.singletonList((Writable) new FloatWritable(2.0f))));
     }
 
     @Test

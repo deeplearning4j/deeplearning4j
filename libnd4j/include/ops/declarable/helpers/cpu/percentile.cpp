@@ -1,10 +1,25 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 17.05.2018
 //
 
 #include <ops/declarable/helpers/percentile.h>
 #include "ResultSet.h"
-#include <NDArrayFactory.h>
 
 namespace nd4j    {
 namespace ops     {
@@ -24,7 +39,7 @@ void percentile(const NDArray<T>& input, NDArray<T>& output, std::vector<int>& a
         shape::checkDimensions(inputRank, axises);          // check, sort dimensions and remove duplicates if they are present
 
 
-    ResultSet<T>* listOfSubArrs = NDArrayFactory<T>::allTensorsAlongDimension(&input, axises);
+    ResultSet<T>* listOfSubArrs = input.allTensorsAlongDimension(axises);
     
     std::vector<Nd4jLong> shapeOfSubArr(listOfSubArrs->at(0)->rankOf());
     for(int i=0; i<shapeOfSubArr.size(); ++i)

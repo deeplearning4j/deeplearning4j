@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 //  @author raver119@gmail.com
 //
@@ -28,9 +44,9 @@ namespace helpers {
         auto _b = b->reshape(b->ordering(), {-1, 3});
         auto _o = o->reshape(o->ordering(), {-1, 3});
 
-        auto tadsA = NDArrayFactory<T>::allTensorsAlongDimension(_a, {1});
-        auto tadsB = NDArrayFactory<T>::allTensorsAlongDimension(_b, {1});
-        auto tadsO = NDArrayFactory<T>::allTensorsAlongDimension(_o, {1});
+        auto tadsA = _a->allTensorsAlongDimension({1});
+        auto tadsB = _b->allTensorsAlongDimension({1});
+        auto tadsO = _o->allTensorsAlongDimension({1});
 
         int tads = tadsA->size();
 

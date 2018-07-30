@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by Yurii Shyrma on 02.01.2018
 //
@@ -5,7 +21,6 @@
 #include <ops/declarable/helpers/stack.h>
 #include <helpers/ShapeUtils.h>
 #include <array/ResultSet.h>
-#include <NDArrayFactory.h>
 
 
 namespace nd4j {
@@ -26,7 +41,7 @@ void stack(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& outArr, const int
 	else {
 
 		std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(outArr.rankOf(), {dim});	
-		ResultSet<T>* list = NDArrayFactory<T>::allTensorsAlongDimension(&outArr, dimsToExclude);		// list.size() == block.width()
+		ResultSet<T>* list = outArr.allTensorsAlongDimension(dimsToExclude);		// list.size() == block.width()
 		
 #pragma omp parallel for if(list->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
 		for(int i=0; i<list->size(); ++i)

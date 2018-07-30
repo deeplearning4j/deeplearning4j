@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.spark.impl.graph;
 
 import org.apache.spark.api.java.JavaPairRDD;
@@ -260,105 +276,111 @@ public class TestSparkComputationGraph extends BaseSparkTest {
 
     @Test
     public void testEvaluationAndRoc() {
-        DataSetIterator iter = new IrisDataSetIterator(5, 150);
+        for( int evalWorkers : new int[]{1, 4, 8}) {
+            DataSetIterator iter = new IrisDataSetIterator(5, 150);
 
-        //Make a 2-class version of iris:
-        List<DataSet> l = new ArrayList<>();
-        iter.reset();
-        while (iter.hasNext()) {
-            DataSet ds = iter.next();
-            INDArray newL = Nd4j.create(ds.getLabels().size(0), 2);
-            newL.putColumn(0, ds.getLabels().getColumn(0));
-            newL.putColumn(1, ds.getLabels().getColumn(1));
-            newL.getColumn(1).addi(ds.getLabels().getColumn(2));
-            ds.setLabels(newL);
-            l.add(ds);
+            //Make a 2-class version of iris:
+            List<DataSet> l = new ArrayList<>();
+            iter.reset();
+            while (iter.hasNext()) {
+                DataSet ds = iter.next();
+                INDArray newL = Nd4j.create(ds.getLabels().size(0), 2);
+                newL.putColumn(0, ds.getLabels().getColumn(0));
+                newL.putColumn(1, ds.getLabels().getColumn(1));
+                newL.getColumn(1).addi(ds.getLabels().getColumn(2));
+                ds.setLabels(newL);
+                l.add(ds);
+            }
+
+            iter = new ListDataSetIterator<>(l);
+
+            ComputationGraph cg = getBasicNetIris2Class();
+
+            Evaluation e = cg.evaluate(iter);
+            ROC roc = cg.evaluateROC(iter, 32);
+
+
+            SparkComputationGraph scg = new SparkComputationGraph(sc, cg, null);
+            scg.setDefaultEvaluationWorkers(evalWorkers);
+
+
+            JavaRDD<DataSet> rdd = sc.parallelize(l);
+            rdd = rdd.repartition(20);
+
+            Evaluation e2 = scg.evaluate(rdd);
+            ROC roc2 = scg.evaluateROC(rdd);
+
+
+            assertEquals(e2.accuracy(), e.accuracy(), 1e-3);
+            assertEquals(e2.f1(), e.f1(), 1e-3);
+            assertEquals(e2.getNumRowCounter(), e.getNumRowCounter(), 1e-3);
+            assertEquals(e2.falseNegatives(), e.falseNegatives());
+            assertEquals(e2.falsePositives(), e.falsePositives());
+            assertEquals(e2.trueNegatives(), e.trueNegatives());
+            assertEquals(e2.truePositives(), e.truePositives());
+            assertEquals(e2.precision(), e.precision(), 1e-3);
+            assertEquals(e2.recall(), e.recall(), 1e-3);
+            assertEquals(e2.getConfusionMatrix(), e.getConfusionMatrix());
+
+            assertEquals(roc.calculateAUC(), roc2.calculateAUC(), 1e-5);
+            assertEquals(roc.calculateAUCPR(), roc2.calculateAUCPR(), 1e-5);
         }
-
-        iter = new ListDataSetIterator<>(l);
-
-        ComputationGraph cg = getBasicNetIris2Class();
-
-        Evaluation e = cg.evaluate(iter);
-        ROC roc = cg.evaluateROC(iter, 32);
-
-
-        SparkComputationGraph scg = new SparkComputationGraph(sc, cg, null);
-
-
-
-        JavaRDD<DataSet> rdd = sc.parallelize(l);
-        rdd = rdd.repartition(20);
-
-        Evaluation e2 = scg.evaluate(rdd);
-        ROC roc2 = scg.evaluateROC(rdd);
-
-
-        assertEquals(e2.accuracy(), e.accuracy(), 1e-3);
-        assertEquals(e2.f1(), e.f1(), 1e-3);
-        assertEquals(e2.getNumRowCounter(), e.getNumRowCounter(), 1e-3);
-        assertEquals(e2.falseNegatives(), e.falseNegatives());
-        assertEquals(e2.falsePositives(), e.falsePositives());
-        assertEquals(e2.trueNegatives(), e.trueNegatives());
-        assertEquals(e2.truePositives(), e.truePositives());
-        assertEquals(e2.precision(), e.precision(), 1e-3);
-        assertEquals(e2.recall(), e.recall(), 1e-3);
-        assertEquals(e2.getConfusionMatrix(), e.getConfusionMatrix());
-
-        assertEquals(roc.calculateAUC(), roc2.calculateAUC(), 1e-5);
-        assertEquals(roc.calculateAUCPR(), roc2.calculateAUCPR(), 1e-5);
     }
 
     @Test
     public void testEvaluationAndRocMDS() {
-        DataSetIterator iter = new IrisDataSetIterator(5, 150);
+        for( int evalWorkers : new int[]{1, 4, 8}) {
 
-        //Make a 2-class version of iris:
-        List<MultiDataSet> l = new ArrayList<>();
-        iter.reset();
-        while (iter.hasNext()) {
-            DataSet ds = iter.next();
-            INDArray newL = Nd4j.create(ds.getLabels().size(0), 2);
-            newL.putColumn(0, ds.getLabels().getColumn(0));
-            newL.putColumn(1, ds.getLabels().getColumn(1));
-            newL.getColumn(1).addi(ds.getLabels().getColumn(2));
+            DataSetIterator iter = new IrisDataSetIterator(5, 150);
 
-            MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(ds.getFeatures(), newL);
-            l.add(mds);
+            //Make a 2-class version of iris:
+            List<MultiDataSet> l = new ArrayList<>();
+            iter.reset();
+            while (iter.hasNext()) {
+                DataSet ds = iter.next();
+                INDArray newL = Nd4j.create(ds.getLabels().size(0), 2);
+                newL.putColumn(0, ds.getLabels().getColumn(0));
+                newL.putColumn(1, ds.getLabels().getColumn(1));
+                newL.getColumn(1).addi(ds.getLabels().getColumn(2));
+
+                MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(ds.getFeatures(), newL);
+                l.add(mds);
+            }
+
+            MultiDataSetIterator mdsIter = new IteratorMultiDataSetIterator(l.iterator(), 5);
+
+            ComputationGraph cg = getBasicNetIris2Class();
+
+            IEvaluation[] es = cg.doEvaluation(mdsIter, new Evaluation(), new ROC(32));
+            Evaluation e = (Evaluation) es[0];
+            ROC roc = (ROC) es[1];
+
+
+            SparkComputationGraph scg = new SparkComputationGraph(sc, cg, null);
+            scg.setDefaultEvaluationWorkers(evalWorkers);
+
+            JavaRDD<MultiDataSet> rdd = sc.parallelize(l);
+            rdd = rdd.repartition(20);
+
+            IEvaluation[] es2 = scg.doEvaluationMDS(rdd, 5, new Evaluation(), new ROC(32));
+            Evaluation e2 = (Evaluation) es2[0];
+            ROC roc2 = (ROC) es2[1];
+
+
+            assertEquals(e2.accuracy(), e.accuracy(), 1e-3);
+            assertEquals(e2.f1(), e.f1(), 1e-3);
+            assertEquals(e2.getNumRowCounter(), e.getNumRowCounter(), 1e-3);
+            assertEquals(e2.falseNegatives(), e.falseNegatives());
+            assertEquals(e2.falsePositives(), e.falsePositives());
+            assertEquals(e2.trueNegatives(), e.trueNegatives());
+            assertEquals(e2.truePositives(), e.truePositives());
+            assertEquals(e2.precision(), e.precision(), 1e-3);
+            assertEquals(e2.recall(), e.recall(), 1e-3);
+            assertEquals(e2.getConfusionMatrix(), e.getConfusionMatrix());
+
+            assertEquals(roc.calculateAUC(), roc2.calculateAUC(), 1e-5);
+            assertEquals(roc.calculateAUCPR(), roc2.calculateAUCPR(), 1e-5);
         }
-
-        MultiDataSetIterator mdsIter = new IteratorMultiDataSetIterator(l.iterator(), 5);
-
-        ComputationGraph cg = getBasicNetIris2Class();
-
-        IEvaluation[] es = cg.doEvaluation(mdsIter, new Evaluation(), new ROC(32));
-        Evaluation e = (Evaluation) es[0];
-        ROC roc = (ROC) es[1];
-
-
-        SparkComputationGraph scg = new SparkComputationGraph(sc, cg, null);
-
-        JavaRDD<MultiDataSet> rdd = sc.parallelize(l);
-        rdd = rdd.repartition(20);
-
-        IEvaluation[] es2 = scg.doEvaluationMDS(rdd, 5, new Evaluation(), new ROC(32));
-        Evaluation e2 = (Evaluation) es2[0];
-        ROC roc2 = (ROC) es2[1];
-
-
-        assertEquals(e2.accuracy(), e.accuracy(), 1e-3);
-        assertEquals(e2.f1(), e.f1(), 1e-3);
-        assertEquals(e2.getNumRowCounter(), e.getNumRowCounter(), 1e-3);
-        assertEquals(e2.falseNegatives(), e.falseNegatives());
-        assertEquals(e2.falsePositives(), e.falsePositives());
-        assertEquals(e2.trueNegatives(), e.trueNegatives());
-        assertEquals(e2.truePositives(), e.truePositives());
-        assertEquals(e2.precision(), e.precision(), 1e-3);
-        assertEquals(e2.recall(), e.recall(), 1e-3);
-        assertEquals(e2.getConfusionMatrix(), e.getConfusionMatrix());
-
-        assertEquals(roc.calculateAUC(), roc2.calculateAUC(), 1e-5);
-        assertEquals(roc.calculateAUCPR(), roc2.calculateAUCPR(), 1e-5);
     }
 
 }

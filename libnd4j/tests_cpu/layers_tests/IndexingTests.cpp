@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by raver119 on 31.10.2017.
 //
@@ -5,7 +21,6 @@
 #include "testlayers.h"
 #include <ops/declarable/CustomOperations.h>
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 #include <NativeOps.h>
 
 using namespace nd4j;
@@ -23,12 +38,12 @@ TEST_F(IndexingTests, StridedSlice_1) {
     exp.putScalar(1, 26.f);
     exp.putScalar(2, 27.f);
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     //nd4j_debug("print x->rankOf(): %i", x.rankOf());
 
     /*
-    auto tads = NDArrayFactory<float>::allTensorsAlongDimension(&x, {0});
+    auto tads = x.allTensorsAlongDimension({0});
     nd4j_debug("numTads: %i\n", tads->size());
     for (int e = 0; e < tads->size(); e++)
         tads->at(e)->assign((float) e);
@@ -55,7 +70,7 @@ TEST_F(IndexingTests, StridedSlice_2) {
     NDArray<float> exp('c', {2, 3, 3});
     exp.setBuffer(_expB);
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::strided_slice<float> op;
 
@@ -78,7 +93,7 @@ TEST_F(IndexingTests, StridedSlice_3) {
     NDArray<float> exp('c', {2, 3, 2});
     exp.setBuffer(_expB);
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::strided_slice<float> op;
 
@@ -195,7 +210,7 @@ TEST_F(IndexingTests, SimpleSlice_4) {
 
 TEST_F(IndexingTests, MaskedSlice_0) {
     NDArray<float> matrix('c', {3, 5});
-    auto tads = NDArrayFactory<float>::allTensorsAlongDimension(&matrix, {1});
+    auto tads = matrix.allTensorsAlongDimension({1});
     for (int e = 0; e < tads->size(); e++) {
         tads->at(e)->assign((float) (e+1));
     }
@@ -222,7 +237,7 @@ TEST_F(IndexingTests, MaskedSlice_0) {
 
 TEST_F(IndexingTests, MaskedSlice_00) {
     NDArray<float> matrix('c', {3, 5});
-    auto tads = NDArrayFactory<float>::allTensorsAlongDimension(&matrix, {1});
+    auto tads = matrix.allTensorsAlongDimension({1});
     for (int e = 0; e < tads->size(); e++) {
         tads->at(e)->assign((float) (e+1));
     }
@@ -249,7 +264,7 @@ TEST_F(IndexingTests, MaskedSlice_00) {
 
 TEST_F(IndexingTests, MaskedSlice_1) {
     NDArray<float> matrix('c', {3, 5});
-    auto tads = NDArrayFactory<float>::allTensorsAlongDimension(&matrix, {1});
+    auto tads = matrix.allTensorsAlongDimension({1});
     for (int e = 0; e < tads->size(); e++) {
         tads->at(e)->assign((float) (e+1));
     }
