@@ -50,7 +50,7 @@ public class IntegrationTests extends BaseDL4JTest {
         IntegrationTestRunner.runTest(RNNTestCases.getRnnCsvSequenceClassificationTestCase1(), testDir);
     }
 
-    @Test(timeout = 30000L)
+    @Test(timeout = 60000L)
     public void testRnnSeqClassification2() throws Exception {
         IntegrationTestRunner.runTest(RNNTestCases.getRnnCsvSequenceClassificationTestCase2(), testDir);
     }
