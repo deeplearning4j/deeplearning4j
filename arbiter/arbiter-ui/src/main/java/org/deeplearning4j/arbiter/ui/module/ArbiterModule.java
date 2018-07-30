@@ -502,9 +502,16 @@ public class ArbiterModule implements UIModule {
 
         //Report optimization settings/configuration.
         String[] tableHeader = {"Configuration", "Value"};
+        String [] dataSourceOrProvider;
+        if (oc.getDataProvider() != null) {
+            dataSourceOrProvider = new String[] {"Data Provider", oc.getDataProvider().toString()};
+        }
+        else {
+            dataSourceOrProvider = new String[] {"Data Source", oc.getDataSource().getCanonicalName()};
+        }
         String[][] table = new String[][]{
                 {"Candidate Generator", oc.getCandidateGenerator().getClass().getSimpleName()},
-                {"Data Provider", oc.getDataProvider().toString()},
+                dataSourceOrProvider,
                 {"Score Function", oc.getScoreFunction().toString()},
                 {"Result Saver", oc.getResultSaver().toString()},
         };

@@ -626,7 +626,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 */
 
                 // in case of regular accumulation we don't care about array state before op
-                ret = Nd4j.createUninitialized(retShape);
+                ret = Nd4j.create(retShape);
             }
             op.setZ(ret);
         } else {
@@ -699,7 +699,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             retShape = new long[] {1, 1};
         }
 
-        INDArray ret = Nd4j.createUninitialized(retShape);
+        INDArray ret = Nd4j.create(retShape);
         /*
         if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
             ret = Nd4j.zeros(retShape);
@@ -1108,7 +1108,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
             return null;
 
-        val ret = Nd4j.createUninitialized(retShape);
+        val ret = Nd4j.create(retShape);
         /*
         if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
             ret = Nd4j.zeros(retShape);

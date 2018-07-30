@@ -193,7 +193,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
         if(op.z() == null || op.x() == op.z()) {
-            val ret = Nd4j.createUninitialized(retShape);
+            val ret = Nd4j.create(retShape);
 
             op.setZ(ret);
         } else if(!Arrays.equals(retShape, op.z().shape())){
@@ -338,7 +338,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     }
                 }
 
-                ret = Nd4j.createUninitialized(retShape);
+                ret = Nd4j.create(retShape);
 
             }
             op.setZ(ret);

@@ -17,7 +17,11 @@
 package org.deeplearning4j.rl4j.policy;
 
 import org.deeplearning4j.nn.api.NeuralNetwork;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -25,9 +29,9 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -37,10 +41,14 @@ import static org.junit.Assert.assertTrue;
 public class PolicyTest {
 
     public static class DummyAC<NN extends DummyAC> implements IActorCritic<NN> {
+        NeuralNetwork nn;
+        DummyAC(NeuralNetwork nn) {
+            this.nn = nn;
+        }
 
         @Override
         public NeuralNetwork[] getNeuralNetworks() {
-            throw new UnsupportedOperationException();
+            return new NeuralNetwork[] { nn };
         }
 
         @Override
@@ -110,8 +118,17 @@ public class PolicyTest {
     }
 
     @Test
-    public void testACPolicy() throws IOException {
-        ACPolicy policy = new ACPolicy(new DummyAC(), new Random(555));
+    public void testACPolicy() throws Exception {
+        ComputationGraph cg = new ComputationGraph(new NeuralNetConfiguration.Builder().seed(444).graphBuilder().addInputs("input")
+                .addLayer("output", new OutputLayer.Builder().nOut(1).build(), "input").setOutputs("output").build());
+        MultiLayerNetwork mln = new MultiLayerNetwork(new NeuralNetConfiguration.Builder().seed(555).list()
+                .layer(0, new OutputLayer.Builder().nOut(1).build()).build());
+
+        ACPolicy policy = new ACPolicy(new DummyAC(cg));
+        assertNotNull(policy.rd);
+
+        policy = new ACPolicy(new DummyAC(mln));
+        assertNotNull(policy.rd);
 
         INDArray input = Nd4j.create(new double[] {1.0, 0.0});
         for (int i = 0; i < 100; i++) {
