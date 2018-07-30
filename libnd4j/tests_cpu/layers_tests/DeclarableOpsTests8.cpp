@@ -2603,16 +2603,22 @@ TEST_F(DeclarableOpsTests8, NormalizeMoments_SGO_1) {
     data.linspace(1);
     
     NDArray<double>* means = data.sum({0});
-    NDArray<double>* deviance = data.varianceAlongDimension<simdOps::SummaryStatsVariance<double>>(true, {0}); //('c', {10, 10});
+    NDArray<double>* deviance = data.varianceAlongDimension<simdOps::SummaryStatsVariance<double>>(false, {0}); //('c', {10, 10});
 
     NDArray<double> counts(10.0);
 
 //    NDArray<double> expMeans('c', {10, 10});
 
 //    NDArray<double> expDeviance('c', {10, 10});
-
+    NDArray<double> squared('c', {10, 10});
+    data.applyTransform<simdOps::Square<double>>(&squared, nullptr);
+    NDArray<double>* ssSquared = squared.sum({0});
     nd4j::ops::normalize_moments<double> op;
-    ResultSet<double>* results = op.execute({&counts, means, deviance}, {0.0}, {});
+    ResultSet<double>* results = op.execute({&counts, means, ssSquared}, {0.0}, {0});
+    (*means) /= counts;
+
+//    nd4j::ops::normalize_moments<double> op;
+//    ResultSet<double>* results = op.execute({&counts, means, deviance}, {0.0}, {});
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_EQ(results->size(), 2);
@@ -2620,16 +2626,17 @@ TEST_F(DeclarableOpsTests8, NormalizeMoments_SGO_1) {
     NDArray<double>* outputMeans = results->at(0);    
     NDArray<double>* outputDeviance = results->at(1);    
 
-//    outputMeans->printIndexedBuffer("Means");
-//    outputDeviance->printIndexedBuffer("Variance");
-//    deviance->printIndexedBuffer("Expected");
-//    means->printIndexedBuffer("Expected means");
+    outputMeans->printIndexedBuffer("Means");
+    outputDeviance->printIndexedBuffer("Variance");
+    deviance->printIndexedBuffer("Expected");
+    means->printIndexedBuffer("Expected means");
     ASSERT_TRUE(means->isSameShape(outputMeans));
     ASSERT_TRUE(means->equalsTo(outputMeans));    
     ASSERT_TRUE(deviance->isSameShape(outputDeviance));
     ASSERT_TRUE(deviance->equalsTo(outputDeviance));    
     delete means;
     delete deviance;
+    delete ssSquared;
 //    ASSERT_TRUE(expMeans.isSameShape(outputMeans));
 //    ASSERT_TRUE(expMeans.equalsTo(outputMeans));    
 //    ASSERT_TRUE(expMeans.isSameShape(outputDeviance));
