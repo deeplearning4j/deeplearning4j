@@ -16,6 +16,11 @@
 
 package org.nd4j.linalg.api.memory.enums;
 
+/**
+ * This enum describes possible debug modes for Nd4j workspaces
+ *
+ * @author raver119@protonmail.com
+ */
 public enum DebugMode {
     /**
      * Default mode, means that workspaces work in production mode
