@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.jcublas;
 
 import lombok.extern.slf4j.Slf4j;
@@ -95,7 +111,7 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
-    public INDArray empty() {
+    public INDArray empty(DataBuffer.Type type) {
         throw new IllegalStateException();
     }
 
@@ -445,6 +461,11 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
+    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, DataBuffer buffer) {
+
+    }
+
+    @Override
     public INDArray createFromNpyPointer(Pointer pointer) {
         return null;
     }
@@ -506,42 +527,52 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
-    public ISparseNDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public ISparseNDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         return new JcusparseNDArrayCSR(data, columns, pointerB, pointerE, shape);
     }
 
     @Override
-    public INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(double[] values, int[][] indices, int[] shape) {
+    public INDArray createSparseCOO(double[] values, long[][] indices, long[] shape) {
         return new JCusparseNDArrayCOO(values, indices, shape);
     }
 
     @Override
-    public INDArray createSparseCOO(float[] values, int[][] indices, int[] shape) {
+    public INDArray createSparseCOO(float[] values, long[][] indices, long[] shape) {
         return new JCusparseNDArrayCOO(values, indices, shape);
     }
 
     @Override
-    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] shape) {
+    public INDArray createSparseCOO(double[] values, int[][] indices, long[] shape) {
         return new JCusparseNDArrayCOO(values, indices, shape);
     }
 
     @Override
-    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, int[] shape) {
+    public INDArray createSparseCOO(float[] values, int[][] indices, long[] shape) {
+        return new JCusparseNDArrayCOO(values, indices, shape);
+    }
+
+    @Override
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] shape) {
+        return new JCusparseNDArrayCOO(values, indices, shape);
+    }
+
+    @Override
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, long[] shape) {
         return new JCusparseNDArrayCOO(values, indices, sparseInformation, shape);
     }
 
     @Override
-    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, int[] shape) {
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, long[] shape) {
         return new JCusparseNDArrayCOO(values, indices, sparseOffsets, flags, hiddenDimensions, underlyingRank, shape);
     }
 

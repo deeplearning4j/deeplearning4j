@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // @author raver119@gmail.com, created on 29/10/17.
 // @author Yurii Shyrma (iuriish@yahoo.com), changed on 14.05.2018
@@ -20,16 +36,16 @@ namespace nd4j {
 
             REQUIRE_TRUE(input->rankOf() == 4, 0, "PNORMPOOL2D op: input should have rank of 4, but got %i instead", input->rankOf());
 
-            int kY = INT_ARG(0);
-            int kX = INT_ARG(1);
-            int sY = INT_ARG(2);
-            int sX = INT_ARG(3);
-            int pY = INT_ARG(4);
-            int pX = INT_ARG(5);
-            int dY = INT_ARG(6);
-            int dX = INT_ARG(7);
-            bool isSameMode = INT_ARG(8);
-            int extraParam0 = INT_ARG(9);
+            auto kY = INT_ARG(0);
+            auto kX = INT_ARG(1);
+            auto sY = INT_ARG(2);
+            auto sX = INT_ARG(3);
+            auto pY = INT_ARG(4);
+            auto pX = INT_ARG(5);
+            auto dY = INT_ARG(6);
+            auto dX = INT_ARG(7);
+            bool isSameMode = static_cast<bool>(INT_ARG(8));
+            auto extraParam0 = INT_ARG(9);
 
             REQUIRE_TRUE(dY != 0 && dX != 0, 0, "PNORMPOOL2D op: dilation must not be zero, but got instead {%i, %i}", dY, dX);
 
@@ -43,16 +59,27 @@ namespace nd4j {
                 output = output->permute({0, 3, 1, 2});                 // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
             }
 
-            const int inY = input->sizeAt(2);
-            const int inX = input->sizeAt(3);
+            const auto inY = static_cast<int>(input->sizeAt(2));
+            const auto inX = static_cast<int>(input->sizeAt(3));
 
             ConvolutionUtils<T>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
             if (isSameMode)
-                ConvolutionUtils<T>::calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sX, pY, dY, dX);
+                ConvolutionUtils<T>::calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
 
             // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;
-            std::vector<T> argT = {(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T)dX, 2., (T)extraParam0};
+            std::vector<T> argT = {
+                    static_cast<T>(kY),
+                    static_cast<T>(kX),
+                    static_cast<T>(sY),
+                    static_cast<T>(sX),
+                    static_cast<T>(pY),
+                    static_cast<T>(pX),
+                    static_cast<T>(dY),
+                    static_cast<T>(dX),
+                    static_cast<T>(2.f),
+                    static_cast<T>(extraParam0)};
+
             ConvolutionUtils<T>::pooling2d(*input, *output, argT.data());
 
             if (!isNCHW) {

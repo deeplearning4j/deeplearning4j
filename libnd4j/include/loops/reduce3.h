@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 /*
  * reduce3.h
  *
@@ -1127,6 +1143,7 @@ template<typename OpType>
                 char xOrder = shape::order(xShapeInfo);
                 char yOrder = shape::order(yShapeInfo);
                 if(xOrder != yOrder) {
+
                     Nd4jLong shapeIter[MAX_RANK];
                     Nd4jLong coord[MAX_RANK];
                     int dim;
@@ -1152,8 +1169,9 @@ template<typename OpType>
                                                  &y,
                                                  yStridesIter) >= 0) {
 
-                        Nd4jLong resultLength = shape::length(resultShapeInfoBuffer);
-                        Nd4jLong tadLength = shape::tadLength(xShapeInfo,dimension,dimensionLength);
+                        auto resultLength = shape::length(resultShapeInfoBuffer);
+                        auto tadLength = shape::tadLength(xShapeInfo,dimension,dimensionLength);
+
                         ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                 Nd4jLong xOffset = shape::getOffset(0,xShape,xStride,coord,rank);
                                 auto reductionIndex = xOffset / resultLength;
@@ -1278,7 +1296,7 @@ template<typename OpType>
                                 int yRank = !xTadBigger ? shape::rank(yTad.tadOnlyShapeInfo) : shape::rank(yShapeInfo);
                                 Nd4jLong coord[MAX_RANK];
                                 Nd4jLong yCoord[MAX_RANK];
-                                T start = 0.0;
+                                T start = OpType::startingValue(x);
 
                                 for (int j = 0; j < tadLength; j++) {
                                     if(xTadBigger) {

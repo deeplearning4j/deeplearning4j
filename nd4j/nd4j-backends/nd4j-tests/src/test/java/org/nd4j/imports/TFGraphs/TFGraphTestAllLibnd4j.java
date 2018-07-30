@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.imports.TFGraphs;
 
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +46,8 @@ public class TFGraphTestAllLibnd4j {
             "deep_mnist_no_dropout",
             "ssd_mobilenet_v1_coco",
             "yolov2_608x608",
-            "inception_v3_with_softmax"
+            "inception_v3_with_softmax",
+            "conv_5" // still RNG differences
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 
@@ -58,7 +75,10 @@ public class TFGraphTestAllLibnd4j {
             log.info("\n\tSKIPPED MODEL: " + modelName);
             return;
         }
-        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, EXECUTE_WITH);
+        Double precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
+
+        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, EXECUTE_WITH, precisionOverride);
+        //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
     }
 
 }

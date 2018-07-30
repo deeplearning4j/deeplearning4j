@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.api.ndarray;
 
 import org.junit.After;
@@ -27,6 +43,11 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
     public TestSerializationFloatToDouble(Nd4jBackend backend) {
         super(backend);
         this.initialType = Nd4j.dataType();
+    }
+
+    @After
+    public void after() {
+        Nd4j.setDataType(this.initialType);
     }
 
     @Test
@@ -147,12 +168,6 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
 
         //assertEquals(sub,arr2);
         assertTrue(Transforms.abs(sub1.sub(arr2).div(sub1)).maxNumber().doubleValue() < 0.01);
-    }
-
-    @After
-    public void after() {
-        DataTypeUtil.setDTypeForContext(this.initialType);
-        System.out.println("AFTER DATATYPE HERE: " + Nd4j.dataType());
     }
 
     @Override

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.api.blas;
 
 import org.junit.Ignore;
@@ -23,7 +39,7 @@ public class SparseCSRLevel1Test extends BaseNd4jTest {
     private int[] col = {0, 1, 3};
     private int[] pointerB = {0};
     private int[] pointerE = {4};
-    private int[] shape = {1, 4};
+    private long[] shape = {1, 4};
 
     public SparseCSRLevel1Test(Nd4jBackend backend) {
         super(backend);
@@ -92,7 +108,7 @@ public class SparseCSRLevel1Test extends BaseNd4jTest {
 
         //System.out.println("indexes: " + ((BaseSparseNDArray) sparseVec).getVectorCoordinates().toString());
         INDArray expectedSparseVec = Nd4j.createSparseCSR(new double[] {3, 6, 6, 12}, new int[] {0, 1, 2, 3},
-                        new int[] {0}, new int[] {4}, new int[] {1, 4});
+                        new int[] {0}, new int[] {4}, new long[] {1, 4});
         INDArray expectedVec = Nd4j.create(new double[] {-1, -2, 3, -4});
         assertEquals(getFailureMessage(), expectedSparseVec.data(), sparseVec.data());
 
@@ -121,7 +137,7 @@ public class SparseCSRLevel1Test extends BaseNd4jTest {
         Nd4j.getBlasWrapper().level1().rot(vec.length(), sparseVec, vec, 1, 2);
 
         INDArray expectedSparseVec = Nd4j.createSparseCSR(new double[] {3, 6, 9, 12}, new int[] {0, 1, 2, 3},
-                        new int[] {0}, new int[] {4}, new int[] {1, 4});
+                        new int[] {0}, new int[] {4}, new long[] {1, 4});
         INDArray expectedVec = Nd4j.create(new double[] {-1, -2, -3, -4});
         assertEquals(getFailureMessage(), expectedSparseVec.data(), sparseVec.data());
         assertEquals(getFailureMessage(), expectedVec, vec);

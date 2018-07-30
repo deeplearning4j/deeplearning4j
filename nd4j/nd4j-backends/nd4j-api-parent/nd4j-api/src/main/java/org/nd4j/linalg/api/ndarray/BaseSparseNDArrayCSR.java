@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.api.ndarray;
 
 import com.google.common.primitives.Ints;
@@ -31,12 +47,12 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
      * @param columnsPointers Element i of the integer array columns is the number of the column in A that contains the i-th value
      *                in the values array.
      * @param pointerB Element j of this integer array gives the index of the element in the values array that is first
-     *                 non-zero element in a row j of A. Note that this index is equal to pointerB(j) - pointerB(1)+1 .
+ *                 non-zero element in a row j of A. Note that this index is equal to pointerB(j) - pointerB(1)+1 .
      * @param pointerE An integer array that contains row indices, such that pointerE(j)-pointerB(1) is the index of the
-     *                 element in the values array that is last non-zero element in a row j of A.
+*                 element in the values array that is last non-zero element in a row j of A.
      * @param shape Shape of the matrix A
      */
-    public BaseSparseNDArrayCSR(double[] data, int[] columnsPointers, int[] pointerB, int[] pointerE, int[] shape) {
+    public BaseSparseNDArrayCSR(double[] data, int[] columnsPointers, int[] pointerB, int[] pointerE, long[] shape) {
         checkArgument(data.length == columnsPointers.length);
         checkArgument(pointerB.length == pointerE.length);
         // TODO
@@ -48,7 +64,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
         this.columnsPointers = Nd4j.getDataBufferFactory().createInt(valuesSpace);
         this.columnsPointers.setData(columnsPointers);
         this.length = columnsPointers.length;
-        int pointersSpace = rows;
+        long pointersSpace = rows;
         this.pointerB = Nd4j.getDataBufferFactory().createInt(pointersSpace);
         this.pointerB.setData(pointerB);
         this.pointerE = Nd4j.getDataBufferFactory().createInt(pointersSpace);
@@ -57,11 +73,11 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
 
     }
 
-    public BaseSparseNDArrayCSR(float[] data, int[] columnsPointers, int[] pointerB, int[] pointerE, int[] shape) {
+    public BaseSparseNDArrayCSR(float[] data, int[] columnsPointers, int[] pointerB, int[] pointerE, long[] shape) {
         this(Nd4j.createBuffer(data), columnsPointers, pointerB, pointerE, shape);
     }
 
-    public BaseSparseNDArrayCSR(DataBuffer data, int[] columnsPointers, int[] pointerB, int[] pointerE, int[] shape) {
+    public BaseSparseNDArrayCSR(DataBuffer data, int[] columnsPointers, int[] pointerB, int[] pointerE, long[] shape) {
         checkArgument(pointerB.length == pointerE.length);
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
         init(shape);
@@ -70,7 +86,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
         this.columnsPointers.setData(columnsPointers);
         this.length = columnsPointers.length;
         // The size of these pointers are constant
-        int pointersSpace = rows;
+        long pointersSpace = rows;
         this.pointerB = Nd4j.getDataBufferFactory().createInt(pointersSpace);
         this.pointerB.setData(pointerB);
         this.pointerE = Nd4j.getDataBufferFactory().createInt(pointersSpace);
@@ -230,7 +246,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
     public INDArray subArray(ShapeOffsetResolution resolution) {
 
         long[] offsets = resolution.getOffsets();
-        int[] shape = LongUtils.toInts(resolution.getShapes());
+        long[] shape = resolution.getShapes();
 
 
         List<Integer> accuColumns = new ArrayList<>();

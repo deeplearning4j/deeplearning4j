@@ -1,10 +1,28 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.layers;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.misc.DummyConfig;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
@@ -34,6 +52,7 @@ public class FrozenLayer extends BaseWrapperLayer {
     private boolean logTestMode = false;
     private boolean logGradient = false;
     private Gradient zeroGradient;
+    private transient DummyConfig config;
 
     public FrozenLayer(Layer insideLayer) {
         super(insideLayer);
@@ -83,12 +102,6 @@ public class FrozenLayer extends BaseWrapperLayer {
     public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         logTestMode(training);
         return underlying.activate(input, false, workspaceMgr);
-    }
-
-    @Override
-    public Layer clone() {
-        OneTimeLogger.info(log, "Frozen layers are cloned as their original versions.");
-        return new FrozenLayer(underlying.clone());
     }
 
     @Override
@@ -201,6 +214,14 @@ public class FrozenLayer extends BaseWrapperLayer {
 
     public Layer getInsideLayer() {
         return underlying;
+    }
+
+    @Override
+    public TrainingConfig getConfig(){
+        if (config == null) {
+            config = new DummyConfig(getUnderlying().getConfig().getLayerName());
+        }
+        return config;
     }
 }
 

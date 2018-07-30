@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 
 #ifndef PAIRWISE_TRANSFORM_CU
 #define PAIRWISE_TRANSFORM_CU
@@ -659,8 +675,8 @@ namespace functions {
 					Nd4jLong yCoord[MAX_RANK];
 
 	    			for (Nd4jLong i = tid; i < n; i += gridDim.x * blockDim.x) {
-		    			shape::ind2subC(xRank,shape::shapeOf(xShapeBuffer), i, xCoord);
-			    		shape::ind2subC(yRank,shape::shapeOf(yShapeBuffer), i, yCoord);
+		    			shape::ind2subC(xRank,shape::shapeOf(xShapeBuffer), i, n, xCoord);
+			    		shape::ind2subC(yRank,shape::shapeOf(yShapeBuffer), i, n, yCoord);
 
 				    	auto xOffset = shape::getOffset(0, shape::shapeOf(xShapeBuffer), shape::stride(xShapeBuffer), xCoord, xRank);
 					    auto yOffset = shape::getOffset(0, shape::shapeOf(yShapeBuffer), shape::stride(yShapeBuffer), yCoord, yRank);
@@ -672,9 +688,9 @@ namespace functions {
     		    	Nd4jLong resultCoord[MAX_RANK];
 
     				for (Nd4jLong i = tid; i < n; i += gridDim.x * blockDim.x) {
-	    				shape::ind2subC(xRank,shape::shapeOf(xShapeBuffer), i, xCoord);
-		    			shape::ind2subC(yRank,shape::shapeOf(yShapeBuffer), i, yCoord);
-			    		shape::ind2subC(resultRank,shape::shapeOf(resultShapeBuffer), i, resultCoord);
+	    				shape::ind2subC(xRank,shape::shapeOf(xShapeBuffer), i, n, xCoord);
+		    			shape::ind2subC(yRank,shape::shapeOf(yShapeBuffer), i, n, yCoord);
+			    		shape::ind2subC(resultRank,shape::shapeOf(resultShapeBuffer), i, n, resultCoord);
 
     					auto xOffset = shape::getOffset(0, shape::shapeOf(xShapeBuffer), shape::stride(xShapeBuffer), xCoord, xRank);
 	    				auto yOffset = shape::getOffset(0, shape::shapeOf(yShapeBuffer), shape::stride(yShapeBuffer), yCoord, yRank);

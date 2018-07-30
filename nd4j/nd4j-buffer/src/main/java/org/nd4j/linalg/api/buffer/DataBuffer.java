@@ -1,21 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.api.buffer;
 
@@ -288,6 +285,23 @@ public interface DataBuffer extends Serializable {
      */
     float[] getFloatsAt(long offset, int length);
 
+    /**
+     * Get the ints at a particular offset
+     *
+     * @param offset the offset to start
+     * @param length the length of the array
+     * @return the doubles at the specified offset and length
+     */
+    int[] getIntsAt(long offset, int length);
+
+    /**
+     * Get the longs at a particular offset
+     *
+     * @param offset the offset to start
+     * @param length the length of the array
+     * @return the doubles at the specified offset and length
+     */
+    long[] getLongsAt(long offset, int length);
 
     /**
      * Get the doubles at a particular offset
@@ -309,6 +323,27 @@ public interface DataBuffer extends Serializable {
      * @return the doubles at the specified offset and length
      */
     float[] getFloatsAt(long offset, long inc, int length);
+
+    /**
+     * Get the ints at a particular offset
+     *
+     * @param offset the offset to start
+     * @param inc    the increment to use
+     * @param length the length of the array
+     * @return the doubles at the specified offset and length
+     */
+    int[] getIntsAt(long offset, long inc, int length);
+
+
+    /**
+     * Get the long at a particular offset
+     *
+     * @param offset the offset to start
+     * @param inc    the increment to use
+     * @param length the length of the array
+     * @return the doubles at the specified offset and length
+     */
+    long[] getLongsAt(long offset, long inc, int length);
 
 
     /**
@@ -333,6 +368,14 @@ public interface DataBuffer extends Serializable {
      * @param data the data for this buffer
      */
     void setData(int[] data);
+
+    /**
+     * Set the data for this buffer
+     *
+     * @param data the data for this buffer
+     */
+    void setData(long[] data);
+
 
     /**
      * Set the data for this buffer

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.api.ndarray;
 
 import com.google.common.primitives.Ints;
@@ -27,7 +43,6 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.LinAlgExceptions;
 
-import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,7 +62,8 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     * */
 
     protected static final double THRESHOLD_MEMORY_ALLOCATION = 2;
-    protected int rows, columns, rank;
+    protected long rows, columns;
+    protected int rank;
     protected Boolean isVector = null;
     protected Boolean isMatrix = null;
     protected Boolean isScalar = null;
@@ -180,6 +196,11 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     @Override
     public long[] toLongVector() {
         return new long[0];
+    }
+
+    @Override
+    public long[][] toLongMatrix() {
+        return new long[0][];
     }
 
     @Override
@@ -326,7 +347,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return length;
     }
 
-    protected void init(int[] shape) {
+    protected void init(long[] shape) {
 
         if (shape.length == 1) {
             rows = 1;
@@ -1674,12 +1695,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public int columns() {
-        return columns;
+        return (int) columns;
     }
 
     @Override
     public int rows() {
-        return rows;
+        return (int) rows;
     }
 
     /**
@@ -2248,5 +2269,13 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     }
 
+    @Override
+    public long[] shapeInfoJava() {
+        return javaShapeInformation;
+    }
 
+    @Override
+    public DataBuffer.Type dataType() {
+        return data().dataType();
+    }
 }

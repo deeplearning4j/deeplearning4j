@@ -1,17 +1,19 @@
-# Copyright 2016 Skymind,Inc. All Rights Reserved.
+################################################################################
+# Copyright (c) 2015-2018 Skymind, Inc.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
+# This program and the accompanying materials are made available under the
+# terms of the Apache License, Version 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0.
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+################################################################################
+
 
 from .java_classes import *
 import numpy as np
@@ -227,12 +229,12 @@ def broadcast(x, y):
     if nx > ny:
         diff = nx - ny
         ys += [1] * diff
-        y = y.reshape(ys)
+        y = y.reshape(*ys)
         ny = nx
     elif ny > nx:
         diff = ny - nx
         xs += [1] * diff
-        x = x.reshape(xs)
+        x = x.reshape(*xs)
         nx = ny
     xt = []
     yt = []
@@ -254,9 +256,9 @@ def broadcast(x, y):
             raise Exception('Unable to broadcast shapes ' + str(_xs) + ''
                             ' and ' + str(_ys))
     if rep_x:
-        x = x.repmat(*xt)
+        x = Nd4j.tile(x, *xt)
     if rep_y:
-        y = y.repmat(*yt)
+        y = Nd4j.tile(y, *yt)
     return x, y
 
 

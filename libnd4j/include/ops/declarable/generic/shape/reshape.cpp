@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by raver119 on 29/10/17.
 //
@@ -26,12 +42,27 @@ namespace nd4j {
                     e = 0;
                 }
 
-                REQUIRE_TRUE(argsSize - e >= 1, 0, "Reshape arguments should at least 1 dimension");
+                REQUIRE_TRUE(argsSize - e >= 1, 0, "Reshape arguments should have at least 1 dimension");
 
                 std::vector<Nd4jLong> shapeNew;
-                
-                for (; e < (int) arguments->size(); e++)
-                    shapeNew.push_back((int) arguments->at(e));
+                int e2 = e;
+                for (; e < (int) arguments->size(); e++) {
+                    if (arguments->at(e) == -1){
+                        long shapeLength = 1;
+                        for(; e2 < e; e2++){
+                            shapeLength *= arguments->at(e2);
+                        }
+                        for(e2 = e + 1; e2 < arguments->size(); e2++){
+                            shapeLength *= arguments->at(e2);
+                        }
+                        long realShape = x->lengthOf() / shapeLength;
+                        shapeNew.push_back(realShape);
+                    }
+                    else{
+                        shapeNew.push_back(arguments->at(e));
+                    }
+
+                }
 
                 auto len = shape::prodLong(shapeNew.data(), shapeNew.size());
                 REQUIRE_TRUE(len == x->lengthOf(), 0, "Reshape: lengths before and after reshape should match, but got %i vs %i", x->lengthOf(), len);
@@ -62,10 +93,26 @@ namespace nd4j {
 
                 std::vector<Nd4jLong> shapeNew(s->lengthOf());
 
-                for (int e = 0; e < (int) s->lengthOf(); e++)
-                    shapeNew[e] = static_cast<Nd4jLong>(s->getScalar(e));
+                for (int e = 0; e < (int) s->lengthOf(); e++) {
+                    auto dim = static_cast<Nd4jLong>(s->getScalar(e));
+                    if (dim == -1){
+                        long shapeLength = 1;
+                        for(int e2 = 0; e2 < e; e2++){
+                            shapeLength *= static_cast<Nd4jLong>(s->getScalar(e2));
+                        }
+                        for(int e2 = e + 1; e2 < (int) s->lengthOf(); e2++){
+                            REQUIRE_TRUE(static_cast<Nd4jLong>(s->getScalar(e2)) != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
+                            shapeLength *= static_cast<Nd4jLong>(s->getScalar(e2));
+                        }
+                        long realShape = x->lengthOf() / shapeLength;
+                        shapeNew[e] = realShape;
+                    }
+                    else{
+                        shapeNew[e] = dim;
+                    }
+                }
 
-               if (Environment::getInstance()->isDebugAndVerbose()) {
+                if (Environment::getInstance()->isDebugAndVerbose()) {
                     nd4j_printv("Reshape: new shape", shapeNew);
                 }
 
@@ -107,49 +154,30 @@ namespace nd4j {
 
                 std::vector<int> shapeNew;
 
-                for (; e < (int) arguments->size(); e++)
-                    shapeNew.push_back((int) arguments->at(e));
+                int e2 = e;
+                for (; e < (int) arguments->size(); e++) {
+                    if ((int) arguments->at(e) == -1){
+
+                        long shapeLength = 1;
+                        for(; e2 < e; e2 ++){
+                            shapeLength *= arguments->at(e2);
+                        }
+                        for(e2 = e + 1; e2 < arguments->size(); e2++){
+                            REQUIRE_TRUE(arguments->at(e2) != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
+                            shapeLength *= arguments->at(e2);
+                        }
+
+                        long realShape = shape::length(inp) / shapeLength;
+                        shapeNew.push_back(realShape);
+                    }
+                    else{
+                        shapeNew.push_back(arguments->at(e));
+                    }
+                }
 
                 Nd4jLong *newShape;
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength((int) shapeNew.size()), Nd4jLong);
 
-                int numberNegativesOnes = 0;
-
-                int *shape_ = shapeNew.data();
-                for (int i = 0; i < (int) shapeNew.size(); i++) {
-                    if (shapeNew[i] == -1) {
-                        if (numberNegativesOnes >= 1)
-                            throw std::runtime_error("Only one dimension can be negative ones");
-
-                        numberNegativesOnes++;
-
-                        int shapeLength = 1;
-                        for (int j = 0; j < (int) shapeNew.size(); j++)
-                            if (shape_[j] >= 1)
-                                shapeLength *= shape_[j];
-
-                        // FIXME: use workspace here
-                        int realShape = nd4j::math::nd4j_abs<int>((int) shape::length(inp) / shapeLength);
-                        int *thisNewShape = new int[shapeNew.size()];
-
-                        for (int j = 0; j < (int) shapeNew.size(); j++) {
-                            if (i != j) {
-                                thisNewShape[j] = shape_[j];
-                            } else
-                                thisNewShape[j] = realShape;
-                        }
-
-                        shape_ = thisNewShape;
-                        break;
-                    }
-                }
-
-                for (int f = 0; e < (int) shapeNew.size(); f++) {
-                    shapeNew[f] = shape_[f];
-                }
-
-                if (numberNegativesOnes > 0)
-                    delete[] shape_;
 
                 newShape[0] = shapeNew.size();
                 int cnt = 1;
@@ -173,46 +201,25 @@ namespace nd4j {
                 }
 
                 std::vector<Nd4jLong> shapeNew(y->lengthOf());
-                int numberNegativesOnes = 0;
 
-                for (int e = 0; e < (int) y->lengthOf(); e++)
-                    shapeNew[e] = (int) y->getIndexedScalar(e);
-
-                auto shape_ = shapeNew.data();
-                for (int i = 0; i < (int) shapeNew.size(); i++) {
-                    if (shapeNew[i] == -1) {
-                        if (numberNegativesOnes >= 1)
-                            throw std::runtime_error("Only one dimension can be negative ones");
-
-                        numberNegativesOnes++;
-
-                        int shapeLength = 1;
-                        for (int j = 0; j < (int) shapeNew.size(); j++)
-                            if (shape_[j] >= 1)
-                                shapeLength *= shape_[j];
-
-                        // FIXME: use workspace here
-                        auto realShape = nd4j::math::nd4j_abs<Nd4jLong>(x->lengthOf()/ shapeLength);
-                        auto thisNewShape = new Nd4jLong[shapeNew.size()];
-
-                        for (int j = 0; j < (int) shapeNew.size(); j++) {
-                            if (i != j) {
-                                thisNewShape[j] = shape_[j];
-                            } else
-                                thisNewShape[j] = realShape;
+                for (int e = 0; e < (int) y->lengthOf(); e++) {
+                    auto dim = (long)y->getIndexedScalar(e);
+                    if (dim == -1){
+                        long shapeLength = 1;
+                        for(int e2 = 0; e2 < e; e2++){
+                            shapeLength *= (long)y->getIndexedScalar(e2);
                         }
-
-                        shape_ = thisNewShape;
-                        break;
+                        for(int e2 = e + 1; e2 < (int)y->lengthOf(); e2++){
+                            REQUIRE_TRUE((int)y->getIndexedScalar(e2) != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
+                            shapeLength *= (long)y->getIndexedScalar(e2);
+                        }
+                        long realShape = shape::length(inp) / shapeLength;
+                        shapeNew[e] = realShape;
+                    }else {
+                        shapeNew[e] = dim;
                     }
                 }
 
-                for (int e = 0; e < (int) shapeNew.size(); e++) {
-                    shapeNew[e] = shape_[e];
-                }
-
-                if (numberNegativesOnes > 0)
-                    delete[] shape_;
 
                 Nd4jLong *newShape;
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shapeNew.size()), Nd4jLong);

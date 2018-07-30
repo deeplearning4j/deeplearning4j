@@ -1,20 +1,19 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2016 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.arbiter.task;
 
 import lombok.AllArgsConstructor;
@@ -29,6 +28,7 @@ import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 import org.deeplearning4j.arbiter.optimize.api.TaskCreator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSource;
 import org.deeplearning4j.arbiter.optimize.api.evaluation.ModelEvaluator;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultReference;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultSaver;
@@ -51,6 +51,7 @@ import org.nd4j.linalg.function.BiFunction;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.Callable;
 
 /**
@@ -81,11 +82,20 @@ public class ComputationGraphTaskCreator implements TaskCreator {
                 taskListener, runner);
     }
 
+    @Override
+    public Callable<OptimizationResult> create(Candidate candidate, Class<? extends DataSource> dataSource, Properties dataSourceProperties,
+                                               ScoreFunction scoreFunction, List<StatusListener> statusListeners, IOptimizationRunner runner) {
+        return new GraphLearningTask(candidate, dataSource, dataSourceProperties, scoreFunction, modelEvaluator, statusListeners,
+                taskListener, runner);
+    }
+
     @AllArgsConstructor
     private static class GraphLearningTask implements Callable<OptimizationResult> {
 
         private Candidate candidate;
         private DataProvider dataProvider;
+        private Class<? extends DataSource> dataSource;
+        private Properties dataSourceProperties;
         private ScoreFunction scoreFunction;
         private ModelEvaluator modelEvaluator;
         private List<StatusListener> listeners;
@@ -99,6 +109,19 @@ public class ComputationGraphTaskCreator implements TaskCreator {
                                  TaskListener taskListener, IOptimizationRunner runner) {
             this.candidate = candidate;
             this.dataProvider = dataProvider;
+            this.scoreFunction = scoreFunction;
+            this.modelEvaluator = modelEvaluator;
+            this.listeners = listeners;
+            this.taskListener = taskListener;
+            this.runner = runner;
+        }
+
+        public GraphLearningTask(Candidate candidate, Class<? extends DataSource> dataSource, Properties dataSourceProperties,
+                                 ScoreFunction scoreFunction, ModelEvaluator modelEvaluator, List<StatusListener> listeners,
+                                 TaskListener taskListener, IOptimizationRunner runner) {
+            this.candidate = candidate;
+            this.dataSource = dataSource;
+            this.dataSourceProperties = dataSourceProperties;
             this.scoreFunction = scoreFunction;
             this.modelEvaluator = modelEvaluator;
             this.listeners = listeners;
@@ -163,7 +186,15 @@ public class ComputationGraphTaskCreator implements TaskCreator {
             }
 
             //For DataSetIterator: wraps in a MultiDataSetIterator, hence method can be used for both
-            MultiDataSetIterator iterator = ScoreUtil.getMultiIterator(dataProvider.trainData(candidate.getDataParameters()));
+            MultiDataSetIterator iterator;
+            if(dataSource != null){
+                DataSource dsInstance = dataSource.newInstance();
+                if(dataSourceProperties != null)
+                    dsInstance.configure(dataSourceProperties);
+                iterator = ScoreUtil.getMultiIterator(dsInstance.trainData());
+            } else {
+                iterator = ScoreUtil.getMultiIterator(dataProvider.trainData(candidate.getDataParameters()));
+            }
 
 
             EarlyStoppingConfiguration<ComputationGraph> esConfig =
@@ -203,7 +234,11 @@ public class ComputationGraphTaskCreator implements TaskCreator {
 
             Double score = null;
             if (net != null) {
-                score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
+                if(dataSource != null){
+                    score = scoreFunction.score(net, dataSource, dataSourceProperties);
+                } else {
+                    score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
+                }
                 ci.setScore(score);
             }
 

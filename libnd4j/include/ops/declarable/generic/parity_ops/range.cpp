@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // @author raver119@gmail.com
 //
@@ -24,6 +40,8 @@ namespace nd4j {
                 int stop = INT_ARG(1);
                 int step = INT_ARG(2);
 
+                REQUIRE_TRUE(step != 0, 0, "Range: step should NOT be equal to 0");
+
                 int cnt = 0;
                 auto e = static_cast<T>(start);
                 if (start > stop) {
@@ -43,6 +61,8 @@ namespace nd4j {
                 T start = T_ARG(0);
                 T stop = T_ARG(1);
                 T step = T_ARG(2);
+
+                REQUIRE_TRUE(step != static_cast<T>(0.0f), 0, "Range: step should NOT be equal to 0");
 
                 int cnt = 0;
                 auto e = start;
@@ -69,6 +89,8 @@ namespace nd4j {
                 T start = arr0->getScalar(0);
                 T stop = arr1->getScalar(0);
                 T step = arr2->getScalar(0);
+
+                REQUIRE_TRUE(step != static_cast<T>(0.0f), 0, "Range: step should NOT be equal to 0");
 
                 auto e = start;
                 if (start > stop) {
@@ -104,6 +126,7 @@ namespace nd4j {
                 auto step = INT_ARG(2);
 
                 REQUIRE_TRUE(stop != start, 0, "Range: stop should be larger then start");
+                REQUIRE_TRUE(step != 0, 0, "Range: step should NOT be equal to 0");
 
                 auto e = static_cast<T>(start);
                 if (start > stop) {
@@ -123,6 +146,7 @@ namespace nd4j {
                 T step = T_ARG(2);
 
                 REQUIRE_TRUE(stop != start, 0, "Range: stop should be larger then start");
+                REQUIRE_TRUE(step != static_cast<T>(0.0f), 0, "Range: step should NOT be equal to 0");
 
                 auto e = start;
                 if (start > stop) {
@@ -149,6 +173,7 @@ namespace nd4j {
                 T step = arr2->getScalar(0);
 
                 REQUIRE_TRUE(stop != start, 0, "Range: stop should be larger then start");
+                REQUIRE_TRUE(step != static_cast<T>(0.0f), 0, "Range: step should NOT be equal to 0");
 
                 auto e = start;
                 if (start > stop) {

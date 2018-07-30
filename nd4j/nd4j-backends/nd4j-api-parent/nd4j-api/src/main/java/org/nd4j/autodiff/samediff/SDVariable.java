@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.autodiff.samediff;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -54,7 +70,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     protected WeightInitScheme weightInitScheme;
 
 
-
+    // autogen_tag::sdvars::start
 
     @Builder
     private SDVariable(String varName,
@@ -183,6 +199,8 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return getArr(false);
     }
 
+
+    // autogen_tag::sdvars::end
     /**
      * A getter for the allocated ndarray with this {@link SDVariable}.
      *
@@ -409,6 +427,9 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return sameDiff.neq(name, this, other);
     }
 
+    public SDVariable mmul(SDVariable other){
+        return sameDiff.mmul(this, other);
+    }
 
     //scalars
 

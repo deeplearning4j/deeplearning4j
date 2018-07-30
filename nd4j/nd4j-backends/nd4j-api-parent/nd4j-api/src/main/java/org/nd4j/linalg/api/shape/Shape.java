@@ -1,21 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.api.shape;
 
@@ -28,6 +25,8 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -502,24 +501,26 @@ public class Shape {
         }
 
         if (left.length != 2 && right.length != 2) {
-            throw new IllegalArgumentException("Illegal shapes for matrix multiply. Must be of length 2");
+            throw new IllegalArgumentException("Illegal shapes for matrix multiply. Must be of length 2. Left shape: "
+                    + Arrays.toString(left) + ", right shape: " + Arrays.toString(right));
         }
 
         for(int i = 0; i < left.length; i++) {
             if(left[i] < 1)
-                throw new ND4JIllegalStateException("Left shape contained value < 0 at index " + i);
+                throw new ND4JIllegalStateException("Left shape contained value < 0 at index " + i + " - left shape " + Arrays.toString(left));
         }
 
 
 
         for(int i = 0; i < right.length; i++) {
             if(right[i] < 1)
-                throw new ND4JIllegalStateException("Right shape contained value < 0 at index " + i);
+                throw new ND4JIllegalStateException("Right shape contained value < 0 at index " + i + " - right shape " + Arrays.toString(right));
         }
 
 
         if (left.length > 1 && left[1] != right[0])
-            throw new IllegalArgumentException("Columns of left not equal to rows of right");
+            throw new IllegalArgumentException("Columns of left not equal to rows of right: left shape " + Arrays.toString(left)
+                    + ", right shape " + Arrays.toString(right));
 
         if(left.length < right.length) {
             if(left[0] == right[0]) {
@@ -540,25 +541,28 @@ public class Shape {
             return left;
         }
 
-        if (left.length != 2 && right.length != 2) {
-            throw new IllegalArgumentException("Illegal shapes for matrix multiply. Must be of length 2");
+        if (left.length != 2 && right.length !=2) {
+            if (left.length != 3 && right.length != 3) {
+                throw new IllegalArgumentException("Illegal shapes for matrix multiply. Must be both of length 2 or both" +
+                        "of length 3 (batch-wise matrix multiply). Left shape: "
+                        + Arrays.toString(left) + ", right shape: " + Arrays.toString(right));
+            }
         }
 
         for(int i = 0; i < left.length; i++) {
             if(left[i] < 1)
-                throw new ND4JIllegalStateException("Left shape contained value < 0 at index " + i);
+                throw new ND4JIllegalStateException("Left shape contained value < 0 at index " + i + " - left shape " + Arrays.toString(left));
         }
-
-
 
         for(int i = 0; i < right.length; i++) {
             if(right[i] < 1)
-                throw new ND4JIllegalStateException("Right shape contained value < 0 at index " + i);
+                throw new ND4JIllegalStateException("Right shape contained value < 0 at index " + i + " - right shape " + Arrays.toString(right));
         }
 
 
-        if (left.length > 1 && left[1] != right[0])
-            throw new IllegalArgumentException("Columns of left not equal to rows of right");
+        if (left.length == 2 && left[1] != right[0] || left.length == 3 && left[2] != right[1])
+            throw new IllegalArgumentException("Columns of left not equal to rows of right: left shape " + Arrays.toString(left)
+                    + ", right shape " + Arrays.toString(right));
 
         if(left.length < right.length) {
             if(left[0] == right[0]) {
@@ -566,7 +570,17 @@ public class Shape {
             }
         }
 
-        long[] shape = {left[0], right[1]};
+        if (left.length == 3 && left[0] != right[0]) {
+            throw new IllegalArgumentException("For batch matrix multiplication the leading dimension of both arguments" +
+                    "has to match, got left leading dimension" + left[0] + "and right " + right[0]);
+        }
+
+        long[] shape;
+        if (left.length == 2) {
+            shape = new long[]{left[0], right[1]};
+        } else {
+            shape = new long[]{left[0], left[1], right[2]};
+        }
         return shape;
     }
 
@@ -2434,6 +2448,8 @@ public class Shape {
      * @return true if c+descending, f+ascending, false otherwise
      */
     public static boolean strideDescendingCAscendingF(INDArray array) {
+        if(array.rank() <= 1)
+            return true;
         long[] strides = array.stride();
         if (array.isVector() && strides[0] == 1 && strides[1] == 1)
             return true;
@@ -3503,6 +3519,8 @@ public class Shape {
     }
 
     public static boolean hasDefaultStridesForShape(INDArray input){
+        if(input.rank() == 0)
+            return true;
         if(!strideDescendingCAscendingF(input)){
             return false;
         }
@@ -3517,5 +3535,7 @@ public class Shape {
     }
 
 
-
+    public static boolean isEmpty(long[] shapeInfo) {
+        return ArrayOptionsHelper.arrayType(shapeInfo) == ArrayType.EMPTY;
+    }
 }

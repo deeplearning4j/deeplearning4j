@@ -1,9 +1,26 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.models.paragraphvectors;
 
 import com.google.common.collect.Lists;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.val;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -135,6 +152,7 @@ public class ParagraphVectors extends Word2Vec {
     public void extractLabels() {
         Collection<VocabWord> vocabWordCollection = vocab.vocabWords();
         List<VocabWord> vocabWordList = new ArrayList<>();
+        List<String> stringList = new ArrayList<>();
         int[] indexArray;
 
         //INDArray pulledArray;
@@ -142,6 +160,7 @@ public class ParagraphVectors extends Word2Vec {
         for (VocabWord vWord : vocabWordCollection) {
             if (vWord.isLabel()) {
                 vocabWordList.add(vWord);
+                stringList.add(vWord.getLabel());
             }
         }
         //Build array of indexes in the order of the vocablist
@@ -154,7 +173,9 @@ public class ParagraphVectors extends Word2Vec {
         //pull the label rows and create new matrix
         if (i > 0) {
             labelsMatrix = Nd4j.pullRows(lookupTable.getWeights(), 1, indexArray);
-            labelsList = vocabWordList;
+            this.labelsList = vocabWordList;
+
+            this.labelsSource = new LabelsSource(stringList);
         }
     }
 
@@ -1031,12 +1052,6 @@ public class ParagraphVectors extends Word2Vec {
         @Override
         public Builder tokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
             super.tokenizerFactory(tokenizerFactory);
-            return this;
-        }
-
-        @Override
-        public Builder index(@NonNull InvertedIndex<VocabWord> index) {
-            super.index(index);
             return this;
         }
 

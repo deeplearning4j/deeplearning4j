@@ -1,22 +1,23 @@
-/*-
- *  * Copyright 2016 Skymind, Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
- */
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.datavec.local.transforms.transform;
 
 
+import org.datavec.api.transform.MathFunction;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.TransformProcess;
@@ -25,14 +26,15 @@ import org.datavec.api.transform.condition.column.DoubleColumnCondition;
 import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
-import org.datavec.api.writable.DoubleWritable;
-import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.Text;
-import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.*;
 
 import org.datavec.arrow.recordreader.ArrowWritableRecordTimeSeriesBatch;
 import org.datavec.local.transforms.LocalTransformExecutor;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.cpu.nativecpu.NDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.*;
 
@@ -44,17 +46,48 @@ import static org.junit.Assert.assertEquals;
 public class ExecutionTest  {
 
     @Test
+    public void testExecutionNdarray() {
+        Schema schema = new Schema.Builder()
+                .addColumnNDArray("first",new long[]{1,32577})
+                .addColumnNDArray("second",new long[]{1,32577}).build();
+
+        TransformProcess transformProcess = new TransformProcess.Builder(schema)
+                .ndArrayMathFunctionTransform("first", MathFunction.SIN)
+                .ndArrayMathFunctionTransform("second",MathFunction.COS)
+                .build();
+
+        List<List<Writable>> functions = new ArrayList<>();
+        List<Writable> firstRow = new ArrayList<>();
+        INDArray firstArr = Nd4j.linspace(1,4,4);
+        INDArray secondArr = Nd4j.linspace(1,4,4);
+        firstRow.add(new NDArrayWritable(firstArr));
+        firstRow.add(new NDArrayWritable(secondArr));
+        functions.add(firstRow);
+
+        List<List<Writable>> execute = LocalTransformExecutor.execute(functions, transformProcess);
+        INDArray firstResult = ((NDArrayWritable) execute.get(0).get(0)).get();
+        INDArray secondResult = ((NDArrayWritable) execute.get(0).get(1)).get();
+
+        INDArray expected = Transforms.sin(firstArr);
+        INDArray secondExpected = Transforms.cos(secondArr);
+        assertEquals(expected,firstResult);
+        assertEquals(secondExpected,secondResult);
+
+    }
+
+    @Test
     public void testExecutionSimple() {
         Schema schema = new Schema.Builder().addColumnInteger("col0")
-                .addColumnCategorical("col1", "state0", "state1", "state2").addColumnDouble("col2").build();
+                .addColumnCategorical("col1", "state0", "state1", "state2").addColumnDouble("col2").
+                        addColumnFloat("col3").build();
 
         TransformProcess tp = new TransformProcess.Builder(schema).categoricalToInteger("col1")
-                .doubleMathOp("col2", MathOp.Add, 10.0).build();
+                .doubleMathOp("col2", MathOp.Add, 10.0).floatMathOp("col3", MathOp.Add, 5f).build();
 
         List<List<Writable>> inputData = new ArrayList<>();
-        inputData.add(Arrays.<Writable>asList(new IntWritable(0), new Text("state2"), new DoubleWritable(0.1)));
-        inputData.add(Arrays.<Writable>asList(new IntWritable(1), new Text("state1"), new DoubleWritable(1.1)));
-        inputData.add(Arrays.<Writable>asList(new IntWritable(2), new Text("state0"), new DoubleWritable(2.1)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(0), new Text("state2"), new DoubleWritable(0.1), new FloatWritable(0.3f)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(1), new Text("state1"), new DoubleWritable(1.1), new FloatWritable(1.7f)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(2), new Text("state0"), new DoubleWritable(2.1), new FloatWritable(3.6f)));
 
         List<List<Writable>> rdd = (inputData);
 
@@ -68,9 +101,9 @@ public class ExecutionTest  {
         });
 
         List<List<Writable>> expected = new ArrayList<>();
-        expected.add(Arrays.<Writable>asList(new IntWritable(0), new IntWritable(2), new DoubleWritable(10.1)));
-        expected.add(Arrays.<Writable>asList(new IntWritable(1), new IntWritable(1), new DoubleWritable(11.1)));
-        expected.add(Arrays.<Writable>asList(new IntWritable(2), new IntWritable(0), new DoubleWritable(12.1)));
+        expected.add(Arrays.<Writable>asList(new IntWritable(0), new IntWritable(2), new DoubleWritable(10.1), new FloatWritable(5.3f)));
+        expected.add(Arrays.<Writable>asList(new IntWritable(1), new IntWritable(1), new DoubleWritable(11.1), new FloatWritable(6.7f)));
+        expected.add(Arrays.<Writable>asList(new IntWritable(2), new IntWritable(0), new DoubleWritable(12.1), new FloatWritable(8.6f)));
 
         assertEquals(expected, out);
     }

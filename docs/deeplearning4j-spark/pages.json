@@ -1,0 +1,14 @@
+{
+  "excludes": [
+    "abstract"
+  ],
+  "indices": [
+  ],
+  "pages": [
+    {
+      "page": "training.md",
+      "class": []
+    }
+  ]
+}
+

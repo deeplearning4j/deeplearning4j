@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.gradientcheck;
 
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +36,9 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
+import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
+import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
@@ -30,6 +49,7 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Random;
 
@@ -207,7 +227,7 @@ public class GradientCheckTests extends BaseDL4JTest {
         //As above (testGradientMLP2LayerIrisSimple()) but with L2, L1, and both L2/L1 applied
         //Need to run gradient through updater, so that L2 can be applied
 
-        Activation[] activFns = {Activation.SIGMOID, Activation.TANH};
+        Activation[] activFns = {Activation.SIGMOID, Activation.TANH, Activation.THRESHOLDEDRELU};
         boolean[] characteristic = {false, true}; //If true: run some backprop steps first
 
         LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
@@ -297,6 +317,44 @@ public class GradientCheckTests extends BaseDL4JTest {
                 }
             }
         }
+    }
+
+    @Test
+    public void testEmbeddingLayerPreluSimple() {
+        Random r = new Random(12345);
+        int nExamples = 5;
+        INDArray input = Nd4j.zeros(nExamples, 1);
+        INDArray labels = Nd4j.zeros(nExamples, 3);
+        for (int i = 0; i < nExamples; i++) {
+            input.putScalar(i, r.nextInt(4));
+            labels.putScalar(new int[] {i, r.nextInt(3)}, 1.0);
+        }
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.1)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345L)
+                .list().layer(new EmbeddingLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
+                                .dist(new NormalDistribution(0, 1))
+                                .updater(new NoOp()).build())
+                .layer(new PReLULayer.Builder().inputShape(3).sharedAxes(1).updater(new NoOp()).build())
+                .layer(new OutputLayer.Builder(LossFunction.MCXENT).nIn(3).nOut(3)
+                        .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
+                        .updater(new NoOp()).activation(Activation.SOFTMAX).build())
+                .pretrain(false).backprop(true).build();
+
+        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+        mln.init();
+
+        if (PRINT_RESULTS) {
+            System.out.println("testEmbeddingLayerSimple");
+            for (int j = 0; j < mln.getnLayers(); j++)
+                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+        }
+
+        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+        String msg = "testEmbeddingLayerSimple";
+        assertTrue(msg, gradOK);
     }
 
     @Test
@@ -495,5 +553,84 @@ public class GradientCheckTests extends BaseDL4JTest {
 
             TestUtils.testModelSerialization(netGraph);
         }
+    }
+
+
+    @Test
+    public void testEmbeddingSequenceLayer(){
+        Nd4j.getRandom().setSeed(12345);
+
+        for(boolean maskArray : new boolean[]{false, true}){
+            for(int inputRank : new int[]{2,3}) {
+
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .seed(12345)
+                        .updater(new NoOp())
+                        .weightInit(new NormalDistribution(0, 1))
+                        .list()
+                        .layer(new EmbeddingSequenceLayer.Builder()
+                                .nIn(8)
+                                .nOut(4)
+                                .build())
+                        .layer(new RnnOutputLayer.Builder().nIn(4).nOut(3).activation(Activation.TANH)
+                                .lossFunction(LossFunction.MSE).build())
+                        .build();
+
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
+
+                INDArray in = Transforms.floor(Nd4j.rand(3, 6).muli(8));    //Integers 0 to 7 inclusive
+                INDArray label = Nd4j.rand(new int[]{3, 3, 6});
+
+                if(inputRank == 3){
+                    //Reshape from [3,6] to [3,1,6]
+                    in = in.reshape('c', 3, 1, 6);
+                }
+
+                INDArray fMask = null;
+                if (maskArray) {
+                    fMask = Nd4j.create(new double[][]{{1, 1, 1, 1, 1, 1},
+                            {1, 1, 0, 0, 0, 0},
+                            {1, 0, 0, 0, 0, 0}});
+
+                }
+
+                String msg = "mask=" + maskArray + ", inputRank=" + inputRank;
+                boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, label, fMask, null);
+                assertTrue(msg, gradOK);
+                TestUtils.testModelSerialization(net);
+
+
+                //Also: if mask is present, double check that the masked steps don't impact score
+                if (maskArray) {
+                    DataSet ds = new DataSet(in, label, fMask, null);
+                    double score = net.score(ds);
+                    if(inputRank == 2){
+                        in.putScalar(1, 2, 0);
+                        in.putScalar(2, 1, 0);
+                        in.putScalar(2, 2, 0);
+                    } else {
+                        in.putScalar(1, 0, 2, 0);
+                        in.putScalar(2, 0, 1, 0);
+                        in.putScalar(2, 0, 2, 0);
+                    }
+                    double score2 = net.score(ds);
+                    assertEquals(score, score2, 1e-6);
+                    if(inputRank == 2){
+                        in.putScalar(1, 2, 1);
+                        in.putScalar(2, 1, 1);
+                        in.putScalar(2, 2, 1);
+                    } else {
+                        in.putScalar(1, 0, 2, 1);
+                        in.putScalar(2, 0, 1, 1);
+                        in.putScalar(2, 0, 2, 1);
+                    }
+                    double score3 = net.score(ds);
+                    assertEquals(score, score3, 1e-6);
+                }
+            }
+        }
+
     }
 }

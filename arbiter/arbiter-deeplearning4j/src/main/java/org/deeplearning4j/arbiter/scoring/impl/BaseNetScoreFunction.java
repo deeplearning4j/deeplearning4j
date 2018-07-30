@@ -1,7 +1,24 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.arbiter.scoring.impl;
 
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSource;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -9,9 +26,11 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIteratorFactory;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Created by Alex on 23/07/2017.
@@ -23,6 +42,24 @@ public abstract class BaseNetScoreFunction implements ScoreFunction {
     @Override
     public double score(Object model, DataProvider dataProvider, Map<String, Object> dataParameters) {
         Object testData = dataProvider.testData(dataParameters);
+        return score(model, testData);
+    }
+
+    @Override
+    public double score(Object model, Class<? extends DataSource> dataSource, Properties dataSourceProperties) {
+        DataSource ds;
+        try{
+            ds = dataSource.newInstance();
+            if (dataSourceProperties != null) {
+                ds.configure(dataSourceProperties);
+            }
+        } catch (Exception e){
+            throw new RuntimeException(e);
+        }
+        return score(model, ds.testData());
+    }
+
+    protected double score(Object model, Object testData){
         if (model instanceof MultiLayerNetwork) {
             if (testData instanceof DataSetIterator) {
                 return score((MultiLayerNetwork) model, (DataSetIterator) testData);

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.AllArgsConstructor;
@@ -5,6 +21,7 @@ import lombok.NonNull;
 import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -53,11 +70,12 @@ public class BidirectionalLayer implements RecurrentLayer {
     private INDArray outFwd;
     private INDArray outBwd;
 
-    public BidirectionalLayer(@NonNull NeuralNetConfiguration conf, @NonNull Layer fwd, @NonNull Layer bwd) {
+    public BidirectionalLayer(@NonNull NeuralNetConfiguration conf, @NonNull Layer fwd, @NonNull Layer bwd, @NonNull INDArray paramsView) {
         this.conf = conf;
         this.fwd = fwd;
         this.bwd = bwd;
         this.layerConf = (Bidirectional) conf.getLayer();
+        this.paramsView = paramsView;
     }
 
     @Override
@@ -173,7 +191,8 @@ public class BidirectionalLayer implements RecurrentLayer {
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray out1 = fwd.activate(training, workspaceMgr);
         INDArray out2 = bwd.activate(training, workspaceMgr);
-        out2 = TimeSeriesUtils.reverseTimeSeries(out2, workspaceMgr, ArrayType.FF_WORKING_MEM);
+        //Reverse the output time series. Note: when using LastTimeStepLayer, output can be rank 2
+        out2 = out2.rank() == 2 ? out2 : TimeSeriesUtils.reverseTimeSeries(out2, workspaceMgr, ArrayType.FF_WORKING_MEM);
 
         switch (layerConf.getMode()){
             case ADD:
@@ -197,16 +216,6 @@ public class BidirectionalLayer implements RecurrentLayer {
     public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         setInput(input, workspaceMgr);
         return activate(training, workspaceMgr);
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Cannot transpose layer");
-    }
-
-    @Override
-    public Layer clone() {
-        throw new UnsupportedOperationException("Clone not supported");
     }
 
     @Override
@@ -253,14 +262,13 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public void accumulateScore(double accum) {
-        fwd.accumulateScore(accum);
-        bwd.accumulateScore(accum);
+    public INDArray params() {
+        return paramsView;
     }
 
     @Override
-    public INDArray params() {
-        return paramsView;
+    public TrainingConfig getConfig() {
+        return conf.getLayer();
     }
 
     @Override
@@ -341,11 +349,6 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public void validateInput() {
-        //no op
-    }
-
-    @Override
     public ConvexOptimizer getOptimizer() {
         return null;
     }
@@ -358,11 +361,6 @@ public class BidirectionalLayer implements RecurrentLayer {
         } else {
             return bwd.getParam(sub);
         }
-    }
-
-    @Override
-    public void initParams() {
-        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override

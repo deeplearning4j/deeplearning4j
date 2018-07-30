@@ -1,30 +1,29 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.jcublas;
 
 import lombok.val;
+import lombok.var;
+import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.compression.CompressionUtils;
-import org.nd4j.linalg.jcublas.buffer.CudaLongDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.*;
 import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
@@ -52,9 +51,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.blas.*;
-import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
-import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
 import org.nd4j.linalg.jcublas.complex.ComplexDouble;
 import org.nd4j.linalg.jcublas.complex.ComplexFloat;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
@@ -1416,9 +1412,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
 
     @Override
-    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target,
-                    long length) {
-
+    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target, long length) {
         val stream = ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).getOldStream();
 
         val p = new PointerPointer<>(new Pointer[]{null, stream});
@@ -1426,12 +1420,109 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         nativeOps.convertTypes(p, typeSrc.ordinal(), source, length, typeDst.ordinal(), target);
     }
 
+    @Override
+    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, DataBuffer buffer) {
+        Pointer srcPtr = null;
+        Pointer dstPtr = null;
+        long size = 0;
+        long ssize = 0;
+        val stream = ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).getOldStream();
+        if (buffer instanceof CompressedDataBuffer) {
+            // compressing
+            size = ((CompressedDataBuffer) buffer).getCompressionDescriptor().getCompressedLength();
+            ssize = ((CompressedDataBuffer) buffer).getCompressionDescriptor().getOriginalLength();
 
+            srcPtr = nativeOps.mallocDevice(ssize, null, 0);
+            dstPtr = nativeOps.mallocDevice(size, null, 0);
+
+            nativeOps.memcpyAsync(srcPtr, source, ssize, CudaConstants.cudaMemcpyHostToDevice, stream);
+        } else {
+            // decompressing
+            throw new UnsupportedOperationException();
+        }
+
+        convertDataEx(typeSrc, srcPtr, typeDst, dstPtr, buffer.length());
+        nativeOps.memcpyAsync(buffer.addressPointer(), dstPtr, size, CudaConstants.cudaMemcpyHostToHost, stream);
+
+        stream.synchronize();
+
+        if (buffer instanceof CompressedDataBuffer) {
+            nativeOps.freeDevice(srcPtr, null);
+            nativeOps.freeDevice(dstPtr, null);
+        }
+    }
 
     @Override
-    public void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst,
-                    DataBuffer target) {
-        convertDataEx(typeSrc, source.addressPointer(), typeDst, target.addressPointer(), target.length());
+    public void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst, DataBuffer target) {
+
+        val stream = ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).getOldStream();
+        Pointer srcPtr = null;
+        Pointer dstPtr = null;
+
+        // we have to replace pointer here, temporary
+        if (Nd4j.getWorkspaceManager().anyWorkspaceActiveForCurrentThread()) {
+            val ws = Nd4j.getMemoryManager().getCurrentWorkspace();
+            // if true - we're decompressing from host memory
+            if (source instanceof CompressedDataBuffer) {
+                val size = ((CompressedDataBuffer) source).getCompressionDescriptor().getCompressedLength();
+                srcPtr = ws.alloc(size, MemoryKind.DEVICE, DataBuffer.Type.HALF, false);
+                nativeOps.memcpyAsync(srcPtr, source.addressPointer(), size, CudaConstants.cudaMemcpyHostToHost, stream);
+            }
+
+            // if true - we're compressing into host memory
+            if (target instanceof CompressedDataBuffer) {
+                val size = ((CompressedDataBuffer) target).getCompressionDescriptor().getCompressedLength();
+                dstPtr = ws.alloc(size, MemoryKind.DEVICE, DataBuffer.Type.HALF, false);
+                //nativeOps.memcpyAsync(dstPtr, target.addressPointer(), size, CudaConstants.cudaMemcpyHostToHost, stream);
+            }
+        } else {
+            // if true - we're decompressing from host memory
+            if (source instanceof CompressedDataBuffer) {
+                log.info("Replacing source ptr");
+                val size = ((CompressedDataBuffer) source).getCompressionDescriptor().getCompressedLength();
+                srcPtr = nativeOps.mallocDevice(size, null, 0);
+                nativeOps.memcpyAsync(srcPtr, source.addressPointer(), size, CudaConstants.cudaMemcpyHostToHost, stream);
+                stream.synchronize();
+            } else
+                srcPtr = AtomicAllocator.getInstance().getPointer(source);
+
+            // if true - we're compressing into host memory
+            if (target instanceof CompressedDataBuffer) {
+                log.info("Replacing target ptr");
+                val size = ((CompressedDataBuffer) target).getCompressionDescriptor().getCompressedLength();
+                dstPtr = nativeOps.mallocDevice(size, null, 0);
+                //nativeOps.memcpyAsync(dstPtr, source.addressPointer(), size, CudaConstants.cudaMemcpyHostToHost, stream);
+                //stream.synchronize();
+            } else
+                dstPtr = AtomicAllocator.getInstance().getPointer(target);
+        }
+
+
+        convertDataEx(typeSrc, srcPtr, typeDst, dstPtr, target.length());
+
+        Nd4j.getExecutioner().commit();
+
+
+        // we were compressing something into temporary buffer
+        if (target instanceof CompressedDataBuffer) {
+            nativeOps.memcpyAsync(target.addressPointer(), dstPtr, target.capacity(),  CudaConstants.cudaMemcpyHostToHost, stream);
+
+            if (Nd4j.getWorkspaceManager().anyWorkspaceActiveForCurrentThread()) {
+                // no-op, workspace was used
+            } else
+                nativeOps.freeDevice(dstPtr, null);
+        }
+
+        // we were decompressing something from host memory
+        if (source instanceof CompressedDataBuffer) {
+            if (Nd4j.getWorkspaceManager().anyWorkspaceActiveForCurrentThread()) {
+                // no-op, workspace was used
+            } else
+                nativeOps.freeDevice(srcPtr, null);
+
+        }
+
+        Nd4j.getExecutioner().commit();
     }
 
     @Override
@@ -1458,7 +1549,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         if (CompressionUtils.goingToCompress(typeSrc, typeDst)) {
             // all types below 8 are compression modes
-            BytePointer pointer = new BytePointer(source.length() * elementSize);
+            Pointer pointer = new BytePointer(source.length() * elementSize);
             CompressionDescriptor descriptor = new CompressionDescriptor(source, typeDst.name());
             descriptor.setCompressionType(CompressionType.LOSSY);
             descriptor.setCompressedLength(source.length() * elementSize);
@@ -1470,7 +1561,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             buffer = Nd4j.createBuffer(descriptor.getNumberOfElements(), false);
 
             AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(buffer);
-            point.tickHostWrite();
+            point.tickDeviceWrite();
         }
 
         convertDataEx(typeSrc, source, typeDst, buffer);
@@ -1698,8 +1789,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
-    public INDArray empty() {
+    public INDArray empty(DataBuffer.Type type) {
         long extras  = ArrayOptionsHelper.setOptionBit(0L, ArrayType.EMPTY);
+        extras = ArrayOptionsHelper.setOptionBit(extras, type);
         val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new int[0], new int[0],0,1,'c', extras);
         return new JCublasNDArray(null, (CudaLongDataBuffer) shape.getFirst(), shape.getSecond());
     }
@@ -1856,42 +1948,52 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     @Override
-    public INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(double[] values, int[][] indices, int[] shape) {
+    public INDArray createSparseCOO(double[] values, long[][] indices, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(float[] values, int[][] indices, int[] shape) {
+    public INDArray createSparseCOO(float[] values, long[][] indices, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] shape) {
+    public INDArray createSparseCOO(double[] values, int[][] indices, long[] shape) {
+        return new JCusparseNDArrayCOO(values, indices, shape);
+    }
+
+    @Override
+    public INDArray createSparseCOO(float[] values, int[][] indices, long[] shape) {
+        return new JCusparseNDArrayCOO(values, indices, shape);
+    }
+
+    @Override
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, int[] shape) {
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, int[] shape) {
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, long[] shape) {
         throw new UnsupportedOperationException();
     }
 

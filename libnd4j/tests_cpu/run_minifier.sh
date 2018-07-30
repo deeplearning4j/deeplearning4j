@@ -1,16 +1,32 @@
 #!/bin/bash
+################################################################################
+# Copyright (c) 2015-2018 Skymind, Inc.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache License, Version 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+################################################################################
+
 # script for running and manual testing of the minifier
-# by GS <sgazeos@gmail.com
-#
+# by GS <sgazeos@gmail.com>
+
 # only for special use
-#
-#
+
 CXX=/usr/bin/g++
 #CXX_PATH=`$CXX --print-search-dirs | awk '/install/{print $2;}'`
 #export CXX_PATH
 export CXX
 
-make -j4 && layers_tests/minifier -l -o nd4j_minilib.h 
+../buildnativeoperations.sh -m -b debug
+../blasbuild/cpu/blas/minifier -l -o nd4j_minilib.h
 #
 #echo "TESTING MINIFIER with all resources"
 #echo "Testing adam_sum.fb"

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 /*
  * templatemath.h
  *
@@ -317,17 +333,17 @@ template<typename T>
 
 		template<>
         math_def inline double nd4j_abs<double>(double value) {
-			return value < 0 ? -value : value;
+			return fabs(value);
 		}
 
 		template<>
         math_def inline int nd4j_abs<int>(int value) {
-			return value < 0 ? -value : value;
+			return abs(value);
 		}
 
 		template<>
 		math_def inline Nd4jLong nd4j_abs<Nd4jLong>(Nd4jLong value) {
-			return value < 0 ? -value : value;
+			return llabs(value);
 		}
 
 

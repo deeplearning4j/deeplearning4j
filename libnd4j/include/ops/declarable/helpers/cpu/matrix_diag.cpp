@@ -1,9 +1,24 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by GS <sgazeos@gmail.com> on 3/21/2018.
 //
 
 #include "ResultSet.h"
-#include "NDArrayFactory.h"
 #include <ops/declarable/helpers/matrix_diag.h>
 
 namespace nd4j {
@@ -17,8 +32,8 @@ namespace helpers {
 template <typename T>
 int matrixDiag(const NDArray<T>* input, NDArray<T>* output) {
 
-    ResultSet<T>* listOut  = NDArrayFactory<T>::allTensorsAlongDimension(output,  {output->rankOf() - 2, output->rankOf() - 1});
-    ResultSet<T>* listDiag = NDArrayFactory<T>::allTensorsAlongDimension(input, {input->rankOf() - 1});
+    ResultSet<T>* listOut  = output->allTensorsAlongDimension({output->rankOf() - 2, output->rankOf() - 1});
+    ResultSet<T>* listDiag = input->allTensorsAlongDimension({input->rankOf() - 1});
 
     if (listOut->size() != listDiag->size()) {
         nd4j_printf("matrix_diag: Input matrix has wrong shape.", "");

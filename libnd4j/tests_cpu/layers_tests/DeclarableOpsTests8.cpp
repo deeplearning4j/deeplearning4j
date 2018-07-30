@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 10.06.2018
 //
@@ -300,7 +316,7 @@ TEST_F(DeclarableOpsTests8, reduceVarianceBP_test1) {
     NDArray<float> exp12('c', {3,4}, {-0.5f, -0.4090909f, -0.3181818f, -0.22727273f, -0.13636364f, -0.045454547f, 0.045454547f, 0.13636364f, 0.22727273f, 0.3181818f, 0.4090909f, 0.5f});
     NDArray<float> exp34('c', {3,4}, {-0.45833334f, -0.375f, -0.29166666f, -0.20833333f, -0.125f, -0.041666668f, 0.041666668f, 0.125f, 0.20833333f, 0.29166666f, 0.375f, 0.45833334f});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
             
     nd4j::ops::reduce_variance_bp<float> op;
 
@@ -343,7 +359,7 @@ TEST_F(DeclarableOpsTests8, reduceVarianceBP_test2) {
     NDArray<float> exp12('c', {3,4}, {-2.666667f, -5.333333f, -8.000000f,  -10.666667f, 0.000000f, 0.000000f, 0.000000f, 0.000000f, 2.666667f, 5.333333f,  8.000000f, 10.666667f});
     NDArray<float> exp34('c', {3,4}, {-4.000000f, -8.000000f, -12.000000f, -16.000000f, 0.000000f, 0.000000f, 0.000000f, 0.000000f, 4.000000f, 8.000000f, 12.000000f, 16.000000f});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
             
     nd4j::ops::reduce_variance_bp<float> op;
 
@@ -386,7 +402,7 @@ TEST_F(DeclarableOpsTests8, reduceVarianceBP_test3) {
     NDArray<float> exp12('c', {3,4}, {-0.750000f, -0.250000f, 0.250000f, 0.750000f, -1.500000f, -0.500000f, 0.500000f, 1.500000f, -2.250000f, -0.750000f, 0.750000f, 2.250000f});
     NDArray<float> exp34('c', {3,4}, {-1.000000f, -0.333333f, 0.333333f, 1.000000f, -2.000000f, -0.666667f, 0.666667f, 2.000000f, -3.000000f, -1.000000f, 1.000000f, 3.000000f});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
             
     nd4j::ops::reduce_variance_bp<float> op;
 
@@ -429,7 +445,7 @@ TEST_F(DeclarableOpsTests8, reduceStDevBP_test1) {
     NDArray<float> exp12('c', {3,4}, {-0.069337524f, -0.056730703f, -0.04412388f, -0.031517055f, -0.018910235f, -0.0063034114f, 0.0063034114f, 0.018910235f, 0.031517055f, 0.04412388f, 0.056730703f, 0.069337524f});     
     NDArray<float> exp34('c', {3,4}, {-0.06638563f, -0.05431551f, -0.0422454f, -0.030175284f, -0.01810517f, -0.006035057f, 0.006035057f, 0.01810517f, 0.030175284f, 0.0422454f, 0.05431551f, 0.06638563f});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
             
     nd4j::ops::reduce_stdev_bp<float> op;
 
@@ -472,7 +488,7 @@ TEST_F(DeclarableOpsTests8, reduceStDevBP_test2) {
     NDArray<float> exp12('c', {3,4}, {-0.4082483f, -0.8164966f, -1.2247449f, -1.6329932f, 0.0, 0.0, 0.0, 0.0, 0.4082483f, 0.8164966f, 1.2247449f, 1.6329932f});
     NDArray<float> exp34('c', {3,4}, {-0.5f, -1.0f, -1.5f, -2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f, 1.5f, 2.0f});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
             
     nd4j::ops::reduce_stdev_bp<float> op;
 
@@ -514,7 +530,7 @@ TEST_F(DeclarableOpsTests8, reduceStDevBP_test3) {
     NDArray<float> exp12('c', {3,4}, {-0.3354102f, -0.1118034f, 0.1118034f, 0.3354102f, -0.6708204f, -0.2236068f, 0.2236068f, 0.6708204f, -1.0062306f, -0.3354102f, 0.3354102f, 1.0062306f});
     NDArray<float> exp34('c', {3,4}, {-0.38729835f, -0.12909944f, 0.12909944f, 0.38729835f, -0.7745967f, -0.2581989f, 0.2581989f, 0.7745967f, -1.161895f, -0.38729835f, 0.38729835f, 1.161895f});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
             
     nd4j::ops::reduce_stdev_bp<float> op;
 
@@ -622,7 +638,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_01) {
 
     NDArray<float> x('c', {2,3,4});
     NDArray<float> exp('c', {4}, {66.f, 72.f, 78.f, 84.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_sum<float> op;
     auto result = op.execute({&x}, {}, {0,1});
@@ -641,7 +657,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_02) {
 
     NDArray<float> x('c', {2,3,4});
     NDArray<float> exp('c', {1,1,4}, {66.f, 72.f, 78.f, 84.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_sum<float> op;
     auto result = op.execute({&x}, {1.}, {0, 1});
@@ -661,7 +677,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_3) {
 
     NDArray<float> x('c', {2,3,4});
     NDArray<float> exp('c', {3}, {68.f, 100.f, 132.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_sum<float> op;
     auto result = op.execute({&x}, {}, {0, 2});
@@ -681,7 +697,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_4) {
 
     NDArray<float> x('c', {2,3,4});
     NDArray<float> exp('c', {1,3,1}, {68.f, 100.f, 132.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_sum<float> op;
     auto result = op.execute({&x}, {1.}, {0, 2});
@@ -701,7 +717,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_5) {
 
     NDArray<float> x('c', {2,3,4});
     NDArray<float> exp(300.f);
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_sum<float> op;
     auto result = op.execute({&x}, {}, {});
@@ -721,7 +737,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_6) {
 
     NDArray<float> x('c', {2,3,4});
     NDArray<float> exp(300.f);
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
            
     nd4j::ops::reduce_sum<float> op;
     auto result = op.execute({&x}, {}, {0,1,2});
@@ -741,7 +757,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_7) {
 
     NDArray<float> x('c', {2,3,4});
     NDArray<float> exp('c', {1,1,1}, {300.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 //    x.printIndexedBuffer("Input with shape (2, 3, 4) is");       
     nd4j::ops::reduce_sum<float> op;
     auto result = op.execute({&x}, {1.}, {0,1,2});
@@ -761,7 +777,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_01) {
 
     NDArray<float> x('c', {2,3,2});
     NDArray<float> exp('c', {2}, {10395.f, 46080.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_prod<float> op;
     auto result = op.execute({&x}, {}, {0,1});
@@ -780,7 +796,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_02) {
 
     NDArray<float> x('c', {2,3,2});
     NDArray<float> exp('c', {1,1,2}, {10395.f, 46080.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_prod<float> op;
     auto result = op.execute({&x}, {1.}, {0, 1});
@@ -800,7 +816,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_3) {
 
     NDArray<float> x('c', {2,3,2});
     NDArray<float> exp('c', {3}, {112.f, 1080.f, 3960.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_prod<float> op;
     auto result = op.execute({&x}, {}, {0, 2});
@@ -820,7 +836,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_4) {
 
     NDArray<float> x('c', {2,3,2});
     NDArray<float> exp('c', {1,3,1}, {112.f, 1080.f, 3960.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_prod<float> op;
     auto result = op.execute({&x}, {1.}, {0, 2});
@@ -840,7 +856,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_5) {
 
     NDArray<float> x('c', {2,3,2});
     NDArray<float> exp(479001600.f);
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
     nd4j::ops::reduce_prod<float> op;
     auto result = op.execute({&x}, {}, {});
@@ -860,7 +876,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_6) {
 
     NDArray<float> x('c', {2,3,2});
     NDArray<float> exp(479001600.f);
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
            
     nd4j::ops::reduce_prod<float> op;
     auto result = op.execute({&x}, {}, {0,1,2});
@@ -880,7 +896,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_7) {
 
     NDArray<float> x('c', {2,3,2});
     NDArray<float> exp('c', {1, 1, 1}, {479001600.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 //    x.printIndexedBuffer("Input with shape (2, 3, 4) is");       
     nd4j::ops::reduce_prod<float> op;
     auto result = op.execute({&x}, {1.}, {0,1,2});
@@ -900,7 +916,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_1) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {4}, {1.f, 2.f, 3.f, 4.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_min<float> op;
     auto result = op.execute({&x}, {}, {0, 1});
@@ -919,7 +935,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_2) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {1,1,4}, {1.f, 2.f, 3.f, 4.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_min<float> op;
     auto result = op.execute({&x}, {1.}, {0, 1});
@@ -939,7 +955,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_3) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {3}, {1.f, 5.f, 9.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_min<float> op;
     auto result = op.execute({&x}, {}, {0, 2});
@@ -959,7 +975,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_4) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {1,3,1}, {1.f, 5.f, 9.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_min<float> op;
     auto result = op.execute({&x}, {1.}, {0, 2});
@@ -979,7 +995,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_5) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp(1.f);
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
     nd4j::ops::reduce_min<float> op;
     auto result = op.execute({&x}, {}, {});
@@ -999,7 +1015,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_6) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp(1.f);
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
            
     nd4j::ops::reduce_min<float> op;
     auto result = op.execute({&x}, {}, {0,1,2});
@@ -1019,7 +1035,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_7) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {1, 1, 1}, {1.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     // x.printIndexedBuffer("Input with shape (2, 3, 4) is");       
     nd4j::ops::reduce_min<float> op;
     auto result = op.execute({&x}, {1.}, {0,1,2});
@@ -1039,7 +1055,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_1) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {4}, {21.f, 22.f, 23.f, 24.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_max<float> op;
     auto result = op.execute({&x}, {}, {0,1});
@@ -1059,7 +1075,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_2) {
 
     NDArray<float> x('c', {2,3,4});
     NDArray<float> exp('c', {1,1,4}, {21.f, 22.f, 23.f, 24.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_max<float> op;
     auto result = op.execute({&x}, {1.}, {0, 1});
@@ -1079,7 +1095,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_3) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {3}, {16.f, 20.f, 24.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_max<float> op;
     auto result = op.execute({&x}, {}, {0, 2});
@@ -1099,7 +1115,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_4) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {1,3,1}, {16.f, 20.f, 24.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_max<float> op;
     auto result = op.execute({&x}, {1.}, {0, 2});
@@ -1119,7 +1135,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_5) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp(24.f);
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
     nd4j::ops::reduce_max<float> op;
     auto result = op.execute({&x}, {}, {});
@@ -1139,7 +1155,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_6) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp(24.f);
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
            
     nd4j::ops::reduce_max<float> op;
     auto result = op.execute({&x}, {}, {0,1,2});
@@ -1159,7 +1175,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_7) {
 
 	NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {1, 1, 1}, {24.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 //    x.printIndexedBuffer("Input with shape (2, 3, 4) is");       
     nd4j::ops::reduce_max<float> op;
     auto result = op.execute({&x}, {1.}, {0,1,2});
@@ -1178,7 +1194,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_1) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {4}, {66.f, 72.f, 78.f, 84.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_norm1<float> op;
     auto result = op.execute({&x}, {}, {0,1});
@@ -1197,7 +1213,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_2) {
 
     NDArray<float> x('c', {2,3,4});
     NDArray<float> exp('c', {1,1,4}, {66.f, 72.f, 78.f, 84.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_norm1<float> op;
     auto result = op.execute({&x}, {1.}, {0, 1});
@@ -1217,7 +1233,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_3) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {3}, {68.f, 100.f, 132.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_norm1<float> op;
     auto result = op.execute({&x}, {}, {0, 2});
@@ -1237,7 +1253,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_4) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {1,3,1}, {68.f, 100.f, 132.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_norm1<float> op;
     auto result = op.execute({&x}, {1.}, {0, 2});
@@ -1257,7 +1273,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_5) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp(300.f);
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
     nd4j::ops::reduce_norm1<float> op;
     auto result = op.execute({&x}, {}, {});
@@ -1277,7 +1293,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_6) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp(300.f);
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
            
     nd4j::ops::reduce_norm1<float> op;
     auto result = op.execute({&x}, {}, {0,1,2});
@@ -1297,7 +1313,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_7) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {1, 1, 1}, {300.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 //    x.printIndexedBuffer("Input with shape (2, 3, 4) is");       
     nd4j::ops::reduce_norm1<float> op;
     auto result = op.execute({&x}, {1.}, {0,1,2});
@@ -1316,7 +1332,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_1) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {4}, {31.7175f, 33.823071f, 35.97221f, 38.15757f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_norm2<float> op;
     auto result = op.execute({&x}, {}, {0,1});
@@ -1335,7 +1351,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_2) {
 
     NDArray<float> x('c', {2,3,4});
     NDArray<float> exp('c', {1,1,4}, {31.7175f, 33.823071f, 35.97221f, 38.15757f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_norm2<float> op;
     auto result = op.execute({&x}, {1.}, {0, 1});
@@ -1355,7 +1371,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_3) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {3}, {29.597298f, 39.344631f, 49.759422f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_norm2<float> op;
     auto result = op.execute({&x}, {}, {0, 2});
@@ -1375,7 +1391,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_4) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {1,3,1}, {29.597298f, 39.344631f, 49.759422f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_norm2<float> op;
     auto result = op.execute({&x}, {1.}, {0, 2});
@@ -1395,7 +1411,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_5) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp(70.f);
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
     nd4j::ops::reduce_norm2<float> op;
     auto result = op.execute({&x}, {}, {});
@@ -1415,7 +1431,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_6) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp(70.f);
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
            
     nd4j::ops::reduce_norm2<float> op;
     auto result = op.execute({&x}, {}, {0,1,2});
@@ -1435,7 +1451,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_7) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {1, 1, 1}, {70.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 //    x.printIndexedBuffer("Input with shape (2, 3, 4) is");       
     nd4j::ops::reduce_norm2<float> op;
     auto result = op.execute({&x}, {1.}, {0,1,2});
@@ -1455,7 +1471,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_1) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {4}, {21.f, 22.f, 23.f, 24.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_norm_max<float> op;
     auto result = op.execute({&x}, {}, {0,1});
@@ -1474,7 +1490,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_2) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {1,1,4}, {21.f, 22.f, 23.f, 24.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_norm_max<float> op;
     auto result = op.execute({&x}, {1.f}, {0,1});
@@ -1493,7 +1509,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_3) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {3}, {16.f, 20.f, 24.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_norm_max<float> op;
     auto result = op.execute({&x}, {}, {0,2});
@@ -1512,7 +1528,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_4) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {1, 3, 1}, {16.f, 20.f, 24.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_norm_max<float> op;
     auto result = op.execute({&x}, {1.f}, {0,2});
@@ -1531,7 +1547,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_5) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp(24.f);
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
     nd4j::ops::reduce_norm_max<float> op;
     auto result = op.execute({&x}, {}, {});
@@ -1551,7 +1567,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_6) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp(24.f);
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
     nd4j::ops::reduce_norm_max<float> op;
     auto result = op.execute({&x}, {}, {0, 1, 2});
@@ -1571,7 +1587,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_7) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {1, 1, 1}, {24.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
     nd4j::ops::reduce_norm_max<float> op;
     auto result = op.execute({&x}, {1.f}, {});
@@ -1591,7 +1607,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_1) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {4}, {1006.f, 1144.f, 1294.f, 1456.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_sqnorm<float> op;
     auto result = op.execute({&x}, {}, {0,1});
@@ -1610,7 +1626,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_2) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {1,1,4}, {1006.f, 1144.f, 1294.f, 1456.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_sqnorm<float> op;
     auto result = op.execute({&x}, {1.f}, {0,1});
@@ -1629,7 +1645,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_3) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {3}, {876.f, 1548.f, 2476.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_sqnorm<float> op;
     auto result = op.execute({&x}, {}, {0,2});
@@ -1648,7 +1664,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_4) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {1, 3, 1}, {876.f, 1548.f, 2476.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::reduce_sqnorm<float> op;
     auto result = op.execute({&x}, {1.f}, {0,2});
@@ -1667,7 +1683,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_5) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp(4900.f);
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
     nd4j::ops::reduce_sqnorm<float> op;
     auto result = op.execute({&x}, {}, {});
@@ -1687,7 +1703,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_6) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp(4900.f);
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
     nd4j::ops::reduce_sqnorm<float> op;
     auto result = op.execute({&x}, {}, {0, 1, 2});
@@ -1707,7 +1723,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_7) {
 
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {1, 1, 1}, {4900.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
     nd4j::ops::reduce_sqnorm<float> op;
     auto result = op.execute({&x}, {1.f}, {});
@@ -1834,7 +1850,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test1) {
 
     NDArray<float> x('c', {2,3,4});
     NDArray<float> exp('c', {4}, {11.f, 12.f, 13.f, 14.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
         
     nd4j::ops::reduce_mean<float> op;
@@ -1854,7 +1870,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test2) {
 
     NDArray<float> x('c', {2,3,4});
     NDArray<float> exp('c', {1,1,4}, {11.f, 12.f, 13.f, 14.f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
         
     nd4j::ops::reduce_mean<float> op;
@@ -1874,7 +1890,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test3) {
 
     NDArray<float> x('c', {2,3,4});
     NDArray<float> exp('c', {3}, {8.5f, 12.5f, 16.5f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
         
     nd4j::ops::reduce_mean<float> op;
@@ -1894,7 +1910,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test4) {
 
     NDArray<float> x('c', {2,3,4});
     NDArray<float> exp('c', {1,3,1}, {8.5f, 12.5f, 16.5f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
         
     nd4j::ops::reduce_mean<float> op;
@@ -1914,7 +1930,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test5) {
 
     NDArray<float> x('c', {2,3,4});
     NDArray<float> exp(12.5f);
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     
         
     nd4j::ops::reduce_mean<float> op;
@@ -1934,7 +1950,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test6) {
 
     NDArray<float> x('c', {2,3,4});
     NDArray<float> exp(12.5f);
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
            
     nd4j::ops::reduce_mean<float> op;
     auto result = op.execute({&x}, {}, {0,1,2});
@@ -1953,7 +1969,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test7) {
 
     NDArray<float> x('c', {2,3,4});
     NDArray<float> exp('c', {1,1,1}, {12.5f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
            
     nd4j::ops::reduce_mean<float> op;
     auto result = op.execute({&x}, {1.}, {0,1,2});
@@ -1975,7 +1991,7 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test1) {
     NDArray<float> gradO2('c', {1,1}, {0.5f});
     NDArray<float> exp('c', {3,4}, {1./24, 1./24, 1./24, 1./24, 1./24, 1./24, 1./24, 1./24, 1./24, 1./24, 1./24, 1./24});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
             
     nd4j::ops::reduce_mean_bp<float> op;
 
@@ -2003,7 +2019,7 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test2) {
     NDArray<float> gradO2('c', {1,4}, {1.f, 2.f, 3.f, 4.f});
     NDArray<float> exp('c', {3,4}, {1.f/3.f, 2.f/3.f, 1.f, 4.f/3.f, 1.f/3.f, 2.f/3.f, 1.f, 4.f/3.f, 1.f/3.f, 2.f/3.f, 1.f, 4.f/3.f});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
             
     nd4j::ops::reduce_mean_bp<float> op;
 
@@ -2030,7 +2046,7 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test3) {
     NDArray<float> gradO2('c', {3,1}, {1.f, 2.f, 3.f});
     NDArray<float> exp('c', {3,4}, {0.25f, 0.25f, 0.25f, 0.25f, 0.5f, 0.5f, 0.5f, 0.5f, 0.75f, 0.75f, 0.75f, 0.75f});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
             
     nd4j::ops::reduce_mean_bp<float> op;
 
@@ -2085,7 +2101,7 @@ TEST_F(DeclarableOpsTests8, avgpool2d_test13) {
                                                       782.5,  783.5,  784.5, 790. ,  791. ,  792. , 799. ,  800. ,  801. , 806.5,  807.5,  808.5, 857.5,  858.5,  859.5, 865. ,  866. ,  867. , 874. ,  875. ,  876. , 881.5,  882.5,  883.5,
                                                       917.5,  918.5,  919.5, 925. ,  926. ,  927. , 934. ,  935. ,  936. , 941.5,  942.5,  943.5, 992.5,  993.5,  994.5,1000. , 1001. , 1002. ,1009. , 1010. , 1011. ,1016.5, 1017.5, 1018.5,
                                                      1082.5, 1083.5, 1084.5,1090. , 1091. , 1092. ,1099. , 1100. , 1101. ,1106.5, 1107.5, 1108.5,1157.5, 1158.5, 1159.5,1165. , 1166. , 1167. ,1174. , 1175. , 1176. ,1181.5, 1182.5, 1183.5});
-    NDArrayFactory<double>::linspace(1., input);    
+    input.linspace(1.);    
 
     nd4j::ops::avgpool2d<double> op;
     ResultSet<double>* results = op.execute({&input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 0, dataFormat});
@@ -2106,7 +2122,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test1) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> expected('c', {2,3}, {2.78507, 1.34254, 4.12761, 2.88507, 2.78507, 2.88507});
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {});
@@ -2128,7 +2144,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test2) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> expected('c', {3,4}, {0.26328, 1.46328, 1.72656, 0.     , 0.26328, 0.     , 1.46328, 0.26328, 1.72656, 0.     , 1.72656, 1.46328});
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {0});
@@ -2150,7 +2166,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test3) {
     NDArray<double> logits('c', {2,3,4});
     NDArray<double> expected('c', {2,4}, {0.75125, 1.55125, 3.45375, 0.75125, 3.45375, 0.     , 2.3025 , 1.15125});
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {1});
@@ -2172,7 +2188,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test4) {
     NDArray<double> logits('c', {2,3});
     NDArray<double> expected('c', {2}, {2.10389, 1.00194});
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {});
@@ -2194,7 +2210,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test5) {
     NDArray<double> logits('c', {2,3});
     NDArray<double> expected('c', {3}, {0., 0.85436, 1.40871});
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {0});
@@ -2216,7 +2232,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test6) {
     NDArray<double> logits('c', {2,1});
     NDArray<double> expected('c', {1}, {0.6444});
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {0});
@@ -2238,7 +2254,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test7) {
     NDArray<double> logits('c', {2,1});
     NDArray<double> expected('c', {2}, {0., 0.});
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {1});
@@ -2260,7 +2276,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test8) {
     NDArray<double> logits('c', {2});
     NDArray<double> expected(0.6444);
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {});
@@ -2302,7 +2318,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test10) {
     NDArray<double> logits('c', {1,2});
     NDArray<double> expected('c', {2}, {0., 0.});
                                             
-    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    logits.linspace(0.1, 0.1);
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {0});
@@ -2339,7 +2355,7 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test5) {
     NDArray<double> x('c', {3, 5});
     NDArray<double> exp('c', {3, 5}, {1.,  2.,  2.89271,  3.50524,  4.00892, 6.,  7.,  7.71389,  7.88678,  8.01784, 11., 12., 12.53507, 12.26833, 12.02676});    
 
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::clipbynorm<double> op;
     auto result = op.execute({&x}, {15.f}, {0});
@@ -2357,7 +2373,7 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test6) {
     NDArray<double> x('c', {3, 5});
     NDArray<double> exp('c', {3, 5}, {1., 2., 3., 4., 5., 4.95434, 5.78006, 6.60578, 7.43151, 8.25723, 5.64288, 6.15587, 6.66886, 7.18185, 7.69484});    
 
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::clipbynorm<double> op;
     auto result = op.execute({&x}, {15.f}, {1});
@@ -2375,7 +2391,7 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test7) {
     NDArray<double> x('c', {3, 5});
     NDArray<double> exp('c', {3, 5}, {0.42597, 0.85194, 1.27791, 1.70389, 2.12986, 2.55583, 2.9818 , 3.40777, 3.83374, 4.25971, 4.68569, 5.11166, 5.53763, 5.9636 , 6.38957});
 
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::clipbynorm<double> op;
     auto result = op.execute({&x}, {15.f}, {0,1});
@@ -2393,7 +2409,7 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test8) {
     NDArray<double> x('c', {3, 5});
     NDArray<double> exp('c', {3, 5}, {0.42597, 0.85194, 1.27791, 1.70389, 2.12986, 2.55583, 2.9818 , 3.40777, 3.83374, 4.25971, 4.68569, 5.11166, 5.53763, 5.9636 , 6.38957});
 
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::clipbynorm<double> op;
     auto result = op.execute({&x}, {15.}, {});
@@ -2444,7 +2460,7 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test11) {
     NDArray<double> exp('c', {2, 3, 4}, {1.,  2.,  3.,  4.,  4.44787,  5.33745,  6.22702,  7.1166 , 6.33046,  7.03384,  7.73723,  8.44061,
                                         13., 14., 15., 16., 15.12277, 16.01235, 16.90192, 17.7915 ,14.77107, 15.47446, 16.17784, 16.88123});
 
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::clipbynorm<double> op;
     auto result = op.execute({&x}, {35.}, {0, 2});
@@ -2455,7 +2471,19 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test11) {
 
     delete result;
 }
- 
+
+
+TEST_F(DeclarableOpsTests8, clipbynorm_test_tf_119_1) {
+    NDArray<double> x('c', {3, 3}, {1, 2, 3, 4, 5,6, 7, 8, 9});
+    NDArray<double> e('c', {3, 3}, {0.03198684, 0.06397368, 0.09596053, 0.12794736, 0.15993419, 0.19192106, 0.22390789, 0.25589472, 0.28788155});
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {0.54}, {});
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, reduceMeanBP_test4) {
@@ -2572,7 +2600,7 @@ TEST_F(DeclarableOpsTests8, ones_as_test1) {
 TEST_F(DeclarableOpsTests8, NormalizeMoments_SGO_1) {
 
     NDArray<double> data  ('c', {10, 10});
-    NDArrayFactory<double>::linspace(1, data);
+    data.linspace(1);
     
     NDArray<double>* means = data.sum({0});
     NDArray<double>* deviance = data.varianceAlongDimension<simdOps::SummaryStatsVariance<double>>(true, {0}); //('c', {10, 10});
@@ -2610,7 +2638,7 @@ TEST_F(DeclarableOpsTests8, Test_Moments_1) {
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> expMeans('c', {4}, {11.f, 12.f, 13.f, 14.f});
     NDArray<float> expVariance('c', {4}, {46.666668f, 46.666668f, 46.66666f, 46.666668f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::moments<float> op;
     auto result = op.execute({&x}, {}, {0, 1});
@@ -2641,7 +2669,7 @@ TEST_F(DeclarableOpsTests8, Test_Moments_2) {
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> expMeans('c', {1,1,4}, {11.f, 12.f, 13.f, 14.f});
     NDArray<float> expVariance('c', {1,1,4}, {46.666668f, 46.666668f, 46.66666f, 46.666668f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::moments<float> op;
     auto result = op.execute({&x}, {1.}, {0, 1});
@@ -2670,7 +2698,7 @@ TEST_F(DeclarableOpsTests8, Test_Moments_3) {
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> expMeans('c', {3}, {8.5f, 12.5f, 16.5f});
     NDArray<float> expVariance('c', {3}, {37.25f, 37.25f, 37.25f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::moments<float> op;
     auto result = op.execute({&x}, {}, {0, 2});
@@ -2699,7 +2727,7 @@ TEST_F(DeclarableOpsTests8, Test_Moments_4) {
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> expMeans('c', {1,3,1}, {8.5f, 12.5f, 16.5f});
     NDArray<float> expVariance('c', {1,3,1}, {37.25f, 37.25f, 37.25f});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
 
     nd4j::ops::moments<float> op;
     auto result = op.execute({&x}, {1.}, {0, 2});
@@ -2728,7 +2756,7 @@ TEST_F(DeclarableOpsTests8, Test_Moments_6) {
     NDArray<float> expVariance(47.916668f);
 
     NDArray<float> x('c', {2, 3, 4});
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
            
     nd4j::ops::moments<float> op;
     auto result = op.execute({&x}, {}, {0,1,2});
@@ -2757,7 +2785,7 @@ TEST_F(DeclarableOpsTests8, Test_Moments_7) {
     NDArray<float> expMeans('c', {1,1,1}, {12.5f});
     NDArray<float> expVariance('c', {1,1,1}, {47.916668f});
 
-    NDArrayFactory<float>::linspace(1, x);
+    x.linspace(1);
     // x.printIndexedBuffer("Input with shape (2, 3, 4) is");       
     nd4j::ops::moments<float> op;
     auto result = op.execute({&x}, {1.}, {0,1,2});

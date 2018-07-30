@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by raver119 on 30.10.2017.
 //
@@ -90,10 +106,10 @@ TEST_F(ContextTests, Basic_Test_4) {
     Context<float> ctx(1, &variableSpace);
 
     auto _20 = new NDArray<float>('c', {2, 2});
-    NDArrayFactory<float>::linspace(1, *_20);
+    _20->linspace(1);
 
     auto _21 = new NDArray<float>('c', {2, 2});
-    NDArrayFactory<float>::linspace(10, *_21);
+    _21->linspace(10);
 
     ctx.pushNDArrayToVariableSpace(1, 1, _20);
 
@@ -112,7 +128,7 @@ TEST_F(ContextTests, Basic_Test_5) {
     Context<float> ctx(1, &variableSpace);
 
     auto _20 = new NDArray<float>('c', {2, 2});
-    NDArrayFactory<float>::linspace(1, *_20);
+    _20->linspace(1);
 
     auto exp = _20->dup();
 
@@ -170,10 +186,10 @@ TEST_F(ContextTests, Basic_Test_7) {
 
 
     auto _10 = new NDArray<float>('c', {2, 2});
-    NDArrayFactory<float>::linspace(1, *_10);
+    _10->linspace(1);
 
     auto _11 = new NDArray<float>('c', {2, 2});
-    NDArrayFactory<float>::linspace(10, *_11);
+    _11->linspace(10);
 
     ctx.pushNDArrayToVariableSpace(1, 0, _10);
     ctx.pushNDArrayToVariableSpace(1, 1, _11);
@@ -191,10 +207,10 @@ TEST_F(ContextTests, Basic_Test_8) {
     Context<float> ctx(1, &variableSpace);
 
     auto _10 = new NDArray<float>('c', {2, 2});
-    NDArrayFactory<float>::linspace(1, *_10);
+    _10->linspace(1);
 
     auto _11 = new NDArray<float>('c', {2, 2});
-    NDArrayFactory<float>::linspace(10, *_11);
+    _11->linspace(10);
 
     ctx.pushNDArrayToVariableSpace(1, 0, _10);
     ctx.pushNDArrayToVariableSpace(1, 1, _11);

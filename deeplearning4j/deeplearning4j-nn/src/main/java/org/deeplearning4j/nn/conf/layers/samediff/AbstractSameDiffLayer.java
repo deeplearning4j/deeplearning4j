@@ -1,9 +1,26 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.conf.layers.samediff;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -30,6 +47,8 @@ public abstract class AbstractSameDiffLayer extends Layer {
     protected double l2Bias;
     protected IUpdater updater;
     protected IUpdater biasUpdater;
+    protected GradientNormalization gradientNormalization;
+    protected double gradientNormalizationThreshold = Double.NaN;
 
     private SDLayerParams layerParams;
 
@@ -69,17 +88,24 @@ public abstract class AbstractSameDiffLayer extends Layer {
     }
 
     @Override
-    public abstract InputType getOutputType(int layerIndex, InputType inputType);
+    public void setNIn(InputType inputType, boolean override) {
+        //Default implementation: no-op
+    }
 
     @Override
-    public abstract void setNIn(InputType inputType, boolean override);
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+        //Default implementation: no-op
+        return null;
+    }
 
-    @Override
-    public abstract InputPreProcessor getPreProcessorForInputType(InputType inputType);
+
+    public void applyGlobalConfigToLayer(NeuralNetConfiguration.Builder globalConfig) {
+        //Default implementation: no op
+    }
 
     /**
-     * Define the parameters for the network. Use {@link SDLayerParams#addWeightParam(String, int...)} and
-     * {@link SDLayerParams#addBiasParam(String, int[])}
+     * Define the parameters for the network. Use {@link SDLayerParams#addWeightParam(String, long...)} and
+     * {@link SDLayerParams#addBiasParam(String, long...)}
      * @param params Object used to set parameters for this layer
      */
     public abstract void defineParameters(SDLayerParams params);
@@ -89,12 +115,6 @@ public abstract class AbstractSameDiffLayer extends Layer {
      * @param params Parameter arrays that may be initialized
      */
     public abstract void initializeParameters(Map<String,INDArray> params);
-
-    /**
-     * Apply the global configuration (weight init, activation function, etc) to this layer
-     * @param globalConfig Global configuration
-     */
-    public abstract void applyGlobalConfigToLayer(NeuralNetConfiguration.Builder globalConfig);
 
     @Override
     public abstract org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
@@ -129,6 +149,11 @@ public abstract class AbstractSameDiffLayer extends Layer {
 
     @Override
     public boolean isPretrainParam(String paramName) {
+        return false;
+    }
+
+    @Override
+    public boolean isPretrain() {
         return false;
     }
 
@@ -169,6 +194,12 @@ public abstract class AbstractSameDiffLayer extends Layer {
         }
         if(biasUpdater == null){
             biasUpdater = b.getBiasUpdater();
+        }
+        if(gradientNormalization == null){
+            gradientNormalization = b.getGradientNormalization();
+        }
+        if(Double.isNaN(gradientNormalizationThreshold)){
+            gradientNormalizationThreshold = b.getGradientNormalizationThreshold();
         }
 
         applyGlobalConfigToLayer(b);

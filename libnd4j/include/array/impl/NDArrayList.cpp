@@ -1,10 +1,25 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // @author raver119@gmail.com
 //
 
 
 #include <iterator>
-#include <NDArrayFactory.h>
 #include <array/NDArrayList.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/CustomOperations.h>
@@ -87,7 +102,7 @@ namespace nd4j {
         _axis = axis;
         std::vector<int> args({axis});
         std::vector<int> newAxis = ShapeUtils<T>::convertAxisToTadTarget(array->rankOf(), args);
-        auto result = nd4j::NDArrayFactory<T>::allTensorsAlongDimension(array, newAxis);
+        auto result = array->allTensorsAlongDimension(newAxis);
         for (int e = 0; e < result->size(); e++) {
             auto chunk = result->at(e)->dup(array->ordering());
             write(e, chunk);
@@ -169,7 +184,7 @@ namespace nd4j {
         // do we have to enforce C order here?
         auto array = new NDArray<T>('c', shape, _workspace);
         std::vector<int> axis = ShapeUtils<T>::convertAxisToTadTarget(shape.size(), {_axis});
-        auto tads = NDArrayFactory<T>::allTensorsAlongDimension(array, axis);
+        auto tads = array->allTensorsAlongDimension(axis);
 
         // just for lulz
 #pragma omp parallel for

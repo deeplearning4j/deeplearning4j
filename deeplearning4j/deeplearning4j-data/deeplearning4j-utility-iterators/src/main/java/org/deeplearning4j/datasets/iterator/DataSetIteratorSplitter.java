@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.datasets.iterator;
 
 import lombok.NonNull;
@@ -34,11 +50,18 @@ public class DataSetIteratorSplitter {
     protected AtomicBoolean resetPending = new AtomicBoolean(false);
     protected DataSet firstTrain = null;
 
-    public DataSetIteratorSplitter(@NonNull DataSetIterator baseIterator, long totalExamples, double ratio) {
+    /**
+     * The only constructor
+     *
+     * @param baseIterator - iterator to be wrapped and split
+     * @param totalBatches - total batches in baseIterator
+     * @param ratio - train/test split ratio
+     */
+    public DataSetIteratorSplitter(@NonNull DataSetIterator baseIterator, long totalBatches, double ratio) {
         if (!(ratio > 0.0 && ratio < 1.0))
             throw new ND4JIllegalStateException("Ratio value should be in range of 0.0 > X < 1.0");
 
-        if (totalExamples < 0)
+        if (totalBatches < 0)
             throw new ND4JIllegalStateException("totalExamples number should be positive value");
 
         if (!baseIterator.resetSupported())
@@ -46,7 +69,7 @@ public class DataSetIteratorSplitter {
 
 
         this.backedIterator = baseIterator;
-        this.totalExamples = totalExamples;
+        this.totalExamples = totalBatches;
         this.ratio = ratio;
         this.numTrain = (long) (totalExamples * ratio);
         this.numTest = totalExamples - numTrain;

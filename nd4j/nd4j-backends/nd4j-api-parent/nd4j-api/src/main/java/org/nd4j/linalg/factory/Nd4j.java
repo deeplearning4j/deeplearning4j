@@ -1,21 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.factory;
 
@@ -58,16 +55,13 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
-import org.nd4j.linalg.api.ops.impl.controlflow.Select;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.shape.Diag;
 import org.nd4j.linalg.api.ops.impl.transforms.OldReverse;
 import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
-import org.nd4j.linalg.api.ops.random.impl.Choice;
-import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
-import org.nd4j.linalg.api.ops.random.impl.Linspace;
-import org.nd4j.linalg.api.ops.random.impl.UniformDistribution;
+import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
+import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
@@ -85,7 +79,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4jBackend.NoAvailableBackendException;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.memory.MemoryManager;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -139,6 +132,8 @@ public class Nd4j {
     public final static String MEMORY_MANAGER = "memorymanager";
     public final static String WORKSPACE_MANAGER = "workspacemanager";
     public final static String RANDOM_PROVIDER = "random";
+    public static final String LOG_INIT_ENV_PROPERTY = "org.nd4j.log.initialization";
+
     //execution mode for element wise operations
     public static OpExecutioner.ExecutionMode executionMode = OpExecutioner.ExecutionMode.JAVA;
 
@@ -413,6 +408,25 @@ public class Nd4j {
             indexes[i] = i < dimension ? shape[i] : i == dimension ? 1 : shape[i - 1];
         return input.reshape(input.ordering(), indexes);
     }
+
+    /**
+     * Squeeze : removes a dimension of size 1
+     * @param input the input array
+     * @param dimension the dimension to remove
+     * @return the array with dimension removed
+     */
+    public static INDArray squeeze(INDArray input, int dimension) {
+        if (dimension < 0){
+            dimension += input.rank();
+        }
+        long[] shape = input.shape();
+        Preconditions.checkState(shape[dimension] == 1, String.format("Squeeze: Only dimension of size 1 can be squeezed. " +
+                "Attempted to squeeze dimension %d of array with shape %s (size %d).", dimension, ArrayUtils.toString(shape), shape[dimension]));
+
+        long[] newShape = ArrayUtil.removeIndex(shape, dimension);
+        return input.reshape(input.ordering(), newShape);
+    }
+
 
     /**
      * Backend specific:
@@ -1489,6 +1503,19 @@ public class Nd4j {
     }
 
     /**
+     * Create a buffer equal of length prod(shape)
+     *
+     * @param data the shape of the buffer to create
+     * @return the created buffer
+     */
+    public static DataBuffer createBuffer(long[] data) {
+        DataBuffer ret;
+        ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createLong(data) : DATA_BUFFER_FACTORY_INSTANCE.createLong(data, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
      * Create a buffer equal of length prod(shape). This method is NOT affected by workspaces
      *
      * @param data
@@ -2317,6 +2344,8 @@ public class Nd4j {
     }
 
     private static String writeStringForArray(INDArray write, String format) {
+        if(write.isView() || !Shape.hasDefaultStridesForShape(write))
+            write = write.dup();
         if (format.isEmpty()) format = "0.000000000000000000E0";
         String lineOne = "{\n";
         String lineTwo = "\"filefrom\": \"dl4j\",\n";
@@ -3524,6 +3553,82 @@ public class Nd4j {
         return getExecutioner().exec(new GaussianDistribution(target), rng);
     }
 
+    /**
+     * Generate a random array according to a binomial distribution with probability p: i.e., values 0 with probability
+     * (1-p) or value 1 with probability p
+     *
+     * @param p     Probability. Must be in range 0 to 1
+     * @param shape Shape of the result array
+     * @return Result array
+     */
+    public static INDArray randomBernoulli(double p, long... shape) {
+        return randomBernoulli(p, Nd4j.createUninitialized(shape));
+    }
+
+    /**
+     * Fill the specified array with values generated according to a binomial distribution with probability p: i.e.,
+     * values 0 with probability (1-p) or value 1 with probability p
+     *
+     * @param p      Probability. Must be in range 0 to 1
+     * @param target Result array to place generated values in
+     * @return Result array
+     */
+    public static INDArray randomBernoulli(double p, @NonNull INDArray target) {
+        Preconditions.checkArgument(p >= 0 && p <= 1.0, "Invalid probability: must be in range 0 to 1, got %s", p);
+        return Nd4j.getExecutioner().exec(new BernoulliDistribution(target, p));
+    }
+
+    /**
+     * Generate an array with random values generated according to a binomial distribution with the specified
+     * number of trials and probability
+     *
+     * @param nTrials Number of trials. Must be >= 0
+     * @param p       Probability. Must be in range 0 to 1
+     * @param shape   Shape of the result array
+     * @return Result array
+     */
+    public static INDArray randomBinomial(int nTrials, double p, long... shape) {
+        return randomBinomial(nTrials, p, Nd4j.createUninitialized(shape));
+    }
+
+    /**
+     * Fill the target array with random values generated according to a binomial distribution with the specified
+     * number of trials and probability
+     *
+     * @param nTrials Number of trials. Must be >= 0
+     * @param p       Probability. Must be in range 0 to 1
+     * @param target  Result array
+     * @return Result array
+     */
+    public static INDArray randomBinomial(int nTrials, double p, INDArray target) {
+        Preconditions.checkArgument(p >= 0 && p <= 1.0, "Invalid probability: must be in range 0 to 1, got %s", p);
+        Preconditions.checkArgument(nTrials >= 0, "Number of trials must be positive: got %s", nTrials);
+        return Nd4j.getExecutioner().exec(new BinomialDistribution(target, nTrials, p));
+    }
+
+    /**
+     * Exponential distribution: P(x) = lambda * exp(-lambda * x)
+     *
+     * @param lambda Must be > 0
+     * @param shape  Shape of the array to generate
+     */
+    public static INDArray randomExponential(double lambda, long... shape) {
+        return randomExponential(lambda, Nd4j.createUninitialized(shape));
+    }
+
+    /**
+     * Exponential distribution: P(x) = lambda * exp(-lambda * x)
+     *
+     * @param lambda Must be > 0
+     * @param target Array to hold the result
+     */
+    public static INDArray randomExponential(double lambda, INDArray target) {
+        Preconditions.checkArgument(lambda > 0, "Lambda argument must be >= 0 - got %s", lambda);
+        INDArray shapeArr = Nd4j.create(ArrayUtil.toDouble(target.shape()));
+        Nd4j.getExecutioner().exec(new RandomExponential(shapeArr, target, lambda));
+        return target;
+    }
+
     ////////////////////// CREATE ///////////////////////////////
 
     /**
@@ -3886,7 +3991,11 @@ public class Nd4j {
      * @return
      */
     public static INDArray empty() {
-        val ret = INSTANCE.empty();
+        return empty(Nd4j.dataType());
+    }
+
+    public static INDArray empty(DataBuffer.Type type) {
+        val ret = INSTANCE.empty(type);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -5789,7 +5898,7 @@ public class Nd4j {
      * @param shape
      * @return a INDArray
      * */
-    public static INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public static INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCSR(data, columns, pointerB, pointerE, shape);
 
         return matrix;
@@ -5803,7 +5912,7 @@ public class Nd4j {
      * @param shape
      * @return a INDArray
      * */
-    public static INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public static INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCSR(data, columns, pointerB, pointerE, shape);
 
         return matrix;
@@ -5818,23 +5927,18 @@ public class Nd4j {
      * @return a INDArray
      * */
     public static INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE,
-                                           int[] shape) {
+                                           long[] shape) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCSR(data, columns, pointerB, pointerE, shape);
 
         return matrix;
     }
-
+    /**
+     * @param data
+     * @param indices
+     * @param shape
+     * @return a INDArray
+     * */
     public static INDArray createSparseCOO(double[] data, int[][] indices, long[] shape) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * @param data
-     * @param indices
-     * @param shape
-     * @return a INDArray
-     * */
-    public static INDArray createSparseCOO(double[] data, int[][] indices, int[] shape) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
 
         return matrix;
@@ -5846,7 +5950,7 @@ public class Nd4j {
      * @param shape
      * @return a INDArray
      * */
-    public static INDArray createSparseCOO(float[] data, int[][] indices, int[] shape) {
+    public static INDArray createSparseCOO(float[] data, int[][] indices, long[] shape) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
 
         return matrix;
@@ -5858,7 +5962,31 @@ public class Nd4j {
      * @param shape
      * @return a INDArray
      * */
-    public static INDArray createSparseCOO(DataBuffer data, DataBuffer indices, int[] shape) {
+    public static INDArray createSparseCOO(double[] data, long[][] indices, long[] shape) {
+        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
+
+        return matrix;
+    }
+
+    /**
+     * @param data
+     * @param indices
+     * @param shape
+     * @return a INDArray
+     * */
+    public static INDArray createSparseCOO(float[] data, long[][] indices, long[] shape) {
+        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
+
+        return matrix;
+    }
+
+    /**
+     * @param data
+     * @param indices
+     * @param shape
+     * @return a INDArray
+     * */
+    public static INDArray createSparseCOO(DataBuffer data, DataBuffer indices, long[] shape) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
 
         return matrix;
@@ -5872,7 +6000,7 @@ public class Nd4j {
      * @return a INDArray
      * */
     public static INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation,
-                                           int[] shape) {
+                                           long[] shape) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCOO(values, indices, sparseInformation, shape);
         return matrix;
     }
@@ -5882,13 +6010,13 @@ public class Nd4j {
      * @param indices a DataBuffer with the indexes of the values
      * @param sparseOffsets the sparse
      * @param flags an array that define the inactive dimension
+     * @param shape
      * @param hiddenDimensions an array containing the position of the hidden dimensions
      * @param underlyingRank the rank of the original ndarray
-     * @param shape
      * @return a INDArray
      * */
     public static INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags,
-                                           int[] shape, int[] hiddenDimensions, int underlyingRank) {
+                                           long[] shape, int[] hiddenDimensions, int underlyingRank) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCOO(values, indices, sparseOffsets, flags, hiddenDimensions,
                 underlyingRank, shape);
         return matrix;
@@ -6975,7 +7103,10 @@ public class Nd4j {
                 fallbackMode.set(false);
             }
 
-            OP_EXECUTIONER_INSTANCE.printEnvironmentInformation();
+            String logInitProperty = System.getProperty(LOG_INIT_ENV_PROPERTY, "true");
+            if(Boolean.parseBoolean(logInitProperty)) {
+                OP_EXECUTIONER_INSTANCE.printEnvironmentInformation();
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -7398,14 +7529,17 @@ public class Nd4j {
         val dtype = array.dtype();
         val order = array.byteOrder();
         val rank = (int) array.shape(0);
-        val shape = new long[rank * 2 + 4];
-        for (int e = 0; e < shape.length; e++)
-            shape[e] = array.shape(e);
+        val shapeInfo = new long[Shape.shapeInfoLength(rank)];
+        for (int e = 0; e < shapeInfo.length; e++)
+            shapeInfo[e] = array.shape(e);
 
-        char ordering = shape[shape.length - 1] == 99 ? 'c' : 'f';
+        if (Shape.isEmpty(shapeInfo))
+            return Nd4j.empty();
 
-        val shapeOf = Shape.shapeOf(shape);
-        val stridesOf = Shape.stridesOf(shape);
+        char ordering = shapeInfo[shapeInfo.length - 1] == 99 ? 'c' : 'f';
+
+        val shapeOf = Shape.shapeOf(shapeInfo);
+        val stridesOf = Shape.stridesOf(shapeInfo);
 
         val _dtype = SameDiff.getDataTypeFromByte(dtype);
         val _order = SameDiff.getOrderFromByte(order);

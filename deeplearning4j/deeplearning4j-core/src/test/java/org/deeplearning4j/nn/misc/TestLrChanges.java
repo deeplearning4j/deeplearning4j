@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.misc;
 
 import org.deeplearning4j.BaseDL4JTest;
@@ -59,7 +75,9 @@ public class TestLrChanges extends BaseDL4JTest {
         conf2.setIterationCount(conf.getIterationCount());
         net2.setParams(net.params().dup());
 
+        assertEquals(0.1, net.getLearningRate(0).doubleValue(), 0.0);
         net.setLearningRate(0, 0.5);  //Set LR for layer 0 to 0.5
+        assertEquals(0.5, net.getLearningRate(0).doubleValue(), 0.0);
 
         assertEquals(conf, conf2);
         assertEquals(conf.toJson(), conf2.toJson());
@@ -222,7 +240,9 @@ public class TestLrChanges extends BaseDL4JTest {
         conf2.setIterationCount(conf.getIterationCount());
         net2.setParams(net.params().dup());
 
+        assertEquals(0.1, net.getLearningRate("0").doubleValue(), 0.0);
         net.setLearningRate("0", 0.5);  //Set LR for layer 0 to 0.5
+        assertEquals(0.5, net.getLearningRate("0").doubleValue(), 0.0);
 
         assertEquals(conf, conf2);
         assertEquals(conf.toJson(), conf2.toJson());

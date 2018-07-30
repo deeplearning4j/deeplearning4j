@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg;
 
 import org.junit.Ignore;
@@ -30,7 +46,7 @@ public class SparseNDArrayCSRTest {
     private int[] columns = {0, 1, 3, 0, 1, 2, 3, 4, 0, 2, 3, 1, 4};
     private int[] pointerB = {0, 3, 5, 8, 11};
     private int[] pointerE = {3, 5, 8, 11, 13};
-    private int[] shape = {5, 5};
+    private long[] shape = {5, 5};
 
 
     @Test
@@ -57,7 +73,7 @@ public class SparseNDArrayCSRTest {
             double[] expectedColumns = {0, 1, 3, 0, 1, 1, 2, 3, 4, 0, 2, 3, 1, 4};
             int[] expectedPointerB = {0, 3, 5, 9, 12};
             int[] expectedPointerE = {3, 5, 9, 12, 14};
-            int[] expectedShape = {5, 5};
+            long[] expectedShape = {5, 5};
 
 
             assertArrayEquals(expectedValues, sparseCSRArray.getDoubleValues(), 0);
@@ -104,7 +120,7 @@ public class SparseNDArrayCSRTest {
             double[] expectedColumns = {0, 1, 3, 0, 1, 2, 3, 4, 0, 2, 3, 1, 4};
             int[] expectedPointerB = {0, 3, 5, 8, 11};
             int[] expectedPointerE = {3, 5, 8, 11, 13};
-            int[] expectedShape = {5, 5};
+            long[] expectedShape = {5, 5};
 
             assertArrayEquals(expectedValues, sparseCSRArray.getDoubleValues(), 0);
             assertArrayEquals(expectedColumns, sparseCSRArray.getColumns(), 0);

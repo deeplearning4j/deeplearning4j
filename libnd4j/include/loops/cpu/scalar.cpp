@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by raver119 on 08.10.2017.
 //
@@ -196,6 +212,9 @@ namespace functions {
                     transform<OpType>(x,xElementWiseStride,result,resultElementWiseStride,scalar,extraParams,n);
                 }
                 else {
+                    Nd4jLong xIdx[MAX_RANK];
+                    Nd4jLong resultIdx[MAX_RANK];
+
                     auto xShape = shape::shapeOf(xShapeInfo);
                     auto resultShape = shape::shapeOf(resultShapeInfo);
 
@@ -204,19 +223,15 @@ namespace functions {
                     int xRank = shape::rank(xShapeInfo);
                     int resultRank = shape::rank(resultShapeInfo);
 
-#pragma omp parallel for simd schedule(guided) if (n > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)
+#pragma omp parallel for schedule(guided) if (n > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)
                     for (Nd4jLong i = 0; i < n; i++) {
-                        auto xIdx = shape::ind2sub(xRank, xShape, i);
-                        auto resultIdx = shape::ind2sub(resultRank, resultShape, i);
+                        shape::ind2sub(xRank, xShape, i, n, xIdx);
+                        shape::ind2sub(resultRank, resultShape, i, n, resultIdx);
+
                         auto xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
-                        auto resultOffset2 = shape::getOffset(0, resultShape, resultStride, resultIdx,
-                                                                   resultRank);
+                        auto resultOffset2 = shape::getOffset(0, resultShape, resultStride, resultIdx, resultRank);
 
                         result[resultOffset2] = OpType::op(x[xOffset2], scalar, extraParams);
-
-                        delete[] xIdx;
-                        delete[] resultIdx;
-
                     }
                 }
 

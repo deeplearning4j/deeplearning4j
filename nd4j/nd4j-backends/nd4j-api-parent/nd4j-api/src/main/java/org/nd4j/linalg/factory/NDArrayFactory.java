@@ -1,21 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.factory;
 
@@ -31,7 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 
 import java.io.File;
-import java.io.InputStream;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -1360,7 +1356,8 @@ public interface NDArrayFactory {
      */
     INDArray scalar(Number value);
 
-    INDArray empty();
+    INDArray empty(DataBuffer.Type type);
+
     INDArray trueScalar(Number value);
 
     INDArray trueVector(float[] data);
@@ -1889,8 +1886,9 @@ public interface NDArrayFactory {
      * @param target
      * @param length
      */
-    void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target,
-                    long length);
+    void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target, long length);
+
+    void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, DataBuffer buffer);
 
     /**
      * Create from an in memory numpy pointer
@@ -1929,21 +1927,25 @@ public interface NDArrayFactory {
 
     // =========== Sparse methods ===========
 
-    INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape);
+    INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape);
 
-    INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape);
+    INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape);
 
-    INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, int[] shape);
+    INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, long[] shape);
 
-    INDArray createSparseCOO(double[] values, int[][] indices, int[] shape);
+    INDArray createSparseCOO(double[] values, long[][] indices, long[] shape);
 
-    INDArray createSparseCOO(float[] values, int[][] indices, int[] shape);
+    INDArray createSparseCOO(float[] values, long[][] indices, long[] shape);
 
-    INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] shape);
+    INDArray createSparseCOO(double[] values, int[][] indices, long[] shape);
 
-    INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, int[] shape);
+    INDArray createSparseCOO(float[] values, int[][] indices, long[] shape);
+
+    INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] shape);
+
+    INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, long[] shape);
 
     INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags,
-                    int[] hiddenDimensions, int underlyingRank, int[] shape);
+                             int[] hiddenDimensions, int underlyingRank, long[] shape);
 
 }

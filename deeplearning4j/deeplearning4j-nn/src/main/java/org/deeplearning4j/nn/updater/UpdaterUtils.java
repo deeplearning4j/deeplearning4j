@@ -1,6 +1,23 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.updater;
 
-import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.Trainable;
+import org.deeplearning4j.nn.api.TrainingConfig;
 import org.nd4j.linalg.learning.config.IUpdater;
 
 /**
@@ -9,9 +26,9 @@ import org.nd4j.linalg.learning.config.IUpdater;
 public class UpdaterUtils {
 
 
-    public static boolean updaterConfigurationsEquals(Layer layer1, String param1, Layer layer2, String param2) {
-        org.deeplearning4j.nn.conf.layers.Layer l1 = layer1.conf().getLayer();
-        org.deeplearning4j.nn.conf.layers.Layer l2 = layer2.conf().getLayer();
+    public static boolean updaterConfigurationsEquals(Trainable layer1, String param1, Trainable layer2, String param2) {
+        TrainingConfig l1 = layer1.getConfig();
+        TrainingConfig l2 = layer2.getConfig();
         IUpdater u1 = l1.getUpdaterByParam(param1);
         IUpdater u2 = l2.getUpdaterByParam(param2);
 
@@ -25,8 +42,8 @@ public class UpdaterUtils {
             return false;
         }
 
-        boolean isPretrainParam1 = layer1.conf().getLayer().isPretrainParam(param1);
-        boolean isPretrainParam2 = layer2.conf().getLayer().isPretrainParam(param2);
+        boolean isPretrainParam1 = l1.isPretrainParam(param1);
+        boolean isPretrainParam2 = l2.isPretrainParam(param2);
         if (isPretrainParam1 || isPretrainParam2) {
             //One or both of params are pretrainable.
             //Either layers differ -> don't want to combine a pretrain updaters across layers

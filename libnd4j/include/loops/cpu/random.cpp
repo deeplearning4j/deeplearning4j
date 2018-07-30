@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by raver119 on 15.12.17.
 //
@@ -61,9 +77,9 @@ namespace functions {
 
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided) private(xCoord, yCoord, zCoord)
                 for (Nd4jLong i = 0; i < length; i++) {
-                    shape::ind2sub(xRank, xShape, i, xCoord);
-                    shape::ind2sub(yRank, yShape, i, yCoord);
-                    shape::ind2sub(zRank, zShape, i, zCoord);
+                    shape::ind2sub(xRank, xShape, i, length, xCoord);
+                    shape::ind2sub(yRank, yShape, i, length, yCoord);
+                    shape::ind2sub(zRank, zShape, i, length, zCoord);
 
                     auto xOffset2 = shape::getOffset(0, xShape, xStride, xCoord, xRank);
                     auto yOffset2 = shape::getOffset(0, yShape, yStride, yCoord, yRank);
@@ -122,11 +138,11 @@ namespace functions {
 
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided) private(zCoord, xCoord)
                 for (Nd4jLong i = 0; i < length; i++) {
-                    shape::ind2sub(xRank, xShape, i, xCoord);
-                    shape::ind2sub(zRank, zShape, i, zCoord);
+                    shape::ind2sub(xRank, xShape, i, length, xCoord);
+                    shape::ind2sub(zRank, zShape, i, length, zCoord);
 
-                    Nd4jLong xOffset2 = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                    Nd4jLong zOffset2 = shape::getOffset(0, zShape, zStride, zCoord, zRank);
+                    auto xOffset2 = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                    auto zOffset2 = shape::getOffset(0, zShape, zStride, zCoord, zRank);
 
                     z[zOffset2] = OpClass::op(x[xOffset2], i, length, buffer, extraArguments);
                 }
@@ -172,7 +188,7 @@ namespace functions {
 
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided) private(zCoord)
                 for (Nd4jLong i = 0; i < length; i++) {
-                    shape::ind2sub(zRank, zShape, i, zCoord);
+                    shape::ind2sub(zRank, zShape, i, length, zCoord);
 
                     auto zOffset2 = shape::getOffset(0, zShape, zStride, zCoord, zRank);
                     z[zOffset2] = OpClass::op(i, length, buffer,  extraArguments);

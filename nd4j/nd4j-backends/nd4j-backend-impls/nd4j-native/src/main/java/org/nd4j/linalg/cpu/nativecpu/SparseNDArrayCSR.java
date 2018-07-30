@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.cpu.nativecpu;
 
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -26,17 +42,17 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
  * @param pointerE An integer array that contains row indices, such that pointerE(j)-pointerB(1) is the index of the
  *                 element in the values array that is last non-zero element in a row j of A.
  * @param shape Shape of the matrix A
-*/
-    public SparseNDArrayCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+ */
+    public SparseNDArrayCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
 
         super(data, columns, pointerB, pointerE, shape);
     }
-    public SparseNDArrayCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public SparseNDArrayCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
 
         super(data, columns, pointerB, pointerE, shape);
     }
 
-    public SparseNDArrayCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public SparseNDArrayCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
 
         super(data, columns, pointerB, pointerE, shape);
     }

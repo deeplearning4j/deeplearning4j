@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 //  @author raver119@gmail.com
 //
@@ -44,15 +60,15 @@ namespace helpers {
     
         depth = nd4j::math::nd4j_min<Nd4jLong>(depth, input->sizeAt(1));
 
-//        int halfDepth = (int) ( (T) depth / (T) 2.f);
-        int halfDepth = nd4j::math::nd4j_max((int) ( (T) depth / (T) 2.f), 0);
+        int halfDepth = (int) ( (T) depth / (T) 2.f);
+        halfDepth = nd4j::math::nd4j_max(halfDepth, 0);
         const int channel =  input->sizeAt(1);
 
         std::unique_ptr<NDArray<T>> activitySqr(input->dup('c'));//NDArrayFactory<T>::createUninitialized(input));
         std::unique_ptr<NDArray<T>> sumPart(activitySqr->dup('c'));
 
         input->template applyPairwiseTransform<simdOps::Multiply<T>>(input, activitySqr.get(), nullptr);
-#pragma omp parallel for if (depth + 1 > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
+#pragma omp parallel for if (halfDepth + 1 > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
         for (int i = 1; i < halfDepth + 1; i++) {
             IndicesList indA({NDIndex::all(), NDIndex::interval(i, channel), NDIndex::all(), NDIndex::all()});
             IndicesList indB({NDIndex::all(), NDIndex::interval(0, channel - i), NDIndex::all(), NDIndex::all()});

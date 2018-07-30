@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 /*
  * shape.h
  *
@@ -855,9 +871,9 @@ namespace shape {
  * @param numIndices the number of total indices (typically prod of shape(
  * @return the mapped indexes along each dimension
  */
-    ND4J_EXPORT _CUDA_HD Nd4jLong* ind2sub(int rank,  Nd4jLong *shape,int index,int numIndices);
+    ND4J_EXPORT _CUDA_HD Nd4jLong* ind2sub(int rank,  Nd4jLong *shape, Nd4jLong index, Nd4jLong numIndices);
 
-    ND4J_EXPORT _CUDA_HD Nd4jLong *ind2sub(int rank,  Nd4jLong *shape,int index);
+    ND4J_EXPORT _CUDA_HD Nd4jLong *ind2sub(int rank,  Nd4jLong *shape, Nd4jLong index);
 
     /**
      * Convert a linear index to
@@ -867,7 +883,7 @@ namespace shape {
      * @param numIndices the number of total indices (typically prod of shape(
      * @return the mapped indexes along each dimension
      */
-    ND4J_EXPORT _CUDA_HD void  ind2sub(int rank,Nd4jLong *shape,int index,int numIndices,Nd4jLong *out);
+    ND4J_EXPORT _CUDA_HD void  ind2sub(int rank,Nd4jLong *shape, Nd4jLong index, Nd4jLong numIndices,Nd4jLong *out);
 
 /**
      * Convert a linear index to
@@ -878,7 +894,7 @@ namespace shape {
      * @param index the index to map
      * @return the mapped indexes along each dimension
      */
-    ND4J_EXPORT _CUDA_HD void ind2sub(int rank, Nd4jLong *shape, int index, Nd4jLong *out);
+    ND4J_EXPORT _CUDA_HD void ind2sub(int rank, Nd4jLong *shape, Nd4jLong index, Nd4jLong *out);
 
     /**
   * Convert a linear index to
@@ -950,7 +966,7 @@ namespace shape {
  * @param numIndices the number of total indices (typically prod of shape(
  * @return the mapped indexes along each dimension
  */
-    ND4J_EXPORT _CUDA_HD void  ind2subOrder(Nd4jLong *shapeInfo,int index,int numIndices,Nd4jLong *out);
+    ND4J_EXPORT _CUDA_HD void  ind2subOrder(Nd4jLong *shapeInfo, Nd4jLong index, Nd4jLong numIndices,Nd4jLong *out);
 
     /**
  * Convert a linear index to
@@ -960,7 +976,7 @@ namespace shape {
  * @param numIndices the number of total indices (typically prod of shape(
  * @return the mapped indexes along each dimension
  */
-    ND4J_EXPORT _CUDA_HD void  ind2subOrder(Nd4jLong *shapeInfo,int index,Nd4jLong *out);
+    ND4J_EXPORT _CUDA_HD void  ind2subOrder(Nd4jLong *shapeInfo, Nd4jLong index,Nd4jLong *out);
 
     ND4J_EXPORT _CUDA_HD void printShapeInfo(Nd4jLong *shapeInfo);
 
@@ -973,6 +989,9 @@ namespace shape {
     ND4J_EXPORT _CUDA_HD void printIntArray(Nd4jLong *arr,int length);
 
     ND4J_EXPORT _CUDA_HD void printArray(float *arr,int length);
+
+    template<typename T>
+    ND4J_EXPORT _CUDA_HD void printArray(T *arr,int length, const char *message);
 
     ND4J_EXPORT _CUDA_HD Nd4jLong* shapeBufferOfNpy(int rank, unsigned int *shape,bool fortranOrder);
 
@@ -1769,10 +1788,7 @@ template <typename T>
  * @param numIndices the number of total indices (typically prod of shape(
  * @return the mapped indexes along each dimension
  */
-    INLINEDEF _CUDA_HD Nd4jLong* ind2sub(int rank,  Nd4jLong *shape, int index,int numIndices) {
-
-        traceNew(14);
-
+    INLINEDEF _CUDA_HD Nd4jLong* ind2sub(int rank,  Nd4jLong *shape, Nd4jLong index, Nd4jLong numIndices) {
         auto ret = new Nd4jLong[rank];
         ind2sub(rank, shape, index, numIndices, ret);
         return ret;
@@ -1787,8 +1803,8 @@ template <typename T>
  * @param index the index to map
  * @return the mapped indexes along each dimension
  */
-    INLINEDEF _CUDA_HD Nd4jLong* ind2sub(int rank,  Nd4jLong *shape, int index) {
-        return ind2sub(rank,shape, index,shape::prodLong(shape,rank));
+    INLINEDEF _CUDA_HD Nd4jLong* ind2sub(int rank,  Nd4jLong *shape, Nd4jLong index) {
+        return ind2sub(rank,shape, index, shape::prodLong(shape,rank));
     }
 
 /**
@@ -1799,7 +1815,7 @@ template <typename T>
 * @param numIndices the number of total indices (typically prod of shape(
 * @return the mapped indexes along each dimension
 */
-    INLINEDEF _CUDA_HD void ind2sub(int rank, Nd4jLong *shape, int index, int numIndices, Nd4jLong *ret) {
+    INLINEDEF _CUDA_HD void ind2sub(int rank, Nd4jLong *shape, Nd4jLong index, Nd4jLong numIndices, Nd4jLong *ret) {
         int denom = numIndices;
 
         for(int i = rank - 1; i >= 0; i--) {
@@ -1818,8 +1834,8 @@ template <typename T>
      * @param index the index to map
      * @return the mapped indexes along each dimension
      */
-    INLINEDEF _CUDA_HD void ind2sub(int rank,Nd4jLong *shape,int index, Nd4jLong *out) {
-        ind2sub(rank,shape, index,shape::prodLong(shape,rank),out);
+    INLINEDEF _CUDA_HD void ind2sub(int rank,Nd4jLong *shape, Nd4jLong index, Nd4jLong *out) {
+        ind2sub(rank,shape, index, shape::prodLong(shape,rank),out);
     }
 
 /**
@@ -1891,7 +1907,7 @@ template <typename T>
 * @param numIndices the number of total indices (typically prod of shape(
 * @return the mapped indexes along each dimension
 */
-    INLINEDEF _CUDA_HD void ind2subOrder(Nd4jLong *shapeInfo, int index, int numIndices,Nd4jLong *out) {
+    INLINEDEF _CUDA_HD void ind2subOrder(Nd4jLong *shapeInfo, Nd4jLong index, Nd4jLong numIndices, Nd4jLong *out) {
         if(shape::order(shapeInfo) == 'f') {
             shape::ind2sub(
                     shape::rank(shapeInfo),
@@ -1919,7 +1935,7 @@ template <typename T>
 * @param numIndices the number of total indices (typically prod of shape(
 * @return the mapped indexes along each dimension
 */
-    INLINEDEF _CUDA_HD void ind2subOrder(Nd4jLong *shapeInfo, int index, Nd4jLong *out) {
+    INLINEDEF _CUDA_HD void ind2subOrder(Nd4jLong *shapeInfo, Nd4jLong index, Nd4jLong *out) {
         ind2subOrder(shapeInfo,index,shape::length(shapeInfo),out);
     }
 
@@ -3460,6 +3476,24 @@ template <typename T>
             }
         }
         printf("]\n");
+#ifndef __CUDACC__
+        fflush(stdout);
+#endif
+    }
+
+    template <typename T>
+    INLINEDEF _CUDA_HD void printArray(T *arr,int length, const char * message) {
+        if (message != nullptr)
+            printf("%s: [", message);
+        else
+            printf("Array: [");
+
+        for (int i = 0; i < length; i ++) {
+            printf("%f", (float) arr[i]);
+            if (i + 1 < length) printf(", ");
+        }
+        printf("]\n");
+
 #ifndef __CUDACC__
         fflush(stdout);
 #endif

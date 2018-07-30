@@ -1,30 +1,29 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg;
 
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import lombok.var;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.imports.TFGraphs.NodeReader;
 import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -165,16 +164,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testDiag() {
       INDArray diag = Nd4j.diag(Nd4j.linspace(1,4,4).reshape(4,1));
       assertArrayEquals(new long[] {4,4},diag.shape());
-
-    }
-
-    @Test
-    public void testSoftmaxDerivativeGradient() {
-        INDArray input = Nd4j.linspace(1,4,4).reshape(2,2);
-        INDArray inputDup = input.dup();
-        Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative(input,Nd4j.ones(2,2),input));
-        Nd4j.getExecutioner().exec(new SoftMaxDerivative(inputDup));
-        assertEquals(input,inputDup);
     }
 
     @Test
@@ -1506,7 +1495,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testNorm2Double() {
         DataBuffer.Type initialType = Nd4j.dataType();
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+
         INDArray n = Nd4j.create(new double[] {1, 2, 3, 4});
         double assertion = 5.47722557505;
         double norm3 = n.norm2Number().doubleValue();
@@ -1517,7 +1507,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
         double norm2 = row1.norm2Number().doubleValue();
         double assertion2 = 5.0f;
         assertEquals(getFailureMessage(), assertion2, norm2, 1e-1);
-        DataTypeUtil.setDTypeForContext(initialType);
+
+        Nd4j.setDataType(initialType);
     }
 
 
@@ -2085,7 +2076,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testNullPointerDataBuffer() {
         DataBuffer.Type initialType = Nd4j.dataType();
 
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
 
         ByteBuffer allocate = ByteBuffer.allocateDirect(10 * 4).order(ByteOrder.nativeOrder());
         allocate.asFloatBuffer().put(new float[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
@@ -2094,7 +2085,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         System.out.println(sum);
         assertEquals(55f, sum, 0.001f);
 
-        DataTypeUtil.setDTypeForContext(initialType);
+        Nd4j.setDataType(initialType);
     }
 
     @Test
@@ -6490,43 +6481,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.setDataType(dtype);
     }
 
-
     @Test
-    public void testEye(){
+    public void testSomething() {
+        val a = Nd4j.create(10, 20);
 
-        int[] rows = new int[]{3,3,3,3};
-        int[] cols = new int[]{3,2,2,2};
-        int[][] batch = new int[][]{null, null, {4}, {3,3}};
-        INDArray[] expOut = new INDArray[4];
-
-        expOut[0] = Nd4j.eye(3);
-        expOut[1] = Nd4j.create(new double[][]{{1,0,0},{0,1,0}});
-        expOut[2] = Nd4j.create(4,3,2);
-        for( int i=0; i<4; i++ ){
-            expOut[2].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(expOut[1]);
-        }
-        expOut[3] = Nd4j.create(3,3,3,2);
-        for( int i=0; i<3; i++ ){
-            for( int j=0; j<3; j++ ) {
-                expOut[3].get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all()).assign(expOut[1]);
-            }
-        }
-
-
-        for(int i=0; i<3; i++ ) {
-            INDArray out = Nd4j.create(expOut[i].shape());
-
-            DynamicCustomOp.DynamicCustomOpsBuilder op = DynamicCustomOp.builder("eye")
-                    .addOutputs(out)
-                    .addIntegerArguments(rows[i], cols[i]);
-            if(batch[i] != null){
-                op.addIntegerArguments(batch[i]);
-            }
-
-            Nd4j.getExecutioner().exec(op.build());
-
-            assertEquals(expOut[i], out);
-        }
+        log.info("Shape: {}", a.mean(0).shape());
     }
 
     @Test
@@ -6542,7 +6501,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         Nd4j.getExecutioner().exec(op);
 
-        INDArray exp = arr.transpose();
+        val exp = arr.transpose();
         assertEquals(exp, out);
     }
 
@@ -6693,6 +6652,71 @@ public class Nd4jTestsC extends BaseNd4jTest {
         val tE = System.nanoTime();
 
         log.info("Average time: {}", ((tE - tS) / iterations));
+    }
+
+
+    @Test
+    public void testIndexesIteration_1() {
+        val arrayC = Nd4j.linspace(1,  60,  60).reshape(3, 4, 5);
+        val arrayF = arrayC.dup('f');
+
+        val iter = new NdIndexIterator(arrayC.ordering(), arrayC.shape());
+        while (iter.hasNext()) {
+            val idx = iter.next();
+
+            val c = arrayC.getDouble(idx);
+            val f = arrayF.getDouble(idx);
+
+            assertEquals(c, f, 1e-5);
+        }
+    }
+
+
+    @Test
+    public void testIndexesIteration_2() {
+        val arrayC = Nd4j.linspace(1,  60,  60).reshape(3, 4, 5);
+        val arrayF = arrayC.dup('f');
+
+        val iter = new NdIndexIterator(arrayC.ordering(), arrayC.shape());
+        while (iter.hasNext()) {
+            val idx = iter.next();
+
+            var c = arrayC.getDouble(idx);
+            var f = arrayF.getDouble(idx);
+
+            arrayC.putScalar(idx,  c + 1.0);
+            arrayF.putScalar(idx, f + 1.0);
+
+            c = arrayC.getDouble(idx);
+            f = arrayF.getDouble(idx);
+
+            assertEquals(c, f, 1e-5);
+        }
+    }
+
+    @Test
+    public void testMatmul_vs_tf() throws Exception {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+
+        // uncomment this line to initialize & propagate sgemm/dgemm pointer
+        //Nd4j.getBlasWrapper().level3();
+
+        val arrayA = NodeReader.readArray("mnist_00", "input.placeholder");
+        val arrayB = NodeReader.readArray("mnist_00", "Variable.0");
+        val arrayC = Nd4j.create(100, 10);
+        val exp = NodeReader.readArray("mnist_00", "MatMul.0");
+        val badExp = Nd4j.create(100, 10);
+
+        val op = new Mmul(arrayA, arrayB, arrayC, null);
+        Nd4j.getExecutioner().exec(op);
+
+
+        Nd4j.getExecutioner().enableDebugMode(false);
+        Nd4j.getExecutioner().enableVerboseMode(false);
+
+        assertEquals(exp, arrayC);
+        assertNotEquals(badExp, arrayC);
     }
 
     ///////////////////////////////////////////////////////
