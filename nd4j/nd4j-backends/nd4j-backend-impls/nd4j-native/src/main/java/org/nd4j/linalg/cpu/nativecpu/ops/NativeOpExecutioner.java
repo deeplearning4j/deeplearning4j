@@ -75,8 +75,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Getter
     private CpuTADManager tadManager = new CpuTADManager();
 
-    private static final String DEBUG_ENABLED = "ND4J_DEBUG";
-    private static final String VERBOSE = "ND4J_VERBOSE";
     //thread locals for custom op inputs and outputs to prevent allocations
     //every time exec(CustomOp) is called
     private ThreadLocal<Map<Integer,PointerPointer>> inputShapes = new ThreadLocal<>();
@@ -101,25 +99,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     public NativeOpExecutioner() {
         tadManager.init(loop, constantHandler);
-
-        // Do not call System.getenv(): Accessing all variables requires higher security privileges
-        if (System.getenv(DEBUG_ENABLED) != null) {
-            try {
-                boolean var = Boolean.parseBoolean(System.getenv(DEBUG_ENABLED));
-                loop.enableDebugMode(var);
-            } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", DEBUG_ENABLED, System.getenv(DEBUG_ENABLED));
-            }
-        }
-
-        if (System.getenv(VERBOSE) != null) {
-            try {
-                boolean var = Boolean.parseBoolean(System.getenv(VERBOSE));
-                loop.enableVerboseMode(var);
-            } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", VERBOSE, System.getenv(VERBOSE));
-            }
-        }
     }
 
     @Override

@@ -14,25 +14,28 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-
 package org.nd4j.linalg.env.impl;
 
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.nd4j.linalg.env.EnvironmentalAction;
 import org.nd4j.linalg.factory.Nd4j;
 
-@Slf4j
-public class DebugAction implements EnvironmentalAction {
+public class WorkspacesDebugAction implements EnvironmentalAction {
     @Override
     public String targetVariable() {
-        return "ND4J_DEBUG";
+        return "ND4J_WORKSPACES_DEBUG";
     }
 
     @Override
     public void process(String value) {
-        val v = Boolean.valueOf(value);
-
-        Nd4j.getExecutioner().enableDebugMode(v);
+        switch (value.toUpperCase()) {
+            case "SPILL_EVERYTHING": {
+                    //Nd4j.getWorkspaceManager().setDebugMode(DebugMode.SPILL_EVERYTHING);
+                };
+                break;
+            case "BYPASS_EVERYTHING": {
+                    //Nd4j.getWorkspaceManager().setDebugMode(DebugMode.BYPASS_EVERYTHING);
+                }
+            break;
+        }
     }
 }
