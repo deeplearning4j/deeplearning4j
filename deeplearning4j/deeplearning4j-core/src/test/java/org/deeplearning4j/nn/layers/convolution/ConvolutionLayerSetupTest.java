@@ -423,8 +423,8 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
 
-        network.setInput(next.getFeatureMatrix());
-        INDArray activationsActual = network.activate(next.getFeatureMatrix());
+        network.setInput(next.getFeatures());
+        INDArray activationsActual = network.activate(next.getFeatures());
         assertEquals(10, activationsActual.shape()[1], 1e-2);
 
         network.fit(next);

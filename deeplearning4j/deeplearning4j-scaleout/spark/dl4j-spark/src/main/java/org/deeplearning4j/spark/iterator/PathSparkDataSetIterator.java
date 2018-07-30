@@ -63,7 +63,7 @@ public class PathSparkDataSetIterator extends BaseDataSetIterator<String> {
 
         // FIXME: int cast
         totalOutcomes = ds.getLabels() == null ? 0 : (int) ds.getLabels().size(1); //May be null for layerwise pretraining
-        inputColumns = (int) ds.getFeatureMatrix().size(1);
+        inputColumns = (int) ds.getFeatures().size(1);
         batch = ds.numExamples();
 
         if (preprocessor != null)

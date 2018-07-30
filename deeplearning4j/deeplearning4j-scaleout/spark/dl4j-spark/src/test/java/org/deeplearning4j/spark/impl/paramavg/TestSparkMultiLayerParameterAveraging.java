@@ -122,7 +122,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
         MultiLayerNetwork network2 = master.fitLabeledPoint(data);
         Evaluation evaluation = new Evaluation();
-        evaluation.eval(d.getLabels(), network2.output(d.getFeatureMatrix()));
+        evaluation.eval(d.getLabels(), network2.output(d.getFeatures()));
         System.out.println(evaluation.stats());
 
 
@@ -163,7 +163,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
         MultiLayerNetwork network2 = master.fitLabeledPoint(data);
         Evaluation evaluation = new Evaluation();
-        evaluation.eval(d.getLabels(), network2.output(d.getFeatureMatrix()));
+        evaluation.eval(d.getLabels(), network2.output(d.getFeatures()));
         System.out.println(evaluation.stats());
     }
 

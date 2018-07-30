@@ -93,15 +93,15 @@ public class ParallelInferenceTest {
 
 
             log.info("Features shape: {}",
-                    Arrays.toString(iterator.next().getFeatureMatrix().shapeInfoDataBuffer().asInt()));
+                    Arrays.toString(iterator.next().getFeatures().shapeInfoDataBuffer().asInt()));
 
-            INDArray array1 = inf.output(iterator.next().getFeatureMatrix());
-            INDArray array2 = inf.output(iterator.next().getFeatureMatrix());
+            INDArray array1 = inf.output(iterator.next().getFeatures());
+            INDArray array2 = inf.output(iterator.next().getFeatures());
 
             assertFalse(array1.isAttached());
             assertFalse(array2.isAttached());
 
-            INDArray array3 = inf.output(iterator.next().getFeatureMatrix());
+            INDArray array3 = inf.output(iterator.next().getFeatures());
             assertFalse(array3.isAttached());
 
             iterator.reset();
@@ -133,15 +133,15 @@ public class ParallelInferenceTest {
 
 
             log.info("Features shape: {}",
-                    Arrays.toString(iterator.next().getFeatureMatrix().shapeInfoDataBuffer().asInt()));
+                    Arrays.toString(iterator.next().getFeatures().shapeInfoDataBuffer().asInt()));
 
-            INDArray array1 = inf.output(iterator.next().getFeatureMatrix());
-            INDArray array2 = inf.output(iterator.next().getFeatureMatrix());
+            INDArray array1 = inf.output(iterator.next().getFeatures());
+            INDArray array2 = inf.output(iterator.next().getFeatures());
 
             assertFalse(array1.isAttached());
             assertFalse(array2.isAttached());
 
-            INDArray array3 = inf.output(iterator.next().getFeatureMatrix());
+            INDArray array3 = inf.output(iterator.next().getFeatures());
             assertFalse(array3.isAttached());
 
             iterator.reset();
@@ -174,15 +174,15 @@ public class ParallelInferenceTest {
 
 
             log.info("Features shape: {}",
-                    Arrays.toString(iterator.next().getFeatureMatrix().shapeInfoDataBuffer().asInt()));
+                    Arrays.toString(iterator.next().getFeatures().shapeInfoDataBuffer().asInt()));
 
-            INDArray array1 = inf.output(iterator.next().getFeatureMatrix());
-            INDArray array2 = inf.output(iterator.next().getFeatureMatrix());
+            INDArray array1 = inf.output(iterator.next().getFeatures());
+            INDArray array2 = inf.output(iterator.next().getFeatures());
 
             assertFalse(array1.isAttached());
             assertFalse(array2.isAttached());
 
-            INDArray array3 = inf.output(iterator.next().getFeatureMatrix());
+            INDArray array3 = inf.output(iterator.next().getFeatures());
             assertFalse(array3.isAttached());
 
             iterator.reset();
@@ -332,7 +332,7 @@ public class ParallelInferenceTest {
         int count = 0;
         while (iterator.hasNext() && (count++ < 100)) {
             ds = iterator.next();
-            INDArray output = inf.output(ds.getFeatureMatrix());
+            INDArray output = inf.output(ds.getFeatures());
             eval.eval(ds.getLabels(), output);
         }
         log.info(eval.stats());

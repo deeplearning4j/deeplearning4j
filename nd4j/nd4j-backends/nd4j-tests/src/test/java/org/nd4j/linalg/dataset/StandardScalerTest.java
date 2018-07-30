@@ -41,7 +41,7 @@ public class StandardScalerTest extends BaseNd4jTest {
         StandardScaler scaler = new StandardScaler();
         DataSetIterator iter = new IrisDataSetIterator(10, 150);
         scaler.fit(iter);
-        INDArray featureMatrix = new IrisDataSetIterator(150, 150).next().getFeatureMatrix();
+        INDArray featureMatrix = new IrisDataSetIterator(150, 150).next().getFeatures();
         INDArray mean = featureMatrix.mean(0);
         INDArray std = featureMatrix.std(0);
         System.out.println(mean);

@@ -348,7 +348,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
             while (iter.hasNext()) {
                 DataSet next = iter.next();
-                input = next.getFeatureMatrix();
+                input = next.getFeatures();
                 pretrainLayer(layerIdx, input);
             }
         }
@@ -1552,7 +1552,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
                 lastEtlTime.set((time2 - time1));
 
-                if (next.getFeatureMatrix() == null || next.getLabels() == null)
+                if (next.getFeatures() == null || next.getLabels() == null)
                     break;
 
                 // TODO: basically we want to wrap internals of this loop into workspace
@@ -1561,13 +1561,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 boolean hasMaskArrays = next.hasMaskArrays();
 
                 if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-                    doTruncatedBPTT(next.getFeatureMatrix(), next.getLabels(), next.getFeaturesMaskArray(),
+                    doTruncatedBPTT(next.getFeatures(), next.getLabels(), next.getFeaturesMaskArray(),
                             next.getLabelsMaskArray(), workspaceMgr);
                 } else {
                     if (hasMaskArrays)
                         setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
 
-                    setInput(next.getFeatureMatrix());
+                    setInput(next.getFeatures());
                     setLabels(next.getLabels());
 
                     if (solver == null) {
@@ -3213,7 +3213,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         while (iter.hasNext()) {
             DataSet next = iter.next();
 
-            if (next.getFeatureMatrix() == null || next.getLabels() == null)
+            if (next.getFeatures() == null || next.getLabels() == null)
                 continue;
 
 
