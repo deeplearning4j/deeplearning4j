@@ -626,8 +626,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             if (op.x().lengthLong() != op.z().lengthLong())
                 throw new ND4JIllegalStateException("op.X length should be equal to op.Z length: " +
-                        "x.length()=" + op.x().length() + ", y.length()=" + op.y().length() + " - x shape info = ["
-                        + Arrays.toString(op.x().shapeInfoDataBuffer().asInt()) + "], y shape info = ["
+                        "x.length()=" + op.x().length() + ", z.length()=" + op.z().length() + " - x shape info = ["
+                        + Arrays.toString(op.x().shapeInfoDataBuffer().asInt()) + "], z shape info = ["
                         + Arrays.toString(op.z().shapeInfoDataBuffer().asInt()) + "]");
 
             if (op.getDimension() != null) {

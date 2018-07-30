@@ -6719,6 +6719,27 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertNotEquals(badExp, arrayC);
     }
 
+    @Test
+    public void testPairwiseScalar_1() throws Exception {
+        val exp_1 = Nd4j.create(new double[]{2.0, 3.0, 4.0}, new long[]{3});
+        val exp_2 = Nd4j.create(new double[]{0.0, 1.0, 2.0}, new long[]{3});
+        val exp_3 = Nd4j.create(new double[]{1.0, 2.0, 3.0}, new long[]{3});
+        val arrayX = Nd4j.create(new double[]{1.0, 2.0, 3.0}, new long[]{3});
+        val arrayY = Nd4j.trueScalar(1.0);
+
+        val arrayZ_1 = arrayX.add(arrayY);
+        assertEquals(exp_1, arrayZ_1);
+
+        val arrayZ_2 = arrayX.sub(arrayY);
+        assertEquals(exp_2, arrayZ_2);
+
+        val arrayZ_3 = arrayX.div(arrayY);
+        assertEquals(exp_3, arrayZ_3);
+
+        val arrayZ_4 = arrayX.mul(arrayY);
+        assertEquals(exp_3, arrayZ_4);
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;

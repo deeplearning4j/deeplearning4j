@@ -1881,6 +1881,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             n = Nd4j.EPS_THRESHOLD;
 
         Nd4j.getExecutioner().exec(new ScalarSubtraction(this, null, result, result.lengthLong(), n));
+
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
 
@@ -1896,7 +1897,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray addi(Number n, INDArray result) {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
+
         Nd4j.getExecutioner().exec(new ScalarAdd(this, null, result, result.lengthLong(), n));
+
+        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
+            Nd4j.clearNans(result);
+
         return result;
     }
 
@@ -3674,7 +3680,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray sub(INDArray other) {
-        return subi(other, Nd4j.createUninitialized(other.shape(), other.ordering()));
+        return subi(other, Nd4j.createUninitialized(this.shape(), this.ordering()));
     }
 
     /**
@@ -3697,7 +3703,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray add(INDArray other) {
-        return dup().addi(other);
+        return addi(other, Nd4j.createUninitialized(this.shape(), this.ordering()));
     }
 
     /**
@@ -4012,7 +4018,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray addi(INDArray other, INDArray result) {
         if (other.isScalar()) {
-            return result.addi(other.getDouble(0), result);
+            return this.addi(other.getDouble(0), result);
         }
 
         if (isScalar()) {
