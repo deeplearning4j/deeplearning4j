@@ -34,6 +34,7 @@ namespace nd4j {
         
         RandomGenerator::~RandomGenerator() {
             //
+            // :)
         }
 
         void RandomGenerator::setStates(Nd4jLong rootSeed, Nd4jLong nodeSeed) {
