@@ -80,6 +80,11 @@ public class RNNTestCases {
                 testParamsPostTraining = true;
                 testEvaluation = true;
                 testOverfitting = false;            //Not much point on this one - it already fits very well...
+                //Gradients depend on a lot of chained steps, numerical differences can accumulate
+                maxRelativeErrorGradients = 5e-4;
+                minAbsErrorGradients = 2e-4;
+                maxRelativeErrorParamsPostTraining = 1e-4;
+                minAbsErrorParamsPostTraining = 2e-3;
             }
 
             private int miniBatchSize = 32;
@@ -134,9 +139,7 @@ public class RNNTestCases {
             public IEvaluation[] getNewEvaluations(){
                 return new IEvaluation[]{
                         new Evaluation(),
-                        new ROCMultiClass(),
-                        new EvaluationCalibration()
-                };
+                        new ROCMultiClass()};
             }
 
             @Override

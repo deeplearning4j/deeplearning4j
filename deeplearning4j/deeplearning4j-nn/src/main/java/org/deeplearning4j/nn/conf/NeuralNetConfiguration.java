@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.conf;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -70,6 +71,7 @@ import java.util.*;
 @Data
 @NoArgsConstructor
 @Slf4j
+@EqualsAndHashCode(exclude = {"iterationCount", "epochCount"})
 public class NeuralNetConfiguration implements Serializable, Cloneable {
 
     protected Layer layer;
