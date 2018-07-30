@@ -39,7 +39,9 @@ CUSTOM_OP_IMPL(multiply, 2, 1, true, 0, 0) {
     REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY OP: the shapes of x %s and y %s are not suitable for broadcast !", ShapeUtils<T>::shapeAsString(x).c_str(), ShapeUtils<T>::shapeAsString(y).c_str());
     RELEASE(zShapeInfo, block.getWorkspace());
 
-    z->assign(*x * *y); 
+    // z->assign(*x * *y); 
+    auto tZ = BroadcastHelper<T>::template broadcast_apply<simdOps::Multiply<T>>(x, y, z);
+    
     return Status::OK();
 }
 
