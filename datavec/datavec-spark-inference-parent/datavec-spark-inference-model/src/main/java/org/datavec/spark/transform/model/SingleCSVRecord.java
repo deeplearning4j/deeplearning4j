@@ -52,7 +52,7 @@ public class SingleCSVRecord implements Serializable {
      * @return the record from this {@link DataSet}
      */
     public static SingleCSVRecord fromRow(DataSet row) {
-        if (!row.getFeatureMatrix().isVector() && !row.getFeatureMatrix().isScalar())
+        if (!row.getFeatures().isVector() && !row.getFeatures().isScalar())
             throw new IllegalArgumentException("Passed in dataset must represent a scalar or vector");
         if (!row.getLabels().isVector() && !row.getLabels().isScalar())
             throw new IllegalArgumentException("Passed in dataset labels must be a scalar or vector");
@@ -60,9 +60,9 @@ public class SingleCSVRecord implements Serializable {
         SingleCSVRecord record;
         int idx = 0;
         if (row.getLabels().sumNumber().doubleValue() == 1.0) {
-            String[] values = new String[row.getFeatureMatrix().columns() + 1];
-            for (int i = 0; i < row.getFeatureMatrix().length(); i++) {
-                values[idx++] = String.valueOf(row.getFeatureMatrix().getDouble(i));
+            String[] values = new String[row.getFeatures().columns() + 1];
+            for (int i = 0; i < row.getFeatures().length(); i++) {
+                values[idx++] = String.valueOf(row.getFeatures().getDouble(i));
             }
             int maxIdx = 0;
             for (int i = 0; i < row.getLabels().length(); i++) {
@@ -76,9 +76,9 @@ public class SingleCSVRecord implements Serializable {
         }
         //regression (any number of values)
         else {
-            String[] values = new String[row.getFeatureMatrix().columns() + row.getLabels().columns()];
-            for (int i = 0; i < row.getFeatureMatrix().length(); i++) {
-                values[idx++] = String.valueOf(row.getFeatureMatrix().getDouble(i));
+            String[] values = new String[row.getFeatures().columns() + row.getLabels().columns()];
+            for (int i = 0; i < row.getFeatures().length(); i++) {
+                values[idx++] = String.valueOf(row.getFeatures().getDouble(i));
             }
             for (int i = 0; i < row.getLabels().length(); i++) {
                 values[idx++] = String.valueOf(row.getLabels().getDouble(i));
