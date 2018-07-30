@@ -648,7 +648,7 @@ public class ParallelInferenceTest {
 
     @Test
     public void testInputMaskingCyclic() throws Exception {
-        for (int e = 0; e < 1000; e++) {
+        for (int e = 0; e < 3; e++) {
             testInputMasking();
             log.info("Iteration: {} finished", e);
             System.gc();
