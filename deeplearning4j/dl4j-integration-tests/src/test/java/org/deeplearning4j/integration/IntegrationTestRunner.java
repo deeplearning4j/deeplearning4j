@@ -298,6 +298,7 @@ public class IntegrationTestRunner {
             MultiDataSetIterator iter = tc.getUnsupervisedTrainData();
 
             INDArray paramsPostTraining;
+            org.deeplearning4j.nn.api.Layer[] layers;
             if(isMLN){
                 int[] layersToTrain = tc.getUnsupervisedTrainLayersMLN();
                 Preconditions.checkState(layersToTrain != null, "Layer indices must not be null");
@@ -307,6 +308,7 @@ public class IntegrationTestRunner {
                     mln.pretrainLayer(i, dsi);
                 }
                 paramsPostTraining = mln.params();
+                layers = mln.getLayers();
             } else {
                 String[] layersToTrain = tc.getUnsupervisedTrainLayersCG();
                 Preconditions.checkState(layersToTrain != null, "Layer names must not be null");
@@ -315,6 +317,7 @@ public class IntegrationTestRunner {
                     cg.pretrainLayer(i, iter);
                 }
                 paramsPostTraining = cg.params();
+                layers = cg.getLayers();
             }
 
             File f = new File(testBaseDir, IntegrationTestRunner.PARAMS_POST_UNSUPERVISED_FILENAME);
@@ -323,6 +326,9 @@ public class IntegrationTestRunner {
             INDArray exceedsRelError = exceedsRelError(expParams, paramsPostTraining, tc.getMaxRelativeErrorPretrainParams(),
                     tc.getMinAbsErrorPretrainParams());
             int count = exceedsRelError.sumNumber().intValue();
+            if(count > 0){
+                logFailedParams(20, layers, exceedsRelError, expParams, paramsPostTraining);
+            }
             assertEquals("Number of parameters exceeding relative error", 0, count);
 
             //Set params to saved ones - to avoid accumulation of roundoff errors causing later failures...
@@ -886,4 +892,40 @@ public class IntegrationTestRunner {
         }
     }
 
+
+    public static void logFailedParams(int maxNum, org.deeplearning4j.nn.api.Layer[] layers, INDArray exceedsRelError, INDArray exp, INDArray act){
+        long length = exceedsRelError.length();
+        int logCount = 0;
+        for(int i=0; i<length; i++ ){
+            if(exceedsRelError.getDouble(i) > 0){
+                double dExp = exp.getDouble(i);
+                double dAct = act.getDouble(i);
+                double re = relError(dExp, dAct);
+                double ae = Math.abs(dExp - dAct);
+
+                //Work out parameter key:
+                long pSoFar = 0;
+                String pName = null;
+                for(org.deeplearning4j.nn.api.Layer l : layers){
+                    int n = l.numParams();
+                    if(pSoFar + n < i){
+                        pSoFar += n;
+                    } else {
+                        for(Map.Entry<String,INDArray> e : l.paramTable().entrySet()){
+                            pSoFar += e.getValue().length();
+                            if(pSoFar >= i){
+                                pName = e.getKey();
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                log.info("Parameter {} ({}) failed: expected {} vs actual {} (RelativeError: {}, AbsError: {})", i, pName, dExp, dAct, re, ae);
+                if(++logCount >= maxNum){
+                    break;
+                }
+            }
+        }
+    }
 }

@@ -53,6 +53,10 @@ public class UnsupervisedTestCases {
                 testEvaluation = false;
                 testOverfitting = false;
                 unsupervisedTrainLayersMLN = new int[]{0};
+                maxRelativeErrorParamsPostTraining = 1e-4;
+                minAbsErrorParamsPostTraining = 1e-4;
+                maxRelativeErrorPretrainParams = 1e-4;
+                minAbsErrorPretrainParams = 1e-4;
             }
 
             @Override
