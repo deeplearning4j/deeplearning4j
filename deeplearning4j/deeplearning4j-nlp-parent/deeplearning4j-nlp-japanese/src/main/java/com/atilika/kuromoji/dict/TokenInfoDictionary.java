@@ -25,21 +25,15 @@ import com.atilika.kuromoji.util.KuromojiBinFilesFetcher;
 import com.atilika.kuromoji.util.ResourceResolver;
 import com.atilika.kuromoji.util.StringUtils;
 
+import java.io.File;
 import java.io.IOException;
 
 public class TokenInfoDictionary implements Dictionary {
 
-    //    public static final String TOKEN_INFO_DICTIONARY_FILENAME = "tokenInfoDictionary.bin";
-    //    public static final String FEATURE_MAP_FILENAME = "tokenInfoFeaturesMap.bin";
-    //    public static final String POS_MAP_FILENAME = "tokenInfoPartOfSpeechMap.bin";
-    //    public static final String TARGETMAP_FILENAME = "tokenInfoTargetMap.bin";
-    public static final String TOKEN_INFO_DICTIONARY_FILENAME =
-                    KuromojiBinFilesFetcher.getRootPath() + "tokenInfoDictionary.bin";
-    public static final String FEATURE_MAP_FILENAME =
-                    KuromojiBinFilesFetcher.getRootPath() + "tokenInfoFeaturesMap.bin";
-    public static final String POS_MAP_FILENAME =
-                    KuromojiBinFilesFetcher.getRootPath() + "tokenInfoPartOfSpeechMap.bin";
-    public static final String TARGETMAP_FILENAME = KuromojiBinFilesFetcher.getRootPath() + "tokenInfoTargetMap.bin";
+    public static final String TOKEN_INFO_DICTIONARY_FILENAME = new File(KuromojiBinFilesFetcher.getKuromojiRoot(), "tokenInfoDictionary.bin").getAbsolutePath();
+    public static final String FEATURE_MAP_FILENAME = new File(KuromojiBinFilesFetcher.getKuromojiRoot(),"tokenInfoFeaturesMap.bin").getAbsolutePath();
+    public static final String POS_MAP_FILENAME = new File(KuromojiBinFilesFetcher.getKuromojiRoot(),"tokenInfoPartOfSpeechMap.bin").getAbsolutePath();
+    public static final String TARGETMAP_FILENAME = new File(KuromojiBinFilesFetcher.getKuromojiRoot(),"tokenInfoTargetMap.bin").getAbsolutePath();
 
     private static final int LEFT_ID = 0;
     private static final int RIGHT_ID = 1;

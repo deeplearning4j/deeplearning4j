@@ -54,6 +54,27 @@ public class Convolution1DUtils {
     /**
      * Get the output size (height) for the given input data and CNN1D configuration
      *
+     * @param inH             Input size (height, or channels).
+     * @param kernel          Kernel size
+     * @param strides         Stride
+     * @param padding         Padding
+     * @param convolutionMode Convolution mode (Same, Strict, Truncate)
+     * @param dilation        Kernel dilation
+     * @return Output size (width)
+     */
+    public static int getOutputSize(int inH, int kernel, int strides, int padding,
+                                    ConvolutionMode convolutionMode, int dilation) {
+        // FIXME: int cast
+        int eKernel = effectiveKernelSize(kernel, dilation);
+        if (convolutionMode == ConvolutionMode.Same) {
+            return (int) Math.ceil(inH / ((double) strides));
+        }
+        return (inH - eKernel + 2 * padding) / strides + 1;
+    }
+
+    /**
+     * Get the output size (height) for the given input data and CNN1D configuration
+     *
      * @param inputData       Input data
      * @param kernel          Kernel size
      * @param strides         Stride

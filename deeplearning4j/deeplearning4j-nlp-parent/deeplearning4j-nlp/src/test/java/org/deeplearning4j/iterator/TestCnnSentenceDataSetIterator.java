@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.iterator;
 
 import org.nd4j.linalg.io.ClassPathResource;
@@ -23,8 +39,6 @@ public class TestCnnSentenceDataSetIterator {
 
     @Test
     public void testSentenceIterator() throws Exception {
-
-
         WordVectors w2v = WordVectorSerializer
                         .readWord2VecModel(new ClassPathResource("word2vec/googleload/sample_vec.bin").getFile());
 
@@ -49,69 +63,145 @@ public class TestCnnSentenceDataSetIterator {
 
         boolean[] alongHeightVals = new boolean[] {true, false};
 
-        for (boolean alongHeight : alongHeightVals) {
+        for(boolean norm : new boolean[]{true, false}) {
+            for (boolean alongHeight : alongHeightVals) {
 
-            INDArray expectedFeatures;
-            if (alongHeight) {
-                expectedFeatures = Nd4j.create(2, 1, maxLength, vectorSize);
-            } else {
-                expectedFeatures = Nd4j.create(2, 1, vectorSize, maxLength);
-            }
-
-            INDArray expectedFeatureMask = Nd4j.create(new double[][] {{1, 1, 1, 1}, {1, 1, 1, 0}});
-
-            for (int i = 0; i < 4; i++) {
+                INDArray expectedFeatures;
                 if (alongHeight) {
-                    expectedFeatures.get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.point(i),
-                                    NDArrayIndex.all()).assign(w2v.getWordVectorMatrix(s1.get(i)));
+                    expectedFeatures = Nd4j.create(2, 1, maxLength, vectorSize);
                 } else {
-                    expectedFeatures.get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.all(),
-                                    NDArrayIndex.point(i)).assign(w2v.getWordVectorMatrix(s1.get(i)));
+                    expectedFeatures = Nd4j.create(2, 1, vectorSize, maxLength);
                 }
-            }
 
-            for (int i = 0; i < 3; i++) {
+                int[] fmShape;
+                if(alongHeight){
+                    fmShape = new int[]{2, 1, 4, 1};
+                } else {
+                    fmShape = new int[]{2, 1, 1, 4};
+                }
+                INDArray expectedFeatureMask = Nd4j.create(new double[][]{{1, 1, 1, 1}, {1, 1, 1, 0}}).reshape('c', fmShape);
+
+
+                for (int i = 0; i < 4; i++) {
+                    INDArray v = norm ? w2v.getWordVectorMatrixNormalized(s1.get(i)) : w2v.getWordVectorMatrix(s1.get(i));
+                    if (alongHeight) {
+                        expectedFeatures.get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.point(i),
+                                NDArrayIndex.all()).assign(v);
+                    } else {
+                        expectedFeatures.get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.all(),
+                                NDArrayIndex.point(i)).assign(v);
+                    }
+                }
+
+                for (int i = 0; i < 3; i++) {
+                    INDArray v = norm ? w2v.getWordVectorMatrixNormalized(s2.get(i)) : w2v.getWordVectorMatrix(s2.get(i));
+                    if (alongHeight) {
+                        expectedFeatures.get(NDArrayIndex.point(1), NDArrayIndex.point(0), NDArrayIndex.point(i),
+                                NDArrayIndex.all()).assign(v);
+                    } else {
+                        expectedFeatures.get(NDArrayIndex.point(1), NDArrayIndex.point(0), NDArrayIndex.all(),
+                                NDArrayIndex.point(i)).assign(v);
+                    }
+                }
+
+
+                LabeledSentenceProvider p = new CollectionLabeledSentenceProvider(sentences, labelsForSentences, null);
+                CnnSentenceDataSetIterator dsi = new CnnSentenceDataSetIterator.Builder(CnnSentenceDataSetIterator.Format.CNN2D)
+                        .sentenceProvider(p).useNormalizedWordVectors(norm)
+                        .wordVectors(w2v).maxSentenceLength(256).minibatchSize(32).sentencesAlongHeight(alongHeight)
+                        .build();
+
+                //            System.out.println("alongHeight = " + alongHeight);
+                DataSet ds = dsi.next();
+                assertArrayEquals(expectedFeatures.shape(), ds.getFeatures().shape());
+                assertEquals(expectedFeatures, ds.getFeatures());
+                assertEquals(expLabels, ds.getLabels());
+                assertEquals(expectedFeatureMask, ds.getFeaturesMaskArray());
+                assertNull(ds.getLabelsMaskArray());
+
+                INDArray s1F = dsi.loadSingleSentence(sentences.get(0));
+                INDArray s2F = dsi.loadSingleSentence(sentences.get(1));
+                INDArray sub1 = ds.getFeatures().get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray sub2;
                 if (alongHeight) {
-                    expectedFeatures.get(NDArrayIndex.point(1), NDArrayIndex.point(0), NDArrayIndex.point(i),
-                                    NDArrayIndex.all()).assign(w2v.getWordVectorMatrix(s2.get(i)));
+
+                    sub2 = ds.getFeatures().get(NDArrayIndex.interval(1, 1, true), NDArrayIndex.all(),
+                            NDArrayIndex.interval(0, 3), NDArrayIndex.all());
                 } else {
-                    expectedFeatures.get(NDArrayIndex.point(1), NDArrayIndex.point(0), NDArrayIndex.all(),
-                                    NDArrayIndex.point(i)).assign(w2v.getWordVectorMatrix(s2.get(i)));
+                    sub2 = ds.getFeatures().get(NDArrayIndex.interval(1, 1, true), NDArrayIndex.all(), NDArrayIndex.all(),
+                            NDArrayIndex.interval(0, 3));
                 }
+
+                assertArrayEquals(sub1.shape(), s1F.shape());
+                assertArrayEquals(sub2.shape(), s2F.shape());
+                assertEquals(sub1, s1F);
+                assertEquals(sub2, s2F);
             }
+        }
+    }
 
 
-            LabeledSentenceProvider p = new CollectionLabeledSentenceProvider(sentences, labelsForSentences, null);
-            CnnSentenceDataSetIterator dsi = new CnnSentenceDataSetIterator.Builder().sentenceProvider(p)
-                            .wordVectors(w2v).maxSentenceLength(256).minibatchSize(32).sentencesAlongHeight(alongHeight)
-                            .build();
+    @Test
+    public void testSentenceIteratorCNN1D_RNN() throws Exception {
+        WordVectors w2v = WordVectorSerializer
+                .readWord2VecModel(new ClassPathResource("word2vec/googleload/sample_vec.bin").getFile());
 
-            //            System.out.println("alongHeight = " + alongHeight);
-            DataSet ds = dsi.next();
-            assertArrayEquals(expectedFeatures.shape(), ds.getFeatures().shape());
-            assertEquals(expectedFeatures, ds.getFeatures());
-            assertEquals(expLabels, ds.getLabels());
-            assertEquals(expectedFeatureMask, ds.getFeaturesMaskArray());
-            assertNull(ds.getLabelsMaskArray());
+        int vectorSize = w2v.lookupTable().layerSize();
 
-            INDArray s1F = dsi.loadSingleSentence(sentences.get(0));
-            INDArray s2F = dsi.loadSingleSentence(sentences.get(1));
-            INDArray sub1 = ds.getFeatures().get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.all(),
-                            NDArrayIndex.all(), NDArrayIndex.all());
-            INDArray sub2;
-            if (alongHeight) {
+        List<String> sentences = new ArrayList<>();
+        //First word: all present
+        sentences.add("these balance Database model");
+        sentences.add("into same THISWORDDOESNTEXIST are");
+        int maxLength = 4;
+        List<String> s1 = Arrays.asList("these", "balance", "Database", "model");
+        List<String> s2 = Arrays.asList("into", "same", "are");
 
-                sub2 = ds.getFeatures().get(NDArrayIndex.interval(1, 1, true), NDArrayIndex.all(),
-                                NDArrayIndex.interval(0, 3), NDArrayIndex.all());
-            } else {
-                sub2 = ds.getFeatures().get(NDArrayIndex.interval(1, 1, true), NDArrayIndex.all(), NDArrayIndex.all(),
-                                NDArrayIndex.interval(0, 3));
+        List<String> labelsForSentences = Arrays.asList("Positive", "Negative");
+
+        INDArray expLabels = Nd4j.create(new double[][] {{0, 1}, {1, 0}}); //Order of labels: alphabetic. Positive -> [0,1]
+
+        for(boolean norm : new boolean[]{true, false}) {
+            for(CnnSentenceDataSetIterator.Format f : new CnnSentenceDataSetIterator.Format[]{CnnSentenceDataSetIterator.Format.CNN1D, CnnSentenceDataSetIterator.Format.RNN}){
+
+                INDArray expectedFeatures = Nd4j.create(2, vectorSize, maxLength);
+                int[] fmShape = new int[]{2, 4};
+                INDArray expectedFeatureMask = Nd4j.create(new double[][]{{1, 1, 1, 1}, {1, 1, 1, 0}}).reshape('c', fmShape);
+
+
+                for (int i = 0; i < 4; i++) {
+                    INDArray v = norm ? w2v.getWordVectorMatrixNormalized(s1.get(i)) : w2v.getWordVectorMatrix(s1.get(i));
+                    expectedFeatures.get(NDArrayIndex.point(0), NDArrayIndex.all(),NDArrayIndex.point(i)).assign(v);
+                }
+
+                for (int i = 0; i < 3; i++) {
+                    INDArray v = norm ? w2v.getWordVectorMatrixNormalized(s2.get(i)) : w2v.getWordVectorMatrix(s2.get(i));
+                    expectedFeatures.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.point(i)).assign(v);
+                }
+
+                LabeledSentenceProvider p = new CollectionLabeledSentenceProvider(sentences, labelsForSentences, null);
+                CnnSentenceDataSetIterator dsi = new CnnSentenceDataSetIterator.Builder(f)
+                        .sentenceProvider(p).useNormalizedWordVectors(norm)
+                        .wordVectors(w2v).maxSentenceLength(256).minibatchSize(32)
+                        .build();
+
+                DataSet ds = dsi.next();
+                assertArrayEquals(expectedFeatures.shape(), ds.getFeatures().shape());
+                assertEquals(expectedFeatures, ds.getFeatures());
+                assertEquals(expLabels, ds.getLabels());
+                assertEquals(expectedFeatureMask, ds.getFeaturesMaskArray());
+                assertNull(ds.getLabelsMaskArray());
+
+                INDArray s1F = dsi.loadSingleSentence(sentences.get(0));
+                INDArray s2F = dsi.loadSingleSentence(sentences.get(1));
+                INDArray sub1 = ds.getFeatures().get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray sub2 = ds.getFeatures().get(NDArrayIndex.interval(1, 1, true), NDArrayIndex.all(), NDArrayIndex.interval(0, 3));
+
+                assertArrayEquals(sub1.shape(), s1F.shape());
+                assertArrayEquals(sub2.shape(), s2F.shape());
+                assertEquals(sub1, s1F);
+                assertEquals(sub2, s2F);
             }
-
-            assertArrayEquals(sub1.shape(), s1F.shape());
-            assertArrayEquals(sub2.shape(), s2F.shape());
-            assertEquals(sub1, s1F);
-            assertEquals(sub2, s2F);
         }
     }
 
@@ -140,7 +230,8 @@ public class TestCnnSentenceDataSetIterator {
 
 
         LabeledSentenceProvider p = new CollectionLabeledSentenceProvider(sentences, labelsForSentences, null);
-        CnnSentenceDataSetIterator dsi = new CnnSentenceDataSetIterator.Builder().sentenceProvider(p).wordVectors(w2v)
+        CnnSentenceDataSetIterator dsi = new CnnSentenceDataSetIterator.Builder(CnnSentenceDataSetIterator.Format.CNN2D).sentenceProvider(p).wordVectors(w2v)
+                        .useNormalizedWordVectors(true)
                         .maxSentenceLength(256).minibatchSize(32).sentencesAlongHeight(false).build();
 
         //            System.out.println("alongHeight = " + alongHeight);
@@ -148,16 +239,16 @@ public class TestCnnSentenceDataSetIterator {
 
         INDArray expectedFeatures = Nd4j.create(2, 1, vectorSize, maxLength);
 
-        INDArray expectedFeatureMask = Nd4j.create(new double[][] {{1, 1, 1, 1}, {1, 1, 1, 0}});
+        INDArray expectedFeatureMask = Nd4j.create(new double[][] {{1, 1, 1, 1}, {1, 1, 1, 0}}).reshape('c', 2, 1, 1, 4);
 
         for (int i = 0; i < 4; i++) {
             expectedFeatures.get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.all(),
-                            NDArrayIndex.point(i)).assign(w2v.getWordVectorMatrix(s1.get(i)));
+                            NDArrayIndex.point(i)).assign(w2v.getWordVectorMatrixNormalized(s1.get(i)));
         }
 
         for (int i = 0; i < 3; i++) {
             expectedFeatures.get(NDArrayIndex.point(1), NDArrayIndex.point(0), NDArrayIndex.all(),
-                            NDArrayIndex.point(i)).assign(w2v.getWordVectorMatrix(s2.get(i)));
+                            NDArrayIndex.point(i)).assign(w2v.getWordVectorMatrixNormalized(s2.get(i)));
         }
 
         assertArrayEquals(expectedFeatures.shape(), ds.getFeatures().shape());
@@ -195,7 +286,8 @@ public class TestCnnSentenceDataSetIterator {
 
 
         LabeledSentenceProvider p = new CollectionLabeledSentenceProvider(sentences, labelsForSentences, null);
-        CnnSentenceDataSetIterator dsi = new CnnSentenceDataSetIterator.Builder().sentenceProvider(p).wordVectors(w2v)
+        CnnSentenceDataSetIterator dsi = new CnnSentenceDataSetIterator.Builder(CnnSentenceDataSetIterator.Format.CNN2D).sentenceProvider(p).wordVectors(w2v)
+                        .useNormalizedWordVectors(true)
                         .maxSentenceLength(256).minibatchSize(2).sentencesAlongHeight(false).build();
 
         assertTrue(dsi.hasNext());
@@ -206,16 +298,16 @@ public class TestCnnSentenceDataSetIterator {
 
         INDArray expectedFeatures = Nd4j.create(2, 1, vectorSize, maxLength);
 
-        INDArray expectedFeatureMask = Nd4j.create(new double[][] {{1, 1, 1, 1}, {1, 1, 1, 0}});
+        INDArray expectedFeatureMask = Nd4j.create(new double[][] {{1, 1, 1, 1}, {1, 1, 1, 0}}).reshape('c', 2, 1, 1, 4);
 
         for (int i = 0; i < 4; i++) {
             expectedFeatures.get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.all(),
-                            NDArrayIndex.point(i)).assign(w2v.getWordVectorMatrix(s1.get(i)));
+                            NDArrayIndex.point(i)).assign(w2v.getWordVectorMatrixNormalized(s1.get(i)));
         }
 
         for (int i = 0; i < 3; i++) {
             expectedFeatures.get(NDArrayIndex.point(1), NDArrayIndex.point(0), NDArrayIndex.all(),
-                            NDArrayIndex.point(i)).assign(w2v.getWordVectorMatrix(s2.get(i)));
+                            NDArrayIndex.point(i)).assign(w2v.getWordVectorMatrixNormalized(s2.get(i)));
         }
 
         assertArrayEquals(expectedFeatures.shape(), ds.getFeatures().shape());

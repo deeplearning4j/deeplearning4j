@@ -1,20 +1,19 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2017 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.modelimport.keras.config;
 
 import lombok.Data;
@@ -35,12 +34,6 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_CLASS_NAME = "class_name";
     private final String LAYER_FIELD_LAYER = "layer";
 
-    /* Basic layer names */
-    // Missing Layers: ActivityRegularization, Masking
-    // Conv3DTranspose, SeparableConv1D, ConvRNN2D, ConvLSTM2D
-    // CuDNNGRU, CuDNNLSTM (TF only)
-    // LocallyConnected1D
-    // Missing layers from keras 1: Highway, MaxoutDense
     private final String LAYER_CLASS_NAME_ACTIVATION = "Activation";
     private final String LAYER_CLASS_NAME_INPUT = "InputLayer";
     private final String LAYER_CLASS_NAME_PERMUTE = "Permute";
@@ -112,6 +105,8 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_CONVOLUTION_2D = ""; // 1: Convolution2D, 2: Conv2D
     private final String LAYER_CLASS_NAME_CONVOLUTION_3D = ""; // 1: Convolution2D, 2: Conv2D
     private final String LAYER_CLASS_NAME_LEAKY_RELU = "LeakyReLU";
+    private final String LAYER_CLASS_NAME_PRELU = "PReLU";
+    private final String LAYER_CLASS_NAME_THRESHOLDED_RELU = "ThresholdedReLU";
     private final String LAYER_CLASS_NAME_UPSAMPLING_1D = "UpSampling1D";
     private final String LAYER_CLASS_NAME_UPSAMPLING_2D = "UpSampling2D";
     private final String LAYER_CLASS_NAME_UPSAMPLING_3D = "UpSampling3D";

@@ -1,26 +1,25 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
@@ -378,16 +377,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
-    public Layer clone() {
-        return new SubsamplingLayer(conf.clone());
-    }
-
-    @Override
     public boolean isPretrainLayer() {
         return false;
     }
@@ -426,12 +415,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public void accumulateScore(double accum) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-
-    @Override
     public void update(INDArray gradient, String paramType) {
 
     }
@@ -449,5 +432,17 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     @Override
     public void setParams(INDArray params) {
 
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+        if (maskArray == null) {
+            //For same mode (with stride 1): output activations size is always same size as input activations size -> mask array is same size
+            return new Pair<>(maskArray, currentMaskState);
+        }
+
+        INDArray outMask = ConvolutionUtils.cnn2dMaskReduction(maskArray, layerConf().getKernelSize(), layerConf().getStride(),
+                layerConf().getPadding(), layerConf().getDilation(), layerConf().getConvolutionMode());
+        return super.feedForwardMaskArray(outMask, currentMaskState, minibatchSize);
     }
 }

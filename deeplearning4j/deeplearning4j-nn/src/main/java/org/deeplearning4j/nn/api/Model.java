@@ -1,20 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.deeplearning4j.nn.api;
 
@@ -93,14 +91,6 @@ public interface Model {
     void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr);
 
     /**
-     * Sets a rolling tally for the score. This is useful for mini batch learning when
-     * you are accumulating error across a dataset.
-     * @param accum the amount to accum
-     */
-    void accumulateScore(double accum);
-
-
-    /**
      * Parameters of the model (if any)
      * @return the parameters of the model
      */
@@ -156,7 +146,7 @@ public interface Model {
     /**
      * Get the gradient. Note that this method will not calculate the gradient, it will rather return the gradient
      * that has been computed before.
-     * For calculating the gradient, see {@link Model#computeGradientAndScore()} .
+     * For calculating the gradient, see {@link Model#computeGradientAndScore(LayerWorkspaceMgr)} } .
      * @return the gradient for this model, as calculated before
      */
     Gradient gradient();
@@ -192,14 +182,6 @@ public interface Model {
      */
     INDArray input();
 
-
-    /**
-     * Validate the input
-     * @deprecated As of 0.7.3 - Feb 2017. No longer used, most implementations are unsupported or no-op.
-     */
-    @Deprecated
-    void validateInput();
-
     /**
      * Returns this models optimizer
      * @return this models optimizer
@@ -212,14 +194,6 @@ public interface Model {
      * @return the parameter vector/matrix with that particular key
      */
     INDArray getParam(String param);
-
-    /**
-     * Initialize the parameters
-     * @deprecated As of 0.7.3 - Feb 2017. Not used; neural network params are initialized by the parameter initializaters.
-     *  Furthermore, most implementations are unsupported or no-op.
-     */
-    @Deprecated
-    void initParams();
 
     /**
      * The param table

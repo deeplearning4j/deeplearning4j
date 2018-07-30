@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.datasets.datavec;
 
 import lombok.Getter;
@@ -177,8 +193,11 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
 
         //Add outputs
         if (singleSequenceReaderMode) {
-            //Features: subset of columns
-            if (labelIndex == 0 || labelIndex == totalSizeF - 1) {
+
+            if (labelIndex < 0 && numPossibleLabels < 0) {
+                //No labels - all values -> features array
+                builder.addInput(READER_KEY);
+            } else if (labelIndex == 0 || labelIndex == totalSizeF - 1) {  //Features: subset of columns
                 //Labels are first or last -> one input in underlying
                 int inputFrom;
                 int inputTo;
@@ -221,12 +240,13 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                 underlyingIsDisjoint = true;
             }
 
-
-            //Multiple output regression already handled
-            if (regression && numPossibleLabels <= 1) {
-                builder.addOutput(READER_KEY, labelIndex, labelIndex);
-            } else if (!regression) {
-                builder.addOutputOneHot(READER_KEY, labelIndex, numPossibleLabels);
+            if(!(labelIndex < 0 && numPossibleLabels < 0)) {
+                if (regression && numPossibleLabels <= 1) {
+                    //Multiple output regression already handled
+                    builder.addOutput(READER_KEY, labelIndex, labelIndex);
+                } else if (!regression) {
+                    builder.addOutputOneHot(READER_KEY, labelIndex, numPossibleLabels);
+                }
             }
         } else {
 
@@ -348,7 +368,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         if (totalOutcomes == -1) {
             // FIXME: int cast
             inputColumns = (int) ds.getFeatures().size(1);
-            totalOutcomes = (int) ds.getLabels().size(1);
+            totalOutcomes = ds.getLabels() == null ? -1 : (int) ds.getLabels().size(1);
         }
 
         return ds;

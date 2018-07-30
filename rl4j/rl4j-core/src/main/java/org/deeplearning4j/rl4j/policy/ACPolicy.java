@@ -1,5 +1,24 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.rl4j.policy;
 
+import org.deeplearning4j.nn.api.NeuralNetwork;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticCompGraph;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticSeparate;
@@ -15,7 +34,7 @@ import java.util.Random;
  *
  * A stochastic policy thats explore the environment based on
  * the softmax output of the actor critic, but objects constructed
- * without a {@link Random} argument return the max only.
+ * with a {@link Random} argument of null return the max only.
  */
 public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
 
@@ -23,7 +42,13 @@ public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
     Random rd;
 
     public ACPolicy(IActorCritic IActorCritic) {
-        this(IActorCritic, null);
+        this.IActorCritic = IActorCritic;
+        NeuralNetwork nn = IActorCritic.getNeuralNetworks()[0];
+        if (nn instanceof ComputationGraph) {
+            rd = new Random(((ComputationGraph)nn).getConfiguration().getDefaultConfiguration().getSeed());
+        } else if (nn instanceof MultiLayerNetwork) {
+            rd = new Random(((MultiLayerNetwork)nn).getDefaultConfiguration().getSeed());
+        }
     }
     public ACPolicy(IActorCritic IActorCritic, Random rd) {
         this.IActorCritic = IActorCritic;
@@ -31,14 +56,14 @@ public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
     }
 
     public static <O extends Encodable> ACPolicy<O> load(String path) throws IOException {
-        return load(path, (Random)null);
+        return new ACPolicy<O>(ActorCriticCompGraph.load(path));
     }
     public static <O extends Encodable> ACPolicy<O> load(String path, Random rd) throws IOException {
         return new ACPolicy<O>(ActorCriticCompGraph.load(path), rd);
     }
 
     public static <O extends Encodable> ACPolicy<O> load(String pathValue, String pathPolicy) throws IOException {
-        return load(pathValue, pathPolicy, null);
+        return new ACPolicy<O>(ActorCriticSeparate.load(pathValue, pathPolicy));
     }
     public static <O extends Encodable> ACPolicy<O> load(String pathValue, String pathPolicy, Random rd) throws IOException {
         return new ACPolicy<O>(ActorCriticSeparate.load(pathValue, pathPolicy), rd);

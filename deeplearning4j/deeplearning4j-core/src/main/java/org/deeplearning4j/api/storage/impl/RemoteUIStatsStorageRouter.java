@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.api.storage.impl;
 
 import lombok.AllArgsConstructor;
@@ -10,10 +26,7 @@ import org.deeplearning4j.api.storage.StorageType;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import javax.xml.bind.DatatypeConverter;
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -29,7 +42,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Alex Black
  */
 @Slf4j
-public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
+public class RemoteUIStatsStorageRouter implements StatsStorageRouter, Serializable {
 
     /**
      * Default path for posting data to the UI - i.e., http://localhost:9000/remoteReceive or similar
@@ -52,14 +65,15 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
 
     private final String USER_AGENT = "Mozilla/5.0";
 
-    private URL url;
-    private int maxRetryCount;
-    private long retryDelayMS;
-    private double retryBackoffFactor;
 
-    private LinkedBlockingDeque<ToPost> queue = new LinkedBlockingDeque<>();
+    private final URL url;
+    private final int maxRetryCount;
+    private final long retryDelayMS;
+    private final double retryBackoffFactor;
 
-    private Thread postThread;
+    private transient LinkedBlockingDeque<ToPost> queue = new LinkedBlockingDeque<>();
+
+    private transient Thread postThread;
 
     private AtomicBoolean shutdown = new AtomicBoolean(false);
     private AtomicLong shutdownWarnCount = new AtomicLong(0);
@@ -115,10 +129,18 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
+    }
 
-        postThread = new Thread(new PostRunnable());
-        postThread.setDaemon(true);
-        postThread.start();
+    private void checkThread(){
+        if(postThread == null){
+            postThread = new Thread(new PostRunnable());
+            postThread.setDaemon(true);
+            postThread.start();
+        }
+        if(queue == null){
+            //May be null if router has been deserialized
+            queue = new LinkedBlockingDeque<>();
+        }
     }
 
     @Override
@@ -128,6 +150,7 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
 
     @Override
     public void putStorageMetaData(Collection<? extends StorageMetaData> storageMetaData) {
+        checkThread();
         if (shutdown.get()) {
             long count = shutdownWarnCount.getAndIncrement();
             if (count <= MAX_SHUTDOWN_WARN_COUNT) {
@@ -150,6 +173,7 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
 
     @Override
     public void putStaticInfo(Collection<? extends Persistable> staticInfo) {
+        checkThread();
         if (shutdown.get()) {
             long count = shutdownWarnCount.getAndIncrement();
             if (count <= MAX_SHUTDOWN_WARN_COUNT) {
@@ -172,6 +196,7 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
 
     @Override
     public void putUpdate(Collection<? extends Persistable> updates) {
+        checkThread();
         if (shutdown.get()) {
             long count = shutdownWarnCount.getAndIncrement();
             if (count <= MAX_SHUTDOWN_WARN_COUNT) {

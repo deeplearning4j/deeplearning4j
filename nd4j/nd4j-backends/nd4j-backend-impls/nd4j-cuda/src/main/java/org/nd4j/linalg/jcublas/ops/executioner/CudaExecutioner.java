@@ -1,21 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.jcublas.ops.executioner;
 
@@ -604,6 +601,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 val xT = op.x().tensorssAlongDimension(dimension);
                 val yT = op.y().tensorssAlongDimension(dimension);
 
+                // we intentionally want to set it to 0.0
                 ret = Nd4j.create(xT, yT);
             } else {
                 if (op.y() != null) {
@@ -614,7 +612,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         throw new ND4JIllegalStateException("Number of TADs along dimension doesn't match");
                 }
 
-
+                /*
                 if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
                     ret = Nd4j.zeros(retShape);
                 } else {
@@ -625,13 +623,17 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     else if (op.x().data().dataType() == DataBuffer.Type.HALF)
                         ret = Nd4j.valueArrayOf(retShape, op.zeroHalf());
                 }
+                */
+
+                // in case of regular accumulation we don't care about array state before op
+                ret = Nd4j.create(retShape);
             }
             op.setZ(ret);
         } else {
             // compare length
             if (op.z().lengthLong() != ArrayUtil.prodLong(retShape))
                 throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
-
+/*
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 op.z().assign(op.zeroDouble());
             } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
@@ -641,6 +643,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
 
             ret = op.z();
+            */
         }
 
         naiveExec(op, dimension);
@@ -696,7 +699,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             retShape = new long[] {1, 1};
         }
 
-        INDArray ret = null;
+        INDArray ret = Nd4j.create(retShape);
+        /*
         if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
             ret = Nd4j.zeros(retShape);
         } else {
@@ -707,6 +711,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             else if (op.x().data().dataType() == DataBuffer.Type.HALF)
                 ret = Nd4j.valueArrayOf(retShape, op.zeroHalf());
         }
+        */
 
         op.setZ(ret);
         //do op along all dimensions
@@ -1103,7 +1108,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
             return null;
 
-        INDArray ret = null;
+        val ret = Nd4j.create(retShape);
+        /*
         if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
             ret = Nd4j.zeros(retShape);
         } else {
@@ -1114,6 +1120,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             else if (op.x().data().dataType() == DataBuffer.Type.HALF)
                 ret = Nd4j.valueArrayOf(retShape, op.zeroHalf());
         }
+        */
         op.setZ(ret);
 
         if (op.z().isScalar()) {

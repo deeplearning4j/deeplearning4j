@@ -1,20 +1,19 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2016 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.arbiter.optimize.runner;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -25,16 +24,14 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSource;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultReference;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.TerminationCondition;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -150,8 +147,12 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
                     status = processFailedCandidates(candidate);
                 } else {
                     long created = System.currentTimeMillis();
-                    ListenableFuture<OptimizationResult> f =
-                            execute(candidate, config.getDataProvider(), config.getScoreFunction());
+                    ListenableFuture<OptimizationResult> f;
+                    if(config.getDataSource() != null){
+                        f = execute(candidate, config.getDataSource(), config.getDataSourceProperties(), config.getScoreFunction());
+                    } else {
+                        f = execute(candidate, config.getDataProvider(), config.getScoreFunction());
+                    }
                     f.addListener(new OnCompletionListener(f), futureListenerExecutor);
                     queuedFutures.add(f);
                     totalCandidateCount.getAndIncrement();
@@ -367,9 +368,16 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
 
     protected abstract int maxConcurrentTasks();
 
+    @Deprecated
     protected abstract ListenableFuture<OptimizationResult> execute(Candidate candidate, DataProvider dataProvider,
                                                                     ScoreFunction scoreFunction);
-
+    @Deprecated
     protected abstract List<ListenableFuture<OptimizationResult>> execute(List<Candidate> candidates,
                                                                           DataProvider dataProvider, ScoreFunction scoreFunction);
+
+    protected abstract ListenableFuture<OptimizationResult> execute(Candidate candidate, Class<? extends DataSource> dataSource,
+                                                                    Properties dataSourceProperties, ScoreFunction scoreFunction);
+
+    protected abstract List<ListenableFuture<OptimizationResult>> execute(List<Candidate> candidates, Class<? extends DataSource> dataSource,
+                                                                          Properties dataSourceProperties, ScoreFunction scoreFunction);
 }

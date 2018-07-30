@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 #ifndef NDARRAY_H
 #define NDARRAY_H
 
@@ -524,7 +540,7 @@ namespace nd4j {
         *  func - what pairwise operation to apply
         *  target - where to store result
         */ 
-        void applyPairwiseLambda(NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target = nullptr);
+        void applyPairwiseLambda(const NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target = nullptr);
 
         void applyIndexedPairwiseLambda(NDArray<T>* other, const std::function<T(Nd4jLong, T, T)>& func, NDArray<T>* target = nullptr);
 
@@ -544,7 +560,8 @@ namespace nd4j {
         /**
         *   apply transpose operation to the copy of this array, that is this array remains unaffected 
         */
-        NDArray<T> *transpose() const;
+        NDArray<T>* transpose() const;
+        NDArray<T>  transp() const;
 
         /**
         *  perform transpose operation and store result in target, this array remains unaffected 
