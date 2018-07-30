@@ -74,7 +74,6 @@ public class IntegrationTests extends BaseDL4JTest {
         IntegrationTestRunner.runTest(CNN2DTestCases.getLenetMnist(), testDir);
     }
 
-    @Ignore //https://github.com/deeplearning4j/deeplearning4j/issues/5309
     @Test(timeout = 360000L)
     public void testVgg16Transfer() throws Exception {
         IntegrationTestRunner.runTest(CNN2DTestCases.getVGG16TransferTinyImagenet(), testDir);
