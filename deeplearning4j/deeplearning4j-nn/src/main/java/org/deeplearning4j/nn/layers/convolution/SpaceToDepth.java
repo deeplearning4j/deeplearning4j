@@ -44,10 +44,8 @@ import java.util.Arrays;
  * Example:
  * blockSize = 4
  * dataFormat = "NCHW"
- * input shape =  [128, 16, 16, 3]
- * output shape = [128, 16/4, 16/4, 3*4*4]
- *
- *
+ * input shape =  [128, 3, 16, 16]
+ * output shape = [128, 3*4*4, 16/4, 16/4]
  *
  * @author Max Pumperla
  */
