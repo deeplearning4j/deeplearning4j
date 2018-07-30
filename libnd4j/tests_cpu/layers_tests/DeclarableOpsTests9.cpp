@@ -517,9 +517,9 @@ TEST_F(DeclarableOpsTests9, TestDropout_BP_1) {
     auto ress = op.execute({&x, &errs, &shape}, {0.2f}, {113});
 
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
-    ress->at(0)->printIndexedBuffer("Result is ");
+    //ress->at(0)->printIndexedBuffer("Result is ");
     //x.printIndexedBuffer("Input is");
-
+    ASSERT_FALSE(ress->at(0)->equalsTo(errs));
     delete ress;
 }
 
@@ -547,7 +547,9 @@ TEST_F(DeclarableOpsTests9, TestDropout_1) {
     countZero = res->template reduceNumber<simdOps::CountZero<float>>();
     ASSERT_NEAR(countZero, 80.f, 5.f);
 
-//    ASSERT_FALSE(res->equalsTo(res2));
+    ASSERT_TRUE(res->equalsTo(res2));
+    res->printIndexedBuffer("FF dropout");
+    res2->printIndexedBuffer("BP dropout");
 
     delete ress;
     delete ress2;
@@ -679,7 +681,7 @@ TEST_F(DeclarableOpsTests9, Test_Dropout_BP_2) {
     //nd4j_printf("Y zero count is %f\n", countZero);
     ASSERT_NEAR(countZero, 50.f, 10.f);
 //    ASSERT_TRUE(exp.equalsTo(ressX->at(0)));
-    ASSERT_FALSE(ressX->at(0)->equalsTo(ressY->at(0)));
+    ASSERT_TRUE(ressX->at(0)->equalsTo(ressY->at(0)));
     delete ressX;
     delete ressY;
     delete ress;
