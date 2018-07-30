@@ -182,13 +182,14 @@ public class IntegrationTestRunner {
             } else {
                 ComputationGraphConfiguration cgc = (ComputationGraphConfiguration) config;
                 cg = new ComputationGraph(cgc);
+                cg.init();
                 m = cg;
                 isMLN = false;
 
                 ComputationGraph loaded = ComputationGraph.load(savedModel, true);
                 assertEquals("Configs not equal", loaded.getConfiguration(), cg.getConfiguration());
-                assertEquals("Params not equal", loaded.params(), mln.params());
-                assertEquals("Param table not equal", loaded.paramTable(), mln.paramTable());
+                assertEquals("Params not equal", loaded.params(), cg.params());
+                assertEquals("Param table not equal", loaded.paramTable(), cg.paramTable());
             }
         } else {
             m = tc.getPretrainedModel();
@@ -516,7 +517,7 @@ public class IntegrationTestRunner {
                 INDArray[] out;
                 if(isMLN){
                     INDArray fm = p.getSecond() == null ? null : p.getSecond()[0];
-                    out = new INDArray[]{mln.output(p.getFirst()[0], true, fm, null)};
+                    out = new INDArray[]{mln.output(p.getFirst()[0], false, fm, null)};
                 } else {
                     out = cg.output(false, p.getFirst(), p.getSecond(), null);
                 }
