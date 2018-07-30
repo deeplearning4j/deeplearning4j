@@ -22,5 +22,17 @@ package org.nd4j.linalg.env;
  * @author raver119@protonmail.com
  */
 public interface EnvironmentalAction {
-    void process(String name, String value);
+    /**
+     * This method returns target environemt variable for this action
+     * @return
+     */
+    String targetVariable();
+
+    /**
+     * This method will be executed with corresponding Env Var value
+     *
+     * @param name
+     * @param value
+     */
+    void process(String value);
 }

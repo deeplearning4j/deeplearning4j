@@ -73,6 +73,7 @@ import org.nd4j.linalg.compression.BasicNDArrayCompressor;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.convolution.ConvolutionInstance;
 import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
+import org.nd4j.linalg.env.EnvironmentalAction;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.exception.ND4JComplexNumbersNotSupportedException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -7106,6 +7107,20 @@ public class Nd4j {
             String logInitProperty = System.getProperty(LOG_INIT_ENV_PROPERTY, "true");
             if(Boolean.parseBoolean(logInitProperty)) {
                 OP_EXECUTIONER_INSTANCE.printEnvironmentInformation();
+            }
+
+            val env = System.getenv();
+            val actions = ServiceLoader.load(EnvironmentalAction.class);
+            val mappedActions = new HashMap<String, EnvironmentalAction>();
+            for (val a: actions) {
+                if (!mappedActions.containsKey(a.targetVariable()))
+                    mappedActions.put(a.targetVariable(), a);
+            }
+
+            for (val e: env.keySet()) {
+                val action = mappedActions.get(e);
+                if (action != null)
+                    action.process(env.get(e));
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
