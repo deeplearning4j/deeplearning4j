@@ -423,7 +423,7 @@ bool ShapeUtils<T>::evalBroadcastShapeInfo(const NDArray<T> &max, const NDArray<
 }
 
 template <typename T>
-bool ShapeUtils<T>::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong*min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, nd4j::memory::Workspace* workspace) {
+bool ShapeUtils<T>::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, nd4j::memory::Workspace* workspace) {
 
     if ((shape::rank(max) == 0 && shape::isScalar(min))) {
         // X is the driver here
