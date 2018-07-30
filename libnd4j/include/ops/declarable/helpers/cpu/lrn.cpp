@@ -19,7 +19,6 @@
 //
 
 #include <ops/declarable/helpers/lrn.h>
-#include <NDArrayFactory.h>
 
 namespace nd4j {
 namespace ops {
@@ -33,8 +32,8 @@ namespace helpers {
         int totalLength = input->lengthOf();
         int lastDim = input->sizeAt(-1);
         int chunkCount = totalLength / lastDim;
-        std::unique_ptr<ResultSet<T>> listOut(NDArrayFactory<T>::allTensorsAlongDimension(output,  {output->rankOf() - 1}));
-        std::unique_ptr<ResultSet<T>> listInput(NDArrayFactory<T>::allTensorsAlongDimension(input, {input->rankOf() - 1}));
+        std::unique_ptr<ResultSet<T>> listOut(output->allTensorsAlongDimension({output->rankOf() - 1}));
+        std::unique_ptr<ResultSet<T>> listInput(input->allTensorsAlongDimension({input->rankOf() - 1}));
         if (chunkCount != listOut->size()) 
             return ND4J_STATUS_VALIDATION;
         for (int c = 0; c < chunkCount; c++) {
