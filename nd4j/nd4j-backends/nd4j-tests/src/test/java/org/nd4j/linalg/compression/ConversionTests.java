@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -119,6 +120,37 @@ public class ConversionTests extends BaseNd4jTest {
         Nd4j.setDataType(dtype);
     }
 
+    @Test
+    public void testConvDouble_1(){
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        val exp = Nd4j.linspace(-5, 5, 11);
+
+        for(val t : new DataBuffer.Type[]{DataBuffer.Type.DOUBLE, DataBuffer.Type.FLOAT, DataBuffer.Type.HALF}) {
+            Nd4j.setDataType(t);
+
+            val arr = Nd4j.linspace(-5, 5, 11);
+            val arr2 = arr.convertToDoubles();
+
+            Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+            assertEquals("Fail with dtype [" + t + "]", exp, arr2);
+        }
+    }
+
+    @Test
+    public void testConvFloat_1(){
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        val exp = Nd4j.linspace(-5, 5, 11);
+
+        for(val t : new DataBuffer.Type[]{DataBuffer.Type.DOUBLE, DataBuffer.Type.FLOAT, DataBuffer.Type.HALF}) {
+            Nd4j.setDataType(t);
+
+            val arr = Nd4j.linspace(-5, 5, 11);
+            val arr2 = arr.convertToFloats();
+
+            Nd4j.setDataType(DataBuffer.Type.FLOAT);
+            assertEquals("Fail with dtype [" + t + "]", exp, arr2);
+        }
+    }
 
     @Override
     public char ordering() {
