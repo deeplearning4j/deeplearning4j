@@ -37,33 +37,57 @@ void multiplyBP(const NDArray<T>& x, const NDArray<T>& y, const NDArray<T>& dLdz
     	dLdy(0.) = x(0.) * dLdz(0.);
     }
     else if(xLen == 1) { 			// x is scalar and y is not 
+
   		dLdx(0.) = (y * dLdz).template reduceNumber<simdOps::Sum<T>>();    	
   		dLdy.assign(dLdz * x(0.));		
-// #pragma omp parallel num_threads(2) 
-//     	{ 
-//   			if (omp_get_thread_num() == 0)
-//   				dLdx(0.) = (y * dLdz).template reduceNumber<simdOps::Sum<T>>();
-//   			else 
-//   				dLdy.assign(dLdz * x(0.));		
-// 		}
     }
     else if(yLen == 1) { 			// y is scalar and x is not 
-#pragma omp parallel num_threads(2)
-    	{     		
-  			if (omp_get_thread_num() == 0)
-  				dLdy(0.) = (x * dLdz).template reduceNumber<simdOps::Sum<T>>();
-  			else 
-  				dLdx.assign(dLdz * y(0.));
-		}
+
+    	dLdy(0.) = (x * dLdz).template reduceNumber<simdOps::Sum<T>>();
+    	dLdx.assign(dLdz * y(0.));
     }    
     else if(x.isSameShape(&y)) {
-#pragma omp parallel num_threads(2)
-    	{     		
-  			if (omp_get_thread_num() == 0)
-  				dLdx.assign(y * dLdz);
-  			else 
-  				dLdy.assign(x * dLdz);
-		}
+
+    	dLdx.assign(y * dLdz);
+    	dLdy.assign(x * dLdz);
+    }
+    else if (x.isSameShape(&dLdz)) {
+    	
+    	const Nd4jLong zLen = dLdz.lengthOf();
+    	const Nd4jLong* yShapeInfo = y.getShapeInfo();
+    	const Nd4jLong* zShapeInfo = dLdz.getShapeInfo();
+    	
+    	dLdy = (T)0;
+
+// #pragma omp parallel for if(zLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+#pragma omp parallel for schedule(guided)
+    	for(Nd4jLong i = 0; i < zLen; ++i) {
+            
+            const T dLdzVal = dLdz(i);
+        	const Nd4jLong yInd = ShapeUtils<T>::getSubArrayIndex(zShapeInfo, yShapeInfo, i);        	
+        	dLdx(i) =  y(yInd) * dLdzVal;
+#pragma omp critical          		
+        		dLdy(yInd) += x(i) * dLdzVal;
+    	}
+    } 
+    else if (y.isSameShape(&dLdz)) {
+
+    	const Nd4jLong zLen = dLdz.lengthOf();
+    	const Nd4jLong* xShapeInfo = x.getShapeInfo();
+    	const Nd4jLong* zShapeInfo = dLdz.getShapeInfo();
+    	
+    	dLdx = (T)0;
+
+// #pragma omp parallel for if(zLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+#pragma omp parallel for schedule(guided)
+    	for(Nd4jLong i = 0; i < zLen; ++i) {
+            
+            const T dLdzVal = dLdz(i);
+        	const Nd4jLong xInd = ShapeUtils<T>::getSubArrayIndex(zShapeInfo, xShapeInfo, i);        	
+        	dLdy(i) =  x(xInd) * dLdzVal;
+#pragma omp critical          		
+        		dLdx(xInd) += y(i) * dLdzVal;
+    	}
     }
     else {
 
@@ -75,7 +99,8 @@ void multiplyBP(const NDArray<T>& x, const NDArray<T>& y, const NDArray<T>& dLdz
     	dLdx = (T)0;
     	dLdy = (T)0;
 
-#pragma omp parallel for if(zLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+// #pragma omp parallel for if(zLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+#pragma omp parallel for schedule(guided)
     	for(Nd4jLong i = 0; i < zLen; ++i) {
             
             const T dLdzVal = dLdz(i);

@@ -1783,3 +1783,114 @@ TEST_F(DeclarableOpsTests9, multiply_bp_test2) {
 
     ASSERT_TRUE(isGradCorrect);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, multiply_bp_test3) {
+            
+    NDArray<double> y('c', {2, 2}, {1.,2.,3.,4.});
+    NDArray<double> x(0.1);
+    NDArray<double> dLdz('c', {2, 2});
+
+    const OpArgsHolder<double> argsHolderFF({&x, &y}, {}, {});
+    const OpArgsHolder<double> argsHolderBP({&x, &y, &dLdz}, {}, {});
+
+    nd4j::ops::multiply<double> opFF;
+    nd4j::ops::multiply_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, multiply_bp_test4) {
+            
+    NDArray<double> x('c', {2, 2}, {1.,2.,3.,4.});
+    NDArray<double> y('c', {2, 2}, {0.1,0.2,0.3,0.4});
+    NDArray<double> dLdz('c', {2, 2});
+
+    const OpArgsHolder<double> argsHolderFF({&x, &y}, {}, {});
+    const OpArgsHolder<double> argsHolderBP({&x, &y, &dLdz}, {}, {});
+
+    nd4j::ops::multiply<double> opFF;
+    nd4j::ops::multiply_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, multiply_bp_test5) {
+            
+    NDArray<double> x('c', {2, 2}, {1.,2.,3.,4.});
+    NDArray<double> y('c', {2}, {0.1,0.2});
+    NDArray<double> dLdz('c', {2, 2});
+
+    const OpArgsHolder<double> argsHolderFF({&x, &y}, {}, {});
+    const OpArgsHolder<double> argsHolderBP({&x, &y, &dLdz}, {}, {});
+
+    nd4j::ops::multiply<double> opFF;
+    nd4j::ops::multiply_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, multiply_bp_test6) {
+            
+    NDArray<double> y('c', {2, 2}, {1.,2.,3.,4.});
+    NDArray<double> x('c', {2}, {0.1,0.2});
+    NDArray<double> dLdz('c', {2, 2});
+
+    const OpArgsHolder<double> argsHolderFF({&x, &y}, {}, {});
+    const OpArgsHolder<double> argsHolderBP({&x, &y, &dLdz}, {}, {});
+
+    nd4j::ops::multiply<double> opFF;
+    nd4j::ops::multiply_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, multiply_bp_test7) {
+            
+    NDArray<double> y('c', {2, 3}, {1.,2.,3.,4.,5.,6.});
+    NDArray<double> x('c', {2, 1}, {0.1,0.2});
+    NDArray<double> dLdz('c', {2, 3});
+
+    const OpArgsHolder<double> argsHolderFF({&x, &y}, {}, {});
+    const OpArgsHolder<double> argsHolderBP({&x, &y, &dLdz}, {}, {});
+
+    nd4j::ops::multiply<double> opFF;
+    nd4j::ops::multiply_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, multiply_bp_test8) {
+            
+    NDArray<double> y('c', {2, 1, 4});
+    NDArray<double> x('c', {1, 3, 4});
+    NDArray<double> dLdz('c', {2, 3, 4});
+    x.linspace(1., 0.5);
+    y.linspace(0.1, 0.05);
+
+    const OpArgsHolder<double> argsHolderFF({&x, &y}, {}, {});
+    const OpArgsHolder<double> argsHolderBP({&x, &y, &dLdz}, {}, {});
+
+    nd4j::ops::multiply<double> opFF;
+    nd4j::ops::multiply_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
