@@ -7119,8 +7119,13 @@ public class Nd4j {
 
             for (val e: env.keySet()) {
                 val action = mappedActions.get(e);
-                if (action != null)
-                    action.process(env.get(e));
+                if (action != null) {
+                    try {
+                        action.process(env.get(e));
+                    } catch (Exception e2) {
+                        logger.info("Failed to process env variable [" + e + "], got exception: " + e2.toString());
+                    }
+                }
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

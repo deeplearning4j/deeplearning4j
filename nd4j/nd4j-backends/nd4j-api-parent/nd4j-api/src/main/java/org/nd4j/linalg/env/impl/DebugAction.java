@@ -14,13 +14,8 @@ public class DebugAction implements EnvironmentalAction {
 
     @Override
     public void process(String value) {
-        try {
-            val v = Boolean.valueOf(value);
+        val v = Boolean.valueOf(value);
 
-            log.debug("Setting debug mode: {}", v);
-            Nd4j.getExecutioner().enableDebugMode(v);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        Nd4j.getExecutioner().enableDebugMode(v);
     }
 }

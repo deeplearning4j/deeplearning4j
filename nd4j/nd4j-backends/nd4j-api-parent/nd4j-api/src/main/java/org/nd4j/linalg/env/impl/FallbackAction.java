@@ -12,12 +12,8 @@ public class FallbackAction implements EnvironmentalAction {
 
     @Override
     public void process(String value) {
-        try {
-            val v = Boolean.valueOf(value);
+        val v = Boolean.valueOf(value);
 
-            Nd4j.enableFallbackMode(v);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        Nd4j.enableFallbackMode(v);
     }
 }
