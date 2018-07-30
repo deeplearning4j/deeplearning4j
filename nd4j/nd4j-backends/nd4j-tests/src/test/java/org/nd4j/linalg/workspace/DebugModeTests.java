@@ -91,4 +91,36 @@ public class DebugModeTests extends BaseNd4jTest {
             assertEquals(10 * 10 * Nd4j.sizeOfDataType(), ws.getSpilledSize());
         }
     }
+
+    @Test
+    public void testSpillMode_2() {
+        Nd4j.getWorkspaceManager().setDebugMode(DebugMode.SPILL_EVERYTHING);
+
+        val basicConfig = WorkspaceConfiguration.builder()
+                .initialSize(0).maxSize(10 * 1024 * 1024).overallocationLimit(0.1)
+                .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.EXTERNAL).build();
+
+        try (val ws = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "R_119_1992")) {
+            assertEquals(0L, ws.getCurrentSize());
+            assertEquals(0, ws.getDeviceOffset());
+            assertEquals(0, ws.getHostOffset());
+
+            val array = Nd4j.create(10, 10).assign(1.0f);
+
+            // nothing should get into workspace
+            assertEquals(0, ws.getHostOffset());
+            assertEquals(0, ws.getDeviceOffset());
+
+            // array buffer should be spilled now
+            assertEquals(10 * 10 * Nd4j.sizeOfDataType(), ws.getSpilledSize());
+        }
+
+        try (val ws = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "R_119_1992")) {
+            assertEquals(0L, ws.getCurrentSize());
+            assertEquals(0, ws.getDeviceOffset());
+            assertEquals(0, ws.getHostOffset());
+            assertEquals(0, ws.getSpilledSize());
+        }
+    }
 }
