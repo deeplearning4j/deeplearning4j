@@ -59,8 +59,7 @@ void multiplyBP(const NDArray<T>& x, const NDArray<T>& y, const NDArray<T>& dLdz
     	
     	dLdy = (T)0;
 
-// #pragma omp parallel for if(zLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for if(zLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
     	for(Nd4jLong i = 0; i < zLen; ++i) {
             
             const T dLdzVal = dLdz(i);
@@ -78,8 +77,7 @@ void multiplyBP(const NDArray<T>& x, const NDArray<T>& y, const NDArray<T>& dLdz
     	
     	dLdx = (T)0;
 
-// #pragma omp parallel for if(zLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for if(zLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
     	for(Nd4jLong i = 0; i < zLen; ++i) {
             
             const T dLdzVal = dLdz(i);
@@ -99,8 +97,7 @@ void multiplyBP(const NDArray<T>& x, const NDArray<T>& y, const NDArray<T>& dLdz
     	dLdx = (T)0;
     	dLdy = (T)0;
 
-// #pragma omp parallel for if(zLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for if(zLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
     	for(Nd4jLong i = 0; i < zLen; ++i) {
             
             const T dLdzVal = dLdz(i);
