@@ -2972,7 +2972,7 @@ Nd4jPointer NativeOps::loadNpyFromHeader(Nd4jPointer data) {
         totalLengthOfShape *= arr.shape[i];
     }
 
-    int printLength = arr.wordSize * totalLengthOfShape;
+    int printLength = totalLengthOfShape;
     for(int i = 0; i < printLength; i++) {
         printf("Char at %d is %x\n",i,arr.data[i]);
     }

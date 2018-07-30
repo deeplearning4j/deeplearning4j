@@ -323,8 +323,7 @@ cnpy::NpyArray cnpy::loadNpyFromHeader(char *data) {
     arr.shape = std::vector<unsigned int>(shape,shape + ndims);
     delete[] shape;
     arr.data = cursor;
-    float *testData = new float[size];
-    memcpy(testData,cursor,sizeof(float) * size);
+    unsigned int *testData = reinterpret_cast<unsigned int *>(arr.data);
     for(int i = 0; i < size; i++) {
         printf("Character at data %d is %f\n",i,testData[i]);
     }

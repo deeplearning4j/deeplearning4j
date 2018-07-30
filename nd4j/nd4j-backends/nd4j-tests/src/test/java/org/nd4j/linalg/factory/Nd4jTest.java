@@ -222,9 +222,9 @@ public class Nd4jTest extends BaseNd4jTest {
 
         //INDArray convertedFrom = Nd4j.getNDArrayFactory().createFromNpyHeaderPointer(pass);
         // System.out.println(pointer.asByteBuffer());
-        Pointer pointer1 = NativeOpsHolder.getInstance().getDeviceNativeOps().dataPointForNumpyStruct(pointer);
-        DataBuffer dataBuffer = Nd4j.createBuffer(new FloatPointer(pointer1),linspace.length());
-        System.out.println(dataBuffer);
+       // Pointer pointer1 = NativeOpsHolder.getInstance().getDeviceNativeOps().dataPointForNumpyStruct(pointer);
+        //DataBuffer dataBuffer = Nd4j.createBuffer(new FloatPointer(pointer1),linspace.length());
+        //System.out.println(dataBuffer);
         // assertEquals(linspace,convertedFrom);
 
     }
