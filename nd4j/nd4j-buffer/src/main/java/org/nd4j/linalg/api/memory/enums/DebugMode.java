@@ -36,5 +36,5 @@ public enum DebugMode {
     /**
      * All workspaces will be disabled. There will be literally no way to enable workspace anywhere
      */
-    NO_WORKSPACES,
+    BYPASS_EVERYTHING,
 }
