@@ -94,13 +94,13 @@ public class TrainModule implements UIModule {
     private Map<String, Long> lastUpdateForSession = Collections.synchronizedMap(new HashMap<>());
 
     public TrainModule() {
-        String maxChartPointsProp = System.getProperty(CHART_MAX_POINTS_PROPERTY);
+        String maxChartPointsProp = System.getProperty(DL4JSystemProperties.CHART_MAX_POINTS_PROPERTY);
         int value = DEFAULT_MAX_CHART_POINTS;
         if (maxChartPointsProp != null) {
             try {
                 value = Integer.parseInt(maxChartPointsProp);
             } catch (NumberFormatException e) {
-                log.warn("Invalid system property: {} = {}", CHART_MAX_POINTS_PROPERTY, maxChartPointsProp);
+                log.warn("Invalid system property: {} = {}", DL4JSystemProperties.CHART_MAX_POINTS_PROPERTY, maxChartPointsProp);
             }
         }
         if (value >= 10) {

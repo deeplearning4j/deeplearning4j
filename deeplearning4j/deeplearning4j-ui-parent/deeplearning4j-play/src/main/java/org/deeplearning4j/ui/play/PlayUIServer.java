@@ -25,6 +25,7 @@ import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.api.storage.StatsStorageListener;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.api.UIServer;
@@ -67,17 +68,11 @@ import static play.mvc.Results.ok;
 public class PlayUIServer extends UIServer {
 
     /**
-     * System property for setting the UI port. Defaults to 9000.
-     * Set to 0 to use a random port
+     * @deprecated Use {@link DL4JSystemProperties#UI_SERVER_PORT_PROPERTY}
      */
-    public static final String UI_SERVER_PORT_PROPERTY = "org.deeplearning4j.ui.port";
+    @Deprecated
+    public static final String UI_SERVER_PORT_PROPERTY = DL4JSystemProperties.UI_SERVER_PORT_PROPERTY;
     public static final int DEFAULT_UI_PORT = 9000;
-
-    /**
-     * System property to enable classpath scanning for custom UI modules. Disabled by default.
-     */
-    public static final String UI_CUSTOM_MODULE_PROPERTY = "org.deeplearning4j.ui.custommodule.enable";
-
 
     public static final String ASSETS_ROOT_DIRECTORY = "deeplearning4jUiAssets/";
 
@@ -188,12 +183,12 @@ public class PlayUIServer extends UIServer {
             }
         }
 
-        String portProperty = System.getProperty(UI_SERVER_PORT_PROPERTY);
+        String portProperty = System.getProperty(DL4JSystemProperties.UI_SERVER_PORT_PROPERTY);
         if (portProperty != null) {
             try {
                 port = Integer.parseInt(portProperty);
             } catch (NumberFormatException e) {
-                log.warn("Could not parse UI port property \"{}\" with value \"{}\"", UI_SERVER_PORT_PROPERTY,
+                log.warn("Could not parse UI port property \"{}\" with value \"{}\"", DL4JSystemProperties.UI_SERVER_PORT_PROPERTY,
                                 portProperty, e);
             }
         }

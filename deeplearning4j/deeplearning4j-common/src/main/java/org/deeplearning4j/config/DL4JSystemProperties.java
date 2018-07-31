@@ -48,14 +48,46 @@ public class DL4JSystemProperties {
      * Applicability: deeplearning4j-nn<br>
      * Description: DL4J writes some crash dumps to disk when an OOM exception occurs - this functionality is enabled
      * by default. This system property can be use to customize the output directory for memory crash reporting. By default,
-     * the current working directory will be used
+     * the current working directory ({@code  System.getProperty("user.dir")} or {@code new File("")}) will be used
      * @see #CRASH_DUMP_ENABLED_PROPERTY To disable crash dump reporting
      */
     public static final String CRASH_DUMP_OUTPUT_DIRECTORY_PROPERTY = "org.deeplearning4j.crash.reporting.directory";
 
     /**
-     * Applicability: deeplearning4j-ui<br>
-     * Description: 
+     * Applicability: deeplearning4j-ui_2.xx<br>
+     * Description: The DL4J training UI (StatsListener + UIServer.getInstance().attach(ss)) will subsample the number
+     * of chart points when a lot of data is present - i.e., only a maximum number of points will be shown on each chart.
+     * This is to reduce the UI bandwidth requirements and client-side rendering cost.
+     * To increase the number of points in charts, set this property to a larger value. Default: 512 values
      */
     public static final String CHART_MAX_POINTS_PROPERTY = "org.deeplearning4j.ui.maxChartPoints";
+
+
+    /**
+     * Applicability: deeplearning4j-play (deeplearning4j-ui_2.xx)<br>
+     * Description: This property sets the port that the UI will be available on. Default port: 9000.
+     * Set to 0 for a random port.
+     */
+    public static final String UI_SERVER_PORT_PROPERTY = "org.deeplearning4j.ui.port";
+
+    /**
+     * Applicability: dl4j-spark_2.xx - NTPTimeSource class (mainly used in ParameterAveragingTrainingMaster when stats
+     * collection is enabled; not enabled by default)<br>
+     * Description: This sets the NTP (network time protocol) server to be used when collecting stats. Default: 0.pool.ntp.org
+     */
+    public static final String NTP_SOURCE_SERVER_PROPERTY = "org.deeplearning4j.spark.time.NTPTimeSource.server";
+
+    /**
+     * Applicability: dl4j-spark_2.xx - NTPTimeSource class (mainly used in ParameterAveragingTrainingMaster when stats
+     * collection is enabled; not enabled by default)<br>
+     * Description: This sets the NTP (network time protocol) update frequency in milliseconds. Default: 1800000 (30 minutes)
+     */
+    public static final String NTP_SOURCE_UPDATE_FREQUENCY_MS_PROPERTY = "org.deeplearning4j.spark.time.NTPTimeSource.frequencyms";
+
+    /**
+     * Applicability: dl4j-spark_2.xx - mainly used in ParameterAveragingTrainingMaster when stats collection is enabled;
+     * not enabled by default<br>
+     * Description: This sets the time source to use for spark stats. Default: {@code org.deeplearning4j.spark.time.NTPTimeSource}
+     */
+    public static final String TIMESOURCE_CLASSNAME_PROPERTY = "org.deeplearning4j.spark.time.TimeSource";
 }
