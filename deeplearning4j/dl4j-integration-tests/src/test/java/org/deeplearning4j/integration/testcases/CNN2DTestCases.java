@@ -16,6 +16,12 @@
 
 package org.deeplearning4j.integration.testcases;
 
+import org.datavec.api.split.FileSplit;
+import org.datavec.image.loader.NativeImageLoader;
+import org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader;
+import org.datavec.image.recordreader.objdetect.impl.SvhnLabelProvider;
+import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
+import org.deeplearning4j.datasets.fetchers.SvhnDataFetcher;
 import org.deeplearning4j.integration.TestCase;
 import org.deeplearning4j.datasets.fetchers.DataSetType;
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
@@ -27,10 +33,11 @@ import org.deeplearning4j.eval.EvaluationCalibration;
 import org.deeplearning4j.eval.IEvaluation;
 import org.deeplearning4j.eval.ROCMultiClass;
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -38,6 +45,7 @@ import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.zoo.PretrainedType;
+import org.deeplearning4j.zoo.model.TinyYOLO;
 import org.deeplearning4j.zoo.model.VGG16;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -45,17 +53,17 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.VGG16ImagePreProcessor;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.File;
+import java.util.*;
 
 public class CNN2DTestCases {
 
@@ -243,8 +251,100 @@ public class CNN2DTestCases {
      * Basically a cut-down version of the YOLO house numbers example
      */
     public static TestCase getYoloHouseNumbers() {
+        return new TestCase() {
 
-        throw new UnsupportedOperationException("Not yet implemented");
+            private int width = 416;
+            private int height = 416;
+            private int nChannels = 3;
+            private int gridWidth = 13;
+            private int gridHeight = 13;
+
+            {
+                testName = "YOLOHouseNumbers";
+                testType = TestType.PRETRAINED;
+                testPredictions = true;
+                testTrainingCurves = true;
+                testGradients = false;              //Skip - requires saving approx 1GB of data (gradients x2)
+                testParamsPostTraining = false;     //Skip - requires saving all params (approx 500mb)
+                testEvaluation = false;
+                testOverfitting = false;
+            }
+
+            @Override
+            public Model getPretrainedModel() throws Exception {
+                int nClasses = 10;
+                int nBoxes = 5;
+                double lambdaNoObj = 0.5;
+                double lambdaCoord = 1.0;
+                double[][] priorBoxes = {{2, 5}, {2.5, 6}, {3, 7}, {3.5, 8}, {4, 9}};
+                double learningRate = 1e-4;
+                ComputationGraph pretrained = (ComputationGraph) TinyYOLO.builder().build().initPretrained();
+                INDArray priors = Nd4j.create(priorBoxes);
+
+                FineTuneConfiguration fineTuneConf = new FineTuneConfiguration.Builder()
+                        .seed(12345)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
+                        .gradientNormalizationThreshold(1.0)
+                        .updater(new Adam(learningRate))
+                        .l2(0.00001)
+                        .activation(Activation.IDENTITY)
+                        .trainingWorkspaceMode(WorkspaceMode.ENABLED)
+                        .inferenceWorkspaceMode(WorkspaceMode.ENABLED)
+                        .build();
+
+                ComputationGraph model = new TransferLearning.GraphBuilder(pretrained)
+                        .fineTuneConfiguration(fineTuneConf)
+                        .removeVertexKeepConnections("conv2d_9")
+                        .addLayer("convolution2d_9",
+                                new ConvolutionLayer.Builder(1,1)
+                                        .nIn(1024)
+                                        .nOut(nBoxes * (5 + nClasses))
+                                        .stride(1,1)
+                                        .convolutionMode(ConvolutionMode.Same)
+                                        .weightInit(WeightInit.XAVIER)
+                                        .activation(Activation.IDENTITY)
+                                        .build(),
+                                "leaky_re_lu_8")
+                        .addLayer("outputs",
+                                new Yolo2OutputLayer.Builder()
+                                        .lambbaNoObj(lambdaNoObj)
+                                        .lambdaCoord(lambdaCoord)
+                                        .boundingBoxPriors(priors)
+                                        .build(),
+                                "convolution2d_9")
+                        .setOutputs("outputs")
+                        .build();
+
+                return model;
+            }
+
+            @Override
+            public List<Pair<INDArray[], INDArray[]>> getPredictionsTestData() throws Exception {
+                MultiDataSet mds = getTrainingData().next();
+                return Collections.singletonList(new Pair<>(mds.getFeatures(), null));
+            }
+
+            @Override
+            public MultiDataSet getGradientsTestData() throws Exception {
+                return getTrainingData().next();
+            }
+
+            @Override
+            public MultiDataSetIterator getTrainingData() throws Exception {
+                SvhnDataFetcher fetcher = new SvhnDataFetcher();
+                File testDir = fetcher.getDataSetPath(DataSetType.TEST);
+
+                FileSplit testData = new FileSplit(testDir, NativeImageLoader.ALLOWED_FORMATS, new Random(12345));
+                ObjectDetectionRecordReader recordReaderTest = new ObjectDetectionRecordReader(height, width, nChannels,
+                        gridHeight, gridWidth, new SvhnLabelProvider(testDir));
+                recordReaderTest.initialize(testData);
+                RecordReaderDataSetIterator test = new RecordReaderDataSetIterator(recordReaderTest, 2, 1, 1, true);
+                test.setPreProcessor(new ImagePreProcessingScaler(0, 1));
+
+                return new MultiDataSetIteratorAdapter(new EarlyTerminationDataSetIterator(test, 2));
+            }
+        };
     }
 
 
