@@ -125,6 +125,14 @@ public class Tokenizer {
             indexDocs.put(wordIndex.get(key), wordDocs.get(key));
     }
 
+    public void fitOnSequences(Integer[][] sequences) {
+        documentCount += 1;
+        for (Integer[] sequence: sequences) {
+            Set<Integer> sequenceSet = new HashSet<>(Arrays.asList(sequence));
+            for (Integer index: sequenceSet)
+                indexDocs.put(index, indexDocs.get(index) + 1);
+        }
+    }
 
 
 }
