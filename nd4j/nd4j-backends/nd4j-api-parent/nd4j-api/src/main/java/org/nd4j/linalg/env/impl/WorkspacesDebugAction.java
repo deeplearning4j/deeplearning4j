@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.env.impl;
 
+import org.nd4j.linalg.api.memory.enums.DebugMode;
 import org.nd4j.linalg.env.EnvironmentalAction;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -29,11 +30,11 @@ public class WorkspacesDebugAction implements EnvironmentalAction {
     public void process(String value) {
         switch (value.toUpperCase()) {
             case "SPILL_EVERYTHING": {
-                    //Nd4j.getWorkspaceManager().setDebugMode(DebugMode.SPILL_EVERYTHING);
+                    Nd4j.getWorkspaceManager().setDebugMode(DebugMode.SPILL_EVERYTHING);
                 };
                 break;
             case "BYPASS_EVERYTHING": {
-                    //Nd4j.getWorkspaceManager().setDebugMode(DebugMode.BYPASS_EVERYTHING);
+                    Nd4j.getWorkspaceManager().setDebugMode(DebugMode.BYPASS_EVERYTHING);
                 }
             break;
         }
