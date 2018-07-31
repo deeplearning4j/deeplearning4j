@@ -145,10 +145,10 @@ public class CNN2DTestCases {
 
                 DataSet ds = iter.next();
                 ds = ds.asList().get(0);
-                list.add(new Pair<>(new INDArray[]{ds.getFeatureMatrix()}, null));
+                list.add(new Pair<>(new INDArray[]{ds.getFeatures()}, null));
 
                 ds = iter.next();
-                list.add(new Pair<>(new INDArray[]{ds.getFeatureMatrix()}, null));
+                list.add(new Pair<>(new INDArray[]{ds.getFeatures()}, null));
                 return list;
             }
 
