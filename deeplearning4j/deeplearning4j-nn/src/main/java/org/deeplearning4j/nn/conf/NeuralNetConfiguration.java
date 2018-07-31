@@ -87,8 +87,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     protected StepFunction stepFunction;
     //minimize or maximize objective
     protected boolean minimize = true;
-    protected Map<String, Double> l1ByParam = new HashMap<>();
-    protected Map<String, Double> l2ByParam = new HashMap<>();
     protected boolean pretrain;
 
     // this field defines preOutput cache
@@ -118,10 +116,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 clone.stepFunction = clone.stepFunction.clone();
             if (clone.variables != null)
                 clone.variables = new ArrayList<>(clone.variables);
-            if (clone.l1ByParam != null)
-                clone.l1ByParam = new HashMap<>(clone.l1ByParam);
-            if (clone.l2ByParam != null)
-                clone.l2ByParam = new HashMap<>(clone.l2ByParam);
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
@@ -141,39 +135,11 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     public void addVariable(String variable) {
         if (!variables.contains(variable)) {
             variables.add(variable);
-            setLayerParamLR(variable);
         }
     }
 
     public void clearVariables() {
         variables.clear();
-        l1ByParam.clear();
-        l2ByParam.clear();
-    }
-
-    public void resetVariables() {
-        for (String s : variables) {
-            setLayerParamLR(s);
-        }
-    }
-
-    public void setLayerParamLR(String variable) {
-        double l1 = layer.getL1ByParam(variable);
-        if (Double.isNaN(l1))
-            l1 = 0.0; //Not set
-        double l2 = layer.getL2ByParam(variable);
-        if (Double.isNaN(l2))
-            l2 = 0.0; //Not set
-        l1ByParam.put(variable, l1);
-        l2ByParam.put(variable, l2);
-    }
-
-    public double getL1ByParam(String variable) {
-        return l1ByParam.get(variable);
-    }
-
-    public double getL2ByParam(String variable) {
-        return l2ByParam.get(variable);
     }
 
     public void setPretrain(boolean pretrain){
@@ -312,28 +278,28 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         /** Helper class for setting input types */
         public class InputTypeBuilder {
             /**
-             * See {@link InputType#convolutional(int, int, int)}
+             * See {@link InputType#convolutional(long, long, long)}
              */
             public ListBuilder convolutional(int height, int width, int depth){
                 return ListBuilder.this.setInputType(InputType.convolutional(height, width, depth));
             }
 
             /**
-             * * See {@link InputType#convolutionalFlat(int, int, int)}
+             * * See {@link InputType#convolutionalFlat(long, long, long)}
              */
             public ListBuilder convolutionalFlat(int height, int width, int depth){
                 return ListBuilder.this.setInputType(InputType.convolutionalFlat(height, width, depth));
             }
 
             /**
-             * See {@link InputType#feedForward(int)}
+             * See {@link InputType#feedForward(long)}
              */
             public ListBuilder feedForward(int size){
                 return ListBuilder.this.setInputType(InputType.feedForward(size));
             }
 
             /**
-             * See {@link InputType#recurrent(int)}}
+             * See {@link InputType#recurrent(long)}}
              */
             public ListBuilder recurrent(int size){
                 return ListBuilder.this.setInputType(InputType.recurrent(size));

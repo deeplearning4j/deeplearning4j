@@ -209,7 +209,7 @@ public class TestPreProcessedData extends BaseSparkTest {
         DataSetIterator iter = new IrisDataSetIterator(1, 150);
         while (iter.hasNext()) {
             DataSet ds = iter.next();
-            list.add(toString(ds.getFeatureMatrix(), Nd4j.argMax(ds.getLabels(), 1).getInt(0)));
+            list.add(toString(ds.getFeatures(), Nd4j.argMax(ds.getLabels(), 1).getInt(0)));
         }
 
         JavaRDD<String> rdd = sc.parallelize(list);
@@ -295,7 +295,7 @@ public class TestPreProcessedData extends BaseSparkTest {
         DataSetIterator iter = new IrisDataSetIterator(1, 150);
         while (iter.hasNext()) {
             DataSet ds = iter.next();
-            list.add(toString(ds.getFeatureMatrix(), Nd4j.argMax(ds.getLabels(), 1).getInt(0)));
+            list.add(toString(ds.getFeatures(), Nd4j.argMax(ds.getLabels(), 1).getInt(0)));
         }
 
         JavaRDD<String> rdd = sc.parallelize(list);

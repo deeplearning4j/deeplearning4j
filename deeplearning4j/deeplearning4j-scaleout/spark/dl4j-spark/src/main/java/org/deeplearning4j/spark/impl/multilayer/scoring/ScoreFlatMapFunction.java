@@ -81,7 +81,7 @@ class ScoreFlatMapFunctionAdapter implements FlatMapFunctionAdapter<Iterator<Dat
             double score = network.score(ds, false);
 
             // FIXME: int cast
-            val numExamples = (int) ds.getFeatureMatrix().size(0);
+            val numExamples = (int) ds.getFeatures().size(0);
             out.add(new Tuple2<>(numExamples, score * numExamples));
         }
 

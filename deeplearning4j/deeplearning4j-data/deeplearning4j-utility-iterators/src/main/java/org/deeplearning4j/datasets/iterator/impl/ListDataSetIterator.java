@@ -72,7 +72,7 @@ public class ListDataSetIterator<T extends DataSet> implements DataSetIterator {
 
     @Override
     public int inputColumns() {
-        return list.get(0).getFeatureMatrix().columns();
+        return list.get(0).getFeatures().columns();
     }
 
     @Override

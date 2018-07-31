@@ -207,7 +207,7 @@ public class EvaluativeListener extends BaseTrainingListener {
                 ((MultiLayerNetwork) model).doEvaluation(dsIterator, evaluations);
             } else if (ds != null) {
                 for (IEvaluation evaluation : evaluations)
-                    evaluation.eval(ds.getLabels(), ((MultiLayerNetwork) model).output(ds.getFeatureMatrix()));
+                    evaluation.eval(ds.getLabels(), ((MultiLayerNetwork) model).output(ds.getFeatures()));
             }
         } else if (model instanceof ComputationGraph) {
             if (dsIterator != null) {
@@ -217,7 +217,7 @@ public class EvaluativeListener extends BaseTrainingListener {
             } else if (ds != null) {
                 for (IEvaluation evaluation : evaluations)
                     evalAtIndex(evaluation, new INDArray[] {ds.getLabels()},
-                                    ((ComputationGraph) model).output(ds.getFeatureMatrix()), 0);
+                                    ((ComputationGraph) model).output(ds.getFeatures()), 0);
             } else if (mds != null) {
                 for (IEvaluation evaluation : evaluations)
                     evalAtIndex(evaluation, mds.getLabels(), ((ComputationGraph) model).output(mds.getFeatures()), 0);

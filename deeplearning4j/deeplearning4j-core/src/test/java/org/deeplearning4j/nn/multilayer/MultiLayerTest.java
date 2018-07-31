@@ -183,7 +183,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         DataSet next = iter.next();
         next.normalizeZeroMeanZeroUnitVariance();
         SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
-        network.setInput(trainTest.getTrain().getFeatureMatrix());
+        network.setInput(trainTest.getTrain().getFeatures());
         network.setLabels(trainTest.getTrain().getLabels());
         network.init();
         for( int i=0; i<5; i++ ) {
@@ -192,7 +192,7 @@ public class MultiLayerTest extends BaseDL4JTest {
 
         DataSet test = trainTest.getTest();
         Evaluation eval = new Evaluation();
-        INDArray output = network.output(test.getFeatureMatrix());
+        INDArray output = network.output(test.getFeatures());
         eval.eval(test.getLabels(), output);
         log.info("Score " + eval.stats());
     }
@@ -211,13 +211,13 @@ public class MultiLayerTest extends BaseDL4JTest {
         DataSet x2 = all.asList().get(0);
 
         //x1 and x2 contain identical data
-        assertArrayEquals(asFloat(x1.getFeatureMatrix()), asFloat(x2.getFeatureMatrix()), 0.0f);
+        assertArrayEquals(asFloat(x1.getFeatures()), asFloat(x2.getFeatures()), 0.0f);
         assertArrayEquals(asFloat(x1.getLabels()), asFloat(x2.getLabels()), 0.0f);
         assertEquals(x1, x2);
 
         //Set inputs/outputs so gradient can be calculated:
-        net1.feedForward(x1.getFeatureMatrix());
-        net2.feedForward(x2.getFeatureMatrix());
+        net1.feedForward(x1.getFeatures());
+        net2.feedForward(x2.getFeatures());
         ((BaseOutputLayer) net1.getLayer(1)).setLabels(x1.getLabels());
         ((BaseOutputLayer) net2.getLayer(1)).setLabels(x2.getLabels());
 
@@ -629,7 +629,7 @@ public class MultiLayerTest extends BaseDL4JTest {
 
         fullData.reset();
         DataSet expectedSet = fullData.next(2);
-        INDArray expectedOut = net.output(expectedSet.getFeatureMatrix(), false);
+        INDArray expectedOut = net.output(expectedSet.getFeatures(), false);
 
         fullData.reset();
 
