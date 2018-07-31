@@ -161,7 +161,8 @@ public class Nd4j {
     public static Nd4jBackend backend;
     public static RandomFactory randomFactory;
     private static MemoryWorkspaceManager workspaceManager;
-    private static AtomicInteger numThreads = new AtomicInteger(-1);
+    private static final AtomicInteger numThreads = new AtomicInteger(-1);
+    private static final AtomicBoolean skipTheadSafetyChecks = new AtomicBoolean(false);
 
     protected static Class<? extends MemoryWorkspaceManager> workspaceManagerClazz;
     protected static Class<? extends BlasWrapper> blasWrapperClazz;
@@ -7614,5 +7615,13 @@ public class Nd4j {
      */
     public static void setNumThreads(int numthreads) {
         numThreads.set(numthreads);
+    }
+
+    public static void skipThreadSafetyChecks(boolean reallySkip) {
+        skipTheadSafetyChecks.set(reallySkip);
+    }
+
+    public static boolean areThreadSafetyChecksSkipped() {
+        return skipTheadSafetyChecks.get();
     }
 }

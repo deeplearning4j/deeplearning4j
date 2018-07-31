@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.exception.ND4JIllegalAccessException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -125,7 +126,7 @@ public class ThreadSafetyTests {
         assertFalse(e.get());
     }
 
-    @Test(expected = ND4JIllegalStateException.class, timeout = 5000L)
+    @Test(timeout = 5000L)
     public void testConcurrentAccess_1() throws Exception {
         val e = new AtomicBoolean(false);
         final val model = new MultiLayerNetwork(mlnConf);
@@ -137,7 +138,7 @@ public class ThreadSafetyTests {
                 try {
                     val array = Nd4j.create(10, 10);
                     model.output(array);
-                } catch (ND4JIllegalStateException e1) {
+                } catch (ND4JIllegalAccessException e1) {
                     e.set(true);
                 }
             }
@@ -149,7 +150,46 @@ public class ThreadSafetyTests {
                 try {
                     val array = Nd4j.create(10, 10);
                     model.output(array);
-                } catch (ND4JIllegalStateException e1) {
+                } catch (ND4JIllegalAccessException e1) {
+                    e.set(true);
+                }
+            }
+        });
+
+        t1.start();
+        t2.start();
+
+        t1.join();
+        t2.join();
+
+        assertTrue(e.get());
+    }
+
+    @Test(timeout = 5000L)
+    public void testConcurrentAccess_2() throws Exception {
+        val e = new AtomicBoolean(false);
+        final val model = new ComputationGraph(cgConf);
+        model.init();
+
+        val t1 = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    val array = Nd4j.create(10, 10);
+                    model.output(array);
+                } catch (ND4JIllegalAccessException e1) {
+                    e.set(true);
+                }
+            }
+        });
+
+        val t2 = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    val array = Nd4j.create(10, 10);
+                    model.output(array);
+                } catch (ND4JIllegalAccessException e1) {
                     e.set(true);
                 }
             }
