@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
+import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.util.AllocUtil;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -55,18 +56,17 @@ import org.nd4j.linalg.util.ArrayUtil;
 public abstract class BaseDataBuffer implements DataBuffer {
 
     /**
-     * To specify the maximum number of elements to print when using DataBuffer.toString().
-     * Use -1 to print all elements (i.e., no limit)
+     * @deprecated Use {@link ND4JSystemProperties#DATABUFFER_TO_STRING_MAX_ELEMENTS}
      */
-    public static String TO_STRING_MAX_ELEMENTS = "org.nd4j.databuffer.tostring.maxelements";
+    public static String TO_STRING_MAX_ELEMENTS = ND4JSystemProperties.DATABUFFER_TO_STRING_MAX_ELEMENTS;
     private static int TO_STRING_MAX;
     static {
-        String s = System.getProperty(TO_STRING_MAX_ELEMENTS);
+        String s = System.getProperty(ND4JSystemProperties.DATABUFFER_TO_STRING_MAX_ELEMENTS);
         if(s != null ){
             try {
                 TO_STRING_MAX = Integer.parseInt(s);
             } catch (NumberFormatException e){
-                log.warn("Invalid value for key {}: \"{}\"", TO_STRING_MAX_ELEMENTS, s);
+                log.warn("Invalid value for key {}: \"{}\"", ND4JSystemProperties.DATABUFFER_TO_STRING_MAX_ELEMENTS, s);
                 TO_STRING_MAX = 1000;
             }
         } else {
