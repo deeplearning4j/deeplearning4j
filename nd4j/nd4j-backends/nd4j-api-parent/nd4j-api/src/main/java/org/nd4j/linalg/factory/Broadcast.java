@@ -258,15 +258,27 @@ public class Broadcast {
         long[] sx = x.shape();
         long[] sy = y.shape();
         //Possibility 1: equal ranks - dimensions must match
-        if(sx.length == sy.length){
-            for(int d : dimensions){
-                Preconditions.checkState(sx[d] == sy[d], "Dimensions mismatch on dimension %s: x shape %s, y shape %s", d, sx, sy);
+        if(dimensions.length == 1 && sy.length == 2 && (sy[0] == 1 || sy[1] == 1)) {
+            //Edge case: x=[a,b,c], y=[1,b], dim=1 etc
+            int d2 = dimensions[0] < 0 ? dimensions[0] + sx.length : dimensions[0]; //Handle negative dimensions
+            if (sy[0] == 1) {
+                Preconditions.checkState(sx[d2] == sy[1], "Shapes do not match: dimensions[0] - x[%s] must match y[%s], x shape %s, y shape %s, dimensions %s",
+                        dimensions[0], 1, sx, sy, dimensions);
+            } else {
+                Preconditions.checkState(sx[d2] == sy[0], "Shapes do not match: dimensions[0] - x[%s] must match y[%s], x shape %s, y shape %s, dimensions %s",
+                        dimensions[0], 0, sx, sy, dimensions);
             }
-        } else if(dimensions.length == sy.length){
+        } else if(sx.length == sy.length){
+            for(int d : dimensions){
+                int d2 = d < 0 ? d + sx.length : d; //Handle negative dimensions
+                Preconditions.checkState(sx[d2] == sy[d2], "Dimensions mismatch on dimension %s: x shape %s, y shape %s", d, sx, sy);
+            }
+        } else if(dimensions.length == sy.length) {
             //Possibility 2: different ranks - for example, mul([a,b,c],[a,c], [0,2]) - dimensions refer to x
-            for(int i=0; i<dimensions.length; i++ ){
-                Preconditions.checkState(sx[dimensions[i]] == sy[i], "Shapes do not match: dimensions[%s] - x[%s] must match y[%s], x shape %s, y shape %s, dimensions %s",
-                        i, dimensions[i], i, sx, sy, dimensions);
+            for (int i = 0; i < dimensions.length; i++) {
+                int d2 = dimensions[i] < 0 ? dimensions[i] + sx.length : dimensions[i]; //Handle negative dimensions
+                Preconditions.checkState(sx[d2] == sy[i], "Shapes do not match: dimensions[%s] - x[%s] must match y[%s], x shape %s, y shape %s, dimensions %s",
+                        i, d2, i, sx, sy, dimensions);
             }
         } else {
             throw new IllegalStateException("Invalid broadcast dimensions: x shape " + Arrays.toString(sx) + ", y shape " + Arrays.toString(sy)
