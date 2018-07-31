@@ -24,6 +24,7 @@ import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.api.storage.StatsStorageListener;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -70,7 +71,11 @@ import static play.mvc.Results.redirect;
 public class TrainModule implements UIModule {
     public static final double NAN_REPLACEMENT_VALUE = 0.0; //UI front-end chokes on NaN in JSON
     public static final int DEFAULT_MAX_CHART_POINTS = 512;
-    public static final String CHART_MAX_POINTS_PROPERTY = "org.deeplearning4j.ui.maxChartPoints";
+    /**
+     * @deprecated Use {@link DL4JSystemProperties#CHART_MAX_POINTS_PROPERTY}
+     */
+    @Deprecated
+    public static final String CHART_MAX_POINTS_PROPERTY = DL4JSystemProperties.CHART_MAX_POINTS_PROPERTY;
     private static final DecimalFormat df2 = new DecimalFormat("#.00");
     private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 

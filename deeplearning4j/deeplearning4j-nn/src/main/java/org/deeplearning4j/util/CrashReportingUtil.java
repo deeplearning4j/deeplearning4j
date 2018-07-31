@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.bytedeco.javacpp.Pointer;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.BackpropType;
@@ -68,30 +69,18 @@ import static org.deeplearning4j.nn.conf.inputs.InputType.inferInputTypes;
 @Slf4j
 public class CrashReportingUtil {
 
-    /**
-     * System property that can be used to enable or disable memory crash reporting. Memory crash reporting is
-     * enabled by default.
-     */
-    public static final String CRASH_DUMP_ENABLED_PROPERTY = "org.deeplearning4j.crash.reporting.enabled";
-
-    /**
-     * System property that can be use to customize the output directory for memory crash reporting. By default,
-     * the current working directory will be used
-     */
-    public static final String CRASH_DUMP_OUTPUT_DIRECTORY_PROPERTY = "org.deeplearning4j.crash.reporting.directory";
-
     @Getter
     private static boolean crashDumpsEnabled = true;
     @Getter
     private static File crashDumpRootDirectory;
 
     static {
-        String s = System.getProperty(CRASH_DUMP_ENABLED_PROPERTY);
+        String s = System.getProperty(DL4JSystemProperties.CRASH_DUMP_ENABLED_PROPERTY);
         if(s != null && !s.isEmpty()){
             crashDumpsEnabled = Boolean.parseBoolean(s);
         }
 
-        s = System.getProperty(CRASH_DUMP_OUTPUT_DIRECTORY_PROPERTY);
+        s = System.getProperty(DL4JSystemProperties.CRASH_DUMP_OUTPUT_DIRECTORY_PROPERTY);
         boolean setDir = false;
         if(s != null && !s.isEmpty()){
             try{
