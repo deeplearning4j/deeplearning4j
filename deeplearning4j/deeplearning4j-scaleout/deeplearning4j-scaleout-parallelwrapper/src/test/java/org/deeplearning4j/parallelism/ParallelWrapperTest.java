@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.parallelism;
 
+import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -38,6 +39,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.junit.Assert.assertTrue;
+
 
 /**
  * Created by agibsonccc on 11/12/16.
@@ -53,12 +56,12 @@ public class ParallelWrapperTest {
 
         // for GPU you usually want to have higher batchSize
         int batchSize = 128;
-        int nEpochs = 10;
+        int nEpochs = 2;
         int seed = 123;
 
         log.info("Load data....");
-        DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize, true, 12345);
-        DataSetIterator mnistTest = new MnistDataSetIterator(batchSize, false, 12345);
+        DataSetIterator mnistTrain = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(batchSize, true, 12345), 100);
+        DataSetIterator mnistTest = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(batchSize, false, 12345), 10);
 
         log.info("Build model....");
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
@@ -119,22 +122,15 @@ public class ParallelWrapperTest {
             log.info("*** Completed epoch {}, time: {} ***", i, (time2 - time1));
         }
         long timeY = System.currentTimeMillis();
-
         log.info("*** Training complete, time: {} ***", (timeY - timeX));
 
-        log.info("Evaluate model....");
-        Evaluation eval = new Evaluation(outputNum);
-        while (mnistTest.hasNext()) {
-            DataSet ds = mnistTest.next();
-            INDArray output = model.output(ds.getFeatureMatrix(), false);
-            eval.eval(ds.getLabels(), output);
-        }
+        Evaluation eval = model.evaluate(mnistTest);
         log.info(eval.stats());
         mnistTest.reset();
 
-        log.info("****************Example finished********************");
+        double acc = eval.accuracy();
+        assertTrue(String.valueOf(acc), acc > 0.5);
+
         wrapper.shutdown();
     }
-
-
 }

@@ -58,17 +58,58 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        CUSTOM_OP_IMPL(cumprod_bp, 2, -1, false, 0, 2) {
+        CUSTOM_OP_IMPL(cumprod_bp, 2, 1, false, 0, 2) {
             auto input = INPUT_VARIABLE(0);
-            auto epsilon = INPUT_VARIABLE(1);
+            auto axis = block.width() == 3 ? INPUT_VARIABLE(1) : nullptr;
+            auto gradOut = block.width() == 3 ? INPUT_VARIABLE(2) : INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
-
+    
             const bool exclusive = INT_ARG(0) == 1;
             const bool reverse = INT_ARG(1) == 1;
-//            output->assign(epsilon);
-            input->template applyPairwiseTransform<simdOps::Multiply<T>>(epsilon, output, nullptr);
-            output->putScalar(0, epsilon->getScalar(0));
-            // 
+    
+            std::vector<int> dims;
+    
+            if (block.width() > 2) {
+                dims = axis->template asVectorT<int>();
+                OUTPUT_VARIABLE(1)->assign(static_cast<T>(1.0f));
+            } else if (int newSize = (block.numI() - 2)) {
+                dims.resize(newSize);
+    
+                for (int e = 0; e < newSize; e++)
+                    dims[e] = INT_ARG(e + 2);
+            }
+
+            nd4j::ops::helpers::_prefix<T, simdOps::Multiply<T>>(input, output, dims, exclusive, reverse);
+            std::unique_ptr<NDArray<T>> val(output->dup());
+ 
+            gradOut->template applyPairwiseTransform<simdOps::Multiply<T>>(output, val.get(), nullptr);
+            val->template applyPairwiseTransform<simdOps::Divide<T>>(input, val.get(), nullptr);
+            if (!exclusive && !reverse) {
+                if (dims.size())
+                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val.get(), output, dims, true, false);
+                else
+                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val->buffer(), output->shapeInfo(), output->buffer(), output->shapeInfo(), false, true);
+    
+            }
+            else if (!exclusive && reverse){
+                if (dims.size())
+                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val.get(), output, dims, false, false);
+                else
+                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val->buffer(), output->shapeInfo(), output->buffer(), output->shapeInfo(), false, false);
+            }
+            else if (exclusive && !reverse) {
+                if (dims.size())
+                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val.get(), output, dims, true, true);
+                else
+                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val->buffer(), output->shapeInfo(), output->buffer(), output->shapeInfo(), true, true);
+            }
+            else {
+                if (dims.size())
+                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val.get(), output, dims, true, false);
+                else
+                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val->buffer(), output->shapeInfo(), output->buffer(), output->shapeInfo(), true, false);
+            }
+                
             return ND4J_STATUS_OK;
         }
 

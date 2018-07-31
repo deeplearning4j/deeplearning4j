@@ -73,6 +73,7 @@ import org.nd4j.linalg.compression.BasicNDArrayCompressor;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.convolution.ConvolutionInstance;
 import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
+import org.nd4j.linalg.env.EnvironmentalAction;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.exception.ND4JComplexNumbersNotSupportedException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -95,6 +96,7 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 /**
@@ -155,10 +157,11 @@ public class Nd4j {
     public static boolean resourceManagerOn = false;
     private static boolean allowsOrder = false;
     public static boolean compressDebug = false;
-    public static boolean preventUnpack = System.getenv("ND4J_PREVENT_UNPACK") != null;
+    public static volatile boolean preventUnpack;
     public static Nd4jBackend backend;
     public static RandomFactory randomFactory;
     private static MemoryWorkspaceManager workspaceManager;
+    private static AtomicInteger numThreads = new AtomicInteger(-1);
 
     protected static Class<? extends MemoryWorkspaceManager> workspaceManagerClazz;
     protected static Class<? extends BlasWrapper> blasWrapperClazz;
@@ -7107,6 +7110,25 @@ public class Nd4j {
             if(Boolean.parseBoolean(logInitProperty)) {
                 OP_EXECUTIONER_INSTANCE.printEnvironmentInformation();
             }
+
+            val env = System.getenv();
+            val actions = ServiceLoader.load(EnvironmentalAction.class);
+            val mappedActions = new HashMap<String, EnvironmentalAction>();
+            for (val a: actions) {
+                if (!mappedActions.containsKey(a.targetVariable()))
+                    mappedActions.put(a.targetVariable(), a);
+            }
+
+            for (val e: env.keySet()) {
+                val action = mappedActions.get(e);
+                if (action != null) {
+                    try {
+                        action.process(env.get(e));
+                    } catch (Exception e2) {
+                        logger.info("Failed to process env variable [" + e + "], got exception: " + e2.toString());
+                    }
+                }
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -7571,5 +7593,26 @@ public class Nd4j {
         }
 
         return Nd4j.create(doubles, shapeOf, stridesOf, 0, ordering);
+    }
+
+    /**
+     * This method returns maximal allowed number of threads for Nd4j.
+     * If value wasn't set in advance, max(1, availableProcessor) will be returned
+     * @return
+     */
+    public static int numThreads() {
+        val v = numThreads.get();
+        if (v <= 0)
+            return Math.max(1, Runtime.getRuntime().availableProcessors() / 2);
+        else
+            return v;
+    }
+
+    /**
+     * This method sets maximal allowed number of threads for Nd4j
+     * @param numthreads
+     */
+    public static void setNumThreads(int numthreads) {
+        numThreads.set(numthreads);
     }
 }

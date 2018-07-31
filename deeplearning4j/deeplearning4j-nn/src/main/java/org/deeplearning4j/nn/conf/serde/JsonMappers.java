@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.conf.serde;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -56,13 +57,13 @@ import java.util.List;
 public class JsonMappers {
 
     /**
-     * This system property is provided as an alternative to {@link NeuralNetConfiguration#registerLegacyCustomClassesForJSON(Class[])}.
-     * Classes can be specified in comma-separated format
+     * @deprecated Use {@link DL4JSystemProperties#CUSTOM_REGISTRATION_PROPERTY}
      */
-    public static String CUSTOM_REGISTRATION_PROPERTY = "org.deeplearning4j.config.custom.legacyclasses";
+    @Deprecated
+    public static String CUSTOM_REGISTRATION_PROPERTY = DL4JSystemProperties.CUSTOM_REGISTRATION_PROPERTY;
 
     static {
-        String p = System.getProperty(CUSTOM_REGISTRATION_PROPERTY);
+        String p = System.getProperty(DL4JSystemProperties.CUSTOM_REGISTRATION_PROPERTY);
         if(p != null && !p.isEmpty()){
             String[] split = p.split(",");
             List<Class<?>> list = new ArrayList<>();
@@ -71,7 +72,7 @@ public class JsonMappers {
                     Class<?> c = Class.forName(s);
                     list.add(c);
                 } catch (Throwable t){
-                    log.warn("Error parsing {} system property: class \"{}\" could not be loaded",CUSTOM_REGISTRATION_PROPERTY, s, t);
+                    log.warn("Error parsing {} system property: class \"{}\" could not be loaded",DL4JSystemProperties.CUSTOM_REGISTRATION_PROPERTY, s, t);
                 }
             }
 
@@ -79,7 +80,7 @@ public class JsonMappers {
                 try {
                     NeuralNetConfiguration.registerLegacyCustomClassesForJSONList(list);
                 } catch (Throwable t){
-                    log.warn("Error registering custom classes for legacy JSON deserialization ({} system property)",CUSTOM_REGISTRATION_PROPERTY, t);
+                    log.warn("Error registering custom classes for legacy JSON deserialization ({} system property)",DL4JSystemProperties.CUSTOM_REGISTRATION_PROPERTY, t);
                 }
             }
         }

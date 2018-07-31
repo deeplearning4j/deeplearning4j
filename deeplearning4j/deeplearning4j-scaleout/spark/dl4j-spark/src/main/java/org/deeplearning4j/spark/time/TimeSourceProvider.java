@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.spark.time;
 
+import org.deeplearning4j.config.DL4JSystemProperties;
+
 import java.lang.reflect.Method;
 
 /**
@@ -33,9 +35,10 @@ public class TimeSourceProvider {
     public static final String DEFAULT_TIMESOURCE_CLASS_NAME = NTPTimeSource.class.getName();
 
     /**
-     * Name of the system property to set if the TimeSource type/class is to be customized
+     * @deprecated Use {@link DL4JSystemProperties#TIMESOURCE_CLASSNAME_PROPERTY}
      */
-    public static final String TIMESOURCE_CLASSNAME_PROPERTY = "org.deeplearning4j.spark.time.TimeSource";
+    @Deprecated
+    public static final String TIMESOURCE_CLASSNAME_PROPERTY = DL4JSystemProperties.TIMESOURCE_CLASSNAME_PROPERTY;
 
     private TimeSourceProvider() {}
 
@@ -46,7 +49,7 @@ public class TimeSourceProvider {
      * @return TimeSource
      */
     public static TimeSource getInstance() {
-        String className = System.getProperty(TIMESOURCE_CLASSNAME_PROPERTY, DEFAULT_TIMESOURCE_CLASS_NAME);
+        String className = System.getProperty(DL4JSystemProperties.TIMESOURCE_CLASSNAME_PROPERTY, DEFAULT_TIMESOURCE_CLASS_NAME);
 
         return getInstance(className);
     }
