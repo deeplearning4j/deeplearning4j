@@ -423,7 +423,7 @@ bool ShapeUtils<T>::evalBroadcastShapeInfo(const NDArray<T> &max, const NDArray<
 }
 
 template <typename T>
-bool ShapeUtils<T>::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong*min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, nd4j::memory::Workspace* workspace) {
+bool ShapeUtils<T>::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, nd4j::memory::Workspace* workspace) {
 
     if ((shape::rank(max) == 0 && shape::isScalar(min))) {
         // X is the driver here
@@ -699,44 +699,17 @@ Nd4jLong* ShapeUtils<T>::evalDiagShapeInfo(const Nd4jLong* shapeInfoConst, nd4j:
 }
 
 template<typename T>
-std::vector<int> ShapeUtils<T>::evalBroadcastBackwardAxis(Nd4jLong *operand, Nd4jLong *result) {
-    const int xRank = shape::rank(operand);
-    const int zRank = shape::rank(result);
+std::vector<int> ShapeUtils<T>::evalBroadcastBackwardAxis(const Nd4jLong *operandShapeInfo, const Nd4jLong *resultShapeInfo) {
+    
+    // rRank >= oRank always  !!
+    const int oRank = shape::rank(operandShapeInfo);
+    const int rRank = shape::rank(resultShapeInfo);
+    const int diff  = rRank - oRank;
     std::vector<int> axis;
 
-    auto xShape = shape::shapeOf(operand);
-    auto zShape = shape::shapeOf(result);
-
-    int minRank = nd4j::math::nd4j_min<int>(xRank, zRank);
-    int maxRank = nd4j::math::nd4j_max<int>(xRank, zRank);
-
-    if (xRank == zRank) {
-        for (int e = -1; e >= -minRank; e--) {
-            int o = shape::sizeAt(operand, e);
-            int r = shape::sizeAt(result, e);
-
-            if (o != r)
-                axis.emplace_back(e + maxRank);
-        } 
-    } else if (xRank < zRank) {
-        for (int e = -1; e > -minRank; e--) {
-            int o = shape::sizeAt(operand, e);
-            int r = shape::sizeAt(result, e);
-
-            if (o != r)
-                axis.emplace_back(e + maxRank);
-        } 
-
-        // adding inner dimensions
-        for (int e = 0; e < zRank - xRank; e++) 
-            axis.emplace_back(e);
-    } else {
-        // this isn't possible
-    }
-
-    // FIXME: eventually we'd like to get rid of sort 
-    if (axis.size() > 1)
-        std::sort(axis.begin(), axis.end());
+    for(int i = 0; i < rRank; ++i)
+        if(i < diff || shape::sizeAt(operandShapeInfo, i - diff) != shape::sizeAt(resultShapeInfo, i))
+            axis.push_back(i);        
 
     return axis;
 }

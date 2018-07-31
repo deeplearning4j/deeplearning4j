@@ -21,7 +21,6 @@
 
 #include<ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
-#include<array>
 
 namespace nd4j {
     namespace ops {
