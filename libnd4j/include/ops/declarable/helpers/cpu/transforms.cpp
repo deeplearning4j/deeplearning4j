@@ -845,6 +845,56 @@ template<typename T>
 void concat(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output, const int axis) {
 
     const int numOfArrs = inArrs.size();
+    bool allC = true;
+    bool allScalar = true;
+    bool allVectors = true;
+    
+    Nd4jLong lenOfFirstArr = inArrs[0]->lengthOf();
+
+    //detect whether all arrays are c ordered or not
+    //Also detect whether they are all scalars
+    for(int i = 0; i < numOfArrs; i++) {
+        allC &= (inArrs[i]->ordering() == 'c');
+        allScalar &= (inArrs[i]->isScalar());
+        allVectors &= (inArrs[i]->isRowVector() && inArrs[0]->lengthOf() == lenOfFirstArr);
+    }
+
+    //we are merging all scalars
+    if(allScalar) {
+        for(int i = 0; i < numOfArrs; i++) 
+                 output.getBuffer()[i] = inArrs[i]->getBuffer()[0];
+        return;
+    }
+
+    if(allC && axis == 0 && output.ordering() == 'c') {
+        
+        if (numOfArrs >= 8 && allVectors) {
+
+#pragma omp parallel for schedule(guided)
+            for (int r = 0; r < numOfArrs; r++) {
+
+                T *z = output.getBuffer() + (r * lenOfFirstArr);
+                T *x = inArrs[r]->getBuffer();
+
+#pragma omp simd
+                for (Nd4jLong e = 0; e < lenOfFirstArr; e++)
+                    z[e] = x[e];
+            }
+        } 
+        else {
+            int currBuffer = 0;
+            int currBufferOffset = 0;
+            for (int i = 0; i < output.lengthOf(); i++) {
+                output.getBuffer()[i] = inArrs[currBuffer]->getBuffer()[currBufferOffset++];
+                if (currBufferOffset >= inArrs[currBuffer]->lengthOf()) {
+                    currBuffer++;
+                    currBufferOffset = 0;
+                }
+            }
+        }
+        return;
+    }
+    
     const int rank  = inArrs[0]->rankOf();
     const int rank2 = 2*rank;
     Nd4jLong* indices = new Nd4jLong[2 * rank * numOfArrs];
