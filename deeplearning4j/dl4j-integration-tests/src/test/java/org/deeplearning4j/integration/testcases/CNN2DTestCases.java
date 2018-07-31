@@ -176,7 +176,7 @@ public class CNN2DTestCases {
                 testTrainingCurves = true;
                 testGradients = false;              //Skip - requires saving approx 1GB of data (gradients x2)
                 testParamsPostTraining = false;     //Skip - requires saving all params (approx 500mb)
-                testEvaluation = true;
+                testEvaluation = false;
                 testOverfitting = false;
             }
 
@@ -232,24 +232,7 @@ public class CNN2DTestCases {
                 DataSetIterator iter = new TinyImageNetDataSetIterator(4, new int[]{224, 224}, DataSetType.TRAIN, null, 12345);
                 iter.setPreProcessor(new VGG16ImagePreProcessor());
 
-                iter = new EarlyTerminationDataSetIterator(iter, 6);
-                return new MultiDataSetIteratorAdapter(iter);
-            }
-
-            @Override
-            public IEvaluation[] getNewEvaluations() {
-                return new IEvaluation[]{
-                        new Evaluation(),
-                        new ROCMultiClass(),
-                        new EvaluationCalibration()
-                };
-            }
-
-            @Override
-            public MultiDataSetIterator getEvaluationTestData() throws Exception {
-                DataSetIterator iter = new TinyImageNetDataSetIterator(4, new int[]{224, 224}, DataSetType.TEST, null, 12345);
-                iter.setPreProcessor(new VGG16ImagePreProcessor());
-                iter = new EarlyTerminationDataSetIterator(iter, 6);
+                iter = new EarlyTerminationDataSetIterator(iter, 2);
                 return new MultiDataSetIteratorAdapter(iter);
             }
         };

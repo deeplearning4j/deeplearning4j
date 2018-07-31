@@ -327,7 +327,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     protected static abstract class BaseConvBuilder<T extends BaseConvBuilder<T>> extends FeedForwardLayer.Builder<T> {
         protected int convolutionDim = 2; // 2D convolution by default
         protected boolean hasBias = true;
-        protected ConvolutionMode convolutionMode = null;
+        protected ConvolutionMode convolutionMode = ConvolutionMode.Same;
         protected int[] dilation = new int[]{1, 1};
         public int[] kernelSize = new int[] {5, 5};
         protected int[] stride = new int[] {1, 1};
