@@ -903,7 +903,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param clearInputs       Whether the layer inputs should be cleared
      * @return List of activations (including the input), detached from any workspace
      */
-    protected List<INDArray> ffToLayerActivationsDetached(boolean train, @NonNull FwdPassType fwdPassType,
+    protected synchronized List<INDArray> ffToLayerActivationsDetached(boolean train, @NonNull FwdPassType fwdPassType,
                                                           boolean storeLastForTBPTT, int layerIndex, @NonNull INDArray input,
                                                           INDArray fMask, INDArray lMask, boolean clearInputs){
         setInput(input);
@@ -991,7 +991,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param lMask             Label mask aray. May be null.
      * @return
      */
-    protected List<INDArray> ffToLayerActivationsInWs(int layerIndex, @NonNull FwdPassType fwdPassType, boolean storeLastForTBPTT,
+    protected synchronized List<INDArray> ffToLayerActivationsInWs(int layerIndex, @NonNull FwdPassType fwdPassType, boolean storeLastForTBPTT,
                                                       @NonNull INDArray input, INDArray fMask, INDArray lMask){
         setInput(input);
         setLayerMaskArrays(fMask, lMask);

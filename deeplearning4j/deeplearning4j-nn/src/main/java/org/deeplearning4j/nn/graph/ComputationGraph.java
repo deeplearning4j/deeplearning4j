@@ -1843,7 +1843,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param clearLayers       Whether the layer inputs should be cleared
      * @return Map of activations (including the input), detached from any workspace
      */
-    protected Map<String,INDArray> ffToLayerActivationsDetached(boolean train, @NonNull FwdPassType fwdPassType, boolean storeLastForTBPTT,
+    protected synchronized Map<String,INDArray> ffToLayerActivationsDetached(boolean train, @NonNull FwdPassType fwdPassType, boolean storeLastForTBPTT,
                                                                 int layerIndex, int[] excludeIdxs, @NonNull INDArray[] features,
                                                                 INDArray[] fMask, INDArray[] lMask, boolean clearLayers){
         if(layerIndex < 0 || layerIndex >= topologicalOrder.length){
@@ -1983,7 +1983,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Map of activations (including the input), in workspace WS_ALL_LAYERS_ACT if workspaces are used (detached
      * otherwise)
      */
-    protected Map<String,INDArray> ffToLayerActivationsInWS(boolean train, int layerIndex, int[] excludeIdxs,
+    protected synchronized Map<String,INDArray> ffToLayerActivationsInWS(boolean train, int layerIndex, int[] excludeIdxs,
                                                             FwdPassType fwdPassType, boolean storeLastForTBPTT,
                                                             INDArray[] input, INDArray[] fMask, INDArray[] lMask, boolean clearInputs) {
         if(layerIndex != -1 && (layerIndex < 0 || layerIndex >= topologicalOrder.length)){
