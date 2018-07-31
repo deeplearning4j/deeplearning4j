@@ -866,9 +866,9 @@ void concat(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output, const in
         return;
     }
 
-    if(allC && axis == 0 && output.ordering() == 'c') {
+    if(allC && axis == 0 && allVectors && output.ordering() == 'c') {
         
-        if (numOfArrs >= 8 && allVectors) {
+        if (numOfArrs >= 8) {
 
 #pragma omp parallel for schedule(guided)
             for (int r = 0; r < numOfArrs; r++) {
