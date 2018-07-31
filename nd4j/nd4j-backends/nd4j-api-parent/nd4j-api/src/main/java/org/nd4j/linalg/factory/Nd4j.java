@@ -33,6 +33,7 @@ import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -7178,7 +7179,7 @@ public class Nd4j {
     }
 
     private boolean isFallback() {
-        String fallback = System.getenv("ND4J_FALLBACK");
+        String fallback = System.getenv(ND4JEnvironmentVars.ND4J_FALLBACK);
         if (fallback == null) {
             return false;
         }

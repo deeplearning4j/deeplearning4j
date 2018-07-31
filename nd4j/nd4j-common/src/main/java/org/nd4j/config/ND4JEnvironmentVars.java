@@ -67,4 +67,70 @@ public class ND4JEnvironmentVars {
      * will usually still take effect for native BLAS libraries (MKL, OpenBLAS) even if this property is set
      */
     public static final String ND4J_SKIP_BLAS_THREADS = "ND4J_SKIP_BLAS_THREADS";
+
+
+    /**
+     * Applicability: nd4j-native backend<br>
+     * Description: Whether build-in BLAS matrix multiplication (GEMM) should be used instead of the native BLAS
+     * library such as MKL or OpenBLAS. This can have a noticable performance impact for these ops.
+     * Note that this is typically only useful as a workaround (or test) for bugs in these underlying native libraries,
+     * which are rare (but do occasionally occur on some platforms)
+     */
+    public static final String ND4J_FALLBACK = "ND4J_FALLBACK";
+
+
+    /**
+     * Applicability: nd4j-parameter-server<br>
+     * Usage: A fallback for determining the local IP the parameter server, if other approaches fail to determine the
+     * local IP
+     */
+    public static final String DL4J_VOID_IP = "DL4J_VOID_IP";
+
+    /**
+     * Applicability: nd4j-cuda-xx<br>
+     * Description:
+     */
+    public static final String ND4J_CUDA_MAX_BLOCK_SIZE = "ND4J_CUDA_MAX_BLOCK_SIZE";
+
+    /**
+     * Applicability: nd4j-cuda-xx<br>
+     * Description:
+     */
+    public static final String ND4J_CUDA_MIN_BLOCK_SIZE = "ND4J_CUDA_MIN_BLOCK_SIZE";
+
+    /**
+     * Applicability: nd4j-cuda-xx<br>
+     * Description:
+     */
+    public static final String ND4J_CUDA_MAX_GRID_SIZE = "ND4J_CUDA_MAX_GRID_SIZE";
+
+    /**
+     * Applicability: nd4j-cuda-xx used on multi-GPU systems<br>
+     * Description: If set, only a single GPU will be used by ND4J, even if multiple GPUs are available in the system
+     */
+    public static final String ND4J_CUDA_FORCE_SINGLE_GPU = "ND4J_CUDA_FORCE_SINGLE_GPU";
+
+    /**
+     * Applicability: nd4j-cuda-xx<br>
+     * Description:
+     */
+    public static final String ND4J_CUDA_USE_PREALLOCATION = "ND4J_CUDA_USE_PREALLOCATION";
+
+    /**
+     * Applicability: nd4j-cuda-xx<br>
+     * Description:
+     */
+    public static final String ND4J_CUDA_MAX_DEVICE_CACHE = "ND4J_CUDA_MAX_DEVICE_CACHE";
+
+    /**
+     * Applicability: nd4j-cuda-xx<br>
+     * Description:
+     */
+    public static final String ND4J_CUDA_MAX_HOST_CACHE = "ND4J_CUDA_MAX_HOST_CACHE";
+
+    /**
+     * Applicability: nd4j-cuda-xx<br>
+     * Description:
+     */
+    public static final String ND4J_CUDA_MAX_DEVICE_ALLOCATION = "ND4J_CUDA_MAX_DEVICE_ALLOCATION";
 }

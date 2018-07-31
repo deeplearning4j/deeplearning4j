@@ -20,6 +20,7 @@ package org.nd4j.nativeblas;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.linalg.api.blas.Blas;
 
 
@@ -35,9 +36,9 @@ public abstract class Nd4jBlas implements Blas {
 
     public Nd4jBlas() {
         int numThreads;
-        String skipper = System.getenv("ND4J_SKIP_BLAS_THREADS");
+        String skipper = System.getenv(ND4JEnvironmentVars.ND4J_SKIP_BLAS_THREADS);
         if (skipper == null || skipper.isEmpty()) {
-            String numThreadsString = System.getenv("OMP_NUM_THREADS");
+            String numThreadsString = System.getenv(ND4JEnvironmentVars.OMP_NUM_THREADS);
             if (numThreadsString != null && !numThreadsString.isEmpty()) {
                 numThreads = Integer.parseInt(numThreadsString);
                 setMaxThreads(numThreads);
