@@ -7112,7 +7112,6 @@ public class Nd4j {
                 OP_EXECUTIONER_INSTANCE.printEnvironmentInformation();
             }
 
-            val env = System.getenv();
             val actions = ServiceLoader.load(EnvironmentalAction.class);
             val mappedActions = new HashMap<String, EnvironmentalAction>();
             for (val a: actions) {
@@ -7120,11 +7119,12 @@ public class Nd4j {
                     mappedActions.put(a.targetVariable(), a);
             }
 
-            for (val e: env.keySet()) {
+            for (val e: mappedActions.keySet()) {
                 val action = mappedActions.get(e);
-                if (action != null) {
+                val value = System.getenv(e);
+                if (value != null) {
                     try {
-                        action.process(env.get(e));
+                        action.process(value);
                     } catch (Exception e2) {
                         logger.info("Failed to process env variable [" + e + "], got exception: " + e2.toString());
                     }
