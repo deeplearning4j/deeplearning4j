@@ -31,6 +31,7 @@ public class NDArrayUnpackAction implements EnvironmentalAction {
     public void process(String value) {
         val v = Boolean.valueOf(value).booleanValue();
 
+
         // FIXME: get rid of direct variable access eventually!!1
         Nd4j.preventUnpack = v;
     }
