@@ -639,7 +639,7 @@ TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
     bool ret = true;
     for (int e = 0; e < ress->at(0)->lengthOf(); e++) {
         if (ress->at(0)->getScalar(e) == 0.f)
-            if (ressX->at(0)->getScalar(e) == ress->at(0)->getScalar(e)) {
+            if (ressX->at(0)->getScalar(e) != ress->at(0)->getScalar(e)) {
                 ret = false;
                 break;
             }

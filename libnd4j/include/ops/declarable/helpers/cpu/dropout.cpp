@@ -109,8 +109,8 @@ namespace helpers {
 
         if (ND4J_STATUS_OK == res)
         for (Nd4jLong e = 0; e < output->lengthOf(); e++) {
-            if ((*output)(e) == T(0.f)) (*output)(e) = (*gradOut)(e) / probValue;
-            else (*output)(e) = T(0.f);
+            if ((*output)(e) != T(0.f)) (*output)(e) = (*gradOut)(e) / probValue;
+//            else (*output)(e) = T(0.f);
         }
 
         return res;
