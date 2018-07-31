@@ -2064,7 +2064,7 @@ void NDArray<T>::tile(NDArray<T>& target) const {
 
 //////////////////////////////////////////////////////////////////////////
     template<typename T>
-    Nd4jLong NDArray<T>::sizeAt(int dim) const {
+    Nd4jLong NDArray<T>::sizeAt(const int dim) const {
         if (dim >= this->rankOf() || dim < -this->rankOf())
             throw std::runtime_error("Bad size index requested");
 

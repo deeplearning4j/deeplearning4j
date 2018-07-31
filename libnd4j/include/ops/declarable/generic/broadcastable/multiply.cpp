@@ -40,7 +40,8 @@ CUSTOM_OP_IMPL(multiply, 2, 1, true, 0, 0) {
     RELEASE(zShapeInfo, block.getWorkspace());
 
     // z->assign(*x * *y); 
-    auto tZ = BroadcastHelper<T>::template broadcast_apply<simdOps::Multiply<T>>(x, y, z);
+    // auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Multiply<T>>(x, y, z);
+    x->template applyTrueBroadcast<simdOps::Multiply<T>>(y, z, false);
     
     return Status::OK();
 }
@@ -76,7 +77,58 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(dLdz) == ShapeUtils<T>::shapeAsString(dLdzShapeInfo), 0, "MULTIPLY_BP OP: wrong shape of next epsilon array (dLdOut), expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString(dLdzShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(dLdz).c_str());
     RELEASE(dLdzShapeInfo, block.getWorkspace());
 
-    helpers::multiplyBP<T>(*x, *y, *dLdz, *dLdx, *dLdy);
+    const Nd4jLong xLen = x->lengthOf();
+    const Nd4jLong yLen = y->lengthOf();
+    
+    if(xLen == 1 && yLen == 1) {    // both are scalars
+        (*dLdx)(0.) = (*y)(0.) * (*dLdz)(0.);
+        (*dLdy)(0.) = (*x)(0.) * (*dLdz)(0.);
+    }
+    else if(xLen == 1) {            // x is scalar and y is not 
+
+        (*dLdx)(0.) = (*y * *dLdz).template reduceNumber<simdOps::Sum<T>>();     
+        dLdy->assign(*dLdz * (*x)(0.));      
+    }
+    else if(yLen == 1) {            // y is scalar and x is not 
+
+        (*dLdy)(0.) = (*x * *dLdz).template reduceNumber<simdOps::Sum<T>>();
+        dLdx->assign(*dLdz * (*y)(0.));
+    }    
+    else if(x->isSameShape(y)) {
+
+        dLdx->assign(*y * *dLdz);
+        dLdy->assign(*x * *dLdz);
+    }
+    else if (x->isSameShape(dLdz)) {
+        
+        NDArray<T> yTiled = *dLdz;
+        y->tile(yTiled);
+        std::vector<int> axesForY = ShapeUtils<T>::evalBroadcastBackwardAxis(y->getShapeInfo(), dLdz->getShapeInfo());
+        
+        dLdy->assign( (*x * *dLdz).template reduceAlongDims<simdOps::Sum<T>>(axesForY) );
+        dLdx->assign( yTiled * *dLdz );
+    } 
+    else if (y->isSameShape(dLdz)) {
+
+        NDArray<T> xTiled = *dLdz;
+        x->tile(xTiled);
+        std::vector<int> axesForX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->getShapeInfo(), dLdz->getShapeInfo());
+        
+        dLdx->assign( (*y * *dLdz).template reduceAlongDims<simdOps::Sum<T>>(axesForX) );
+        dLdy->assign( xTiled * *dLdz );
+    }
+    else {
+
+        NDArray<T> xTiled = *dLdz;
+        NDArray<T> yTiled = *dLdz;        
+        x->tile(xTiled);
+        y->tile(yTiled);
+        std::vector<int> axesForX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->getShapeInfo(), dLdz->getShapeInfo());
+        std::vector<int> axesForY = ShapeUtils<T>::evalBroadcastBackwardAxis(y->getShapeInfo(), dLdz->getShapeInfo());
+        
+        dLdx->assign( (*y * *dLdz).template reduceAlongDims<simdOps::Sum<T>>(axesForX) );
+        dLdy->assign( (*x * *dLdz).template reduceAlongDims<simdOps::Sum<T>>(axesForY) );      
+    }
 
     return Status::OK();
 }

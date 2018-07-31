@@ -1893,4 +1893,3 @@ TEST_F(DeclarableOpsTests9, multiply_bp_test8) {
 
     ASSERT_TRUE(isGradCorrect);
 }
-

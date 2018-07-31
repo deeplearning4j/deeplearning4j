@@ -27,7 +27,7 @@ namespace nd4j {
             NDArray<T> *y = INPUT_VARIABLE(1);
             NDArray<T> *z = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper<T>::template broadcast_apply<simdOps::GreaterThanOrEqual<T>>(x, y, z);
+            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::GreaterThanOrEqual<T>>(x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z) {

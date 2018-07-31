@@ -32,7 +32,7 @@ namespace nd4j {
             NDArray<T> *z = this->getZ(block);
 
 
-            auto tZ = BroadcastHelper<T>::template broadcast_apply<simdOps::Divide<T>>(x, y, z);
+            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Divide<T>>(x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z) {
