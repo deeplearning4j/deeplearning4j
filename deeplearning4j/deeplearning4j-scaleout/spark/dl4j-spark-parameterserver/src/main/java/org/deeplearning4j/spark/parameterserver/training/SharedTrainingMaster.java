@@ -32,6 +32,7 @@ import org.deeplearning4j.api.loader.impl.SerializedMultiDataSetLoader;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.StorageMetaData;
+import org.deeplearning4j.config.DL4JEnvironmentVars;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.spark.api.*;
@@ -425,7 +426,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         if (voidConfiguration.getControllerAddress() == null)
-            voidConfiguration.setControllerAddress(System.getenv("DL4J_VOID_IP"));
+            voidConfiguration.setControllerAddress(DL4JEnvironmentVars.DL4J_VOID_IP);
 
         if (voidConfiguration.getControllerAddress() == null)
             throw new DL4JInvalidConfigException(
