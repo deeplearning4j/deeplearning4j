@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -45,7 +46,7 @@ public class CudaWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testWorkspaceReuse() {
-        if (!Nd4j.getExecutioner().getClass().getName().toLowerCase().contains("cuda"))
+        if (Nd4j.getExecutioner().type() != OpExecutioner.ExecutionerType.CUDA)
             return;
 
         val workspaceConfig = WorkspaceConfiguration.builder()

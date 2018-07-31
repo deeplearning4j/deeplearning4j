@@ -62,7 +62,7 @@ public class DataSetTest extends BaseNd4jTest {
         while (iter.hasNext()) {
             DataSet next = iter.next();
             count++;
-            assertArrayEquals(new long[] {10, 4}, next.getFeatureMatrix().shape());
+            assertArrayEquals(new long[] {10, 4}, next.getFeatures().shape());
         }
 
         assertFalse(iter.hasNext());
@@ -114,12 +114,12 @@ public class DataSetTest extends BaseNd4jTest {
         assertEquals(train.getTrain().getLabels().length(), 6);
 
         SplitTestAndTrain train2 = data.splitTestAndTrain(6, new Random(1));
-        assertEquals(getFailureMessage(), train.getTrain().getFeatureMatrix(), train2.getTrain().getFeatureMatrix());
+        assertEquals(getFailureMessage(), train.getTrain().getFeatures(), train2.getTrain().getFeatures());
 
         DataSet x0 = new IrisDataSetIterator(150, 150).next();
         SplitTestAndTrain testAndTrain = x0.splitTestAndTrain(10);
-        assertArrayEquals(new long[] {10, 4}, testAndTrain.getTrain().getFeatureMatrix().shape());
-        assertEquals(x0.getFeatureMatrix().getRows(ArrayUtil.range(0, 10)), testAndTrain.getTrain().getFeatureMatrix());
+        assertArrayEquals(new long[] {10, 4}, testAndTrain.getTrain().getFeatures().shape());
+        assertEquals(x0.getFeatures().getRows(ArrayUtil.range(0, 10)), testAndTrain.getTrain().getFeatures());
         assertEquals(x0.getLabels().getRows(ArrayUtil.range(0, 10)), testAndTrain.getTrain().getLabels());
 
 
@@ -140,9 +140,9 @@ public class DataSetTest extends BaseNd4jTest {
         rngHere = new Random(123);
         SplitTestAndTrain testAndTrainRng = x2.splitTestAndTrain(10, rngHere);
 
-        assertArrayEquals(testAndTrainRng.getTrain().getFeatureMatrix().shape(),
-                        testAndTrain.getTrain().getFeatureMatrix().shape());
-        assertEquals(testAndTrainRng.getTrain().getFeatureMatrix(), testAndTrain.getTrain().getFeatureMatrix());
+        assertArrayEquals(testAndTrainRng.getTrain().getFeatures().shape(),
+                        testAndTrain.getTrain().getFeatures().shape());
+        assertEquals(testAndTrainRng.getTrain().getFeatures(), testAndTrain.getTrain().getFeatures());
         assertEquals(testAndTrainRng.getTrain().getLabels(), testAndTrain.getTrain().getLabels());
 
     }
@@ -186,7 +186,7 @@ public class DataSetTest extends BaseNd4jTest {
 
         for (int i = 0; i < numExamples; i++) {
             DataSet exp = list.get(i);
-            INDArray expIn = exp.getFeatureMatrix();
+            INDArray expIn = exp.getFeatures();
             INDArray expL = exp.getLabels();
 
             INDArray fSubset = f.get(interval(i, i + 1), all(), all());
@@ -234,7 +234,7 @@ public class DataSetTest extends BaseNd4jTest {
         //Check each row individually:
         for (int i = 0; i < numExamples; i++) {
             DataSet exp = list.get(i);
-            INDArray expIn = exp.getFeatureMatrix();
+            INDArray expIn = exp.getFeatures();
             INDArray expL = exp.getLabels();
 
             int thisRowOriginalLength = minTSLength + i;
@@ -337,7 +337,7 @@ public class DataSetTest extends BaseNd4jTest {
         //Check each row individually:
         for (int i = 0; i < numExamples; i++) {
             DataSet original = list.get(i);
-            INDArray expIn = original.getFeatureMatrix();
+            INDArray expIn = original.getFeatures();
             INDArray expL = original.getLabels();
             INDArray origMaskF = original.getFeaturesMaskArray();
             INDArray origMaskL = original.getLabelsMaskArray();
@@ -423,7 +423,7 @@ public class DataSetTest extends BaseNd4jTest {
 
         DataSet merged = DataSet.merge(Arrays.asList(ds1, ds2));
 
-        INDArray fMerged = merged.getFeatureMatrix();
+        INDArray fMerged = merged.getFeatures();
         INDArray lMerged = merged.getLabels();
 
         assertArrayEquals(new long[] {nExamples1 + nExamples2, depth, width, height}, fMerged.shape());
@@ -533,7 +533,7 @@ public class DataSetTest extends BaseNd4jTest {
 
             DataSet merged = DataSet.merge(Arrays.asList(ds1, ds2, ds3));
 
-            INDArray fMerged = merged.getFeatureMatrix();
+            INDArray fMerged = merged.getFeatures();
             INDArray lMerged = merged.getLabels();
             INDArray fmMerged = merged.getFeaturesMaskArray();
 
@@ -622,7 +622,7 @@ public class DataSetTest extends BaseNd4jTest {
 
         for (int i = 0; i < numExamples; i++) {
             DataSet exp = list.get(i);
-            INDArray expIn = exp.getFeatureMatrix();
+            INDArray expIn = exp.getFeatures();
             INDArray expL = exp.getLabels();
 
             INDArray fSubset = f.get(interval(i, i + 1), all(), all());
@@ -962,7 +962,7 @@ public class DataSetTest extends BaseNd4jTest {
                             assertEquals(ds, ds2);
 
                             if (labelsSameAsFeatures)
-                                assertTrue(ds2.getFeatureMatrix() == ds2.getLabels()); //Expect same object
+                                assertTrue(ds2.getFeatures() == ds2.getLabels()); //Expect same object
                         }
                     }
                 }
@@ -1006,7 +1006,7 @@ public class DataSetTest extends BaseNd4jTest {
         assertEquals(ds, ds2);
 
         if (labelsSameAsFeatures)
-            assertTrue(ds2.getFeatureMatrix() == ds2.getLabels()); //Expect same object
+            assertTrue(ds2.getFeatures() == ds2.getLabels()); //Expect same object
     }
 
     @Test

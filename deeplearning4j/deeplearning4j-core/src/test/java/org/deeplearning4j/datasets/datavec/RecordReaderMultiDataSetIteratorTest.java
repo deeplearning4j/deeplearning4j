@@ -77,7 +77,7 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
 
         while (rrdsi.hasNext()) {
             DataSet ds = rrdsi.next();
-            INDArray fds = ds.getFeatureMatrix();
+            INDArray fds = ds.getFeatures();
             INDArray lds = ds.getLabels();
 
             MultiDataSet mds = rrmdsi.next();
@@ -127,7 +127,7 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
 
         while (iter.hasNext()) {
             DataSet ds = iter.next();
-            INDArray fds = ds.getFeatureMatrix();
+            INDArray fds = ds.getFeatures();
             INDArray lds = ds.getLabels();
 
             MultiDataSet mds = srrmdsi.next();
@@ -187,7 +187,7 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
 
         while (rrdsi.hasNext()) {
             DataSet ds = rrdsi.next();
-            INDArray fds = ds.getFeatureMatrix();
+            INDArray fds = ds.getFeatures();
             INDArray lds = ds.getLabels();
 
             MultiDataSet mds = rrmdsi.next();
@@ -276,7 +276,7 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
 
         while (iter.hasNext()) {
             DataSet ds = iter.next();
-            INDArray fds = ds.getFeatureMatrix();
+            INDArray fds = ds.getFeatures();
             INDArray lds = ds.getLabels();
 
             MultiDataSet mds = srrmdsi.next();
@@ -451,11 +451,11 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
             assertEquals(1, mdsEnd.getLabelsMaskArrays().length);
 
 
-            assertEquals(dsStart.getFeatureMatrix(), mdsStart.getFeatures(0));
+            assertEquals(dsStart.getFeatures(), mdsStart.getFeatures(0));
             assertEquals(dsStart.getLabels(), mdsStart.getLabels(0));
             assertEquals(dsStart.getLabelsMaskArray(), mdsStart.getLabelsMaskArray(0));
 
-            assertEquals(dsEnd.getFeatureMatrix(), mdsEnd.getFeatures(0));
+            assertEquals(dsEnd.getFeatures(), mdsEnd.getFeatures(0));
             assertEquals(dsEnd.getLabels(), mdsEnd.getLabels(0));
             assertEquals(dsEnd.getLabelsMaskArray(), mdsEnd.getLabelsMaskArray(0));
         }
@@ -569,8 +569,8 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
             DataSet d1 = dsi1.next();
             DataSet d2 = dsi2.next();
 
-            assertEquals(d1.getFeatureMatrix(), mds.getFeatures(0));
-            assertEquals(d2.getFeatureMatrix(), mds.getFeatures(1));
+            assertEquals(d1.getFeatures(), mds.getFeatures(0));
+            assertEquals(d2.getFeatures(), mds.getFeatures(1));
             assertEquals(d1.getLabels(), mds.getLabels(0));
         }
     }
@@ -621,8 +621,8 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
         DataSet d1 = dsi1.next();
         DataSet d2 = dsi2.next();
 
-        assertEquals(d1.getFeatureMatrix(), mds.getFeatures(0));
-        assertEquals(d2.getFeatureMatrix(), mds.getFeatures(1));
+        assertEquals(d1.getFeatures(), mds.getFeatures(0));
+        assertEquals(d2.getFeatures(), mds.getFeatures(1));
         assertEquals(d1.getLabels(), mds.getLabels(0));
 
         //Check label assignment:

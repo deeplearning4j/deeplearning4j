@@ -180,17 +180,17 @@ public class NormalizerTests extends BaseNd4jTest {
             assertEquals(ds, dsCopy2);
 
             //Second: ensure time steps post normalization (and post revert) are 0.0
-            INDArray shouldBe0_1 = ds.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(),
+            INDArray shouldBe0_1 = ds.getFeatures().get(NDArrayIndex.point(1), NDArrayIndex.all(),
                             NDArrayIndex.interval(3, 5));
-            INDArray shouldBe0_2 = dsCopy1.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(),
+            INDArray shouldBe0_2 = dsCopy1.getFeatures().get(NDArrayIndex.point(1), NDArrayIndex.all(),
                             NDArrayIndex.interval(3, 5));
-            INDArray shouldBe0_3 = dsCopy2.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(),
+            INDArray shouldBe0_3 = dsCopy2.getFeatures().get(NDArrayIndex.point(1), NDArrayIndex.all(),
                             NDArrayIndex.interval(3, 5));
 
             INDArray zeros = Nd4j.zeros(shouldBe0_1.shape());
 
             for (int j = 0; j < 2; j++) {
-                System.out.println(ds.getFeatureMatrix().get(NDArrayIndex.point(j), NDArrayIndex.all(),
+                System.out.println(ds.getFeatures().get(NDArrayIndex.point(j), NDArrayIndex.all(),
                                 NDArrayIndex.all()));
                 System.out.println();
             }
@@ -203,11 +203,11 @@ public class NormalizerTests extends BaseNd4jTest {
             norm.revert(ds);
             normFitSubset.revert(dsCopy1);
             normByRow.revert(dsCopy2);
-            shouldBe0_1 = ds.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(),
+            shouldBe0_1 = ds.getFeatures().get(NDArrayIndex.point(1), NDArrayIndex.all(),
                             NDArrayIndex.interval(3, 5));
-            shouldBe0_2 = dsCopy1.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(),
+            shouldBe0_2 = dsCopy1.getFeatures().get(NDArrayIndex.point(1), NDArrayIndex.all(),
                             NDArrayIndex.interval(3, 5));
-            shouldBe0_3 = dsCopy2.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(),
+            shouldBe0_3 = dsCopy2.getFeatures().get(NDArrayIndex.point(1), NDArrayIndex.all(),
                             NDArrayIndex.interval(3, 5));
 
             assertEquals(zeros, shouldBe0_1);

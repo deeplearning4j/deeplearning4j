@@ -140,11 +140,11 @@ public class CachingDataSetIteratorTest extends BaseNd4jTest {
             assertTrue(cachedIt.hasNext());
 
             DataSet cachedDs = cachedIt.next();
-            assertEquals(1000.0, cachedDs.getFeatureMatrix().sumNumber());
+            assertEquals(1000.0, cachedDs.getFeatures().sumNumber());
             assertEquals(0.0, cachedDs.getLabels().sumNumber());
 
             DataSet ds = it.next();
-            assertEquals(0.0, ds.getFeatureMatrix().sumNumber());
+            assertEquals(0.0, ds.getFeatures().sumNumber());
             assertEquals(20.0, ds.getLabels().sumNumber());
         }
 

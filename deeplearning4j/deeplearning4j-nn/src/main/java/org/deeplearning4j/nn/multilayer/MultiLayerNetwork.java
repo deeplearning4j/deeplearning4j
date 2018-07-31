@@ -155,7 +155,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     protected static final String WS_RNN_LOOP_WORKING_MEM = "WS_RNN_LOOP_WORKING_MEM";
 
 
-    protected final WorkspaceConfiguration WS_LAYER_WORKING_MEM_CONFIG;
+    protected WorkspaceConfiguration WS_LAYER_WORKING_MEM_CONFIG;
 
     protected static final WorkspaceConfiguration WS_ALL_LAYERS_ACT_CONFIG = WorkspaceConfiguration.builder()
             .initialSize(0)
@@ -166,7 +166,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             .policyAllocation(AllocationPolicy.OVERALLOCATE)
             .build();
 
-    protected final WorkspaceConfiguration WS_LAYER_ACT_X_CONFIG;
+    protected WorkspaceConfiguration WS_LAYER_ACT_X_CONFIG;
 
     protected static final WorkspaceConfiguration WS_RNN_LOOP_WORKING_MEM_CONFIG = WorkspaceConfiguration.builder()
             .initialSize(0).overallocationLimit(0.05).policyReset(ResetPolicy.BLOCK_LEFT)
@@ -181,24 +181,31 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         //Working memory: should learn over course of: (a) full forward pass, and (b) full backward pass
         //Working memory should be opened once per layer and once per preprocessor, for each of forward and backward passes
         int numWorkingMem = 2 * (layerWiseConfigurations.getConfs().size() + layerWiseConfigurations.getInputPreProcessors().size());
-        WS_LAYER_WORKING_MEM_CONFIG = WorkspaceConfiguration.builder()
+        WS_LAYER_WORKING_MEM_CONFIG = getLayerWorkingMemWSConfig(numWorkingMem);
+        WS_LAYER_ACT_X_CONFIG = getLayerActivationWSConfig(layerWiseConfigurations.getConfs().size());
+    }
+
+    protected static WorkspaceConfiguration getLayerWorkingMemWSConfig(int numWorkingMemCycles){
+        return WorkspaceConfiguration.builder()
                 .initialSize(0)
                 .overallocationLimit(0.02)
                 .policyLearning(LearningPolicy.OVER_TIME)
-                .cyclesBeforeInitialization(numWorkingMem)
+                .cyclesBeforeInitialization(numWorkingMemCycles)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .policySpill(SpillPolicy.REALLOCATE)
                 .policyAllocation(AllocationPolicy.OVERALLOCATE)
                 .build();
+    }
 
+    protected static WorkspaceConfiguration getLayerActivationWSConfig(int numLayers){
         //Activations memory: opened once per layer - for every second layer (preprocessors are within the loop).
         //Technically we could set learning to numLayers / 2, but will set to numLayers for simplicity, and also to
         // account for a backward pass
-        WS_LAYER_ACT_X_CONFIG = WorkspaceConfiguration.builder()
+        return WorkspaceConfiguration.builder()
                 .initialSize(0)
                 .overallocationLimit(0.02)
                 .policyLearning(LearningPolicy.OVER_TIME)
-                .cyclesBeforeInitialization(layerWiseConfigurations.getConfs().size())
+                .cyclesBeforeInitialization(numLayers)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .policySpill(SpillPolicy.REALLOCATE)
                 .policyAllocation(AllocationPolicy.OVERALLOCATE)
@@ -341,7 +348,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
             while (iter.hasNext()) {
                 DataSet next = iter.next();
-                input = next.getFeatureMatrix();
+                input = next.getFeatures();
                 pretrainLayer(layerIdx, input);
             }
         }
@@ -1545,7 +1552,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
                 lastEtlTime.set((time2 - time1));
 
-                if (next.getFeatureMatrix() == null || next.getLabels() == null)
+                if (next.getFeatures() == null || next.getLabels() == null)
                     break;
 
                 // TODO: basically we want to wrap internals of this loop into workspace
@@ -1554,13 +1561,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 boolean hasMaskArrays = next.hasMaskArrays();
 
                 if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-                    doTruncatedBPTT(next.getFeatureMatrix(), next.getLabels(), next.getFeaturesMaskArray(),
+                    doTruncatedBPTT(next.getFeatures(), next.getLabels(), next.getFeaturesMaskArray(),
                             next.getLabelsMaskArray(), workspaceMgr);
                 } else {
                     if (hasMaskArrays)
                         setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
 
-                    setInput(next.getFeatureMatrix());
+                    setInput(next.getFeatures());
                     setLabels(next.getLabels());
 
                     if (solver == null) {
@@ -3206,7 +3213,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         while (iter.hasNext()) {
             DataSet next = iter.next();
 
-            if (next.getFeatureMatrix() == null || next.getLabels() == null)
+            if (next.getFeatures() == null || next.getLabels() == null)
                 continue;
 
 
@@ -3763,6 +3770,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         this.layerWiseConfigurations = mln.layerWiseConfigurations.clone();
         this.init();
         this.flattenedParams.assign(mln.flattenedParams);
+
+        int numWorkingMem = 2 * (layerWiseConfigurations.getConfs().size() + layerWiseConfigurations.getInputPreProcessors().size());
+        WS_LAYER_WORKING_MEM_CONFIG = getLayerWorkingMemWSConfig(numWorkingMem);
+        WS_LAYER_ACT_X_CONFIG = getLayerActivationWSConfig(layerWiseConfigurations.getConfs().size());
 
         if (mln.getUpdater() != null && mln.getUpdater(false).getStateViewArray() != null)
             this.getUpdater(true).getStateViewArray().assign(mln.getUpdater(false).getStateViewArray());

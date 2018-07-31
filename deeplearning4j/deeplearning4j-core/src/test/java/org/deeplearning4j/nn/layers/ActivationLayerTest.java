@@ -113,11 +113,11 @@ public class ActivationLayerTest extends BaseDL4JTest {
 
         // check activations
         network.init();
-        network.setInput(next.getFeatureMatrix());
+        network.setInput(next.getFeatures());
         List<INDArray> activations = network.feedForward(true);
 
         network2.init();
-        network2.setInput(next.getFeatureMatrix());
+        network2.setInput(next.getFeatures());
         List<INDArray> activations2 = network2.feedForward(true);
 
         assertEquals(activations.get(1).reshape(activations2.get(2).shape()), activations2.get(2));
@@ -246,11 +246,11 @@ public class ActivationLayerTest extends BaseDL4JTest {
 
         // check activations
         network.init();
-        network.setInput(next.getFeatureMatrix());
+        network.setInput(next.getFeatures());
         List<INDArray> activations = network.feedForward(true);
 
         network2.init();
-        network2.setInput(next.getFeatureMatrix());
+        network2.setInput(next.getFeatures());
         List<INDArray> activations2 = network2.feedForward(true);
 
         assertEquals(activations.get(1).reshape(activations2.get(2).shape()), activations2.get(2));

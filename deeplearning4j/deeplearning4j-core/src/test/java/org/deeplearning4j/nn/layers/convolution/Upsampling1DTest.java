@@ -115,7 +115,7 @@ public class Upsampling1DTest extends BaseDL4JTest {
         DataSetIterator data = new MnistDataSetIterator(5, 5);
         DataSet mnist = data.next();
         nExamples = mnist.numExamples();
-        INDArray features = mnist.getFeatureMatrix().reshape(nExamples, nChannelsIn, inputLength, inputLength);
+        INDArray features = mnist.getFeatures().reshape(nExamples, nChannelsIn, inputLength, inputLength);
         return features.slice(0, 3);
     }
 

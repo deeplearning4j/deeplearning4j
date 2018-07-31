@@ -144,7 +144,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
         exampleCount += batchSize;
         batchNum++;
 
-        if ((result.getFeatureMatrix() == null || result == new DataSet())
+        if ((result.getFeatures() == null || result == new DataSet())
                         || (maxNumBatches > -1 && batchNum >= maxNumBatches)) {
             overshot = true;
             return last;

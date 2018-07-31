@@ -174,7 +174,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         for (DataSet ds : data) {
             if(ds.isEmpty())
                 continue;
-            featuresToMerge[count] = ds.getFeatureMatrix();
+            featuresToMerge[count] = ds.getFeatures();
             labelsToMerge[count] = ds.getLabels();
 
             if (ds.getFeaturesMaskArray() != null) {
@@ -389,7 +389,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public void apply(Condition condition, Function<Number, Number> function) {
-        BooleanIndexing.applyWhere(getFeatureMatrix(), condition, function);
+        BooleanIndexing.applyWhere(getFeatures(), condition, function);
     }
 
     /**
@@ -500,7 +500,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public void scaleMinAndMax(double min, double max) {
-        FeatureUtil.scaleMinMax(min, max, getFeatureMatrix());
+        FeatureUtil.scaleMinMax(min, max, getFeatures());
     }
 
     /**
@@ -519,7 +519,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public void addFeatureVector(INDArray toAdd) {
-        setFeatures(Nd4j.hstack(getFeatureMatrix(), toAdd));
+        setFeatures(Nd4j.hstack(getFeatures(), toAdd));
     }
 
 
@@ -558,7 +558,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public void binarize(double cutoff) {
-        INDArray linear = getFeatureMatrix().linearView();
+        INDArray linear = getFeatures().linearView();
         for (int i = 0; i < getFeatures().length(); i++) {
             double curr = linear.getDouble(i);
             if (curr > cutoff)
@@ -577,7 +577,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     @Override
     public void normalizeZeroMeanZeroUnitVariance() {
         INDArray columnMeans = getFeatures().mean(0);
-        INDArray columnStds = getFeatureMatrix().std(0);
+        INDArray columnStds = getFeatures().std(0);
 
         setFeatures(getFeatures().subiRowVector(columnMeans));
         columnStds.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
@@ -969,16 +969,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         this.labels = labels;
     }
 
-    /**
-     * Get the feature matrix (inputs for the data)
-     *
-     * @return the feature matrix for the dataset
-     */
-    @Override
-    public INDArray getFeatureMatrix() {
-        return getFeatures();
-    }
-
 
     /**
      * Organizes the dataset to minimize sampling error
@@ -1158,8 +1148,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     @Override
     public int numExamples() {
         // FIXME: int cast
-        if (getFeatureMatrix() != null)
-            return (int) getFeatureMatrix().size(0);
+        if (getFeatures() != null)
+            return (int) getFeatures().size(0);
         else if (getLabels() != null)
             return (int) getLabels().size(0);
         return 0;

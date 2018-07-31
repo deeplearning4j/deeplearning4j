@@ -62,16 +62,111 @@ public class CNN2DTestCases {
     /**
      * Essentially: LeNet MNIST example
      */
-    public static TestCase getLenetMnist(){
+    public static TestCase getLenetMnist() {
+        return new TestCase() {
+            {
+                testName = "LenetMnist";
+                testType = TestType.RANDOM_INIT;
+                testPredictions = true;
+                testTrainingCurves = true;
+                testGradients = true;
+                testParamsPostTraining = true;
+                testEvaluation = true;
+                testOverfitting = false;
+            }
 
-        throw new UnsupportedOperationException("Not yet implemented");
+            public Object getConfiguration() throws Exception {
+                int nChannels = 1; // Number of input channels
+                int outputNum = 10; // The number of possible outcomes
+                int seed = 123;
+
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .seed(seed)
+                        .l2(0.0005)
+                        .weightInit(WeightInit.XAVIER)
+                        .updater(new Nesterovs(0.01, 0.9))
+                        .list()
+                        .layer(0, new ConvolutionLayer.Builder(5, 5)
+                                //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
+                                .nIn(nChannels)
+                                .stride(1, 1)
+                                .nOut(20)
+                                .activation(Activation.IDENTITY)
+                                .build())
+                        .layer(1, new SubsamplingLayer.Builder(PoolingType.MAX)
+                                .kernelSize(2, 2)
+                                .stride(2, 2)
+                                .build())
+                        .layer(2, new ConvolutionLayer.Builder(5, 5)
+                                //Note that nIn need not be specified in later layers
+                                .stride(1, 1)
+                                .nOut(50)
+                                .activation(Activation.IDENTITY)
+                                .build())
+                        .layer(3, new SubsamplingLayer.Builder(PoolingType.MAX)
+                                .kernelSize(2, 2)
+                                .stride(2, 2)
+                                .build())
+                        .layer(4, new DenseLayer.Builder().activation(Activation.RELU)
+                                .nOut(500).build())
+                        .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                                .nOut(outputNum)
+                                .activation(Activation.SOFTMAX)
+                                .build())
+                        .setInputType(InputType.convolutionalFlat(28, 28, 1)) //See note below
+                        .backprop(true).pretrain(false).build();
+
+                return conf;
+            }
+
+            @Override
+            public MultiDataSet getGradientsTestData() throws Exception {
+                DataSet ds = new MnistDataSetIterator(8, false, 12345).next();
+                return new org.nd4j.linalg.dataset.MultiDataSet(ds.getFeatures(), ds.getLabels());
+            }
+
+            @Override
+            public MultiDataSetIterator getTrainingData() throws Exception {
+                DataSetIterator iter = new MnistDataSetIterator(16, true, 12345);
+
+                iter = new EarlyTerminationDataSetIterator(iter, 60);
+                return new MultiDataSetIteratorAdapter(iter);
+            }
+
+            @Override
+            public MultiDataSetIterator getEvaluationTestData() throws Exception {
+                return new MultiDataSetIteratorAdapter(new EarlyTerminationDataSetIterator(new MnistDataSetIterator(32, false, 12345), 10));
+            }
+
+            @Override
+            public List<Pair<INDArray[],INDArray[]>> getPredictionsTestData() throws Exception {
+                DataSetIterator iter = new MnistDataSetIterator(8, true, 12345);
+                List<Pair<INDArray[], INDArray[]>> list = new ArrayList<>();
+
+                DataSet ds = iter.next();
+                ds = ds.asList().get(0);
+                list.add(new Pair<>(new INDArray[]{ds.getFeatureMatrix()}, null));
+
+                ds = iter.next();
+                list.add(new Pair<>(new INDArray[]{ds.getFeatureMatrix()}, null));
+                return list;
+            }
+
+            @Override
+            public IEvaluation[] getNewEvaluations(){
+                return new IEvaluation[]{
+                        new Evaluation(),
+                        new ROCMultiClass()};
+            }
+
+        };
     }
 
 
     /**
      * VGG16 + transfer learning + tiny imagenet
      */
-    public static TestCase getVGG16TransferTinyImagenet(){
+    public static TestCase getVGG16TransferTinyImagenet() {
         return new TestCase() {
 
             {
@@ -98,7 +193,7 @@ public class CNN2DTestCases {
                         .fineTuneConfiguration(new FineTuneConfiguration.Builder()
                                 .updater(new Adam(1e-3))
                                 .seed(12345)
-                            .build())
+                                .build())
                         .removeVertexKeepConnections("predictions")
                         .addLayer("predictions", new OutputLayer.Builder()
                                 .nIn(4096)
@@ -111,14 +206,14 @@ public class CNN2DTestCases {
 
             @Override
             public List<Pair<INDArray[], INDArray[]>> getPredictionsTestData() throws Exception {
-                List<Pair<INDArray[],INDArray[]>> out = new ArrayList<>();
+                List<Pair<INDArray[], INDArray[]>> out = new ArrayList<>();
 
-                DataSetIterator iter = new TinyImageNetDataSetIterator(1, new int[]{224,224}, DataSetType.TRAIN, null, 12345);
+                DataSetIterator iter = new TinyImageNetDataSetIterator(1, new int[]{224, 224}, DataSetType.TRAIN, null, 12345);
                 iter.setPreProcessor(new VGG16ImagePreProcessor());
                 DataSet ds = iter.next();
                 out.add(new Pair<>(new INDArray[]{ds.getFeatures()}, null));
 
-                iter = new TinyImageNetDataSetIterator(3, new int[]{224,224}, DataSetType.TRAIN, null, 54321);
+                iter = new TinyImageNetDataSetIterator(3, new int[]{224, 224}, DataSetType.TRAIN, null, 54321);
                 iter.setPreProcessor(new VGG16ImagePreProcessor());
                 ds = iter.next();
                 out.add(new Pair<>(new INDArray[]{ds.getFeatures()}, null));
@@ -128,13 +223,13 @@ public class CNN2DTestCases {
 
             @Override
             public MultiDataSet getGradientsTestData() throws Exception {
-                DataSet ds =  new TinyImageNetDataSetIterator(8, new int[]{224,224}, DataSetType.TRAIN, null, 12345).next();
+                DataSet ds = new TinyImageNetDataSetIterator(8, new int[]{224, 224}, DataSetType.TRAIN, null, 12345).next();
                 return new org.nd4j.linalg.dataset.MultiDataSet(ds.getFeatures(), ds.getLabels());
             }
 
             @Override
             public MultiDataSetIterator getTrainingData() throws Exception {
-                DataSetIterator iter = new TinyImageNetDataSetIterator(4, new int[]{224,224}, DataSetType.TRAIN, null, 12345);
+                DataSetIterator iter = new TinyImageNetDataSetIterator(4, new int[]{224, 224}, DataSetType.TRAIN, null, 12345);
                 iter.setPreProcessor(new VGG16ImagePreProcessor());
 
                 iter = new EarlyTerminationDataSetIterator(iter, 6);
@@ -142,7 +237,7 @@ public class CNN2DTestCases {
             }
 
             @Override
-            public IEvaluation[] getNewEvaluations(){
+            public IEvaluation[] getNewEvaluations() {
                 return new IEvaluation[]{
                         new Evaluation(),
                         new ROCMultiClass(),
@@ -152,7 +247,7 @@ public class CNN2DTestCases {
 
             @Override
             public MultiDataSetIterator getEvaluationTestData() throws Exception {
-                DataSetIterator iter = new TinyImageNetDataSetIterator(4, new int[]{224,224}, DataSetType.TEST, null, 12345);
+                DataSetIterator iter = new TinyImageNetDataSetIterator(4, new int[]{224, 224}, DataSetType.TEST, null, 12345);
                 iter.setPreProcessor(new VGG16ImagePreProcessor());
                 iter = new EarlyTerminationDataSetIterator(iter, 6);
                 return new MultiDataSetIteratorAdapter(iter);
@@ -164,7 +259,7 @@ public class CNN2DTestCases {
     /**
      * Basically a cut-down version of the YOLO house numbers example
      */
-    public static TestCase getYoloHouseNumbers(){
+    public static TestCase getYoloHouseNumbers() {
 
         throw new UnsupportedOperationException("Not yet implemented");
     }
@@ -175,14 +270,13 @@ public class CNN2DTestCases {
      * Convolution, Subsampling, Upsampling, Cropping, Depthwise conv, separable conv, deconv, space to batch,
      * space to depth, zero padding, batch norm, LRN
      */
-    public static TestCase getCnn2DSynthetic(){
+    public static TestCase getCnn2DSynthetic() {
 
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
 
-
-    public static TestCase testLenetTransferDropoutRepeatability(){
+    public static TestCase testLenetTransferDropoutRepeatability() {
         return new TestCase() {
 
             {
@@ -218,8 +312,8 @@ public class CNN2DTestCases {
                                 .activation(Activation.IDENTITY)
                                 .build())
                         .layer(1, new SubsamplingLayer.Builder(PoolingType.MAX)
-                                .kernelSize(2,2)
-                                .stride(2,2)
+                                .kernelSize(2, 2)
+                                .stride(2, 2)
                                 .build())
                         .layer(2, new ConvolutionLayer.Builder(5, 5)
                                 //Note that nIn need not be specified in later layers
@@ -229,8 +323,8 @@ public class CNN2DTestCases {
                                 .dropOut(0.5)   //**** Dropout on conv layer
                                 .build())
                         .layer(3, new SubsamplingLayer.Builder(PoolingType.MAX)
-                                .kernelSize(2,2)
-                                .stride(2,2)
+                                .kernelSize(2, 2)
+                                .stride(2, 2)
                                 .build())
                         .layer(4, new DenseLayer.Builder().activation(Activation.RELU)
                                 .dropOut(0.5)   //**** Dropout on dense layer
@@ -239,7 +333,7 @@ public class CNN2DTestCases {
                                 .nOut(10)
                                 .activation(Activation.SOFTMAX)
                                 .build())
-                        .setInputType(InputType.convolutionalFlat(28,28,1)) //See note below
+                        .setInputType(InputType.convolutionalFlat(28, 28, 1)) //See note below
                         .backprop(true).pretrain(false).build();
 
 
@@ -252,9 +346,9 @@ public class CNN2DTestCases {
                 MultiLayerNetwork pretrained = new TransferLearning.Builder(net)
                         .fineTuneConfiguration(
                                 FineTuneConfiguration.builder()
-                                .updater(new Nesterovs(0.01, 0.9))
-                                .seed(98765)
-                                .build())
+                                        .updater(new Nesterovs(0.01, 0.9))
+                                        .seed(98765)
+                                        .build())
                         .nOutReplace(5, 10, WeightInit.XAVIER)
                         .build();
 
@@ -264,7 +358,7 @@ public class CNN2DTestCases {
             @Override
             public List<Pair<INDArray[], INDArray[]>> getPredictionsTestData() throws Exception {
                 MnistDataSetIterator iter = new MnistDataSetIterator(1, true, 12345);
-                List<Pair<INDArray[],INDArray[]>> out = new ArrayList<>();
+                List<Pair<INDArray[], INDArray[]>> out = new ArrayList<>();
                 out.add(new Pair<>(new INDArray[]{iter.next().getFeatures()}, null));
 
                 iter = new MnistDataSetIterator(10, true, 12345);
@@ -286,7 +380,7 @@ public class CNN2DTestCases {
             }
 
             @Override
-            public IEvaluation[] getNewEvaluations(){
+            public IEvaluation[] getNewEvaluations() {
                 return new IEvaluation[]{
                         new Evaluation(),
                         new ROCMultiClass(),
@@ -308,7 +402,7 @@ public class CNN2DTestCases {
             }
 
             @Override
-            public int getOverfitNumIterations(){
+            public int getOverfitNumIterations() {
                 return 200;
             }
         };

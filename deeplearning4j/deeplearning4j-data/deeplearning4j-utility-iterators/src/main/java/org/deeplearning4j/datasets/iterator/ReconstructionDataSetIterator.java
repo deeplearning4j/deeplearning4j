@@ -50,7 +50,7 @@ public class ReconstructionDataSetIterator implements DataSetIterator {
     @Override
     public DataSet next(int num) {
         DataSet ret = iter.next(num);
-        ret.setLabels(ret.getFeatureMatrix());
+        ret.setLabels(ret.getFeatures());
         return ret;
     }
 
@@ -133,7 +133,7 @@ public class ReconstructionDataSetIterator implements DataSetIterator {
     @Override
     public DataSet next() {
         DataSet next = iter.next();
-        next.setLabels(next.getFeatureMatrix());
+        next.setLabels(next.getFeatures());
         return next;
     }
 
