@@ -297,7 +297,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
         DataSetIterator data = new MnistDataSetIterator(nExamples, nExamples);
         DataSet mnist = data.next();
         nExamples = mnist.numExamples();
-        return mnist.getFeatureMatrix().reshape(nExamples, nChannelsIn, inputHeight, inputWidth);
+        return mnist.getFeatures().reshape(nExamples, nChannelsIn, inputHeight, inputWidth);
     }
 
     public Layer getContainedConfig() {
@@ -354,12 +354,12 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
         DataSet test = mnistIter.next();
 
         Evaluation eval = new Evaluation();
-        INDArray output = model.output(test.getFeatureMatrix());
+        INDArray output = model.output(test.getFeatures());
         eval.eval(test.getLabels(), output);
         double f1Score = eval.f1();
 
         Evaluation eval2 = new Evaluation();
-        INDArray output2 = model2.output(test.getFeatureMatrix());
+        INDArray output2 = model2.output(test.getFeatures());
         eval2.eval(test.getLabels(), output2);
         double f1Score2 = eval2.f1();
 
@@ -384,12 +384,12 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
         DataSet test = mnistIter.next();
 
         Evaluation eval = new Evaluation();
-        INDArray output = model.output(test.getFeatureMatrix());
+        INDArray output = model.output(test.getFeatures());
         eval.eval(test.getLabels(), output);
         double f1Score = eval.f1();
 
         Evaluation eval2 = new Evaluation();
-        INDArray output2 = model2.output(test.getFeatureMatrix());
+        INDArray output2 = model2.output(test.getFeatures());
         eval2.eval(test.getLabels(), output2);
         double f1Score2 = eval2.f1();
 

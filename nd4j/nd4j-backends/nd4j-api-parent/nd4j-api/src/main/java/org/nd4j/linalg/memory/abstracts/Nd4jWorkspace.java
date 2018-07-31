@@ -366,7 +366,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         }
 
         // if size is enough - allocate from workspace
-        if (hostOffset.get() + requiredMemory <= currentSize.get() && !trimmer) {
+        if (hostOffset.get() + requiredMemory <= currentSize.get() && !trimmer && Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.SPILL_EVERYTHING) {
             // just alignment to 8 bytes
 
             cycleAllocations.addAndGet(requiredMemory);
@@ -388,7 +388,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
             // in case of circular mode - we just reset offsets, and start from the beginning of the workspace
             if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0
-                            && !trimmer) {
+                            && !trimmer && Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.SPILL_EVERYTHING) {
                 reset();
                 resetPlanned.set(true);
                 return alloc(requiredMemory, kind, type, initialize);
@@ -640,12 +640,16 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                             || (workspaceConfiguration.getPolicyLearning() == LearningPolicy.FIRST_LOOP
                                             && currentSize.get() == 0)) {
                 //log.info("Initializing on cycle {}", cyclesCount.get());
-                initializeWorkspace();
+
+                if (Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.SPILL_EVERYTHING)
+                    initializeWorkspace();
             } else if (currentSize.get() > 0 && cycleAllocations.get() > 0
                             && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE
                             && workspaceConfiguration.getPolicyReset() != ResetPolicy.ENDOFBUFFER_REACHED) {
                 //log.debug("Reinit on cycle {}; step: {}", cyclesCount.get(), stepsCount.get());
-                initializeWorkspace();
+
+                if (Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.SPILL_EVERYTHING)
+                    initializeWorkspace();
             }
         }
 

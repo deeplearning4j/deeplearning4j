@@ -373,8 +373,8 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
 
-        network.setInput(next.getFeatureMatrix());
-        INDArray activationsActual = network.activate(next.getFeatureMatrix());
+        network.setInput(next.getFeatures());
+        INDArray activationsActual = network.activate(next.getFeatures());
         assertEquals(10, activationsActual.shape()[1], 1e-2);
 
         network.fit(next);
@@ -435,7 +435,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
             net.fit(iter.next());
         }
 
-        INDArray in = iter.next().getFeatureMatrix();
+        INDArray in = iter.next().getFeatures();
 
         INDArray out = net.output(in, false);
         INDArray out2 = net.output(in, false);

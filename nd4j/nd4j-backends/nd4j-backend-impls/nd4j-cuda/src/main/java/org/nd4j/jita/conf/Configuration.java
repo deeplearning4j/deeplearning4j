@@ -216,8 +216,6 @@ public class Configuration implements Serializable {
     private static final String MAX_BLOCK_SIZE = "ND4J_CUDA_MAX_BLOCK_SIZE";
     private static final String MIN_BLOCK_SIZE = "ND4J_CUDA_MIN_BLOCK_SIZE";
     private static final String MAX_GRID_SIZE = "ND4J_CUDA_MAX_GRID_SIZE";
-    private static final String DEBUG_ENABLED = "ND4J_DEBUG";
-    private static final String VERBOSE = "ND4J_VERBOSE";
     private static final String USE_PREALLOCATION = "ND4J_CUDA_USE_PREALLOCATION";
     private static final String MAX_DEVICE_CACHE = "ND4J_CUDA_MAX_DEVICE_CACHE";
     private static final String MAX_HOST_CACHE = "ND4J_CUDA_MAX_HOST_CACHE";
@@ -255,30 +253,12 @@ public class Configuration implements Serializable {
             }
         }
 
-        if (System.getenv(DEBUG_ENABLED) != null) {
-            try {
-                boolean var = Boolean.parseBoolean(System.getenv(DEBUG_ENABLED));
-                enableDebug(var);
-            } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", DEBUG_ENABLED, System.getenv(DEBUG_ENABLED));
-            }
-        }
-
         if (System.getenv(FORCE_SINGLE_GPU) != null) {
             try {
                 boolean var = Boolean.parseBoolean(System.getenv(FORCE_SINGLE_GPU));
                 allowMultiGPU(!var);
             } catch (Exception e) {
                 log.error("Can't parse {}: [{}]", FORCE_SINGLE_GPU, System.getenv(FORCE_SINGLE_GPU));
-            }
-        }
-
-        if (System.getenv(VERBOSE) != null) {
-            try {
-                boolean var = Boolean.parseBoolean(System.getenv(VERBOSE));
-                setVerbose(var);
-            } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", VERBOSE, System.getenv(VERBOSE));
             }
         }
 

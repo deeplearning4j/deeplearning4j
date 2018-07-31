@@ -99,11 +99,11 @@ public class DataSetIteratorTest extends BaseDL4JTest {
             DataSet dsExp = dsi.next();
             DataSet dsAct = iter.next();
 
-            INDArray fExp = dsExp.getFeatureMatrix();
+            INDArray fExp = dsExp.getFeatures();
             fExp.divi(255);
             INDArray lExp = dsExp.getLabels();
 
-            INDArray fAct = dsAct.getFeatureMatrix();
+            INDArray fAct = dsAct.getFeatures();
             INDArray lAct = dsAct.getLabels();
 
             assertEquals(fExp, fAct);
@@ -122,7 +122,7 @@ public class DataSetIteratorTest extends BaseDL4JTest {
         assertTrue(iter.hasNext());
         DataSet data = iter.next();
         assertEquals(numExamples, data.getLabels().size(0));
-        assertEquals(row, data.getFeatureMatrix().size(2));
+        assertEquals(row, data.getFeatures().size(2));
     }
 
     @Test
@@ -186,7 +186,7 @@ public class DataSetIteratorTest extends BaseDL4JTest {
         model.fit(lfw.next());
 
         DataSet dataTest = lfw.next();
-        INDArray output = model.output(dataTest.getFeatureMatrix());
+        INDArray output = model.output(dataTest.getFeatures());
         Evaluation eval = new Evaluation(outputNum);
         eval.eval(dataTest.getLabels(), output);
         System.out.println(eval.stats());
@@ -202,7 +202,7 @@ public class DataSetIteratorTest extends BaseDL4JTest {
         assertTrue(iter.hasNext());
         DataSet data = iter.next();
         assertEquals(numExamples, data.getLabels().size(0));
-        assertEquals(channels * row * col, data.getFeatureMatrix().ravel().length());
+        assertEquals(channels * row * col, data.getFeatures().ravel().length());
     }
 
 
@@ -252,7 +252,7 @@ public class DataSetIteratorTest extends BaseDL4JTest {
         Evaluation eval = new Evaluation(cifar.getLabels());
         while (cifar.hasNext()) {
             DataSet testDS = cifar.next(batchSize);
-            INDArray output = model.output(testDS.getFeatureMatrix());
+            INDArray output = model.output(testDS.getFeatures());
             eval.eval(testDS.getLabels(), output);
         }
         System.out.println(eval.stats(true));
@@ -282,21 +282,21 @@ public class DataSetIteratorTest extends BaseDL4JTest {
         int count = 0;
         while (iter.hasNext()) {
             DataSet ds = iter.next();
-            assertArrayEquals(new long[] {batchSize, featureSize}, ds.getFeatureMatrix().shape());
+            assertArrayEquals(new long[] {batchSize, featureSize}, ds.getFeatures().shape());
             assertArrayEquals(new long[] {batchSize, labelSize}, ds.getLabels().shape());
 
             List<INDArray> fList = new ArrayList<>();
             List<INDArray> lList = new ArrayList<>();
             for (int i = 0; i < batchSize; i++) {
                 DataSet dsOrig = orig.get(count * batchSize + i);
-                fList.add(dsOrig.getFeatureMatrix());
+                fList.add(dsOrig.getFeatures());
                 lList.add(dsOrig.getLabels());
             }
 
             INDArray fExp = Nd4j.vstack(fList);
             INDArray lExp = Nd4j.vstack(lList);
 
-            assertEquals(fExp, ds.getFeatureMatrix());
+            assertEquals(fExp, ds.getFeatures());
             assertEquals(lExp, ds.getLabels());
 
             count++;
@@ -329,17 +329,17 @@ public class DataSetIteratorTest extends BaseDL4JTest {
 
 
         List<DataSet> expected = new ArrayList<>();
-        expected.add(new DataSet(orig.get(0).getFeatureMatrix().getRows(0, 1, 2),
+        expected.add(new DataSet(orig.get(0).getFeatures().getRows(0, 1, 2),
                         orig.get(0).getLabels().getRows(0, 1, 2)));
         expected.add(new DataSet(
-                        Nd4j.vstack(orig.get(0).getFeatureMatrix().getRows(3),
-                                        orig.get(1).getFeatureMatrix().getRows(0, 1)),
+                        Nd4j.vstack(orig.get(0).getFeatures().getRows(3),
+                                        orig.get(1).getFeatures().getRows(0, 1)),
                         Nd4j.vstack(orig.get(0).getLabels().getRows(3), orig.get(1).getLabels().getRows(0, 1))));
         expected.add(new DataSet(
-                        Nd4j.vstack(orig.get(1).getFeatureMatrix().getRows(2, 3),
-                                        orig.get(2).getFeatureMatrix().getRows(0)),
+                        Nd4j.vstack(orig.get(1).getFeatures().getRows(2, 3),
+                                        orig.get(2).getFeatures().getRows(0)),
                         Nd4j.vstack(orig.get(1).getLabels().getRows(2, 3), orig.get(2).getLabels().getRows(0))));
-        expected.add(new DataSet(orig.get(2).getFeatureMatrix().getRows(1, 2, 3),
+        expected.add(new DataSet(orig.get(2).getFeatures().getRows(1, 2, 3),
                         orig.get(2).getLabels().getRows(1, 2, 3)));
 
 

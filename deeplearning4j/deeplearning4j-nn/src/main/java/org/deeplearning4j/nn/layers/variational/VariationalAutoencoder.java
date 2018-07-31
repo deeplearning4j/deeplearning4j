@@ -630,7 +630,7 @@ public class VariationalAutoencoder implements Layer {
     public double calcL2(boolean backpropParamsOnly) {
         double l2Sum = 0.0;
         for (Map.Entry<String, INDArray> e : paramTable().entrySet()) {
-            double l2 = conf().getL2ByParam(e.getKey());
+            double l2 = conf().getLayer().getL2ByParam(e.getKey());
             if (l2 <= 0.0 || (backpropParamsOnly && isPretrainParam(e.getKey()))) {
                 continue;
             }
@@ -646,7 +646,7 @@ public class VariationalAutoencoder implements Layer {
     public double calcL1(boolean backpropParamsOnly) {
         double l1Sum = 0.0;
         for (Map.Entry<String, INDArray> e : paramTable().entrySet()) {
-            double l1 = conf().getL1ByParam(e.getKey());
+            double l1 = conf().getLayer().getL1ByParam(e.getKey());
             if (l1 <= 0.0 || (backpropParamsOnly && isPretrainParam(e.getKey()))) {
                 continue;
             }
