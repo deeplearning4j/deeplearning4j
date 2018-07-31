@@ -16,5 +16,6 @@
 
 package org.deeplearning4j.nn.modelimport.keras.preprocessing.text;
 
-public class Utils {
+public enum TokenizerMode {
+    BINARY, COUNT, TFIDF, FREQ
 }

@@ -20,6 +20,8 @@ import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Ordering;
 import lombok.Data;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
 
@@ -134,5 +136,29 @@ public class Tokenizer {
         }
     }
 
+    public int[][] textsToSequences(String[] texts) {
+        return new int[][] {{}}; // TODO skip textsToSequencesGenerator()
+    }
+
+    public int[][] sequencesToTexts(String[] texts) {
+        return new int[][] {{}}; // TODO skip sequencesToTextsGenerator()
+    }
+
+    public INDArray textsToMatrix(String[] texts, TokenizerMode mode) {
+        int[][] sequences = textsToSequences(texts);
+        return sequencesToMatrix(sequences);
+    }
+
+    public INDArray sequencesToMatrix(int[][] sequences) {
+        if (numWords == null) {
+            if (!wordIndex.isEmpty()) {
+                numWords = wordIndex.size();
+            } else {
+                throw new IllegalArgumentException("Either specify numWords argument" +
+                        "or fit Tokenizer on data first, i.e. by using fitOnTexts");
+            }
+        }
+        return Nd4j.create(42); // TODO
+    }
 
 }
