@@ -22,7 +22,6 @@
 #include <op_boilerplate.h>
 #if NOT_EXCLUDED(OP_multiply)
 
-#include <ops/declarable/helpers/multiply.h>
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -87,17 +86,17 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     else if(xLen == 1) {            // x is scalar and y is not 
 
         (*dLdx)(0.) = (*y * *dLdz).template reduceNumber<simdOps::Sum<T>>();     
-        dLdy->assign(*dLdz * (*x)(0.));      
+        dLdz->template applyScalar<simdOps::Multiply<T>>((*x)(0.), dLdy);     
     }
     else if(yLen == 1) {            // y is scalar and x is not 
 
-        (*dLdy)(0.) = (*x * *dLdz).template reduceNumber<simdOps::Sum<T>>();
-        dLdx->assign(*dLdz * (*y)(0.));
+        (*dLdy)(0.) = (*x * *dLdz).template reduceNumber<simdOps::Sum<T>>();        
+        dLdz->template applyScalar<simdOps::Multiply<T>>((*y)(0.), dLdx);
     }    
     else if(x->isSameShape(y)) {
 
-        dLdx->assign(*y * *dLdz);
-        dLdy->assign(*x * *dLdz);
+        x->template applyPairwiseTransform<simdOps::Multiply<T>>(dLdz, dLdy, nullptr);
+        y->template applyPairwiseTransform<simdOps::Multiply<T>>(dLdz, dLdx, nullptr);
     }
     else if (x->isSameShape(dLdz)) {
         
@@ -105,8 +104,8 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
         y->tile(yTiled);
         std::vector<int> axesForY = ShapeUtils<T>::evalBroadcastBackwardAxis(y->getShapeInfo(), dLdz->getShapeInfo());
         
-        dLdy->assign( (*x * *dLdz).template reduceAlongDims<simdOps::Sum<T>>(axesForY) );
-        dLdx->assign( yTiled * *dLdz );
+        dLdy->assign( (*x * *dLdz).template reduceAlongDims<simdOps::Sum<T>>(axesForY) );        
+        yTiled.template applyPairwiseTransform<simdOps::Multiply<T>>(dLdz, dLdx, nullptr);
     } 
     else if (y->isSameShape(dLdz)) {
 
@@ -115,7 +114,7 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
         std::vector<int> axesForX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->getShapeInfo(), dLdz->getShapeInfo());
         
         dLdx->assign( (*y * *dLdz).template reduceAlongDims<simdOps::Sum<T>>(axesForX) );
-        dLdy->assign( xTiled * *dLdz );
+        xTiled.template applyPairwiseTransform<simdOps::Multiply<T>>(dLdz, dLdy, nullptr);        
     }
     else {
 
