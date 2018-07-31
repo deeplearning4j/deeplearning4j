@@ -6740,6 +6740,40 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp_3, arrayZ_4);
     }
 
+    @Test
+    public void testLTOE_1() throws Exception {
+        val x = Nd4j.create(new double[]{1.0, 2.0, 3.0, -1.0});
+        val y = Nd4j.create(new double[]{2.0, 2.0, 3.0, -2.0});
+
+        val ex = Nd4j.create(new double[]{1.0, 2.0, 3.0, -1.0});
+        val ey = Nd4j.create(new double[]{2.0, 2.0, 3.0, -2.0});
+
+        val ez = Nd4j.create(new double[]{1.0, 1.0, 1.0, 0.0});
+        val z = Transforms.lessThanOrEqual(x, y, true);
+
+        assertEquals(ex, x);
+        assertEquals(ey, y);
+
+        assertEquals(ez, z);
+    }
+
+    @Test
+    public void testGTOE_1() throws Exception {
+        val x = Nd4j.create(new double[]{1.0, 2.0, 3.0, -1.0});
+        val y = Nd4j.create(new double[]{2.0, 2.0, 3.0, -2.0});
+
+        val ex = Nd4j.create(new double[]{1.0, 2.0, 3.0, -1.0});
+        val ey = Nd4j.create(new double[]{2.0, 2.0, 3.0, -2.0});
+
+        val ez = Nd4j.create(new double[]{0.0, 1.0, 1.0, 1.0});
+        val z = Transforms.greaterThanOrEqual(x, y, true);
+
+        assertEquals(ex, x);
+        assertEquals(ey, y);
+
+        assertEquals(ez, z);
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;
