@@ -17,6 +17,7 @@
 package org.deeplearning4j.common.resources;
 
 import lombok.NonNull;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.nd4j.base.Preconditions;
 
 import java.io.File;
@@ -33,8 +34,16 @@ import java.net.URL;
  */
 public class DL4JResources {
 
-    public static final String DL4J_RESOURCES_DIR_PROPERTY = "org.deeplearning4j.resources.directory";
-    public static final String DL4J_BASE_URL_PROPERTY = "org.deeplearning4j.resources.baseurl";
+    /**
+     * @deprecated Use {@link DL4JSystemProperties#DL4J_RESOURCES_DIR_PROPERTY}
+     */
+    @Deprecated
+    public static final String DL4J_RESOURCES_DIR_PROPERTY = DL4JSystemProperties.DL4J_RESOURCES_DIR_PROPERTY;
+    /**
+     * @deprecated Use {@link DL4JSystemProperties#DL4J_RESOURCES_BASE_URL_PROPERTY}
+     */
+    @Deprecated
+    public static final String DL4J_BASE_URL_PROPERTY = DL4JSystemProperties.DL4J_RESOURCES_BASE_URL_PROPERTY;
     private static final String DL4J_DEFAULT_URL = "http://blob.deeplearning4j.org/";
 
     private static File baseDirectory;
@@ -43,7 +52,7 @@ public class DL4JResources {
     static {
         resetBaseDirectoryLocation();
 
-        String property = System.getProperty(DL4J_BASE_URL_PROPERTY);
+        String property = System.getProperty(DL4JSystemProperties.DL4J_RESOURCES_BASE_URL_PROPERTY);
         if(property != null){
             baseURL = property;
         } else {
@@ -98,11 +107,11 @@ public class DL4JResources {
     }
 
     /**
-     * Reset to the default directory, or the directory set via the {@link #DL4J_RESOURCES_DIR_PROPERTY} system property,
+     * Reset to the default directory, or the directory set via the {@link DL4JSystemProperties#DL4J_RESOURCES_DIR_PROPERTY} system property,
      * org.deeplearning4j.resources.directory
      */
     public static void resetBaseDirectoryLocation(){
-        String property = System.getProperty(DL4J_RESOURCES_DIR_PROPERTY);
+        String property = System.getProperty(DL4JSystemProperties.DL4J_RESOURCES_DIR_PROPERTY);
         if(property != null){
             baseDirectory = new File(property);
         } else {
