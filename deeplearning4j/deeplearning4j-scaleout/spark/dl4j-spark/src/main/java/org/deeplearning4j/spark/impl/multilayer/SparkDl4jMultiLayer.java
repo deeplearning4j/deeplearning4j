@@ -34,7 +34,9 @@ import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
+import org.deeplearning4j.spark.data.loader.RemoteFileSourceFactory;
 import org.deeplearning4j.spark.impl.SparkListenable;
+import org.deeplearning4j.spark.impl.common.LoadDataSetFunction;
 import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateAggregateFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateFlatMapFunction;
@@ -494,6 +496,43 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      */
     public Evaluation evaluate(RDD<DataSet> data) {
         return evaluate(data.toJavaRDD());
+    }
+
+    /**
+     * Evaluate on a directory containing a set of DataSet objects serialized with {@link DataSet#save(OutputStream)}
+     * @param path Path/URI to the directory containing the dataset objects
+     * @return Evaluation
+     */
+    public Evaluation evaluate(String path){
+        return evaluate(path, new SerializedDataSetLoader());
+    }
+
+    /**
+     * Evaluate on a directory containing a set of DataSet objects to be loaded with a {@link DataSetLoader}.
+     * Uses default batch size of {@link #DEFAULT_EVAL_SCORE_BATCH_SIZE}
+     * @param path Path/URI to the directory containing the datasets to load
+     * @return Evaluation
+     */
+    public Evaluation evaluate(String path, DataSetLoader loader) {
+        return evaluate(path, DEFAULT_EVAL_SCORE_BATCH_SIZE, loader);
+    }
+
+    /**
+     * Evaluate on a directory containing a set of DataSet objects to be loaded with a {@link DataSetLoader}.
+     * Uses default batch size of {@link #DEFAULT_EVAL_SCORE_BATCH_SIZE}
+     * @param path Path/URI to the directory containing the datasets to load
+     * @return Evaluation
+     */
+    public Evaluation evaluate(String path, int batchSize, DataSetLoader loader){
+        JavaRDD<String> paths;
+        try {
+            paths = SparkUtils.listPaths(sc, path);
+        } catch (IOException e) {
+            throw new RuntimeException("Error listing paths in directory", e);
+        }
+
+        JavaRDD<DataSet> rdd = paths.map(new LoadDataSetFunction(new SerializedDataSetLoader(), new RemoteFileSourceFactory()));
+        return doEvaluation(rdd, batchSize, new Evaluation())[0];
     }
 
     /**

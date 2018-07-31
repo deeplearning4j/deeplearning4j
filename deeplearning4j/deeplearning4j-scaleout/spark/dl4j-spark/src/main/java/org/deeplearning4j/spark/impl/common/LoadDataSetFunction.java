@@ -16,8 +16,12 @@
 
 package org.deeplearning4j.spark.impl.common;
 
+import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.input.PortableDataStream;
+import org.nd4j.api.loader.Loader;
+import org.nd4j.api.loader.Source;
+import org.nd4j.api.loader.SourceFactory;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.InputStream;
@@ -27,13 +31,15 @@ import java.io.InputStream;
  *
  * @author Alex Black
  */
-public class LoadSerializedDataSetFunction implements Function<PortableDataStream, DataSet> {
+@AllArgsConstructor
+public class LoadDataSetFunction implements Function<String, DataSet> {
+
+    private final Loader<DataSet> loader;
+    private final SourceFactory factory;
+
     @Override
-    public DataSet call(PortableDataStream pds) throws Exception {
-        try (InputStream is = pds.open()) {
-            DataSet d = new DataSet();
-            d.load(is);
-            return d;
-        }
+    public DataSet call(String path) throws Exception {
+        Source s = factory.getSource(path);
+        return loader.load(s);
     }
 }
