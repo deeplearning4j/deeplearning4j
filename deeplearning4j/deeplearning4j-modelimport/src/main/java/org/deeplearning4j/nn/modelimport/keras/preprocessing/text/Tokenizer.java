@@ -48,7 +48,7 @@ public class Tokenizer {
     private Map<String, Integer> wordIndex = new HashMap<String, Integer>();
     private Map<Integer, String> indexWord = new HashMap<Integer, String>();
     private Map<Integer, Integer> indexDocs = new HashMap<Integer, Integer>();
-    private int documentCount = 0;
+    private Integer documentCount;
 
 
 
@@ -136,20 +136,20 @@ public class Tokenizer {
         }
     }
 
-    public int[][] textsToSequences(String[] texts) {
-        return new int[][] {{}}; // TODO skip textsToSequencesGenerator()
+    public Integer[][] textsToSequences(String[] texts) {
+        return new Integer[][] {{}}; // TODO skip textsToSequencesGenerator()
     }
 
-    public int[][] sequencesToTexts(String[] texts) {
-        return new int[][] {{}}; // TODO skip sequencesToTextsGenerator()
+    public Integer[][] sequencesToTexts(String[] texts) {
+        return new Integer[][] {{}}; // TODO skip sequencesToTextsGenerator()
     }
 
     public INDArray textsToMatrix(String[] texts, TokenizerMode mode) {
-        int[][] sequences = textsToSequences(texts);
-        return sequencesToMatrix(sequences);
+        Integer[][] sequences = textsToSequences(texts);
+        return sequencesToMatrix(sequences, mode);
     }
 
-    public INDArray sequencesToMatrix(int[][] sequences) {
+    public INDArray sequencesToMatrix(Integer[][] sequences, TokenizerMode mode) {
         if (numWords == null) {
             if (!wordIndex.isEmpty()) {
                 numWords = wordIndex.size();
@@ -158,7 +158,44 @@ public class Tokenizer {
                         "or fit Tokenizer on data first, i.e. by using fitOnTexts");
             }
         }
-        return Nd4j.create(42); // TODO
+        if (mode.equals(TokenizerMode.TFIDF) && documentCount == null) {
+            throw new IllegalArgumentException("To use TFIDF mode you need to" +
+                    "fit the Tokenizer instance with fitOnTexts first.");
+        }
+        INDArray x = Nd4j.zeros(sequences.length, numWords);
+        for (int i=0; i< sequences.length; i++) {
+            Integer[] sequence = sequences[i];
+            if (sequence == null)
+                continue;
+            Map<Integer, Integer> counts = new HashMap<Integer, Integer>();
+            for (int j: sequence) {
+                if (j >= numWords)
+                    continue;
+                counts.put(j, counts.get(j) + 1);
+            }
+            for (int j: counts.keySet()) {
+                int count = counts.get(j);
+                switch (mode) {
+                    case COUNT:
+                        x.put(i, j, count);
+                        break;
+                    case FREQ:
+                        x.put(i, j, count / sequence.length);
+                        break;
+                    case BINARY:
+                        x.put(i, j, 1);
+                        break;
+                    case TFIDF:
+                        double tf = 1.0 + Math.log(count);
+                        int index = indexDocs.containsKey(j) ? indexDocs.get(j) : 0;
+                        double idf = Math.log(1 + documentCount / (1.0 + index));
+                        x.put(i, j, tf * idf);
+                        break;
+                }
+            }
+
+        }
+        return x;
     }
 
 }
