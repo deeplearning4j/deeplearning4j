@@ -1504,7 +1504,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
     }
 
-    private void fitHelper(DataSetIterator iterator){
+    private synchronized void fitHelper(DataSetIterator iterator){
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch - where appropriate
         DataSetIterator iter;
         boolean destructable = false;
@@ -2100,7 +2100,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param featuresMask The mask array for the features (used for variable length time series, etc). May be null.
      * @param labelsMask The mask array for the labels (used for variable length time series, etc). May be null.
      */
-    public void fit(INDArray features, INDArray labels, INDArray featuresMask, INDArray labelsMask) {
+    public synchronized void fit(INDArray features, INDArray labels, INDArray featuresMask, INDArray labelsMask) {
         try{
             fitHelper(features, labels, featuresMask, labelsMask);
         } catch (OutOfMemoryError e){
@@ -2264,7 +2264,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param outputWorkspace May be null. If not null: the workspace MUST be opened before calling this method.
      * @return The output/activations from the network (either detached or in the specified workspace if provided)
      */
-    public INDArray output(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask, MemoryWorkspace outputWorkspace) {
+    public synchronized INDArray output(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask, MemoryWorkspace outputWorkspace) {
         try {
             return outputOfLayerDetached(train, FwdPassType.STANDARD, layers.length - 1, input, featuresMask, labelsMask, outputWorkspace);
         } catch (OutOfMemoryError e) {

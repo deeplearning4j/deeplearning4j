@@ -1032,10 +1032,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * For pretraining use method pretrain.. {@link #pretrain(MultiDataSetIterator)}<br>
      * @param multi Training data (MultiDataSetIterator)
      */
-    public void fit(MultiDataSetIterator multi) {
-        // this method "tags" current model as belonging to specific thread
-        setOccupancy();
-
+    public synchronized void fit(MultiDataSetIterator multi) {
         if (flattenedGradients == null) {
             initGradientsView();
         }
@@ -1105,10 +1102,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
     }
 
-    private void fitHelper(INDArray[] inputs, INDArray[] labels, INDArray[] featureMaskArrays, INDArray[] labelMaskArrays) {
-        // this method "tags" current model as belonging to specific thread
-        setOccupancy();
-
+    private synchronized void fitHelper(INDArray[] inputs, INDArray[] labels, INDArray[] featureMaskArrays, INDArray[] labelMaskArrays) {
         if (numParams() == 0) {
             return; //Edge case: net with no params: fitting is a no-op
         }
@@ -1698,10 +1692,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param outputWorkspace May be null. If not null: the workspace MUST be opened before calling this method.
      * @return Network output activations
      */
-    public INDArray[] output(boolean train, @NonNull INDArray[] input, INDArray[] inputMasks, INDArray[] labelMasks, MemoryWorkspace outputWorkspace){
-        // this method "tags" current model as belonging to specific thread
-        setOccupancy();
-
+    public synchronized INDArray[] output(boolean train, @NonNull INDArray[] input, INDArray[] inputMasks, INDArray[] labelMasks, MemoryWorkspace outputWorkspace){
         try {
             setLayerMaskArrays(inputMasks, labelMasks);
             INDArray[] out = outputOfLayersDetached(train, FwdPassType.STANDARD, getOutputLayerIndices(), input, inputMasks, labelMasks, true, false, outputWorkspace);
@@ -1712,19 +1703,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
-    }
-
-    protected void setOccupancy() {
-        // if global skip is set - obey it
-        if (Nd4j.areThreadSafetyChecksSkipped())
-            return;
-
-        val id = Thread.currentThread().getId();
-
-        if (occupiedBy.get() >= 0 && occupiedBy.get() != id)
-            throw new ND4JIllegalAccessException();
-
-        occupiedBy.set(id);
     }
 
     /**
@@ -1766,10 +1744,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param input       Input to the network
      * @return            Output from the network
      */
-    public INDArray[] output(boolean train, boolean clearInputs, INDArray... input){
-        // this method "tags" current model as belonging to specific thread
-        setOccupancy();
-
+    public synchronized INDArray[] output(boolean train, boolean clearInputs, INDArray... input){
         boolean detachedInputs = !clearInputs;  //If !clearInputs, then inputs should be detached (otherwise: will be out of scope)
         try {
             return outputOfLayersDetached(train, FwdPassType.STANDARD, getOutputLayerIndices(), input, null, null, clearInputs, detachedInputs, null);
