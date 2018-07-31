@@ -14,27 +14,26 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.env.impl;
+package org.nd4j.linalg.exception;
 
-import lombok.val;
-import org.nd4j.linalg.api.memory.enums.DebugMode;
-import org.nd4j.linalg.env.EnvironmentalAction;
-import org.nd4j.linalg.factory.Nd4j;
+/**
+ *  ND4JIllegalAccessException is thrown on illegal access cases, i.e. bad concurrent access on object that doesn't support that
+ *
+ * @author raver119@protonmail.com
+ */
+public class ND4JIllegalAccessException extends ND4JException {
 
-public class OmpNumThreadsAction implements EnvironmentalAction {
-    @Override
-    public String targetVariable() {
-        return "OMP_NUM_THREADS";
+    public ND4JIllegalAccessException() {}
+
+    public ND4JIllegalAccessException(String message) {
+        super(message);
     }
 
-    @Override
-    public void process(String value) {
-        val v = Integer.valueOf(value).intValue();
+    public ND4JIllegalAccessException(String message, Throwable cause) {
+        super(message, cause);
+    }
 
-        val skipper = System.getenv("ND4J_SKIP_BLAS_THREADS");
-        if (skipper == null) {
-            // we infer num threads only if skipper undefined
-            Nd4j.setNumThreads(v);
-        }
+    public ND4JIllegalAccessException(Throwable cause) {
+        super(cause);
     }
 }

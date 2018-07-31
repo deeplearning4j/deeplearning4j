@@ -14,27 +14,25 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+
 package org.nd4j.linalg.env.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.nd4j.linalg.api.memory.enums.DebugMode;
 import org.nd4j.linalg.env.EnvironmentalAction;
 import org.nd4j.linalg.factory.Nd4j;
 
-public class OmpNumThreadsAction implements EnvironmentalAction {
+@Slf4j
+public class ConcurrencyAction implements EnvironmentalAction {
     @Override
     public String targetVariable() {
-        return "OMP_NUM_THREADS";
+        return "ND4J_SKIP_THREAD_SAFETY_CHECKS";
     }
 
     @Override
     public void process(String value) {
-        val v = Integer.valueOf(value).intValue();
+        val v = Boolean.valueOf(value);
 
-        val skipper = System.getenv("ND4J_SKIP_BLAS_THREADS");
-        if (skipper == null) {
-            // we infer num threads only if skipper undefined
-            Nd4j.setNumThreads(v);
-        }
+        Nd4j.skipThreadSafetyChecks(v);
     }
 }

@@ -161,7 +161,8 @@ public class Nd4j {
     public static Nd4jBackend backend;
     public static RandomFactory randomFactory;
     private static MemoryWorkspaceManager workspaceManager;
-    private static AtomicInteger numThreads = new AtomicInteger(-1);
+    private static final AtomicInteger numThreads = new AtomicInteger(-1);
+    private static final AtomicBoolean skipTheadSafetyChecks = new AtomicBoolean(false);
 
     protected static Class<? extends MemoryWorkspaceManager> workspaceManagerClazz;
     protected static Class<? extends BlasWrapper> blasWrapperClazz;
@@ -7111,7 +7112,6 @@ public class Nd4j {
                 OP_EXECUTIONER_INSTANCE.printEnvironmentInformation();
             }
 
-            val env = System.getenv();
             val actions = ServiceLoader.load(EnvironmentalAction.class);
             val mappedActions = new HashMap<String, EnvironmentalAction>();
             for (val a: actions) {
@@ -7119,11 +7119,12 @@ public class Nd4j {
                     mappedActions.put(a.targetVariable(), a);
             }
 
-            for (val e: env.keySet()) {
+            for (val e: mappedActions.keySet()) {
                 val action = mappedActions.get(e);
-                if (action != null) {
+                val value = System.getenv(e);
+                if (value != null) {
                     try {
-                        action.process(env.get(e));
+                        action.process(value);
                     } catch (Exception e2) {
                         logger.info("Failed to process env variable [" + e + "], got exception: " + e2.toString());
                     }
@@ -7614,5 +7615,13 @@ public class Nd4j {
      */
     public static void setNumThreads(int numthreads) {
         numThreads.set(numthreads);
+    }
+
+    public static void skipThreadSafetyChecks(boolean reallySkip) {
+        skipTheadSafetyChecks.set(reallySkip);
+    }
+
+    public static boolean areThreadSafetyChecksSkipped() {
+        return skipTheadSafetyChecks.get();
     }
 }
