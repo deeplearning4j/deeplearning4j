@@ -96,6 +96,7 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 /**
@@ -156,10 +157,11 @@ public class Nd4j {
     public static boolean resourceManagerOn = false;
     private static boolean allowsOrder = false;
     public static boolean compressDebug = false;
-    public static boolean preventUnpack = System.getenv("ND4J_PREVENT_UNPACK") != null;
+    public static volatile boolean preventUnpack;
     public static Nd4jBackend backend;
     public static RandomFactory randomFactory;
     private static MemoryWorkspaceManager workspaceManager;
+    private static AtomicInteger numThreads = new AtomicInteger(-1);
 
     protected static Class<? extends MemoryWorkspaceManager> workspaceManagerClazz;
     protected static Class<? extends BlasWrapper> blasWrapperClazz;
@@ -7591,5 +7593,26 @@ public class Nd4j {
         }
 
         return Nd4j.create(doubles, shapeOf, stridesOf, 0, ordering);
+    }
+
+    /**
+     * This method returns maximal allowed number of threads for Nd4j.
+     * If value wasn't set in advance, max(1, availableProcessor) will be returned
+     * @return
+     */
+    public static int numThreads() {
+        val v = numThreads.get();
+        if (v <= 0)
+            return Math.max(1, Runtime.getRuntime().availableProcessors() / 2);
+        else
+            return v;
+    }
+
+    /**
+     * This method sets maximal allowed number of threads for Nd4j
+     * @param numthreads
+     */
+    public static void setNumThreads(int numthreads) {
+        numThreads.set(numthreads);
     }
 }
