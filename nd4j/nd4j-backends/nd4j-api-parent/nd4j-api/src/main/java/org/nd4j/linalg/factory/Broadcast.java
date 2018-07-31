@@ -265,7 +265,7 @@ public class Broadcast {
         } else if(dimensions.length == sy.length){
             //Possibility 2: different ranks - for example, mul([a,b,c],[a,c], [0,2]) - dimensions refer to x
             for(int i=0; i<dimensions.length; i++ ){
-                Preconditions.checkState(sx[dimensions[i]] == sy[i], "Shapes do not match: dimensions[%n] - x[%s] must match y[%s], x shape %s, y shape %s, dimensions %s",
+                Preconditions.checkState(sx[dimensions[i]] == sy[i], "Shapes do not match: dimensions[%s] - x[%s] must match y[%s], x shape %s, y shape %s, dimensions %s",
                         i, dimensions[i], i, sx, sy, dimensions);
             }
         } else {
