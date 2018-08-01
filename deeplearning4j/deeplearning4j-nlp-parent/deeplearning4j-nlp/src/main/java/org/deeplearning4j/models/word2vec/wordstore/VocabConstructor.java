@@ -174,6 +174,27 @@ public class VocabConstructor<T extends SequenceElement> {
         return cache;
     }
 
+    public VocabCache<T> transferVocabulary(@NonNull VocabCache<T> vocabCache, boolean buildHuffman) {
+        val result = cache != null ? cache : new AbstractCache.Builder<T>().build();
+
+        for (val v: vocabCache.tokens()) {
+            result.addToken(v);
+
+            // optionally transferring indices
+            if (v.getIndex() >= 0)
+                result.addWordToIndex(v.getIndex(), v.getLabel());
+            else
+                result.addWordToIndex(result.numWords(), v.getLabel());
+        }
+
+        if (buildHuffman) {
+            val huffman = new Huffman(result.vocabWords());
+            huffman.build();
+            huffman.applyIndexes(result);
+        }
+
+        return result;
+    }
 
     /**
      * This method scans all sources passed through builder, and returns all words as vocab.
