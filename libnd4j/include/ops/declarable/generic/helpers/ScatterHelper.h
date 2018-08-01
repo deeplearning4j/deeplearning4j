@@ -121,8 +121,7 @@ class ScatterHelper {
 
             if(outRank == 1) {
 
-// #pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-#pragma omp parallel for schedule(guided)                
+#pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
                 for(Nd4jLong i = 0; i < indLen; ++i) {
                     T& out = output(indices(i));                    
 #pragma omp critical                    
@@ -137,8 +136,8 @@ class ScatterHelper {
                 std::vector<Nd4jLong> idxRangesOut(2 * output.rankOf());
                 std::vector<Nd4jLong> idxRangesUpd(2 * updates.rankOf());
 
-// #pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) firstprivate(idxRangesOut, idxRangesUpd)
-// #pragma omp parallel for schedule(guided) firstprivate(idxRangesOut, idxRangesUpd)
+// #pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) firstprivate(idxRangesOut, idxRangesUpd)  // causes known openMP asan bug !
+#pragma omp parallel for schedule(guided) firstprivate(idxRangesOut, idxRangesUpd)
                 for(Nd4jLong i = 0; i < indLen; ++i) {                    
 
                     ShapeUtils<T>::evalIdxRangesForSubArr(indices(i), output.getShapeInfo(), {0}, idxRangesOut.data());
@@ -146,7 +145,7 @@ class ScatterHelper {
 
                     NDArray<T> outSubArr = output(idxRangesOut.data());                
                     NDArray<T> updSubArr = updates(idxRangesUpd.data());
- // #pragma omp critical
+ #pragma omp critical
                     outSubArr.template applyPairwiseTransform<OpClass>(&updSubArr, nullptr);
                 }
             }
