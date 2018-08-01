@@ -347,7 +347,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
 
         @Override
         public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
-            INDArray preAct = getParam(R_KEY).sub(preOutput);
+            INDArray preAct = preOutput.rsub(getParam(R_KEY).getDouble(0));
             INDArray target =   relu.backprop(getParam(R_KEY).sub(preOutput),Nd4j.ones(preAct.shape())).getFirst();
             return target;
         }
