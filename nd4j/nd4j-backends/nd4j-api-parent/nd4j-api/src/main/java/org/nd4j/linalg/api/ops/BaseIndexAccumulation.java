@@ -22,7 +22,6 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -136,11 +135,6 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     @Override
     public Pair<Double, Integer> zeroPair() {
         return new Pair<>(zeroDouble(), -1);
-    }
-
-    @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(0.0, 0.0);
     }
 
     private void init() {

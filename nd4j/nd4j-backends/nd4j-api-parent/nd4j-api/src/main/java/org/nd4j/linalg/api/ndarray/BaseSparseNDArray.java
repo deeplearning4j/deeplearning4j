@@ -24,8 +24,6 @@ import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ops.impl.accum.Entropy;
 import org.nd4j.linalg.api.ops.impl.accum.LogEntropy;
@@ -1324,11 +1322,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public IComplexNumber normmaxComplex() {
-        return null;
-    }
-
-    @Override
     public INDArray norm2(int... dimension) {
         return null;
     }
@@ -1339,22 +1332,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public IComplexNumber norm2Complex() {
-        return null;
-    }
-
-    @Override
     public INDArray norm1(int... dimension) {
         return null;
     }
 
     @Override
     public Number norm1Number() {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber norm1Complex() {
         return null;
     }
 
@@ -1379,11 +1362,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public IComplexNumber stdComplex() {
-        return null;
-    }
-
-    @Override
     public INDArray prod(int... dimension) {
         return null;
     }
@@ -1394,22 +1372,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public IComplexNumber prodComplex() {
-        return null;
-    }
-
-    @Override
     public INDArray mean(int... dimension) {
         return null;
     }
 
     @Override
     public Number meanNumber() {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber meanComplex() {
         return null;
     }
 
@@ -1429,22 +1397,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public IComplexNumber varComplex() {
-        return null;
-    }
-
-    @Override
     public INDArray max(int... dimension) {
         return null;
     }
 
     @Override
     public Number maxNumber() {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber maxComplex() {
         return null;
     }
 
@@ -1459,22 +1417,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public IComplexNumber minComplex() {
-        return null;
-    }
-
-    @Override
     public INDArray sum(int... dimension) {
         return null;
     }
 
     @Override
     public Number sumNumber() {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber sumComplex() {
         return null;
     }
 
@@ -1819,127 +1767,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public Object element() {
-        return null;
-    }
-
-
-    @Override
-    public IComplexNDArray rdiv(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray rdivi(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray rsub(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray rsubi(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray div(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray divi(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray mul(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray muli(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray sub(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray subi(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray add(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray addi(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray rdiv(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray rdivi(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray rsub(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray rsubi(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray div(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray divi(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray mul(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray muli(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray sub(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray subi(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray add(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray addi(IComplexNumber n, IComplexNDArray result) {
         return null;
     }
 
