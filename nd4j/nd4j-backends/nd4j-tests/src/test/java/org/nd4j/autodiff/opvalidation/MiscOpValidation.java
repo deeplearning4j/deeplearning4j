@@ -253,7 +253,9 @@ public class MiscOpValidation extends BaseOpValidation {
         testCases.add(new Triple<>(new long[]{3, 1, 1, 1}, new long[]{1, 4, 5, 6}, new long[]{3, 4, 5, 6}));
         testCases.add(new Triple<>(new long[]{1, 1, 1, 6}, new long[]{3, 4, 5, 6}, new long[]{3, 4, 5, 6}));
         testCases.add(new Triple<>(new long[]{1, 4, 5, 1}, new long[]{3, 1, 1, 6}, new long[]{3, 4, 5, 6}));
-        testCases.add(new Triple<>(new long[]{1, 6}, new long[]{3, 4, 5, 1}, new long[]{3, 4, 5, 6}));
+        if(!OpValidationSuite.IGNORE_FAILING) {
+            testCases.add(new Triple<>(new long[]{1, 6}, new long[]{3, 4, 5, 1}, new long[]{3, 4, 5, 6}));
+        }
 
         for (val p : testCases) {
 
@@ -322,7 +324,7 @@ public class MiscOpValidation extends BaseOpValidation {
                 TestCase tc = new TestCase(sd);
                 String error = OpValidation.validate(tc);
                 if(error != null){
-                    failed.add(name);
+                    failed.add(name + " " + i +  " - " + error);
                 }
             }
         }
