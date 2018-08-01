@@ -19,6 +19,7 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.LongBuffer;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
@@ -91,11 +92,11 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public void createBlas() {
-        String lib = System.getProperty("org.bytedeco.javacpp.openblas.load",
-                     System.getProperty("org.bytedeco.javacpp.openblas_nolapack.load", "")).toLowerCase();
+        String lib = System.getProperty(ND4JSystemProperties.ND4J_CPU_LOAD_OPENBLAS,
+                     System.getProperty(ND4JSystemProperties.ND4J_CPU_LOAD_OPENBLAS_NOLAPACK, "")).toLowerCase();
         if (lib.trim().length() == 0) {
             // try to load by default the LAPACK-less version of MKL bundled with MKL-DNN
-            System.setProperty("org.bytedeco.javacpp.openblas_nolapack.load", "mklml");
+            System.setProperty(ND4JSystemProperties.ND4J_CPU_LOAD_OPENBLAS_NOLAPACK, "mklml");
         }
 
         blas = new CpuBlas();

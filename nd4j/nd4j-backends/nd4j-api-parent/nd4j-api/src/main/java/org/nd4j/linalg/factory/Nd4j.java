@@ -33,6 +33,8 @@ import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.config.ND4JEnvironmentVars;
+import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -107,10 +109,11 @@ import java.util.logging.Logger;
 public class Nd4j {
 
     public final static String NUMERICAL_STABILITY = "force.stability";
-    public final static String FFT_OPS = "fft";
     public final static String DATA_BUFFER_OPS = "databufferfactory";
     public final static String CONVOLUTION_OPS = "convops";
-    public final static String DTYPE = "dtype";
+    /**@deprecated Use {@link ND4JSystemProperties#DTYPE}*/
+    @Deprecated
+    public final static String DTYPE = ND4JSystemProperties.DTYPE;
     public final static String BLAS_OPS = "blas.ops";
     public final static String SPARSE_BLAS_OPS = "sparseblas.ops";
     public final static String NATIVE_OPS = "native.ops";
@@ -134,7 +137,9 @@ public class Nd4j {
     public final static String MEMORY_MANAGER = "memorymanager";
     public final static String WORKSPACE_MANAGER = "workspacemanager";
     public final static String RANDOM_PROVIDER = "random";
-    public static final String LOG_INIT_ENV_PROPERTY = "org.nd4j.log.initialization";
+    /**@deprecated Use {@link ND4JSystemProperties#LOG_INITIALIZATION}*/
+    @Deprecated
+    public static final String LOG_INIT_ENV_PROPERTY = ND4JSystemProperties.LOG_INITIALIZATION;
 
     //execution mode for element wise operations
     public static OpExecutioner.ExecutionMode executionMode = OpExecutioner.ExecutionMode.JAVA;
@@ -7006,9 +7011,9 @@ public class Nd4j {
             props = Nd4jContext.getInstance().getConf();
             PropertyParser pp = new PropertyParser(props);
 
-            String otherDtype = pp.toString(DTYPE);
-            dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT
-                    : otherDtype.equals("half") ? DataBuffer.Type.HALF : DataBuffer.Type.DOUBLE;
+            String otherDtype = pp.toString(ND4JSystemProperties.DTYPE);
+            dtype = otherDtype.equalsIgnoreCase("float") ? DataBuffer.Type.FLOAT
+                    : otherDtype.equalsIgnoreCase("half") ? DataBuffer.Type.HALF : DataBuffer.Type.DOUBLE;
 
             if (dtype == DataBuffer.Type.HALF && backend.getClass().getName().equals("CpuBackend")) {
                 showAttractiveMessage(getMessageForNativeHalfPrecision());
@@ -7107,7 +7112,7 @@ public class Nd4j {
                 fallbackMode.set(false);
             }
 
-            String logInitProperty = System.getProperty(LOG_INIT_ENV_PROPERTY, "true");
+            String logInitProperty = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION, "true");
             if(Boolean.parseBoolean(logInitProperty)) {
                 OP_EXECUTIONER_INSTANCE.printEnvironmentInformation();
             }
@@ -7178,7 +7183,7 @@ public class Nd4j {
     }
 
     private boolean isFallback() {
-        String fallback = System.getenv("ND4J_FALLBACK");
+        String fallback = System.getenv(ND4JEnvironmentVars.ND4J_FALLBACK);
         if (fallback == null) {
             return false;
         }

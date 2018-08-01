@@ -47,17 +47,16 @@ public interface DataBuffer extends Serializable {
 
 
     /**
-     * Direct (off heap) and heap allocation
-     *
-     * Each has their trade offs.
-     *
-     * One allows for storing unlimited array sizes, faster i/o with native
-     * applications
-     *
-     * heap is backed by an array and can be useful depending on the api
+     * Mainly used for backward compatability.
+     * Note that DIRECT and HEAP modes have been deprecated asd should not be used.
      */
     enum AllocationMode {
-        DIRECT, HEAP, JAVACPP,
+
+        @Deprecated
+        DIRECT,
+        @Deprecated
+        HEAP,
+        JAVACPP,
         LONG_SHAPE, // long shapes will be used instead of int
     }
 
