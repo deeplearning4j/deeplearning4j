@@ -31,7 +31,7 @@ import java.util.*;
  * @author Max Pumperla
  */
 @Data
-public class Tokenizer {
+public class KerasTokenizer {
 
     private static final String DEFAULT_FILTER = "!\"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n";
     private static final String DEFAULT_SPLIT = " ";
@@ -43,11 +43,11 @@ public class Tokenizer {
     private boolean charLevel;
     private String outOfVocabularyToken;
 
-    private Map<String, Integer> wordCounts = new HashMap<String, Integer>();
-    private Map<String, Integer> wordDocs = new HashMap<String, Integer>();
-    private Map<String, Integer> wordIndex = new HashMap<String, Integer>();
-    private Map<Integer, String> indexWord = new HashMap<Integer, String>();
-    private Map<Integer, Integer> indexDocs = new HashMap<Integer, Integer>();
+    private Map<String, Integer> wordCounts = new HashMap<>();
+    private HashMap<String, Integer> wordDocs = new HashMap<>();
+    private Map<String, Integer> wordIndex = new HashMap<>();
+    private Map<Integer, String> indexWord = new HashMap<>();
+    private Map<Integer, Integer> indexDocs = new HashMap<>();
     private Integer documentCount;
 
 
@@ -62,7 +62,7 @@ public class Tokenizer {
      * @param charLevel            whether to operate on character- or word-level
      * @param outOfVocabularyToken replace items outside the vocabulary by this token
      */
-    public Tokenizer(Integer numWords, String filters, boolean lower, String split, boolean charLevel,
+    public KerasTokenizer(Integer numWords, String filters, boolean lower, String split, boolean charLevel,
                      String outOfVocabularyToken) {
 
         this.numWords = numWords;
@@ -73,7 +73,12 @@ public class Tokenizer {
         this.outOfVocabularyToken = outOfVocabularyToken;
     }
 
-    public Tokenizer() {
+
+    public KerasTokenizer(Integer numWords) {
+        this(numWords, DEFAULT_FILTER, true, DEFAULT_SPLIT, false, null);
+    }
+
+    public KerasTokenizer() {
         this(null, DEFAULT_FILTER, true, DEFAULT_SPLIT, false, null);
     }
 
@@ -95,7 +100,10 @@ public class Tokenizer {
     public void fitOnTexts(String[] texts) {
         String[] sequence;
         for (String text : texts) {
-            documentCount += 1;
+            if (documentCount == null)
+                documentCount = 1;
+            else
+                documentCount += 1;
             if (charLevel) {
                 if (lower)
                     text = text.toLowerCase();
@@ -105,29 +113,29 @@ public class Tokenizer {
             }
             for (String word : sequence) {
                 if (wordCounts.containsKey(word))
-                    wordCounts.put(word, (int) wordCounts.get(word) + 1);
+                    wordCounts.put(word, wordCounts.get(word) + 1);
                 else
                     wordCounts.put(word, 1);
             }
             Set<String> sequenceSet = new HashSet<>(Arrays.asList(sequence));
             for (String word: sequenceSet) {
                 if (wordDocs.containsKey(word))
-                    wordDocs.put(word, (int) wordDocs.get(word) + 1);
+                    wordDocs.put(word, wordDocs.get(word) + 1);
                 else
                     wordDocs.put(word, 1);
             }
         }
-        Ordering valueComparator = Ordering.natural().reverse().onResultOf(Functions.forMap(wordDocs));
-        Map<String, Integer> sortedWordCounts = ImmutableSortedMap.copyOf(wordDocs, valueComparator);
-        ArrayList<String> sortedVocabulary = new ArrayList<String>();
+        Map<String, Integer> sortedWordCounts = sortByValues(wordDocs);
+
+        ArrayList<String> sortedVocabulary = new ArrayList<>();
         if (outOfVocabularyToken != null)
             sortedVocabulary.add(outOfVocabularyToken);
         for (String word: sortedWordCounts.keySet()) {
             sortedVocabulary.add(word);
         }
 
-        for (int i = 1; i <= sortedVocabulary.size() + 1; i++)
-            wordIndex.put(sortedVocabulary.get(i), i);
+        for (int i = 0; i < sortedVocabulary.size(); i++)
+            wordIndex.put(sortedVocabulary.get(i), i+1);
 
         for(String key : wordIndex.keySet()){
             indexWord.put(wordIndex.get(key), key);
@@ -135,6 +143,22 @@ public class Tokenizer {
 
         for (String key: wordDocs.keySet())
             indexDocs.put(wordIndex.get(key), wordDocs.get(key));
+    }
+
+    private static HashMap sortByValues(HashMap map) {
+        List list = new LinkedList(map.entrySet());
+        Collections.sort(list, new Comparator() {
+            public int compare(Object o1, Object o2) {
+                return ((Comparable) ((Map.Entry) (o1)).getValue())
+                        .compareTo(((Map.Entry) (o2)).getValue());
+            }
+        });
+        HashMap sortedHashMap = new LinkedHashMap();
+        for (Iterator it = list.iterator(); it.hasNext();) {
+            Map.Entry entry = (Map.Entry) it.next();
+            sortedHashMap.put(entry.getKey(), entry.getValue());
+        }
+        return sortedHashMap;
     }
 
     public void fitOnSequences(Integer[][] sequences) {
@@ -233,11 +257,14 @@ public class Tokenizer {
             Integer[] sequence = sequences[i];
             if (sequence == null)
                 continue;
-            Map<Integer, Integer> counts = new HashMap<Integer, Integer>();
+            HashMap<Integer, Integer> counts = new HashMap<>();
             for (int j: sequence) {
                 if (j >= numWords)
                     continue;
-                counts.put(j, counts.get(j) + 1);
+                if (counts.containsKey(j))
+                    counts.put(j, counts.get(j) + 1);
+                else
+                    counts.put(j, 1);
             }
             for (int j: counts.keySet()) {
                 int count = counts.get(j);
