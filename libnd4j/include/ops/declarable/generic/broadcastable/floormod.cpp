@@ -16,8 +16,8 @@
 
 //
 //  @author raver119@gmail.com
+//  modified by sgazeos@gmail.com with backprop implementation.
 //
-
 #include <op_boilerplate.h>
 #if NOT_EXCLUDED(OP_floormod)
 
@@ -86,9 +86,16 @@ namespace nd4j {
             auto gradX = OUTPUT_VARIABLE(0);
             auto gradY = OUTPUT_VARIABLE(1);
 
-            gradY->assign((T) 0.0f);
-            gradX->assign((T) 0.0f);
-
+//            gradY->assign();
+            gradX->assign(epsNext);
+            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::FloorMod<T>>(x, y, gradY);
+            if (tZ == nullptr)
+                return ND4J_STATUS_KERNEL_FAILURE;
+            else if (tZ != gradY) {
+                OVERWRITE_RESULT(tZ);
+            }
+            
+            epsNext->template applyPairwiseTransform<simdOps::Multiply<T>>(gradY, gradY, nullptr);
             return Status::OK();
         }
 
