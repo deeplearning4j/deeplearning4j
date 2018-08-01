@@ -23,28 +23,16 @@ import lombok.var;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.imports.TFGraphs.NodeReader;
-import org.nd4j.linalg.api.blas.params.GemmParams;
-import org.nd4j.linalg.api.blas.params.MMulTranspose;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
-import org.nd4j.linalg.api.ops.impl.accum.LogSumExp;
-import org.nd4j.linalg.api.ops.impl.accum.Mmul;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
-import org.nd4j.linalg.indexing.BooleanIndexing;
-import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.imports.TFGraphs.NodeReader;
+import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -78,6 +66,7 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -387,7 +376,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(order, Nd4j.order().charValue());
     }
 
-
     @Test
     public void testMatrix() {
         INDArray arr = Nd4j.create(new float[] {1, 2, 3, 4}, new long[] {2, 2});
@@ -397,17 +385,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(Nd4j.create(new double[] {-4, -4}), arr.getRow(0));
 
     }
-
-    @Test
-    @Ignore
-    public void testParseComplexNumber() {
-        IComplexNumber assertion = Nd4j.createComplexNumber(1, 1);
-        String parse = "1 + 1i";
-        IComplexNumber parsed = Nd4j.parseComplexNumber(parse);
-        assertEquals(assertion, parsed);
-    }
-
-
 
     @Test
     public void testMMul() {

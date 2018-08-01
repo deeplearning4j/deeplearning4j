@@ -54,8 +54,7 @@ public class VectorDeSerializer extends JsonDeserializer<INDArray> {
             realStride[i] = stride.get(i).asInt();
         }
 
-        INDArray ret = type.equals("real") ? Nd4j.create(buff, realShape, realStride, offset, ordering.charAt(0))
-                        : Nd4j.createComplex(buff, realShape, realStride, offset, ordering.charAt(0));
+        INDArray ret = Nd4j.create(buff, realShape, realStride, offset, ordering.charAt(0));
         return ret;
     }
 }
