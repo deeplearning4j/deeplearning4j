@@ -374,7 +374,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         predictedXYInGrid.putScalar(new int[]{0, 0, 0, gridNumY2, gridNumX2}, pX2);
         predictedXYInGrid.putScalar(new int[]{0, 0, 1, gridNumY2, gridNumX2}, pY2);
 
-        INDArray objectPresentMask = labelImgClasses;   //Only 1 class here, so same thing as object present mask...
+        INDArray objectPresentMask = labelImgClasses.reshape(labelImgClasses.ordering(), 1, labelImgClasses.size(0), labelImgClasses.size(1));   //Only 1 class here, so same thing as object present mask...
 
         Object ret = m.invoke(ol, labelTL, labelBR, predictedWH, predictedXYInGrid, objectPresentMask);
         Field fIou = ret.getClass().getDeclaredField("iou");
