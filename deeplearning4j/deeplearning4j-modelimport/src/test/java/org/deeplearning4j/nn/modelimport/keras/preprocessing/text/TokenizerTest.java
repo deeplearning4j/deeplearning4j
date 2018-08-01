@@ -30,15 +30,17 @@ public class TokenizerTest {
 
     @Test
     public void tokenizerBasics() {
-        int numDocs = 3;
+        int numDocs = 5;
         int numWords = 12;
 
         KerasTokenizer tokenizer = new KerasTokenizer(numWords);
 
         String[] texts = new String[] {
-                "The cat sat on the mat.",
-                "The dog sat on the log.",
-                "Dogs and cats living together."
+                "Black then white are all I see",
+                "In my infancy",
+                "Red and yellow then came to be",
+                "Reaching out to me",
+                "Lets me see."
         };
 
         tokenizer.fitOnTexts(texts);

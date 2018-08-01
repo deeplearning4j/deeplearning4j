@@ -16,9 +16,6 @@
 
 package org.deeplearning4j.nn.modelimport.keras.preprocessing.text;
 
-import com.google.common.base.Functions;
-import com.google.common.collect.ImmutableSortedMap;
-import com.google.common.collect.Ordering;
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -26,7 +23,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.*;
 
 /**
- * Keras text tokenizer.
+ * Java port of Keras' text tokenizer, see https://keras.io/preprocessing/text/ for more information.
  *
  * @author Max Pumperla
  */
@@ -53,7 +50,7 @@ public class KerasTokenizer {
 
 
     /**
-     * Create a Keras Tokenizer instance
+     * Create a Keras Tokenizer instance with full set of properties.
      *
      * @param numWords             The maximum vocabulary size, can be null
      * @param filters              Characters to filter
@@ -74,15 +71,32 @@ public class KerasTokenizer {
     }
 
 
+    /**
+     * Tokenizer constructor with only numWords specified
+     *
+     * @param numWords             The maximum vocabulary size, can be null
+     */
     public KerasTokenizer(Integer numWords) {
         this(numWords, DEFAULT_FILTER, true, DEFAULT_SPLIT, false, null);
     }
 
+    /**
+     * Default Keras tokenizer constructor
+     */
     public KerasTokenizer() {
         this(null, DEFAULT_FILTER, true, DEFAULT_SPLIT, false, null);
     }
 
 
+    /**
+     * Turns a String text into a sequence of tokens.
+     *
+     * @param text                 input text
+     * @param filters              characters to filter
+     * @param lower                whether to lowercase input or not
+     * @param split                by which string to split words (usually single space)
+     * @return Sequence of tokens as String array
+     */
     public static String[] textToWordSequence(String text, String filters, boolean lower, String split) {
         if (lower)
             text = text.toLowerCase();
@@ -97,6 +111,11 @@ public class KerasTokenizer {
         return seqList.toArray(new String[seqList.size()]);
     }
 
+    /**
+     * Fit this tokenizer on a corpus of texts.
+     *
+     * @param texts array of strings to fit tokenizer on.
+     */
     public void fitOnTexts(String[] texts) {
         String[] sequence;
         for (String text : texts) {
@@ -125,7 +144,7 @@ public class KerasTokenizer {
                     wordDocs.put(word, 1);
             }
         }
-        Map<String, Integer> sortedWordCounts = sortByValues(wordDocs);
+        Map<String, Integer> sortedWordCounts = reverseSortByValues(wordDocs);
 
         ArrayList<String> sortedVocabulary = new ArrayList<>();
         if (outOfVocabularyToken != null)
@@ -145,12 +164,18 @@ public class KerasTokenizer {
             indexDocs.put(wordIndex.get(key), wordDocs.get(key));
     }
 
-    private static HashMap sortByValues(HashMap map) {
+    /**
+     * Sort HashMap by values in reverse order
+     *
+     * @param map input HashMap
+     * @return sorted HashMap
+     */
+    private static HashMap reverseSortByValues(HashMap map) {
         List list = new LinkedList(map.entrySet());
         Collections.sort(list, new Comparator() {
             public int compare(Object o1, Object o2) {
-                return ((Comparable) ((Map.Entry) (o1)).getValue())
-                        .compareTo(((Map.Entry) (o2)).getValue());
+                return ((Comparable) ((Map.Entry) (o2)).getValue())
+                        .compareTo(((Map.Entry) (o1)).getValue());
             }
         });
         HashMap sortedHashMap = new LinkedHashMap();
@@ -161,6 +186,11 @@ public class KerasTokenizer {
         return sortedHashMap;
     }
 
+    /**
+     * Fit this tokenizer on a corpus of word indices
+     *
+     * @param sequences array of indices derived from a text.
+     */
     public void fitOnSequences(Integer[][] sequences) {
         documentCount += 1;
         for (Integer[] sequence: sequences) {
@@ -170,6 +200,12 @@ public class KerasTokenizer {
         }
     }
 
+    /**
+     * Transforms a bunch of texts into their index representations.
+     *
+     * @param texts input texts
+     * @return array of indices of the texts
+     */
     public Integer[][] textsToSequences(String[] texts) {
         Integer oovTokenIndex  = wordIndex.get(outOfVocabularyToken);
         String[] wordSequence;
@@ -204,6 +240,12 @@ public class KerasTokenizer {
     }
 
 
+    /**
+     * Turns index sequences back into texts
+     *
+     * @param sequences index sequences
+     * @return text reconstructed from sequences
+     */
     public String[] sequencesToTexts(Integer[][] sequences) {
         Integer oovTokenIndex  = wordIndex.get(outOfVocabularyToken);
         ArrayList<String> texts = new ArrayList<>();
@@ -234,11 +276,27 @@ public class KerasTokenizer {
     }
 
 
+    /**
+     * Turns an array of texts into an ND4J matrix of shape
+     * (number of texts, number of words in vocabulary)
+     *
+     * @param texts input texts
+     * @param mode TokenizerMode that controls how to vectorize data
+     * @return resulting matrix representation
+     */
     public INDArray textsToMatrix(String[] texts, TokenizerMode mode) {
         Integer[][] sequences = textsToSequences(texts);
         return sequencesToMatrix(sequences, mode);
     }
 
+    /**
+     * Turns an array of index sequences into an ND4J matrix of shape
+     * (number of texts, number of words in vocabulary)
+     *
+     * @param sequences input sequences
+     * @param mode TokenizerMode that controls how to vectorize data
+     * @return resulting matrix representatio
+     */
     public INDArray sequencesToMatrix(Integer[][] sequences, TokenizerMode mode) {
         if (numWords == null) {
             if (!wordIndex.isEmpty()) {
