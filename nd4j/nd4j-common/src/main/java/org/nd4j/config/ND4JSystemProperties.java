@@ -18,15 +18,12 @@ package org.nd4j.config;
 
 public class ND4JSystemProperties {
 
-    private ND4JSystemProperties(){ }
-
     /**
      * Applicability: Always<br>
      * Description: Sets the default datatype for ND4J - should be one of "float", "double", "half".
      * ND4J is set to float (32-bit floating point values) by default.
      */
     public static final String DTYPE = "dtype";
-
     /**
      * Applicability: Always<br>
      * Description: By default, ND4J will log some information when the library has completed initialization, such as the
@@ -34,11 +31,25 @@ public class ND4JSystemProperties {
      * initialization information
      */
     public static final String LOG_INITIALIZATION = "org.nd4j.log.initialization";
-
-
-    //TODO ADD JAVACCP MEMORY OPTIONS HERE
-    //(Technically they aren't ND4J system properties, but they are very important)
-
+    /**
+     * Applicability: Always<br>
+     * Description: This system property defines the maximum amount of off-heap memory that can be used.
+     * ND4J uses off-heap memory for storage of all INDArray data. This off-heap memory is a different
+     * pool of memory to the on-heap JVM memory (configured using standard Java Xms/Xmx options).
+     * Default: 2x Java XMX setting
+     *
+     * @see #JAVACPP_MEMORY_MAX_PHYSICAL_BYTES
+     */
+    public static final String JAVACPP_MEMORY_MAX_BYTES = "org.bytedeco.javacpp.maxbytes";
+    /**
+     * Applicability: Always<br>
+     * Description: This system property defines the maximum total amount of memory that the process can use - it is
+     * the sum of both off-heap and on-heap memory. This can be used to provide an upper bound on the maximum amount
+     * of memory (of all types) that ND4J will use
+     *
+     * @see #JAVACPP_MEMORY_MAX_BYTES
+     */
+    public static final String JAVACPP_MEMORY_MAX_PHYSICAL_BYTES = "org.bytedeco.javacpp.maxphysicalbytes";
     /**
      * Applicability: always - but only if an ND4J backend cannot be found/loaded via standard ServiceLoader mechanisms<br>
      * Description: Set this property to a set fully qualified JAR files to attempt to load before failing on
@@ -48,7 +59,6 @@ public class ND4JSystemProperties {
      * system property (the system property will take precidence if both are set)
      */
     public static final String DYNAMIC_LOAD_CLASSPATH_PROPERTY = "org.nd4j.backend.dynamicbackend";
-
     /**
      * Applicability: Always<br>
      * Description Setting the system property to false will stop ND4J from performing the version check, and logging any
@@ -57,8 +67,6 @@ public class ND4JSystemProperties {
      * issues, and should be avoided.
      */
     public static final String VERSION_CHECK_PROPERTY = "org.nd4j.versioncheck";
-
-
     /**
      * Applicability: always<br>
      * Description: Used to specify the maximum number of elements (numbers) to print when using DataBuffer.toString().
@@ -67,12 +75,20 @@ public class ND4JSystemProperties {
      * Default: 1000
      */
     public static final String DATABUFFER_TO_STRING_MAX_ELEMENTS = "org.nd4j.databuffer.tostring.maxelements";
-
-
+    /**
+     * Applicability: nd4j-native backend, when multiple BLAS libraries are available<br>
+     * Description: This system property can be used to control which BLAS library is loaded and used by ND4J.
+     * For example, {@code org.bytedeco.javacpp.openblas.load=mkl_rt} can be used to load a default installation of MKL.
+     * However, MKL is liked with by default (when available) so setting this option explicitly is not usually required.
+     * For more details, see <a href="https://github.com/bytedeco/javacpp-presets/tree/master/openblas#documentation">https://github.com/bytedeco/javacpp-presets/tree/master/openblas#documentation</a>
+     */
     public static final String ND4J_CPU_LOAD_OPENBLAS = "org.bytedeco.javacpp.openblas.load";
-
+    /**
+     * Applicability: nd4j-native backend, when multiple BLAS libraries are available<br>
+     * Description: This system property can be used to control which BLAS library is loaded and used by ND4J.
+     * Similar to {@link #ND4J_CPU_LOAD_OPENBLAS} but when this is set, LAPACK will not be loaded
+     */
     public static final String ND4J_CPU_LOAD_OPENBLAS_NOLAPACK = "org.bytedeco.javacpp.openblas_nolapack.load";
-
     /**
      * Applicability: nd4j-parameter-server, dl4j-spark (gradient sharing training master)<br>
      * Description: Aeros in a high-performance communication library used in distributed computing contexts in some
@@ -85,4 +101,7 @@ public class ND4JSystemProperties {
      * the buffer size will have no effect)
      */
     public static final String AERON_TERM_BUFFER_PROP = "aeron.term.buffer.length";
+
+    private ND4JSystemProperties() {
+    }
 }
