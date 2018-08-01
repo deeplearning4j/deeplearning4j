@@ -78,8 +78,18 @@ public class Tokenizer {
     }
 
 
-    public String[] textToWordSequence(String text, String filters, boolean lower, String split) {
-        return new String[]{"f", "o", "o"}; // TODO
+    public static String[] textToWordSequence(String text, String filters, boolean lower, String split) {
+        if (lower)
+            text = text.toLowerCase();
+
+        for (String filter: filters.split("")) {
+            text = text.replace(filter, split);
+        }
+        String[] sequences = text.split(split);
+        List<String> seqList = Arrays.asList(sequences);
+        seqList.removeAll(Arrays.asList("", null));
+
+        return seqList.toArray(new String[seqList.size()]);
     }
 
     public void fitOnTexts(String[] texts) {
@@ -137,12 +147,68 @@ public class Tokenizer {
     }
 
     public Integer[][] textsToSequences(String[] texts) {
-        return new Integer[][] {{}}; // TODO skip textsToSequencesGenerator()
+        Integer oovTokenIndex  = wordIndex.get(outOfVocabularyToken);
+        String[] wordSequence;
+        ArrayList<Integer[]> sequences = new ArrayList<>();
+        for (String text: texts) {
+            if (charLevel) {
+                if (lower) {
+                    text = text.toLowerCase();
+                }
+                wordSequence = text.split("");
+            } else {
+                wordSequence = textToWordSequence(text, filters, lower, split);
+            }
+            ArrayList<Integer> indexVector = new ArrayList<>();
+            for (String word: wordSequence) {
+                if (wordIndex.containsKey(word)) {
+                    int index = wordIndex.get(word);
+                    if (numWords != null && index >= numWords) {
+                        if (oovTokenIndex != null)
+                            indexVector.add(oovTokenIndex);
+                    } else {
+                        indexVector.add(index);
+                    }
+                } else if (oovTokenIndex != null) {
+                    indexVector.add(oovTokenIndex);
+                }
+            }
+            Integer[] indices = indexVector.toArray(new Integer[indexVector.size()]);
+            sequences.add(indices);
+        }
+        return sequences.toArray(new Integer[sequences.size()][]);
     }
 
-    public Integer[][] sequencesToTexts(String[] texts) {
-        return new Integer[][] {{}}; // TODO skip sequencesToTextsGenerator()
+
+    public String[] sequencesToTexts(Integer[][] sequences) {
+        Integer oovTokenIndex  = wordIndex.get(outOfVocabularyToken);
+        ArrayList<String> texts = new ArrayList<>();
+        for (Integer[] sequence: sequences) {
+            ArrayList<String> wordVector = new ArrayList<>();
+            for (Integer index: sequence) {
+                if (indexWord.containsKey(index)) {
+                    String word = indexWord.get(index);
+                    if (numWords != null && index >= numWords) {
+                        if (oovTokenIndex != null) {
+                            wordVector.add(indexWord.get(oovTokenIndex));
+                        } else {
+                            wordVector.add(word);
+                        }
+                    }
+                } else if (oovTokenIndex != null) {
+                    wordVector.add(indexWord.get(oovTokenIndex));
+                }
+            }
+            StringBuilder builder = new StringBuilder();
+            for (String word: wordVector) {
+                builder.append(word + split);
+            }
+            String text = builder.toString();
+            texts.add(text);
+        }
+        return texts.toArray(new String[texts.size()]);
     }
+
 
     public INDArray textsToMatrix(String[] texts, TokenizerMode mode) {
         Integer[][] sequences = textsToSequences(texts);
@@ -193,7 +259,6 @@ public class Tokenizer {
                         break;
                 }
             }
-
         }
         return x;
     }
