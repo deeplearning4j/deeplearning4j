@@ -22,26 +22,16 @@ import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.util.AllocUtil;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
-import org.nd4j.linalg.api.complex.IComplexDouble;
-import org.nd4j.linalg.api.complex.IComplexFloat;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.*;
-import java.nio.ByteBuffer;
+import java.nio.*;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import org.nd4j.linalg.util.ArrayUtil;
 
 
 /**
@@ -953,25 +943,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @return the data buffer based on the given buffer
      */
     public abstract DataBuffer create(int[] data);
-
-
-    @Override
-    public abstract IComplexFloat getComplexFloat(long i);
-
-    @Override
-    public abstract IComplexDouble getComplexDouble(long i);
-
-    @Override
-    public IComplexNumber getComplex(long i) {
-        return dataType() == Type.FLOAT ? getComplexFloat(i) : getComplexDouble(i);
-    }
-
-
-    @Override
-    public void put(long i, IComplexNumber result) {
-        put(i, result.realComponent().doubleValue());
-        put(i + 1, result.imaginaryComponent().doubleValue());
-    }
 
 
     @Override
