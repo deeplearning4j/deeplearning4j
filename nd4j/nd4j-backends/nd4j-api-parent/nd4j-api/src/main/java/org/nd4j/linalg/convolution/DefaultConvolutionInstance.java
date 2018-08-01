@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.convolution;
 
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -25,20 +24,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Adam Gibson
  */
 public class DefaultConvolutionInstance extends BaseConvolution {
-
-    /**
-     * ND Convolution
-     *
-     * @param input  the input to op
-     * @param kernel the kernel to op with
-     * @param type   the opType of convolution
-     * @param axes   the axes to do the convolution along
-     * @return the convolution of the given input and kernel
-     */
-    @Override
-    public IComplexNDArray convn(IComplexNDArray input, IComplexNDArray kernel, Convolution.Type type, int[] axes) {
-        throw new UnsupportedOperationException();
-    }
 
     /**
      * ND Convolution

@@ -31,8 +31,6 @@ import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -55,7 +53,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
-import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.exception.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
@@ -900,10 +897,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     protected INDArray create(DataBuffer data, int[] shape, long offset) {
-        if (this instanceof IComplexNDArray)
-            return Nd4j.createComplex(data, shape, offset);
-        else
-            return Nd4j.create(data, shape, offset);
+        return Nd4j.create(data, shape, offset);
     }
 
 
@@ -1290,18 +1284,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public IComplexNumber normmaxComplex() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Number norm2Number() {
         return norm2(Integer.MAX_VALUE).getDouble(0);
-    }
-
-    @Override
-    public IComplexNumber norm2Complex() {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -1310,28 +1294,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public IComplexNumber norm1Complex() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Number stdNumber() {
         return std(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
-    public IComplexNumber stdComplex() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Number prodNumber() {
         return prod(Integer.MAX_VALUE).getDouble(0);
-    }
-
-    @Override
-    public IComplexNumber prodComplex() {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -1345,19 +1314,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public IComplexNumber meanComplex() {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
     public Number varNumber() {
         return var(Integer.MAX_VALUE).getDouble(0);
-    }
-
-    @Override
-    public IComplexNumber varComplex() {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -1368,11 +1326,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public Number amaxNumber() {
         return amax(Integer.MAX_VALUE).getDouble(0);
-    }
-
-    @Override
-    public IComplexNumber maxComplex() {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -1389,12 +1342,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public Number scan(Condition condition) {
         MatchCondition op = new MatchCondition(this, condition);
         return Nd4j.getExecutioner().exec(op, Integer.MAX_VALUE).getDouble(0);
-    }
-
-    @Override
-    public IComplexNumber minComplex() {
-        throw new UnsupportedOperationException();
-
     }
 
     @Override
@@ -1428,12 +1375,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public Number logEntropyNumber() {
         return logEntropy(Integer.MAX_VALUE).getDouble(0);
-    }
-
-
-    @Override
-    public IComplexNumber sumComplex() {
-        throw new UnsupportedOperationException();
     }
 
     /**
@@ -2275,31 +2216,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     protected INDArray create(DataBuffer data, int[] newShape, int[] newStrides, long offset, char ordering) {
-        if (this instanceof IComplexNDArray)
-            return Nd4j.createComplex(data, newShape, newStrides, offset, ordering);
-        else
-            return Nd4j.create(data, newShape, newStrides, offset, ordering);
+        return Nd4j.create(data, newShape, newStrides, offset, ordering);
     }
 
     protected INDArray create(DataBuffer data, int[] newShape, int[] newStrides, long offset) {
-        if (this instanceof IComplexNDArray)
-            return Nd4j.createComplex(data, newShape, newStrides, offset);
-        else
-            return Nd4j.create(data, newShape, newStrides, offset);
+        return Nd4j.create(data, newShape, newStrides, offset);
     }
 
     protected INDArray create(int[] shape) {
-        if (this instanceof IComplexNDArray)
-            return Nd4j.createComplex(shape, getStrides(shape, Nd4j.order()), 0);
-        else
-            return Nd4j.create(shape, getStrides(shape, Nd4j.order()), 0);
+        return Nd4j.create(shape, getStrides(shape, Nd4j.order()), 0);
     }
 
     protected INDArray create(int[] shape, int[] strides, long offset) {
-        if (this instanceof IComplexNDArray)
-            return Nd4j.createComplex(shape, strides, offset);
-        else
-            return Nd4j.create(shape, strides, offset);
+        return Nd4j.create(shape, strides, offset);
     }
 
     protected int[] getStrides(int[] shape, char ordering) {
@@ -3041,9 +2970,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         if (rank() == 2 && columns() == 1 && rowVector.isScalar()) {
-            if (this instanceof IComplexNDArray) {
-                applyScalarOp(rowVector, operation);
-            }
+            applyScalarOp(rowVector, operation);
         } else {
             // special optimization case, broadcast turns into ScalarOp Along Dimension
             if (rank() == 2 && elementWiseStride() == 1 && ordering() == 'f' && rowVector.elementWiseStride() == 1) {
@@ -3138,52 +3065,26 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     private void applyScalarOp(INDArray vector, char operation) {
         Nd4j.getCompressor().autoDecompress(this);
-        if (this instanceof IComplexNDArray) {
-            IComplexNDArray row = (IComplexNDArray) vector;
-            switch (operation) {
-                case 'a':
-                    addi(row.getComplex(0));
-                    break;
-                case 's':
-                    subi(row.getComplex(0));
-                    break;
-                case 'm':
-                    muli(row.getComplex(0));
-                    break;
-                case 'd':
-                    divi(row.getComplex(0));
-                    break;
-                case 'h':
-                    rsubi(row.getComplex(0));
-                    break;
-                case 't':
-                    rdivi(row.getComplex(0));
-                    break;
-            }
-        } else {
-            switch (operation) {
-                case 'a':
-                    addi(vector.getDouble(0));
-                    break;
-                case 's':
-                    subi(vector.getDouble(0));
-                    break;
-                case 'm':
-                    muli(vector.getDouble(0));
-                    break;
-                case 'd':
-                    divi(vector.getDouble(0));
-                    break;
-                case 'h':
-                    rsubi(vector.getDouble(0));
-                    break;
-                case 't':
-                    rdivi(vector.getDouble(0));
-                    break;
-            }
-
+        switch (operation) {
+            case 'a':
+                addi(vector.getDouble(0));
+                break;
+            case 's':
+                subi(vector.getDouble(0));
+                break;
+            case 'm':
+                muli(vector.getDouble(0));
+                break;
+            case 'd':
+                divi(vector.getDouble(0));
+                break;
+            case 'h':
+                rsubi(vector.getDouble(0));
+                break;
+            case 't':
+                rdivi(vector.getDouble(0));
+                break;
         }
-
     }
 
     protected DataBuffer shapeOf() {
@@ -3505,10 +3406,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     protected INDArray create(int[] shape, char ordering) {
-        if (this instanceof IComplexNDArray)
-            return Nd4j.createComplex(shape, ordering);
-        else
-            return Nd4j.create(shape, ordering);
+        return Nd4j.create(shape, ordering);
     }
 
     @Override
@@ -3856,10 +3754,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     private INDArray create(int[] shape, int[] stride) {
-        if (this instanceof IComplexNDArray)
-            return Nd4j.createComplex(shape, stride);
-        else
-            return Nd4j.create(shape, stride);
+        return Nd4j.create(shape, stride);
     }
 
     /**
@@ -4576,10 +4471,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     protected INDArray create(DataBuffer data, int[] shape, int[] strides) {
-        if (this instanceof IComplexNDArray)
-            return Nd4j.createComplex(data, shape, strides, 0, ordering());
-        else
-            return Nd4j.create(data, shape, strides, 0, ordering());
+        return Nd4j.create(data, shape, strides, 0, ordering());
     }
 
     @Override
@@ -5858,137 +5750,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (data.dataType() == DataBuffer.Type.FLOAT)
             return data.getFloat(0);
         return data.getDouble(0);
-    }
-
-
-    @Override
-    public IComplexNDArray rdiv(IComplexNumber n) {
-        return dup().rdivi(n);
-    }
-
-    @Override
-    public IComplexNDArray rdivi(IComplexNumber n) {
-        //return rdivi(n, Nd4j.createComplex(shape()));
-        throw new ND4JComplexNumbersNotSupportedException();
-    }
-
-    @Override
-    public IComplexNDArray rsub(IComplexNumber n) {
-        return dup().rsubi(n);
-    }
-
-    @Override
-    public IComplexNDArray rsubi(IComplexNumber n) {
-        //return rsubi(n, Nd4j.createComplex(shape()));
-        throw new ND4JComplexNumbersNotSupportedException();
-    }
-
-    @Override
-    public IComplexNDArray div(IComplexNumber n) {
-        return dup().divi(n);
-    }
-
-    @Override
-    public IComplexNDArray divi(IComplexNumber n) {
-        //return divi(n, Nd4j.createComplex(shape()));
-        throw new ND4JComplexNumbersNotSupportedException();
-    }
-
-    @Override
-    public IComplexNDArray mul(IComplexNumber n) {
-        return dup().muli(n);
-    }
-
-    @Override
-    public IComplexNDArray muli(IComplexNumber n) {
-        //return muli(n, Nd4j.createComplex(shape()));
-        throw new ND4JComplexNumbersNotSupportedException();
-    }
-
-    @Override
-    public IComplexNDArray sub(IComplexNumber n) {
-        return dup().subi(n);
-    }
-
-    @Override
-    public IComplexNDArray subi(IComplexNumber n) {
-        //return subi(n, Nd4j.createComplex(shape()));
-        throw new ND4JComplexNumbersNotSupportedException();
-    }
-
-    @Override
-    public IComplexNDArray add(IComplexNumber n) {
-        return dup().addi(n);
-    }
-
-    @Override
-    public IComplexNDArray addi(IComplexNumber n) {
-        //return addi(n, Nd4j.createComplex(shape()));
-        throw new ND4JComplexNumbersNotSupportedException();
-    }
-
-    @Override
-    public IComplexNDArray rdiv(IComplexNumber n, IComplexNDArray result) {
-        return dup().rdivi(n, result);
-    }
-
-    @Override
-    public IComplexNDArray rdivi(IComplexNumber n, IComplexNDArray result) {
-        return Nd4j.createComplex(this).rdivi(n, result);
-    }
-
-    @Override
-    public IComplexNDArray rsub(IComplexNumber n, IComplexNDArray result) {
-        return dup().rsubi(n, result);
-    }
-
-    @Override
-    public IComplexNDArray rsubi(IComplexNumber n, IComplexNDArray result) {
-        return Nd4j.createComplex(this).rsubi(n, result);
-    }
-
-    @Override
-    public IComplexNDArray div(IComplexNumber n, IComplexNDArray result) {
-        return dup().divi(n, result);
-    }
-
-    @Override
-    public IComplexNDArray divi(IComplexNumber n, IComplexNDArray result) {
-        return Nd4j.createComplex(this).divi(n, result);
-
-    }
-
-    @Override
-    public IComplexNDArray mul(IComplexNumber n, IComplexNDArray result) {
-        return dup().muli(n, result);
-    }
-
-    @Override
-    public IComplexNDArray muli(IComplexNumber n, IComplexNDArray result) {
-        return Nd4j.createComplex(this).muli(n, result);
-
-    }
-
-    @Override
-    public IComplexNDArray sub(IComplexNumber n, IComplexNDArray result) {
-        return dup().subi(n, result);
-    }
-
-    @Override
-    public IComplexNDArray subi(IComplexNumber n, IComplexNDArray result) {
-        return Nd4j.createComplex(this).subi(n, result);
-
-    }
-
-    @Override
-    public IComplexNDArray add(IComplexNumber n, IComplexNDArray result) {
-        return dup().addi(n, result);
-    }
-
-    @Override
-    public IComplexNDArray addi(IComplexNumber n, IComplexNDArray result) {
-        return Nd4j.createComplex(this).addi(n, result);
-
     }
 
     @Override

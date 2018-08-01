@@ -17,7 +17,6 @@
 package org.nd4j.linalg.indexing.conditions;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -26,10 +25,6 @@ import org.nd4j.linalg.factory.Nd4j;
 public class NotEqualsCondition extends BaseCondition {
     public NotEqualsCondition(Number value) {
         super(value);
-    }
-
-    public NotEqualsCondition(IComplexNumber complexNumber) {
-        super(complexNumber);
     }
 
     /**
@@ -48,10 +43,5 @@ public class NotEqualsCondition extends BaseCondition {
             return input.doubleValue() != value.doubleValue();
         else
             return input.floatValue() != value.floatValue();
-    }
-
-    @Override
-    public Boolean apply(IComplexNumber input) {
-        return complexNumber.equals(input);
     }
 }

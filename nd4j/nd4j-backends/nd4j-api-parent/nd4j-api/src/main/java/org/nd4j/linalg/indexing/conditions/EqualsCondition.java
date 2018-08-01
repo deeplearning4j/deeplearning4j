@@ -17,7 +17,6 @@
 package org.nd4j.linalg.indexing.conditions;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -36,10 +35,6 @@ public class EqualsCondition extends BaseCondition {
         super(value);
     }
 
-    public EqualsCondition(IComplexNumber complexNumber) {
-        super(complexNumber);
-    }
-
     /**
      * Returns condition ID for native side
      *
@@ -56,10 +51,5 @@ public class EqualsCondition extends BaseCondition {
             return input.doubleValue() == value.doubleValue();
         else
             return input.floatValue() == value.floatValue();
-    }
-
-    @Override
-    public Boolean apply(IComplexNumber input) {
-        return complexNumber.equals(input);
     }
 }
