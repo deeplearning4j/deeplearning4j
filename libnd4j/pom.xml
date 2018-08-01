@@ -175,7 +175,6 @@
                             <workingDirectory>${basedir}/tests_cpu</workingDirectory>
                             <arguments>
                                 <argument>run_tests.sh</argument>
-                                <argument>--release=${libnd4j.test.is.release.build}</argument>
                             </arguments>
                         </configuration>
                     </execution>
