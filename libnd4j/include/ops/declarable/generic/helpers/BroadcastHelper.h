@@ -30,7 +30,7 @@ namespace nd4j {
         class BroadcastHelper {
         public: 
             template <typename OpName>
-            static FORCEINLINE NDArray<T>* broadcast_apply(NDArray<T>* x, NDArray<T>* y, NDArray<T>* z, T *extraArgs = nullptr) {
+            static FORCEINLINE NDArray<T>* broadcastApply(NDArray<T>* x, NDArray<T>* y, NDArray<T>* z, T *extraArgs = nullptr) {
                 if (!x->isScalar() && !y->isScalar() && x->isSameShape(y)) {
 				    x->template applyPairwiseTransform<OpName>(y, z, nullptr);
                 } else if (!x->isScalar() && y->isScalar()) {
