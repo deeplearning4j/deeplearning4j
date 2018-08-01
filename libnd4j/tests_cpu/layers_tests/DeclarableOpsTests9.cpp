@@ -2113,10 +2113,10 @@ TEST_F(DeclarableOpsTests9, Floormod_BP_Test_1) {
     NDArray<double> y('c', {10, 10});
     NDArray<double> x('c', {10, 10});
     NDArray<double> dLdz('c', {10, 10});
-    NDArray<double> eps('c', {10, 10});
+    //NDArray<double> eps('c', {10, 10});
     x.linspace(3); //2., 2.0);
     y.linspace(2);
-    eps.linspace(1);
+    //eps.assign(-1.); //linspace(1);
     const OpArgsHolder<double> argsHolderFF({&x, &y}, {}, {});
     const OpArgsHolder<double> argsHolderBP({&x, &y, &dLdz}, {}, {});
 
