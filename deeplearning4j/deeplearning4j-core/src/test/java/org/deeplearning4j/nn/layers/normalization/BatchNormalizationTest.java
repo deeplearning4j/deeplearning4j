@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.normalization;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
@@ -23,6 +24,7 @@ import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
@@ -69,6 +71,7 @@ import static org.junit.Assert.*;
 
 /**
  */
+@Slf4j
 public class BatchNormalizationTest extends BaseDL4JTest {
 
     static {
@@ -652,5 +655,37 @@ public class BatchNormalizationTest extends BaseDL4JTest {
                 .build();
 
         net2.fit(iter);
+    }
+
+    @Test
+    public void testBatchNormRecurrentCnn1d(){
+        //Simple sanity check on CNN1D and RNN layers
+
+        for(boolean rnn : new boolean[]{true, false}){
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .weightInit(WeightInit.XAVIER)
+                    .convolutionMode(ConvolutionMode.Same)
+                    .list()
+                    .layer(rnn ? new LSTM.Builder().nOut(3).build() :
+                            new Convolution1DLayer.Builder().kernelSize(3).stride(1).nOut(3).build())
+                    .layer(new BatchNormalization())
+                    .layer(new RnnOutputLayer.Builder().nOut(3).activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build())
+                    .setInputType(InputType.recurrent(3))
+                    .build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            INDArray in = Nd4j.rand(new int[]{1, 3, 5});
+            INDArray label = Nd4j.rand(new int[]{1,3,5});
+
+            INDArray out = net.output(in);
+            assertArrayEquals(new long[]{1,3,5}, out.shape());
+
+            net.fit(in, label);
+            log.info("OK: {}", (rnn ? "rnn" : "cnn1d"));
+        }
     }
 }
