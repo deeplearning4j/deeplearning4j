@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -144,6 +145,8 @@ public class BatchNormalization extends FeedForwardLayer {
         if (inputType.getType() == InputType.Type.CNNFlat) {
             InputType.InputTypeConvolutionalFlat i = (InputType.InputTypeConvolutionalFlat) inputType;
             return new FeedForwardToCnnPreProcessor(i.getHeight(), i.getWidth(), i.getDepth());
+        } else if(inputType.getType() == InputType.Type.RNN){
+            return new RnnToFeedForwardPreProcessor();
         }
 
         return null;
