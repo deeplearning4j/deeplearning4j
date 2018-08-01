@@ -7749,7 +7749,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 		public native void tilei(@Cast("Nd4jLong*") @StdVector long[] repeats);
 
         /**
-        *  returns new array which is created by by repeating of this array the number of times given by reps 
+        *  returns new array which is created by repeating of this array the number of times given by reps 
         *  repeats - contains numbers of repetitions
         */
 		public native @ByVal FloatNDArray tile(@Cast("Nd4jLong*") @StdVector LongPointer repeats);
@@ -8015,7 +8015,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
         *
         *  shape  - contains new shape to broadcast array to 
-        *  target - optional argument, if target != nullptr the resulting array will be placed it target, in opposite case tile operation is done in place
+        *  target - optional argument, if target != nullptr the resulting array will be placed in target, in opposite case tile operation is done in place
         */
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape, FloatNDArray target/*=nullptr*/);
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape);
@@ -8045,7 +8045,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native FloatResultSet allTensorsAlongDimension(@StdVector IntBuffer dimensions);
         public native FloatResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
 
-        public native FloatResultSet allExamples();        
+        public native FloatResultSet allExamples();
         
         /**
         *  default destructor
@@ -8921,7 +8921,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 		public native void tilei(@Cast("Nd4jLong*") @StdVector long[] repeats);
 
         /**
-        *  returns new array which is created by by repeating of this array the number of times given by reps 
+        *  returns new array which is created by repeating of this array the number of times given by reps 
         *  repeats - contains numbers of repetitions
         */
 		public native @ByVal HalfNDArray tile(@Cast("Nd4jLong*") @StdVector LongPointer repeats);
@@ -9187,7 +9187,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
         *
         *  shape  - contains new shape to broadcast array to 
-        *  target - optional argument, if target != nullptr the resulting array will be placed it target, in opposite case tile operation is done in place
+        *  target - optional argument, if target != nullptr the resulting array will be placed in target, in opposite case tile operation is done in place
         */
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape, HalfNDArray target/*=nullptr*/);
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape);
@@ -9217,7 +9217,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native HalfResultSet allTensorsAlongDimension(@StdVector IntBuffer dimensions);
         public native HalfResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
 
-        public native HalfResultSet allExamples();        
+        public native HalfResultSet allExamples();
         
         /**
         *  default destructor
@@ -10093,7 +10093,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 		public native void tilei(@Cast("Nd4jLong*") @StdVector long[] repeats);
 
         /**
-        *  returns new array which is created by by repeating of this array the number of times given by reps 
+        *  returns new array which is created by repeating of this array the number of times given by reps 
         *  repeats - contains numbers of repetitions
         */
 		public native @ByVal DoubleNDArray tile(@Cast("Nd4jLong*") @StdVector LongPointer repeats);
@@ -10359,7 +10359,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
         *
         *  shape  - contains new shape to broadcast array to 
-        *  target - optional argument, if target != nullptr the resulting array will be placed it target, in opposite case tile operation is done in place
+        *  target - optional argument, if target != nullptr the resulting array will be placed in target, in opposite case tile operation is done in place
         */
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape, DoubleNDArray target/*=nullptr*/);
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape);
@@ -10389,7 +10389,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native DoubleResultSet allTensorsAlongDimension(@StdVector IntBuffer dimensions);
         public native DoubleResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
 
-        public native DoubleResultSet allExamples();        
+        public native DoubleResultSet allExamples();
         
         /**
         *  default destructor
@@ -13379,9 +13379,9 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native @Cast("bool") boolean equalsStrict(@Cast("Nd4jLong*") LongBuffer shapeA, @Cast("Nd4jLong*") LongBuffer shapeB);
     @Namespace("shape") public static native @Cast("bool") boolean equalsStrict(@Cast("Nd4jLong*") long[] shapeA, @Cast("Nd4jLong*") long[] shapeB);
 
-    @Namespace("shape") public static native int sizeAt(@Cast("Nd4jLong*") LongPointer shape, int dim);
-    @Namespace("shape") public static native int sizeAt(@Cast("Nd4jLong*") LongBuffer shape, int dim);
-    @Namespace("shape") public static native int sizeAt(@Cast("Nd4jLong*") long[] shape, int dim);
+    @Namespace("shape") public static native int sizeAt(@Cast("const Nd4jLong*") LongPointer shape, int dim);
+    @Namespace("shape") public static native int sizeAt(@Cast("const Nd4jLong*") LongBuffer shape, int dim);
+    @Namespace("shape") public static native int sizeAt(@Cast("const Nd4jLong*") long[] shape, int dim);
 
     @Namespace("shape") public static native void traceNew(int id);
 
@@ -13792,9 +13792,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * Returns the rank portion of
  * an information buffer
  */
-    @Namespace("shape") public static native int rank( @Cast("Nd4jLong*") LongPointer buffer);
-    @Namespace("shape") public static native int rank( @Cast("Nd4jLong*") LongBuffer buffer);
-    @Namespace("shape") public static native int rank( @Cast("Nd4jLong*") long[] buffer);
+    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") LongPointer buffer);
+    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") LongBuffer buffer);
+    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") long[] buffer);
 
 /**
  * Converts a raw int buffer of the layout:
