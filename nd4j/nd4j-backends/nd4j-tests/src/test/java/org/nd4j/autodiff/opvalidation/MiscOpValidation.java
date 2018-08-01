@@ -91,10 +91,6 @@ public class MiscOpValidation extends BaseOpValidation {
                         name = "sub";
                         break;
                     case 2:
-                        if(OpValidationSuite.IGNORE_FAILING){
-                            //https://github.com/deeplearning4j/deeplearning4j/issues/5978
-                            continue;
-                        }
                         bcOp = in3.mul(in2);
                         name = "mul";
                         break;
