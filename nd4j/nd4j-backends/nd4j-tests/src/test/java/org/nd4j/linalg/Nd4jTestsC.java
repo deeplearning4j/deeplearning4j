@@ -6774,6 +6774,16 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(ez, z);
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void testBroadcastInvalid(){
+        INDArray arr1 = Nd4j.ones(3,4,1);
+
+        //Invalid op: y must match x/z dimensions 0 and 2
+        INDArray arrInvalid = Nd4j.create(3,12);
+        Nd4j.getExecutioner().exec(new BroadcastMulOp(arr1, arrInvalid, arr1, 0, 2));
+        fail("Excepted exception on invalid input");
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;
