@@ -18,7 +18,6 @@ package org.nd4j.linalg.api.ops.impl.indexaccum;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
 import org.nd4j.linalg.factory.Nd4j;
@@ -76,11 +75,6 @@ public class IAMax extends BaseIndexAccumulation {
     @Override
     public float zeroHalf() {
         return zeroFloat();
-    }
-
-    @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(0, 0);
     }
 
     @Override

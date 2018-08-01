@@ -19,8 +19,6 @@ package org.nd4j.linalg.api.ndarray;
 import com.google.flatbuffers.FlatBufferBuilder;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.exception.Nd4jNoSuchWorkspaceException;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
@@ -122,10 +120,11 @@ public interface INDArray extends Serializable {
 
     /**
      * Element stride (one element to the next,
-     * also called the defualt stride: 1 for normal
-     * 2 for complex)
+     * also called the default stride: 1 for normal
      * @return
+     * @deprecated Previously used for complex numbers
      */
+    @Deprecated
     int elementStride();
 
 
@@ -1734,12 +1733,6 @@ public interface INDArray extends Serializable {
     Number normmaxNumber();
 
     /**
-     *
-     * @return
-     */
-    IComplexNumber normmaxComplex();
-
-    /**
      * Returns the norm2 (L2 norm, sqrt(sum(x_i^2), also known as Euclidean norm) along the specified dimension(s)
      *
      * @param dimension the dimension to getScalar the norm2 along
@@ -1753,12 +1746,6 @@ public interface INDArray extends Serializable {
      * @return L2 norm for the array
      */
     Number norm2Number();
-
-    /**
-     *
-     * @return
-     */
-    IComplexNumber norm2Complex();
 
     /**
      * Returns the norm1 (L1 norm, i.e., sum of absolute values; also known as Taxicab or Manhattan norm) along the
@@ -1776,14 +1763,6 @@ public interface INDArray extends Serializable {
      * @return Norm 1 for the array
      */
     Number norm1Number();
-
-    /**
-     * Calculate and return norm1 (L1 norm, i.e., sum of absolute values; also known as Taxicab or Manhattan norm) for
-     * the entire array
-     *
-     * @return
-     */
-    IComplexNumber norm1Complex();
 
     /**
      * Standard deviation of an INDArray along one or more dimensions
@@ -1817,12 +1796,6 @@ public interface INDArray extends Serializable {
     Number stdNumber(boolean biasCorrected);
 
     /**
-     *
-     * @return
-     */
-    IComplexNumber stdComplex();
-
-    /**
      * Returns the product along a given dimension
      *
      * @param dimension the dimension to getScalar the product along
@@ -1836,12 +1809,6 @@ public interface INDArray extends Serializable {
      * @return Product of all values in the array
      */
     Number prodNumber();
-
-    /**
-     *
-     * @return
-     */
-    IComplexNumber prodComplex();
 
     /**
      * Returns the overall mean of this ndarray
@@ -1881,8 +1848,6 @@ public interface INDArray extends Serializable {
      */
     Number ameanNumber();
 
-    IComplexNumber meanComplex();
-
     /**
      * Returns the overall variance of this ndarray
      *
@@ -1906,12 +1871,6 @@ public interface INDArray extends Serializable {
      * @return variance
      */
     Number varNumber();
-
-    /**
-     *
-     * @return
-     */
-    IComplexNumber varComplex();
 
     /**
      * Returns the overall max of this ndarray along given dimensions
@@ -1942,12 +1901,6 @@ public interface INDArray extends Serializable {
     Number amaxNumber();
 
     /**
-     *
-     * @return
-     */
-    IComplexNumber maxComplex();
-
-    /**
      * Returns the overall min of this ndarray
      *
      * @param dimension the dimension to getScalar the mean along
@@ -1974,8 +1927,6 @@ public interface INDArray extends Serializable {
      * @return Absolute min value
      */
     Number aminNumber();
-
-    IComplexNumber minComplex();
 
     /**
      * Returns the sum along the last dimension of this ndarray
@@ -2044,11 +1995,6 @@ public interface INDArray extends Serializable {
      */
     INDArray logEntropy(int... dimension);
 
-    /**
-     * Sum the entire array
-     * @return
-     */
-    IComplexNumber sumComplex();
 
     /**
      * stride setter
@@ -2563,187 +2509,6 @@ public interface INDArray extends Serializable {
      * @return the linear double array representation of this ndarray
      */
     DataBuffer data();
-
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray rdiv(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray rdivi(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray rsub(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray rsubi(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray div(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray divi(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray mul(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray muli(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray sub(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray subi(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray add(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray addi(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray rdiv(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray rdivi(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray rsub(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray rsubi(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray div(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray divi(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray mul(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray muli(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray sub(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray subi(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray add(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray addi(IComplexNumber n, IComplexNDArray result);
 
     /**
      * This method checks 2 INDArrays equality with given eps

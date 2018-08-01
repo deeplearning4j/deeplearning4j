@@ -145,11 +145,6 @@ public abstract class Nd4jBackend {
      */
     public abstract Class getNDArrayClass();
 
-    /**
-     * Get the actual (concrete/implementation) class for complex INDArrays for this backend
-     */
-    public abstract Class getComplexNDArrayClass();
-
 
     /**
      * Loads the best available backend.

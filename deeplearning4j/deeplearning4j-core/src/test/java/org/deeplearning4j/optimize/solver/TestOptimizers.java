@@ -40,7 +40,6 @@ import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Cos;
 import org.nd4j.linalg.api.ops.impl.transforms.Sin;
@@ -520,11 +519,6 @@ public class TestOptimizers extends BaseDL4JTest {
                 public Boolean apply(Number input) {
                     return Math.abs(input.doubleValue()) > 5.12;
                 }
-
-                @Override
-                public Boolean apply(IComplexNumber input) {
-                    throw new UnsupportedOperationException();
-                }
             });
 
             int nExceeds512 = paramExceeds512.sum(Integer.MAX_VALUE).getInt(0);
@@ -722,11 +716,6 @@ public class TestOptimizers extends BaseDL4JTest {
                 @Override
                 public Boolean apply(Number input) {
                     return Math.abs(input.doubleValue()) > 5.0;
-                }
-
-                @Override
-                public Boolean apply(IComplexNumber input) {
-                    throw new UnsupportedOperationException();
                 }
             });
 

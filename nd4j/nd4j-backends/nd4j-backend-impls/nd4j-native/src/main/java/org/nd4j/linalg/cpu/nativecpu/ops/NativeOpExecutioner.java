@@ -23,10 +23,8 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.*;
-import org.bytedeco.javacpp.indexer.IntIndexer;
 import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
@@ -36,7 +34,6 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
-import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.rng.Random;
@@ -49,7 +46,6 @@ import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.cpu.nativecpu.CpuTADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -596,7 +592,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(ScalarOp op) {
-        if (op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
+        if (executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
         } else {
             long st = profilingHookIn(op);
@@ -880,7 +876,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(IndexAccumulation op) {
-        if (op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
+        if (executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
 
         } else {
@@ -913,7 +909,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(Accumulation op) {
-        if (op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
+        if (executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
         }
         else if(op.isExecSpecial()) {

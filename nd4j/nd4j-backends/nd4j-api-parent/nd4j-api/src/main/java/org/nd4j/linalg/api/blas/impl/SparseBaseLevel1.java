@@ -18,8 +18,6 @@ package org.nd4j.linalg.api.blas.impl;
 
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.BaseSparseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
@@ -67,11 +65,6 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public IComplexNumber dot(long n, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y) {
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * Computes the Euclidean norm of a vector.
      *
@@ -92,11 +85,6 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
                 return hnrm2(arr.length(), arr, 1);
             default:
         }
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public IComplexNumber nrm2(IComplexNDArray arr) {
         throw new UnsupportedOperationException();
     }
 
@@ -127,11 +115,6 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
 
     @Override
     public double asum(long n, DataBuffer x, int offsetX, int incrX) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public IComplexNumber asum(IComplexNDArray arr) {
         throw new UnsupportedOperationException();
     }
 
@@ -168,11 +151,6 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public int iamax(IComplexNDArray arr) {
-        throw new UnsupportedOperationException();
-    }
-
 
     /**
      * Find the index of the element with maximum absolute value
@@ -198,17 +176,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     }
 
     @Override
-    public int iamin(IComplexNDArray arr) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void swap(INDArray x, INDArray y) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void swap(IComplexNDArray x, IComplexNDArray y) {
         throw new UnsupportedOperationException();
     }
 
@@ -220,11 +188,6 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
 
     @Override
     public void copy(long n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void copy(IComplexNDArray x, IComplexNDArray y) {
         throw new UnsupportedOperationException();
     }
 
@@ -264,11 +227,6 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
 
     @Override
     public void axpy(long n, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void axpy(long n, IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y) {
         throw new UnsupportedOperationException();
     }
 
@@ -313,18 +271,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     }
 
     @Override
-    public void rot(long N, IComplexNDArray X, IComplexNDArray Y, IComplexNumber c, IComplexNumber s) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void rotmg(INDArray d1, INDArray d2, INDArray b1, double b2, INDArray P) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void rotmg(IComplexNDArray d1, IComplexNDArray d2, IComplexNDArray b1, IComplexNumber b2,
-                    IComplexNDArray P) {
         throw new UnsupportedOperationException();
     }
 
@@ -351,11 +298,6 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
                 throw new UnsupportedOperationException();
         }
 
-    }
-
-    @Override
-    public void scal(long N, IComplexNumber alpha, IComplexNDArray X) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
