@@ -40,7 +40,6 @@ public class VectorDeSerializer extends JsonDeserializer<INDArray> {
         int offset = node.get("offsetField").asInt();
         JsonNode shape = node.get("shapeField");
         JsonNode stride = node.get("strideField");
-        String type = node.get("typeField").asText();
         int[] realShape = new int[rank];
         int[] realStride = new int[rank];
         DataBuffer buff = Nd4j.createBuffer(numElements);
