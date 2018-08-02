@@ -477,7 +477,6 @@ public class ReductionOpValidation extends BaseOpValidation {
                         name = "sum";
                         break;
                     case 2:
-                        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
                         reduced = sd.standardDeviation("reduced", second, true, reduceDim);
                         inputArr.divi(1000);
                         labelArr.divi(1000);
@@ -570,11 +569,14 @@ public class ReductionOpValidation extends BaseOpValidation {
                 sd.associateArrayWithVariable(inputArr, in);
                 sd.associateArrayWithVariable(labelArr, label);
 
+                tc.gradCheckMaxRelativeError(maxRelError);
+                tc.gradCheckMinAbsError(minAbsError);
+
 //                sd.execAndEndResult();
 
                 String error = OpValidation.validate(tc);
                 if(error != null){
-                    failed.add(name);
+                    failed.add(name + " - " + error);
                 }
             }
         }
@@ -643,6 +645,9 @@ public class ReductionOpValidation extends BaseOpValidation {
                         inArr.divi(100).addi(0.1);
                         in2Arr.divi(100).addi(0.1);
                         exp = Nd4j.getExecutioner().exec(new JaccardDistance(inArr, in2Arr, null, true, false), reduceDims);
+
+                        if(OpValidationSuite.IGNORE_FAILING && reduceDims.length == 2)
+                            continue;
                         break;
                     case 6:
                         name = "dot";

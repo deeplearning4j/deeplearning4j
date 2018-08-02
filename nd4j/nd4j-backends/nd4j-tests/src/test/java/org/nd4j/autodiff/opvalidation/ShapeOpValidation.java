@@ -337,7 +337,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         testCases.add(new Triple<>(new int[]{3, 4}, new int[]{1, 2}, new int[]{2, 2}));
         testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{0, 0, 0}, new int[]{3, 4, 5}));
         testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{1, 1, 1}, new int[]{2, 3, 4}));
-        testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{1, 0, 2}, new int[]{3, 3, 2}));
+        testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{1, 0, 2}, new int[]{2, 3, 2}));
 
         Map<Integer,INDArrayIndex[]> indices = new HashMap<>();
         indices.put(0, new INDArrayIndex[]{all(), all()});
@@ -1516,7 +1516,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testStridedSliceNewAxisMask() {
-        OpValidationSuite.ignoreFailing();
         INDArray inArr = Nd4j.linspace(1, 60, 60).reshape('c', 3, 4, 5);
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", inArr);
@@ -1524,7 +1523,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         INDArray out = sd.execAndEndResult();
 
-        assertArrayEquals(new long[]{1, 3, 4, 5}, inArr.shape());
+        assertArrayEquals(new long[]{1, 3, 4, 5}, out.shape());
         assertEquals(inArr, out.get(point(0), all(), all(), all()));
     }
 
