@@ -37,6 +37,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.SerializationUtils;
+import org.nd4j.linalg.cpu.nativecpu.ops.OpExecutioner;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -250,6 +251,10 @@ public class FloatDataBufferTest extends BaseNd4jTest {
 
     @Test
     public void testAddressPointer(){
+        if( Nd4j.getExecutioner().type() !=  OpExecutioner.ExecutionerType.NATIVE_CPU ){
+            return;
+        }
+
         DataBuffer buffer = Nd4j.createBuffer(new float[] {1, 2, 3, 4});
         DataBuffer wrappedBuffer = Nd4j.createBuffer(buffer, 1, 2);
 

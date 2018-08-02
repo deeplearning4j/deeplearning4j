@@ -38,7 +38,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.SerializationUtils;
+import org.nd4j.linalg.cpu.nativecpu.ops.OpExecutioner;
 
+import java.awt.image.DataBuffer;
 import java.io.*;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -246,6 +248,9 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
     @Test
     public void testAddressPointer(){
+        if( Nd4j.getExecutioner().type() !=  OpExecutioner.ExecutionerType.NATIVE_CPU ){
+            return;
+        }
         DataBuffer buffer = Nd4j.createBuffer(new double[] {1, 2, 3, 4});
         DataBuffer wrappedBuffer = Nd4j.createBuffer(buffer, 1, 2);
 
