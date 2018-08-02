@@ -181,7 +181,7 @@
         <t-digest.version>3.2</t-digest.version>
 
         <oshi.version>3.4.2</oshi.version>
-        <kafka.version>0.10.1.1</kafka.version>
+        <kafka.version>0.8.2.2</kafka.version>
         <akka.version>2.3.16</akka.version>
         <typesafe.config.version>1.2.1</typesafe.config.version>
         <py4j.version>0.10.4</py4j.version>
@@ -256,7 +256,7 @@
         <hadoop.version>2.2.0
         </hadoop.version>  <!-- Hadoop version used by Spark 1.6.3 and 2.2.1 (and likely others) -->
         <spark.version>1.6.3</spark.version>
-        <camel.version>2.18.2</camel.version>
+        <camel.version>2.16.3</camel.version>
         <zookeeper.version>3.4.6</zookeeper.version>
         <agrona.version>0.5.4</agrona.version>
         <mapdb.version>3.0.5</mapdb.version>
@@ -306,7 +306,7 @@
         <scalatest.version>3.0.5</scalatest.version>
         <scalafmt.version>1.3.0</scalafmt.version>
         <scalacheck.version>1.13.5</scalacheck.version>
-        <scala-parser-combinators.version>1.0.1</scala-parser-combinators.version>
+        <scala-misc.version>1.0.1</scala-misc.version>
 
         <libnd4j.tests>--tests</libnd4j.tests>
         <libnd4j.test.skip>false</libnd4j.test.skip>
