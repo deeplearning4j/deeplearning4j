@@ -10223,6 +10223,7 @@ public class SameDiff {
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
                 Op op = (Op) differentialFunction;
+                String outVarName = ((BaseOp) op).outputVariable().getVarName();
 
                 // ops in differential function might have stale NDArrays used. we should renew them
                 if(inputs != null && inputs.length > 0) {
@@ -10236,7 +10237,7 @@ public class SameDiff {
                 List<long[]> outputShape = ((BaseOp)op).calculateOutputShape();
                 Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
                 //Update shape. DynamicCustomOp does this in populateInputsAndOutputsFromSameDiff(); for legacy ops, we'll do it here
-                putOrUpdateShapeForVarName(((BaseOp) op).outputVariable().getVarName(), outputShape.get(0), true);
+                putOrUpdateShapeForVarName(outVarName, outputShape.get(0), true);
                 INDArray z = op.z();
                 Preconditions.checkNotNull(z, "Could not get output array for op: %s", op.getClass());
                 if(!Arrays.equals(outputShape.get(0), z.shape())){
@@ -10250,8 +10251,11 @@ public class SameDiff {
                     SDVariable outputVar = getVariable(outputName);
 
                     putOrUpdateShapeForVarName(outputName, outputShape.get(0), true);
-                    INDArray newZ = outputVar.storeAndAllocateNewArray();
-                    op.setZ(newZ);
+                    z = outputVar.storeAndAllocateNewArray();
+                    op.setZ(z);
+                }
+                if(getArrForVarName(outVarName) != z){  //Also handles null case
+                    putOrUpdateArrayForVarName(outVarName, z);
                 }
 
 
