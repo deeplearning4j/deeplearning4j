@@ -19,7 +19,6 @@ package org.nd4j.jdbc.loader.impl;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.nd4j.jdbc.driverfinder.DriverFinder;
 import org.nd4j.jdbc.loader.api.JDBCNDArrayIO;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.serde.binary.BinarySerde;
@@ -80,26 +79,6 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
     /**
      * Convert an ndarray to a blob
      *
-     * @param toConvert the complex ndarray to convert
-     * @return the converted complex ndarray
-     */
-    @Override
-    public Blob convert(IComplexNDArray toConvert) throws IOException, SQLException {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(bos);
-
-        Nd4j.writeComplex(toConvert, dos);
-
-        byte[] bytes = bos.toByteArray();
-        Connection c = dataSource.getConnection();
-        Blob b = c.createBlob();
-        b.setBytes(1, bytes);
-        return b;
-    }
-
-    /**
-     * Convert an ndarray to a blob
-     *
      * @param toConvert the ndarray to convert
      * @return the converted ndarray
      */
@@ -141,18 +120,6 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
     }
 
     /**
-     * Load a complex ndarray from a blob
-     *
-     * @param blob the blob to load from
-     * @return the complex ndarray
-     */
-    @Override
-    public IComplexNDArray loadComplex(Blob blob) throws SQLException, IOException {
-        DataInputStream dis = new DataInputStream(blob.getBinaryStream());
-        return Nd4j.readComplex(dis);
-    }
-
-    /**
      * Save the ndarray
      *
      * @param save the ndarray to save
@@ -163,27 +130,12 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
 
     }
 
-    /**
-     * Save the ndarray
-     *
-     * @param save the ndarray to save
-     */
-    @Override
-    public void save(IComplexNDArray save, String id) throws IOException, SQLException {
-        doSave(save, id);
-    }
-
 
     private void doSave(INDArray save, String id) throws SQLException, IOException {
         Connection c = dataSource.getConnection();
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
-        if (save instanceof IComplexNDArray) {
-            IComplexNDArray c2 = (IComplexNDArray) save;
-            Nd4j.writeComplex(c2, dos);
-        } else {
-            BinarySerde.writeArrayToOutputStream(save,bos);
-        }
+        BinarySerde.writeArrayToOutputStream(save,bos);
 
         byte[] bytes = bos.toByteArray();
 

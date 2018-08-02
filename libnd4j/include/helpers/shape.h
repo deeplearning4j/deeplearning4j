@@ -107,7 +107,7 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD bool equalsStrict(Nd4jLong *shapeA, Nd4jLong *shapeB);
 
-    ND4J_EXPORT _CUDA_HD int sizeAt(Nd4jLong *shape, int dim);
+    ND4J_EXPORT _CUDA_HD int sizeAt(const Nd4jLong *shape, const int dim);
 
     template <typename T>
     ND4J_EXPORT _CUDA_HD void fill(T* buffer, T value, Nd4jLong length);
@@ -438,7 +438,7 @@ namespace shape {
  * Returns the rank portion of
  * an information buffer
  */
-    ND4J_EXPORT _CUDA_HD int rank( Nd4jLong *buffer);
+    ND4J_EXPORT _CUDA_HD int rank(const Nd4jLong *buffer);
 
 /**
  * Converts a raw int buffer of the layout:
@@ -2594,7 +2594,7 @@ template <typename T>
  * Returns the rank portion of
  * an information buffer
  */
-    INLINEDEF _CUDA_HD  int rank( Nd4jLong *buffer) {
+    INLINEDEF _CUDA_HD  int rank(const Nd4jLong *buffer) {
         return static_cast<int>(buffer[0]);
     }
 
@@ -2977,7 +2977,7 @@ template <typename T>
         return true;
     }
 
-    INLINEDEF _CUDA_HD int sizeAt(Nd4jLong *shape, int dim) {
+    INLINEDEF _CUDA_HD int sizeAt(const Nd4jLong *shape, const int dim) {
         if (dim >= 0)
             return shape[1+dim];
         else

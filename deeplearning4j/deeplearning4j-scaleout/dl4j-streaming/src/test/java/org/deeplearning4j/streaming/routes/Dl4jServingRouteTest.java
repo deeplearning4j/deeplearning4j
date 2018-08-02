@@ -95,7 +95,7 @@ public class Dl4jServingRouteTest extends CamelTestSupport {
                 from("direct:start").process(new Processor() {
                     @Override
                     public void process(Exchange exchange) throws Exception {
-                        final INDArray arr = next.getFeatureMatrix();
+                        final INDArray arr = next.getFeatures();
                         ByteArrayOutputStream bos = new ByteArrayOutputStream();
                         DataOutputStream dos = new DataOutputStream(bos);
                         Nd4j.write(arr, dos);

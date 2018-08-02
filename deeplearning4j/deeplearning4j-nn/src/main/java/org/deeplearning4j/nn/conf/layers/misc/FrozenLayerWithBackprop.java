@@ -80,12 +80,7 @@ public class FrozenLayerWithBackprop extends BaseWrapperLayer {
             conf.clearVariables();
             for (String s : vars) {
                 conf.variables(false).add(s);
-                conf.getL1ByParam().put(s, 0.0);
-                conf.getL2ByParam().put(s, 0.0);
-
                 nncUnderlying.variables(false).add(s);
-                nncUnderlying.getL1ByParam().put(s, 0.0);
-                nncUnderlying.getL2ByParam().put(s, 0.0);
             }
         }
 

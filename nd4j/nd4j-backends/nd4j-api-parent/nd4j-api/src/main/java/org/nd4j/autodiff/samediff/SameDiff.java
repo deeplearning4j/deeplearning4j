@@ -231,7 +231,6 @@ public class SameDiff {
         //cloner.registerFastCloner(INDArray.class, new INDArrayFastCloner());  //Does not work due to interface
         IFastCloner fc = new INDArrayFastCloner();
         cloner.registerFastCloner(Nd4j.getBackend().getNDArrayClass(), fc);
-        cloner.registerFastCloner(Nd4j.getBackend().getComplexNDArrayClass(), fc);
 
         //Same thing with DataBuffers: off heap -> cloner library chokes on them, but need to know the concrete
         // buffer classes, not just the interface

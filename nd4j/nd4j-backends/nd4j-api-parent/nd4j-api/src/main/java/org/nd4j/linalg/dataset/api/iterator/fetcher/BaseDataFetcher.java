@@ -82,7 +82,7 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
         INDArray inputs = createInputMatrix(examples.size());
         INDArray labels = createOutputMatrix(examples.size());
         for (int i = 0; i < examples.size(); i++) {
-            inputs.putRow(i, examples.get(i).getFeatureMatrix());
+            inputs.putRow(i, examples.get(i).getFeatures());
             labels.putRow(i, examples.get(i).getLabels());
         }
         curr = new DataSet(inputs, labels);

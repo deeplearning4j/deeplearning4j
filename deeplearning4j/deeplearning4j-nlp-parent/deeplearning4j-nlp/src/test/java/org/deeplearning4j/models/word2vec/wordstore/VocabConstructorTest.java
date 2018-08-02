@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.word2vec.wordstore;
 
+import lombok.val;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
@@ -327,5 +328,57 @@ public class VocabConstructorTest {
         assertTrue(cacheTarget.indexOf("Zfinance") > sourceSize - 1);
         assertTrue(cacheTarget.indexOf("Zscience") > sourceSize - 1);
         assertTrue(cacheTarget.indexOf("Zhealth") > sourceSize - 1);
+    }
+
+    @Test
+    public void testTransfer_1() {
+        val vocab = new AbstractCache<VocabWord>();
+
+        vocab.addToken(new VocabWord(1.0,"alpha"));
+        vocab.addWordToIndex(0, "alpha");
+
+        vocab.addToken(new VocabWord(2.0,"beta"));
+        vocab.addWordToIndex(5, "beta");
+
+        vocab.addToken(new VocabWord(3.0,"gamma"));
+        vocab.addWordToIndex(10, "gamma");
+
+        val constructor = new VocabConstructor.Builder<VocabWord>()
+                .build();
+
+
+        val result = constructor.transferVocabulary(vocab, true);
+
+        assertEquals(3, result.numWords());
+
+        assertEquals("gamma", result.wordAtIndex(0));
+        assertEquals("beta", result.wordAtIndex(1));
+        assertEquals("alpha", result.wordAtIndex(2));
+    }
+
+    @Test
+    public void testTransfer_2() {
+        val vocab = new AbstractCache<VocabWord>();
+
+        vocab.addToken(new VocabWord(1.0,"alpha"));
+        vocab.addWordToIndex(0, "alpha");
+
+        vocab.addToken(new VocabWord(2.0,"beta"));
+        vocab.addWordToIndex(5, "beta");
+
+        vocab.addToken(new VocabWord(3.0,"gamma"));
+        vocab.addWordToIndex(10, "gamma");
+
+        val constructor = new VocabConstructor.Builder<VocabWord>()
+                .build();
+
+
+        val result = constructor.transferVocabulary(vocab, false);
+
+        assertEquals(3, result.numWords());
+
+        assertEquals("gamma", result.wordAtIndex(10));
+        assertEquals("beta", result.wordAtIndex(5));
+        assertEquals("alpha", result.wordAtIndex(0));
     }
 }

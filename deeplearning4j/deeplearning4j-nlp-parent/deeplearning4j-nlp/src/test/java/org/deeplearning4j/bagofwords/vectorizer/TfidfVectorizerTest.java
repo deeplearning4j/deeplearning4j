@@ -126,7 +126,7 @@ public class TfidfVectorizerTest {
         vectorizer2.setTokenizerFactory(tokenizerFactory);
 
         dataSet = vectorizer2.vectorize("This is 3 file.", "label2");
-        assertEquals(vector, dataSet.getFeatureMatrix());
+        assertEquals(vector, dataSet.getFeatures());
     }
 
     @Test(timeout = 10000L)

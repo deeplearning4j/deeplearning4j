@@ -616,17 +616,17 @@ public class Preconditions {
         }
     }
 
-    private static void throwEx(String message, Object... args) {
+    public static void throwEx(String message, Object... args) {
         String f = format(message, args);
         throw new IllegalArgumentException(f);
     }
 
-    private static void throwStateEx(String message, Object... args) {
+    public static void throwStateEx(String message, Object... args) {
         String f = format(message, args);
         throw new IllegalStateException(f);
     }
 
-    private static void throwNullPointerEx(String message, Object... args) {
+    public static void throwNullPointerEx(String message, Object... args) {
         String f = format(message, args);
         throw new NullPointerException(f);
     }

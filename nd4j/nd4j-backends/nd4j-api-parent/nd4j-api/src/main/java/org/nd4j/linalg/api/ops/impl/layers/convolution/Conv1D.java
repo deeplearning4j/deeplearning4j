@@ -73,6 +73,9 @@ public class Conv1D extends DynamicCustomOp {
     }
 
     protected void addArgs() {
+        if (config == null)
+            config = Conv1DConfig.builder().build();
+
         addIArgument(config.getK(),
                 config.getS(),
                 config.getP(),

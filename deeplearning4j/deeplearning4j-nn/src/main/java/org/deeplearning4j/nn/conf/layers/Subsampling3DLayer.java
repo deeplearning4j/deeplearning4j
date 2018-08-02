@@ -294,7 +294,7 @@ public class Subsampling3DLayer extends NoParamLayer {
         protected int[] stride = new int[]{2, 2, 2};
         protected int[] padding = new int[]{0, 0, 0};
         protected int[] dilation = new int[]{1, 1, 1};
-        protected ConvolutionMode convolutionMode = null;
+        protected ConvolutionMode convolutionMode = ConvolutionMode.Same;
         protected boolean cudnnAllowFallback = true;
 
         protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize, int[] stride) {

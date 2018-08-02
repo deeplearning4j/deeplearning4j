@@ -55,7 +55,7 @@ import java.util.*;
  * @author Alex Black
  */
 @Data
-@EqualsAndHashCode
+@EqualsAndHashCode(exclude = {"trainingWorkspaceMode", "inferenceWorkspaceMode", "cacheMode", "topologicalOrder", "topologicalOrderStr"})
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
 public class ComputationGraphConfiguration implements Serializable, Cloneable {

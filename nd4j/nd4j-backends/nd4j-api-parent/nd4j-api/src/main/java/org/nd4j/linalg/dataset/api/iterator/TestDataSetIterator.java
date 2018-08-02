@@ -73,7 +73,7 @@ public class TestDataSetIterator implements DataSetIterator {
     @Override
     public int inputColumns() {
         // FIXME: int cast
-        return (int)list.get(0).getFeatureMatrix().columns();
+        return (int)list.get(0).getFeatures().columns();
     }
 
     @Override

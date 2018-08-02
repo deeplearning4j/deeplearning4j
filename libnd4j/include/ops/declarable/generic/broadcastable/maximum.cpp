@@ -32,7 +32,7 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper<T>::template broadcast_apply<simdOps::Max<T>>(x, y, z);
+            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Max<T>>(x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z) {

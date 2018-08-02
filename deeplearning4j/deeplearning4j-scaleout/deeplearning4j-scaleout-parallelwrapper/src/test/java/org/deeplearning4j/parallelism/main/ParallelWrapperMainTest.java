@@ -94,9 +94,6 @@ public class ParallelWrapperMainTest {
         parallelWrapperMain.runMain(new String[] {"--modelPath", tempModel.getAbsolutePath(),
                         "--dataSetIteratorFactoryClazz", MnistDataSetIteratorProviderFactory.class.getName(),
                         "--modelOutputPath", tmp.getAbsolutePath(), "--uiUrl", "localhost:" + uiPort});
-
-
-        Thread.sleep(30000);
     }
 
 }

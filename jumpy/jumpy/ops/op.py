@@ -18,7 +18,7 @@
 from jumpy.java_classes import *
 from jumpy.ndarray import array
 from jumpy.ndarray import ndarray
-
+import inspect
 
 _INDArray_class = 'org.nd4j.linalg.api.ndarray.INDArray'
 
@@ -59,6 +59,17 @@ will be automatically bound to ndarray class.
 
 def op(f):
     def wrapper(*args, **kwargs):
+        spec = inspect.getargspec(f)
+        received_arg_count = len(args)
+        received_kwargs = kwargs.copy()
+        defs = list(spec.defaults)
+        for arg in spec.args:
+            if received_arg_count:
+                received_arg_count -= 1
+            elif arg not in received_kwargs:
+                kwargs[arg] = defs.pop(0)
+            else:
+                raise Exception("Value not provided for argument " + arg + ".")
         args = list(args)
         for i, arg in enumerate(args):
             if _is_jumpy(arg):

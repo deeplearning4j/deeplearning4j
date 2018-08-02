@@ -548,7 +548,6 @@ public class ModelSerializer {
 
         String json = "";
         INDArray params = null;
-        ComputationGraphUpdater updater = null;
         INDArray updaterState = null;
         DataSetPreProcessor preProcessor = null;
 

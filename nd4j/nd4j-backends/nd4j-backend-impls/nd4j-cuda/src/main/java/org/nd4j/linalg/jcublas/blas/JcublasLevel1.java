@@ -24,11 +24,7 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.linalg.api.blas.impl.BaseLevel1;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexDouble;
-import org.nd4j.linalg.api.complex.IComplexFloat;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.accum.ASum;
 import org.nd4j.linalg.api.ops.impl.accum.Dot;
@@ -182,29 +178,6 @@ public class JcublasLevel1 extends BaseLevel1 {
     }
 
     @Override
-    protected void cdotu_sub(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotu) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected void cdotc_sub(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotc) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void zdotu_sub(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotu) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void zdotc_sub(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotc) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
     protected float snrm2(long N, INDArray X, int incX) {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT nrm2 called");
@@ -353,68 +326,6 @@ public class JcublasLevel1 extends BaseLevel1 {
     }
 
     @Override
-    protected float scnrm2(long N, IComplexNDArray X, int incX) {
-        /*
-        CudaContext ctx = CudaContext.getBlasContext();
-        float[] ret = new float[1];
-        Pointer result = Pointer.to(ret);
-        
-        CublasPointer xCPointer = new CublasPointer(X, ctx);
-        
-        cublasHandle_t handle = ctx.getHandle();
-        synchronized (handle) {
-            cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
-        
-            JCublas2.cublasScnrm2(
-                    ContextHolder.getInstance().getHandle()
-                    , N
-                    , xCPointer.getDevicePointer()
-                    , incX
-                    , result);
-        }
-        
-        return ret[0];
-        */
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected float scasum(long N, IComplexNDArray X, int incX) {
-        /*
-        CudaContext ctx = CudaContext.getBlasContext();
-        float[] ret = new float[1];
-        Pointer result = Pointer.to(ret);
-        
-        CublasPointer xCPointer = new CublasPointer(X, ctx);
-        
-        cublasHandle_t handle = ctx.getHandle();
-        synchronized (handle) {
-            cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
-        
-            JCublas2.cublasScasum(
-                    ctx.getHandle()
-                    , N
-                    , xCPointer.getDevicePointer()
-                    , incX
-                    , result);
-        }
-        return ret[0];
-        */
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected double dznrm2(long N, IComplexNDArray X, int incX) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected double dzasum(long N, IComplexNDArray X, int incX) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
     protected int isamax(long N, INDArray X, int incX) {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT iamax called");
@@ -475,17 +386,6 @@ public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected int idamax(long N, DataBuffer X, int offsetX, int incX) {
         throw new UnsupportedOperationException("not yet implemented");
-    }
-
-
-    @Override
-    protected int icamax(long N, IComplexNDArray X, int incX) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected int izamax(long N, IComplexNDArray X, int incX) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -709,40 +609,6 @@ public class JcublasLevel1 extends BaseLevel1 {
     }
 
     @Override
-    protected void cswap(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void ccopy(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected void caxpy(long N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void zswap(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected void zcopy(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected void zaxpy(long N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
-        throw new UnsupportedOperationException();
-
-
-    }
-
-    @Override
     protected void srotg(float a, float b, float c, float s) {
         throw new UnsupportedOperationException();
 
@@ -836,29 +702,6 @@ public class JcublasLevel1 extends BaseLevel1 {
         allocator.registerAction(ctx, X);
 
         OpExecutionerUtil.checkForAny(X);
-    }
-
-    @Override
-    protected void cscal(long N, IComplexFloat alpha, IComplexNDArray X, int incX) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected void zscal(long N, IComplexDouble alpha, IComplexNDArray X, int incX) {
-        throw new UnsupportedOperationException();
-
-
-    }
-
-    @Override
-    protected void csscal(long N, float alpha, IComplexNDArray X, int incX) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void zdscal(long N, double alpha, IComplexNDArray X, int incX) {
-        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -395,7 +395,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         useStored = true;
 
         // FIXME: int cast
-        inputColumns = (int) stored.getFeatureMatrix().size(1);
+        inputColumns = (int) stored.getFeatures().size(1);
         totalOutcomes = (int) stored.getLabels().size(1);
     }
 

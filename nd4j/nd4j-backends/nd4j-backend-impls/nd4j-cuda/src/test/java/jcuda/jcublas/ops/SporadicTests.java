@@ -547,7 +547,7 @@ public class SporadicTests {
             DataSet restore = new DataSet();
             restore.load(tempFile);
 
-            assertEquals(features, restore.getFeatureMatrix());
+            assertEquals(features, restore.getFeatures());
             assertEquals(labels, restore.getLabels());
 
         }
