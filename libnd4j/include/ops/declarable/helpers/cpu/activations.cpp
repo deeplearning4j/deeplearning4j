@@ -152,7 +152,8 @@ void softmax(const NDArray<T>& input, NDArray<T>& output, const int dimension) {
     }
     else {
         
-        NDArray<T> exponents = const_cast<NDArray<T>&>(input).template transform<simdOps::Exp<T>>();
+        NDArray<T> maxAlongDim = const_cast<NDArray<T>&>(input).template reduceAlongDims<simdOps::Max<T>>({dimension}, true);        
+        NDArray<T> exponents = (input - maxAlongDim).template transform<simdOps::Exp<T>>();
         NDArray<T> sumAlongDim = exponents.template reduceAlongDims<simdOps::Sum<T>>({dimension}, true);        
         output.assign(exponents / sumAlongDim);
     }
