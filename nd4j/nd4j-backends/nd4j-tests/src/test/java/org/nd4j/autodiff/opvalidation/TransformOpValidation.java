@@ -26,6 +26,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
+import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -500,7 +501,7 @@ public class TransformOpValidation extends BaseOpValidation {
         INDArray[] expOut = new INDArray[4];
 
         expOut[0] = Nd4j.eye(3);
-        expOut[1] = Nd4j.create(new double[][]{{1,0,0},{0,1,0}});
+        expOut[1] = Nd4j.create(new double[][]{{1,0},{0,1},{0,0}});
         expOut[2] = Nd4j.create(4,3,2);
         for( int i=0; i<4; i++ ){
             expOut[2].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(expOut[1]);
@@ -525,7 +526,18 @@ public class TransformOpValidation extends BaseOpValidation {
                     .gradientCheck(true));
             assertNull(err);
         }
+    }
 
+    @Test
+    public void testEyeShape(){
+        DynamicCustomOp dco = DynamicCustomOp.builder("eye")
+                .addIntegerArguments(3,3)
+                //.addIntegerArguments(-99,3,3) //Also fails
+                .build();
+
+        List<long[]> list = Nd4j.getExecutioner().calculateOutputShape(dco);
+        assertEquals(1, list.size());   //Fails here - empty list
+        assertArrayEquals(new long[]{3,3}, list.get(0));
     }
 
     @Test
