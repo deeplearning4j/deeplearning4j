@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.imports.TFGraphs;
 
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +45,7 @@ import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.nd4j.imports.TFGraphs.TFGraphsSkipNodes.skipNode;
 
 /**
@@ -88,12 +105,12 @@ public class TFGraphTestAllHelper {
         return modelParams;
     }
 
-    protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, ExecuteWith execType) throws IOException {
+    protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, ExecuteWith execType, Double precisionOverride) throws IOException {
         log.info("Running model " + modelName + " only output");
-        checkOnlyOutput(inputs, predictions, modelName, execType.getDefaultBaseDir(), execType);
+        checkOnlyOutput(inputs, predictions, modelName, execType.getDefaultBaseDir(), execType, precisionOverride);
     }
 
-    protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, String baseDir, ExecuteWith execType) throws IOException {
+    protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, String baseDir, ExecuteWith execType, Double precisionOverride) throws IOException {
         Nd4j.EPS_THRESHOLD = 1e-3;
         Nd4j.getExecutioner().enableDebugMode(true);
         Nd4j.getExecutioner().enableVerboseMode(true);
@@ -126,7 +143,12 @@ public class TFGraphTestAllHelper {
                 assertNotNull(nd4jPred);
                 assertNotNull(tfPred);
 
-                assertEquals("Predictions do not match on " + modelName, tfPred, nd4jPred);
+                if(precisionOverride == null) {
+                    assertEquals("Predictions do not match on " + modelName + ", node " + outputNode, tfPred, nd4jPred);
+                } else {
+                    boolean eq = tfPred.equalsWithEps(nd4jPred, precisionOverride);
+                    assertTrue("Predictions do not match on " + modelName + ", node " + outputNode + " - precision " + precisionOverride, eq);
+                }
             }
             log.info("\n\tTEST " + modelName + " PASSED...");
             log.info("\n========================================================\n");
@@ -295,5 +317,14 @@ public class TFGraphTestAllHelper {
             }
         }
         return varMap;
+    }
+
+
+    public static Double testPrecisionOverride(String testName){
+        if("conv_4".equalsIgnoreCase(testName)){
+            //Most values: around 1k. So this is the 6th significant figure, which is OK
+            return 1e-2;
+        }
+        return null;
     }
 }

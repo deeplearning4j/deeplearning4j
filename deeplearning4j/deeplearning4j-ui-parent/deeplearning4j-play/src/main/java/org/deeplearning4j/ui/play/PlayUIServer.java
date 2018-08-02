@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.ui.play;
 
 import com.beust.jcommander.JCommander;
@@ -9,6 +25,7 @@ import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.api.storage.StatsStorageListener;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.api.UIServer;
@@ -51,17 +68,11 @@ import static play.mvc.Results.ok;
 public class PlayUIServer extends UIServer {
 
     /**
-     * System property for setting the UI port. Defaults to 9000.
-     * Set to 0 to use a random port
+     * @deprecated Use {@link DL4JSystemProperties#UI_SERVER_PORT_PROPERTY}
      */
-    public static final String UI_SERVER_PORT_PROPERTY = "org.deeplearning4j.ui.port";
+    @Deprecated
+    public static final String UI_SERVER_PORT_PROPERTY = DL4JSystemProperties.UI_SERVER_PORT_PROPERTY;
     public static final int DEFAULT_UI_PORT = 9000;
-
-    /**
-     * System property to enable classpath scanning for custom UI modules. Disabled by default.
-     */
-    public static final String UI_CUSTOM_MODULE_PROPERTY = "org.deeplearning4j.ui.custommodule.enable";
-
 
     public static final String ASSETS_ROOT_DIRECTORY = "deeplearning4jUiAssets/";
 
@@ -172,12 +183,12 @@ public class PlayUIServer extends UIServer {
             }
         }
 
-        String portProperty = System.getProperty(UI_SERVER_PORT_PROPERTY);
+        String portProperty = System.getProperty(DL4JSystemProperties.UI_SERVER_PORT_PROPERTY);
         if (portProperty != null) {
             try {
                 port = Integer.parseInt(portProperty);
             } catch (NumberFormatException e) {
-                log.warn("Could not parse UI port property \"{}\" with value \"{}\"", UI_SERVER_PORT_PROPERTY,
+                log.warn("Could not parse UI port property \"{}\" with value \"{}\"", DL4JSystemProperties.UI_SERVER_PORT_PROPERTY,
                                 portProperty, e);
             }
         }

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 10.06.2018
 //
@@ -2455,7 +2471,19 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test11) {
 
     delete result;
 }
- 
+
+
+TEST_F(DeclarableOpsTests8, clipbynorm_test_tf_119_1) {
+    NDArray<double> x('c', {3, 3}, {1, 2, 3, 4, 5,6, 7, 8, 9});
+    NDArray<double> e('c', {3, 3}, {0.03198684, 0.06397368, 0.09596053, 0.12794736, 0.15993419, 0.19192106, 0.22390789, 0.25589472, 0.28788155});
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {0.54}, {});
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, reduceMeanBP_test4) {

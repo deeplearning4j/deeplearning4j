@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.autodiff.functions;
 
 import lombok.Data;
@@ -645,20 +661,20 @@ public class DifferentialFunctionFactory {
         return new MatchConditionTransform(sameDiff(), in, condition).outputVariable();
     }
 
-    public SDVariable cumsum(SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
-        return new CumSum(sameDiff(), in, axis, exclusive, reverse).outputVariable();
+    public SDVariable cumsum(SDVariable in, boolean exclusive, boolean reverse, int... axis) {
+        return new CumSum(sameDiff(), in, exclusive, reverse, axis).outputVariable();
     }
 
-    public SDVariable cumsumBp(SDVariable in, SDVariable axis, SDVariable grad, boolean exclusive, boolean reverse) {
-        return new CumSumBp(sameDiff(), in, axis, grad, exclusive, reverse).outputVariable();
+    public SDVariable cumsumBp(SDVariable in, SDVariable grad, boolean exclusive, boolean reverse, int... axis) {
+        return new CumSumBp(sameDiff(), in, grad, exclusive, reverse, axis).outputVariable();
     }
 
-    public SDVariable cumprod(SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
-        return new CumProd(sameDiff(), in, axis, exclusive, reverse).outputVariable();
+    public SDVariable cumprod(SDVariable in, boolean exclusive, boolean reverse, int... axis) {
+        return new CumProd(sameDiff(), in, exclusive, reverse, axis).outputVariable();
     }
 
-    public SDVariable cumprodBp(SDVariable in, SDVariable axis, SDVariable grad, boolean exclusive, boolean reverse) {
-        return new CumProdBp(sameDiff(), in, axis, grad, exclusive, reverse).outputVariable();
+    public SDVariable cumprodBp(SDVariable in, SDVariable grad, boolean exclusive, boolean reverse, int... axis) {
+        return new CumProdBp(sameDiff(), in, grad, exclusive, reverse, axis).outputVariable();
     }
 
     public SDVariable biasAdd(SDVariable input, SDVariable bias) {
@@ -983,7 +999,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable floorMod(SDVariable x, SDVariable y) {
-        return new FModOp(sameDiff(), x, y).outputVariable();
+        return new FloorModOp(sameDiff(), x, y).outputVariable();
     }
 
     public List<SDVariable> floorModBp(SDVariable x, SDVariable y, SDVariable grad) {
@@ -1423,9 +1439,9 @@ public class DifferentialFunctionFactory {
     }
 
 
-    public SDVariable softmaxDerivative(SDVariable functionInput, SDVariable wrt) {
+    public SDVariable softmaxDerivative(SDVariable functionInput, SDVariable wrt, Integer dimension) {
         validateDifferentialFunctionsameDiff(functionInput);
-        return new SoftMaxDerivative(sameDiff(), functionInput, wrt).outputVariable();
+        return new SoftmaxBp(sameDiff(), functionInput, wrt, dimension).outputVariable();
     }
 
 

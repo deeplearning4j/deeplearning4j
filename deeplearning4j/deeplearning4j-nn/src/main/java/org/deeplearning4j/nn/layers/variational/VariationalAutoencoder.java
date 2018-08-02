@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.layers.variational;
 
 import lombok.*;
@@ -455,11 +471,6 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public void accumulateScore(double accum) {
-
-    }
-
-    @Override
     public INDArray params() {
         return paramsFlattened;
     }
@@ -557,11 +568,6 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public void validateInput() {
-        throw new UnsupportedOperationException("Not supported " + layerId());
-    }
-
-    @Override
     public ConvexOptimizer getOptimizer() {
         return optimizer;
     }
@@ -569,11 +575,6 @@ public class VariationalAutoencoder implements Layer {
     @Override
     public INDArray getParam(String param) {
         return params.get(param);
-    }
-
-    @Override
-    public void initParams() {
-        throw new UnsupportedOperationException("Deprecated " + layerId());
     }
 
     @Override
@@ -629,7 +630,7 @@ public class VariationalAutoencoder implements Layer {
     public double calcL2(boolean backpropParamsOnly) {
         double l2Sum = 0.0;
         for (Map.Entry<String, INDArray> e : paramTable().entrySet()) {
-            double l2 = conf().getL2ByParam(e.getKey());
+            double l2 = conf().getLayer().getL2ByParam(e.getKey());
             if (l2 <= 0.0 || (backpropParamsOnly && isPretrainParam(e.getKey()))) {
                 continue;
             }
@@ -645,7 +646,7 @@ public class VariationalAutoencoder implements Layer {
     public double calcL1(boolean backpropParamsOnly) {
         double l1Sum = 0.0;
         for (Map.Entry<String, INDArray> e : paramTable().entrySet()) {
-            double l1 = conf().getL1ByParam(e.getKey());
+            double l1 = conf().getLayer().getL1ByParam(e.getKey());
             if (l1 <= 0.0 || (backpropParamsOnly && isPretrainParam(e.getKey()))) {
                 continue;
             }
@@ -792,16 +793,6 @@ public class VariationalAutoencoder implements Layer {
     public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         setInput(input, workspaceMgr);
         return activate(training, workspaceMgr);
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not supported " + layerId());
-    }
-
-    @Override
-    public Layer clone() {
-        throw new UnsupportedOperationException("Not yet implemented " + layerId());
     }
 
     @Override

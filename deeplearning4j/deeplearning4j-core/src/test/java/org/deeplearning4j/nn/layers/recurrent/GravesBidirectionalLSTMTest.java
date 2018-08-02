@@ -1,10 +1,24 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.layers.recurrent;
 
 import junit.framework.TestCase;
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -16,15 +30,10 @@ import org.deeplearning4j.nn.params.GravesBidirectionalLSTMParamInitializer;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.optimize.api.BaseTrainingListener;
-import org.deeplearning4j.optimize.api.TrainingListener;
-import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.NoOp;
@@ -428,92 +437,6 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         reverseColumnsInPlace(refEpsilon.slice(0));
         assertArrayEquals(backEpsilon.dup().data().asDouble(), refEpsilon.dup().data().asDouble(), 1e-6);
 
-    }
-
-    @Test
-    @Ignore
-    public void testConvergence() {
-        Nd4j.getRandom().setSeed(12345);
-        final int state1Len = 100;
-        final int state2Len = 30;
-
-        //segment by signal mean
-        //Data: has shape [miniBatchSize,nIn,timeSeriesLength];
-
-        final INDArray sig1 = Nd4j.randn(new int[] {1, 2, state1Len}).mul(0.1);
-        final INDArray sig2 = Nd4j.randn(new int[] {1, 2, state2Len}).mul(0.1)
-                        .add(Nd4j.ones(new int[] {1, 2, state2Len}).mul(1.0));
-
-        INDArray sig = Nd4j.concat(2, sig1, sig2);
-        INDArray labels = Nd4j.zeros(new int[] {1, 2, state1Len + state2Len});
-
-        for (int t = 0; t < state1Len; t++) {
-            labels.putScalar(new int[] {0, 0, t}, 1.0);
-        }
-
-        for (int t = state1Len; t < state1Len + state2Len; t++) {
-            labels.putScalar(new int[] {0, 1, t}, 1.0);
-        }
-
-        for (int i = 0; i < 3; i++) {
-            sig = Nd4j.concat(2, sig, sig);
-            labels = Nd4j.concat(2, labels, labels);
-        }
-
-        final DataSet ds = new DataSet(sig, labels);
-
-        final MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new AdaGrad(0.1))
-                        .l2(0.001)
-                        .seed(12345).list().pretrain(false)
-                        .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
-                                        .activation(Activation.TANH).nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)
-                                        .dist(new UniformDistribution(-0.05, 0.05)).build())
-                        .layer(1, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
-                                        .activation(Activation.TANH).nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)
-                                        .dist(new UniformDistribution(-0.05, 0.05)).build())
-                        /*.layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2)
-                                .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-0.05,0.05))
-                                .build())
-                        .layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2)
-                                .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-0.05,0.05))
-                                .build())*/ //this converges
-                        .layer(2, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder()
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(2)
-                                        .activation(Activation.TANH).build())
-                        .backprop(true).build();
-
-        final MultiLayerNetwork net = new MultiLayerNetwork(conf);
-
-        final TrainingListener scoreSaver = new BaseTrainingListener() {
-
-            @Override
-            public void iterationDone(Model model, int iteration, int epoch) {
-                score = model.score();
-            }
-        };
-
-        net.setListeners(scoreSaver, new ScoreIterationListener(1));
-        double oldScore = Double.POSITIVE_INFINITY;
-        net.init();
-        for (int iEpoch = 0; iEpoch < 3; iEpoch++) {
-            for( int i=0; i<5; i++ ) {
-                net.fit(ds);
-            }
-
-            System.out.print(String.format("score is %f%n", score));
-
-            assertTrue(!Double.isNaN(score));
-
-            assertTrue(score < 0.9 * oldScore);
-            oldScore = score;
-
-            final INDArray output = net.output(ds.getFeatureMatrix());
-            Evaluation evaluation = new Evaluation();
-            evaluation.evalTimeSeries(ds.getLabels(), output);
-            System.out.print(evaluation.stats() + "\n");
-        }
     }
 
     @Test

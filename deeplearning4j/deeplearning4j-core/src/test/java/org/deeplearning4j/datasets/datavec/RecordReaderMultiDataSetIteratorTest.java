@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.datasets.datavec;
 
 
@@ -61,7 +77,7 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
 
         while (rrdsi.hasNext()) {
             DataSet ds = rrdsi.next();
-            INDArray fds = ds.getFeatureMatrix();
+            INDArray fds = ds.getFeatures();
             INDArray lds = ds.getLabels();
 
             MultiDataSet mds = rrmdsi.next();
@@ -111,7 +127,7 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
 
         while (iter.hasNext()) {
             DataSet ds = iter.next();
-            INDArray fds = ds.getFeatureMatrix();
+            INDArray fds = ds.getFeatures();
             INDArray lds = ds.getLabels();
 
             MultiDataSet mds = srrmdsi.next();
@@ -171,7 +187,7 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
 
         while (rrdsi.hasNext()) {
             DataSet ds = rrdsi.next();
-            INDArray fds = ds.getFeatureMatrix();
+            INDArray fds = ds.getFeatures();
             INDArray lds = ds.getLabels();
 
             MultiDataSet mds = rrmdsi.next();
@@ -260,7 +276,7 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
 
         while (iter.hasNext()) {
             DataSet ds = iter.next();
-            INDArray fds = ds.getFeatureMatrix();
+            INDArray fds = ds.getFeatures();
             INDArray lds = ds.getLabels();
 
             MultiDataSet mds = srrmdsi.next();
@@ -435,11 +451,11 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
             assertEquals(1, mdsEnd.getLabelsMaskArrays().length);
 
 
-            assertEquals(dsStart.getFeatureMatrix(), mdsStart.getFeatures(0));
+            assertEquals(dsStart.getFeatures(), mdsStart.getFeatures(0));
             assertEquals(dsStart.getLabels(), mdsStart.getLabels(0));
             assertEquals(dsStart.getLabelsMaskArray(), mdsStart.getLabelsMaskArray(0));
 
-            assertEquals(dsEnd.getFeatureMatrix(), mdsEnd.getFeatures(0));
+            assertEquals(dsEnd.getFeatures(), mdsEnd.getFeatures(0));
             assertEquals(dsEnd.getLabels(), mdsEnd.getLabels(0));
             assertEquals(dsEnd.getLabelsMaskArray(), mdsEnd.getLabelsMaskArray(0));
         }
@@ -553,8 +569,8 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
             DataSet d1 = dsi1.next();
             DataSet d2 = dsi2.next();
 
-            assertEquals(d1.getFeatureMatrix(), mds.getFeatures(0));
-            assertEquals(d2.getFeatureMatrix(), mds.getFeatures(1));
+            assertEquals(d1.getFeatures(), mds.getFeatures(0));
+            assertEquals(d2.getFeatures(), mds.getFeatures(1));
             assertEquals(d1.getLabels(), mds.getLabels(0));
         }
     }
@@ -605,8 +621,8 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
         DataSet d1 = dsi1.next();
         DataSet d2 = dsi2.next();
 
-        assertEquals(d1.getFeatureMatrix(), mds.getFeatures(0));
-        assertEquals(d2.getFeatureMatrix(), mds.getFeatures(1));
+        assertEquals(d1.getFeatures(), mds.getFeatures(0));
+        assertEquals(d2.getFeatures(), mds.getFeatures(1));
         assertEquals(d1.getLabels(), mds.getLabels(0));
 
         //Check label assignment:

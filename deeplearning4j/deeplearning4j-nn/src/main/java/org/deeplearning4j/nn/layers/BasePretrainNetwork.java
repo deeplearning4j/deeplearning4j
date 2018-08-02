@@ -1,20 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.deeplearning4j.nn.layers;
 
@@ -201,9 +199,9 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         double l2Sum = super.calcL2(true);
         if (backpropParamsOnly)
             return l2Sum;
-        if (conf.getL2ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) > 0) {
+        if (layerConf().getL2ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) > 0) {
             double l2Norm = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).norm2Number().doubleValue();
-            l2Sum += 0.5 * conf.getL2ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) * l2Norm * l2Norm;
+            l2Sum += 0.5 * layerConf().getL2ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) * l2Norm * l2Norm;
         }
         return l2Sum;
     }
@@ -211,8 +209,8 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     @Override
     public double calcL1(boolean backpropParamsOnly) {
         double l1Sum = super.calcL1(true);
-        if (conf.getL1ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) > 0) {
-            l1Sum += conf.getL1ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY)
+        if (layerConf().getL1ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) > 0) {
+            l1Sum += layerConf().getL1ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY)
                             * getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).norm1Number().doubleValue();
         }
         return l1Sum;

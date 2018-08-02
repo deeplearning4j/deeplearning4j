@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.layers.objdetect;
 
 import lombok.val;
@@ -73,8 +89,9 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
 
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .l2(0.01)
                 .list()
-                .layer(new ConvolutionLayer.Builder().nIn(1).nOut(1).kernelSize(1,1).build())
+                .layer(new ConvolutionLayer.Builder().nIn(depth).nOut(depth).kernelSize(1,1).build())
                 .layer(new Yolo2OutputLayer.Builder()
                         .boundingBoxPriors(bbPrior)
                         .build())
@@ -134,6 +151,16 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         double score2 = y2impl.computeScore(0, 0, true, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(score, score2, 1e-8);
+
+        //Test computeScoreForExamples:
+        INDArray scoreArr1 = net.scoreExamples(new DataSet(input, labels), false);
+        INDArray scoreArr2 = net.scoreExamples(new DataSet(input, labels), true);
+        assertFalse(scoreArr1.isAttached());
+        assertFalse(scoreArr2.isAttached());
+
+        assertArrayEquals(new long[]{mb,1}, scoreArr1.shape());
+        assertArrayEquals(new long[]{mb,1}, scoreArr2.shape());
+        assertNotEquals(scoreArr1, scoreArr2);
     }
 
 
@@ -347,7 +374,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         predictedXYInGrid.putScalar(new int[]{0, 0, 0, gridNumY2, gridNumX2}, pX2);
         predictedXYInGrid.putScalar(new int[]{0, 0, 1, gridNumY2, gridNumX2}, pY2);
 
-        INDArray objectPresentMask = labelImgClasses;   //Only 1 class here, so same thing as object present mask...
+        INDArray objectPresentMask = labelImgClasses.reshape(labelImgClasses.ordering(), 1, labelImgClasses.size(0), labelImgClasses.size(1));   //Only 1 class here, so same thing as object present mask...
 
         Object ret = m.invoke(ol, labelTL, labelBR, predictedWH, predictedXYInGrid, objectPresentMask);
         Field fIou = ret.getClass().getDeclaredField("iou");

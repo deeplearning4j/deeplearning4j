@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.autodiff.samediff;
 
 import com.google.common.collect.HashBasedTable;
@@ -159,7 +175,6 @@ public class SameDiff {
     private Map<String, List<String[]>> placeHolderMap;
     private Map<String, long[]> placeHolderOriginalShapes;
     private Set<String> placeHolderVarNames;
-    private IdentityHashMap<INDArray, SDVariable> reverseArrayLookup;
     private MemoryWorkspace workspace;
     private Map<String, SameDiffFunctionDefinition> sameDiffFunctionDefinitionMap;
     private Map<String, SameDiff> sameDiffFunctionInstances;
@@ -167,6 +182,7 @@ public class SameDiff {
     private static Cloner cloner = newCloner();
     private static Map<String, Method> opMethods;
 
+    @Getter
     private Map<String, DifferentialFunction> functionInstancesById;
 
     private Table<String, String, String> fieldVariableResolutionMapping;
@@ -215,7 +231,6 @@ public class SameDiff {
         //cloner.registerFastCloner(INDArray.class, new INDArrayFastCloner());  //Does not work due to interface
         IFastCloner fc = new INDArrayFastCloner();
         cloner.registerFastCloner(Nd4j.getBackend().getNDArrayClass(), fc);
-        cloner.registerFastCloner(Nd4j.getBackend().getComplexNDArrayClass(), fc);
 
         //Same thing with DataBuffers: off heap -> cloner library chokes on them, but need to know the concrete
         // buffer classes, not just the interface
@@ -432,10 +447,6 @@ public class SameDiff {
             sameDiff.functionInstancesById.put(function.getOwnName(), function);
         }
 
-        for (val reverseArrayEntry : reverseArrayLookup.entrySet()) {
-            sameDiff.reverseArrayLookup.put(reverseArrayEntry.getKey(), sameDiff.getVariable(reverseArrayEntry.getValue().getVarName()));
-        }
-
         return sameDiff.variables().get(sameDiff.variables().size() - 1);
 
     }
@@ -566,7 +577,6 @@ public class SameDiff {
         }
 
         variableNameToArr.put(varName, arr);
-        reverseArrayLookup.put(arr, getVariable(varName));
     }
 
     /**
@@ -784,7 +794,6 @@ public class SameDiff {
             throw new ND4JIllegalArgumentException("Array must not be null");
         }
 
-        reverseArrayLookup.put(arr, variable);
         variableNameToArr.put(variable.getVarName(), arr);
         putOrUpdateShapeForVarName(variable.getVarName(), arr.shape(), true);
         // invalidate exec cache
@@ -857,20 +866,6 @@ public class SameDiff {
         throw new ND4JIllegalStateException("Illegal method opName " + op.opName());
     }
 
-
-    /**
-     * Get an {@link SDVariable} for an array reference.
-     * Internally samediff associates array references with variables. This will typically be a shortcut
-     * for the array associated with {@link SDVariable#getArr()}
-     *
-     * @param arr the array reference
-     * @return the variable if one exists
-     */
-    public SDVariable getVariableForArray(INDArray arr) {
-        return reverseArrayLookup.get(arr);
-    }
-
-
     /**
      * The set of defined SameDiff function names. SameDiff function instances should not be confused
      * with DifferentialFunction ops; an example of a SameDiff function instance is the gradient "grad" function
@@ -910,7 +905,6 @@ public class SameDiff {
         gradients = new LinkedHashMap<>();
         forwardVarForGrad = new LinkedHashMap<>();
         opsForResult = new IntArrayKeyMap<>();
-        reverseArrayLookup = new IdentityHashMap<>();
         variableNameToArr = new LinkedHashMap<>();
         variableNameToShape = new LinkedHashMap<>();
         placeHolderMap = new LinkedHashMap<>();
@@ -1672,7 +1666,7 @@ public class SameDiff {
      * @return the created variable
      */
     public SDVariable var(String name, long... shape) {
-        Preconditions.checkArgument(shape != null && shape.length > 0, "Invalid shape: %s", shape);
+        Preconditions.checkNotNull(shape != null, "Invalid shape: shape may not be null");
         return var(name, shape, new ZeroInitScheme());
     }
 
@@ -1685,7 +1679,7 @@ public class SameDiff {
      * @return the created variable
      */
     public SDVariable var(String name, int... shape) {
-        Preconditions.checkArgument(shape != null && shape.length > 0, "Invalid shape: %s", shape);
+        Preconditions.checkNotNull(shape != null, "Invalid shape: shape may not be null");
         return var(name, ArrayUtil.toLongArray(shape), new ZeroInitScheme());
     }
 
@@ -1837,7 +1831,6 @@ public class SameDiff {
             putShapeForVarName(name, arr.shape());
         //ensure there is a reference to the array in the integer index
         //this is used later for op creation
-        reverseArrayLookup.put(arr, ret);
         variableMap.put(name, ret);
         return ret;
 
@@ -6696,8 +6689,8 @@ public class SameDiff {
     /**
      * @see #cumsum(String, SDVariable, SDVariable, boolean, boolean)
      */
-    public SDVariable cumsum(SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
-        return cumsum(null, in, axis, exclusive, reverse);
+    public SDVariable cumsum(SDVariable in, boolean exclusive, boolean reverse, int... axis) {
+        return cumsum(null, in, exclusive, reverse, axis);
     }
 
     /**
@@ -6715,16 +6708,16 @@ public class SameDiff {
      * @param reverse   If true: reverse the direction of the accumulation
      * @return Output variable
      */
-    public SDVariable cumsum(String name, SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
-        SDVariable ret = f().cumsum(in, axis, exclusive, reverse);
+    public SDVariable cumsum(String name, SDVariable in, boolean exclusive, boolean reverse, int... axis) {
+        SDVariable ret = f().cumsum(in, exclusive, reverse, axis);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
      * @see #cumprod(String, SDVariable, SDVariable, boolean, boolean)
      */
-    public SDVariable cumprod(SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
-        return cumprod(null, in, axis, exclusive, reverse);
+    public SDVariable cumprod(SDVariable in, boolean exclusive, boolean reverse, int... axis) {
+        return cumprod(null, in, exclusive, reverse, axis);
     }
 
     /**
@@ -6742,8 +6735,8 @@ public class SameDiff {
      * @param reverse   If true: reverse the direction of the accumulation
      * @return Output variable
      */
-    public SDVariable cumprod(String name, SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
-        SDVariable ret = f().cumprod(in, axis, exclusive, reverse);
+    public SDVariable cumprod(String name, SDVariable in, boolean exclusive, boolean reverse, int... axis) {
+        SDVariable ret = f().cumprod(in, exclusive, reverse, axis);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -6764,6 +6757,36 @@ public class SameDiff {
     public SDVariable biasAdd(String name, SDVariable input, SDVariable bias) {
         SDVariable ret = f().biasAdd(input, bias);
         return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Reshape the input variable to the specified (fixed) shape. The output variable will have the same values as the
+     * input, but with the specified shape.<br>
+     * Note that prod(shape) must match length(input) == prod(input.shape)
+     *
+     * @param x    Input variable
+     * @param shape New shape for variable
+     * @return Output variable
+     * @see #reshape(SDVariable, SDVariable)
+     */
+    public SDVariable reshape(SDVariable x, long... shape) {
+        return reshape(null, x, shape);
+    }
+
+    /**
+     * Reshape the input variable to the specified (fixed) shape. The output variable will have the same values as the
+     * input, but with the specified shape.<br>
+     * Note that prod(shape) must match length(input) == prod(input.shape)
+     *
+     * @param name  Output variable name
+     * @param x    Input variable
+     * @param shape New shape for variable
+     * @return Output variable
+     * @see #reshape(SDVariable, SDVariable)
+     */
+    public SDVariable reshape(String name, SDVariable x, long... shape) {
+        SDVariable result = functionFactory .reshape(x, shape);
+        return updateVariableNameAndReference(result, name);
     }
 
     /**
@@ -7991,7 +8014,11 @@ public class SameDiff {
      * @return
      */
     public SDVariable softmaxDerivative(String name, SDVariable x, SDVariable wrt) {
-        SDVariable result = functionFactory.softmaxDerivative(x, wrt);
+        return softmaxDerivative(name, x, wrt, null);
+    }
+
+    public SDVariable softmaxDerivative(String name, SDVariable x, SDVariable wrt, Integer dimension) {
+        SDVariable result = functionFactory.softmaxDerivative(x, wrt, dimension);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -8932,31 +8959,6 @@ public class SameDiff {
         lists.put(name, list);
     }
 
-    /**
-     * An interface for representing a conditional statement
-     */
-    public interface SameDiffConditional {
-
-
-        /**
-         * @param context
-         * @param body
-         * @return
-         */
-        SDVariable eval(SameDiff context, SameDiffFunctionDefinition body, SDVariable[] inputVars);
-
-    }
-
-    public static class DefaultSameDiffConditional implements SameDiffConditional {
-
-        @Override
-        public SDVariable eval(SameDiff context, SameDiff.SameDiffFunctionDefinition body, SDVariable[] inputVars) {
-            context.defineFunction("eval", body, inputVars);
-            context.invokeFunctionOn("eval", context);
-            return new ArrayList<>(context.functionInstancesById.values()).get(context.functionInstancesById.size() - 1).outputVariables()[0];
-        }
-    }
-
 
     /**
      * Creates a while statement
@@ -8967,7 +8969,7 @@ public class SameDiff {
      */
     public While whileStatement(SameDiffConditional sameDiffConditional,
                                 SameDiffFunctionDefinition conditionBody,
-                                SameDiff.SameDiffFunctionDefinition loopBody
+                                SameDiffFunctionDefinition loopBody
             , SDVariable[] inputVars) {
         return While.builder()
                 .inputVars(inputVars)
@@ -9004,19 +9006,6 @@ public class SameDiff {
 
     public TensorArrayV3 tensorArray() {
         return new TensorArrayV3(this);
-    }
-
-    /**
-     * A function definition for samediff
-     */
-    public interface SameDiffFunctionDefinition {
-
-        /**
-         * @param inputs
-         * @param variableInputs
-         * @return
-         */
-        SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs);
     }
 
     /**
@@ -10563,7 +10552,7 @@ public class SameDiff {
         int ownId = forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
         reverseMap.put(node.getOwnName(), ownId);
 
-        val dims = node.opType() == Op.Type.REDUCE && inPaired.size() == 1 && node.getDimensions() != null ? node.getDimensions() : new int[]{};
+        val dims = node.opType() == Op.Type.REDUCE && node.getDimensions() != null ? node.getDimensions() : new int[]{};
         // TODO: Adam, just put your props here, instead of empty list, and they will be saved
         List<FunctionProperties> props = new ArrayList<>();
         int properties = FunctionProperties.asFlatProperties(bufferBuilder, props);

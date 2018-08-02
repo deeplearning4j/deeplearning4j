@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.params;
 
 import lombok.val;
@@ -103,13 +119,7 @@ public class BidirectionalParamInitializer implements ParamInitializer {
         c2.setLayer(underlying);
         Map<String, INDArray> origFwd = underlying.initializer().init(c1, forwardView, initializeParams);
         Map<String, INDArray> origBwd = underlying.initializer().init(c2, backwardView, initializeParams);
-
-        Map<String,Double> l1ByParam = addPrefixes(c1.getL1ByParam(), c2.getL1ByParam());
-        Map<String,Double> l2ByParam = addPrefixes(c1.getL2ByParam(), c2.getL2ByParam());
         List<String> variables = addPrefixes(c1.getVariables(), c2.getVariables());
-
-        conf.setL1ByParam(l1ByParam);
-        conf.setL2ByParam(l2ByParam);
         conf.setVariables(variables);
 
         Map<String,INDArray> out = new LinkedHashMap<>();

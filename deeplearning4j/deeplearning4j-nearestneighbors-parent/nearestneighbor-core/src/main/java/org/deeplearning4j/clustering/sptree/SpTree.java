@@ -1,24 +1,24 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.deeplearning4j.clustering.sptree;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import lombok.Getter;
+import lombok.Setter;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -71,7 +71,8 @@ public class SpTree implements Serializable {
             .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
             .policyLearning(LearningPolicy.OVER_TIME).build();
 
-    protected WorkspaceMode workspaceMode;
+    @Getter @Setter
+    protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
     protected final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
             .initialSize(0).overallocationLimit(0.3).policyLearning(LearningPolicy.FIRST_LOOP)
             .policyReset(ResetPolicy.BLOCK_LEFT).policySpill(SpillPolicy.REALLOCATE)
@@ -101,10 +102,10 @@ public class SpTree implements Serializable {
                     meanY.getDouble(i) - minY.getDouble(i) + Nd4j.EPS_THRESHOLD));
         }
 
-        init(null, data, meanY, width, indices, similarityFunction);
-        fill(N);
-
-
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            init(null, data, meanY, width, indices, similarityFunction);
+            fill(N);
+        }
     }
 
 
@@ -154,7 +155,6 @@ public class SpTree implements Serializable {
         boundary.setWidth(width.dup());
         centerOfMass = Nd4j.create(D);
         buf = Nd4j.create(D);
-
     }
 
 

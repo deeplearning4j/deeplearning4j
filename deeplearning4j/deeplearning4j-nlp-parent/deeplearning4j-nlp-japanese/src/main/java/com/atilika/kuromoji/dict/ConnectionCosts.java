@@ -20,18 +20,15 @@ import com.atilika.kuromoji.io.ByteBufferIO;
 import com.atilika.kuromoji.util.KuromojiBinFilesFetcher;
 import com.atilika.kuromoji.util.ResourceResolver;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 
 public class ConnectionCosts {
 
     //    public static final String CONNECTION_COSTS_FILENAME = "connectionCosts.bin";
-    public static final String CONNECTION_COSTS_FILENAME =
-                    KuromojiBinFilesFetcher.getRootPath() + "connectionCosts.bin";
+    public static final String CONNECTION_COSTS_FILENAME = new File(KuromojiBinFilesFetcher.getKuromojiRoot(),
+            "connectionCosts.bin").getAbsolutePath();
 
     private int size;
 

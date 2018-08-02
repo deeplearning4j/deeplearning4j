@@ -1,7 +1,24 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.graph;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
+import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -31,7 +48,7 @@ import static org.junit.Assert.*;
 /**
  * Created by nyghtowl on 1/15/16.
  */
-@Ignore
+//@Ignore
 public class TestCompGraphCNN extends BaseDL4JTest {
 
     protected ComputationGraphConfiguration conf;
@@ -122,39 +139,7 @@ public class TestCompGraphCNN extends BaseDL4JTest {
 
     }
 
-    @Test
-    public void testForwardBasic() {
-
-        graph.setInput(0, ds.getFeatureMatrix());
-        Map<String, INDArray> activations = graph.feedForward(true);
-        assertEquals(6, activations.size()); //1 input, 2 CNN layers, 1 subsampling, 1 dense, 1 output -> 6
-        assertTrue(activations.containsKey("input"));
-        assertTrue(activations.containsKey("cnn1"));
-        assertTrue(activations.containsKey("output"));
-
-        // Check feedforward activations
-
-    }
-
-    @Test
-    public void testBackwardIrisBasic() {
-
-        //Now: set parameters of both networks to be identical. Then feedforward, and check we get the same outputs
-        Nd4j.getRandom().setSeed(12345);
-
-        INDArray input = ds.getFeatureMatrix();
-        INDArray labels = ds.getLabels();
-        graph.setInput(0, input.dup());
-        graph.setLabel(0, labels.dup());
-
-        //Compute gradients
-        graph.computeGradientAndScore();
-        Pair<Gradient, Double> graphGradScore = graph.gradientAndScore();
-
-        // Check gradients
-    }
-
-    @Test(expected = InvalidInputTypeException.class)
+    @Test(expected = DL4JInvalidConfigException.class)
     public void testCNNComputationGraphKernelTooLarge() {
         int imageWidth = 23;
         int imageHeight = 19;
@@ -199,94 +184,4 @@ public class TestCompGraphCNN extends BaseDL4JTest {
 
         model.fit(trainInput);
     }
-
-    @Test
-    public void testCNNComputationGraphSingleOutFeatureMap() {
-        int imageWidth = 23;
-        int imageHeight = 23;
-        int nChannels = 1;
-        int classes = 2;
-        int numSamples = 200;
-
-        int kernelHeight = 3;
-        int kernelWidth = 3;
-
-
-        DataSet trainInput;
-
-        ComputationGraphConfiguration conf =
-                        new NeuralNetConfiguration.Builder()
-                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .seed(123).graphBuilder().addInputs("input")
-                                        .setInputTypes(InputType.convolutional(imageHeight, imageWidth,
-                                                        nChannels))
-                                        .addLayer("conv1",
-                                                        new ConvolutionLayer.Builder()
-                                                                        .kernelSize(kernelHeight, kernelWidth)
-                                                                        .stride(1, 1).nIn(nChannels).nOut(1) // check if it can take 1 nOut only
-                                                                        .weightInit(WeightInit.XAVIER)
-                                                                        .activation(Activation.RELU).build(),
-                                                        "input")
-                                        .addLayer("pool1",
-                                                        new SubsamplingLayer.Builder()
-                                                                        .poolingType(SubsamplingLayer.PoolingType.MAX)
-                                                                        .kernelSize(imageHeight - kernelHeight, 1)
-                                                                        .stride(1, 1).build(),
-                                                        "conv1")
-                                        .addLayer("output", new OutputLayer.Builder().nOut(classes).build(), "pool1")
-                                        .setOutputs("output").backprop(true).pretrain(false).build();
-
-
-        ComputationGraph model = new ComputationGraph(conf);
-        model.init();
-
-
-        INDArray emptyFeatures = Nd4j.zeros(numSamples, imageWidth * imageHeight * nChannels);
-        INDArray emptyLables = Nd4j.zeros(numSamples, classes);
-
-        trainInput = new DataSet(emptyFeatures, emptyLables);
-
-        model.fit(trainInput);
-    }
-
-    @Test
-    public void testCnnLRN_BN() {
-
-        int imageHeight = 40;
-        int imageWidth = 40;
-        int nChannels = 1;
-
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
-                        .graphBuilder().addInputs("input")
-                        .setInputTypes(InputType.convolutional(imageHeight, imageWidth, nChannels))
-                        //-- kernel size, stride , padding
-                        .addLayer("cnn1",
-                                        new ConvolutionLayer.Builder(new int[] {2, 2}, new int[] {1, 1},
-                                                        new int[] {0, 0}) //Out: 39x39x64
-                                                                        .nIn(nChannels).nOut(64).biasInit(0.2).build(),
-                                        "input")
-
-                        //-- kernel size, stride
-                        .addLayer("max1",
-                                        new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2},
-                                                        new int[] {1, 1}) //Out: 38x38x64
-                                                                        .build(),
-                                        "cnn1")
-
-                        //--
-                        .addLayer("lrn1", new LocalResponseNormalization.Builder(5, 1e-4, 0.75).build(), "max1")
-
-                        .addLayer("batchnorm", new BatchNormalization.Builder().nOut(64).build(), "lrn1")
-
-                        .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "batchnorm")
-
-                        .setOutputs("out").pretrain(false).backprop(true).build();
-
-        ComputationGraph graph = new ComputationGraph(conf);
-        graph.init();
-
-
-    }
-
 }

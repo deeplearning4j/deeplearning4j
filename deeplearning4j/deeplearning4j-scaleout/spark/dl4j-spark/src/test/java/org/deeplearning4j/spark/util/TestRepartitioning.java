@@ -1,22 +1,39 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.spark.util;
 
+import org.apache.spark.Partitioner;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.RepartitionStrategy;
 import org.deeplearning4j.spark.impl.common.CountPartitionsFunction;
-import org.deeplearning4j.spark.impl.common.repartition.AssignIndexFunction;
-import org.deeplearning4j.spark.impl.common.repartition.MapTupleToPairFlatMap;
+import org.deeplearning4j.spark.impl.repartitioner.DefaultRepartitioner;
+import org.junit.Assert;
 import org.junit.Test;
 import scala.Tuple2;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
 import static junit.framework.TestCase.assertEquals;
-import static org.deeplearning4j.spark.util.SparkUtils.indexedRDD;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -24,50 +41,6 @@ import static org.junit.Assert.assertTrue;
  * Created by Alex on 03/07/2016.
  */
 public class TestRepartitioning extends BaseSparkTest {
-
-    public void testAssignIdx() {
-        List<String> list = new ArrayList<>();
-        for (int i = 0; i < 1000; i++) {
-            list.add(String.valueOf(i));
-        }
-
-        JavaRDD<String> rdd = sc.parallelize(list, 10);
-
-        int numPartitions = rdd.getNumPartitions();
-        int objectsPerPartition = 100;
-
-        List<Tuple2<Integer, Integer>> partitionCounts =
-                        rdd.mapPartitionsWithIndex(new CountPartitionsFunction<String>(), true).collect();
-        int totalObjects = 0;
-        int initialPartitions = partitionCounts.size();
-
-        int[] countPerPartition = new int[partitionCounts.size()];
-        int x = 0;
-        for (Tuple2<Integer, Integer> t2 : partitionCounts) {
-            int partitionSize = t2._2();
-            countPerPartition[x++] = partitionSize;
-        }
-
-        int[] elementStartOffsetByPartitions = new int[countPerPartition.length];
-        for (int i = 1; i < elementStartOffsetByPartitions.length; i++) {
-            elementStartOffsetByPartitions[i] = elementStartOffsetByPartitions[i - 1] + countPerPartition[i - 1];
-        }
-
-        JavaRDD<Tuple2<Integer, String>> indexed = rdd
-                        .mapPartitionsWithIndex(new AssignIndexFunction<String>(elementStartOffsetByPartitions), true);
-        JavaPairRDD<Integer, String> pairIndexed =
-                        indexed.mapPartitionsToPair(new MapTupleToPairFlatMap<Integer, String>(), true);
-
-        JavaPairRDD<Integer, String> withIndexes = indexedRDD(rdd);
-
-        List<Integer> pairKeys = pairIndexed.keys().collect();
-        List<Integer> indexedKeys = withIndexes.keys().collect();
-
-        assertTrue(indexedKeys.size() == pairKeys.size());
-        for (int i = 0; i < pairKeys.size(); i++) {
-            assertEquals(pairKeys.get(i), indexedKeys.get(i));
-        }
-    }
 
     @Test
     public void testRepartitioning() {
@@ -146,6 +119,103 @@ public class TestRepartitioning extends BaseSparkTest {
             assertEquals(expNumPartitionsWithMore, actNumPartitionsWithMore);
         }
     }
+
+    @Test
+    public void testRepartitioning3(){
+
+        //Initial partitions (idx, count) - [(0,29), (1,29), (2,29), (3,34), (4,34), (5,35), (6,34)]
+
+        List<Integer> ints = new ArrayList<>();
+        for( int i=0; i<224; i++ ){
+            ints.add(i);
+        }
+
+        JavaRDD<Integer> rdd = sc.parallelize(ints);
+        JavaPairRDD<Integer,Integer> pRdd = SparkUtils.indexedRDD(rdd);
+        JavaPairRDD<Integer,Integer> initial = pRdd.partitionBy(new Partitioner() {
+            @Override
+            public int getPartition(Object key) {
+                int i = (Integer)key;
+                if(i < 29){
+                    return 0;
+                } else if(i < 29+29){
+                    return 1;
+                } else if(i < 29+29+29){
+                    return 2;
+                } else if(i < 29+29+29+34){
+                    return 3;
+                } else if(i < 29+29+29+34+34){
+                    return 4;
+                } else if(i < 29+29+29+34+34+35){
+                    return 5;
+                } else {
+                    return 6;
+                }
+            }
+            @Override
+            public int numPartitions() {
+                return 7;
+            }
+        });
+
+        List<Tuple2<Integer, Integer>> partitionCounts = initial.values().mapPartitionsWithIndex(new CountPartitionsFunction<Integer>(), true).collect();
+
+        System.out.println(partitionCounts);
+
+        List<Tuple2<Integer,Integer>> initialExpected = Arrays.asList(
+                new Tuple2<>(0,29),
+                new Tuple2<>(1,29),
+                new Tuple2<>(2,29),
+                new Tuple2<>(3,34),
+                new Tuple2<>(4,34),
+                new Tuple2<>(5,35),
+                new Tuple2<>(6,34));
+        Assert.assertEquals(initialExpected, partitionCounts);
+
+
+        JavaRDD<Integer> afterRepartition = SparkUtils.repartitionBalanceIfRequired(initial.values(), Repartition.Always, 2, 112);
+        List<Tuple2<Integer, Integer>> partitionCountsAfter = afterRepartition.mapPartitionsWithIndex(new CountPartitionsFunction<Integer>(), true).collect();
+        System.out.println(partitionCountsAfter);
+
+        for(Tuple2<Integer,Integer> t2 : partitionCountsAfter){
+            assertEquals(2, (int)t2._2());
+        }
+    }
+
+    @Test
+    public void testRepartitioning4(){
+        List<Integer> ints = new ArrayList<>();
+        for( int i=0; i<7040; i++ ){
+            ints.add(i);
+        }
+
+        JavaRDD<Integer> rdd = sc.parallelize(ints);
+
+        JavaRDD<Integer> afterRepartition = new DefaultRepartitioner().repartition(rdd, 1, 32);
+        List<Tuple2<Integer, Integer>> partitionCountsAfter = afterRepartition.mapPartitionsWithIndex(new CountPartitionsFunction<Integer>(), true).collect();
+
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        int minIdx = 0;
+        int maxIdx = 0;
+        for(Tuple2<Integer,Integer> t2 : partitionCountsAfter){
+            min = Math.min(min, t2._2());
+            max = Math.max(max, t2._2());
+            if(min == t2._2()){
+                minIdx = t2._1();
+            }
+            if(max == t2._2()){
+                maxIdx = t2._1();
+            }
+        }
+
+        System.out.println("min: " + min + "\t@\t" + minIdx);
+        System.out.println("max: " + max + "\t@\t" + maxIdx);
+
+        assertEquals(1, min);
+        assertEquals(2, max);
+    }
+
 
     @Test
     public void testRepartitioningApprox() {

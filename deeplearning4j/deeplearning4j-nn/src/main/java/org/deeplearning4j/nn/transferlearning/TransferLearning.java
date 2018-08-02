@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.transferlearning;
 
 import lombok.extern.slf4j.Slf4j;
@@ -286,7 +302,6 @@ public class TransferLearning {
                     // the original layer config. While network NNC should have the frozen layer, for to/from JSON etc
                     NeuralNetConfiguration origNNC = editedModel.getLayerWiseConfigurations().getConf(i);
                     NeuralNetConfiguration layerNNC = origNNC.clone();
-                    editedModel.getLayerWiseConfigurations().getConf(i).resetVariables();
                     layers[i].setConf(layerNNC);
                     layers[i] = new FrozenLayer(layers[i]);
 
@@ -296,16 +311,9 @@ public class TransferLearning {
                         layerNNC.clearVariables();
                         for (String s : vars) {
                             origNNC.variables(false).add(s);
-                            origNNC.getL1ByParam().put(s, 0.0);
-                            origNNC.getL2ByParam().put(s, 0.0);
-
                             layerNNC.variables(false).add(s);
-                            layerNNC.getL1ByParam().put(s, 0.0);
-                            layerNNC.getL2ByParam().put(s, 0.0);
                         }
                     }
-
-
 
                     Layer origLayerConf = editedModel.getLayerWiseConfigurations().getConf(i).getLayer();
                     Layer newLayerConf = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(origLayerConf);
@@ -816,8 +824,6 @@ public class TransferLearning {
                             currLayerVertex.getLayerConf().clearVariables();
                             for (String s : vars) {
                                 newNNC.variables(false).add(s);
-                                newNNC.getL1ByParam().put(s, 0.0);
-                                newNNC.getL2ByParam().put(s, 0.0);
                             }
 
                             //We also need to place the layer in the CompGraph Layer[] (replacing the old one)

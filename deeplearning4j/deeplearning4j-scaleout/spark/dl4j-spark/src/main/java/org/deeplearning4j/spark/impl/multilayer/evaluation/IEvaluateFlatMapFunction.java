@@ -1,20 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2016 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.deeplearning4j.spark.impl.multilayer.evaluation;
 
@@ -28,12 +26,14 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.spark.impl.evaluation.EvaluationRunner;
 import org.deeplearning4j.spark.iterator.SparkADSI;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.concurrent.Future;
 
 /**
  * Function to evaluate data (using an IEvaluation instance), in a distributed manner
@@ -46,8 +46,8 @@ public class IEvaluateFlatMapFunction<T extends IEvaluation>
                 extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, T[]> {
 
     public IEvaluateFlatMapFunction(boolean isCompGraph, Broadcast<String> json, Broadcast<INDArray> params,
-                    int evalBatchSize, T... evaluations) {
-        super(new IEvaluateFlatMapFunctionAdapter<>(isCompGraph, json, params, evalBatchSize, evaluations));
+                    int evalNumWorkers, int evalBatchSize, T... evaluations) {
+        super(new IEvaluateFlatMapFunctionAdapter<>(isCompGraph, json, params, evalNumWorkers, evalBatchSize, evaluations));
     }
 }
 
@@ -65,6 +65,7 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
     protected boolean isCompGraph;
     protected Broadcast<String> json;
     protected Broadcast<INDArray> params;
+    protected int evalNumWorkers;
     protected int evalBatchSize;
     protected T[] evaluations;
 
@@ -76,10 +77,11 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
      * @param evaluations Initial evaulation instance (i.e., empty Evaluation or RegressionEvaluation instance)
      */
     public IEvaluateFlatMapFunctionAdapter(boolean isCompGraph, Broadcast<String> json, Broadcast<INDArray> params,
-                    int evalBatchSize, T[] evaluations) {
+                    int evalNumWorkers, int evalBatchSize, T[] evaluations) {
         this.isCompGraph = isCompGraph;
         this.json = json;
         this.params = params;
+        this.evalNumWorkers = evalNumWorkers;
         this.evalBatchSize = evalBatchSize;
         this.evaluations = evaluations;
     }
@@ -90,34 +92,14 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
             return Collections.emptyList();
         }
 
-        MultiLayerNetwork network = null;
-        ComputationGraph graph = null;
-        INDArray val = params.value().unsafeDuplication();
-        if (isCompGraph) {
-            graph = new ComputationGraph(ComputationGraphConfiguration.fromJson(json.getValue()));
-            graph.init();
-            if (val.length() != graph.numParams(false))
-                throw new IllegalStateException(
-                                "Network did not have same number of parameters as the broadcast set parameters");
-            graph.setParams(val);
+        Future<IEvaluation[]> f = EvaluationRunner.getInstance().execute(
+                evaluations, evalNumWorkers, evalBatchSize, dataSetIterator, null, isCompGraph, json, params);
 
-            T[] eval = graph.doEvaluation(
-                            new SparkADSI(new IteratorDataSetIterator(dataSetIterator, evalBatchSize), 2, true),
-                            evaluations);
-            return Collections.singletonList(eval);
-
+        IEvaluation[] result = f.get();
+        if(result == null){
+            return Collections.emptyList();
         } else {
-            network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json.getValue()));
-            network.init();
-            if (val.length() != network.numParams(false))
-                throw new IllegalStateException(
-                                "Network did not have same number of parameters as the broadcast set parameters");
-            network.setParameters(val);
-
-            T[] eval = network.doEvaluation(
-                            new SparkADSI(new IteratorDataSetIterator(dataSetIterator, evalBatchSize), 2, true),
-                            evaluations);
-            return Collections.singletonList(eval);
+            return Collections.singletonList((T[])result);
         }
     }
 }

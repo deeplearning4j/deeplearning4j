@@ -1,9 +1,26 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 19.04.2018
 // @author raver119@gmail.com
 //
 
-#include<ops/declarable/helpers/activations.h>
+#include <ops/declarable/helpers/activations.h>
+#include <ShapeUtils.h>
 
 
 namespace nd4j    {
@@ -141,6 +158,49 @@ void softmax(const NDArray<T>& input, NDArray<T>& output, const int dimension) {
     }
 }
 
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+void prelu(const NDArray<T>& input, const NDArray<T>& alpha, NDArray<T>& output) {
+
+    const Nd4jLong inputLen = input.lengthOf();    
+    const Nd4jLong* inputShapeInfo = input.getShapeInfo(); 
+    const Nd4jLong* alphaShapeInfo = alpha.getShapeInfo();
+
+#pragma omp parallel for if(inputLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+    for(Nd4jLong i = 0; i < inputLen; ++i) {
+        T x = input(i);
+        if(x < static_cast<T>(0)) 
+            output(i) = x * alpha(ShapeUtils<T>::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i));
+        else
+            output(i) = x;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+void preluBP(const NDArray<T>& input, const NDArray<T>& alpha, const NDArray<T>& dLdO, NDArray<T>& dLdI, NDArray<T>& dLdA) {
+
+    const Nd4jLong inputLen = input.lengthOf();    
+    const Nd4jLong* inputShapeInfo = input.getShapeInfo(); 
+    const Nd4jLong* alphaShapeInfo = alpha.getShapeInfo();
+
+    dLdA = static_cast<T>(0);
+
+#pragma omp parallel for if(inputLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+    for(Nd4jLong i = 0; i < inputLen; ++i) {
+        T x   = input(i);
+        T grO = dLdO(i);
+        if(x < static_cast<T>(0)) {
+            
+            Nd4jLong alphaInd = ShapeUtils<T>::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i);
+            dLdI(i) = grO * alpha(alphaInd);
+            dLdA(alphaInd) += grO * x;
+        }
+        else
+            dLdI(i) = grO;
+    }
+}
+
 
 template void softMaxForVector<float>  (const NDArray<float  >& input, NDArray<float  >& output);
 template void softMaxForVector<float16>(const NDArray<float16>& input, NDArray<float16>& output);
@@ -154,6 +214,13 @@ template void softmax<float>(const NDArray<float>& input, NDArray<float>& output
 template void softmax<float16>(const NDArray<float16>& input, NDArray<float16>& output, const int dimension);
 template void softmax<double>(const NDArray<double>& input, NDArray<double>& output, const int dimension);
 
+template void prelu<float16>(const NDArray<float16>& input, const NDArray<float16>& alpha, NDArray<float16>& output);
+template void prelu<float>(const NDArray<float>& input, const NDArray<float>& alpha, NDArray<float>& output);
+template void prelu<double>(const NDArray<double>& input, const NDArray<double>& alpha, NDArray<double>& output);
+
+template void preluBP<float16>(const NDArray<float16>& input, const NDArray<float16>& alpha, const NDArray<float16>& dLdO, NDArray<float16>& dLdI, NDArray<float16>& dLdA);
+template void preluBP<float>(const NDArray<float>& input, const NDArray<float>& alpha, const NDArray<float>& dLdO, NDArray<float>& dLdI, NDArray<float>& dLdA);
+template void preluBP<double>(const NDArray<double>& input, const NDArray<double>& alpha, const NDArray<double>& dLdO, NDArray<double>& dLdI, NDArray<double>& dLdA);
 
 }
 }
