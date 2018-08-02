@@ -214,6 +214,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_scatter_mul.class,
         float_scatter_div.class,
         float_scatter_upd.class,
+        float_scatter_max.class,
+        float_scatter_min.class,
         float_fill_as.class,
         float_rint.class,
         float_unique.class,
@@ -579,6 +581,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_scatter_mul.class,
         half_scatter_div.class,
         half_scatter_upd.class,
+        half_scatter_max.class,
+        half_scatter_min.class,
         half_fill_as.class,
         half_rint.class,
         half_unique.class,
@@ -944,6 +948,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_scatter_mul.class,
         double_scatter_div.class,
         double_scatter_upd.class,
+        double_scatter_max.class,
+        double_scatter_min.class,
         double_fill_as.class,
         double_rint.class,
         double_unique.class,
@@ -29376,11 +29382,11 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * This operation applies Add opeartion to specific inputs wrt indices
+         * This operation applies Add operation to specific inputs wrt indices
          * Expected arguments:
-         * input: N-dimensional array
-         * indices: either scalar, vector, or N-dimensional array
-         * updates: N-dimensional array
+         * input: array to be updated
+         * indices: array containing indexes for first dimension of input
+         * updates: array containing elements to be interfered with input 
          */
 //         #if NOT_EXCLUDED(OP_scatter_add)
         @Name("nd4j::ops::scatter_add<float>") public static class float_scatter_add extends FloatDeclarableOp {
@@ -29431,11 +29437,11 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * This operation applies Subtract opeartion to specific inputs wrt indices
+         * This operation applies Subtract operation to specific inputs wrt indices
          * Expected arguments:
-         * input: N-dimensional array
-         * indices: either scalar, vector, or N-dimensional array
-         * updates: N-dimensional array
+         * input: array to be updated
+         * indices: array containing indexes for first dimension of input
+         * updates: array containing elements to be interfered with input 
          */
 //         #if NOT_EXCLUDED(OP_scatter_sub)
         @Name("nd4j::ops::scatter_sub<float>") public static class float_scatter_sub extends FloatDeclarableOp {
@@ -29486,11 +29492,11 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * This operation applies Multiply opeartion to specific inputs wrt indices
+         * This operation applies Multiply operation to specific inputs wrt indices
          * Expected arguments:
-         * input: N-dimensional array
-         * indices: either scalar, vector, or N-dimensional array
-         * updates: N-dimensional array
+         * input: array to be updated
+         * indices: array containing indexes for first dimension of input
+         * updates: array containing elements to be interfered with input 
          */
 //         #if NOT_EXCLUDED(OP_scatter_mul)
         @Name("nd4j::ops::scatter_mul<float>") public static class float_scatter_mul extends FloatDeclarableOp {
@@ -29541,11 +29547,11 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * This operation applies Divide opeartion to specific inputs wrt indices
+         * This operation applies Divide operation to specific inputs wrt indices
          * Expected arguments:
-         * input: N-dimensional array
-         * indices: either scalar, vector, or N-dimensional array
-         * updates: N-dimensional array
+         * input: array to be updated
+         * indices: array containing indexes for first dimension of input
+         * updates: array containing elements to be interfered with input 
          */
 //         #if NOT_EXCLUDED(OP_scatter_div)
         @Name("nd4j::ops::scatter_div<float>") public static class float_scatter_div extends FloatDeclarableOp {
@@ -29596,11 +29602,11 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * This operation applies Assign opeartion to specific inputs wrt indices
+         * This operation applies Assign operation to specific inputs wrt indices
          * Expected arguments:
-         * input: N-dimensional array
-         * indices: either scalar, vector, or N-dimensional array
-         * updates: N-dimensional array
+         * input: array to be updated
+         * indices: array containing indexes for first dimension of input
+         * updates: array containing elements to be interfered with input 
          */
 //         #if NOT_EXCLUDED(OP_scatter_upd)
         @Name("nd4j::ops::scatter_upd<float>") public static class float_scatter_upd extends FloatDeclarableOp {
@@ -29645,6 +29651,116 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                     public double_scatter_upd() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                }
+//         #endif
+
+        /**
+         * This operation applies Max operation to specific inputs through given indices
+         * Expected arguments:
+         * input: array to be updated
+         * indices: array containing indexes for first dimension of input
+         * updates: array containing elements to be interfered with input 
+         */
+//         #if NOT_EXCLUDED(OP_scatter_max)
+        @Name("nd4j::ops::scatter_max<float>") public static class float_scatter_max extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_scatter_max(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_scatter_max(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_scatter_max position(long position) {
+                return (float_scatter_max)super.position(position);
+            }
+        
+                                                    public float_scatter_max() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                }
+        @Name("nd4j::ops::scatter_max<float16>") public static class half_scatter_max extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_scatter_max(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_scatter_max(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_scatter_max position(long position) {
+                return (half_scatter_max)super.position(position);
+            }
+        
+                                                    public half_scatter_max() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                }
+        @Name("nd4j::ops::scatter_max<double>") public static class double_scatter_max extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_scatter_max(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_scatter_max(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_scatter_max position(long position) {
+                return (double_scatter_max)super.position(position);
+            }
+        
+                                                    public double_scatter_max() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                }
+//         #endif
+
+        /**
+         * This operation applies Min operation to specific inputs through given indices
+         * Expected arguments:
+         * input: array to be updated
+         * indices: array containing indexes for first dimension of input
+         * updates: array containing elements to be interfered with input 
+         */
+//         #if NOT_EXCLUDED(OP_scatter_min)
+        @Name("nd4j::ops::scatter_min<float>") public static class float_scatter_min extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_scatter_min(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_scatter_min(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_scatter_min position(long position) {
+                return (float_scatter_min)super.position(position);
+            }
+        
+                                                    public float_scatter_min() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                }
+        @Name("nd4j::ops::scatter_min<float16>") public static class half_scatter_min extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_scatter_min(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_scatter_min(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_scatter_min position(long position) {
+                return (half_scatter_min)super.position(position);
+            }
+        
+                                                    public half_scatter_min() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                }
+        @Name("nd4j::ops::scatter_min<double>") public static class double_scatter_min extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_scatter_min(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_scatter_min(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_scatter_min position(long position) {
+                return (double_scatter_min)super.position(position);
+            }
+        
+                                                    public double_scatter_min() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
