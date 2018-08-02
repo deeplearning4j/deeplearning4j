@@ -263,8 +263,6 @@ public class ReductionOpValidation extends BaseOpValidation {
                     INDArray expArr = Transforms.exp(inputArr);
                     double sum = expArr.sumNumber().doubleValue();
                     tc.expected("loss", Nd4j.create(new double[]{Math.log(sum)}));
-                    if(OpValidationSuite.IGNORE_FAILING)
-                        continue;
                     break;
                 case 18:
                     inputArr = Nd4j.rand(minibatch, nOut);
