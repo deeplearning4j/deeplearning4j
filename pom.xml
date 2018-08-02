@@ -150,17 +150,47 @@
         <datavec.version>1.0.0-SNAPSHOT</datavec.version>
         <dl4j-test-resources.version>1.0.0-SNAPSHOT</dl4j-test-resources.version>
 
+        <jackson-asl.version>1.9.13</jackson-asl.version>
+        <asm.version>5.1</asm.version>
+        <arrow.version>0.9.0</arrow.version>
+        <avro.version>1.7.7</avro.version>
+        <curator.version>2.8.0</curator.version>
+        <guice.version>4.0</guice.version>
+        <hibernate.version>5.1.3.Final</hibernate.version>
+        <hppc.version>0.8.1</hppc.version>
+        <httpclient.version>4.5.3</httpclient.version>
+        <httpcore.version>4.4.6</httpcore.version>
+        <httpmime.version>4.5.3</httpmime.version>
+        <janino.version>2.7.8</janino.version>
+        <javassist.version>3.19.0-GA</javassist.version>
+        <jaxb.version>2.2.11</jaxb.version>
+        <jets3t.version>0.7.1</jets3t.version>
+        <jetty.version>9.4.10.v20180503</jetty.version>
+        <jsch.version>0.1.51</jsch.version>
+        <leveldb.version>1.8</leveldb.version>
+        <lz4.version>1.3.0</lz4.version>
+        <metrics.version>3.1.2</metrics.version>
+        <netty.version>3.10.4.Final</netty.version>
+        <objenesis.version>2.6</objenesis.version>
+        <paranamer.version>2.6</paranamer.version>
+        <ws.rs.version>2.0</ws.rs.version>
+        <servlet.version>3.1.0</servlet.version>
+        <snakeyaml.version>1.12</snakeyaml.version>
+        <snappy.version>1.1.2.6</snappy.version>
+        <spring.version>4.1.6.RELEASE</spring.version>
+        <t-digest.version>3.2</t-digest.version>
+
         <oshi.version>3.4.2</oshi.version>
         <kafka.version>0.10.1.1</kafka.version>
         <akka.version>2.3.16</akka.version>
-        <typesafe.config.version>1.3.0</typesafe.config.version>
+        <typesafe.config.version>1.2.1</typesafe.config.version>
         <py4j.version>0.10.4</py4j.version>
         <jcommander.version>1.27</jcommander.version>
         <dropwizard.version>0.8.0</dropwizard.version>
-        <jodatime.version>2.9.2</jodatime.version>
+        <jodatime.version>2.2</jodatime.version>
         <protonpack.version>1.15</protonpack.version>
         <poi.version>3.17</poi.version>
-        <play.version>2.4.6</play.version>
+        <play.version>2.4.8</play.version>
         <freemarker.version>2.3.23</freemarker.version>
         <geoip2.version>2.8.1</geoip2.version>
         <stream.analytics.version>2.7.0</stream.analytics.version>
@@ -195,16 +225,20 @@
         <tensorflow.javacpp.version>${tensorflow.version}-${javacpp-presets.version}</tensorflow.javacpp.version>
 
         <commons-compress.version>1.16.1</commons-compress.version>
-        <commonsmath.version>3.4.1</commonsmath.version>
-        <commonslang.version>3.4</commonslang.version>
-        <commonsio.version>2.4</commonsio.version>
+        <commonsmath.version>3.5</commonsmath.version>
+        <commonslang.version>3.6</commonslang.version>
+        <commonsio.version>2.5</commonsio.version>
         <commons-codec.version>1.10</commons-codec.version>
         <commons.math.version>${commonsmath.version}</commons.math.version>
         <commons.lang.version>${commonslang.version}</commons.lang.version>
         <commons.io.version>${commonsio.version}</commons.io.version>
         <commons-math3.version>${commonsmath.version}</commons-math3.version>
+        <commons-lang.version>2.6</commons-lang.version>
         <commons-lang3.version>${commonslang.version}</commons-lang3.version>
+        <commons-logging.version>1.2</commons-logging.version>
+        <commons-net.version>3.1</commons-net.version>
         <commons-io.version>${commonsio.version}</commons-io.version>
+        <commons-collections.version>3.2.2</commons-collections.version>
         <commons-collections4.version>4.1</commons-collections4.version>
 
         <args4j.version>2.0.29</args4j.version>
@@ -213,7 +247,6 @@
         <logback.version>1.2.3</logback.version>
         <jackson.version>2.5.1</jackson.version>
         <spark.jackson.version>2.4.4</spark.jackson.version>
-        <typesafe.config.version>1.3.0</typesafe.config.version>
         <lombok.version>1.18.0</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
         <lucene-solr.version>7.4.0</lucene-solr.version>
@@ -273,6 +306,7 @@
         <scalatest.version>3.0.5</scalatest.version>
         <scalafmt.version>1.3.0</scalafmt.version>
         <scalacheck.version>1.13.5</scalacheck.version>
+        <scala-parser-combinators.version>1.0.1</scala-parser-combinators.version>
 
         <libnd4j.tests>--tests</libnd4j.tests>
         <libnd4j.test.skip>false</libnd4j.test.skip>
