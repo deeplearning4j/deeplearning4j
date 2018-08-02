@@ -513,7 +513,6 @@ public class TransformOpValidation extends BaseOpValidation {
             }
         }
 
-
         for(int i=0; i<3; i++ ) {
             SameDiff sd = SameDiff.create();
             SDVariable eye = sd.eye("e", rows[i], cols[i], batch[i]);
