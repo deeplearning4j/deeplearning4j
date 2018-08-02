@@ -670,7 +670,9 @@ public class SameDiff {
                 }
                 variableNameToArr.remove(varName);
             } else {
-                throw new ND4JIllegalStateException("Already found an existing array!");
+                throw new ND4JIllegalStateException("Already found an existing array for variable \"" + varName
+                        + "\" with shape " + Arrays.toString(variableNameToArr.get(varName).shape())
+                        + " - attempting to put new array shape " + Arrays.toString(shape));
             }
         }
 

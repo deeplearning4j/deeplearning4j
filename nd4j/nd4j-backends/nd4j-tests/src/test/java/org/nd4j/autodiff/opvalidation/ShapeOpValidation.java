@@ -1015,7 +1015,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         SameDiff sd = SameDiff.create();
         INDArray ia = Nd4j.trueVector(new double[]{1,2,3});
         SDVariable in = sd.var(ia);
-        SDVariable constant = sd.constant(in);
+        SDVariable constant = sd.constant(in, 3);
         SDVariable loss = constant.std(true);
 
         assertNull(OpValidation.validate(new TestCase(sd).expected(constant, ia)));
@@ -1566,7 +1566,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray[] expOut = new INDArray[4];
 
         expOut[0] = Nd4j.eye(3);
-        expOut[1] = Nd4j.create(new double[][]{{1,0,0},{0,1,0}});
+        expOut[1] = Nd4j.create(new double[][]{{1,0},{0,1},{0,0}});
         expOut[2] = Nd4j.create(4,3,2);
         for( int i=0; i<4; i++ ){
             expOut[2].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(expOut[1]);
@@ -1580,6 +1580,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
 
         for(int i=0; i<3; i++ ) {
+            log.info("Starting: " + i);
             INDArray out = Nd4j.create(expOut[i].shape());
 
             DynamicCustomOp.DynamicCustomOpsBuilder op = DynamicCustomOp.builder("eye")

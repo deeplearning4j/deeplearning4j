@@ -167,7 +167,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable constant(SDVariable input, long... shape) {
-        return new Constant(sameDiff(), input, (shape != null && shape.length > 0 ? null : shape)).outputVariable();
+        return new Constant(sameDiff(), input, (shape != null && shape.length > 0 ? shape : null)).outputVariable();
     }
 
     public SDVariable linspace(double lower, double upper, long count) {
