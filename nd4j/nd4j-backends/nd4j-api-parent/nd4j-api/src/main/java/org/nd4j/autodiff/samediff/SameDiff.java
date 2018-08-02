@@ -9556,6 +9556,10 @@ public class SameDiff {
             throw new NullPointerException("Null input: No variable found for updating!");
         }
 
+        if(newVarName != null && variableMap.containsKey(newVarName) && varToUpdate != variableMap.get(newVarName)){
+            throw new IllegalStateException("Variable name \"" + newVarName + "\" already exists for a different SDVariable");
+        }
+
         if (newVarName == null && variableMap.containsKey(varToUpdate.getVarName())) {
             //Edge case: suppose we do m1=sd.mean(in), m2=sd.mean(m1) -> both initially have the name
             // "mean" and consequently a new variable name needs to be generated

@@ -29,6 +29,7 @@ import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
@@ -323,6 +324,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 SDVariable loss;
                 String name;
                 TestCase tc = new TestCase(sd);
+                boolean uDistInput = false;
                 switch (i) {
                     case 0:
                         loss = sd.mean("loss", msePerEx, dim);
@@ -395,9 +397,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                     case 17:
                         name = "logEntropy";
                         loss = sd.logEntropy("loss", msePerEx, dim);
-                        if(OpValidationSuite.IGNORE_FAILING){
-                            continue;
-                        }
+                        uDistInput = true;
                         break;
                     default:
                         throw new RuntimeException();
@@ -407,8 +407,8 @@ public class ReductionOpValidation extends BaseOpValidation {
                 String msg = "(test " + i + " - " + name + ", dimension=" + dim + ")";
                 log.info("*** Starting test: " + msg);
 
-                INDArray inputArr = Nd4j.randn(minibatch, nOut).muli(100);
-                INDArray labelArr = Nd4j.randn(minibatch, nOut).muli(100);
+                INDArray inputArr = uDistInput ? Nd4j.rand(minibatch, nOut) : Nd4j.randn(minibatch, nOut).muli(100);
+                INDArray labelArr = uDistInput ? Nd4j.rand(minibatch, nOut) : Nd4j.randn(minibatch, nOut).muli(100);
 
                 sd.associateArrayWithVariable(inputArr, input);
                 sd.associateArrayWithVariable(labelArr, label);
@@ -477,7 +477,10 @@ public class ReductionOpValidation extends BaseOpValidation {
                         name = "sum";
                         break;
                     case 2:
+                        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
                         reduced = sd.standardDeviation("reduced", second, true, reduceDim);
+                        inputArr.divi(1000);
+                        labelArr.divi(1000);
                         name = "stdev";
                         break;
                     case 3:
@@ -527,27 +530,27 @@ public class ReductionOpValidation extends BaseOpValidation {
                         name = "argmin";
                         break;
                     case 12:
-                        reduced = sd.countNonZero("loss", second, reduceDim);
+                        reduced = sd.countNonZero("reduced", second, reduceDim);
                         name = "countNonZero";
                         break;
                     case 13:
-                        reduced = sd.countZero("loss", second, reduceDim);
+                        reduced = sd.countZero("reduced", second, reduceDim);
                         name = "countZero";
                         break;
                     case 14:
-                        reduced = sd.amax("loss", second, reduceDim);
+                        reduced = sd.amax("reduced", second, reduceDim);
                         name = "amax";
                         break;
                     case 15:
-                        reduced = sd.amin("loss", second, reduceDim);
+                        reduced = sd.amin("reduced", second, reduceDim);
                         name = "amin";
                         break;
                     case 16:
-                        reduced = sd.asum("loss", second, reduceDim);
+                        reduced = sd.asum("reduced", second, reduceDim);
                         name = "asum";
                         break;
                     case 17:
-                        reduced = sd.amean("loss", second, reduceDim);
+                        reduced = sd.amean("reduced", second, reduceDim);
                         name = "amean";
                         break;
                     default:
@@ -566,6 +569,8 @@ public class ReductionOpValidation extends BaseOpValidation {
 
                 sd.associateArrayWithVariable(inputArr, in);
                 sd.associateArrayWithVariable(labelArr, label);
+
+//                sd.execAndEndResult();
 
                 String error = OpValidation.validate(tc);
                 if(error != null){
@@ -590,7 +595,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         List<String> failed = new ArrayList<>();
         for (int[] reduceDims : new int[][]{{Integer.MAX_VALUE}, {0, 1, 2}, {0}, {1}, {2}, {0, 1}, {0, 2}, {1, 2}}) {
-            for (int i = 0; i < 7; i++) {
+            for (int i = 5; i < 6; i++) {
 
                 SameDiff sd = SameDiff.create();
                 sd.setLogExecution(false);
@@ -610,39 +615,39 @@ public class ReductionOpValidation extends BaseOpValidation {
                     case 0:
                         reduced = sd.manhattanDistance(in, in2, reduceDims);
                         name = "manhattan";
-                        exp = Nd4j.getExecutioner().exec(new ManhattanDistance(inArr, in2Arr), reduceDims);
+                        exp = Nd4j.getExecutioner().exec(new ManhattanDistance(inArr, in2Arr, null, true, false), reduceDims);
                         break;
                     case 1:
                         reduced = sd.euclideanDistance(in, in2, reduceDims);
                         name = "euclidean";
-                        exp = Nd4j.getExecutioner().exec(new EuclideanDistance(inArr, in2Arr), reduceDims);
+                        exp = Nd4j.getExecutioner().exec(new EuclideanDistance(inArr, in2Arr, null, true, false), reduceDims);
                         break;
                     case 2:
                         reduced = sd.cosineSimilarity(in, in2, reduceDims);
                         name = "cosine";
-                        exp = Nd4j.getExecutioner().exec(new CosineSimilarity(inArr, in2Arr), reduceDims);
+                        exp = Nd4j.getExecutioner().exec(new CosineSimilarity(inArr, in2Arr, null, true, false), reduceDims);
                         break;
                     case 3:
                         reduced = sd.cosineDistance(in, in2, reduceDims);
                         name = "cosinedistance";
-                        exp = Nd4j.getExecutioner().exec(new CosineDistance(inArr, in2Arr), reduceDims);
+                        exp = Nd4j.getExecutioner().exec(new CosineDistance(inArr, in2Arr, null, true, false), reduceDims);
                         break;
                     case 4:
                         reduced = sd.hammingDistance(in, in2, reduceDims);
                         name = "hamming";
-                        exp = Nd4j.getExecutioner().exec(new HammingDistance(inArr, in2Arr), reduceDims);
+                        exp = Nd4j.getExecutioner().exec(new HammingDistance(inArr, in2Arr, null, true, false), reduceDims);
                         break;
                     case 5:
                         name = "jaccard";
                         reduced = sd.jaccardDistance(name, in, in2, reduceDims);
                         inArr.divi(100).addi(0.1);
                         in2Arr.divi(100).addi(0.1);
-                        exp = Nd4j.getExecutioner().exec(new JaccardDistance(inArr, in2Arr), reduceDims);
+                        exp = Nd4j.getExecutioner().exec(new JaccardDistance(inArr, in2Arr, null, true, false), reduceDims);
                         break;
                     case 6:
                         name = "dot";
                         reduced = sd.dot(name, in, in2, reduceDims);
-                        exp = Nd4j.getExecutioner().exec(new Dot(inArr, in2Arr), reduceDims);
+                        exp = Nd4j.getExecutioner().exec(new Dot(inArr, in2Arr, null, true, false), reduceDims);
                         break;
                     default:
                         throw new RuntimeException();
@@ -662,7 +667,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
                 String error = OpValidation.validate(tc, true);
                 if(error != null){
-                    failed.add(msg);
+                    failed.add(msg + " - " + error);
                 }
             }
         }
