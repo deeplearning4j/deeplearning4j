@@ -151,7 +151,6 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testReductionGradientsSimple() {
-        OpValidationSuite.ignoreFailing();
         //Test reductions: final and only function
         Nd4j.getRandom().setSeed(12345);
 
@@ -264,6 +263,8 @@ public class ReductionOpValidation extends BaseOpValidation {
                     INDArray expArr = Transforms.exp(inputArr);
                     double sum = expArr.sumNumber().doubleValue();
                     tc.expected("loss", Nd4j.create(new double[]{Math.log(sum)}));
+                    if(OpValidationSuite.IGNORE_FAILING)
+                        continue;
                     break;
                 case 18:
                     inputArr = Nd4j.rand(minibatch, nOut);
