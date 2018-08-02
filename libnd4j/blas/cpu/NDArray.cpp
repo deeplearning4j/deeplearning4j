@@ -2064,7 +2064,7 @@ void NDArray<T>::tile(NDArray<T>& target) const {
 
 //////////////////////////////////////////////////////////////////////////
     template<typename T>
-    Nd4jLong NDArray<T>::sizeAt(int dim) const {
+    Nd4jLong NDArray<T>::sizeAt(const int dim) const {
         if (dim >= this->rankOf() || dim < -this->rankOf())
             throw std::runtime_error("Bad size index requested");
 
@@ -2390,7 +2390,7 @@ void NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target,
             delete[] newShapeInfo;
     }
 
-    // check whether min array have to be tiled
+    // check whether min array has to be tiled
     if(!max->isSameShape(target)) {
         // evaluate repeating dimensions for tile operation
         std::vector<Nd4jLong> repeatMax(max->rankOf());
@@ -2401,7 +2401,7 @@ void NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target,
     else
         target->assign(max);
 
-    // check whether min array have to be tiled
+    // check whether min array has to be tiled
     std::vector<Nd4jLong> repeatMin(min->rankOf());
     int product = 1;
     for(int i = min->rankOf(); i >=1 ; --i) {

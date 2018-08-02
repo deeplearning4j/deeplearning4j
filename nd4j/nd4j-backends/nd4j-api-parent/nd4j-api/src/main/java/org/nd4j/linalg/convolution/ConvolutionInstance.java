@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.convolution;
 
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -35,9 +34,6 @@ public interface ConvolutionInstance {
      */
     INDArray conv2d(INDArray input, INDArray kernel, Convolution.Type type);
 
-
-    INDArray conv2d(IComplexNDArray input, IComplexNDArray kernel, Convolution.Type type);
-
     /**
      * ND Convolution
      *
@@ -49,18 +45,6 @@ public interface ConvolutionInstance {
      */
     INDArray convn(INDArray input, INDArray kernel, Convolution.Type type, int[] axes);
 
-
-    /**
-     * ND Convolution
-     *
-     * @param input  the input to op
-     * @param kernel the kernel to op with
-     * @param type   the opType of convolution
-     * @param axes   the axes to do the convolution along
-     * @return the convolution of the given input and kernel
-     */
-    IComplexNDArray convn(IComplexNDArray input, IComplexNDArray kernel, Convolution.Type type, int[] axes);
-
     /**
      * ND Convolution
      *
@@ -70,16 +54,4 @@ public interface ConvolutionInstance {
      * @return the convolution of the given input and kernel
      */
     INDArray convn(INDArray input, INDArray kernel, Convolution.Type type);
-
-    /**
-     * ND Convolution
-     *
-     * @param input  the input to op
-     * @param kernel the kernel to op with
-     * @param type   the opType of convolution
-     * @return the convolution of the given input and kernel
-     */
-    IComplexNDArray convn(IComplexNDArray input, IComplexNDArray kernel, Convolution.Type type);
-
-
 }

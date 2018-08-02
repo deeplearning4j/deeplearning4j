@@ -18,9 +18,6 @@ package org.nd4j.linalg.api.buffer;
 
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
-import org.nd4j.linalg.api.complex.IComplexDouble;
-import org.nd4j.linalg.api.complex.IComplexFloat;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
 import java.io.*;
@@ -47,17 +44,16 @@ public interface DataBuffer extends Serializable {
 
 
     /**
-     * Direct (off heap) and heap allocation
-     *
-     * Each has their trade offs.
-     *
-     * One allows for storing unlimited array sizes, faster i/o with native
-     * applications
-     *
-     * heap is backed by an array and can be useful depending on the api
+     * Mainly used for backward compatability.
+     * Note that DIRECT and HEAP modes have been deprecated asd should not be used.
      */
     enum AllocationMode {
-        DIRECT, HEAP, JAVACPP,
+
+        @Deprecated
+        DIRECT,
+        @Deprecated
+        HEAP,
+        JAVACPP,
         LONG_SHAPE, // long shapes will be used instead of int
     }
 
@@ -506,31 +502,6 @@ public interface DataBuffer extends Serializable {
 
 
     /**
-     * Get the complex float
-     *
-     * @param i the i togete
-     * @return the complex float at the specified index
-     */
-    IComplexFloat getComplexFloat(long i);
-
-    /**
-     * Get the complex double at the specified index
-     *
-     * @param i the index
-     * @return the complex double
-     */
-    IComplexDouble getComplexDouble(long i);
-
-    /**
-     * Returns a complex number
-     *
-     * @param i the complex number cto get
-     * @return the complex number to get
-     */
-    IComplexNumber getComplex(long i);
-
-
-    /**
      * Returns the length of the buffer
      *
      * @return the length of the buffer
@@ -577,13 +548,6 @@ public interface DataBuffer extends Serializable {
      * Flush the data buffer
      */
     void flush();
-
-    /**
-     * Insert a complex number at the given index
-     * @param i the index to insert
-     * @param result the element to insert
-     */
-    void put(long i, IComplexNumber result);
 
 
     /**

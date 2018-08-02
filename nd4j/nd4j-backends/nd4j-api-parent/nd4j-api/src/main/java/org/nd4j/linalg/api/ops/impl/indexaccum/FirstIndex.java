@@ -21,7 +21,6 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
 import org.nd4j.linalg.factory.Nd4j;
@@ -92,12 +91,6 @@ public class FirstIndex extends BaseIndexAccumulation {
     public double zeroDouble() {
         return 0.0;
     }
-
-    @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(-Double.MAX_VALUE, 0);
-    }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

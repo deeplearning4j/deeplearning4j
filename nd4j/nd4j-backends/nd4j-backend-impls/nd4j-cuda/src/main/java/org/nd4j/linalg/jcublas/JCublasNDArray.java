@@ -793,7 +793,7 @@ public class JCublasNDArray extends BaseNDArray {
 
         factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataBuffer.TypeEx.FLOAT, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
 
-        AtomicAllocator.getInstance().getAllocationPoint(buffer).tickHostWrite();
+        AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
 
         return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
     }
@@ -808,7 +808,7 @@ public class JCublasNDArray extends BaseNDArray {
 
         factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataBuffer.TypeEx.DOUBLE, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
 
-        AtomicAllocator.getInstance().getAllocationPoint(buffer).tickHostWrite();
+        AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
 
         return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
     }

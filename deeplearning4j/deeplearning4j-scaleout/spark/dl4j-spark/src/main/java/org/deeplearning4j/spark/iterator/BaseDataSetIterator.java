@@ -114,7 +114,7 @@ public abstract class BaseDataSetIterator<T> implements DataSetIterator {
 
         // FIXME: int cast
         totalOutcomes = (int) preloadedDataSet.getLabels().size(1);
-        inputColumns = (int) preloadedDataSet.getFeatureMatrix().size(1);
+        inputColumns = (int) preloadedDataSet.getFeatures().size(1);
     }
 
 

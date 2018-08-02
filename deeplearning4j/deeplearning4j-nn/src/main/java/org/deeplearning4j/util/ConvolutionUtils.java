@@ -485,7 +485,7 @@ public class ConvolutionUtils {
 
         val s = output.shape();
         INDArray bMask = workspaceMgr.create(type, new long[]{s[0], 1, s[2], s[3]}, 'c');
-        Nd4j.getExecutioner().exec(new BroadcastCopyOp(bMask, mask, bMask, 1));
+        Nd4j.getExecutioner().exec(new BroadcastCopyOp(bMask, mask, bMask, 0, 1));
 
         INDArray bMaskPermute = bMask.permute(0, 2, 3).dup('c');  //Not sure if dup is strictly necessary...
 

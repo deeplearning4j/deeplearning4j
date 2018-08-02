@@ -95,7 +95,7 @@ namespace nd4j {
         // evaluate shapeInfo for diagonal array which is made using input arr elements as diagonal
         static Nd4jLong* evalDiagShapeInfo(const Nd4jLong* shapeInfo, nd4j::memory::Workspace* workspace);
 
-        static std::vector<int> evalBroadcastBackwardAxis(Nd4jLong *operand, Nd4jLong *result);
+        static std::vector<int> evalBroadcastBackwardAxis(const Nd4jLong *operand, const Nd4jLong *result);
 
         // utility to calculate matrix product shape with give source shapes and additional params 
         // returns ShapeList pointer with result shape

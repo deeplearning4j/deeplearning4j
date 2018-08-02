@@ -31,7 +31,7 @@ namespace nd4j {
             NDArray<T> *y = INPUT_VARIABLE(1);
             NDArray<T> *z = this->getZ(block);
 
-            auto tZ = BroadcastHelper<T>::template broadcast_apply<simdOps::ReverseMod<T>>(x, y, z);
+            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::ReverseMod<T>>(x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else  if (tZ != z) {

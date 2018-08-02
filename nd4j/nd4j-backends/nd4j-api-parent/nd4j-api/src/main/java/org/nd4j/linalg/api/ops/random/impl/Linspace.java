@@ -55,11 +55,12 @@ public class Linspace extends BaseRandomOp {
     }
 
     public Linspace(SameDiff sd, double from, double to, long length){
+        super(sd, new long[]{length});
         this.sameDiff = sd;
         this.from = from;
         this.to = to;
         this.length = length;
-        sameDiff.addArgsFor(new String[]{},this);
+        this.extraArgs = new Object[] {from, to};
     }
 
     @Override

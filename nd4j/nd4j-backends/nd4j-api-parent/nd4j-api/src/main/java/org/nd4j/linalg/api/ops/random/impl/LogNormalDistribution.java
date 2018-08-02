@@ -44,7 +44,7 @@ public class LogNormalDistribution extends BaseRandomOp {
     public LogNormalDistribution(SameDiff sd, double mean, double stdev, long... shape){
         super(sd, shape);
         this.mean = mean;
-        this.stddev = stddev;
+        this.stddev = stdev;
         this.extraArgs = new Object[] {this.mean, this.stddev};
     }
 
@@ -124,6 +124,14 @@ public class LogNormalDistribution extends BaseRandomOp {
     @Override
     public boolean isExecSpecial() {
         return true;
+    }
+
+    @Override
+    public void setZ(INDArray z){
+        //We want all 3 args set to z for this op
+        this.x = z;
+        this.y = z;
+        this.z = z;
     }
 
     @Override

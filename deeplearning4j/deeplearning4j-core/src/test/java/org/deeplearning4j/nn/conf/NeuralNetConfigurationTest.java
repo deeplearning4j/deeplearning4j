@@ -297,14 +297,14 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
 
         ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(),
                         new NegativeDefaultStepFunction(), null, net);
-        assertEquals(l1, net.getLayer(0).conf().getL1ByParam("W"), 1e-4);
-        assertEquals(0.0, net.getLayer(0).conf().getL1ByParam("b"), 0.0);
-        assertEquals(0.0, net.getLayer(1).conf().getL2ByParam("beta"), 0.0);
-        assertEquals(0.0, net.getLayer(1).conf().getL2ByParam("gamma"), 0.0);
-        assertEquals(0.0, net.getLayer(1).conf().getL2ByParam("mean"), 0.0);
-        assertEquals(0.0, net.getLayer(1).conf().getL2ByParam("var"), 0.0);
-        assertEquals(l2, net.getLayer(2).conf().getL2ByParam("W"), 1e-4);
-        assertEquals(0.0, net.getLayer(2).conf().getL2ByParam("b"), 0.0);
+        assertEquals(l1, net.getLayer(0).conf().getLayer().getL1ByParam("W"), 1e-4);
+        assertEquals(0.0, net.getLayer(0).conf().getLayer().getL1ByParam("b"), 0.0);
+        assertEquals(0.0, net.getLayer(1).conf().getLayer().getL2ByParam("beta"), 0.0);
+        assertEquals(0.0, net.getLayer(1).conf().getLayer().getL2ByParam("gamma"), 0.0);
+        assertEquals(0.0, net.getLayer(1).conf().getLayer().getL2ByParam("mean"), 0.0);
+        assertEquals(0.0, net.getLayer(1).conf().getLayer().getL2ByParam("var"), 0.0);
+        assertEquals(l2, net.getLayer(2).conf().getLayer().getL2ByParam("W"), 1e-4);
+        assertEquals(0.0, net.getLayer(2).conf().getLayer().getL2ByParam("b"), 0.0);
     }
 
     @Test

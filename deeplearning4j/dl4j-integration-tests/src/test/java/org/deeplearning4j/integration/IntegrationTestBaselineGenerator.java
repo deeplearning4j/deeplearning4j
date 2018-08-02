@@ -65,20 +65,6 @@ public class IntegrationTestBaselineGenerator {
 
 //        runGeneration(
 //                MLPTestCases.getMLPMnist(),
-//                MLPTestCases.getMLPMoon(),
-//                RNNTestCases.getRnnCsvSequenceClassificationTestCase1(),
-//                RNNTestCases.getRnnCsvSequenceClassificationTestCase2(),
-//                RNNTestCases.getRnnCharacterTestCase(),
-////                CNN1DTestCases.getCnn1dTestCaseSynthetic(),
-////                CNN2DTestCases.getLenetMnist(),
-//                CNN2DTestCases.getVGG16TransferTinyImagenet(),
-////                CNN2DTestCases.getYoloHouseNumbers(),
-////                CNN2DTestCases.getCnn2DSynthetic(),
-//                CNN2DTestCases.testLenetTransferDropoutRepeatability()//,
-////                CNN3DTestCases.getCnn3dTestCaseSynthetic(),
-////                UnsupervisedTestCases.getVAEMnistAnomaly(),
-////                TransferLearningTestCases.testPartFrozenResNet50(),
-////                TransferLearningTestCases.testPartFrozenNASNET()
 //        );
 
     }
@@ -105,6 +91,7 @@ public class IntegrationTestBaselineGenerator {
             //Step 0: collect metadata for the current machine, and write it (in case we need to debug anything related to
             // the comparison data)
             Properties properties = Nd4j.getExecutioner().getEnvironmentInformation();
+            Properties pCopy = new Properties();
             String comment = System.getProperty("user.name") + " - " + System.currentTimeMillis();
 //        StringBuilder sb = new StringBuilder(comment).append("\n");
             try (OutputStream os = new BufferedOutputStream(new FileOutputStream(new File(testBaseDir, "nd4jEnvironmentInfo.json")))) {
@@ -112,9 +99,9 @@ public class IntegrationTestBaselineGenerator {
                 while (e.hasMoreElements()) {
                     Object k = e.nextElement();
                     Object v = properties.get(k);
-                    properties.setProperty(k.toString(), v == null ? "null" : v.toString());
+                    pCopy.setProperty(k.toString(), v == null ? "null" : v.toString());
                 }
-                properties.store(os, comment);
+                pCopy.store(os, comment);
             }
 
 

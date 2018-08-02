@@ -75,12 +75,12 @@ public class DenseTest extends BaseDL4JTest {
         assertEquals(model.params(), model2.params());
 
         Evaluation eval = new Evaluation();
-        INDArray output = model.output(test.getFeatureMatrix());
+        INDArray output = model.output(test.getFeatures());
         eval.eval(test.getLabels(), output);
         double f1Score = eval.f1();
 
         Evaluation eval2 = new Evaluation();
-        INDArray output2 = model2.output(test.getFeatureMatrix());
+        INDArray output2 = model2.output(test.getFeatures());
         eval2.eval(test.getLabels(), output2);
         double f1Score2 = eval2.f1();
 
@@ -102,12 +102,12 @@ public class DenseTest extends BaseDL4JTest {
         assertEquals(model.params(), model2.params());
 
         Evaluation eval = new Evaluation();
-        INDArray output = model.output(test.getFeatureMatrix());
+        INDArray output = model.output(test.getFeatures());
         eval.eval(test.getLabels(), output);
         double f1Score = eval.f1();
 
         Evaluation eval2 = new Evaluation();
-        INDArray output2 = model2.output(test.getFeatureMatrix());
+        INDArray output2 = model2.output(test.getFeatures());
         eval2.eval(test.getLabels(), output2);
         double f1Score2 = eval2.f1();
 

@@ -193,8 +193,8 @@ public class DropoutLayerTest extends BaseDL4JTest {
         assertEquals(netIntegrated.getLayer(1).getParam("b"), netSeparate.getLayer(2).getParam("b"));
 
         // check activations
-        netIntegrated.setInput(next.getFeatureMatrix());
-        netSeparate.setInput(next.getFeatureMatrix());
+        netIntegrated.setInput(next.getFeatures());
+        netSeparate.setInput(next.getFeatures());
 
         Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTrainIntegrated = netIntegrated.feedForward(true);
@@ -272,8 +272,8 @@ public class DropoutLayerTest extends BaseDL4JTest {
         assertEquals(netIntegrated.getLayer(1).getParam("b"), netSeparate.getLayer(2).getParam("b"));
 
         // check activations
-        netIntegrated.setInput(next.getFeatureMatrix());
-        netSeparate.setInput(next.getFeatureMatrix());
+        netIntegrated.setInput(next.getFeatures());
+        netSeparate.setInput(next.getFeatures());
 
         Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTrainIntegrated = netIntegrated.feedForward(true);

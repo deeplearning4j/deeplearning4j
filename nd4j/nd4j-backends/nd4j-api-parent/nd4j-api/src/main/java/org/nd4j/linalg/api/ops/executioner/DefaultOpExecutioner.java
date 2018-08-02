@@ -20,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -137,37 +136,19 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
         //execute row wise
         else if (op.x().isMatrix()) {
-            if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray original = (IComplexNDArray) op.x();
-                IComplexNDArray originalZ = (IComplexNDArray) op.z();
-                IComplexNDArray y = (IComplexNDArray) op.y();
+            INDArray original = op.x();
+            INDArray originalZ = op.z();
+            INDArray y = op.y();
 
-                for (int i = 0; i < original.rows(); i++) {
-                    IComplexNDArray row = original.slice(i);
-                    IComplexNDArray zRow = originalZ.slice(i);
-                    op.setX(row.dup());
-                    op.setZ(zRow.dup());
-                    if (y != null)
-                        op.setY(y.slice(i));
-                    exec(op);
-                    originalZ.slice(i).assign(op.z());
-
-                }
-            } else {
-                INDArray original = op.x();
-                INDArray originalZ = op.z();
-                INDArray y = op.y();
-
-                for (int i = 0; i < original.rows(); i++) {
-                    INDArray row = original.getRow(i);
-                    INDArray zRow = originalZ.getRow(i);
-                    op.setX(row.dup());
-                    op.setZ(zRow.dup());
-                    if (y != null)
-                        op.setY(y.getRow(i).dup());
-                    exec(op);
-                    zRow.assign(op.z());
-                }
+            for (int i = 0; i < original.rows(); i++) {
+                INDArray row = original.getRow(i);
+                INDArray zRow = originalZ.getRow(i);
+                op.setX(row.dup());
+                op.setZ(zRow.dup());
+                if (y != null)
+                    op.setY(y.getRow(i).dup());
+                exec(op);
+                zRow.assign(op.z());
             }
         } else {
             INDArray originalX = op.x();
@@ -191,28 +172,15 @@ public class DefaultOpExecutioner implements OpExecutioner {
         else if (op.x().isMatrix() || op.x().isColumnVector()) {
             exec(op, 1);
         } else {
-            if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray originalX = (IComplexNDArray) op.x();
-                IComplexNDArray originalZ = (IComplexNDArray) op.z();
-                IComplexNDArray y = (IComplexNDArray) op.y();
-                for (int i = 0; i < op.x().slices(); i++) {
-                    op.setX(originalX.getColumn(i));
-                    op.setZ(originalZ.getColumn(i));
-                    if (y != null)
-                        op.setY(y.getColumn(i));
-                    iterateOverAllColumns(op);
-                }
-            } else {
-                INDArray originalX = op.x();
-                INDArray originalZ = op.z();
-                INDArray y = op.y();
-                for (int i = 0; i < op.x().slices(); i++) {
-                    op.setX(originalX.getColumn(i));
-                    op.setZ(originalZ.getColumn(i));
-                    if (y != null)
-                        op.setY(y.getColumn(i));
-                    iterateOverAllColumns(op);
-                }
+            INDArray originalX = op.x();
+            INDArray originalZ = op.z();
+            INDArray y = op.y();
+            for (int i = 0; i < op.x().slices(); i++) {
+                op.setX(originalX.getColumn(i));
+                op.setZ(originalZ.getColumn(i));
+                if (y != null)
+                    op.setY(y.getColumn(i));
+                iterateOverAllColumns(op);
             }
         }
     }

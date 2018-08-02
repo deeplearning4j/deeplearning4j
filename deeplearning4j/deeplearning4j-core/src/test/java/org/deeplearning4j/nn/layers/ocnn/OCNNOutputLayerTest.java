@@ -71,7 +71,7 @@ public class OCNNOutputLayerTest {
 
 
         DataSet ds = dataSetIterator.next();
-        INDArray arr = ds.getFeatureMatrix();
+        INDArray arr = ds.getFeatures();
         network.setInput(arr);
 
         if (doLearningFirst) {
@@ -126,16 +126,16 @@ public class OCNNOutputLayerTest {
         }
 
         DataSet anomalies = next.filterBy(new int[] {2});
-        INDArray output = network.labelProbabilities(anomalies.getFeatureMatrix());
-        INDArray normalOutput = network.output(anomalies.getFeatureMatrix(),false);
+        INDArray output = network.labelProbabilities(anomalies.getFeatures());
+        INDArray normalOutput = network.output(anomalies.getFeatures(),false);
         assertEquals(output.lt(0.0).sumNumber().doubleValue(),normalOutput.eq(0.0).sumNumber().doubleValue(),1e-1);
 
         System.out.println("Labels " + anomalies.getLabels());
         System.out.println("Anomaly output " + normalOutput);
         System.out.println(output);
 
-        INDArray normalProbs = network.labelProbabilities(filtered.getFeatureMatrix());
-        INDArray outputForNormalSamples = network.output(filtered.getFeatureMatrix(),false);
+        INDArray normalProbs = network.labelProbabilities(filtered.getFeatures());
+        INDArray outputForNormalSamples = network.output(filtered.getFeatures(),false);
         System.out.println("Normal probabilities " + normalProbs);
         System.out.println("Normal raw output " + outputForNormalSamples);
 

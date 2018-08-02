@@ -18,12 +18,9 @@ package org.nd4j.linalg.api.ops.impl.indexaccum;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
-import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -77,11 +74,6 @@ public class IMin extends BaseIndexAccumulation {
     @Override
     public float zeroHalf() {
         return 65503.0f;
-    }
-
-    @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(Double.MAX_VALUE, 0);
     }
 
 

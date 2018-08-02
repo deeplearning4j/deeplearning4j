@@ -274,6 +274,9 @@
         <scalafmt.version>1.3.0</scalafmt.version>
         <scalacheck.version>1.13.5</scalacheck.version>
 
+        <libnd4j.tests>--tests</libnd4j.tests>
+        <libnd4j.test.skip>false</libnd4j.test.skip>
+        <skipBackendChoice>false</skipBackendChoice>
         <skipTestResourceEnforcement>false
         </skipTestResourceEnforcement> <!-- Test resource profile must be enabled unless using -DskipTests etc -->
     </properties>
@@ -491,17 +494,6 @@
         </profile>
         <!-- This controls skipping the test backend choice enforcement below -->
         <profile>
-            <id>default</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <libnd4j.test.skip>false</libnd4j.test.skip>
-                <skipBackendChoice>false</skipBackendChoice>
-                <skipTestResourceEnforcement>false</skipTestResourceEnforcement>
-            </properties>
-        </profile>
-        <profile>
             <id>skipTestCompileAndRun</id>
             <activation>
                 <property>
@@ -510,6 +502,7 @@
                 </property>
             </activation>
             <properties>
+                <libnd4j.tests></libnd4j.tests>
                 <libnd4j.test.skip>true</libnd4j.test.skip>
                 <skipBackendChoice>true</skipBackendChoice>
                 <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
@@ -523,6 +516,7 @@
                 </property>
             </activation>
             <properties>
+                <libnd4j.tests></libnd4j.tests>
                 <libnd4j.test.skip>true</libnd4j.test.skip>
                 <skipBackendChoice>true</skipBackendChoice>
                 <skipTestResourceEnforcement>true</skipTestResourceEnforcement>

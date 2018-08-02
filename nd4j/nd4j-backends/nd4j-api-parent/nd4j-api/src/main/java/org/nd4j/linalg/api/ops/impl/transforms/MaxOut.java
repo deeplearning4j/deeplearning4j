@@ -19,7 +19,6 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,7 +33,6 @@ import java.util.List;
  */
 public class MaxOut extends BaseTransformOp {
 
-    private IComplexNumber maxComplex = Nd4j.createComplexNumber(Double.NaN, Double.NaN);
     private Number max = Double.NaN;
 
     public MaxOut(SameDiff sameDiff, SDVariable i_v, boolean inPlace, Number max) {

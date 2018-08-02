@@ -30,7 +30,6 @@ import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -42,7 +41,6 @@ import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
-import org.nd4j.linalg.api.ops.random.impl.TruncatedNormalDistribution;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.TADManager;
@@ -797,7 +795,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         checkForCompression(op);
 
         //linear views and oblong offsets can't be handled by the gpu (due to the way the buffers are interpreted as vectors)
-        if (op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA || op instanceof CopyOp) {
+        if ( executionMode() == ExecutionMode.JAVA || op instanceof CopyOp) {
             // we dont' care about op.Z sync state, since it'll be overwritten
             if (op.x() != null)
                 AtomicAllocator.getInstance().synchronizeHostData(op.x());

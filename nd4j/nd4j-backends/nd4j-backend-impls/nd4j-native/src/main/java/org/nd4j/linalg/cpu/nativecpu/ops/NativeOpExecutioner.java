@@ -23,10 +23,8 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.*;
-import org.bytedeco.javacpp.indexer.IntIndexer;
 import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
@@ -36,7 +34,6 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
-import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.rng.Random;
@@ -49,7 +46,6 @@ import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.cpu.nativecpu.CpuTADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -75,8 +71,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Getter
     private CpuTADManager tadManager = new CpuTADManager();
 
-    private static final String DEBUG_ENABLED = "ND4J_DEBUG";
-    private static final String VERBOSE = "ND4J_VERBOSE";
     //thread locals for custom op inputs and outputs to prevent allocations
     //every time exec(CustomOp) is called
     private ThreadLocal<Map<Integer,PointerPointer>> inputShapes = new ThreadLocal<>();
@@ -101,25 +95,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     public NativeOpExecutioner() {
         tadManager.init(loop, constantHandler);
-
-        // Do not call System.getenv(): Accessing all variables requires higher security privileges
-        if (System.getenv(DEBUG_ENABLED) != null) {
-            try {
-                boolean var = Boolean.parseBoolean(System.getenv(DEBUG_ENABLED));
-                loop.enableDebugMode(var);
-            } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", DEBUG_ENABLED, System.getenv(DEBUG_ENABLED));
-            }
-        }
-
-        if (System.getenv(VERBOSE) != null) {
-            try {
-                boolean var = Boolean.parseBoolean(System.getenv(VERBOSE));
-                loop.enableVerboseMode(var);
-            } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", VERBOSE, System.getenv(VERBOSE));
-            }
-        }
     }
 
     @Override
@@ -617,7 +592,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(ScalarOp op) {
-        if (op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
+        if (executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
         } else {
             long st = profilingHookIn(op);
@@ -626,8 +601,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             if (op.x().lengthLong() != op.z().lengthLong())
                 throw new ND4JIllegalStateException("op.X length should be equal to op.Z length: " +
-                        "x.length()=" + op.x().length() + ", y.length()=" + op.y().length() + " - x shape info = ["
-                        + Arrays.toString(op.x().shapeInfoDataBuffer().asInt()) + "], y shape info = ["
+                        "x.length()=" + op.x().length() + ", z.length()=" + op.z().length() + " - x shape info = ["
+                        + Arrays.toString(op.x().shapeInfoDataBuffer().asInt()) + "], z shape info = ["
                         + Arrays.toString(op.z().shapeInfoDataBuffer().asInt()) + "]");
 
             if (op.getDimension() != null) {
@@ -901,7 +876,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(IndexAccumulation op) {
-        if (op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
+        if (executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
 
         } else {
@@ -934,7 +909,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(Accumulation op) {
-        if (op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
+        if (executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
         }
         else if(op.isExecSpecial()) {

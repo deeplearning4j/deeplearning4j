@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.indexing.conditions;
 
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -24,11 +23,9 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public abstract class BaseCondition implements Condition {
     protected Number value;
-    protected IComplexNumber complexNumber;
 
     public BaseCondition(Number value) {
         this.value = value;
-        this.complexNumber = Nd4j.createComplexNumber(value, 0);
     }
 
     @Override
@@ -40,11 +37,5 @@ public abstract class BaseCondition implements Condition {
     public double getValue() {
         return value.doubleValue();
     }
-
-    public BaseCondition(IComplexNumber complexNumber) {
-        this.complexNumber = complexNumber;
-        this.value = complexNumber.absoluteValue();
-    }
-
 
 }

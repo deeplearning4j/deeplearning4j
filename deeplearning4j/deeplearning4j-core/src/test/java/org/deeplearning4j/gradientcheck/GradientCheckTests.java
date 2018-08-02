@@ -130,7 +130,7 @@ public class GradientCheckTests extends BaseDL4JTest {
         }
 
         boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, ds.getFeatureMatrix(), ds.getLabels());
+                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, ds.getFeatures(), ds.getLabels());
 
         String msg = "testMinibatchApplication() - activationFn=" + afn + ", lossFn=" + lf
                 + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst;
@@ -158,7 +158,7 @@ public class GradientCheckTests extends BaseDL4JTest {
         iter.setPreProcessor(scaler);
         DataSet ds = iter.next();
 
-        INDArray input = ds.getFeatureMatrix();
+        INDArray input = ds.getFeatures();
         INDArray labels = ds.getLabels();
 
         for (Activation afn : activFns) {
@@ -239,7 +239,7 @@ public class GradientCheckTests extends BaseDL4JTest {
         iter.setPreProcessor(scaler);
         DataSet ds = iter.next();
 
-        INDArray input = ds.getFeatureMatrix();
+        INDArray input = ds.getFeatures();
         INDArray labels = ds.getLabels();
 
         //use l2vals[i] with l1vals[i]
@@ -414,7 +414,7 @@ public class GradientCheckTests extends BaseDL4JTest {
         scaler.fit(iter);
         iter.setPreProcessor(scaler);
         DataSet ds = iter.next();
-        INDArray input = ds.getFeatureMatrix();
+        INDArray input = ds.getFeatures();
         INDArray labels = ds.getLabels();
 
         NormalizerStandardize norm = new NormalizerStandardize();
