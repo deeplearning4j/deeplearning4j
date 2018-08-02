@@ -132,6 +132,26 @@ namespace nd4j {
             template int dynamicStitchFunctor(std::vector<NDArray<float>*>& inputs, std::vector<NDArray<float>*>& indices, NDArray<float>* output);
             template int dynamicStitchFunctor(std::vector<NDArray<float16>*>& inputs, std::vector<NDArray<float16>*>& indices, NDArray<float16>* output);
             template int dynamicStitchFunctor(std::vector<NDArray<double>*>& inputs, std::vector<NDArray<double>*>& indices, NDArray<double>* output);
+
+            template <typename T>
+            void dynamicPartitionFunctorBP(NDArray<T>const* input, NDArray<T>const* indices, std::vector<NDArray<T>*> const& inputGradientList, std::vector<NDArray<T>*>& outputList) {
+
+            }
+
+            template <typename T>
+            int dynamicStitchFunctorBP(std::vector<NDArray<T>*> const& inputs, std::vector<NDArray<T>*> const& indices, NDArray<T> const* gradInput, std::vector<NDArray<T>*>& outputList){
+
+                return ND4J_STATUS_OK;
+            }
+
+            template void dynamicPartitionFunctorBP(NDArray<float> const* input, NDArray<float> const* indices, std::vector<NDArray<float>*> const& inputGradientList, std::vector<NDArray<float>*>& outputList);
+            template void dynamicPartitionFunctorBP(NDArray<float16> const* input, NDArray<float16> const* indices, std::vector<NDArray<float16>*> const& inputGradientList, std::vector<NDArray<float16>*>& outputList);
+            template void dynamicPartitionFunctorBP(NDArray<double> const* input, NDArray<double> const* indices, std::vector<NDArray<double>*> const& inputGradientList, std::vector<NDArray<double>*>& outputList);
+
+            template int dynamicStitchFunctorBP(std::vector<NDArray<float>*> const& inputs, std::vector<NDArray<float>*> const& indices, NDArray<float> const* gradInput, std::vector<NDArray<float>*>& outputList);
+            template int dynamicStitchFunctorBP(std::vector<NDArray<float16>*> const& inputs, std::vector<NDArray<float16>*> const& indices, NDArray<float16> const* gradInput, std::vector<NDArray<float16>*>& outputList);
+            template int dynamicStitchFunctorBP(std::vector<NDArray<double>*> const& inputs, std::vector<NDArray<double>*> const& indices, NDArray<double> const* gradInput, std::vector<NDArray<double>*>& outputList);
+
         }
     }
 }
