@@ -1372,27 +1372,13 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         header.position(0);
 
 
-        ByteBuffer dataByteBuffer = array.data().asNio();
-        dataByteBuffer.position(0);
-
-        ByteBuffer byteBuffer = ByteBuffer.allocateDirect((int) (size.get() + dataByteBuffer.capacity()));
-        byteBuffer.position(0);
-        BytePointer wrapperRet = new BytePointer(byteBuffer);
-       /*
-        wrapperRet.position(0);
-
-        BytePointer headerPointer = new BytePointer(header);
-
-        BytePointer pointerWrapper = new BytePointer(array.data().pointer());
-        pointerWrapper.capacity(dataByteBuffer.capacity());
-        pointerWrapper.position(0);
-*/
-        byteBuffer.put(header.asByteBuffer());
-        byteBuffer.put(dataByteBuffer);
-
-        wrapperRet.position(0);
-
-        return wrapperRet;
+        BytePointer bytePointer = new BytePointer((int) (size.get() + (array.data().getElementSize() * array.data().length())));
+        BytePointer headerCast = new BytePointer(header);
+        Pointer.memcpy(bytePointer,headerCast,headerCast.capacity());
+        bytePointer.position(size.get() - 1);
+        Pointer.memcpy(bytePointer,array.data().pointer(),(array.data().getElementSize() * array.data().length()));
+        bytePointer.position(0);
+        return bytePointer;
     }
 
     /**

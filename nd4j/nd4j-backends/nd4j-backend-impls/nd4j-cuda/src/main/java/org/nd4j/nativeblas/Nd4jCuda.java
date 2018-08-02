@@ -5232,6 +5232,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
  * @param shapeBuffer
  * @param wordSize
  * @param headerSize
+ * @param wordSize
  * @return
  */
     public native @Cast("Nd4jPointer") Pointer numpyHeaderForNd4j(@Cast("Nd4jPointer") Pointer data,@Cast("Nd4jPointer") Pointer shapeBuffer,@Cast("Nd4jLong") long wordSize,@Cast("Nd4jLong*") LongPointer headerSize);

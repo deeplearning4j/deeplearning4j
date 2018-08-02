@@ -22,6 +22,7 @@ import org.bytedeco.javacpp.CharPointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.CharIndexer;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -36,6 +37,8 @@ import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -195,7 +198,7 @@ public class Nd4jTest extends BaseNd4jTest {
             val shape = testMatrix.shape();
             final INDArray squeezed = Nd4j.squeeze(testMatrix, 1);
             final long[] expShape = ArrayUtil.removeIndex(shape, 1);
-            final String message = "Squeezing in dimension 1; Shape before squeezing: " + Arrays.toString(shape) + " "+ordering+" Order; Shape after expanding: " + Arrays.toString(squeezed.shape()) +  " "+squeezed.ordering()+"; Input Created via: " + recreation;
+            final String message = "Squeezing in dimension 1; Shape before squeezing: " + Arrays.toString(shape) + " " + ordering + " Order; Shape after expanding: " + Arrays.toString(squeezed.shape()) +  " "+squeezed.ordering()+"; Input Created via: " + recreation;
 
             assertArrayEquals(message, expShape, squeezed.shape());
             assertEquals(message, ordering, squeezed.ordering());
@@ -213,19 +216,27 @@ public class Nd4jTest extends BaseNd4jTest {
         INDArray linspace = Nd4j.linspace(1,4,4);
         Pointer convert = Nd4j.getNDArrayFactory().convertToNumpy(linspace);
         convert.position(0);
-        BytePointer bytePointer = new BytePointer(convert);
-        String byteString = bytePointer.getString();
-        String newString = byteString.replace("\0","");
-        BytePointer pass = new BytePointer(newString);
-        System.out.println(byteString);
-        Pointer pointer = NativeOpsHolder.getInstance().getDeviceNativeOps().loadNpyFromHeader(pass);
 
-        //INDArray convertedFrom = Nd4j.getNDArrayFactory().createFromNpyHeaderPointer(pass);
-        // System.out.println(pointer.asByteBuffer());
-       // Pointer pointer1 = NativeOpsHolder.getInstance().getDeviceNativeOps().dataPointForNumpyStruct(pointer);
-        //DataBuffer dataBuffer = Nd4j.createBuffer(new FloatPointer(pointer1),linspace.length());
-        //System.out.println(dataBuffer);
-        // assertEquals(linspace,convertedFrom);
+        Pointer pointer = NativeOpsHolder.getInstance().getDeviceNativeOps().loadNpyFromHeader(convert);
+        Pointer pointer1 = NativeOpsHolder.getInstance().getDeviceNativeOps().dataPointForNumpyStruct(pointer);
+        pointer1.capacity(linspace.data().getElementSize() * linspace.data().length());
+        ByteBuffer byteBuffer = linspace.data().pointer().asByteBuffer();
+        byte[] originalData = new byte[byteBuffer.capacity()];
+        byteBuffer.get(originalData);
+
+
+        ByteBuffer floatBuffer = pointer1.asByteBuffer();
+        byte[] dataTwo = new byte[floatBuffer.capacity()];
+        floatBuffer.get(dataTwo);
+        Assert.assertArrayEquals(originalData,dataTwo);
+        floatBuffer.position(0);
+
+        DataBuffer dataBuffer = Nd4j.createBuffer(new FloatPointer(floatBuffer.asFloatBuffer()),linspace.length());
+        assertEquals(Nd4j.createBuffer(new float[]{1,2,3,4}),dataBuffer);
+
+        INDArray convertedFrom = Nd4j.getNDArrayFactory().createFromNpyHeaderPointer(convert);
+        assertEquals(linspace,convertedFrom);
+
 
     }
 

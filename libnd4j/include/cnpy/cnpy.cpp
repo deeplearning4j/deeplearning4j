@@ -145,16 +145,14 @@ void cnpy::parseNpyHeaderStr(std::string header,
     int loc1, loc2;
 
 
-    printf("Length of string %d with string %s\n",header.size(),header.data());
+
     //fortran order
     loc1 = header.find("fortran_order") + 16;
     fortranOrder = (header.substr(loc1,5) == "True" ? true : false);
-    printf("Fortran order %d\n",fortranOrder);
     //shape
     loc1 = header.find("(");
     loc2 = header.find(")");
     std::string str_shape = header.substr(loc1 + 1,loc2 - loc1 - 1);
-    printf("Parsed shape %s\n",str_shape.data());
     if(str_shape[str_shape.size() - 1] == ',') ndims = 1;
     else ndims = std::count(str_shape.begin(),str_shape.end(),',')+1;
 
@@ -165,7 +163,6 @@ void cnpy::parseNpyHeaderStr(std::string header,
         str_shape = str_shape.substr(loc1 + 1);
     }
 
-    printf("Parsed shape %s\n",str_shape.data());
 
 
     //endian, word size, data type
@@ -174,7 +171,6 @@ void cnpy::parseNpyHeaderStr(std::string header,
     loc1 = header.find("descr") + 9;
     bool littleEndian = (header[loc1] == '<' || header[loc1] == '|' ? true : false);
     assert(littleEndian);
-    printf("Little endian %d\n",littleEndian);
 
     //char type = header[loc1+1];
     //assert(type == map_type(T));
@@ -182,7 +178,6 @@ void cnpy::parseNpyHeaderStr(std::string header,
     std::string str_ws = header.substr(loc1 + 2);
     loc2 = str_ws.find("'");
     wordSize = atoi(str_ws.substr(0,loc2).c_str());
-    printf("Word size %d\n",wordSize);
 
 }
 
@@ -295,7 +290,6 @@ cnpy::NpyArray cnpy::loadNpyFromHeader(char *data) {
     unsigned int *shape;
     unsigned int ndims, wordSize;
     bool fortranOrder;
-    printf("Attempting to load numpy from header %s\n",data);
     cnpy::parseNpyHeaderStr(std::string(data),
                             wordSize,
                             shape,
@@ -313,7 +307,6 @@ cnpy::NpyArray cnpy::loadNpyFromHeader(char *data) {
     //move pass the \n
     data++;
     count++;
-    printf("Count is %d\n",count);
 
     unsigned long long size = 1; //long long so no overflow when multiplying by word_size
     for(unsigned int i = 0; i < ndims; i++) size *= shape[i];
@@ -323,14 +316,7 @@ cnpy::NpyArray cnpy::loadNpyFromHeader(char *data) {
     arr.shape = std::vector<unsigned int>(shape,shape + ndims);
     delete[] shape;
     arr.data = cursor;
-    unsigned int *testData = reinterpret_cast<unsigned int *>(arr.data);
-    for(int i = 0; i < size; i++) {
-        printf("Character at data %d is %f\n",i,testData[i]);
-    }
-
-
     arr.fortranOrder = fortranOrder;
-    printf("Returning numpy array from header\n");
     return arr;
 }
 

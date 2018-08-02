@@ -102,7 +102,7 @@ namespace cnpy {
                                       const unsigned
                                       int *shape,
                                       const unsigned int ndims,
-                                       unsigned int wordSize);
+                                      unsigned int wordSize);
     /**
      * Parse the numpy header from
      * the given file
@@ -382,7 +382,6 @@ namespace cnpy {
                                       const unsigned int ndims,
                                       unsigned int wordSize) {
 
-        printf("Word size in create numpy header %d\n",wordSize);
         std::vector<char> dict;
         dict += "{'descr': '";
         dict += BigEndianTest();
@@ -402,7 +401,6 @@ namespace cnpy {
         int remainder = 16 - (10 + dict.size()) % 16;
         dict.insert(dict.end(),remainder,' ');
         dict.back() = '\n';
-        printf("Dict %s\n",dict.data());
 
         std::vector<char> header;
         header += (char) 0x93;
@@ -411,7 +409,17 @@ namespace cnpy {
         header += (char) 0x00; //minor version of numpy format
         header += (unsigned short) dict.size();
         header.insert(header.end(),dict.begin(),dict.end());
-        printf("Returning header from createNpyHeader %s  and header size %d\n",header.data(),header.size());
+        std::vector<int> remove;
+        for(int i = 0; i < header.size(); i++) {
+            if(header[i] == '\0') {
+                remove.push_back(i);
+            }
+        }
+
+        for(int i = 0; i < remove.size(); i++) {
+            header.erase(header.begin() + remove[i]);
+        }
+
         return header;
     }
 
