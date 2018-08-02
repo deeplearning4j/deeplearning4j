@@ -417,10 +417,10 @@ public class TransformOpValidation extends BaseOpValidation {
         OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
 
-        INDArray ia = Nd4j.create(new float[]{5, 1, 3}, new int[]{1, 3});
-        INDArray ib = Nd4j.create(new float[]{7, 2, 4}, new int[]{1, 3});
-        INDArray indexA = Nd4j.create(new float[]{0, 1, 4}, new int[]{1, 3});
-        INDArray indexB = Nd4j.create(new float[]{2, 3, 5}, new int[]{1, 3});
+        INDArray ia = Nd4j.create(new float[]{5, 1, 3}, new long[]{3});
+        INDArray ib = Nd4j.create(new float[]{7, 2, 4}, new long[]{3});
+        INDArray indexA = Nd4j.create(new float[]{0, 1, 4}, new long[]{3});
+        INDArray indexB = Nd4j.create(new float[]{2, 3, 5}, new long[]{3});
 
         INDArray expOut = Nd4j.create(new long[]{6});
 
@@ -432,24 +432,22 @@ public class TransformOpValidation extends BaseOpValidation {
         INDArray expOut2 = Nd4j.create(new double[]{5,1,7,2,3,4});
         assertEquals(expOut2, expOut);
 
-        SDVariable in1 = sd.var("in1", new int[]{1, 3});
-        SDVariable in2 = sd.var("in2", new int[]{1, 3});
+        SDVariable in1 = sd.var("in1", ia);
+        SDVariable in2 = sd.var("in2", ib);
 
-        SDVariable index1 = sd.var("index1", new int[]{1, 3});
-        SDVariable index2 = sd.var("index2", new int[]{1, 3});
-
-        sd.associateArrayWithVariable(ia, in1);
-        sd.associateArrayWithVariable(ib, in2);
-        sd.associateArrayWithVariable(indexA, index1);
-        sd.associateArrayWithVariable(indexB, index2);
+        SDVariable index1 = sd.var("index1", indexA);
+        SDVariable index2 = sd.var("index2", indexB);
 
         SDVariable t = sd.dynamicStitch("ds", new SDVariable[]{index1, index2}, new SDVariable[]{in1, in2});
-        SDVariable loss = sd.mean("loss", t);
+        SDVariable loss = sd.standardDeviation("loss", t, true);
 
         String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("ds", expOut)
-                .gradientCheck(true));
-        assertNull(err, err);
+                .gradientCheck(true)
+                .gradCheckSkipVariables("index1", "index2")
+
+        );
+        assertNull(err);
     }
 
     @Test
