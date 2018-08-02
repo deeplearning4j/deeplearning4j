@@ -14,7 +14,6 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-
 package org.deeplearning4j.plot;
 
 
