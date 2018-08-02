@@ -2397,7 +2397,46 @@ public class SameDiffTests {
         SDVariable result = sd.scatterDiv(refs, idxs, upds);
         assertArrayEquals(new long[]{3, 3}, result.eval().shape());
         assertEquals(expected, result.eval());
+    }
 
+    @Test
+    public void testScatterMax() {
+        INDArray arr1 = Nd4j.ones(3, 3);
+        INDArray arr2 = Nd4j.create(new float[]{0,1}, new long[]{2});
+        INDArray arr3 = Nd4j.ones(2, 3).assign(2);
+        INDArray expected = Nd4j.create(new float[]{2.0f, 2.0f, 2.0f,
+                        2.0f, 2.0f, 2.0f,
+                        1.0f, 1.0f, 1.0f},
+                new long[]{3, 3});
+
+        SameDiff sd  = SameDiff.create();
+        SDVariable refs = sd.var("refs", arr1);
+        SDVariable idxs = sd.var("idxs", arr2);
+        SDVariable upds = sd.var("upds", arr3);
+
+        SDVariable result = sd.scatterMax(refs, idxs, upds);
+        assertArrayEquals(new long[]{3, 3}, result.eval().shape());
+        assertEquals(expected, result.eval());
+    }
+
+    @Test
+    public void testScatterMin() {
+        INDArray arr1 = Nd4j.ones(3, 3);
+        INDArray arr2 = Nd4j.create(new float[]{1,2}, new long[]{2});
+        INDArray arr3 = Nd4j.ones(2, 3).assign(-2.0f);
+        INDArray expected = Nd4j.create(new float[]{1.0f, 1.0f, 1.0f,
+                        -2.0f, -2.0f, -2.0f,
+                        -2.0f, -2.0f, -2.0f},
+                new long[]{3, 3});
+
+        SameDiff sd  = SameDiff.create();
+        SDVariable refs = sd.var("refs", arr1);
+        SDVariable idxs = sd.var("idxs", arr2);
+        SDVariable upds = sd.var("upds", arr3);
+
+        SDVariable result = sd.scatterMin(refs, idxs, upds);
+        assertArrayEquals(new long[]{3, 3}, result.eval().shape());
+        assertEquals(expected, result.eval());
     }
 
     @Test
