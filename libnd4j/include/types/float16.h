@@ -234,9 +234,6 @@ local_def ihalf cpu_float2ihalf_rn(float f)
     local_def unsigned short getx() const { return (const unsigned short)data.getX(); }
     local_def float16& setx(unsigned short x) { *data.getXP() = x; return *this; }
 */
-    template <class T>
-    local_def float16& operator=(const T& rhs) { assign(rhs); return *this; }
-
     ///////  CAST INT TYPES
 
     local_def operator nd4j::int8() const {
@@ -340,9 +337,9 @@ local_def ihalf cpu_float2ihalf_rn(float f)
 #endif
     }
 
-    local_def explicit operator double() const {
-        return static_cast<double>(cpu_ihalf2float(data));
-    }
+    // local_def explicit operator double() const {
+    //     return static_cast<double>(cpu_ihalf2float(data));
+    // }
 
     ///////  ASSIGN FLOAT TYPES
     local_def void assign(nd4j::float8 rhs) {
