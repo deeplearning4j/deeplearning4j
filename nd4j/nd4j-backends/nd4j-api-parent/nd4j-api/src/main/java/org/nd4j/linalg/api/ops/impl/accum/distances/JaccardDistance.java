@@ -108,23 +108,28 @@ public class JaccardDistance extends BaseAccumulation {
         //Jaccard distance: https://en.wikipedia.org/wiki/Jaccard_index#Generalized_Jaccard_similarity_and_distance
         //J(x,y) = 1 - sum_i min(x_i, y_i) / sum_i max(x_i, y_i)
 
-        int rank = Shape.rankFromShape(larg().getShape());
-
-        SDVariable jSim = outputVariables()[0].rsub(1.0);   //jaccard similarity = 1 - jaccard distance
         SDVariable min = f().min(larg(), rarg());
         SDVariable max = f().max(larg(), rarg());
-        SDVariable sumMax = f().sum(max, true, dimensions);
-        SDVariable broadcastableJSim = f().reductionBroadcastableWithOrigShape(rank, dimensions, jSim);
+        SDVariable sumMax = max.sum(true, dimensions);
+        SDVariable sumMin = min.sum(true, dimensions);
 
         SDVariable xIsMin = f().eq(min, larg());
         SDVariable xIsMax = f().eq(max, larg());
         SDVariable yIsMin = f().eq(min, rarg());
         SDVariable yIsMax = f().eq(max, rarg());
 
-        SDVariable dldx = xIsMax.mul(broadcastableJSim).sub(xIsMin).div(sumMax);
-        SDVariable dldy = yIsMax.mul(broadcastableJSim).sub(yIsMin).div(sumMax);
+        SDVariable sqSumMax = f().square(sumMax);
+        SDVariable dldx = xIsMax.mul(sumMin).sub(xIsMin.mul(sumMax)).div(sqSumMax);
+        SDVariable dldy = yIsMax.mul(sumMin).sub(yIsMin.mul(sumMax)).div(sqSumMax);
 
-        return Arrays.asList(dldx.mul(f1.get(0)), dldy.mul(f1.get(0)));
+        SDVariable bcGradOut;
+        if(dimensions == null){
+            bcGradOut = f1.get(0);
+        } else {
+            int inRank = arg().getArr().rank();
+            bcGradOut = f().reductionBroadcastableWithOrigShape(inRank, dimensions, f1.get(0));
+        }
+        return Arrays.asList(dldx.mul(bcGradOut), dldy.mul(bcGradOut));
     }
 
     @Override
