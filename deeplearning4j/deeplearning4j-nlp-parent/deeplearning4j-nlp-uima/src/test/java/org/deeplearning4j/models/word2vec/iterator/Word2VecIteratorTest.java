@@ -1,23 +1,23 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.deeplearning4j.models.word2vec.iterator;
 
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
@@ -42,12 +42,16 @@ import static org.junit.Assert.assertNotEquals;
 public class Word2VecIteratorTest {
     private Word2Vec vec;
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Before
     public void before() throws Exception {
         if (vec == null) {
             ClassPathResource resource = new ClassPathResource("/labeled/");
-            File file = resource.getFile();
-            SentenceIterator iter = UimaSentenceIterator.createWithPath(file.getAbsolutePath());
+            File dir = testDir.newFolder();
+            resource.copyDirectory(dir);
+            SentenceIterator iter = UimaSentenceIterator.createWithPath(dir.getAbsolutePath());
             new File("cache.ser").delete();
 
             TokenizerFactory t = new UimaTokenizerFactory();
@@ -69,8 +73,12 @@ public class Word2VecIteratorTest {
         unk = vec.getWordVectorMatrix("2131241sdasdas");
         assertNotEquals(null, unk);
 
+        ClassPathResource resource = new ClassPathResource("/labeled/");
+        File dir = testDir.newFolder();
+        resource.copyDirectory(dir);
+
         Word2VecDataSetIterator iter = new Word2VecDataSetIterator(vec,
-                        new LabelAwareFileSentenceIterator(null, new ClassPathResource("labeled/").getFile()),
+                        new LabelAwareFileSentenceIterator(null, dir),
                         Arrays.asList("negative", "positive", "neutral"));
         DataSet next = iter.next();
 

@@ -1,25 +1,24 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2016 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -39,6 +38,8 @@ import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasSimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasOptimizerUtils;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.IOException;
@@ -75,6 +76,7 @@ public class KerasModel {
     protected int kerasMajorVersion;
     protected String kerasBackend;
     protected KerasLayer.DimOrder dimOrder = null;
+    protected IUpdater optimizer = null;
 
     public KerasModel() {
     }
@@ -227,6 +229,13 @@ public class KerasModel {
         return new Pair<>(layers, layersOrdered);
     }
 
+    Map<String, Object> getOptimizerConfig(Map<String, Object> trainingConfig) throws InvalidKerasConfigurationException{
+        if (!trainingConfig.containsKey(config.getOptimizerConfig()))
+            throw new InvalidKerasConfigurationException("Field "
+                    + config.getOptimizerConfig() + " missing from layer config");
+        return (Map<String, Object>) trainingConfig.get(config.getOptimizerConfig());
+    }
+
     /**
      * Helper method called from constructor. Incorporate training configuration details into model.
      * Includes loss function, optimization details, etc.
@@ -239,6 +248,9 @@ public class KerasModel {
     void importTrainingConfiguration(String trainingConfigJson)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> trainingConfig = KerasModelUtils.parseJsonString(trainingConfigJson);
+
+        Map<String, Object> optimizerConfig = getOptimizerConfig(trainingConfig);
+        this.optimizer = KerasOptimizerUtils.mapOptimizer(optimizerConfig);
 
         /* Add loss layers for each loss function. */
         List<KerasLayer> lossLayers = new ArrayList<>();
@@ -311,10 +323,15 @@ public class KerasModel {
                     "Keras model class name " + this.className + " incompatible with ComputationGraph");
         NeuralNetConfiguration.Builder modelBuilder = new NeuralNetConfiguration.Builder();
 
+        if (optimizer != null) {
+            modelBuilder.updater(optimizer);
+        }
+
         ComputationGraphConfiguration.GraphBuilder graphBuilder = modelBuilder.graphBuilder();
         // NOTE: normally this is disallowed in DL4J. However, in Keras you can create disconnected graph vertices.
         // The responsibility for doing this correctly is that of the Keras user.
         graphBuilder.allowDisconnected(true);
+
 
         /* Build String array of input layer names, add to ComputationGraph. */
         String[] inputLayerNameArray = new String[this.inputLayerNames.size()];
@@ -375,6 +392,7 @@ public class KerasModel {
                     .tBPTTBackwardLength(truncatedBPTT);
         else
             graphBuilder.backpropType(BackpropType.Standard);
+
         return graphBuilder.build();
     }
 

@@ -1,24 +1,24 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.factory;
 
+import lombok.extern.slf4j.Slf4j;
+import org.nd4j.config.ND4JEnvironmentVars;
+import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.io.Resource;
 import org.slf4j.Logger;
@@ -61,18 +61,26 @@ import java.util.*;
  * @author saudet
  *
  */
+@Slf4j
 public abstract class Nd4jBackend {
 
     public static final int BACKEND_PRIORITY_CPU;
     public static final int BACKEND_PRIORITY_GPU;
-    public final static String DYNAMIC_LOAD_CLASSPATH = "ND4J_DYNAMIC_LOAD_CLASSPATH";
-    public final static String DYNAMIC_LOAD_CLASSPATH_PROPERTY = "org.nd4j.backend.dynamicbackend";
-    private static final Logger log = LoggerFactory.getLogger(Nd4jBackend.class);
+    /**
+     * @deprecated Use {@link ND4JEnvironmentVars#BACKEND_DYNAMIC_LOAD_CLASSPATH}
+     */
+    @Deprecated
+    public final static String DYNAMIC_LOAD_CLASSPATH = ND4JEnvironmentVars.BACKEND_DYNAMIC_LOAD_CLASSPATH;
+    /**
+     * @deprecated Use {@link ND4JSystemProperties#DYNAMIC_LOAD_CLASSPATH_PROPERTY}
+     */
+    @Deprecated
+    public final static String DYNAMIC_LOAD_CLASSPATH_PROPERTY = ND4JSystemProperties.DYNAMIC_LOAD_CLASSPATH_PROPERTY;
     private static boolean triedDynamicLoad = false;
 
     static {
         int n = 0;
-        String s = System.getenv("BACKEND_PRIORITY_CPU");
+        String s = System.getenv(ND4JEnvironmentVars.BACKEND_PRIORITY_CPU);
         if (s != null && s.length() > 0) {
             try {
                 n = Integer.parseInt(s);
@@ -85,7 +93,7 @@ public abstract class Nd4jBackend {
 
     static {
         int n = 100;
-        String s = System.getenv("BACKEND_PRIORITY_GPU");
+        String s = System.getenv(ND4JEnvironmentVars.BACKEND_PRIORITY_GPU);
         if (s != null && s.length() > 0) {
             try {
                 n = Integer.parseInt(s);
@@ -136,11 +144,6 @@ public abstract class Nd4jBackend {
      *  Get the actual (concrete/implementation) class for standard INDArrays for this backend
      */
     public abstract Class getNDArrayClass();
-
-    /**
-     * Get the actual (concrete/implementation) class for complex INDArrays for this backend
-     */
-    public abstract Class getComplexNDArrayClass();
 
 
     /**
@@ -199,11 +202,11 @@ public abstract class Nd4jBackend {
         //ones being dynamically discovered.
         //Note that we prioritize jvm properties first, followed by environment variables.
         String[] jarUris;
-        if (System.getProperties().containsKey(DYNAMIC_LOAD_CLASSPATH_PROPERTY) && !triedDynamicLoad) {
-            jarUris = System.getProperties().getProperty(DYNAMIC_LOAD_CLASSPATH_PROPERTY).split(";");
+        if (System.getProperties().containsKey(ND4JSystemProperties.DYNAMIC_LOAD_CLASSPATH_PROPERTY) && !triedDynamicLoad) {
+            jarUris = System.getProperties().getProperty(ND4JSystemProperties.DYNAMIC_LOAD_CLASSPATH_PROPERTY).split(";");
         // Do not call System.getenv(): Accessing all variables requires higher security privileges
-        } else if (System.getenv(DYNAMIC_LOAD_CLASSPATH) != null && !triedDynamicLoad) {
-            jarUris = System.getenv(DYNAMIC_LOAD_CLASSPATH).split(";");
+        } else if (System.getenv(ND4JEnvironmentVars.BACKEND_DYNAMIC_LOAD_CLASSPATH) != null && !triedDynamicLoad) {
+            jarUris = System.getenv(ND4JEnvironmentVars.BACKEND_DYNAMIC_LOAD_CLASSPATH).split(";");
         }
 
         else

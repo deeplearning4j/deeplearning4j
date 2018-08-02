@@ -1,7 +1,22 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.string;
 
 import org.apache.commons.lang3.StringUtils;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -118,10 +133,6 @@ public class NDArrayStrings {
         int rank = arr.rank();
         if (arr.isScalar()) {
             //true scalar i.e shape = [] not legacy which is [1,1]
-            if (arr instanceof IComplexNDArray) {
-                return ((IComplexNDArray) arr).getComplex(0).toString();
-            }
-            /////
             double arrElement = arr.getDouble(0);
             if (!dontOverrideFormat && ((Math.abs(arrElement) < this.minToPrintWithoutSwitching && arrElement!= 0) || (Math.abs(arrElement) >= this.maxToPrintWithoutSwitching))) {
                 //switch to scientific notation
@@ -191,29 +202,23 @@ public class NDArrayStrings {
         sb.append("[");
         long l = arr.length();
         for (int i = 0; i <l; i++) {
-            if (arr instanceof IComplexNDArray) {
-                sb.append(((IComplexNDArray) arr).getComplex(i).toString());
+            if (summarize && i > 2 && i < l - 3) {
+                sb.append("  ...");
+                // immediately jump to the last elements so we only print ellipsis once
+                i = Math.max(i, (int) l - 4);
             } else {
-                if (summarize && i > 2 && i < l - 3) {
-                    sb.append("  ...");
-                    // immediately jump to the last elements so we only print ellipsis once
-                    i = Math.max(i, (int) l - 4);
+                double arrElement = arr.getDouble(i);
+                if (!dontOverrideFormat && ((Math.abs(arrElement) < this.minToPrintWithoutSwitching && arrElement != 0) || (Math.abs(arrElement) >= this.maxToPrintWithoutSwitching))) {
+                    //switch to scientific notation
+                    String asString = new DecimalFormat(scientificFormat).format(arrElement);
+                    //from E to small e
+                    asString = asString.replace('E', 'e');
+                    sb.append(String.format("%1$" + padding + "s", asString));
                 } else {
-                    double arrElement = arr.getDouble(i);
-                    if (!dontOverrideFormat && ((Math.abs(arrElement) < this.minToPrintWithoutSwitching && arrElement!= 0) || (Math.abs(arrElement) >= this.maxToPrintWithoutSwitching))) {
-                        //switch to scientific notation
-                        String asString = new DecimalFormat(scientificFormat).format(arrElement);
-                        //from E to small e
-                        asString = asString.replace('E','e');
-                        sb.append(String.format("%1$" + padding + "s", asString));
-                    }
-                    else {
-                        if (arrElement == 0) {
-                            sb.append(String.format("%1$" + padding + "s", 0));
-                        }
-                        else {
-                            sb.append(String.format("%1$" + padding + "s", decimalFormat.format(arrElement)));
-                        }
+                    if (arrElement == 0) {
+                        sb.append(String.format("%1$" + padding + "s", 0));
+                    } else {
+                        sb.append(String.format("%1$" + padding + "s", decimalFormat.format(arrElement)));
                     }
                 }
             }

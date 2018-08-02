@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.tensorflow.conversion.graphrunner;
 
 import com.github.os72.protobuf351.ByteString;
@@ -65,7 +81,33 @@ public class GraphRunner implements Closeable {
      *                                                          graph inputs and outputs
      */
     public GraphRunner(List<String> inputNames,tensorflow.TF_Graph graph,org.tensorflow.framework.GraphDef graphDef) {
+        this(inputNames,graph,graphDef,null);
+
+    }
+
+    /**
+     * Pass in a graph instance and
+     * the length of the protobuf
+     * that it was instantiated with.
+     * For files this is typically
+     * {@link File#length()},
+     * for byte arrays, this is
+     * byte array.length
+     * and for {@link java.nio.ByteBuffer}
+     * this would be something like the
+     * {@link java.nio.ByteBuffer#capacity()}
+     * @param graph a pointer to the {@link TF_Graph} to use when executing
+     * @param graphDef {@link org.tensorflow.framework.GraphDef} protobuf
+     *                                                          definition containing
+     *                                                          the graph configuration
+     *                                                          for automatically inferring
+     *                                                          things like
+     *                                                          graph inputs and outputs
+     * @param configProto  the session configuration proto to use with this runner
+     */
+    public GraphRunner(List<String> inputNames,tensorflow.TF_Graph graph,org.tensorflow.framework.GraphDef graphDef,ConfigProto configProto) {
         this.graph = graph;
+        this.protoBufConfigProto = configProto;
         this.inputOrder = inputNames;
         initSessionAndStatusIfNeeded(graphDef);
 

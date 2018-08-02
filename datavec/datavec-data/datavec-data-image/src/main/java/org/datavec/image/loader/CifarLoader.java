@@ -1,18 +1,18 @@
-/*-
- *  * Copyright 2016 Skymind, Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
- */
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.datavec.image.loader;
 
@@ -316,7 +316,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
             }
         }
         for (int i = 0; i < result.numExamples(); i++) {
-            INDArray newFeatures = result.get(i).getFeatureMatrix();
+            INDArray newFeatures = result.get(i).getFeatures();
             newFeatures.tensorAlongDimension(0, new int[] {0, 2, 3}).divi(255);
             newFeatures.tensorAlongDimension(1, new int[] {0, 2, 3}).subi(uMean).divi(uStd);
             newFeatures.tensorAlongDimension(2, new int[] {0, 2, 3}).subi(vMean).divi(vStd);
@@ -383,10 +383,10 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
                     vTempMean = vChannel.meanNumber().doubleValue();
                     vStd += varManual(vChannel, vTempMean);
                     vMean += vTempMean;
-                    data.setFeatures(data.getFeatureMatrix().div(255));
+                    data.setFeatures(data.getFeatures().div(255));
                 } else {
                     // normalize if just input stream and not special preprocess
-                    data.setFeatures(data.getFeatureMatrix().div(255));
+                    data.setFeatures(data.getFeatures().div(255));
                 }
             } catch (IllegalArgumentException e) {
                 throw new IllegalStateException("The number of channels must be 3 to special preProcess Cifar with.");

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.Data;
@@ -8,6 +24,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.util.Convolution1DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -59,7 +76,16 @@ public class Subsampling1DLayer extends SubsamplingLayer {
             throw new IllegalStateException("Invalid input for Subsampling1D layer (layer name=\"" + getLayerName()
                     + "\"): Expected RNN input, got " + inputType);
         }
-        return inputType;
+        InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent)inputType;
+        long inputTsLength = r.getTimeSeriesLength();
+        int outLength;
+        if(inputTsLength < 0){
+            //Probably: user did InputType.recurrent(x) without specifying sequence length
+            outLength = -1;
+        } else {
+            outLength = Convolution1DUtils.getOutputSize((int)inputTsLength, kernelSize[0], stride[0], padding[0], convolutionMode, dilation[0]);
+        }
+        return InputType.recurrent(r.getSize(), outLength);
     }
 
     @Override

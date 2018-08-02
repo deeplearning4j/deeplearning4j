@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.memory.abstracts;
 
 import lombok.Data;
@@ -350,7 +366,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         }
 
         // if size is enough - allocate from workspace
-        if (hostOffset.get() + requiredMemory <= currentSize.get() && !trimmer) {
+        if (hostOffset.get() + requiredMemory <= currentSize.get() && !trimmer && Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.SPILL_EVERYTHING) {
             // just alignment to 8 bytes
 
             cycleAllocations.addAndGet(requiredMemory);
@@ -372,7 +388,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
             // in case of circular mode - we just reset offsets, and start from the beginning of the workspace
             if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0
-                            && !trimmer) {
+                            && !trimmer && Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.SPILL_EVERYTHING) {
                 reset();
                 resetPlanned.set(true);
                 return alloc(requiredMemory, kind, type, initialize);
@@ -624,12 +640,16 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                             || (workspaceConfiguration.getPolicyLearning() == LearningPolicy.FIRST_LOOP
                                             && currentSize.get() == 0)) {
                 //log.info("Initializing on cycle {}", cyclesCount.get());
-                initializeWorkspace();
+
+                if (Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.SPILL_EVERYTHING)
+                    initializeWorkspace();
             } else if (currentSize.get() > 0 && cycleAllocations.get() > 0
                             && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE
                             && workspaceConfiguration.getPolicyReset() != ResetPolicy.ENDOFBUFFER_REACHED) {
                 //log.debug("Reinit on cycle {}; step: {}", cyclesCount.get(), stepsCount.get());
-                initializeWorkspace();
+
+                if (Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.SPILL_EVERYTHING)
+                    initializeWorkspace();
             }
         }
 

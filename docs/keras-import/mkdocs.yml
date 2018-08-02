@@ -10,13 +10,12 @@ dev_addr: '0.0.0.0:8000'
 pages:
 - Home: index.md
 - Overview of supported features: supported-features.md
-- Why import Keras models: why-import-keras.md
 - Getting started:
   - Guide to KerasSequentialModel: getting-started/keras-sequential-guide.md
   - Guide to KerasModel: getting-started/keras-model-guide.md
 - Models:
-  - Sequential: models/sequential.md
-  - Model (functional API): models/model.md
+  - KerasSequentialModel: models/sequential.md
+  - KerasModel (functional API): models/model.md
 - Layers:
   - About Keras import layers: layers/about-importing-layers.md
   - Core Layers: layers/core.md

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.layers.ocnn;
 
 
@@ -162,13 +178,8 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         INDArray vGradView = gradientViews.get(V_KEY);
         double oneDivNu = 1.0 / layerConf().getNu();
         INDArray xTimesV = input.mmul(getParam(V_KEY));
-        INDArray derivW = layerConf().getActivationFn()
-                .getActivation(xTimesV.dup(),true).negi();
-        derivW = delta.isRowVector() ? derivW
-                .muliRowVector(delta).mean(0)
-                .muli(oneDivNu).addi(getParam(W_KEY)) : derivW
-                .muli(delta).mean(0)
-                .muli(oneDivNu).addi(getParam(W_KEY));
+        INDArray derivW = layerConf().getActivationFn().getActivation(xTimesV.dup(),true).negi();
+        derivW = derivW.muliColumnVector(delta).mean(0).muli(oneDivNu).addi(getParam(W_KEY));
         gradient.setGradientFor(W_KEY,gradientViews.get(W_KEY).assign(derivW));
 
         //dG -> sigmoid derivative
@@ -176,10 +187,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         INDArray firstVertDerivV =  layerConf().getActivationFn()
                 .backprop(xTimesV.dup(),Nd4j.ones(xTimesV.shape()))
                 .getFirst().muliRowVector(getParam(W_KEY).neg());
-        firstVertDerivV = delta.isRowVector() ?
-                firstVertDerivV .muliRowVector(delta)
-                        .reshape('f',input.size(0),1,layerConf().getHiddenSize()) :
-                firstVertDerivV.muli(delta)
+        firstVertDerivV = firstVertDerivV.muliColumnVector(delta)
                         .reshape('f',input.size(0),1,layerConf().getHiddenSize());
         INDArray secondTermDerivV = input.reshape('f',
                 input.size(0),getParam(V_KEY).size(0),1);
@@ -192,7 +200,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         INDArray firstDerivVBroadcast = Nd4j.createUninitialized(shape);
 
         INDArray mulResult = firstVertDerivV.broadcast(firstDerivVBroadcast);
-        int[] bcDims = Shape.getBroadcastDimensions(mulResult.shape(), secondTermDerivV.shape());
+        int[] bcDims = {0,1};
         Broadcast.mul(mulResult, secondTermDerivV, mulResult, bcDims);
 
         INDArray derivV = mulResult
@@ -233,7 +241,6 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
                 decision[i] = 1.0f;
             }
         }
-
         return Nd4j.create(decision);
     }
 
@@ -242,8 +249,6 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
     public Layer.Type type() {
         return Type.FEED_FORWARD;
     }
-
-
 
 
     @Override
@@ -315,7 +320,8 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
             double wSum = Transforms.pow(getParam(W_KEY),2).sumNumber().doubleValue() * 0.5;
             double vSum = Transforms.pow(getParam(V_KEY),2).sumNumber().doubleValue() * 0.5;
             org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer ocnnOutputLayer = (org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) conf().getLayer();
-            INDArray rMeanSub  = relu.getActivation(getParam(R_KEY).sub(preOutput),true);
+            INDArray rSubPre = preOutput.rsub(getParam(R_KEY).getDouble(0));
+            INDArray rMeanSub  = relu.getActivation(rSubPre,true);
             double rMean = rMeanSub.meanNumber().doubleValue();
             double rSum = getParam(R_KEY).getDouble(0);
             double nuDiv = (1 / ocnnOutputLayer.getNu()) * rMean;
@@ -331,8 +337,8 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
 
         @Override
         public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
-            INDArray preAct = getParam(R_KEY).sub(preOutput);
-            INDArray target =   relu.backprop(getParam(R_KEY).sub(preOutput),Nd4j.ones(preAct.shape())).getFirst();
+            INDArray preAct = preOutput.rsub(getParam(R_KEY).getDouble(0));
+            INDArray target =   relu.backprop(preAct,Nd4j.ones(preAct.shape())).getFirst();
             return target;
         }
 

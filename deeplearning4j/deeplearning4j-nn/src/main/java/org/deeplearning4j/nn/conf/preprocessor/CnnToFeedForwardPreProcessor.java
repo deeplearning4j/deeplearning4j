@@ -1,20 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
@@ -145,7 +143,17 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
                     int minibatchSize) {
-        //Pass-through, unmodified (assuming here that it's a 1d mask array - one value per example)
-        return new Pair<>(maskArray, currentMaskState);
+        if(maskArray == null || maskArray.rank() == 2)
+            return new Pair<>(maskArray, currentMaskState);
+
+        if (maskArray.rank() != 4 || maskArray.size(2) != 1 || maskArray.size(3) != 1) {
+            throw new UnsupportedOperationException(
+                    "Expected rank 4 mask array for 2D CNN layer activations. Got rank " + maskArray.rank() + " mask array (shape " +
+                            Arrays.toString(maskArray.shape()) + ")  - when used in conjunction with input data of shape" +
+                            " [batch,channels,h,w] 4d masks passing through CnnToFeedForwardPreProcessor should have shape" +
+                            " [batchSize,1,1,1]");
+        }
+
+        return new Pair<>(maskArray.reshape(maskArray.ordering(), maskArray.size(0), maskArray.size(1)), currentMaskState);
     }
 }

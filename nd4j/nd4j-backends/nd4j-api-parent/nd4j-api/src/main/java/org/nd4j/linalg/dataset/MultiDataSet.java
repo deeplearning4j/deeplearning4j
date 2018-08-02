@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.dataset;
 
 import org.nd4j.linalg.primitives.Pair;
@@ -68,7 +84,6 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         this.labelsMaskArrays = labelsMaskArrays;
 
         Nd4j.getExecutioner().commit();
-
     }
 
     @Override
@@ -213,6 +228,13 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
             saveINDArrays(labels, dos, false);
             saveINDArrays(featuresMaskArrays, dos, true);
             saveINDArrays(labelsMaskArrays, dos, true);
+
+            if(exampleMetaData != null && exampleMetaData.size() > 0){
+                dos.writeInt(1);
+                ObjectOutputStream oos = new ObjectOutputStream(dos);
+                oos.writeObject(exampleMetaData);
+                oos.flush();
+            }
         }
     }
 
@@ -239,7 +261,7 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
 
     @Override
     public void load(InputStream from) throws IOException {
-        try (DataInputStream dis = new DataInputStream(from)) {
+        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(from))) {
             int numFArr = dis.readInt();
             int numLArr = dis.readInt();
             int numFMArr = dis.readInt();
@@ -249,6 +271,22 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
             labels = loadINDArrays(numLArr, dis, false);
             featuresMaskArrays = loadINDArrays(numFMArr, dis, true);
             labelsMaskArrays = loadINDArrays(numLMArr, dis, true);
+
+            int i;
+            try {
+                i = dis.readInt();
+            } catch (EOFException e){
+                //OK, no metadata to read
+                return;
+            }
+            if(i == 1){
+                ObjectInputStream ois = new ObjectInputStream(dis);
+                try{
+                this.exampleMetaData = (List<Serializable>)ois.readObject();
+                } catch (ClassNotFoundException e){
+                    throw new RuntimeException("Error reading metadata from serialized MultiDataSet");
+                }
+            }
         }
     }
 

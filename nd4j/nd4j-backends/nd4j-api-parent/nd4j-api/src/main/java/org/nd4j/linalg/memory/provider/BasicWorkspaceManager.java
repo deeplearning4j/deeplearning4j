@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.memory.provider;
 
 import lombok.NonNull;
@@ -10,6 +26,7 @@ import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
+import org.nd4j.linalg.primitives.SynchronizedObject;
 import org.nd4j.util.StringUtils;
 
 import java.lang.ref.ReferenceQueue;
@@ -19,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+
 
 /**
  * Workspace manager implementation. Please note, this class is supposed to be used via Nd4j.getWorkspaceManager(), to provide consistency between different threads within given JVM process
@@ -33,6 +51,9 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     private ReferenceQueue<MemoryWorkspace> queue;
     private WorkspaceDeallocatorThread thread;
     private Map<String, Nd4jWorkspace.GarbageWorkspaceReference> referenceMap = new ConcurrentHashMap<>();
+
+    // default mode is DISABLED, as in: production mode
+    protected SynchronizedObject<DebugMode> debugMode = new SynchronizedObject<>(DebugMode.DISABLED);
 
     public BasicWorkspaceManager() {
         this(WorkspaceConfiguration.builder().initialSize(0).maxSize(0).overallocationLimit(0.3)
@@ -79,6 +100,19 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     @Override
     public MemoryWorkspace getWorkspaceForCurrentThread(@NonNull String id) {
         return getWorkspaceForCurrentThread(defaultConfiguration, id);
+    }
+
+    @Override
+    public DebugMode getDebugMode() {
+        return debugMode.get();
+    }
+
+    @Override
+    public void setDebugMode(DebugMode mode) {
+        if (mode == null)
+            mode = DebugMode.DISABLED;
+
+        debugMode.set(mode);
     }
 
     /*
@@ -238,13 +272,16 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     }
 
 
+    @Deprecated // For test use within the github.com/deeplearning4j/deeplearning4j repo only.
+    public static final String WorkspaceDeallocatorThreadName = "Workspace deallocator thread";
+
     protected class WorkspaceDeallocatorThread extends Thread implements Runnable {
         private final ReferenceQueue<MemoryWorkspace> queue;
 
         protected WorkspaceDeallocatorThread(ReferenceQueue<MemoryWorkspace> queue) {
             this.queue = queue;
             this.setDaemon(true);
-            this.setName("Workspace deallocator thread");
+            this.setName(WorkspaceDeallocatorThreadName);
         }
 
         @Override

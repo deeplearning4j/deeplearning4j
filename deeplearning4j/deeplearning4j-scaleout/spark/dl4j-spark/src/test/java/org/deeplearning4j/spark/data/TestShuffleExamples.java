@@ -1,10 +1,25 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.spark.data;
 
 import org.apache.spark.HashPartitioner;
 import org.apache.spark.Partitioner;
 import org.apache.spark.api.java.JavaRDD;
 import org.deeplearning4j.spark.BaseSparkTest;
-import org.deeplearning4j.spark.data.shuffle.IntPartitioner;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -50,28 +65,5 @@ public class TestShuffleExamples extends BaseSparkTest {
         }
 
         assertEquals(100, totalExampleCount);
-    }
-
-    @Test
-    public void testIntPartitioner() {
-        int nTest = 10000;
-        int nPartitions = 42;
-
-        Partitioner intPartitioner = new IntPartitioner(nPartitions);
-        Partitioner hashPartitioner = new HashPartitioner(nPartitions);
-
-        Random r = new Random();
-
-        List<Integer> samples = new ArrayList();
-        for (int i = 0; i < nTest; i++) {
-            samples.add(Math.abs(r.nextInt()));
-        }
-
-        for (int i : samples) {
-            assertTrue("Found intPartitioner " + intPartitioner.getPartition(i) + " for value " + i
-                            + " with hashPartitioner " + hashPartitioner.getPartition(i),
-                            intPartitioner.getPartition(i) == hashPartitioner.getPartition(i));
-        }
-
     }
 }

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.spark.parameterserver.functions;
 
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
@@ -48,11 +64,11 @@ class SharedFlatMapMultiDataSetAdapter<R extends TrainingResult>
          */
 
         // iterator should be silently attached to VirtualDataSetIterator, and used appropriately
-        SharedTrainingWrapper.getInstance().attachMDS(dataSetIterator);
+        SharedTrainingWrapper.getInstance(worker.getInstanceId()).attachMDS(dataSetIterator);
 
         // first callee will become master, others will obey and die
         // all threads in this executor will be blocked here until training finished
-        SharedTrainingResult result = SharedTrainingWrapper.getInstance().run(worker);
+        SharedTrainingResult result = SharedTrainingWrapper.getInstance(worker.getInstanceId()).run(worker);
 
         return Collections.singletonList((R) result);
     }

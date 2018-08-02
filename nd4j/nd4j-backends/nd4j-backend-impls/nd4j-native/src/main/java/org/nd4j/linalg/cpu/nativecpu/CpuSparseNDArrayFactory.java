@@ -1,12 +1,24 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.cpu.nativecpu;
 
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexDouble;
-import org.nd4j.linalg.api.complex.IComplexFloat;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.BaseSparseNDArrayCOO;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SparseFormat;
@@ -165,31 +177,6 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
-    public IComplexFloat createFloat(float real, float imag) {
-        return null;
-    }
-
-    @Override
-    public IComplexDouble createDouble(double real, double imag) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(INDArray arr) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(List<IComplexNDArray> arrs, int[] shape) {
-        return null;
-    }
-
-    @Override
     public INDArray specialConcat(int dimension, INDArray... toConcat) {
         return null;
     }
@@ -205,22 +192,12 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
-    public IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, long offset) {
-        return null;
-    }
-
-    @Override
     public INDArray create(double[] data, int[] shape, int[] stride, long offset) {
         return null;
     }
 
     @Override
     public INDArray create(List<INDArray> list, int[] shape) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, long offset, char ordering) {
         return null;
     }
 
@@ -316,47 +293,7 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
-    public IComplexNDArray createComplex(DataBuffer data) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(DataBuffer data, long rows, long columns, int[] stride, long offset) {
-        return null;
-    }
-
-    @Override
     public INDArray create(DataBuffer data, long rows, long columns, int[] stride, long offset) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(DataBuffer data, int[] shape, int[] stride, long offset) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int[] stride, long offset) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int[] stride, long offset, char ordering) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int[] stride, char ordering) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, long offset, char ordering) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, char ordering) {
         return null;
     }
 
@@ -366,42 +303,7 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
-    public IComplexNDArray createComplex(DataBuffer data, int[] shape) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(DataBuffer data, int[] shape, int[] stride) {
-        return null;
-    }
-
-    @Override
     public INDArray create(DataBuffer data, int[] shape, int[] stride, long offset) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(DataBuffer buffer, int[] shape, long offset, char ordering) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(DataBuffer buffer, int[] shape, long offset) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(float[] data, int[] shape, long offset, char ordering) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(float[] data, int[] shape, long offset) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, long offset, char ordering) {
         return null;
     }
 
@@ -412,11 +314,6 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
 
     @Override
     public INDArray create(float[][] data, char ordering) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(float[] dim) {
         return null;
     }
 
@@ -447,16 +344,6 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
 
     @Override
     public INDArray create(DataBuffer data, int[] newShape, int[] newStride, long offset, char ordering) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(DataBuffer data, int[] newDims, int[] newStrides, long offset, char ordering) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(float[] data, Character order) {
         return null;
     }
 

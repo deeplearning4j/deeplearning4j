@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.BaseDL4JTest;
@@ -76,10 +92,10 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         graph.setParams(newParams);
 
         DataSet ds = new IrisDataSetIterator(150, 150).next();
-        INDArray min = ds.getFeatureMatrix().min(0);
-        INDArray max = ds.getFeatureMatrix().max(0);
-        ds.getFeatureMatrix().subiRowVector(min).diviRowVector(max.sub(min));
-        INDArray input = ds.getFeatureMatrix();
+        INDArray min = ds.getFeatures().min(0);
+        INDArray max = ds.getFeatures().max(0);
+        ds.getFeatures().subiRowVector(min).diviRowVector(max.sub(min));
+        INDArray input = ds.getFeatures();
         INDArray labels = ds.getLabels();
 
         if (PRINT_RESULTS) {
@@ -127,10 +143,10 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         graph.setParams(newParams);
 
         DataSet ds = new IrisDataSetIterator(150, 150).next();
-        INDArray min = ds.getFeatureMatrix().min(0);
-        INDArray max = ds.getFeatureMatrix().max(0);
-        ds.getFeatureMatrix().subiRowVector(min).diviRowVector(max.sub(min));
-        INDArray input = ds.getFeatureMatrix();
+        INDArray min = ds.getFeatures().min(0);
+        INDArray max = ds.getFeatures().max(0);
+        ds.getFeatures().subiRowVector(min).diviRowVector(max.sub(min));
+        INDArray input = ds.getFeatures();
         INDArray labels = ds.getLabels();
 
         if (PRINT_RESULTS) {
@@ -184,10 +200,10 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             graph.setParams(newParams);
 
             DataSet ds = new IrisDataSetIterator(150, 150).next();
-            INDArray min = ds.getFeatureMatrix().min(0);
-            INDArray max = ds.getFeatureMatrix().max(0);
-            ds.getFeatureMatrix().subiRowVector(min).diviRowVector(max.sub(min));
-            INDArray input = ds.getFeatureMatrix();
+            INDArray min = ds.getFeatures().min(0);
+            INDArray max = ds.getFeatures().max(0);
+            ds.getFeatures().subiRowVector(min).diviRowVector(max.sub(min));
+            INDArray input = ds.getFeatures();
             INDArray labels = ds.getLabels();
 
             if (PRINT_RESULTS) {
@@ -244,10 +260,10 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             graph.setParams(newParams);
 
             DataSet ds = new IrisDataSetIterator(150, 150).next();
-            INDArray min = ds.getFeatureMatrix().min(0);
-            INDArray max = ds.getFeatureMatrix().max(0);
-            ds.getFeatureMatrix().subiRowVector(min).diviRowVector(max.sub(min));
-            INDArray input = ds.getFeatureMatrix();
+            INDArray min = ds.getFeatures().min(0);
+            INDArray max = ds.getFeatures().max(0);
+            ds.getFeatures().subiRowVector(min).diviRowVector(max.sub(min));
+            INDArray input = ds.getFeatures();
             INDArray labels = ds.getLabels();
 
             if (PRINT_RESULTS) {

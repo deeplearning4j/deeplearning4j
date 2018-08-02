@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.layers.normalization;
 
 import lombok.extern.slf4j.Slf4j;
@@ -116,17 +132,33 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
 
 
-        if (helper != null && epsilon.rank() == 4) {
+        if (helper != null ){//&& epsilon.rank() == 4) {
             //Note that cudnn does not support dense (2d) batch norm case as of v5.1
             if (layerConf.isLockGammaBeta()) {
                 gamma = Nd4j.valueArrayOf(new long[] {1, shape[1]}, layerConf.getGamma());
             }
+
+            INDArray in;
+            INDArray eps;
+            if(input.rank() == 2){
+                in = input.reshape(input.ordering(), input.size(0), input.size(1), 1, 1);
+                eps = epsilon.reshape(epsilon.ordering(), epsilon.size(0), epsilon.size(1), 1, 1);
+            } else {
+                in = input;
+                eps = epsilon;
+            }
+
             // FIXME: int cast
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, ArrayUtil.toInts(shape), gamma, dGammaView, dBetaView,
+            Pair<Gradient, INDArray> ret = helper.backpropGradient(in, eps, ArrayUtil.toInts(shape), gamma, dGammaView, dBetaView,
                             layerConf.getEps(), workspaceMgr);
             if (ret != null) {
                 ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_MEAN, dGlobalMeanView);
                 ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_VAR, dGlobalVarView);
+
+                if(input.rank() == 2){
+                    INDArray e = ret.getSecond();
+                    ret.setSecond(e.reshape(e.ordering(), e.size(0), e.size(1)));
+                }
                 return ret;
             }
         }
@@ -264,15 +296,24 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             beta = getParam(BatchNormalizationParamInitializer.BETA);
         }
 
-        if (helper != null && input.rank() == 4) {
+        if (helper != null ){   //&& input.rank() == 4) {
+
+            INDArray in = x;
+            if(x.rank() == 2)
+                in = x.reshape(x.ordering(), in.size(0), in.size(1), 1, 1);
+
             //Note that cudnn does not support dense (2d) batch norm case as of v7.1
             double decay = layerConf.getDecay();
 
             // FIXME: int cast
-            INDArray ret = helper.preOutput(x, training == TrainingMode.TRAIN, ArrayUtil.toInts(shape), gamma, beta, globalMeanView,
+            INDArray ret = helper.preOutput(in, training == TrainingMode.TRAIN, ArrayUtil.toInts(shape), gamma, beta, globalMeanView,
                             globalVarView, decay, layerConf.getEps(), workspaceMgr);
             if (ret != null) {
-                return ret;
+                if(input.rank() == 2){
+                    return ret.reshape(ret.ordering(), ret.size(0), ret.size(1));
+                } else {
+                    return ret;
+                }
             }
         }
 
@@ -300,14 +341,13 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                             + " not supported " + layerId());
             }
 
-
-            var.addi(layerConf.getEps());
+            std = Transforms.sqrt(workspaceMgr.dup(ArrayType.INPUT, var).addi(layerConf().getEps()), false);
         } else {
             // Global mean and variance estimate - used after training
             mean = getParam(BatchNormalizationParamInitializer.GLOBAL_MEAN);
             var = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
+            std = Transforms.sqrt(workspaceMgr.dup(ArrayType.INPUT, var).addi(layerConf().getEps()), false);
         }
-        std = Transforms.sqrt(workspaceMgr.dup(ArrayType.INPUT, var), false);
 
         // BN(xk) = gamma*xˆ + β (applying gamma and beta for each activation)
         if (x.rank() == 2) {
@@ -396,18 +436,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         activations = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, activations);   //Most of the time this should be a no-op
         return activations;
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException(layerId());
-
-    }
-
-    @Override
-    public Layer clone() {
-        throw new UnsupportedOperationException(layerId());
-
     }
 
     @Override

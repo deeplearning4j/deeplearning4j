@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.dataset;
 
 import org.junit.Test;
@@ -23,7 +39,7 @@ public class KFoldIteratorTest extends BaseNd4jTest {
 
     @Test
     public void checkFolds() {
-        randomDataSet randomDS = new randomDataSet(new int[] {2, 3}, new int[] {3, 3, 3, 2});
+        RandomDataSet randomDS = new RandomDataSet(new int[] {2, 3}, new int[] {3, 3, 3, 2});
         DataSet allData = randomDS.getAllFolds();
         KFoldIterator kiter = new KFoldIterator(4, allData);
         int i = 0;
@@ -31,8 +47,10 @@ public class KFoldIteratorTest extends BaseNd4jTest {
             DataSet now = kiter.next();
             DataSet test = kiter.testFold();
 
-            assertEquals(now.getFeatures(), randomDS.getFoldbutk(i, true));
-            assertEquals(now.getLabels(), randomDS.getFoldbutk(i, false));
+            INDArray fExp = randomDS.getFoldbutk(i, true);
+            assertEquals(fExp, now.getFeatures());
+            INDArray lExp = randomDS.getFoldbutk(i, false);
+            assertEquals(lExp, now.getLabels());
 
             assertEquals(test.getFeatures(), randomDS.getfoldK(i, true));
             assertEquals(test.getLabels(), randomDS.getfoldK(i, false));
@@ -68,7 +86,7 @@ public class KFoldIteratorTest extends BaseNd4jTest {
 
     @Test
     public void checkCornerCaseA() {
-        randomDataSet randomDS = new randomDataSet(new int[] {2, 3}, new int[] {2, 1});
+        RandomDataSet randomDS = new RandomDataSet(new int[] {2, 3}, new int[] {2, 1});
         DataSet allData = randomDS.getAllFolds();
         KFoldIterator kiter = new KFoldIterator(2, allData);
         int i = 0;
@@ -87,7 +105,7 @@ public class KFoldIteratorTest extends BaseNd4jTest {
         assertEquals(i, 2);
     }
 
-    public class randomDataSet {
+    public class RandomDataSet {
         //only one label
         private int[] dataShape;
         private int dataRank;
@@ -99,7 +117,7 @@ public class KFoldIteratorTest extends BaseNd4jTest {
         private INDArray[] kfoldFeats;
         private INDArray[] kfoldLabels;
 
-        public randomDataSet(int[] dataShape, int[] ks) {
+        public RandomDataSet(int[] dataShape, int[] ks) {
             this.dataShape = dataShape;
             this.dataRank = this.dataShape.length;
             this.ks = ks;
@@ -134,7 +152,7 @@ public class KFoldIteratorTest extends BaseNd4jTest {
         }
 
         public INDArray getfoldK(int k, boolean feat) {
-            return feat == true ? kfoldFeats[k] : kfoldLabels[k];
+            return feat ? kfoldFeats[k] : kfoldLabels[k];
         }
 
         public INDArray getFoldbutk(int k, boolean feat) {
@@ -151,6 +169,38 @@ public class KFoldIteratorTest extends BaseNd4jTest {
                 }
             }
             return iFold;
+        }
+    }
+
+
+    @Test
+    public void test5974(){
+        DataSet ds = new DataSet(Nd4j.linspace(1,99,99).transpose(), Nd4j.linspace(1,99,99).transpose());
+
+        KFoldIterator iter = new KFoldIterator(10, ds);
+
+        int count = 0;
+        while(iter.hasNext()){
+            DataSet fold = iter.next();
+//            System.out.println(fold);
+            INDArray testFold;
+            int countTrain;
+            if(count < 9){
+                //Folds 0 to 8: should have 10 examples for test
+                testFold = Nd4j.linspace(10*count+1, 10*count+10, 10).transpose();
+                countTrain = 99 - 10;
+            } else {
+                //Fold 9 should have 9 examples for test
+                testFold = Nd4j.linspace(10*count+1, 10*count+9, 9).transpose();
+                countTrain = 99-9;
+            }
+            String s = String.valueOf(count);
+            DataSet test = iter.testFold();
+            assertEquals(s, testFold, test.getFeatures());
+            assertEquals(s, testFold, test.getLabels());
+            assertEquals(s, countTrain, fold.getFeatures().length());
+            assertEquals(s, countTrain, fold.getLabels().length());
+            count++;
         }
     }
 

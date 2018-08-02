@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.integration;
 
 import com.google.common.io.Files;
@@ -49,20 +65,6 @@ public class IntegrationTestBaselineGenerator {
 
 //        runGeneration(
 //                MLPTestCases.getMLPMnist(),
-//                MLPTestCases.getMLPMoon(),
-//                RNNTestCases.getRnnCsvSequenceClassificationTestCase1(),
-//                RNNTestCases.getRnnCsvSequenceClassificationTestCase2(),
-//                RNNTestCases.getRnnCharacterTestCase(),
-////                CNN1DTestCases.getCnn1dTestCaseSynthetic(),
-////                CNN2DTestCases.getLenetMnist(),
-//                CNN2DTestCases.getVGG16TransferTinyImagenet(),
-////                CNN2DTestCases.getYoloHouseNumbers(),
-////                CNN2DTestCases.getCnn2DSynthetic(),
-//                CNN2DTestCases.testLenetTransferDropoutRepeatability()//,
-////                CNN3DTestCases.getCnn3dTestCaseSynthetic(),
-////                UnsupervisedTestCases.getVAEMnistAnomaly(),
-////                TransferLearningTestCases.testPartFrozenResNet50(),
-////                TransferLearningTestCases.testPartFrozenNASNET()
 //        );
 
     }
@@ -89,6 +91,7 @@ public class IntegrationTestBaselineGenerator {
             //Step 0: collect metadata for the current machine, and write it (in case we need to debug anything related to
             // the comparison data)
             Properties properties = Nd4j.getExecutioner().getEnvironmentInformation();
+            Properties pCopy = new Properties();
             String comment = System.getProperty("user.name") + " - " + System.currentTimeMillis();
 //        StringBuilder sb = new StringBuilder(comment).append("\n");
             try (OutputStream os = new BufferedOutputStream(new FileOutputStream(new File(testBaseDir, "nd4jEnvironmentInfo.json")))) {
@@ -96,9 +99,9 @@ public class IntegrationTestBaselineGenerator {
                 while (e.hasMoreElements()) {
                     Object k = e.nextElement();
                     Object v = properties.get(k);
-                    properties.setProperty(k.toString(), v == null ? "null" : v.toString());
+                    pCopy.setProperty(k.toString(), v == null ? "null" : v.toString());
                 }
-                properties.store(os, comment);
+                pCopy.store(os, comment);
             }
 
 

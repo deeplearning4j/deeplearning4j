@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.dataset;
 
 import org.junit.Before;
@@ -164,17 +180,17 @@ public class NormalizerTests extends BaseNd4jTest {
             assertEquals(ds, dsCopy2);
 
             //Second: ensure time steps post normalization (and post revert) are 0.0
-            INDArray shouldBe0_1 = ds.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(),
+            INDArray shouldBe0_1 = ds.getFeatures().get(NDArrayIndex.point(1), NDArrayIndex.all(),
                             NDArrayIndex.interval(3, 5));
-            INDArray shouldBe0_2 = dsCopy1.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(),
+            INDArray shouldBe0_2 = dsCopy1.getFeatures().get(NDArrayIndex.point(1), NDArrayIndex.all(),
                             NDArrayIndex.interval(3, 5));
-            INDArray shouldBe0_3 = dsCopy2.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(),
+            INDArray shouldBe0_3 = dsCopy2.getFeatures().get(NDArrayIndex.point(1), NDArrayIndex.all(),
                             NDArrayIndex.interval(3, 5));
 
             INDArray zeros = Nd4j.zeros(shouldBe0_1.shape());
 
             for (int j = 0; j < 2; j++) {
-                System.out.println(ds.getFeatureMatrix().get(NDArrayIndex.point(j), NDArrayIndex.all(),
+                System.out.println(ds.getFeatures().get(NDArrayIndex.point(j), NDArrayIndex.all(),
                                 NDArrayIndex.all()));
                 System.out.println();
             }
@@ -187,11 +203,11 @@ public class NormalizerTests extends BaseNd4jTest {
             norm.revert(ds);
             normFitSubset.revert(dsCopy1);
             normByRow.revert(dsCopy2);
-            shouldBe0_1 = ds.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(),
+            shouldBe0_1 = ds.getFeatures().get(NDArrayIndex.point(1), NDArrayIndex.all(),
                             NDArrayIndex.interval(3, 5));
-            shouldBe0_2 = dsCopy1.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(),
+            shouldBe0_2 = dsCopy1.getFeatures().get(NDArrayIndex.point(1), NDArrayIndex.all(),
                             NDArrayIndex.interval(3, 5));
-            shouldBe0_3 = dsCopy2.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(),
+            shouldBe0_3 = dsCopy2.getFeatures().get(NDArrayIndex.point(1), NDArrayIndex.all(),
                             NDArrayIndex.interval(3, 5));
 
             assertEquals(zeros, shouldBe0_1);
