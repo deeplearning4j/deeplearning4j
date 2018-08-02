@@ -114,7 +114,13 @@ public class TruncatedNormalDistribution extends BaseRandomOp {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
-
+    @Override
+    public void setZ(INDArray z){
+        //We want all 3 args set to z for this op
+        this.x = z;
+        this.y = z;
+        this.z = z;
+    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

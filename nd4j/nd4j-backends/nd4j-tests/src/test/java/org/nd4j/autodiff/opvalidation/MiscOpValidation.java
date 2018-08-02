@@ -114,6 +114,7 @@ public class MiscOpValidation extends BaseOpValidation {
                         bcOp = sd.f().floorMod(in3, in2);
                         name = "floormod";
                         if(OpValidationSuite.IGNORE_FAILING){
+                            //https://github.com/deeplearning4j/deeplearning4j/issues/5976
                             continue;
                         }
                         break;
@@ -146,8 +147,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testGradientAutoBroadcast2() {
-        OpValidationSuite.ignoreFailing();
-
         Nd4j.getRandom().setSeed(12345);
 
         List<String> failed = new ArrayList<>();
@@ -202,6 +201,10 @@ public class MiscOpValidation extends BaseOpValidation {
                     case 7:
                         bcOp = sd.f().floorMod(in3, in2);
                         name = "floormod";
+                        if(OpValidationSuite.IGNORE_FAILING){
+                            //https://github.com/deeplearning4j/deeplearning4j/issues/5976
+                            continue;
+                        }
                         break;
                     default:
                         throw new RuntimeException();
@@ -231,7 +234,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testGradientAutoBroadcast3() {
-        OpValidationSuite.ignoreFailing();
         //These tests: output size > input sizes
 
         Nd4j.getRandom().setSeed(12345);
@@ -251,7 +253,9 @@ public class MiscOpValidation extends BaseOpValidation {
         testCases.add(new Triple<>(new long[]{3, 1, 1, 1}, new long[]{1, 4, 5, 6}, new long[]{3, 4, 5, 6}));
         testCases.add(new Triple<>(new long[]{1, 1, 1, 6}, new long[]{3, 4, 5, 6}, new long[]{3, 4, 5, 6}));
         testCases.add(new Triple<>(new long[]{1, 4, 5, 1}, new long[]{3, 1, 1, 6}, new long[]{3, 4, 5, 6}));
-        testCases.add(new Triple<>(new long[]{1, 6}, new long[]{3, 4, 5, 1}, new long[]{3, 4, 5, 6}));
+        if(!OpValidationSuite.IGNORE_FAILING) {
+            testCases.add(new Triple<>(new long[]{1, 6}, new long[]{3, 4, 5, 1}, new long[]{3, 4, 5, 6}));
+        }
 
         for (val p : testCases) {
 
@@ -296,6 +300,10 @@ public class MiscOpValidation extends BaseOpValidation {
                     case 7:
                         bcOp = sd.f().floorMod(in3, in2);
                         name = "floormod";
+                        if(OpValidationSuite.IGNORE_FAILING){
+                            //https://github.com/deeplearning4j/deeplearning4j/issues/5976
+                            continue;
+                        }
                         break;
                     default:
                         throw new RuntimeException();
@@ -316,7 +324,7 @@ public class MiscOpValidation extends BaseOpValidation {
                 TestCase tc = new TestCase(sd);
                 String error = OpValidation.validate(tc);
                 if(error != null){
-                    failed.add(name);
+                    failed.add(name + " " + i +  " - " + error);
                 }
             }
         }
@@ -413,8 +421,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testGatherGradient() {
-        OpValidationSuite.ignoreFailing();
-
         Nd4j.getRandom().setSeed(12345);
 
         List<String> failed = new ArrayList<>();
@@ -435,7 +441,8 @@ public class MiscOpValidation extends BaseOpValidation {
 
                 INDArray gatherExp = null;
                 if(rank == 2){
-                    gatherExp = Nd4j.pullRows(in.getArr(), dim, new int[]{0,3,7});
+                    int tadDim = dim == 0 ? 1 : 0;  //Swap: pullRows dim is "tensor along dimension" vs. gather's "index is value for this dimension"
+                    gatherExp = Nd4j.pullRows(in.getArr(), tadDim, new int[]{0,3,7});
                 }
 
                 SDVariable gather = sd.gather(in, indices, dim);
@@ -443,10 +450,11 @@ public class MiscOpValidation extends BaseOpValidation {
 
                 SDVariable loss = sd.standardDeviation("loss", gather, true, Integer.MAX_VALUE);
 
-                String msg = "rank=" + rank + ", dim=" + dim;
+                String msg = "rank=" + rank + " dim=" + dim;
 
-                TestCase tc = new TestCase(sd).testName(msg);
-                tc.testName(msg);
+                TestCase tc = new TestCase(sd)
+                        .testName(msg)
+                        .gradCheckSkipVariables(indices.getVarName());
 
                 if (gatherExp != null) {
                     tc.expected(gather, gatherExp);
@@ -454,7 +462,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
                 String error = OpValidation.validate(tc);
                 if(error != null){
-                    failed.add(msg);
+                    failed.add(msg + " - " + error);
                 }
             }
         }
@@ -1124,7 +1132,7 @@ public class MiscOpValidation extends BaseOpValidation {
         OpValidationSuite.ignoreFailing();
 
         SameDiff sd = SameDiff.create();
-        SDVariable out = sd.linspace(1,10,10);
+        SDVariable out = sd.linspace("linspace", 1,10,10);
         SDVariable loss = out.std(true);
 
         String err = OpValidation.validate(new TestCase(sd)

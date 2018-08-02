@@ -133,14 +133,6 @@ public class LayerOpValidation extends BaseOpValidation {
         }
     }
 
-
-    @Test
-    public void testLinear() {
-        OpValidationSuite.ignoreFailing();
-
-        fail();
-    }
-
     @Test
     public void testConv2d() {
         OpValidationSuite.ignoreFailing();

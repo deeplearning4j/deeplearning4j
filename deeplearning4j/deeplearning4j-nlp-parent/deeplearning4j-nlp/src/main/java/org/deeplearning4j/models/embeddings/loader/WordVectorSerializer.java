@@ -2067,6 +2067,9 @@ public class WordVectorSerializer {
     public static void writeVocabCache(@NonNull VocabCache<VocabWord> vocabCache, @NonNull OutputStream stream)
                     throws IOException {
         try (PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(stream, StandardCharsets.UTF_8)))) {
+            // saving general vocab information
+            writer.println("" + vocabCache.numWords() + " " + vocabCache.totalNumberOfDocs() + " " + vocabCache.totalWordOccurrences());
+
             for (int x = 0; x < vocabCache.numWords(); x++) {
                 VocabWord word = vocabCache.elementAtIndex(x);
                 writer.println(word.toJSON());
@@ -2097,17 +2100,39 @@ public class WordVectorSerializer {
      * @throws IOException
      */
     public static VocabCache<VocabWord> readVocabCache(@NonNull InputStream stream) throws IOException {
-        AbstractCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
-        VocabWordFactory factory = new VocabWordFactory();
+        val vocabCache = new AbstractCache.Builder<VocabWord>().build();
+        val factory = new VocabWordFactory();
+        boolean firstLine = true;
+        long totalWordOcc = -1L;
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                VocabWord word = factory.deserialize(line);
+                // try to treat first line as header with 3 digits
+                if (firstLine) {
+                    firstLine = false;
+                    val split = line.split("\\ ");
+
+                    if (split.length != 3)
+                        continue;
+
+                    try {
+                        vocabCache.setTotalDocCount(Long.valueOf(split[1]));
+                        totalWordOcc = Long.valueOf(split[2]);
+                        continue;
+                    } catch (NumberFormatException e) {
+                        // no-op
+                    }
+                }
+
+                val word = factory.deserialize(line);
 
                 vocabCache.addToken(word);
                 vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
             }
         }
+
+        if (totalWordOcc >= 0)
+            vocabCache.setTotalWordOccurences(totalWordOcc);
 
         return vocabCache;
     }

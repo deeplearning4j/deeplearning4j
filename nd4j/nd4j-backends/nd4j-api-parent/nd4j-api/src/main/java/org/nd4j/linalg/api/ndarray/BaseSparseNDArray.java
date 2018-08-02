@@ -1427,16 +1427,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public void setStride(int... stride) {
-
-    }
-
-    @Override
-    public void setShape(int... shape) {
-
-    }
-    
-    @Override
     public void setShapeAndStride(int[] shape, int[] stride) {
 
     }
