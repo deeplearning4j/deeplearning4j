@@ -5,7 +5,6 @@
 #include "testlayers.h"
 #include <memory>
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 #include <NativeOps.h>
 #include <types/float8.h>
 #include "type_conversions.h"
