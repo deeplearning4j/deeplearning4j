@@ -2626,10 +2626,10 @@ TEST_F(DeclarableOpsTests8, NormalizeMoments_SGO_1) {
     NDArray<double>* outputMeans = results->at(0);    
     NDArray<double>* outputDeviance = results->at(1);    
 
-    outputMeans->printIndexedBuffer("Means");
-    outputDeviance->printIndexedBuffer("Variance");
-    deviance->printIndexedBuffer("Expected");
-    means->printIndexedBuffer("Expected means");
+//    outputMeans->printIndexedBuffer("Means");
+//    outputDeviance->printIndexedBuffer("Variance");
+//    deviance->printIndexedBuffer("Expected");
+//    means->printIndexedBuffer("Expected means");
     ASSERT_TRUE(means->isSameShape(outputMeans));
     ASSERT_TRUE(means->equalsTo(outputMeans));    
     ASSERT_TRUE(deviance->isSameShape(outputDeviance));
