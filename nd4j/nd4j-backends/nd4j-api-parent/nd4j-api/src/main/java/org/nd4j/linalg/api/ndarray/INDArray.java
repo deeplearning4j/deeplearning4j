@@ -2002,9 +2002,6 @@ public interface INDArray extends Serializable {
      * @deprecated, use {@link #reshape(int...) }
      */
     @Deprecated
-    void setStride(int... stride);
-
-    @Deprecated
     void setStride(long... stride);
 
     /**
@@ -2012,8 +2009,7 @@ public interface INDArray extends Serializable {
      * @param shape
      * @deprecated, use {@link #reshape(int...) }
      */
-    @Deprecated
-    void setShape(int... shape);
+
 
     @Deprecated
     void setShape(long... shape);
