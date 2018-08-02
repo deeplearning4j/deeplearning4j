@@ -37,9 +37,7 @@ public class JaccardDistance extends BaseAccumulation {
 
     public JaccardDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
-        extraArgs = new Object[2];
-        extraArgs[0] = 0.0f;
-        extraArgs[1] = 0.0f;
+        extraArgs = new Object[]{0.0f, 0.0f};
     }
 
     public JaccardDistance() {
@@ -49,33 +47,25 @@ public class JaccardDistance extends BaseAccumulation {
     public JaccardDistance(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
         passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[2];
-        extraArgs[0] = 0.0f;
-        extraArgs[1] = 0.0f;
+        extraArgs = new Object[]{0.0f, 0.0f};
     }
 
     public JaccardDistance(INDArray x, INDArray y, long n) {
         super(x, y, n);
         passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[2];
-        extraArgs[0] = 0.0f;
-        extraArgs[1] = 0.0f;
+        extraArgs = new Object[]{0.0f, 0.0f};
     }
 
     public JaccardDistance(INDArray x) {
         super(x);
         passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[2];
-        extraArgs[0] = 0.0f;
-        extraArgs[1] = 0.0f;
+        extraArgs = new Object[]{0.0f, 0.0f};
     }
 
     public JaccardDistance(INDArray x, INDArray y) {
         super(x, y);
         passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[2];
-        extraArgs[0] = 0.0f;
-        extraArgs[1] = 0.0f;
+        extraArgs = new Object[]{0.0f, 0.0f};
     }
 
     public JaccardDistance(INDArray x, INDArray y, INDArray z, boolean allDistances) {
@@ -86,6 +76,11 @@ public class JaccardDistance extends BaseAccumulation {
     public JaccardDistance(INDArray x, INDArray y, boolean allDistances) {
         this(x, y);
         this.isComplex = allDistances;
+    }
+
+    public JaccardDistance(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){
+        super(x, y, z, newFormat, keepDims, dimensions);
+        extraArgs = new Object[]{0.0f, 0.0f};
     }
 
     @Override
