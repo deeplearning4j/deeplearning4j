@@ -1216,18 +1216,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public void setShape(int[] shape) {
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), stride(), 0, elementWiseStride(), ordering()));
-    }
-
-    @Override
     public void setShape(long[] shape) {
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride(), 0, elementWiseStride(), ordering()));
-    }
-
-    @Override
-    public void setStride(int[] stride) {
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape(), ArrayUtil.toLongArray(stride), 0, elementWiseStride(), ordering()));
     }
 
     @Override

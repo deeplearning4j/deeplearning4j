@@ -171,7 +171,7 @@ public class WorkspaceTests extends BaseDL4JTest {
             }
 
             cg.setInputs(input);
-            cg.setLabels(Nd4j.rand(1, 3, 5));
+            cg.setLabels(Nd4j.rand(new int[]{1, 3, 5}));
             cg.computeGradientAndScore();
         }
     }
@@ -203,7 +203,7 @@ public class WorkspaceTests extends BaseDL4JTest {
             }
 
             net.setInput(input);
-            net.setLabels(Nd4j.rand(1, 3, 5));
+            net.setLabels(Nd4j.rand(new int[]{1, 3, 5}));
             net.computeGradientAndScore();
         }
     }
