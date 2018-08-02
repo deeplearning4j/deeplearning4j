@@ -4693,9 +4693,9 @@ void NativeOps::specialConcatInt(
         int numArrays,
         Nd4jPointer *data,
         Nd4jPointer *inputShapeInfo,
-        Nd4jInt *result,
+        int *result,
         Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
-    nd4j::SpecialMethods<Nd4jInt>::concatCpuGeneric(
+    nd4j::SpecialMethods<int>::concatCpuGeneric(
             dimension,
             numArrays,
             data,
@@ -4838,7 +4838,7 @@ void NativeOps::concatInt(
         int numArrays,
         Nd4jPointer *data,
         Nd4jPointer *inputShapeInfo,
-        Nd4jInt *result,
+        int *result,
         Nd4jLong *resultShapeInfo,
         Nd4jPointer *tadPointers,
         Nd4jPointer *offsetPointers) {

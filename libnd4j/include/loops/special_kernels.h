@@ -402,10 +402,10 @@ extern "C" __global__ void concatKernelScalarInt(int dimension,
 													int numArrays,
 													Nd4jPointer *data,
 													Nd4jPointer *inputShapeInfo,
-												    Nd4jInt *result,
+												    int *result,
 													Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
 
-	concatKernelScalarGeneric<Nd4jInt>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
+	concatKernelScalarGeneric<int>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
 }
 
 extern "C" __global__ void concatKernelScalarLong(int dimension,
@@ -490,10 +490,10 @@ extern "C" __global__ void concatKernelHStackInt(int dimension,
 												int numArrays,
 												Nd4jPointer *data,
 												Nd4jPointer *inputShapeInfo,
-												Nd4jInt *result,
+												int *result,
 												Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
 
-	concatKernelHStackGeneric<Nd4jInt>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
+	concatKernelHStackGeneric<int>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
 }
 
 extern "C" __global__ void concatKernelHStackLong(int dimension,
@@ -579,10 +579,10 @@ extern "C" __global__ void concatKernelVStackInt(int dimension,
 													int numArrays,
 													Nd4jPointer *data,
 													Nd4jPointer *inputShapeInfo,
-													Nd4jInt *result,
+													int *result,
 													Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
 
-	concatKernelVStackGeneric<Nd4jInt>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
+	concatKernelVStackGeneric<int>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
 }
 
 
@@ -620,9 +620,9 @@ extern "C" __global__ void concatKernelInt(int dimension,
 											  int numArrays,
 											  Nd4jPointer *data,
 											  Nd4jPointer *inputShapeInfo,
-											  Nd4jInt *result,
+											  int *result,
 											  Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers, Nd4jLong *zTadShape, Nd4jLong *zOffsets) {
-	concatKernelGeneric<Nd4jInt>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
+	concatKernelGeneric<int>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
 }
 
 extern "C" __global__ void concatKernelLong(int dimension,

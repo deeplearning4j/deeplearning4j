@@ -9,7 +9,6 @@
 
 typedef void* Nd4jPointer;
 typedef long long Nd4jLong;
-typedef int Nd4jInt;
 typedef int Nd4jStatus;
 
 #define ND4J_STATUS_OK            0

@@ -3129,7 +3129,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 int numArrays,
                 @Cast("Nd4jPointer*") PointerPointer data,
                 @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
-                @Cast("Nd4jInt*") IntPointer result,
+                @Cast("int*") IntPointer result,
                 @Cast("Nd4jLong*") LongPointer resultShapeInfo,
                 @Cast("Nd4jPointer*") PointerPointer tadPointers,
                 @Cast("Nd4jPointer*") PointerPointer offsetPointers);
@@ -3139,7 +3139,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 int numArrays,
                 @Cast("Nd4jPointer*") PointerPointer data,
                 @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
-                @Cast("Nd4jInt*") IntBuffer result,
+                @Cast("int*") IntBuffer result,
                 @Cast("Nd4jLong*") LongBuffer resultShapeInfo,
                 @Cast("Nd4jPointer*") PointerPointer tadPointers,
                 @Cast("Nd4jPointer*") PointerPointer offsetPointers);
@@ -3149,7 +3149,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 int numArrays,
                 @Cast("Nd4jPointer*") PointerPointer data,
                 @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
-                @Cast("Nd4jInt*") int[] result,
+                @Cast("int*") int[] result,
                 @Cast("Nd4jLong*") long[] resultShapeInfo,
                 @Cast("Nd4jPointer*") PointerPointer tadPointers,
                 @Cast("Nd4jPointer*") PointerPointer offsetPointers);
@@ -3302,7 +3302,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 int numArrays,
                 @Cast("Nd4jPointer*") PointerPointer data,
                 @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
-                @Cast("Nd4jInt*") IntPointer result,
+                @Cast("int*") IntPointer result,
                 @Cast("Nd4jLong*") LongPointer resultShapeInfo,
                 @Cast("Nd4jPointer*") PointerPointer tadPointers,
                 @Cast("Nd4jPointer*") PointerPointer offsetPointers);
@@ -3312,7 +3312,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 int numArrays,
                 @Cast("Nd4jPointer*") PointerPointer data,
                 @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
-                @Cast("Nd4jInt*") IntBuffer result,
+                @Cast("int*") IntBuffer result,
                 @Cast("Nd4jLong*") LongBuffer resultShapeInfo,
                 @Cast("Nd4jPointer*") PointerPointer tadPointers,
                 @Cast("Nd4jPointer*") PointerPointer offsetPointers);
@@ -3322,7 +3322,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 int numArrays,
                 @Cast("Nd4jPointer*") PointerPointer data,
                 @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
-                @Cast("Nd4jInt*") int[] result,
+                @Cast("int*") int[] result,
                 @Cast("Nd4jLong*") long[] resultShapeInfo,
                 @Cast("Nd4jPointer*") PointerPointer tadPointers,
                 @Cast("Nd4jPointer*") PointerPointer offsetPointers);

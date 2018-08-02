@@ -82,7 +82,7 @@ public class Nd4jCudaPresets implements InfoMapper {
                 .put(new Info("Nd4jPointer").cast().valueTypes("Pointer").pointerTypes("PointerPointer"))
                 .put(new Info("Nd4jLong").cast().valueTypes("long").pointerTypes("LongPointer", "LongBuffer",
                         "long[]"))
-                .put(new Info("Nd4jInt").cast().valueTypes("int").pointerTypes("IntPointer", "IntBuffer",
+                .put(new Info("int").cast().valueTypes("int").pointerTypes("IntPointer", "IntBuffer",
                         "int[]"))
                 .put(new Info("Nd4jStatus").cast().valueTypes("int").pointerTypes("IntPointer", "IntBuffer",
                         "int[]"))
