@@ -78,24 +78,23 @@ namespace nd4j {
         }
 
         CUSTOM_OP_IMPL(floormod_bp, 3, 2, false, 0, 0) {
-            // PLEASE NOTE: we're just passing eps down the line here
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
             auto epsNext = INPUT_VARIABLE(2);
 
             auto gradX = OUTPUT_VARIABLE(0);
             auto gradY = OUTPUT_VARIABLE(1);
-
-//            gradY->assign();
             gradX->assign(epsNext);
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::FloorMod<T>>(x, y, gradY);
-            if (tZ == nullptr)
-                return ND4J_STATUS_KERNEL_FAILURE;
-            else if (tZ != gradY) {
-                OVERWRITE_RESULT(tZ);
+            nd4j::ops::floormod<T> op;
+            std::unique_ptr<ResultSet<T>> tmpResult(op.execute({x, y}, {}, {})); 
+
+            if (gradY->rankOf() == gradX->rankOf())
+                epsNext->template applyPairwiseTransform<simdOps::Multiply<T>>(tmpResult->at(0), gradY, nullptr);
+            else // epsNext is greater than gradY
+            {
+                for (Nd4jLong e = 0; e < gradY->lengthOf(); e++)
+                    (*gradY)(e) = (*tmpResult->at(0))(e) * (*epsNext)(e);
             }
-            
-            epsNext->template applyPairwiseTransform<simdOps::Multiply<T>>(gradY, gradY, nullptr);
             return Status::OK();
         }
 
