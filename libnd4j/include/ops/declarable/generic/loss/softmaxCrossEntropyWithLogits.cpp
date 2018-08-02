@@ -41,7 +41,9 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0) {
     REQUIRE_TRUE(classesDim < logits->rankOf(), 0, "SOFTMAX_CROSS_ENTROPY_LOSS_WITH_LOGITS OP: class dimension must be smaller than rank of logits, but got %i and %i correspondingly !", classesDim, logits->rankOf());
 	
 	T extraParams[1] = {static_cast<T>(classesDim)};
-    NDArray<T> logExp = logits->template transform<simdOps::Exp<T>>();
+
+    NDArray<T> maxAlongDim = logits->template reduceAlongDims<simdOps::Max<T>>({classesDim}, true);
+    NDArray<T> logExp = (*logits - maxAlongDim).template transform<simdOps::Exp<T>>();
     NDArray<T> logSoftMax = ( logExp / logExp.template reduceAlongDims<simdOps::Sum<T>>({classesDim}, true) ).template transform<simdOps::Log<T>>();
     
 	output->assign( -((*labels) * logSoftMax).template reduceAlongDims<simdOps::Sum<T>>({classesDim}) );
