@@ -159,7 +159,7 @@ namespace helpers {
         Nd4jLong n = input->sizeAt(-1);
         Nd4jLong n2 = n * n;
 
-        std::unique_ptr<NDArray<T>> matrix(new NDArray<T>({n, n})); //, block.getWorkspace());
+        std::unique_ptr<NDArray<T>> matrix(new NDArray<T>('c', {n, n})); //, block.getWorkspace());
 //#pragma omp parallel for if(output->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < output->lengthOf(); e++) {
             for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
@@ -184,11 +184,11 @@ namespace helpers {
         auto totalCount = output->lengthOf() / n2;
         
         output->assign((T)0.0); // fill up output tensor with zeros
-        std::unique_ptr<NDArray<T>> matrix(new NDArray<T>({n, n})); //, block.getWorkspace());
-        std::unique_ptr<NDArray<T>> compound(new NDArray<T>({n, n})); //, block.getWorkspace());
-        std::unique_ptr<NDArray<T>> permutation(new NDArray<T>({n, n}));
-        std::unique_ptr<NDArray<T>> lowerMatrix(new NDArray<T>({n, n}));
-        std::unique_ptr<NDArray<T>> upperMatrix(new NDArray<T>({n, n}));
+        std::unique_ptr<NDArray<T>> matrix(new NDArray<T>('c', {n, n})); //, block.getWorkspace());
+        std::unique_ptr<NDArray<T>> compound(new NDArray<T>('c', {n, n})); //, block.getWorkspace());
+        std::unique_ptr<NDArray<T>> permutation(new NDArray<T>('c', {n, n}));
+        std::unique_ptr<NDArray<T>> lowerMatrix(new NDArray<T>('c', {n, n}));
+        std::unique_ptr<NDArray<T>> upperMatrix(new NDArray<T>('c', {n, n}));
 
         for (int e = 0; e < totalCount; e++) {
             if (e)

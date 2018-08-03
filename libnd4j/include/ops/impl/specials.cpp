@@ -369,4 +369,6 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
     template class ND4J_EXPORT SpecialMethods<float>;
     template class ND4J_EXPORT SpecialMethods<float16>;
     template class ND4J_EXPORT SpecialMethods<double>;
+    template class ND4J_EXPORT SpecialMethods<int>;
+    template class ND4J_EXPORT SpecialMethods<Nd4jLong>;
 }

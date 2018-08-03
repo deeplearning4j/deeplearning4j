@@ -97,7 +97,7 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
     helpers::reverseSequence<T>(x, seqLen, revOut, 0, 1);
 
     // backward steps    
-    NDArray<T>* hBW = new NDArray<T>({time, bS, numUnitsBW}, block.getWorkspace());
+    NDArray<T>* hBW = new NDArray<T>('c', {time, bS, numUnitsBW}, block.getWorkspace());
     helpers::rnnTimeLoop<T>({revOut, WxBW, WhBW, bBW, h0BW, maxTimeStep}, hBW, hBWFinal);
 
     // reverse hBW 

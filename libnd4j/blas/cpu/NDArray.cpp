@@ -130,26 +130,6 @@ namespace nd4j {
     }
 
 ////////////////////////////////////////////////////////////////////////
-    template <typename T>
-    NDArray<T>::NDArray(std::initializer_list<Nd4jLong> s, nd4j::memory::Workspace* workspace) {
-        std::vector<Nd4jLong> shape(s);
-        int rank = (int) shape.size();
-
-
-        ALLOCATE(_shapeInfo, workspace, shape::shapeInfoLength(rank), Nd4jLong);
-
-        shape::shapeBuffer(rank, shape.data(), _shapeInfo);
-
-        this->_length = shape::length(_shapeInfo);
-
-        ALLOCATE(_buffer, workspace, this->_length, T);
-
-        _isShapeAlloc = true;
-        _isBuffAlloc = true;
-        _workspace = workspace;
-    }
-
-////////////////////////////////////////////////////////////////////////
 template <typename T>
 NDArray<T>::NDArray(T scalar) {
     nd4j::memory::Workspace* workspace = nullptr;
