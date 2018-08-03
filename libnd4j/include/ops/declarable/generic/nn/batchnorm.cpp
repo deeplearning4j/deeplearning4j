@@ -41,12 +41,10 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
     const bool applyOffset = (bool)INT_ARG(1);
     const T    epsilon     = T_ARG(0);
 
-    if(block.width() > 3 && applyScale)
+    if(applyScale)
         gamma = INPUT_VARIABLE(3);    
-    if(block.width() > 3 && !applyScale && applyOffset)
-        beta = INPUT_VARIABLE(3);
-    else if(block.width() > 4 && applyOffset)
-        beta = INPUT_VARIABLE(4);
+    if(applyOffset)
+        beta = INPUT_VARIABLE(3 + static_cast<int>(applyScale));    
 
     std::vector<const NDArray<T>*> inArrs(block.width());
     for(int i = 0; i < block.width(); ++i)
@@ -55,18 +53,28 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
     // check whether all input shapes are mutually broadcastable
     Nd4jLong* outShapeInfo = nullptr;
     const bool areShapesOk = ShapeUtils<T>::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
-    REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM op: the shapes of input arrays are not mutually broadcastable !");    
+    REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM op: the shapes of input arrays are not mutually broadcastable !");
+    RELEASE(outShapeInfo, block.getWorkspace());
 
     // normalized output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
 
-    NDArray<T> sigmaInv = (*variance + epsilon).template transform<simdOps::RSqrt<T>>();
+    NDArray<T> sigmaInvGam = (*variance + epsilon).template transform<simdOps::RSqrt<T>>();
     if(applyScale)
-        sigmaInv *= *gamma;
+        sigmaInvGam *= *gamma;
+
+    NDArray<T> inputMinusMean;
+    if(!input->isSameShape(output) && !mean->isSameShape(output)) {
+        NDArray<T> inputTiled(output, false, block.getWorkspace());
+        input->tile(inputTiled);
+        inputMinusMean = inputTiled - *mean;
+    }
+    else
+        inputMinusMean = *input - *mean;       
 
     if (applyOffset)
-        output->assign((*input) * sigmaInv - (*mean) * sigmaInv + *beta);
+        output->assign(inputMinusMean * sigmaInvGam + *beta);
     else 
-        output->assign((*input) * sigmaInv - (*mean) * sigmaInv);
+        output->assign(inputMinusMean * sigmaInvGam);
 
     STORE_RESULT(*output);
  
@@ -90,7 +98,7 @@ DECLARE_SHAPE_FN(batchnorm) {
 
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(batchnorm_bp, 4, 5, false, 1, 2) {
+CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 
     NDArray<T>* input    = INPUT_VARIABLE(0);
     NDArray<T>* mean     = INPUT_VARIABLE(1);
@@ -99,36 +107,135 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 5, false, 1, 2) {
     NDArray<T>* beta     = nullptr;
     NDArray<T>* dLdO     = nullptr;                 // next epsilon
 
-    NDArray<T>* output   = OUTPUT_VARIABLE(0);
+    NDArray<T>* dLdI = OUTPUT_VARIABLE(0);
+    NDArray<T>* dLdM = OUTPUT_VARIABLE(1);
+    NDArray<T>* dLdV = OUTPUT_VARIABLE(2);
+    NDArray<T>* dLdG = nullptr;
+    NDArray<T>* dLdB = nullptr;
 
     const bool applyScale  = (bool)INT_ARG(0);
     const bool applyOffset = (bool)INT_ARG(1);
     const T    epsilon     = T_ARG(0);
 
-    if(applyScale)
-        gamma = INPUT_VARIABLE(3);    
-    if(!applyScale && applyOffset)
-        beta = INPUT_VARIABLE(3);
-    else if(block.width() > 4 && applyScale && applyOffset)
-        beta = INPUT_VARIABLE(4);
-    if(!applyScale && !applyOffset)
-        dLdO = INPUT_VARIABLE(3);
-    else if((applyScale && !applyOffset) || (!applyScale && applyOffset))
-        dLdO = INPUT_VARIABLE(4);
-    else
-        dLdO = INPUT_VARIABLE(5);
+    const int dLdONum = static_cast<int>(applyScale) + static_cast<int>(applyOffset);
 
+    if(applyScale) {
+        gamma = INPUT_VARIABLE(3);
+        dLdG  = OUTPUT_VARIABLE(3);
+    }
+    if(applyOffset) {
+        beta = INPUT_VARIABLE(3 + static_cast<int>(applyScale));
+        dLdB = OUTPUT_VARIABLE(3 + static_cast<int>(applyScale));
+    }
+        
+    dLdO = INPUT_VARIABLE(3 + dLdONum);
+    
     std::vector<const NDArray<T>*> inArrs(block.width());
-    for(int i = 0; i < block.width(); ++i)
+    for(int i = 0; i < 4 + dLdONum; ++i)
         inArrs[i] = INPUT_VARIABLE(i);
 
     // check whether all input shapes are mutually broadcastable
     Nd4jLong* outShapeInfo = nullptr;
     const bool areShapesOk = ShapeUtils<T>::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
-    REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM op: the shapes of input arrays are not mutually broadcastable !");    
+    REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM_BP op: the shapes of input arrays are not mutually broadcastable !");    
+    RELEASE(outShapeInfo, block.getWorkspace());
 
+    // ***** calculations ***** //
+
+    NDArray<T> sigmaInv = (*variance + epsilon).template transform<simdOps::RSqrt<T>>();    
+    
+    NDArray<T> sigmaInvGamdLdO = -sigmaInv * *dLdO;
+    if(applyScale)
+        sigmaInvGamdLdO *= *gamma;
+
+    NDArray<T> inputMinusMean;
+    if(!input->isSameShape(dLdO) && !mean->isSameShape(dLdO)) {
+        NDArray<T> inputTiled(dLdO, false, block.getWorkspace());
+        input->tile(inputTiled);
+        inputMinusMean = inputTiled - *mean;
+    }
+    else
+        inputMinusMean = *input - *mean;
+
+    // dLdI
+    if(!dLdI->isSameShape(dLdO))
+        dLdI->assign( (-sigmaInvGamdLdO).template reduceAlongDims<simdOps::Sum<T>>(ShapeUtils<T>::evalBroadcastBackwardAxis(dLdI->getShapeInfo(), dLdO->getShapeInfo())) );        
+    else
+        dLdI->assign(-sigmaInvGamdLdO);
+
+    // dLdM
+    if(!dLdM->isSameShape(dLdO))
+        dLdM->assign( sigmaInvGamdLdO.template reduceAlongDims<simdOps::Sum<T>>(ShapeUtils<T>::evalBroadcastBackwardAxis(dLdM->getShapeInfo(), dLdO->getShapeInfo())) );        
+    else
+        dLdM->assign(sigmaInvGamdLdO);
+
+    // dLdV
+    if(!dLdV->isSameShape(dLdO)) {
+        dLdV->assign( (sigmaInv * sigmaInv * sigmaInvGamdLdO * inputMinusMean * static_cast<T>(0.5)).template reduceAlongDims<simdOps::Sum<T>>(ShapeUtils<T>::evalBroadcastBackwardAxis(dLdV->getShapeInfo(), dLdO->getShapeInfo())) );
+    }
+    else
+        dLdV->assign(sigmaInv * sigmaInv * sigmaInvGamdLdO * inputMinusMean * static_cast<T>(0.5));
+
+    // dLdG
+    if(applyScale) {
+        if(!dLdG->isSameShape(dLdO))
+            dLdG->assign( (sigmaInv * inputMinusMean * *dLdO).template reduceAlongDims<simdOps::Sum<T>>(ShapeUtils<T>::evalBroadcastBackwardAxis(dLdG->getShapeInfo(), dLdO->getShapeInfo())) );
+        else
+            dLdG->assign(sigmaInv * inputMinusMean * *dLdO);
+    }
+
+    // dLdB
+    if(applyOffset) {
+        if(!dLdB->isSameShape(dLdO))
+            dLdB->assign(dLdO->template reduceAlongDims<simdOps::Sum<T>>(ShapeUtils<T>::evalBroadcastBackwardAxis(dLdB->getShapeInfo(), dLdO->getShapeInfo())) );
+        else
+            dLdB->assign(dLdO);
+    }
+
+    return Status::OK();
 }
 
+//////////////////////////////////////////////////////////////////////////
+DECLARE_SHAPE_FN(batchnorm_bp) {
+
+    const bool applyScale  = (bool)INT_ARG(0);
+    const bool applyOffset = (bool)INT_ARG(1);
+
+    const int dLdONum = static_cast<int>(applyScale) + static_cast<int>(applyOffset);
+
+    std::vector<const NDArray<T>*> inArrs(block.width());
+    for(int i = 0; i < 4 + dLdONum; ++i)
+        inArrs[i] = INPUT_VARIABLE(i);
+
+    // check whether all input shapes are mutually broadcastable
+    Nd4jLong* outShapeInfo = nullptr;
+    const bool areShapesOk = ShapeUtils<T>::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
+    REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM_BP op: the shapes of input arrays are not mutually broadcastable !");    
+    RELEASE(outShapeInfo, block.getWorkspace());
+
+    Nd4jLong* dLdIShapeInfo(nullptr), *dLdMShapeInfo(nullptr), *dLdVShapeInfo(nullptr), *dLdGShapeInfo(nullptr), *dLdBShapeInfo(nullptr);
+    COPY_SHAPE(inputShape->at(0), dLdIShapeInfo);
+    COPY_SHAPE(inputShape->at(1), dLdMShapeInfo);
+    COPY_SHAPE(inputShape->at(2), dLdVShapeInfo);
+
+    if(applyScale) {
+        COPY_SHAPE(inputShape->at(3), dLdGShapeInfo);
+    }
+    if(applyOffset){
+        COPY_SHAPE(inputShape->at(3 + static_cast<int>(applyScale)), dLdBShapeInfo);
+    }
+
+    if(!applyScale && !applyOffset)
+        return SHAPELIST(dLdIShapeInfo, dLdMShapeInfo, dLdVShapeInfo);
+
+    if(applyScale && !applyOffset)
+        return SHAPELIST(dLdIShapeInfo, dLdMShapeInfo, dLdVShapeInfo, dLdGShapeInfo);
+
+    if(!applyScale && applyOffset)
+        return SHAPELIST(dLdIShapeInfo, dLdMShapeInfo, dLdVShapeInfo, dLdBShapeInfo);
+
+    return SHAPELIST(dLdIShapeInfo, dLdMShapeInfo, dLdVShapeInfo, dLdGShapeInfo, dLdBShapeInfo);
+}
         // //////////////////////////////////////////////////////////////////////////
         // CONFIGURABLE_OP_IMPL(batchnorm_bp, 5, 1, true, 0, 1) {
 

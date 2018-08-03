@@ -2106,3 +2106,79 @@ TEST_F(DeclarableOpsTests9, multiply_bp_test8) {
 
     ASSERT_TRUE(isGradCorrect);
 }
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, batchnorm_bp_test1) {
+    
+    NDArray<double> input   ('c', {3,2});
+    NDArray<double> mean    ('c', {2,3,2});
+    NDArray<double> variance('c', {2,3,1,3,2});
+    NDArray<double> gamma   ('c', {1,1});
+    NDArray<double> beta    ('c', {1,2});
+    NDArray<double> dLdO    ('c', {2,3,2,3,2});
+    
+    input.linspace(0.1, 0.1);
+    mean.assign(1.);
+    variance.assign(0.5);
+    gamma.assign(1.2);
+    beta.assign(1.);
+
+    const OpArgsHolder<double> argsHolderFF({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1});
+    const OpArgsHolder<double> argsHolderBP({&input, &mean, &variance, &gamma, &beta, &dLdO}, {1e-5}, {1,1});
+
+    nd4j::ops::batchnorm<double> opFF;
+    nd4j::ops::batchnorm_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, batchnorm_bp_test2) {
+    
+    NDArray<double> input   ('c', {2,3,2,3,2});
+    NDArray<double> mean    ('c', {2,3,2});
+    NDArray<double> variance('c', {2,3,1,3,1});
+    NDArray<double> gamma   ('c', {1,1});
+    NDArray<double> dLdO    ('c', {2,3,2,3,2});
+    
+    input.linspace(0.1, 0.1);
+    mean.assign(1.);
+    variance.assign(0.5);
+    gamma.assign(1.2);
+
+    const OpArgsHolder<double> argsHolderFF({&input, &mean, &variance, &gamma}, {1e-5}, {1,0});
+    const OpArgsHolder<double> argsHolderBP({&input, &mean, &variance, &gamma, &dLdO}, {1e-5}, {1,0});
+
+    nd4j::ops::batchnorm<double> opFF;
+    nd4j::ops::batchnorm_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, batchnorm_bp_test3) {
+    
+    NDArray<double> input   ('c', {2,3,1,3});
+    NDArray<double> mean    ('c', {1,3,2,1});
+    NDArray<double> variance('c', {2,1,2,3});
+    NDArray<double> dLdO    ('c', {2,3,2,3});
+    
+    input.linspace(0.1, 0.1);
+    mean.assign(1.);
+    variance.assign(0.5);
+
+    const OpArgsHolder<double> argsHolderFF({&input, &mean, &variance}, {1e-5}, {0,0});
+    const OpArgsHolder<double> argsHolderBP({&input, &mean, &variance, &dLdO}, {1e-5}, {0,0});
+
+    nd4j::ops::batchnorm<double> opFF;
+    nd4j::ops::batchnorm_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+

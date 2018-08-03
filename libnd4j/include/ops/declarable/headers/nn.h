@@ -134,7 +134,7 @@ namespace nd4j {
         * dL/dBeta
         */
         #if NOT_EXCLUDED(OP_batchnorm)
-        DECLARE_CUSTOM_OP(batchnorm_bp, 4, 5, false, 1, 2);
+        DECLARE_CUSTOM_OP(batchnorm_bp, 4, 3, false, 1, 2);
         #endif
 
 
