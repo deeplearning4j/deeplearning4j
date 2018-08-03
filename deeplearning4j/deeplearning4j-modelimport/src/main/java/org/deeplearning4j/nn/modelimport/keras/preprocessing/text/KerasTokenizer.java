@@ -17,10 +17,16 @@
 package org.deeplearning4j.nn.modelimport.keras.preprocessing.text;
 
 import lombok.Data;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
+
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils.parseJsonString;
 
 /**
  * Java port of Keras' text tokenizer, see https://keras.io/preprocessing/text/ for more information.
@@ -87,6 +93,46 @@ public class KerasTokenizer {
         this(null, DEFAULT_FILTER, true, DEFAULT_SPLIT, false, null);
     }
 
+
+    public static KerasTokenizer fromJson(String jsonFileName) throws IOException, InvalidKerasConfigurationException {
+        String json = new String(Files.readAllBytes(Paths.get(jsonFileName)));
+        Map<String, Object> tokenizerBaseConfig = parseJsonString(json);
+        Map<String, Object> tokenizerConfig;
+        if (tokenizerBaseConfig.containsKey("config"))
+            tokenizerConfig = (Map<String, Object>) tokenizerBaseConfig.get("config");
+        else
+            throw new InvalidKerasConfigurationException("No configuration found for Keras tokenizer");
+
+
+        int numWords = (int) tokenizerConfig.get("num_words");
+        String filters = (String) tokenizerConfig.get("filters");
+        Boolean lower = (Boolean) tokenizerConfig.get("lower");
+        String split = (String) tokenizerConfig.get("split");
+        Boolean charLevel = (Boolean) tokenizerConfig.get("char_level");
+        String oovToken = (String) tokenizerConfig.get("oov_token");
+        int documentCount = (int) tokenizerConfig.get("document_count");
+
+        @SuppressWarnings("unchecked")
+        Map<String, Integer> wordCounts = (Map) parseJsonString((String) tokenizerConfig.get("word_counts"));
+        @SuppressWarnings("unchecked")
+        Map<String, Integer> wordDocs = (Map) parseJsonString((String) tokenizerConfig.get("word_docs"));
+        @SuppressWarnings("unchecked")
+        Map<String, Integer> wordIndex = (Map) parseJsonString((String) tokenizerConfig.get("word_index"));
+        @SuppressWarnings("unchecked")
+        Map<Integer, String> indexWord = (Map) parseJsonString((String) tokenizerConfig.get("index_word"));
+        @SuppressWarnings("unchecked")
+        Map<Integer, Integer> indexDocs = (Map) parseJsonString((String) tokenizerConfig.get("index_docs"));
+
+        KerasTokenizer tokenizer = new KerasTokenizer(numWords, filters, lower, split, charLevel, oovToken);
+        tokenizer.setDocumentCount(documentCount);
+        tokenizer.setWordCounts(wordCounts);
+        tokenizer.setWordDocs(new HashMap<>(wordDocs));
+        tokenizer.setWordIndex(wordIndex);
+        tokenizer.setIndexWord(indexWord);
+        tokenizer.setIndexDocs(indexDocs);
+
+        return tokenizer;
+    }
 
     /**
      * Turns a String text into a sequence of tokens.
