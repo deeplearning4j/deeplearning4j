@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.modelimport.keras.configurations;
 
 import junit.framework.TestCase;
@@ -200,7 +216,44 @@ public class FullModelComparisons {
         for (int i = 0; i < 5; i++) {
             TestCase.assertEquals(output.getDouble(i), kerasOutput.getDouble(i), 1e-4);
         }
+    }
 
+
+    @Test
+    public void cnnBatchNormLargerTest() throws IOException, UnsupportedKerasConfigurationException,
+            InvalidKerasConfigurationException {
+
+        String modelPath = "modelimport/keras/fullconfigs/cnn_batch_norm/cnn_batch_norm_medium.h5";
+
+
+        ClassPathResource modelResource = new ClassPathResource(modelPath, classLoader);
+
+        KerasSequentialModel kerasModel = new KerasModel().modelBuilder()
+                .modelHdf5Filename(modelResource.getFile().getAbsolutePath())
+                .enforceTrainingConfig(false)
+                .buildSequential();
+
+        MultiLayerNetwork model = kerasModel.getMultiLayerNetwork();
+        model.init();
+
+        System.out.println(model.summary());
+
+        ClassPathResource inputResource = new ClassPathResource(
+                "modelimport/keras/fullconfigs/cnn_batch_norm/input.npy", classLoader);
+        INDArray input = Nd4j.createFromNpyFile(inputResource.getFile());
+        input = input.permute(0, 3, 1, 2);
+        assertTrue(Arrays.equals(input.shape(), new long[] {5, 1, 48, 48}));
+
+        INDArray output = model.output(input);
+
+        ClassPathResource outputResource = new ClassPathResource(
+                "modelimport/keras/fullconfigs/cnn_batch_norm/predictions.npy", classLoader);
+        INDArray kerasOutput = Nd4j.createFromNpyFile(outputResource.getFile());
+
+        for (int i = 0; i < 5; i++) {
+            // TODO this should be a little closer
+            TestCase.assertEquals(output.getDouble(i), kerasOutput.getDouble(i), 1e-2);
+        }
     }
 
 }

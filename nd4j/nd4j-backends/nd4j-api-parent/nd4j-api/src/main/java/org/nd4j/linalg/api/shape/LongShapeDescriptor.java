@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.api.shape;
 
 import lombok.NonNull;
@@ -72,9 +88,9 @@ public class LongShapeDescriptor {
     public int hashCode() {
         int result = (int) order;
 
-        result = 31 * result + Long.hashCode(offset);
-        result = 31 * result + Long.hashCode(ews);
-        result = 31 * result + Long.hashCode(extras);
+        result = 31 * result + longHashCode(offset);
+        result = 31 * result + longHashCode(ews);
+        result = 31 * result + longHashCode(extras);
         result = 31 * result + Arrays.hashCode(shape);
         result = 31 * result + Arrays.hashCode(stride);
         return result;
@@ -95,6 +111,10 @@ public class LongShapeDescriptor {
         return result;
     }
 
+    private int longHashCode(long v) {
+        // impl from j8
+        return (int)(v ^ (v >>> 32));
+    }
 
     public static LongShapeDescriptor fromShapeDescriptor(@NonNull ShapeDescriptor descriptor) {
         return new LongShapeDescriptor(ArrayUtil.toLongArray(descriptor.getShape()), ArrayUtil.toLongArray(descriptor.getStride()), descriptor.getOffset(), descriptor.getEws(), descriptor.getOrder(), descriptor.getExtras());

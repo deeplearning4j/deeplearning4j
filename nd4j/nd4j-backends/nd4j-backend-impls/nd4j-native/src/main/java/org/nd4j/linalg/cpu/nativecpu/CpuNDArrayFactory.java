@@ -1,42 +1,35 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.cpu.nativecpu;
 
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.LongBuffer;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.compression.CompressionUtils;
-import org.nd4j.linalg.exception.ND4JComplexNumbersNotSupportedException;
 import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexDouble;
-import org.nd4j.linalg.api.complex.IComplexFloat;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -45,9 +38,6 @@ import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
 import org.nd4j.linalg.cpu.nativecpu.blas.*;
-import org.nd4j.linalg.cpu.nativecpu.complex.ComplexDouble;
-import org.nd4j.linalg.cpu.nativecpu.complex.ComplexFloat;
-import org.nd4j.linalg.cpu.nativecpu.complex.ComplexNDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
@@ -94,11 +84,11 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public void createBlas() {
-        String lib = System.getProperty("org.bytedeco.javacpp.openblas.load",
-                     System.getProperty("org.bytedeco.javacpp.openblas_nolapack.load", "")).toLowerCase();
+        String lib = System.getProperty(ND4JSystemProperties.ND4J_CPU_LOAD_OPENBLAS,
+                     System.getProperty(ND4JSystemProperties.ND4J_CPU_LOAD_OPENBLAS_NOLAPACK, "")).toLowerCase();
         if (lib.trim().length() == 0) {
             // try to load by default the LAPACK-less version of MKL bundled with MKL-DNN
-            System.setProperty("org.bytedeco.javacpp.openblas_nolapack.load", "mklml");
+            System.setProperty(ND4JSystemProperties.ND4J_CPU_LOAD_OPENBLAS_NOLAPACK, "mklml");
         }
 
         blas = new CpuBlas();
@@ -145,30 +135,6 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     }
 
     /**
-     * Create float
-     *
-     * @param real real component
-     * @param imag imag component
-     * @return
-     */
-    @Override
-    public IComplexFloat createFloat(float real, float imag) {
-        return new ComplexFloat(real, imag);
-    }
-
-    /**
-     * Create an instance of a complex double
-     *
-     * @param real the real component
-     * @param imag the imaginary component
-     * @return a new imaginary double with the specified real and imaginary components
-     */
-    @Override
-    public IComplexDouble createDouble(double real, double imag) {
-        return new ComplexDouble(real, imag);
-    }
-
-    /**
      * Create an ndarray with the given data layout
      *
      * @param data the data to create the ndarray with
@@ -184,109 +150,14 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         return new NDArray(data, ordering);
     }
 
-    /**
-     * Create a complex ndarray from the passed in indarray
-     *
-     * @param arr the arr to wrap
-     * @return the complex ndarray with the specified ndarray as the
-     * real components
-     */
-    @Override
-    public IComplexNDArray createComplex(INDArray arr) {
-        return new ComplexNDArray(arr);
-    }
-
-    /**
-     * Create a complex ndarray from the passed in indarray
-     *
-     * @param data  the data to wrap
-     * @param shape
-     * @return the complex ndarray with the specified ndarray as the
-     * real components
-     */
-    @Override
-    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape) {
-        return new ComplexNDArray(data, shape);
-    }
-
-    /**
-     * Create a complex ndarray from the passed in indarray
-     *
-     * @param arrs  the arr to wrap
-     * @param shape
-     * @return the complex ndarray with the specified ndarray as the
-     * real components
-     */
-    @Override
-    public IComplexNDArray createComplex(List<IComplexNDArray> arrs, int[] shape) {
-        return new ComplexNDArray(arrs, shape);
-    }
-
     @Override
     public INDArray create(DataBuffer data) {
         return new NDArray(data);
     }
 
     @Override
-    public IComplexNDArray createComplex(DataBuffer data) {
-        return new ComplexNDArray(data);
-    }
-
-    @Override
-    public IComplexNDArray createComplex(DataBuffer data, long rows, long columns, int[] stride, long offset) {
-        //return new ComplexNDArray(data, new long[] {rows, columns}, stride, offset);
-        throw new ND4JComplexNumbersNotSupportedException();
-    }
-
-    @Override
     public INDArray create(DataBuffer data, long rows, long columns, int[] stride, long offset) {
-        //return new NDArray(data, new long[] {rows, columns}, stride, offset);
-        throw new ND4JComplexNumbersNotSupportedException();
-    }
-
-    @Override
-    public IComplexNDArray createComplex(DataBuffer data, int[] shape, int[] stride, long offset) {
-        return new ComplexNDArray(data, shape, stride, offset);
-    }
-
-    @Override
-    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int[] stride, long offset) {
-        return createComplex(data, shape, stride, offset, order());
-    }
-
-    @Override
-    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int[] stride, long offset, char ordering) {
-        return new ComplexNDArray(data, shape, stride, offset, ordering);
-
-    }
-
-    @Override
-    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int[] stride, char ordering) {
-        return new ComplexNDArray(data, shape, stride, 0, ordering);
-    }
-
-    @Override
-    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, long offset, char ordering) {
-        return createComplex(data, shape, Nd4j.getComplexStrides(shape), offset, ordering);
-    }
-
-    @Override
-    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, char ordering) {
-        return createComplex(data, shape, Nd4j.getComplexStrides(shape), 0, ordering);
-    }
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param data   the data to use with the ndarray
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    @Override
-    public IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, long offset) {
-        return new ComplexNDArray(data, shape, stride, offset);
+        return create(data, new long[]{rows, columns}, ArrayUtil.toLongArray(stride), offset);
     }
 
     @Override
@@ -338,18 +209,6 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
-    public IComplexNDArray createComplex(DataBuffer data, int[] newDims, int[] newStrides, long offset, char ordering) {
-        return new ComplexNDArray(data, newDims, newStrides, offset, ordering);
-
-    }
-
-
-    @Override
-    public IComplexNDArray createComplex(float[] data, Character order) {
-        return new ComplexNDArray(data, order);
-    }
-
-    @Override
     public INDArray create(float[] data, int[] shape, long offset, Character order) {
         return new NDArray(data, shape, offset, order);
     }
@@ -361,8 +220,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray create(float[] data, long rows, long columns, int[] stride, long offset, char ordering) {
-        //return new NDArray(data, new int[] {rows, columns}, stride, offset, ordering);
-        throw new ND4JComplexNumbersNotSupportedException();
+        return create(data, new long[]{rows, columns}, ArrayUtil.toLongArray(stride), offset, ordering);
     }
 
     @Override
@@ -463,20 +321,6 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         return new NDArray(data, shape, stride, offset);
     }
 
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param data
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    @Override
-    public IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, long offset) {
-        return new ComplexNDArray(Nd4j.createBuffer(data), shape, stride, offset);
-    }
-
 
     /**
      * Creates an ndarray with the specified shape
@@ -495,16 +339,6 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public INDArray create(DataBuffer data, int[] shape) {
         return new NDArray(data, shape);
-    }
-
-    @Override
-    public IComplexNDArray createComplex(DataBuffer data, int[] shape) {
-        return new ComplexNDArray(data, shape);
-    }
-
-    @Override
-    public IComplexNDArray createComplex(DataBuffer data, int[] shape, int[] stride) {
-        return new ComplexNDArray(data, shape, stride);
     }
 
     @Override
@@ -530,74 +364,11 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
-    public INDArray empty() {
+    public INDArray empty(DataBuffer.Type type) {
         long extras  = ArrayOptionsHelper.setOptionBit(0L, ArrayType.EMPTY);
+        extras = ArrayOptionsHelper.setOptionBit(extras, type);
         val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new int[0], new int[0],0,1,'c', extras);
         return new NDArray(null, (LongBuffer) shape.getFirst(), shape.getSecond());
-    }
-
-
-    /**
-     * Create a complex ndarray with the given data
-     *
-     * @param data     the data to use with tne ndarray
-     * @param shape    the shape of the ndarray
-     * @param stride   the stride for the ndarray
-     * @param offset   the offset of the ndarray
-     * @param ordering the ordering for the ndarray
-     * @return the created complex ndarray
-     */
-    @Override
-    public IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, long offset, char ordering) {
-        return new ComplexNDArray(ArrayUtil.floatCopyOf(data), shape, stride, offset, ordering);
-    }
-
-    /**
-     * @param data
-     * @param shape
-     * @param offset
-     * @param ordering
-     * @return
-     */
-    @Override
-    public IComplexNDArray createComplex(double[] data, int[] shape, long offset, char ordering) {
-        return new ComplexNDArray(ArrayUtil.floatCopyOf(data), shape, offset, ordering);
-    }
-
-    @Override
-    public IComplexNDArray createComplex(DataBuffer buffer, int[] shape, long offset, char ordering) {
-        return new ComplexNDArray(buffer, shape, Nd4j.getComplexStrides(shape), offset, ordering);
-    }
-
-    /**
-     * @param data
-     * @param shape
-     * @param offset
-     * @return
-     */
-    @Override
-    public IComplexNDArray createComplex(double[] data, int[] shape, long offset) {
-        return new ComplexNDArray(ArrayUtil.floatCopyOf(data), shape, offset);
-    }
-
-    @Override
-    public IComplexNDArray createComplex(DataBuffer buffer, int[] shape, long offset) {
-        return new ComplexNDArray(buffer, shape, Nd4j.getComplexStrides(shape), offset, Nd4j.order());
-    }
-
-    /**
-     * Create a complex ndarray with the given data
-     *
-     * @param data     the data to use with tne ndarray
-     * @param shape    the shape of the ndarray
-     * @param stride   the stride for the ndarray
-     * @param offset   the offset of the ndarray
-     * @param ordering the ordering for the ndarray
-     * @return the created complex ndarray
-     */
-    @Override
-    public IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, long offset, char ordering) {
-        return new ComplexNDArray(data, shape, stride, offset, ordering);
     }
 
     @Override
@@ -611,11 +382,6 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
-    public IComplexNDArray createComplex(float[] dim) {
-        return new ComplexNDArray(dim);
-    }
-
-    @Override
     public INDArray create(float[] data, int[] shape, int[] stride, long offset, char ordering) {
         return new NDArray(data, shape, stride, offset, ordering);
     }
@@ -623,30 +389,6 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public INDArray create(DataBuffer buffer, int[] shape, long offset) {
         return new NDArray(buffer, shape, Nd4j.getStrides(shape), offset);
-    }
-
-    /**
-     * @param data
-     * @param shape
-     * @param offset
-     * @param ordering
-     * @return
-     */
-    @Override
-    public IComplexNDArray createComplex(float[] data, int[] shape, long offset, char ordering) {
-        return new ComplexNDArray(data, shape, Nd4j.getComplexStrides(shape, ordering), offset, ordering);
-
-    }
-
-    /**
-     * @param data
-     * @param shape
-     * @param offset
-     * @return
-     */
-    @Override
-    public IComplexNDArray createComplex(float[] data, int[] shape, long offset) {
-        return new ComplexNDArray(data, shape, offset);
     }
 
     @Override
@@ -1349,6 +1091,11 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
+    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, DataBuffer buffer) {
+        convertDataEx(typeSrc, source, typeDst, buffer.addressPointer(), buffer.length());
+    }
+
+    @Override
     public void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst,
                               DataBuffer target) {
         convertDataEx(typeSrc, source.addressPointer(), typeDst, target.addressPointer(), target.length());
@@ -1456,43 +1203,53 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
-    public INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(double[] values, int[][] indices, int[] shape) {
+    public INDArray createSparseCOO(double[] values, int[][] indices, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(float[] values, int[][] indices, int[] shape) {
+    public INDArray createSparseCOO(float[] values, int[][] indices, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] shape) {
+    public INDArray createSparseCOO(double[] values, long[][] indices, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, int[] shape) {
+    public INDArray createSparseCOO(float[] values, long[][] indices, long[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
 
     @Override
-    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, int[] shape) {
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, long[] shape) {
         throw new UnsupportedOperationException();
     }
 

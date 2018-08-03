@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 //  @author raver119@gmail.com
 //
@@ -161,17 +177,17 @@ namespace functions {
                 for (Nd4jLong i = threadIdx.x; i < tadLength; i+= blockDim.x) {
 
                     if (shape::order(tadOnlyShapeInfo) == 'c') {
-                        shape::ind2subC(tadRank,tadShape, i, xCoord);
-                        shape::ind2subC(yRank, yShape, i, yCoord);
+                        shape::ind2subC(tadRank,tadShape, i, tadLength, xCoord);
+                        shape::ind2subC(yRank, yShape, i, tadLength, yCoord);
                     } else {
-                        shape::ind2sub(tadRank,tadShape, i, xCoord);
-                        shape::ind2sub(yRank, yShape, i, yCoord);
+                        shape::ind2sub(tadRank,tadShape, i, tadLength, xCoord);
+                        shape::ind2sub(yRank, yShape, i, tadLength, yCoord);
                     }
 
                     if (shape::order(tadOnlyShapeInfoZ) == 'c')
-                        shape::ind2subC(zRank,zShape, i, zCoord);
+                        shape::ind2subC(zRank,zShape, i, tadLength, zCoord);
                     else
-                        shape::ind2sub(zRank,zShape, i, zCoord);
+                        shape::ind2sub(zRank,zShape, i, tadLength, zCoord);
 
                     auto xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
                     auto zOffset = shape::getOffset(tadOffsetForBlockZ, zShape, zStride, zCoord, zRank);

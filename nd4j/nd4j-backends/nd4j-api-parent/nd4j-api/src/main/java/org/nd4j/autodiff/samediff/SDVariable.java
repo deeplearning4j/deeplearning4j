@@ -1,7 +1,24 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.autodiff.samediff;
 
 import com.google.common.annotations.VisibleForTesting;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import onnx.OnnxProto3;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.builder.Diff;
@@ -41,6 +58,7 @@ import java.util.logging.Logger;
  */
 @Data
 @NoArgsConstructor
+@Slf4j
 public class SDVariable extends DifferentialFunction implements Serializable {
 
 
@@ -52,7 +70,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     protected WeightInitScheme weightInitScheme;
 
 
-
+    // autogen_tag::sdvars::start
 
     @Builder
     private SDVariable(String varName,
@@ -148,7 +166,8 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      */
     public INDArray storeAndAllocateNewArray() {
         val shape = sameDiff.getShapeForVarName(getVarName());
-        if(getArr() != null && Arrays.equals(getArr().shape(),shape))
+        INDArray currArr = getArr();
+        if(currArr != null && Arrays.equals(currArr.shape(),shape))
             return getArr();
 
         if(varName == null)
@@ -159,7 +178,11 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         }
 
         val arr = getWeightInitScheme().create(shape);
-        sameDiff.putArrayForVarName(getVarName(),arr);
+        sameDiff.associateArrayWithVariable(arr, this);
+        if(log.isTraceEnabled()){
+            log.trace("Generated and stored new array for variable \"{}\": old shape: {}, new shape {}", getVarName(),
+                    (currArr == null ? "null" : Arrays.toString(currArr.shape())), Arrays.toString(arr.shape()));
+        }
         return arr;
     }
 
@@ -176,6 +199,8 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return getArr(false);
     }
 
+
+    // autogen_tag::sdvars::end
     /**
      * A getter for the allocated ndarray with this {@link SDVariable}.
      *
@@ -193,21 +218,28 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
         //initialize value if it's actually a scalar constant (zero or 1 typically...)
         if(getScalarValue() != null && ArrayUtil.prod(getShape()) == 1) {
-            INDArray arr = Nd4j.valueArrayOf(getShape(),
-                    getScalarValue().doubleValue());
+            INDArray arr = Nd4j.valueArrayOf(getShape(),getScalarValue().doubleValue());
             sameDiff.associateArrayWithVariable(arr,this);
+            if(log.isTraceEnabled()){
+                log.trace("getArr() for variable \"{}\" allocated new scalar array: shape {}", getVarName(), Arrays.toString(getShape()));
+            }
         }
         else if(sameDiff.getShapeForVarName(getVarName()) == null) {
             if (enforceExistence) {
                 throw new IllegalStateException("Cannot get array for SDVariable \"" + getVarName() + "\": no array has" +
                         " been defined, and array shape cannot be calculated");
             }
+            if(log.isTraceEnabled()){
+                log.trace("SDVariable.getArr(): could not get array for variable {}: shape is null", getVarName());
+            }
             return null;
         } else {
             long[] shape = sameDiff.getShapeForVarName(getVarName());
             INDArray newAlloc = getWeightInitScheme().create(shape);
             sameDiff.associateArrayWithVariable(newAlloc,this);
-
+            if(log.isTraceEnabled()){
+                log.trace("getArr() for variable \"{}\" allocated new array with shape {}", getVarName(), Arrays.toString(getShape()));
+            }
         }
 
         return sameDiff.getArrForVarName(getVarName());
@@ -395,6 +427,9 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return sameDiff.neq(name, this, other);
     }
 
+    public SDVariable mmul(SDVariable other){
+        return sameDiff.mmul(this, other);
+    }
 
     //scalars
 
@@ -1005,7 +1040,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
     public SDVariable sum(boolean keepDims, int... dimensions){
-        return sum(null, dimensions);
+        return sum(null, keepDims, dimensions);
     }
 
     public SDVariable sum(String name, int... dimensions){

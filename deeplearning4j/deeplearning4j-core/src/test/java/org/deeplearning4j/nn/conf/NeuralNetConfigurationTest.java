@@ -1,20 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.deeplearning4j.nn.conf;
 
@@ -299,14 +297,14 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
 
         ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(),
                         new NegativeDefaultStepFunction(), null, net);
-        assertEquals(l1, net.getLayer(0).conf().getL1ByParam("W"), 1e-4);
-        assertEquals(0.0, net.getLayer(0).conf().getL1ByParam("b"), 0.0);
-        assertEquals(0.0, net.getLayer(1).conf().getL2ByParam("beta"), 0.0);
-        assertEquals(0.0, net.getLayer(1).conf().getL2ByParam("gamma"), 0.0);
-        assertEquals(0.0, net.getLayer(1).conf().getL2ByParam("mean"), 0.0);
-        assertEquals(0.0, net.getLayer(1).conf().getL2ByParam("var"), 0.0);
-        assertEquals(l2, net.getLayer(2).conf().getL2ByParam("W"), 1e-4);
-        assertEquals(0.0, net.getLayer(2).conf().getL2ByParam("b"), 0.0);
+        assertEquals(l1, net.getLayer(0).conf().getLayer().getL1ByParam("W"), 1e-4);
+        assertEquals(0.0, net.getLayer(0).conf().getLayer().getL1ByParam("b"), 0.0);
+        assertEquals(0.0, net.getLayer(1).conf().getLayer().getL2ByParam("beta"), 0.0);
+        assertEquals(0.0, net.getLayer(1).conf().getLayer().getL2ByParam("gamma"), 0.0);
+        assertEquals(0.0, net.getLayer(1).conf().getLayer().getL2ByParam("mean"), 0.0);
+        assertEquals(0.0, net.getLayer(1).conf().getLayer().getL2ByParam("var"), 0.0);
+        assertEquals(l2, net.getLayer(2).conf().getLayer().getL2ByParam("W"), 1e-4);
+        assertEquals(0.0, net.getLayer(2).conf().getLayer().getL2ByParam("b"), 0.0);
     }
 
     @Test

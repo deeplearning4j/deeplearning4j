@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.integration;
 
 
@@ -65,7 +81,7 @@ public class IntegrationTestRunner {
     public static final String PARAMS_POST_TRAIN_FILENAME = "paramsPostTrain.bin";
     public static final String PARAMS_POST_UNSUPERVISED_FILENAME = "paramsPostUnsupervised.bin";
 
-    public static final double MAX_REL_ERROR_SCORES = 1e-6;
+    public static final double MAX_REL_ERROR_SCORES = 1e-4;
 
     private static List<Class<?>> layerClasses = new ArrayList<>();
     private static List<Class<?>> preprocClasses = new ArrayList<>();
@@ -166,13 +182,14 @@ public class IntegrationTestRunner {
             } else {
                 ComputationGraphConfiguration cgc = (ComputationGraphConfiguration) config;
                 cg = new ComputationGraph(cgc);
+                cg.init();
                 m = cg;
                 isMLN = false;
 
                 ComputationGraph loaded = ComputationGraph.load(savedModel, true);
                 assertEquals("Configs not equal", loaded.getConfiguration(), cg.getConfiguration());
-                assertEquals("Params not equal", loaded.params(), mln.params());
-                assertEquals("Param table not equal", loaded.paramTable(), mln.paramTable());
+                assertEquals("Params not equal", loaded.params(), cg.params());
+                assertEquals("Param table not equal", loaded.paramTable(), cg.paramTable());
             }
         } else {
             m = tc.getPretrainedModel();
@@ -214,7 +231,9 @@ public class IntegrationTestRunner {
                         outSaved = Nd4j.read(dis);
                     }
 
-                    assertEquals("Predictions do not match saved predictions - output " + count, outSaved, out);
+                    INDArray gradExceedsRE = exceedsRelError(outSaved, out, tc.getMaxRelativeErrorOutput(), tc.getMinAbsErrorOutput());
+                    int countExceeds = gradExceedsRE.sumNumber().intValue();
+                    assertEquals("Predictions do not match saved predictions - output", 0, countExceeds);
                 }
             } else {
                 for (Pair<INDArray[], INDArray[]> p : inputs) {
@@ -229,7 +248,11 @@ public class IntegrationTestRunner {
                         }
                     }
 
-                    assertArrayEquals("Predictions do not match saved predictions - output " + count, outSaved, out);
+                    for( int i=0; i<outSaved.length; i++ ){
+                        INDArray gradExceedsRE = exceedsRelError(outSaved[i], out[i], tc.getMaxRelativeErrorOutput(), tc.getMinAbsErrorOutput());
+                        int countExceeds = gradExceedsRE.sumNumber().intValue();
+                        assertEquals("Predictions do not match saved predictions - output " + i, 0, countExceeds);
+                    }
                 }
             }
 
@@ -243,24 +266,32 @@ public class IntegrationTestRunner {
 
             MultiDataSet data = tc.getGradientsTestData();
             INDArray gradientFlat;
+            org.deeplearning4j.nn.api.Layer[] layers;
             if (isMLN) {
                 mln.setInput(data.getFeatures(0));
                 mln.setLabels(data.getLabels(0));
                 mln.setLayerMaskArrays(data.getFeaturesMaskArray(0), data.getLabelsMaskArray(0));
                 mln.computeGradientAndScore();
                 gradientFlat = mln.getFlattenedGradients();
+                layers = mln.getLayers();
             } else {
                 cg.setInputs(data.getFeatures());
                 cg.setLabels(data.getLabels());
                 cg.setLayerMaskArrays(data.getFeaturesMaskArrays(), data.getLabelsMaskArrays());
                 cg.computeGradientAndScore();
                 gradientFlat = cg.getFlattenedGradients();
+                layers = cg.getLayers();
             }
 
             File gFlatFile = new File(testBaseDir, IntegrationTestRunner.FLAT_GRADIENTS_FILENAME);
             INDArray gradientFlatSaved = read(gFlatFile);
 
-            assertEquals("Saved flattened gradients: not equal", gradientFlatSaved, gradientFlat);
+            INDArray gradExceedsRE = exceedsRelError(gradientFlatSaved, gradientFlat, tc.getMaxRelativeErrorGradients(), tc.getMinAbsErrorGradients());
+            int count = gradExceedsRE.sumNumber().intValue();
+            if(count > 0){
+                logFailedParams(20, "Gradient", layers, gradExceedsRE, gradientFlatSaved, gradientFlat);
+            }
+            assertEquals("Saved flattened gradients: not equal (using relative error)", 0, count);
 
             //Load the gradient table:
             File gradientDir = new File(testBaseDir, "gradients");
@@ -272,7 +303,11 @@ public class IntegrationTestRunner {
                 key = key.substring(0, key.length() - 4); //remove ".bin"
                 INDArray loaded = read(f);
                 INDArray now = m.gradient().gradientForVariable().get(key);
-                assertEquals("Gradient is not equal for parameter: " + key, loaded, now);
+
+
+                gradExceedsRE = exceedsRelError(gradientFlatSaved, gradientFlat, tc.getMaxRelativeErrorGradients(), tc.getMinAbsErrorGradients());
+                count = gradExceedsRE.sumNumber().intValue();
+                assertEquals("Saved flattened gradients: not equal (using relative error) for parameter: " + key, 0, count);
             }
         }
 
@@ -282,6 +317,7 @@ public class IntegrationTestRunner {
             MultiDataSetIterator iter = tc.getUnsupervisedTrainData();
 
             INDArray paramsPostTraining;
+            org.deeplearning4j.nn.api.Layer[] layers;
             if(isMLN){
                 int[] layersToTrain = tc.getUnsupervisedTrainLayersMLN();
                 Preconditions.checkState(layersToTrain != null, "Layer indices must not be null");
@@ -291,6 +327,7 @@ public class IntegrationTestRunner {
                     mln.pretrainLayer(i, dsi);
                 }
                 paramsPostTraining = mln.params();
+                layers = mln.getLayers();
             } else {
                 String[] layersToTrain = tc.getUnsupervisedTrainLayersCG();
                 Preconditions.checkState(layersToTrain != null, "Layer names must not be null");
@@ -299,6 +336,7 @@ public class IntegrationTestRunner {
                     cg.pretrainLayer(i, iter);
                 }
                 paramsPostTraining = cg.params();
+                layers = cg.getLayers();
             }
 
             File f = new File(testBaseDir, IntegrationTestRunner.PARAMS_POST_UNSUPERVISED_FILENAME);
@@ -307,6 +345,9 @@ public class IntegrationTestRunner {
             INDArray exceedsRelError = exceedsRelError(expParams, paramsPostTraining, tc.getMaxRelativeErrorPretrainParams(),
                     tc.getMinAbsErrorPretrainParams());
             int count = exceedsRelError.sumNumber().intValue();
+            if(count > 0){
+                logFailedParams(20, "Parameter", layers, exceedsRelError, expParams, paramsPostTraining);
+            }
             assertEquals("Number of parameters exceeding relative error", 0, count);
 
             //Set params to saved ones - to avoid accumulation of roundoff errors causing later failures...
@@ -337,18 +378,21 @@ public class IntegrationTestRunner {
             int epochAfter;
 
             Map<String,INDArray> frozenParamsBefore = getFrozenLayerParamCopies(m);
+            org.deeplearning4j.nn.api.Layer[] layers;
             if (isMLN) {
                 iterBefore = mln.getIterationCount();
                 epochBefore = mln.getEpochCount();
                 mln.fit(countingIter);
                 iterAfter = mln.getIterationCount();
                 epochAfter = mln.getEpochCount();
+                layers = mln.getLayers();
             } else {
                 iterBefore = cg.getConfiguration().getIterationCount();
                 epochBefore = cg.getConfiguration().getEpochCount();
                 cg.fit(countingIter);
                 iterAfter = cg.getConfiguration().getIterationCount();
                 epochAfter = cg.getConfiguration().getEpochCount();
+                layers = cg.getLayers();
             }
 
             //Check that frozen params (if any) haven't changed during training:
@@ -386,6 +430,9 @@ public class IntegrationTestRunner {
                 INDArray paramsExp = read(p);
                 INDArray z = exceedsRelError(m.params(), paramsExp, tc.getMaxRelativeErrorParamsPostTraining(), tc.getMinAbsErrorParamsPostTraining());
                 int count = z.sumNumber().intValue();
+                if(count > 0){
+                    logFailedParams(20, "Parameter", layers, z, paramsExp, m.params());
+                }
                 assertEquals("Number of params exceeded max relative error", 0, count);
             }
 
@@ -470,7 +517,7 @@ public class IntegrationTestRunner {
                 INDArray[] out;
                 if(isMLN){
                     INDArray fm = p.getSecond() == null ? null : p.getSecond()[0];
-                    out = new INDArray[]{mln.output(p.getFirst()[0], true, fm, null)};
+                    out = new INDArray[]{mln.output(p.getFirst()[0], false, fm, null)};
                 } else {
                     out = cg.output(false, p.getFirst(), p.getSecond(), null);
                 }
@@ -870,4 +917,40 @@ public class IntegrationTestRunner {
         }
     }
 
+
+    public static void logFailedParams(int maxNum, String prefix, org.deeplearning4j.nn.api.Layer[] layers, INDArray exceedsRelError, INDArray exp, INDArray act){
+        long length = exceedsRelError.length();
+        int logCount = 0;
+        for(int i=0; i<length; i++ ){
+            if(exceedsRelError.getDouble(i) > 0){
+                double dExp = exp.getDouble(i);
+                double dAct = act.getDouble(i);
+                double re = relError(dExp, dAct);
+                double ae = Math.abs(dExp - dAct);
+
+                //Work out parameter key:
+                long pSoFar = 0;
+                String pName = null;
+                for(org.deeplearning4j.nn.api.Layer l : layers){
+                    int n = l.numParams();
+                    if(pSoFar + n < i){
+                        pSoFar += n;
+                    } else {
+                        for(Map.Entry<String,INDArray> e : l.paramTable().entrySet()){
+                            pSoFar += e.getValue().length();
+                            if(pSoFar >= i){
+                                pName = e.getKey();
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                log.info("{} {} ({}) failed: expected {} vs actual {} (RelativeError: {}, AbsError: {})", i, prefix, pName, dExp, dAct, re, ae);
+                if(++logCount >= maxNum){
+                    break;
+                }
+            }
+        }
+    }
 }

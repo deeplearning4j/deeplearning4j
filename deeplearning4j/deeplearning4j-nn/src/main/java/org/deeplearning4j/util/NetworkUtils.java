@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.util;
 
 import lombok.extern.slf4j.Slf4j;
@@ -156,6 +172,32 @@ public class NetworkUtils {
         }
     }
 
+    /**
+     * Get the current learning rate, for the specified layer, fromthe network.
+     * Note: If the layer has no learning rate (no parameters, or an updater without a learning rate) then null is returned
+     * @param net           Network
+     * @param layerNumber   Layer number to get the learning rate for
+     * @return Learning rate for the specified layer, or null
+     */
+    public static Double getLearningRate(MultiLayerNetwork net, int layerNumber){
+        Layer l = net.getLayer(layerNumber).conf().getLayer();
+        int iter = net.getIterationCount();
+        int epoch = net.getEpochCount();
+        if (l instanceof BaseLayer) {
+            BaseLayer bl = (BaseLayer) l;
+            IUpdater u = bl.getIUpdater();
+            if (u != null && u.hasLearningRate()) {
+                double d = u.getLearningRate(iter, epoch);
+                if(Double.isNaN(d)){
+                    return null;
+                }
+                return d;
+            }
+            return null;
+        }
+        return null;
+    }
+
     private static void refreshUpdater(MultiLayerNetwork net) {
         INDArray origUpdaterState = net.getUpdater().getStateViewArray();
         net.setUpdater(null);
@@ -248,6 +290,32 @@ public class NetworkUtils {
                 refreshUpdater(net);
             }
         }
+    }
+
+    /**
+     * Get the current learning rate, for the specified layer, from the network.
+     * Note: If the layer has no learning rate (no parameters, or an updater without a learning rate) then null is returned
+     * @param net        Network
+     * @param layerName  Layer name to get the learning rate for
+     * @return Learning rate for the specified layer, or null
+     */
+    public static Double getLearningRate(ComputationGraph net, String layerName){
+        Layer l = net.getLayer(layerName).conf().getLayer();
+        int iter = net.getConfiguration().getIterationCount();
+        int epoch = net.getConfiguration().getEpochCount();
+        if (l instanceof BaseLayer) {
+            BaseLayer bl = (BaseLayer) l;
+            IUpdater u = bl.getIUpdater();
+            if (u != null && u.hasLearningRate()) {
+                double d = u.getLearningRate(iter, epoch);
+                if(Double.isNaN(d)){
+                    return null;
+                }
+                return d;
+            }
+            return null;
+        }
+        return null;
     }
 
     private static void refreshUpdater(ComputationGraph net) {

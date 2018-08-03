@@ -1,21 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 // --- BEGIN LICENSE BLOCK ---
 // --- END LICENSE BLOCK ---
@@ -26,10 +23,6 @@ import org.nd4j.linalg.api.blas.Lapack;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.blas.Level2;
 import org.nd4j.linalg.api.blas.Level3;
-import org.nd4j.linalg.api.complex.IComplexDouble;
-import org.nd4j.linalg.api.complex.IComplexFloat;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 
@@ -89,24 +82,11 @@ public interface BlasWrapper {
     @Deprecated
     INDArray scal(float alpha, INDArray x);
 
-    @Deprecated
-    IComplexNDArray scal(IComplexFloat alpha, IComplexNDArray x);
-
-    @Deprecated
-    IComplexNDArray scal(IComplexDouble alpha, IComplexNDArray x);
-
-    /**
-     * Compute x <- alpha * x (scale a matrix)
-     */
-    IComplexNDArray scal(IComplexNumber alpha, IComplexNDArray x);
-
 
     /**
      * Compute y <- x (copy a matrix)
      */
     INDArray copy(INDArray x, INDArray y);
-
-    IComplexNDArray copy(IComplexNDArray x, IComplexNDArray y);
 
     @Deprecated
     INDArray axpy(double da, INDArray dx, INDArray dy);
@@ -126,51 +106,26 @@ public interface BlasWrapper {
      */
     INDArray axpy(Number da, INDArray dx, INDArray dy);
 
-
-    IComplexNDArray axpy(IComplexNumber da, IComplexNDArray dx, IComplexNDArray dy);
-
     /**
      * Compute x^T * y (dot product)
      */
     double dot(INDArray x, INDArray y);
 
     /**
-     * Compute x^T * y (dot product)
-     */
-    IComplexNumber dotc(IComplexNDArray x, IComplexNDArray y);
-
-    /**
-     * Compute x^T * y (dot product)
-     */
-    IComplexNumber dotu(IComplexNDArray x, IComplexNDArray y);
-
-    /**
      * Compute || x ||_2 (2-norm)
      */
     double nrm2(INDArray x);
-
-    IComplexNumber nrm2(IComplexNDArray x);
 
     /**
      * Compute || x ||_1 (1-norm, sum of absolute values)
      */
     double asum(INDArray x);
 
-    IComplexNumber asum(IComplexNDArray x);
-
     /**
      * Compute index of element with largest absolute value (index of absolute
      * value maximum)
      */
     int iamax(INDArray x);
-
-    /**
-     * Compute index of element with largest absolute value (complex version).
-     *
-     * @param x matrix
-     * @return index of element with largest absolute value.
-     */
-    int iamax(IComplexNDArray x);
 
     /**
      * ************************************************************************
@@ -199,42 +154,6 @@ public interface BlasWrapper {
      */
     INDArray ger(float alpha, INDArray x, INDArray y, INDArray a);
 
-    @Deprecated
-    IComplexNDArray gemv(IComplexDouble alpha, IComplexNDArray a, IComplexNDArray x, IComplexDouble beta,
-                    IComplexNDArray y);
-
-    @Deprecated
-    IComplexNDArray gemv(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray x, IComplexNumber beta,
-                    IComplexNDArray y);
-
-    @Deprecated
-    IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta,
-                    IComplexNDArray y);
-
-    @Deprecated
-    IComplexNDArray geru(IComplexDouble alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a);
-
-
-    /**
-     * Compute A <- alpha * x * y^T + A (general rank-1 update)
-     */
-    IComplexNDArray geru(IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a);
-
-    /**
-     * Compute A <- alpha * x * y^T + A (general rank-1 update)
-     */
-    @Deprecated
-    IComplexNDArray geru(IComplexFloat alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a);
-
-    /**
-     * Compute A <- alpha * x * y^H + A (general rank-1 update)
-     */
-    @Deprecated
-    IComplexNDArray gerc(IComplexFloat alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a);
-
-    @Deprecated
-    IComplexNDArray gerc(IComplexDouble alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a);
-
     /**
      * ************************************************************************
      * BLAS Level 3
@@ -248,10 +167,6 @@ public interface BlasWrapper {
      */
     @Deprecated
     INDArray gemm(float alpha, INDArray a, INDArray b, float beta, INDArray c);
-
-    @Deprecated
-    IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray b, IComplexNumber beta,
-                    IComplexNDArray c);
 
 
     /**

@@ -1,25 +1,25 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2016 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.layers.convolution;
 
 
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -246,6 +246,36 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         return preOutput(training, forBackprop, workspaceMgr);
     }
 
+    protected void validateInputRank() {
+        //Input validation: expect rank 4 matrix
+        if (input.rank() != 4) {
+            String layerName = conf.getLayer().getLayerName();
+            if (layerName == null)
+                layerName = "(not named)";
+            throw new DL4JInvalidInputException("Got rank " + input.rank()
+                    + " array as input to ConvolutionLayer (layer name = " + layerName + ", layer index = "
+                    + index + ") with shape " + Arrays.toString(input.shape()) + ". "
+                    + "Expected rank 4 array with shape [minibatchSize, layerInputDepth, inputHeight, inputWidth]."
+                    + (input.rank() == 2
+                    ? " (Wrong input type (see InputType.convolutionalFlat()) or wrong data type?)"
+                    : "")
+                    + " " + layerId());
+        }
+    }
+
+    protected void validateInputDepth(int inDepth) {
+        if (input.size(1) != inDepth) {
+            String layerName = conf.getLayer().getLayerName();
+            if (layerName == null)
+                layerName = "(not named)";
+            throw new DL4JInvalidInputException("Cannot do forward pass in Convolution layer (layer name = " + layerName
+                    + ", layer index = " + index + "): input array channels does not match CNN layer configuration"
+                    + " (data input channels = " + input.size(1) + ", [minibatch,inputDepth,height,width]="
+                    + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inDepth + ") "
+                    + layerId());
+        }
+    }
+
     /**
      * PreOutput method that also returns the im2col2d array (if being called for backprop), as this can be re-used
      * instead of being calculated again.
@@ -260,36 +290,14 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray bias = getParamWithNoise(ConvolutionParamInitializer.BIAS_KEY, training, workspaceMgr);
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, training, workspaceMgr);
 
-        //Input validation: expect rank 4 matrix
-        if (input.rank() != 4) {
-            String layerName = conf.getLayer().getLayerName();
-            if (layerName == null)
-                layerName = "(not named)";
-            throw new DL4JInvalidInputException("Got rank " + input.rank()
-                            + " array as input to ConvolutionLayer (layer name = " + layerName + ", layer index = "
-                            + index + ") with shape " + Arrays.toString(input.shape()) + ". "
-                            + "Expected rank 4 array with shape [minibatchSize, layerInputDepth, inputHeight, inputWidth]."
-                            + (input.rank() == 2
-                                            ? " (Wrong input type (see InputType.convolutionalFlat()) or wrong data type?)"
-                                            : "")
-                            + " " + layerId());
-        }
+        validateInputRank();
 
         // FIXME: int cast
         int miniBatch = (int) input.size(0);
-
         int outDepth = (int) weights.size(0);
         int inDepth = (int) weights.size(1);
-        if (input.size(1) != inDepth) {
-            String layerName = conf.getLayer().getLayerName();
-            if (layerName == null)
-                layerName = "(not named)";
-            throw new DL4JInvalidInputException("Cannot do forward pass in Convolution layer (layer name = " + layerName
-                            + ", layer index = " + index + "): input array channels does not match CNN layer configuration"
-                            + " (data input channels = " + input.size(1) + ", [minibatch,inputDepth,height,width]="
-                            + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inDepth + ") "
-                            + layerId());
-        }
+        validateInputDepth(inDepth);
+
         int kH = (int) weights.size(2);
         int kW = (int) weights.size(3);
 
@@ -424,11 +432,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not supported - " + layerId());
-    }
-
-    @Override
     public boolean hasBias() {
         return layerConf().hasBias();
     }
@@ -458,6 +461,18 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     public void setParams(INDArray params) {
         //Override, as base layer does f order parameter flattening by default
         setParams(params, 'c');
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+        if (maskArray == null) {
+            //For same mode (with stride 1): output activations size is always same size as input activations size -> mask array is same size
+            return new Pair<>(maskArray, currentMaskState);
+        }
+
+        INDArray outMask = ConvolutionUtils.cnn2dMaskReduction(maskArray, layerConf().getKernelSize(), layerConf().getStride(),
+                layerConf().getPadding(), layerConf().getDilation(), layerConf().getConvolutionMode());
+        return new Pair<>(outMask, currentMaskState);
     }
 
 }

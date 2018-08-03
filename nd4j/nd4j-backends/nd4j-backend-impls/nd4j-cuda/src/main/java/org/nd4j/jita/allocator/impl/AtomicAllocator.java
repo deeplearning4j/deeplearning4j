@@ -1,7 +1,24 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.jita.allocator.impl;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
@@ -447,12 +464,12 @@ public class AtomicAllocator implements Allocator {
             getMemoryHandler().getCudaContext();
             point.setDeviceId(Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
-            CudaWorkspace workspace = (CudaWorkspace) Nd4j.getMemoryManager().getCurrentWorkspace();
+            val workspace = (CudaWorkspace) Nd4j.getMemoryManager().getCurrentWorkspace();
 
-            PointersPair pair = new PointersPair();
+            val pair = new PointersPair();
 
-            PagedPointer ptrDev = workspace.alloc(reqMem, MemoryKind.DEVICE, requiredMemory.getDataType(), initialize);
-            PagedPointer ptrHost = workspace.alloc(reqMem, MemoryKind.HOST, requiredMemory.getDataType(), initialize);
+            val ptrDev = workspace.alloc(reqMem, MemoryKind.DEVICE, requiredMemory.getDataType(), initialize);
+            val ptrHost = workspace.alloc(reqMem, MemoryKind.HOST, requiredMemory.getDataType(), initialize);
 
             pair.setHostPointer(ptrHost);
             if (ptrDev != null) {
@@ -463,8 +480,6 @@ public class AtomicAllocator implements Allocator {
                 point.setAllocationStatus(AllocationStatus.HOST);
             }
 
-
-            //if (!ptrDev.isLeaked())
             point.setAttached(true);
 
             point.setPointers(pair);
@@ -475,7 +490,7 @@ public class AtomicAllocator implements Allocator {
         }
 
         allocationsMap.put(allocId, point);
-        point.tickHostRead();
+        //point.tickHostRead();
         point.tickDeviceWrite();
         return point;
     }

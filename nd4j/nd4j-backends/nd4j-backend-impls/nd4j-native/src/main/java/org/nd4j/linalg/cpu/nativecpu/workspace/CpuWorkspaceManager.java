@@ -1,8 +1,27 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.cpu.nativecpu.workspace;
 
 import lombok.NonNull;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.DebugMode;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.linalg.memory.provider.BasicWorkspaceManager;
 
@@ -15,14 +34,28 @@ public class CpuWorkspaceManager extends BasicWorkspaceManager {
         super();
     }
 
+    protected MemoryWorkspace newWorkspace(WorkspaceConfiguration configuration) {
+        return Nd4j.getWorkspaceManager().getDebugMode() == DebugMode.BYPASS_EVERYTHING ? new DummyWorkspace() : new CpuWorkspace(configuration);
+    }
+
+    protected MemoryWorkspace newWorkspace(WorkspaceConfiguration configuration, String id) {
+        return Nd4j.getWorkspaceManager().getDebugMode() == DebugMode.BYPASS_EVERYTHING ? new DummyWorkspace() : new CpuWorkspace(configuration, id);
+    }
+
+    protected MemoryWorkspace newWorkspace(WorkspaceConfiguration configuration, String id, int deviceId) {
+        return Nd4j.getWorkspaceManager().getDebugMode() == DebugMode.BYPASS_EVERYTHING ? new DummyWorkspace() : new CpuWorkspace(configuration, id, deviceId);
+    }
+
     @Override
     public MemoryWorkspace createNewWorkspace(@NonNull WorkspaceConfiguration configuration) {
         ensureThreadExistense();
 
-        MemoryWorkspace workspace = new CpuWorkspace(configuration);
+        MemoryWorkspace workspace = newWorkspace(configuration);
 
         backingMap.get().put(workspace.getId(), workspace);
-        pickReference(workspace);
+
+        if (Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.BYPASS_EVERYTHING)
+            pickReference(workspace);
 
         return workspace;
     }
@@ -31,10 +64,12 @@ public class CpuWorkspaceManager extends BasicWorkspaceManager {
     public MemoryWorkspace createNewWorkspace() {
         ensureThreadExistense();
 
-        MemoryWorkspace workspace = new CpuWorkspace(defaultConfiguration);
+        MemoryWorkspace workspace = newWorkspace(defaultConfiguration);
 
         backingMap.get().put(workspace.getId(), workspace);
-        pickReference(workspace);
+
+        if (Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.BYPASS_EVERYTHING)
+            pickReference(workspace);
 
         return workspace;
     }
@@ -43,10 +78,12 @@ public class CpuWorkspaceManager extends BasicWorkspaceManager {
     public MemoryWorkspace createNewWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String id) {
         ensureThreadExistense();
 
-        MemoryWorkspace workspace = new CpuWorkspace(configuration, id);
+        MemoryWorkspace workspace = newWorkspace(configuration, id);
 
         backingMap.get().put(id, workspace);
-        pickReference(workspace);
+
+        if (Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.BYPASS_EVERYTHING)
+            pickReference(workspace);
 
         return workspace;
     }
@@ -55,10 +92,12 @@ public class CpuWorkspaceManager extends BasicWorkspaceManager {
     public MemoryWorkspace createNewWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String id, Integer deviceId) {
         ensureThreadExistense();
 
-        MemoryWorkspace workspace = new CpuWorkspace(configuration, id, deviceId);
+        MemoryWorkspace workspace = newWorkspace(configuration, id, deviceId);
 
         backingMap.get().put(id, workspace);
-        pickReference(workspace);
+
+        if (Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.BYPASS_EVERYTHING)
+            pickReference(workspace);
 
         return workspace;
     }
@@ -69,9 +108,11 @@ public class CpuWorkspaceManager extends BasicWorkspaceManager {
 
         MemoryWorkspace workspace = backingMap.get().get(id);
         if (workspace == null) {
-            workspace = new CpuWorkspace(configuration, id);
+            workspace = newWorkspace(configuration, id);
             backingMap.get().put(id, workspace);
-            pickReference(workspace);
+
+            if (Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.BYPASS_EVERYTHING)
+                pickReference(workspace);
         }
 
         return workspace;

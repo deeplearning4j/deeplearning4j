@@ -1,21 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.jcublas.buffer;
 
@@ -32,9 +29,6 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
-import org.nd4j.linalg.api.complex.IComplexDouble;
-import org.nd4j.linalg.api.complex.IComplexFloat;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
@@ -260,12 +254,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, this.elementSize, dataType()), initialize);
         this.length = length;
-        //allocationPoint.attachBuffer(this);
-        //this.elementSize = elementSize;
+
         this.trackingPoint = allocationPoint.getObjectId();
         this.offset = 0;
         this.originalOffset = 0;
-
 
         if (dataType() == Type.DOUBLE) {
             this.attached = true;
@@ -363,30 +355,30 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public BaseCudaDataBuffer(long length) {
-        this(length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2);
+        this(length, (Nd4j.dataType() == Type.DOUBLE || Nd4j.dataType() == Type.LONG) ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2);
     }
 
     public BaseCudaDataBuffer(float[] data) {
         //super(data);
-        this(data.length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
+        this(data.length, (Nd4j.dataType() == Type.DOUBLE || Nd4j.dataType() == Type.LONG) ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
         set(data, data.length, 0, 0);
     }
 
     public BaseCudaDataBuffer(int[] data) {
         //super(data);
-        this(data.length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
+        this(data.length, (Nd4j.dataType() == Type.DOUBLE || Nd4j.dataType() == Type.LONG) ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
         set(data, data.length, 0, 0);
     }
 
     public BaseCudaDataBuffer(long[] data) {
         //super(data);
-        this(data.length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
+        this(data.length, (Nd4j.dataType() == Type.DOUBLE || Nd4j.dataType() == Type.LONG) ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
         set(data, data.length, 0, 0);
     }
 
     public BaseCudaDataBuffer(long[] data, boolean copy) {
         //super(data);
-        this(data.length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
+        this(data.length, (Nd4j.dataType() == Type.DOUBLE || Nd4j.dataType() == Type.LONG) ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
 
         if (copy)
             set(data, data.length, 0, 0);
@@ -394,7 +386,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public BaseCudaDataBuffer(double[] data) {
         // super(data);
-        this(data.length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
+        this(data.length, (Nd4j.dataType() == Type.DOUBLE || Nd4j.dataType() == Type.LONG) ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
         set(data, data.length, 0, 0);
     }
 
@@ -409,7 +401,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public BaseCudaDataBuffer(ByteBuffer buffer, long length, long offset) {
         //super(buffer, length, offset);
-        this(length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, offset);
+        this(length, (Nd4j.dataType() == Type.DOUBLE || Nd4j.dataType() == Type.LONG) ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, offset);
 
         Pointer srcPtr = new CudaPointer(new Pointer(buffer.order(ByteOrder.nativeOrder())));
 
@@ -632,6 +624,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
+    public void setData(long[] data) {
+        set(data, data.length, 0, 0);
+    }
+
+    @Override
     public void setData(float[] data) {
         set(data, data.length, 0, 0);
     }
@@ -695,11 +692,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         //referencing.add(id);
     }
 
-    @Override
-    public void put(long i, IComplexNumber result) {
-        throw new UnsupportedOperationException("ComplexNumbers are not supported yet");
-    }
-
 
     @Deprecated
     public Pointer getHostPointer(INDArray arr, int stride, long offset, int length) {
@@ -735,21 +727,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public Pointer addressPointer() {
         return AtomicAllocator.getInstance().getHostPointer(this);
-    }
-
-    @Override
-    public IComplexFloat getComplexFloat(long i) {
-        return Nd4j.createFloat(getFloat(i), getFloat(i + 1));
-    }
-
-    @Override
-    public IComplexDouble getComplexDouble(long i) {
-        return Nd4j.createDouble(getDouble(i), getDouble(i + 1));
-    }
-
-    @Override
-    public IComplexNumber getComplex(long i) {
-        return dataType() == Type.FLOAT ? getComplexFloat(i) : getComplexDouble(i);
     }
 
     /**
@@ -926,7 +903,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
                 LongRawIndexer Lindexer = (LongRawIndexer) indexer;
 
-                for (int i = 0; i < length(); i++) {
+                for (long i = 0; i < length(); i++) {
                     if (t == Type.LONG)
                         Lindexer.put(i, s.readLong());
                     else if (t == Type.INT)
@@ -955,7 +932,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
                 IntIndexer Iindexer = (IntIndexer) indexer;
 
-                for (int i = 0; i < length(); i++) {
+                for (long i = 0; i < length(); i++) {
                     if (t == Type.INT)
                         Iindexer.put(i, s.readInt());
                     else if (t == Type.LONG)
@@ -993,7 +970,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
                 DoubleIndexer Dindexer = (DoubleIndexer) indexer;
 
-                for (int i = 0; i < length(); i++) {
+                for (long i = 0; i < length(); i++) {
                     if (t == Type.DOUBLE)
                         Dindexer.put(i, s.readDouble());
                     else if (t == Type.LONG)
@@ -1019,8 +996,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
                 FloatIndexer Findexer = (FloatIndexer) indexer;
 
-                for (int i = 0; i < length; i++) {
-
+                for (long i = 0; i < length; i++) {
 
                     if (t == Type.DOUBLE)
                         Findexer.put(i, (float) s.readDouble());
@@ -1048,7 +1024,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
                 HalfIndexer Hindexer = (HalfIndexer) indexer;
 
-                for (int i = 0; i < length; i++) {
+                for (long i = 0; i < length; i++) {
 
                     if (t == Type.DOUBLE)
                         Hindexer.put(i, (float) s.readDouble());

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 //  @author raver119@gmail.com
 //
@@ -130,17 +146,17 @@ namespace functions {
                         // all this stuff already happens within thread
                         for (int f = 0; f < tadLength; f++) {
                             if (shape::order(tadShapeShapeInfo) == 'c') {
-                                shape::ind2subC(xRank, xShape, f, xCoord);
-                                shape::ind2subC(yRank, yShape, f, yCoord);
+                                shape::ind2subC(xRank, xShape, f, tadLength, xCoord);
+                                shape::ind2subC(yRank, yShape, f, tadLength, yCoord);
                             } else {
-                                shape::ind2sub(xRank, xShape, f, xCoord);
-                                shape::ind2sub(yRank, yShape, f, yCoord);
+                                shape::ind2sub(xRank, xShape, f, tadLength, xCoord);
+                                shape::ind2sub(yRank, yShape, f, tadLength, yCoord);
                             }
 
                             if (shape::order(tadShapeInfoZ) == 'c')
-                                shape::ind2subC(zRank, zShape, f, zCoord);
+                                shape::ind2subC(zRank, zShape, f, tadLength, zCoord);
                             else
-                                shape::ind2sub(zRank, zShape, f, zCoord);
+                                shape::ind2sub(zRank, zShape, f, tadLength, zCoord);
 
                             auto xOffset = shape::getOffset(offset, xShape, xStride, xCoord, xRank);
                             auto zOffset = shape::getOffset(offsetZ, zShape, zStride, zCoord, zRank);

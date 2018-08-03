@@ -1,24 +1,23 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.deeplearning4j.nn.conf;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -30,12 +29,13 @@ import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop;
+import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
-import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLayer;
+import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyGraphVertexDeserializer;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyLayerDeserializer;
@@ -71,6 +71,7 @@ import java.util.*;
 @Data
 @NoArgsConstructor
 @Slf4j
+@EqualsAndHashCode(exclude = {"iterationCount", "epochCount"})
 public class NeuralNetConfiguration implements Serializable, Cloneable {
 
     protected Layer layer;
@@ -86,8 +87,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     protected StepFunction stepFunction;
     //minimize or maximize objective
     protected boolean minimize = true;
-    protected Map<String, Double> l1ByParam = new HashMap<>();
-    protected Map<String, Double> l2ByParam = new HashMap<>();
     protected boolean pretrain;
 
     // this field defines preOutput cache
@@ -117,10 +116,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 clone.stepFunction = clone.stepFunction.clone();
             if (clone.variables != null)
                 clone.variables = new ArrayList<>(clone.variables);
-            if (clone.l1ByParam != null)
-                clone.l1ByParam = new HashMap<>(clone.l1ByParam);
-            if (clone.l2ByParam != null)
-                clone.l2ByParam = new HashMap<>(clone.l2ByParam);
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
@@ -140,39 +135,18 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     public void addVariable(String variable) {
         if (!variables.contains(variable)) {
             variables.add(variable);
-            setLayerParamLR(variable);
         }
     }
 
     public void clearVariables() {
         variables.clear();
-        l1ByParam.clear();
-        l2ByParam.clear();
     }
 
-    public void resetVariables() {
-        for (String s : variables) {
-            setLayerParamLR(s);
+    public void setPretrain(boolean pretrain){
+        this.pretrain = pretrain;
+        if(layer != null){
+            layer.setPretrain(pretrain);
         }
-    }
-
-    public void setLayerParamLR(String variable) {
-        double l1 = layer.getL1ByParam(variable);
-        if (Double.isNaN(l1))
-            l1 = 0.0; //Not set
-        double l2 = layer.getL2ByParam(variable);
-        if (Double.isNaN(l2))
-            l2 = 0.0; //Not set
-        l1ByParam.put(variable, l1);
-        l2ByParam.put(variable, l2);
-    }
-
-    public double getL1ByParam(String variable) {
-        return l1ByParam.get(variable);
-    }
-
-    public double getL2ByParam(String variable) {
-        return l2ByParam.get(variable);
     }
 
     /**
@@ -304,28 +278,28 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         /** Helper class for setting input types */
         public class InputTypeBuilder {
             /**
-             * See {@link InputType#convolutional(int, int, int)}
+             * See {@link InputType#convolutional(long, long, long)}
              */
             public ListBuilder convolutional(int height, int width, int depth){
                 return ListBuilder.this.setInputType(InputType.convolutional(height, width, depth));
             }
 
             /**
-             * * See {@link InputType#convolutionalFlat(int, int, int)}
+             * * See {@link InputType#convolutionalFlat(long, long, long)}
              */
             public ListBuilder convolutionalFlat(int height, int width, int depth){
                 return ListBuilder.this.setInputType(InputType.convolutionalFlat(height, width, depth));
             }
 
             /**
-             * See {@link InputType#feedForward(int)}
+             * See {@link InputType#feedForward(long)}
              */
             public ListBuilder feedForward(int size){
                 return ListBuilder.this.setInputType(InputType.feedForward(size));
             }
 
             /**
-             * See {@link InputType#recurrent(int)}}
+             * See {@link InputType#recurrent(long)}}
              */
             public ListBuilder recurrent(int size){
                 return ListBuilder.this.setInputType(InputType.recurrent(size));
@@ -1092,8 +1066,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             else
                 layerName = layer.getLayerName();
 
-            if(layer instanceof BaseSameDiffLayer){
-                BaseSameDiffLayer sdl = (BaseSameDiffLayer)layer;
+            if(layer instanceof AbstractSameDiffLayer){
+                AbstractSameDiffLayer sdl = (AbstractSameDiffLayer)layer;
                 sdl.applyGlobalConfig(this);
             }
 

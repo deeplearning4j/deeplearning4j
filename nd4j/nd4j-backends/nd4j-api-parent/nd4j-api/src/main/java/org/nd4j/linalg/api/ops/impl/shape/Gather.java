@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import lombok.NoArgsConstructor;
@@ -8,6 +24,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -73,8 +90,13 @@ public class Gather extends DynamicCustomOp {
         super.resolvePropertiesFromSameDiffBeforeExecution();
         if (indices != null && numInputArguments() < 2) {
             if (numInputArguments() == 0) {
-                addInputArgument(args()[0].getArr(), Nd4j.create(ArrayUtil.toFloats(indices)).reshape(indices.length));
+                INDArray a = Nd4j.create(ArrayUtil.toFloats(indices));
+                if (indices.length > 1)
+                    a = a.reshape(indices.length);
+                else
+                    a = a.reshape(new int[]{});
 
+                addInputArgument(args()[0].getArr(), a);
             } else if (numInputArguments() == 1) {
                 addInputArgument(Nd4j.create(ArrayUtil.toFloats(indices)));
             }
@@ -99,8 +121,6 @@ public class Gather extends DynamicCustomOp {
                 addOutputArgument(output);
             }
         }
-
-
     }
 
     @Override
@@ -147,20 +167,26 @@ public class Gather extends DynamicCustomOp {
         SDVariable indicesGrad = sameDiff.zerosLike(arg(1));
         SDVariable inputGrad = sameDiff.zerosLike(arg(0));
 
-        if(axis == 0){
+        int ndim = arg(0).getShape().length;
+        int a = axis;
+        if(a < 0){
+            a += ndim;
+        }
+
+        if(a == 0){
             inputGrad = sameDiff.scatterAdd(inputGrad, arg(1), i_v.get(0));
         } else {
-            int ndim = arg(0).getShape().length;
             int[] permDims = new int[ndim];
-            permDims[0] = axis;
-            for(int i=0; i<axis; i++){
+            permDims[0] = a;
+            for(int i=0; i<a; i++){
                 permDims[i+1] = i;
             }
-            for(int i=axis+1; i<ndim; i++){
+            for(int i=a+1; i<ndim; i++){
                 permDims[i] = i;
             }
             inputGrad = sameDiff.permute(inputGrad, permDims);
-            inputGrad = sameDiff.scatterAdd(inputGrad, arg(1), i_v.get(0));
+            SDVariable i_v_transposed = sameDiff.permute(i_v.get(0), permDims);
+            inputGrad = sameDiff.scatterAdd(inputGrad, arg(1), i_v_transposed);
             int[] reverseDims = new int[ndim];
             for(int i=0; i<ndim; i++){
                 reverseDims[permDims[i]] = i;

@@ -1,29 +1,24 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.api.ndarray;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.exception.Nd4jNoSuchWorkspaceException;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
@@ -125,10 +120,11 @@ public interface INDArray extends Serializable {
 
     /**
      * Element stride (one element to the next,
-     * also called the defualt stride: 1 for normal
-     * 2 for complex)
+     * also called the default stride: 1 for normal
      * @return
+     * @deprecated Previously used for complex numbers
      */
+    @Deprecated
     int elementStride();
 
 
@@ -1519,6 +1515,15 @@ public interface INDArray extends Serializable {
 
     long[] toLongVector();
 
+    /**
+     * Convert this ndarray to a 2d int matrix.
+     * Note that THIS SHOULD NOT BE USED FOR SPEED.
+     * This is mainly used for integrations with other libraries.
+     * Due to nd4j's off  heap nature, moving data on heap is very expensive
+     * and should not be used if possible.
+     * @return a copy of this array as a 2d int array
+     */
+    long[][] toLongMatrix();
 
     /**
      * Convert this ndarray to a 2d int matrix.
@@ -1728,12 +1733,6 @@ public interface INDArray extends Serializable {
     Number normmaxNumber();
 
     /**
-     *
-     * @return
-     */
-    IComplexNumber normmaxComplex();
-
-    /**
      * Returns the norm2 (L2 norm, sqrt(sum(x_i^2), also known as Euclidean norm) along the specified dimension(s)
      *
      * @param dimension the dimension to getScalar the norm2 along
@@ -1747,12 +1746,6 @@ public interface INDArray extends Serializable {
      * @return L2 norm for the array
      */
     Number norm2Number();
-
-    /**
-     *
-     * @return
-     */
-    IComplexNumber norm2Complex();
 
     /**
      * Returns the norm1 (L1 norm, i.e., sum of absolute values; also known as Taxicab or Manhattan norm) along the
@@ -1770,14 +1763,6 @@ public interface INDArray extends Serializable {
      * @return Norm 1 for the array
      */
     Number norm1Number();
-
-    /**
-     * Calculate and return norm1 (L1 norm, i.e., sum of absolute values; also known as Taxicab or Manhattan norm) for
-     * the entire array
-     *
-     * @return
-     */
-    IComplexNumber norm1Complex();
 
     /**
      * Standard deviation of an INDArray along one or more dimensions
@@ -1811,12 +1796,6 @@ public interface INDArray extends Serializable {
     Number stdNumber(boolean biasCorrected);
 
     /**
-     *
-     * @return
-     */
-    IComplexNumber stdComplex();
-
-    /**
      * Returns the product along a given dimension
      *
      * @param dimension the dimension to getScalar the product along
@@ -1830,12 +1809,6 @@ public interface INDArray extends Serializable {
      * @return Product of all values in the array
      */
     Number prodNumber();
-
-    /**
-     *
-     * @return
-     */
-    IComplexNumber prodComplex();
 
     /**
      * Returns the overall mean of this ndarray
@@ -1875,8 +1848,6 @@ public interface INDArray extends Serializable {
      */
     Number ameanNumber();
 
-    IComplexNumber meanComplex();
-
     /**
      * Returns the overall variance of this ndarray
      *
@@ -1900,12 +1871,6 @@ public interface INDArray extends Serializable {
      * @return variance
      */
     Number varNumber();
-
-    /**
-     *
-     * @return
-     */
-    IComplexNumber varComplex();
 
     /**
      * Returns the overall max of this ndarray along given dimensions
@@ -1936,12 +1901,6 @@ public interface INDArray extends Serializable {
     Number amaxNumber();
 
     /**
-     *
-     * @return
-     */
-    IComplexNumber maxComplex();
-
-    /**
      * Returns the overall min of this ndarray
      *
      * @param dimension the dimension to getScalar the mean along
@@ -1968,8 +1927,6 @@ public interface INDArray extends Serializable {
      * @return Absolute min value
      */
     Number aminNumber();
-
-    IComplexNumber minComplex();
 
     /**
      * Returns the sum along the last dimension of this ndarray
@@ -2038,20 +1995,12 @@ public interface INDArray extends Serializable {
      */
     INDArray logEntropy(int... dimension);
 
-    /**
-     * Sum the entire array
-     * @return
-     */
-    IComplexNumber sumComplex();
 
     /**
      * stride setter
      * @param stride
      * @deprecated, use {@link #reshape(int...) }
      */
-    @Deprecated
-    void setStride(int... stride);
-
     @Deprecated
     void setStride(long... stride);
 
@@ -2060,8 +2009,7 @@ public interface INDArray extends Serializable {
      * @param shape
      * @deprecated, use {@link #reshape(int...) }
      */
-    @Deprecated
-    void setShape(int... shape);
+
 
     @Deprecated
     void setShape(long... shape);
@@ -2558,187 +2506,6 @@ public interface INDArray extends Serializable {
      */
     DataBuffer data();
 
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray rdiv(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray rdivi(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray rsub(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray rsubi(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray div(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray divi(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray mul(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray muli(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray sub(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray subi(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray add(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @return
-     */
-    IComplexNDArray addi(IComplexNumber n);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray rdiv(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray rdivi(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray rsub(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray rsubi(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray div(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray divi(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray mul(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray muli(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray sub(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray subi(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray add(IComplexNumber n, IComplexNDArray result);
-
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
-    IComplexNDArray addi(IComplexNumber n, IComplexNDArray result);
-
     /**
      * This method checks 2 INDArrays equality with given eps
      *
@@ -3047,4 +2814,16 @@ public interface INDArray extends Serializable {
      * @return
      */
     boolean isEmpty();
+
+    /**
+     * This method returns shapeInformation as jvm long array
+     * @return
+     */
+    long[] shapeInfoJava();
+
+    /**
+     * This method returns dtype for this INDArray
+     * @return
+     */
+    DataBuffer.Type dataType();
 }

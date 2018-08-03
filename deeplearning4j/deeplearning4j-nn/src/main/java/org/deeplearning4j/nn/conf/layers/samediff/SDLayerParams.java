@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.conf.layers.samediff;
 
 import com.google.common.base.Preconditions;
@@ -59,7 +75,7 @@ public class SDLayerParams implements Serializable {
      * @param paramKey   The parameter key (name) for the bias parameter
      * @param paramShape Shape of the bias parameter array
      */
-    public void addBiasParam(@NonNull String paramKey, @NonNull long[] paramShape) {
+    public void addBiasParam(@NonNull String paramKey, @NonNull long... paramShape) {
         Preconditions.checkArgument(paramShape.length > 0, "Provided mia- parameter shape is" +
                 " invalid: length 0 provided for shape. Parameter: " + paramKey);
         biasParams.put(paramKey, paramShape);
@@ -69,8 +85,8 @@ public class SDLayerParams implements Serializable {
     }
 
     /**
-     * @return Get a list of parameter names / keys (previously added via {@link #addWeightParam(String, int...)} and
-     * {@link #addBiasParam(String, int[])}
+     * @return Get a list of parameter names / keys (previously added via {@link #addWeightParam(String, long...)} and
+     * {@link #addBiasParam(String, long...)}
      */
     @JsonIgnore
     public List<String> getParameterKeys() {
@@ -85,7 +101,7 @@ public class SDLayerParams implements Serializable {
 
     /**
      * @return Get a list of parameter names / keys for weight parameters only, previously added via
-     * {@link #addWeightParam(String, int...)}
+     * {@link #addWeightParam(String, long...)}
      */
     @JsonIgnore
     public List<String> getWeightParameterKeys() {
@@ -97,7 +113,7 @@ public class SDLayerParams implements Serializable {
 
     /**
      * @return Get a list of parameter names / keys for weight parameters only, previously added via
-     * {@link #addWeightParam(String, int...)}
+     * {@link #addWeightParam(String, long...)}
      */
     @JsonIgnore
     public List<String> getBiasParameterKeys() {
@@ -129,6 +145,14 @@ public class SDLayerParams implements Serializable {
         paramsList = null;
         weightParamsList = null;
         biasParamsList = null;
+    }
+
+    public boolean isWeightParam(String param){
+        return weightParams.containsKey(param);
+    }
+
+    public boolean isBiasParam(String param){
+        return biasParams.containsKey(param);
     }
 
     @Override

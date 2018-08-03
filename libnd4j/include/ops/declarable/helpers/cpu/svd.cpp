@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 03.01.2018
 //
@@ -6,7 +22,6 @@
 #include <ops/declarable/helpers/jacobiSVD.h>
 #include <ops/declarable/helpers/biDiagonalUp.h>
 #include <array/ResultSet.h>
-#include <NDArrayFactory.h>
 
 
 namespace nd4j {
@@ -974,13 +989,13 @@ void svd(const NDArray<T>* x, const std::vector<NDArray<T>*>& outArrs, const boo
     const int rank =  x->rankOf();    
     const int sRank = rank == 2 ? 2 : rank - 1; 
 
-    ResultSet<T>* listX = NDArrayFactory<T>::allTensorsAlongDimension(x, {rank-2, rank-1});
-    ResultSet<T>* listS = NDArrayFactory<T>::allTensorsAlongDimension(s, {sRank-1});
+    ResultSet<T>* listX = x->allTensorsAlongDimension({rank-2, rank-1});
+    ResultSet<T>* listS = s->allTensorsAlongDimension({sRank-1});
     ResultSet<T>* listU(nullptr), *listV(nullptr);
     
     if(calcUV) {                
-        listU = NDArrayFactory<T>::allTensorsAlongDimension(u, {rank-2, rank-1});
-        listV = NDArrayFactory<T>::allTensorsAlongDimension(v, {rank-2, rank-1});
+        listU = u->allTensorsAlongDimension({rank-2, rank-1});
+        listV = v->allTensorsAlongDimension({rank-2, rank-1});
     }
 
     for(int i = 0; i < listX->size(); ++i) {

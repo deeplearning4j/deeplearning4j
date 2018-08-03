@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.autodiff.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.impl.DefaultSameDiffConditional;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -16,6 +33,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.Mean;
 import org.nd4j.linalg.api.ops.impl.accum.bp.MeanBp;
+import org.nd4j.linalg.api.ops.impl.accum.bp.StandardDeviationBp;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.layers.Linear;
@@ -32,6 +50,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp.MulBpOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp.SubBpOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
+import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -71,11 +90,7 @@ public class SameDiffTests {
     @After
     public void after() throws Exception {
         Nd4j.setDataType(initialType);
-    }
 
-
-    @After
-    public void tearDown() throws Exception {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
@@ -97,6 +112,22 @@ public class SameDiffTests {
         inputMap.put("w", weights);
         inputMap.put("y", labels);
         return inputMap;
+    }
+
+    @Test
+    public void testVariableNaming_1() {
+        val sd = SameDiff.create();
+
+        val input = sd.var("inp", new long[]{2, 3});
+
+        val nodeA = sd.square(input);
+        val nodeB = sd.square(nodeA);
+
+        sd.associateArrayWithVariable(Nd4j.create(new double[]{1, 2, 3, 4, 5, 6}, new long[]{2, 3}), input);
+
+        sd.execAndEndResult();
+
+        nodeA.isPlaceHolder();
     }
 
 
@@ -218,18 +249,6 @@ public class SameDiffTests {
         INDArray resultArray = res.getArr();
         assertArrayEquals(new long[]{1, 5}, res.getShape());
 
-    }
-
-    @Test
-    public void testDropout() {
-        SameDiff sd = SameDiff.create();
-        double p = 0.5;
-        INDArray ia = Nd4j.create(new long[]{2, 2});
-
-        SDVariable input = sd.var("input", ia);
-
-        SDVariable res = sd.dropout(input, p);
-        assertArrayEquals(new long[]{2, 2}, res.getShape());
     }
 
     @Test
@@ -431,7 +450,7 @@ public class SameDiffTests {
         Map<String, INDArray> xAndY = new HashMap<>();
         xAndY.put("x", ones);
         xAndY.put("y", toDivBy);
-        sameDiff.defineFunction("div", new SameDiff.SameDiffFunctionDefinition() {
+        sameDiff.defineFunction("div", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable x = sameDiff.var("x", inputs.get("x"));
@@ -440,7 +459,7 @@ public class SameDiffTests {
             }
         }, xAndY);
 
-        sameDiff.defineFunction("rdiv", new SameDiff.SameDiffFunctionDefinition() {
+        sameDiff.defineFunction("rdiv", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable x = sameDiff.var("x", inputs.get("x"));
@@ -464,7 +483,7 @@ public class SameDiffTests {
         INDArray ones = Nd4j.ones(4);
         Map<String, INDArray> xAndY = new HashMap<>();
         xAndY.put("x", ones);
-        sameDiff.defineFunction("neg", new SameDiff.SameDiffFunctionDefinition() {
+        sameDiff.defineFunction("neg", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable x = sameDiff.var("x", inputs.get("x"));
@@ -484,7 +503,7 @@ public class SameDiffTests {
         INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         Map<String, INDArray> inputs = new HashMap<>();
         inputs.put("x", sumInput);
-        sameDiff.defineFunction("sum", new SameDiff.SameDiffFunctionDefinition() {
+        sameDiff.defineFunction("sum", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable input = sameDiff.var("x", inputs.get("x"));
@@ -601,7 +620,7 @@ public class SameDiffTests {
 
         };
 
-        SameDiff functionDef = sameDiff.defineFunction(testFunctionName, new SameDiff.SameDiffFunctionDefinition() {
+        SameDiff functionDef = sameDiff.defineFunction(testFunctionName, new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 return new SDVariable[]{variableInputs[0].add(variableInputs[1])};
@@ -615,68 +634,11 @@ public class SameDiffTests {
 
     }
 
-    @Test(timeout = 10000L)
-    public void testWhileLoop() {
-        SameDiff sameDiff = SameDiff.create();
-        sameDiff.whileStatement(new SameDiff.DefaultSameDiffConditional(), new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable eqResult = sameDiff.neq(variableInputs[0], variableInputs[1]);
-                return new SDVariable[]{eqResult};
-            }
-        }, new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable ret = variableInputs[1].addi(1.0);
-                return new SDVariable[]{variableInputs[0], ret};
-            }
-        }, new SDVariable[]{
-                sameDiff.one("one", new long[]{1, 1}),
-                sameDiff.var("two", new long[]{1, 1}),
-
-        });
-
-        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec = sameDiff.exec();
-        assertFalse(exec.getRight().isEmpty());
-        While function = (While) exec.getRight().get(exec.getRight().size() - 1);
-        assumeNotNull(function.getOutputVars());
-        assertEquals(1, function.getNumLooped());
-        sameDiff.toString();
-    }
-    @Test(timeout = 10000L)
-    public void testWhileLoop2() {
-        SameDiff sameDiff = SameDiff.create();
-        sameDiff.whileStatement(new SameDiff.DefaultSameDiffConditional(), new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable eqResult = sameDiff.neq(variableInputs[0], variableInputs[1]);
-                return new SDVariable[]{eqResult};
-            }
-        }, new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable ret = variableInputs[1].add(1.0);
-                return new SDVariable[]{variableInputs[0], ret};
-            }
-        }, new SDVariable[]{
-                sameDiff.one("one", new long[]{1, 1}),
-                sameDiff.var("two", new long[]{1, 1}),
-
-        });
-
-        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec = sameDiff.exec();
-        assertFalse(exec.getRight().isEmpty());
-        While function = (While) exec.getRight().get(exec.getRight().size() - 1);
-        assumeNotNull(function.getOutputVars());
-        assertEquals(1, function.getNumLooped());
-        sameDiff.toString();
-    }
-
 
     @Test
     public void testIfStatementTrueBodyBackwards() {
         SameDiff sameDiff = SameDiff.create();
-        SameDiff.SameDiffFunctionDefinition conditionBody = new SameDiff.SameDiffFunctionDefinition() {
+        SameDiffFunctionDefinition conditionBody = new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable sum = sameDiff.sum(variableInputs[0], Integer.MAX_VALUE);
@@ -686,7 +648,7 @@ public class SameDiffTests {
         };
 
 
-        SameDiff.SameDiffFunctionDefinition trueBody = new SameDiff.SameDiffFunctionDefinition() {
+        SameDiffFunctionDefinition trueBody = new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable add = variableInputs[0].add(1.0);
@@ -694,7 +656,7 @@ public class SameDiffTests {
             }
         };
 
-        SameDiff.SameDiffFunctionDefinition falseBody = new SameDiff.SameDiffFunctionDefinition() {
+        SameDiffFunctionDefinition falseBody = new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable sub = variableInputs[0].sub(1.0);
@@ -709,7 +671,7 @@ public class SameDiffTests {
         };
 
 
-        sameDiff.ifStatement(new SameDiff.DefaultSameDiffConditional(), conditionBody, trueBody, falseBody, firstInputs);
+        sameDiff.ifStatement(new DefaultSameDiffConditional(), conditionBody, trueBody, falseBody, firstInputs);
         sameDiff.execBackwards();
         SameDiff grad = sameDiff.getFunction("grad");
        /* If ifBlock = (If) grad.getFunction(new long[]{1},new long[]{2});
@@ -724,38 +686,11 @@ public class SameDiffTests {
     }
 
 
-    @Test(timeout = 10000L)
-    public void testWhileBackwards() {
-        SameDiff sameDiff = SameDiff.create();
-        sameDiff.whileStatement(new SameDiff.DefaultSameDiffConditional(), new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable eqResult = sameDiff.neq(variableInputs[0], variableInputs[1]);
-                return new SDVariable[]{eqResult};
-            }
-        }, new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable ret = variableInputs[1].addi(1.0);
-                return new SDVariable[]{variableInputs[0], ret};
-            }
-        }, new SDVariable[]{
-                sameDiff.one("one", new long[]{1, 1}),
-                sameDiff.var("two", new long[]{1, 1}),
-
-        });
-
-        sameDiff.execBackwards();
-        SameDiff exec = sameDiff.getFunction("grad");
-        System.out.println(exec);
-    }
-
-
     @Test
     public void testIfStatementTrueBody() {
         SameDiff sameDiff = SameDiff.create();
 
-        SameDiff.SameDiffFunctionDefinition conditionBody = new SameDiff.SameDiffFunctionDefinition() {
+        SameDiffFunctionDefinition conditionBody = new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable sum = sameDiff.sum(variableInputs[0], Integer.MAX_VALUE);
@@ -765,7 +700,7 @@ public class SameDiffTests {
         };
 
 
-        SameDiff.SameDiffFunctionDefinition trueBody = new SameDiff.SameDiffFunctionDefinition() {
+        SameDiffFunctionDefinition trueBody = new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable add = variableInputs[0].add(1.0);
@@ -773,7 +708,7 @@ public class SameDiffTests {
             }
         };
 
-        SameDiff.SameDiffFunctionDefinition falseBody = new SameDiff.SameDiffFunctionDefinition() {
+        SameDiffFunctionDefinition falseBody = new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable sub = variableInputs[0].sub(1.0);
@@ -788,7 +723,7 @@ public class SameDiffTests {
         };
 
 
-        sameDiff.ifStatement(new SameDiff.DefaultSameDiffConditional(), conditionBody, trueBody, falseBody, firstInputs);
+        sameDiff.ifStatement(new DefaultSameDiffConditional(), conditionBody, trueBody, falseBody, firstInputs);
         Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec = sameDiff.exec();
 
     }
@@ -798,7 +733,7 @@ public class SameDiffTests {
     public void testIfStatementFalseBody() {
         SameDiff sameDiff = SameDiff.create();
 
-        SameDiff.SameDiffFunctionDefinition conditionBody = new SameDiff.SameDiffFunctionDefinition() {
+        SameDiffFunctionDefinition conditionBody = new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable sum = sameDiff.sum(variableInputs[0], Integer.MAX_VALUE);
@@ -808,7 +743,7 @@ public class SameDiffTests {
         };
 
 
-        SameDiff.SameDiffFunctionDefinition trueBody = new SameDiff.SameDiffFunctionDefinition() {
+        SameDiffFunctionDefinition trueBody = new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable add = variableInputs[0].add(1.0);
@@ -816,7 +751,7 @@ public class SameDiffTests {
             }
         };
 
-        SameDiff.SameDiffFunctionDefinition falseBody = new SameDiff.SameDiffFunctionDefinition() {
+        SameDiffFunctionDefinition falseBody = new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable sub = variableInputs[0].sub(1.0);
@@ -831,7 +766,7 @@ public class SameDiffTests {
 
         };
 
-        sameDiff.ifStatement(new SameDiff.DefaultSameDiffConditional(), conditionBody, trueBody, falseBody, secondInputs);
+        sameDiff.ifStatement(new DefaultSameDiffConditional(), conditionBody, trueBody, falseBody, secondInputs);
 
         Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec = sameDiff.exec();
 
@@ -1027,7 +962,7 @@ public class SameDiffTests {
     public void testRunLogisticRegression() {
         Map<String, INDArray> vars = this.variablesForInput();
         SameDiff outside = SameDiff.create();
-        outside.defineFunction("activate", new SameDiff.SameDiffFunctionDefinition() {
+        outside.defineFunction("activate", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 sameDiff.enableDebugMode();
@@ -1064,7 +999,7 @@ public class SameDiffTests {
     public void testSoftmaxRegression() {
         Map<String, INDArray> vars = this.variablesForInput();
         SameDiff outside = SameDiff.create();
-        outside.defineFunction("activate", new SameDiff.SameDiffFunctionDefinition() {
+        outside.defineFunction("activate", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 sameDiff.enableDebugMode();
@@ -1135,7 +1070,7 @@ public class SameDiffTests {
         Map<String, INDArray> vars = this.variablesForInput();
         SameDiff outside = SameDiff.create();
 
-        outside.defineFunction("activate", new SameDiff.SameDiffFunctionDefinition() {
+        outside.defineFunction("activate", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 sameDiff.enableDebugMode();
@@ -1222,7 +1157,7 @@ public class SameDiffTests {
         final SameDiff outer = SameDiff.create();
         Map<String, INDArray> input = new HashMap<>();
         input.put("x", Nd4j.ones(2));
-        outer.defineFunction("firstadd", new SameDiff.SameDiffFunctionDefinition() {
+        outer.defineFunction("firstadd", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable input = sameDiff.var("x", inputs.get("x"));
@@ -1231,7 +1166,7 @@ public class SameDiffTests {
             }
         }, input);
 
-        outer.defineFunction("secondadd", new SameDiff.SameDiffFunctionDefinition() {
+        outer.defineFunction("secondadd", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable result = outer.invokeFunctionOn("firstadd", sameDiff);
@@ -1276,7 +1211,7 @@ public class SameDiffTests {
         Map<String, INDArray> inputs = variablesForInput();
         inputs.remove("y");
         String logisticForward = "logisticPredictions";
-        sameDiffOuter.defineFunction(logisticForward, new SameDiff.SameDiffFunctionDefinition() {
+        sameDiffOuter.defineFunction(logisticForward, new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
 
@@ -1301,7 +1236,7 @@ public class SameDiffTests {
         INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         Map<String, INDArray> inputs = new HashMap<>();
         inputs.put("x", sumInput);
-        sameDiff.defineFunction("softmax", new SameDiff.SameDiffFunctionDefinition() {
+        sameDiff.defineFunction("softmax", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable input = sameDiff.var("x", inputs.get("x").dup());
@@ -1342,7 +1277,7 @@ public class SameDiffTests {
         Map<String, INDArray> params = new HashMap<>();
         INDArray var = Nd4j.valueArrayOf(4, 2);
         params.put("x", var);
-        sameDiff.defineFunction("rsubop", new SameDiff.SameDiffFunctionDefinition() {
+        sameDiff.defineFunction("rsubop", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable input = sameDiff.var("x", inputs.get("x"));
@@ -1365,7 +1300,7 @@ public class SameDiffTests {
         SameDiff sameDiffOuter = SameDiff.create();
         Map<String, INDArray> inputs = variablesForInput();
 
-        sameDiffOuter.defineFunction("logisticPredictions", new SameDiff.SameDiffFunctionDefinition() {
+        sameDiffOuter.defineFunction("logisticPredictions", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable input = sameDiff.var("x", inputs.get("x"));
@@ -1376,7 +1311,7 @@ public class SameDiffTests {
             }
         }, inputs);
 
-        sameDiffOuter.defineFunction("oneminuspredictions", new SameDiff.SameDiffFunctionDefinition() {
+        sameDiffOuter.defineFunction("oneminuspredictions", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable y = sameDiff.var("y", inputs.get("y"));
@@ -1409,7 +1344,7 @@ public class SameDiffTests {
         final SameDiff sameDiffOuter = SameDiff.create();
         Map<String, INDArray> inputs = variablesForInput();
 
-        sameDiffOuter.defineFunction("logisticPredictions", new SameDiff.SameDiffFunctionDefinition() {
+        sameDiffOuter.defineFunction("logisticPredictions", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable input = sameDiff.var("x", inputs.get("x"));
@@ -1422,7 +1357,7 @@ public class SameDiffTests {
             }
         }, inputs);
 
-        sameDiffOuter.defineFunction("loss", new SameDiff.SameDiffFunctionDefinition() {
+        sameDiffOuter.defineFunction("loss", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable outputs = sameDiffOuter.invokeFunctionOn("logisticPredictions", sameDiff);
@@ -2385,7 +2320,7 @@ public class SameDiffTests {
     public void testScatterAdd() {
         INDArray arr1 = Nd4j.zeros(3, 3);
         INDArray arr2 = Nd4j.create(new float[]{0,1}, new long[]{2});
-        INDArray arr3 = Nd4j.ones(3, 3);
+        INDArray arr3 = Nd4j.ones(2, 3);
         INDArray expected = Nd4j.create(new float[]{1, 1, 1,
                                                     1, 1, 1,
                                                     0, 0, 0},
@@ -2406,7 +2341,7 @@ public class SameDiffTests {
     public void testScatterMul() {
         INDArray arr1 = Nd4j.ones(3, 3);
         INDArray arr2 = Nd4j.create(new float[]{0,1}, new long[]{2});
-        INDArray arr3 = Nd4j.zeros(3, 3);
+        INDArray arr3 = Nd4j.zeros(2, 3);
         INDArray expected = Nd4j.create(new float[]{0, 0, 0,
                                                     0, 0, 0,
                                                    1, 1, 1},
@@ -2427,7 +2362,7 @@ public class SameDiffTests {
     public void testScatterSub() {
         INDArray arr1 = Nd4j.ones(3, 3);
         INDArray arr2 = Nd4j.create(new float[]{0,1}, new long[]{2});
-        INDArray arr3 = Nd4j.ones(3, 3);
+        INDArray arr3 = Nd4j.ones(2, 3);
         INDArray expected = Nd4j.create(new float[]{0, 0, 0,
                                                     0, 0, 0,
                                                     1, 1, 1},
@@ -2448,7 +2383,7 @@ public class SameDiffTests {
     public void testScatterDiv() {
         INDArray arr1 = Nd4j.ones(3, 3);
         INDArray arr2 = Nd4j.create(new float[]{0,1}, new long[]{2});
-        INDArray arr3 = Nd4j.ones(3, 3).assign(2);
+        INDArray arr3 = Nd4j.ones(2, 3).assign(2);
         INDArray expected = Nd4j.create(new float[]{0.5f, 0.5f, 0.5f,
                                                     0.5f, 0.5f, 0.5f,
                                                     1.0f, 1.0f, 1.0f},
@@ -2462,7 +2397,46 @@ public class SameDiffTests {
         SDVariable result = sd.scatterDiv(refs, idxs, upds);
         assertArrayEquals(new long[]{3, 3}, result.eval().shape());
         assertEquals(expected, result.eval());
+    }
 
+    @Test
+    public void testScatterMax() {
+        INDArray arr1 = Nd4j.ones(3, 3);
+        INDArray arr2 = Nd4j.create(new float[]{0,1}, new long[]{2});
+        INDArray arr3 = Nd4j.ones(2, 3).assign(2);
+        INDArray expected = Nd4j.create(new float[]{2.0f, 2.0f, 2.0f,
+                        2.0f, 2.0f, 2.0f,
+                        1.0f, 1.0f, 1.0f},
+                new long[]{3, 3});
+
+        SameDiff sd  = SameDiff.create();
+        SDVariable refs = sd.var("refs", arr1);
+        SDVariable idxs = sd.var("idxs", arr2);
+        SDVariable upds = sd.var("upds", arr3);
+
+        SDVariable result = sd.scatterMax(refs, idxs, upds);
+        assertArrayEquals(new long[]{3, 3}, result.eval().shape());
+        assertEquals(expected, result.eval());
+    }
+
+    @Test
+    public void testScatterMin() {
+        INDArray arr1 = Nd4j.ones(3, 3);
+        INDArray arr2 = Nd4j.create(new float[]{1,2}, new long[]{2});
+        INDArray arr3 = Nd4j.ones(2, 3).assign(-2.0f);
+        INDArray expected = Nd4j.create(new float[]{1.0f, 1.0f, 1.0f,
+                        -2.0f, -2.0f, -2.0f,
+                        -2.0f, -2.0f, -2.0f},
+                new long[]{3, 3});
+
+        SameDiff sd  = SameDiff.create();
+        SDVariable refs = sd.var("refs", arr1);
+        SDVariable idxs = sd.var("idxs", arr2);
+        SDVariable upds = sd.var("upds", arr3);
+
+        SDVariable result = sd.scatterMin(refs, idxs, upds);
+        assertArrayEquals(new long[]{3, 3}, result.eval().shape());
+        assertEquals(expected, result.eval());
     }
 
     @Test
@@ -2549,7 +2523,7 @@ public class SameDiffTests {
         DifferentialFunction[] dfsBackward = sdGrad.functions();
         assertEquals(10, dfsBackward.length);    //sub, mul, mean, mean, backward marker, meanbp, meanbp, mulbp, add (from diff.mul(diff)), subbp
 
-        List<Class> classesExp = Arrays.asList(
+        val classesExp = Arrays.asList(
                 SubOp.class, MulOp.class, Mean.class, Mean.class, GradientBackwardsMarker.class, MeanBp.class,
                 MeanBp.class, MulBpOp.class, AddOp.class, SubBpOp.class);
         for(int i=0; i<10; i++ ){
@@ -2730,52 +2704,6 @@ public class SameDiffTests {
         assertEquals(arr2, result2.eval());
     }
 
-    @Test(timeout = 10000L)
-    public void testTensorArray4(){
-        SameDiff sd = SameDiff.create();
-        TensorArrayV3 ta = sd.tensorArray();
-
-        // while loop
-        val predicate = new SameDiff.DefaultSameDiffConditional();
-        val cond = new SameDiff.SameDiffFunctionDefinition(){
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable ret = sameDiff.neq(variableInputs[0], variableInputs[1]);
-                return new SDVariable[]{ret};
-            }
-        };
-        val loop_body = new SameDiff.SameDiffFunctionDefinition(){
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                ta.write(variableInputs[0], variableInputs[2]);
-                SDVariable ret1 = variableInputs[0].addi(1);
-                SDVariable ret2 = variableInputs[1];
-                SDVariable ret3 = variableInputs[2].addi(1);
-                return new SDVariable[]{ret1, ret2, ret3};
-            }
-        };
-
-        SDVariable loop_counter = sd.var(Nd4j.create(new double[]{0}));
-
-
-        INDArray arr = Nd4j.create(new double[]{1, 2, 3, 4, 5});
-        SDVariable initial_state = sd.var(arr);
-
-        sd.whileStatement(predicate, cond, loop_body, new SDVariable[]{loop_counter, loop_counter.add(10), initial_state});
-
-
-        // build expected output
-        List<INDArray> arr_list = new ArrayList<>();
-        for(int i=0; i<10; i++){
-            arr_list.add(arr.add(i));
-        }
-        INDArray expOut = Nd4j.pile(arr_list);
-
-
-        SDVariable result = ta.stack();
-        assertEquals(expOut, result.eval());
-    }
-
     @Test
     public void testFill(){
         SameDiff sd = SameDiff.create();
@@ -2832,19 +2760,244 @@ public class SameDiffTests {
 
     }
 
+
     @Test
-    public void testEye(){
-        INDArray arr = Nd4j.create(new double[]{1, 0, 0, 0, 1, 0}, new int[]{2, 3});
-        List<INDArray> stack = new ArrayList<>();
-        for(int i=0; i< 25; i++){
-            stack.add(arr);
-        }
-        INDArray expOut = Nd4j.pile(stack).reshape(5, 5, 2, 3);
+    public void testExecutionDifferentShapesAccumAlongDim(){
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+
+        SDVariable sum = in.sum(1);
+        INDArray exp = in.getArr().sum(1).reshape(3);
+
+        INDArray out = sd.execAndEndResult();
+        assertEquals(exp, out);
+
+        //Now, replace with minibatch 5:
+        in.setArray(Nd4j.linspace(1,20,20).reshape(5,4));
+        INDArray out2 = sd.execAndEndResult();
+        assertArrayEquals(new long[]{5}, out2.shape());
+
+        exp = in.getArr().sum(1).reshape(5);
+        assertEquals(exp, out2);
+    }
+
+    @Test
+    public void testExecutionDifferentShapesIndexAccumAlongDim(){
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+
+        SDVariable sum = in.argmax(1);
+        INDArray exp = in.getArr().argMax(1).reshape(3);
+
+        INDArray out = sd.execAndEndResult();
+        assertEquals(exp, out);
+
+        //Now, replace with minibatch 5:
+        in.setArray(Nd4j.linspace(1,20,20).reshape(5,4));
+        INDArray out2 = sd.execAndEndResult();
+        assertArrayEquals(new long[]{5}, out2.shape());
+
+        exp = in.getArr().argMax(1).reshape(5);
+        assertEquals(exp, out2);
+    }
+
+    @Test
+    public void testExternalErrorsSimple(){
+        INDArray externalGrad = Nd4j.linspace(1,12,12).reshape(3,4);
 
         SameDiff sd = SameDiff.create();
-        SDVariable result = sd.eye(2, 3, 5, 5);
+        SDVariable var = sd.var("var", externalGrad);
+        SDVariable out = var.mul("out", 0.5);
 
-        assertEquals(expOut, result.eval());
+        Map<String,INDArray> gradMap = new HashMap<>();
+        gradMap.put("out", externalGrad);
+        ExternalErrorsFunction fn = sd.f().externalErrors(out);
+        //new ExternalErrorsFunction(sd, Collections.singletonList(out), gradMap);
+
+        fn.updateVariable("out", externalGrad);
+        sd.execAndEndResult();
+        sd.execBackwards();
+
+        INDArray gradOut = out.getGradient().getArr();
+        INDArray gradVar = var.getGradient().getArr();
+
+        assertEquals(externalGrad, gradOut);
+        assertEquals(externalGrad.mul(0.5), gradVar);
+
+        //Now, update and execute again:
+        externalGrad = Nd4j.linspace(1,12,12).reshape(3,4).muli(10);
+        fn.updateVariable("out", externalGrad);
+
+        sd.execBackwards();
+
+        gradOut = out.getGradient().getArr();
+        gradVar = var.getGradient().getArr();
+
+        assertEquals(externalGrad, gradOut);
+        assertEquals(externalGrad.mul(0.5), gradVar);
+    }
+
+    @Test
+    public void testUpdatingGradient(){
+        Nd4j.getRandom().setSeed(12345);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+        SDVariable w = sd.var("w", Nd4j.linspace(1,20,20).reshape(4,5));
+        SDVariable out = sd.mmul(in, w);
+        SDVariable loss = out.std("out", true);
+
+        INDArray outArr = sd.execAndEndResult().dup();
+        sd.execBackwards();
+
+        Map<String,INDArray> origGrad = new HashMap<>();
+        origGrad.put("in", in.gradient().getArr().dup());
+        origGrad.put("w", w.gradient().getArr().dup());
+        origGrad.put("out", out.gradient().getArr().dup());
+
+        in.getArr().assign(Nd4j.rand(in.getArr().shape()));
+        INDArray outArr2 = sd.execAndEndResult();
+        sd.execBackwards();
+
+        assertNotEquals(outArr, outArr2);
+
+        //Ensure gradients are also changed:
+        assertNotEquals(origGrad.get("in"), in.gradient().getArr());
+        assertNotEquals(origGrad.get("w"), w.gradient().getArr());
+        assertNotEquals(origGrad.get("out"), out.gradient().getArr());
+    }
+
+    @Test
+    public void testUpdatingInplaceFwd(){
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+        SDVariable w = sd.var("w", Nd4j.linspace(1,20,20).reshape(4,5));
+        SDVariable out = sd.mmul(in, w);
+        SDVariable loss = out.std("out", true);
+
+        INDArray outArr = sd.execAndEndResult().dup();
+        sd.execBackwards();
+
+        Map<String,INDArray> origGrad = new HashMap<>();
+        origGrad.put("in", in.gradient().getArr().dup());
+        origGrad.put("w", w.gradient().getArr().dup());
+        origGrad.put("out", out.gradient().getArr().dup());
+
+        in.getArr().muli(5);
+
+        //check gradient function copy of array
+        SameDiff sdGrad = sd.getFunction("grad");
+        INDArray gradArrIn = sdGrad.getVariable("in").getArr();
+        assertEquals(in.getArr(), gradArrIn);
+    }
+
+    @Test
+    public void testUpdatingAssociateFwd(){
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+        SDVariable w = sd.var("w", Nd4j.linspace(1,20,20).reshape(4,5));
+        SDVariable out = sd.mmul(in, w);
+        SDVariable loss = out.std("out", true);
+
+        INDArray outArr = sd.execAndEndResult().dup();
+        sd.execBackwards();
+
+        Map<String,INDArray> origGrad = new HashMap<>();
+        origGrad.put("in", in.gradient().getArr().dup());
+        origGrad.put("w", w.gradient().getArr().dup());
+        origGrad.put("out", out.gradient().getArr().dup());
+
+        INDArray newIn = in.getArr().dup().muli(5);
+        in.setArray(newIn);
+
+        //check gradient function copy of array
+        SameDiff sdGrad = sd.getFunction("grad");
+        INDArray gradArrIn = sdGrad.getVariable("in").getArr();
+        assertEquals(newIn, gradArrIn);
+    }
+
+    @Test
+    public void testUpdatingGradientSimple() throws Exception {
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+        SDVariable out = in.mul(2.0);
+        SDVariable loss = out.std("out", true);
+
+        INDArray outArr = sd.execAndEndResult().dup();
+        sd.execBackwards();
+
+        SameDiff sdGrad = sd.getFunction("grad");
+
+        Field f = SameDiff.class.getDeclaredField("variableNameToArr");
+        f.setAccessible(true);
+        Map<String,INDArray> before = (Map<String, INDArray>) f.get(sdGrad);
+        for(Map.Entry<String,INDArray> e : before.entrySet()){
+            System.out.println(e.getKey());
+            System.out.println(e.getValue());
+        }
+
+        Map<String,INDArray> origGrad = new HashMap<>();
+        origGrad.put("in", in.gradient().getArr().dup());
+        origGrad.put("out", out.gradient().getArr().dup());
+
+        double stdBefore = in.getArr().stdNumber().doubleValue();
+        in.getArr().assign(Nd4j.rand(in.getArr().shape()));
+        double stdAfter = in.getArr().stdNumber().doubleValue();
+        System.out.println("Before vs. after: " + stdBefore + ", " + stdAfter);
+        INDArray outArr2 = sd.execAndEndResult();
+        sd.execBackwards();
+
+        assertNotEquals(outArr, outArr2);
+
+        System.out.println("=======================================================");
+        Map<String,INDArray> after = (Map<String, INDArray>) f.get(sdGrad);
+        for(Map.Entry<String,INDArray> e : after.entrySet()){
+            System.out.println(e.getKey());
+            System.out.println(e.getValue());
+        }
+
+        //Ensure gradients are also changed:
+        assertNotEquals(origGrad.get("in"), in.gradient().getArr());
+        assertNotEquals(origGrad.get("out"), out.gradient().getArr());
+    }
+
+    @Test
+    public void testShapeUpdating(){
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", 3,5);
+        SDVariable w = sd.var("W", 5,4);
+        SDVariable b = sd.var("b", 1,4);
+        SDVariable z = in.mmul(w).add(b);
+        SDVariable out = sd.tanh("tanh", z);
+        ExternalErrorsFunction fn = sd.f().externalErrors(out);
+
+        INDArray inA = Nd4j.linspace(1,15,15).reshape(3,5);
+        INDArray wA = Nd4j.linspace(1,20,20).reshape(5,4);
+        INDArray bA = Nd4j.linspace(1,4,4);
+        in.setArray(inA);
+        w.setArray(wA);
+        b.setArray(bA);
+
+        INDArray grad = Nd4j.linspace(1,12,12).reshape(3,4);
+        fn.updateVariable("tanh", grad);
+
+        log.info("--------------- sd.execAndEndResult() ---------------");
+        sd.execAndEndResult();
+        log.info("--------------- sd.execBackwards() #1 ---------------");
+        sd.execBackwards();
+
+        log.info("--------------- sd.execBackwards() #2 ---------------");
+        System.out.println(sd.getFunction("grad").summary());
+
+        in.setArray(Nd4j.linspace(1, 10, 10).reshape(2,5));
+        grad = Nd4j.linspace(1,8,8).reshape(2,4);
+        fn.updateVariable("tanh", grad);
+
+        sd.execBackwards();
+        INDArray inGrad = in.getGradient().getArr();
+        assertArrayEquals(new long[]{2,5}, inGrad.shape());
+        
     }
 
 }

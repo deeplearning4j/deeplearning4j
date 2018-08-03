@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // This file contains operations added by 3rd parties
 //
@@ -18,7 +34,6 @@
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/CustomOperations.h>
-#include <NDArrayFactory.h>
 
 namespace nd4j {
     namespace ops {
@@ -48,7 +63,7 @@ namespace nd4j {
                 sparse2dense.insert(pair);
             }
 
-            std::unique_ptr<ResultSet<T>> rows(NDArrayFactory<T>::allTensorsAlongDimension(x, {1}));
+            std::unique_ptr<ResultSet<T>> rows(x->allTensorsAlongDimension({1}));
 
 #pragma omp parallel for schedule(dynamic) proc_bind(close)
             for (int r = 0; r < batchSize; r++) {

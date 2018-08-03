@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.params;
 
 import lombok.extern.slf4j.Slf4j;
@@ -6,6 +22,9 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
+import org.deeplearning4j.nn.conf.layers.samediff.SameDiffVertex;
+import org.deeplearning4j.nn.layers.samediff.SameDiffGraphVertex;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -95,15 +114,29 @@ public class SameDiffParamInitializer implements ParamInitializer {
 
     private Map<String,INDArray> subsetAndReshape(List<String> params, Map<String,long[]> paramShapes, INDArray view,
                                                   AbstractSameDiffLayer sdl){
+        return subsetAndReshape(params, paramShapes, view, sdl, null);
+    }
+
+    public Map<String,INDArray> subsetAndReshape(List<String> params, Map<String,long[]> paramShapes, INDArray view,
+                                                 AbstractSameDiffLayer sdl, SameDiffVertex sdv){
+        Class<?> clazz = (sdl != null ? sdl.getClass() : sdv.getClass());
+        String layerName = (sdl != null ? sdl.getLayerName() : ""); //TODO
+
         Map<String,INDArray> out = new LinkedHashMap<>();
         int soFar = 0;
         for(String s : params){
             val sh = paramShapes.get(s);
             val length = ArrayUtil.prodLong(sh);
+            if(length <= 0){
+                throw new IllegalStateException("Invalid array state for parameter \"" + s + "\" in layer " + layerName
+                        + " of type " + clazz.getSimpleName() + ": parameter length (" + length
+                        + ") must be > 0 - parameter array shape: " + Arrays.toString(sh));
+            }
             INDArray sub = view.get(point(0), interval(soFar, soFar + length));
 
             if(!Arrays.equals(sub.shape(), sh)){
-                sub = sub.reshape(sdl.paramReshapeOrder(s), sh); //TODO do we want to allow users to override initialization order?
+                char order = (sdl != null ? sdl.paramReshapeOrder(s) : sdv.paramReshapeOrder(s));
+                sub = sub.reshape(order, sh);
             }
             out.put(s, sub);
 

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.imports.graphmapper.tf;
 
 import com.github.os72.protobuf351.Message;
@@ -441,6 +457,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             return;
         }
 
+        val nodeName = tfNode.getName();
 
         val diff = importState.getSameDiff();
         if (isVariableNode(tfNode)) {
@@ -472,7 +489,6 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         }
         else {
             val opName = tfNode.getOp();
-            val nodeName = tfNode.getName();
 
             // FIXME: early draft
             // conditional import
@@ -820,10 +836,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 int val = tfTensor.getIntVal(0);
 
                 if (arrayShape == null || arrayShape.length == 0)
-                    arrayShape = new int[]{};
+                    return Nd4j.trueScalar((double) val);
 
-                INDArray array = Nd4j.valueArrayOf(arrayShape, (double) val);
-                return array;
+                return Nd4j.valueArrayOf(arrayShape, (double) val);
             } else if (tfTensor.getInt64ValCount() > 0) {
                 double[] jArray = new double[tfTensor.getIntValCount()];
                 for (int e = 0; e < tfTensor.getIntValCount(); e++) {
@@ -831,8 +846,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 }
 
                 // TF arrays are always C
-                INDArray array = Nd4j.create(jArray, arrayShape, 0, 'c');
-                return array;
+                return Nd4j.create(jArray, arrayShape, 0, 'c');
             } else {
                 // FIXME: INT bytebuffers should be converted to floating point
                 //throw new UnsupportedOperationException("To be implemented yet");
@@ -1025,14 +1039,6 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         long[] shape = new long[tensorShapeProto.getDimList().size()];
         for(int i = 0; i < shape.length; i++) {
             shape[i] =  tensorShapeProto.getDim(i).getSize();
-        }
-
-        //shape should be mapped to a row vector
-        if(shape.length < 2) {
-            if(shape.length == 1)
-                shape = new long[]{1,shape[0]};
-            else
-                shape = new long[]{1,1};
         }
 
         return shape;

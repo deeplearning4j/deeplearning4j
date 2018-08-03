@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
@@ -30,7 +46,7 @@ import java.util.Map;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class Subsampling3DLayer extends Layer {
+public class Subsampling3DLayer extends NoParamLayer {
 
     protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;
     protected org.deeplearning4j.nn.conf.layers.PoolingType poolingType;
@@ -278,7 +294,7 @@ public class Subsampling3DLayer extends Layer {
         protected int[] stride = new int[]{2, 2, 2};
         protected int[] padding = new int[]{0, 0, 0};
         protected int[] dilation = new int[]{1, 1, 1};
-        protected ConvolutionMode convolutionMode = null;
+        protected ConvolutionMode convolutionMode = ConvolutionMode.Same;
         protected boolean cudnnAllowFallback = true;
 
         protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize, int[] stride) {

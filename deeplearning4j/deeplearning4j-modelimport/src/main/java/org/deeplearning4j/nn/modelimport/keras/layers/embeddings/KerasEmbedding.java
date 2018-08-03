@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.modelimport.keras.layers.embeddings;
 
 import lombok.Data;
@@ -163,6 +179,13 @@ public class KerasEmbedding extends KerasLayer {
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
         this.weights = new HashMap<>();
+        // TODO: "embeddings" is incorrectly read as "s" for some applications
+        if (weights.containsKey("s")) {
+            INDArray kernel = weights.get("s");
+            weights.remove("s");
+            weights.put(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS(), kernel);
+        }
+
         if (!weights.containsKey(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS()))
             throw new InvalidKerasConfigurationException(
                     "Parameter " + conf.getLAYER_FIELD_EMBEDDING_WEIGHTS() + " does not exist in weights");

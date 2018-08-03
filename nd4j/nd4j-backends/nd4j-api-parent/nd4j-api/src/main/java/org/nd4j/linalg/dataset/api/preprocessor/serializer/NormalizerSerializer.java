@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.dataset.api.preprocessor.serializer;
 
 import lombok.NonNull;
@@ -14,6 +30,7 @@ import java.util.List;
  * @author Ede Meijer
  */
 public class NormalizerSerializer {
+
     private static final String HEADER = "NORMALIZER";
     private static NormalizerSerializer defaultSerializer;
 
@@ -108,10 +125,11 @@ public class NormalizerSerializer {
     public static NormalizerSerializer getDefault() {
         if (defaultSerializer == null) {
             defaultSerializer = new NormalizerSerializer().addStrategy(new StandardizeSerializerStrategy())
-                            .addStrategy(new MinMaxSerializerStrategy())
-                            .addStrategy(new MultiStandardizeSerializerStrategy())
-                            .addStrategy(new MultiMinMaxSerializerStrategy())
-                            .addStrategy(new MultiHybridSerializerStrategy());
+                    .addStrategy(new MinMaxSerializerStrategy())
+                    .addStrategy(new MultiStandardizeSerializerStrategy())
+                    .addStrategy(new MultiMinMaxSerializerStrategy())
+                    .addStrategy(new ImagePreProcessingSerializerStrategy())
+                    .addStrategy(new MultiHybridSerializerStrategy());
         }
         return defaultSerializer;
     }
@@ -140,9 +158,9 @@ public class NormalizerSerializer {
             }
         }
         throw new RuntimeException(String.format(
-                        "No serializer strategy found for normalizer of class %s. If this is a custom normalizer, you probably "
-                                        + "forgot to register a corresponding custom serializer strategy with this serializer.",
-                        normalizer.getClass()));
+                "No serializer strategy found for normalizer of class %s. If this is a custom normalizer, you probably "
+                        + "forgot to register a corresponding custom serializer strategy with this serializer.",
+                normalizer.getClass()));
     }
 
     /**
@@ -173,7 +191,7 @@ public class NormalizerSerializer {
      * @return whether the strategy supports the normalizer
      */
     private boolean strategySupportsNormalizer(NormalizerSerializerStrategy strategy, NormalizerType normalizerType,
-                    Class<? extends Normalizer> normalizerClass) {
+                                               Class<? extends Normalizer> normalizerClass) {
         if (!strategy.getSupportedType().equals(normalizerType)) {
             return false;
         }
@@ -181,8 +199,8 @@ public class NormalizerSerializer {
             // Strategy should be instance of CustomSerializerStrategy
             if (!(strategy instanceof CustomSerializerStrategy)) {
                 throw new IllegalArgumentException(
-                                "Strategies supporting CUSTOM opType must be instance of CustomSerializerStrategy, got"
-                                                + strategy.getClass());
+                        "Strategies supporting CUSTOM opType must be instance of CustomSerializerStrategy, got"
+                                + strategy.getClass());
             }
             return ((CustomSerializerStrategy) strategy).getSupportedClass().equals(normalizerClass);
         }
@@ -203,8 +221,8 @@ public class NormalizerSerializer {
         String header = dis.readUTF();
         if (!header.equals(HEADER)) {
             throw new IllegalArgumentException(
-                            "Could not restore normalizer: invalid header. If this normalizer was saved with a opType-specific "
-                                            + "strategy like StandardizeSerializerStrategy, use that class to restore it as well.");
+                    "Could not restore normalizer: invalid header. If this normalizer was saved with a opType-specific "
+                            + "strategy like StandardizeSerializerStrategy, use that class to restore it as well.");
         }
 
         // The next byte is an integer indicating the version

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 //  @author raver119@gmail.com
 //
@@ -150,9 +166,9 @@ namespace functions {
                     auto zStride = shape::stride(zShapeBuffer);
 
                     for (Nd4jLong i = tid; i < length; i += blockDim.x * gridDim.x) {
-                        shape::ind2sub(xRank, xShape, i, xCoord);
-                        shape::ind2sub(yRank, yShape, i, yCoord);
-                        shape::ind2sub(zRank, zShape, i, zCoord);
+                        shape::ind2sub(xRank, xShape, i, length, xCoord);
+                        shape::ind2sub(yRank, yShape, i, length, yCoord);
+                        shape::ind2sub(zRank, zShape, i, length, zCoord);
 
                         auto xOffset2 = shape::getOffset(0, xShape, xStride, xCoord, xRank);
                         auto yOffset2 = shape::getOffset(0, yShape, yStride, yCoord, yRank);
@@ -218,8 +234,8 @@ namespace functions {
                     auto zStride = shape::stride(zShapeBuffer);
 
                     for (Nd4jLong i = blockIdx.x * blockDim.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x) {
-                        shape::ind2sub(xRank, xShape, i, xCoord);
-                        shape::ind2sub(zRank, zShape, i, zCoord);
+                        shape::ind2sub(xRank, xShape, i, length, xCoord);
+                        shape::ind2sub(zRank, zShape, i, length, zCoord);
 
                         auto xOffset2 = shape::getOffset(0, xShape, xStride, xCoord, xRank);
                         auto zOffset2 = shape::getOffset(0, zShape, zStride, zCoord, zRank);
@@ -273,7 +289,7 @@ namespace functions {
                     auto zStride = shape::stride(zShapeBuffer);
 
                     for (Nd4jLong i = tid; i < length; i += blockDim.x * gridDim.x) {
-                        shape::ind2sub(zRank, zShape, i, zCoord);
+                        shape::ind2sub(zRank, zShape, i, length, zCoord);
 
                         auto zOffset2 = shape::getOffset(0, zShape, zStride, zCoord, zRank);
 

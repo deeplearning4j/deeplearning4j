@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.layers;
 
 import org.deeplearning4j.BaseDL4JTest;
@@ -97,11 +113,11 @@ public class ActivationLayerTest extends BaseDL4JTest {
 
         // check activations
         network.init();
-        network.setInput(next.getFeatureMatrix());
+        network.setInput(next.getFeatures());
         List<INDArray> activations = network.feedForward(true);
 
         network2.init();
-        network2.setInput(next.getFeatureMatrix());
+        network2.setInput(next.getFeatures());
         List<INDArray> activations2 = network2.feedForward(true);
 
         assertEquals(activations.get(1).reshape(activations2.get(2).shape()), activations2.get(2));
@@ -230,11 +246,11 @@ public class ActivationLayerTest extends BaseDL4JTest {
 
         // check activations
         network.init();
-        network.setInput(next.getFeatureMatrix());
+        network.setInput(next.getFeatures());
         List<INDArray> activations = network.feedForward(true);
 
         network2.init();
-        network2.setInput(next.getFeatureMatrix());
+        network2.setInput(next.getFeatures());
         List<INDArray> activations2 = network2.feedForward(true);
 
         assertEquals(activations.get(1).reshape(activations2.get(2).shape()), activations2.get(2));

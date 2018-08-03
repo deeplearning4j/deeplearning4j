@@ -1,8 +1,22 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.api.blas;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -39,28 +53,11 @@ public interface Level1 {
     double dot(long N, DataBuffer dx, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY);
 
     /**
-     * computes a vector-vector dot product.
-     * @param n
-     * @param alpha
-     * @param X
-     * @param Y
-     * @return
-     */
-    IComplexNumber dot(long N, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y);
-
-    /**
      * computes the Euclidean norm of a vector.
      * @param arr
      * @return
      */
     double nrm2(INDArray arr);
-
-    /**
-     * computes the Euclidean norm of a vector.
-     * @param arr
-     * @return
-     */
-    IComplexNumber nrm2(IComplexNDArray arr);
 
     /**
      * computes the sum of magnitudes of all vector elements or, for a complex vector x, the sum
@@ -71,14 +68,6 @@ public interface Level1 {
 
     /** sum of magnitudes of all elements */
     double asum(long N, DataBuffer x, int offsetX, int incrX);
-
-    /**
-     * computes the sum of magnitudes
-     * of all vector elements or, for a complex vector x, the sum
-     * @param arr
-     * @return
-     */
-    IComplexNumber asum(IComplexNDArray arr);
 
     /**
      * finds the element of a
@@ -103,13 +92,6 @@ public interface Level1 {
     int iamax(long N, DataBuffer x, int offsetX, int incrX);
 
     /**
-     * finds the element of a vector that has the largest absolute value.
-     * @param arr
-     * @return
-     */
-    int iamax(IComplexNDArray arr);
-
-    /**
      * finds the element of a vector that has the minimum absolute value.
      * @param arr
      * @return
@@ -117,20 +99,11 @@ public interface Level1 {
     int iamin(INDArray arr);
 
     /**
-     * finds the element of a vector that has the minimum absolute value.
-     * @param arr
-     * @return
-     */
-    int iamin(IComplexNDArray arr);
-
-    /**
      * swaps a vector with another vector.
      * @param x
      * @param y
      */
     void swap(INDArray x, INDArray y);
-
-    void swap(IComplexNDArray x, IComplexNDArray y);
 
     /**
      * copy a vector to another vector.
@@ -144,8 +117,6 @@ public interface Level1 {
      * @param y
      */
     void copy(long N, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY);
-
-    void copy(IComplexNDArray x, IComplexNDArray y);
 
     /**
      *  computes a vector-scalar product and adds the result to a vector.
@@ -171,15 +142,6 @@ public interface Level1 {
     void axpy(long N, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY);
 
     /**
-     *  computes a vector-scalar product and adds the result to a vector.
-     * @param n
-     * @param alpha
-     * @param x
-     * @param y
-     */
-    void axpy(long N, IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y);
-
-    /**
      * computes parameters for a Givens rotation.
      * @param a
      * @param b
@@ -199,16 +161,6 @@ public interface Level1 {
     void rot(long N, INDArray X, INDArray Y, double c, double s);
 
     /**
-     * performs rotation of points in the plane.
-     * @param N
-     * @param X
-     * @param Y
-     * @param c
-     * @param s
-     */
-    void rot(long N, IComplexNDArray X, IComplexNDArray Y, IComplexNumber c, IComplexNumber s);
-
-    /**
      * computes the modified parameters for a Givens rotation.
      * @param d1
      * @param d2
@@ -219,30 +171,12 @@ public interface Level1 {
     void rotmg(INDArray d1, INDArray d2, INDArray b1, double b2, INDArray P);
 
     /**
-     * computes the modified parameters for a Givens rotation.
-     * @param d1
-     * @param d2
-     * @param b1
-     * @param b2
-     * @param P
-     */
-    void rotmg(IComplexNDArray d1, IComplexNDArray d2, IComplexNDArray b1, IComplexNumber b2, IComplexNDArray P);
-
-    /**
      *  computes a vector by a scalar product.
      * @param N
      * @param alpha
      * @param X
      */
     void scal(long N, double alpha, INDArray X);
-
-    /**
-     *  computes a vector by a scalar product.
-     * @param N
-     * @param alpha
-     * @param X
-     */
-    void scal(long N, IComplexNumber alpha, IComplexNDArray X);
 
 
     /** Can we use the axpy and copy methods that take a DataBuffer instead of an INDArray with this backend? */

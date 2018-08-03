@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
@@ -77,15 +93,15 @@ public class ParallelInferenceTest {
 
 
             log.info("Features shape: {}",
-                    Arrays.toString(iterator.next().getFeatureMatrix().shapeInfoDataBuffer().asInt()));
+                    Arrays.toString(iterator.next().getFeatures().shapeInfoDataBuffer().asInt()));
 
-            INDArray array1 = inf.output(iterator.next().getFeatureMatrix());
-            INDArray array2 = inf.output(iterator.next().getFeatureMatrix());
+            INDArray array1 = inf.output(iterator.next().getFeatures());
+            INDArray array2 = inf.output(iterator.next().getFeatures());
 
             assertFalse(array1.isAttached());
             assertFalse(array2.isAttached());
 
-            INDArray array3 = inf.output(iterator.next().getFeatureMatrix());
+            INDArray array3 = inf.output(iterator.next().getFeatures());
             assertFalse(array3.isAttached());
 
             iterator.reset();
@@ -117,15 +133,15 @@ public class ParallelInferenceTest {
 
 
             log.info("Features shape: {}",
-                    Arrays.toString(iterator.next().getFeatureMatrix().shapeInfoDataBuffer().asInt()));
+                    Arrays.toString(iterator.next().getFeatures().shapeInfoDataBuffer().asInt()));
 
-            INDArray array1 = inf.output(iterator.next().getFeatureMatrix());
-            INDArray array2 = inf.output(iterator.next().getFeatureMatrix());
+            INDArray array1 = inf.output(iterator.next().getFeatures());
+            INDArray array2 = inf.output(iterator.next().getFeatures());
 
             assertFalse(array1.isAttached());
             assertFalse(array2.isAttached());
 
-            INDArray array3 = inf.output(iterator.next().getFeatureMatrix());
+            INDArray array3 = inf.output(iterator.next().getFeatures());
             assertFalse(array3.isAttached());
 
             iterator.reset();
@@ -158,15 +174,15 @@ public class ParallelInferenceTest {
 
 
             log.info("Features shape: {}",
-                    Arrays.toString(iterator.next().getFeatureMatrix().shapeInfoDataBuffer().asInt()));
+                    Arrays.toString(iterator.next().getFeatures().shapeInfoDataBuffer().asInt()));
 
-            INDArray array1 = inf.output(iterator.next().getFeatureMatrix());
-            INDArray array2 = inf.output(iterator.next().getFeatureMatrix());
+            INDArray array1 = inf.output(iterator.next().getFeatures());
+            INDArray array2 = inf.output(iterator.next().getFeatures());
 
             assertFalse(array1.isAttached());
             assertFalse(array2.isAttached());
 
-            INDArray array3 = inf.output(iterator.next().getFeatureMatrix());
+            INDArray array3 = inf.output(iterator.next().getFeatures());
             assertFalse(array3.isAttached());
 
             iterator.reset();
@@ -316,7 +332,7 @@ public class ParallelInferenceTest {
         int count = 0;
         while (iterator.hasNext() && (count++ < 100)) {
             ds = iterator.next();
-            INDArray output = inf.output(ds.getFeatureMatrix());
+            INDArray output = inf.output(ds.getFeatures());
             eval.eval(ds.getLabels(), output);
         }
         log.info(eval.stats());
@@ -632,7 +648,7 @@ public class ParallelInferenceTest {
 
     @Test
     public void testInputMaskingCyclic() throws Exception {
-        for (int e = 0; e < 1000; e++) {
+        for (int e = 0; e < 3; e++) {
             testInputMasking();
             log.info("Iteration: {} finished", e);
             System.gc();

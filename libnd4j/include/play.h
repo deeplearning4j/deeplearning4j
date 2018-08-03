@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by raver119 on 21.08.16.
 //
@@ -5,13 +21,15 @@
 #ifndef LIBND4J_PLAY_H
 #define LIBND4J_PLAY_H
 
-#include "type_boilerplate.h"
+#include "op_boilerplate.h"
+#include <loops/legacy_ops.h>
 
 /*
-#define ACTIVATIONS \
+#define SCALAR_OPS \
         (0, simdOps::Identity) ,\
         (1, simdOps::ReLU)
-
+*/
+/*
 #define NATIVE_LAYERS \
         (0, nd4j::layers::DenseLayer)
 //        (1, nd4j::layers::ConvolutionLayer) ,\
@@ -55,6 +73,10 @@
 
 EXECUTE_NOE((x, y, extras), OPS_A(PAIRWISE_TRANSFORM_OPS))
 */
+
+
+EXECUTE_NOE((x, extras), OPS_A(SCALAR_OPS))
+
 //BUILD_CALL_1(template void nd4j::NDArray<float16>::applyTransform, float16, (NDArray<float16>* a, float16* b), TRANSFORM_OPS)
 
 //BUILD_CALL_1(template void nd4j::NDArray<float16>::applyPairwiseTransform, float16, (NDArray<float16>* other, float16* extraParams), PAIRWISE_TRANSFORM_OPS)

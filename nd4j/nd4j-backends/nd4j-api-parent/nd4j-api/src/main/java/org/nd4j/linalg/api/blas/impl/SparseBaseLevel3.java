@@ -1,8 +1,22 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.api.blas.impl;
 
 import org.nd4j.linalg.api.blas.Level3;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -45,60 +59,6 @@ public class SparseBaseLevel3 extends SparseBaseLevel implements Level3 {
 
     @Override
     public void trsm(char Order, char Side, char Uplo, char TransA, char Diag, double alpha, INDArray A, INDArray B) {
-
-    }
-
-    @Override
-    public void gemm(char Order, char TransA, char TransB, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B,
-                    IComplexNumber beta, IComplexNDArray C) {
-
-    }
-
-    @Override
-    public void hemm(char Order, char Side, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B,
-                    IComplexNumber beta, IComplexNDArray C) {
-
-    }
-
-    @Override
-    public void herk(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNumber beta,
-                    IComplexNDArray C) {
-
-    }
-
-    @Override
-    public void her2k(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B,
-                    IComplexNumber beta, IComplexNDArray C) {
-
-    }
-
-    @Override
-    public void symm(char Order, char Side, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B,
-                    IComplexNumber beta, IComplexNDArray C) {
-
-    }
-
-    @Override
-    public void syrk(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNumber beta,
-                    IComplexNDArray C) {
-
-    }
-
-    @Override
-    public void syr2k(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B,
-                    IComplexNumber beta, IComplexNDArray C) {
-
-    }
-
-    @Override
-    public void trmm(char Order, char Side, char Uplo, char TransA, char Diag, IComplexNumber alpha, IComplexNDArray A,
-                    IComplexNDArray B, IComplexNDArray C) {
-
-    }
-
-    @Override
-    public void trsm(char Order, char Side, char Uplo, char TransA, char Diag, IComplexNumber alpha, IComplexNDArray A,
-                    IComplexNDArray B) {
 
     }
 }

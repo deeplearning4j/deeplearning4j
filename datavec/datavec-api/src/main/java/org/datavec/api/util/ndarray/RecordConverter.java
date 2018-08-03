@@ -1,18 +1,18 @@
-/*-
- *  * Copyright 2017 Skymind, Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
- */
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.datavec.api.util.ndarray;
 
@@ -20,17 +20,19 @@ import com.google.common.base.Preconditions;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import lombok.NonNull;
 import org.datavec.api.timeseries.util.TimeSeriesWritableUtils;
-import org.datavec.api.writable.DoubleWritable;
-import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.NDArrayWritable;
-import org.datavec.api.writable.Writable;
+import org.datavec.api.transform.metadata.ColumnMetaData;
+import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.writable.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * @author Adam Gibson
@@ -207,6 +209,78 @@ public class RecordConverter {
         return writables;
     }
 
+    /**
+     *  Convert a collection into a `List<Writable>`, i.e. a record that can be used with other datavec methods.
+     *  Uses a schema to decide what kind of writable to use.
+     *
+     * @return a record
+     */
+    public static List<Writable> toRecord(Schema schema, List<Object> source){
+        final List<Writable> record = new ArrayList<>(source.size());
+        final List<ColumnMetaData> columnMetaData = schema.getColumnMetaData();
+
+        if(columnMetaData.size() != source.size()){
+            throw new IllegalArgumentException("Schema and source list don't have the same length!");
+        }
+
+        for (int i = 0; i < columnMetaData.size(); i++) {
+            final ColumnMetaData metaData = columnMetaData.get(i);
+            final Object data = source.get(i);
+            if(!metaData.isValid(data)){
+                throw new IllegalArgumentException("Element "+i+": "+data+" is not valid for Column \""+metaData.getName()+"\" ("+metaData.getColumnType()+")");
+            }
+
+            try {
+                final Writable writable;
+                switch (metaData.getColumnType().getWritableType()){
+                    case Float:
+                        writable = new FloatWritable((Float) data);
+                        break;
+                    case Double:
+                        writable = new DoubleWritable((Double) data);
+                        break;
+                    case Int:
+                        writable = new IntWritable((Integer) data);
+                        break;
+                    case Byte:
+                        writable = new ByteWritable((Byte) data);
+                        break;
+                    case Boolean:
+                        writable = new BooleanWritable((Boolean) data);
+                        break;
+                    case Long:
+                        writable = new LongWritable((Long) data);
+                        break;
+                    case Null:
+                        writable = new NullWritable();
+                        break;
+                    case Bytes:
+                        writable = new BytesWritable((byte[]) data);
+                        break;
+                    case NDArray:
+                        writable = new NDArrayWritable((INDArray) data);
+                        break;
+                    case Text:
+                        if(data instanceof String)
+                            writable = new Text((String) data);
+                        else if(data instanceof Text)
+                            writable = new Text((Text) data);
+                        else if(data instanceof byte[])
+                            writable = new Text((byte[]) data);
+                        else
+                            throw new IllegalArgumentException("Element "+i+": "+data+" is not usable for Column \""+metaData.getName()+"\" ("+metaData.getColumnType()+")");
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Element "+i+": "+data+" is not usable for Column \""+metaData.getName()+"\" ("+metaData.getColumnType()+")");
+                }
+                record.add(writable);
+            } catch (ClassCastException e) {
+                throw new IllegalArgumentException("Element "+i+": "+data+" is not usable for Column \""+metaData.getName()+"\" ("+metaData.getColumnType()+")", e);
+            }
+        }
+
+        return record;
+    }
 
     /**
      * Convert a DataSet to a matrix

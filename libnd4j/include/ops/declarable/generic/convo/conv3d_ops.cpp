@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // @author raver119@gmail.com
 //
@@ -36,8 +52,8 @@ namespace nd4j {
 
             REQUIRE_TRUE(!(pT != 0 || pW != 0 || pH != 0), 0, "Padding isn't supported on CPU backend O_o");
             
-            std::unique_ptr<ResultSet<T>> batchIn(NDArrayFactory<T>::allExamples(input));
-            std::unique_ptr<ResultSet<T>> batchOut(NDArrayFactory<T>::allExamples(output));
+            std::unique_ptr<ResultSet<T>> batchIn(input->allExamples());
+            std::unique_ptr<ResultSet<T>> batchOut(output->allExamples());
 
             // FIXME: helpers should be used here
             for (int e = 0; e < batchIn->size(); e++) {
@@ -45,7 +61,7 @@ namespace nd4j {
                 auto tadOut = batchOut->at(e);
 
                 if (biasUsed) {
-                    std::unique_ptr<ResultSet<T>> outputBlock(NDArrayFactory<T>::allExamples(tadOut));
+                    std::unique_ptr<ResultSet<T>> outputBlock(tadOut->allExamples());
                     for (int i = 0; i < bias->lengthOf(); i++) {
                         auto oB = outputBlock->at(i);
                         oB->assign(bias->getScalar(i));

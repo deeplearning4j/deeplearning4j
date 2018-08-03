@@ -1,6 +1,23 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.indexing;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -11,6 +28,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author raver119@gmail.com
@@ -191,6 +209,26 @@ public class TransformsTest extends BaseNd4jTest {
         INDArray z = Transforms.not(x);
 
         assertEquals(exp, z);
+    }
+
+    @Test
+    public void testSlice_1() {
+        val arr = Nd4j.linspace(1,4, 4).reshape(2, 2, 1);
+        val exp0 = Nd4j.create(new double[]{1, 2}, new int[] {2, 1});
+        val exp1 = Nd4j.create(new double[]{3, 4}, new int[] {2, 1});
+
+        val slice0 = arr.slice(0).dup('c');
+        assertEquals(exp0, slice0);
+        assertEquals(exp0, arr.slice(0));
+
+        val slice1 = arr.slice(1).dup('c');
+        assertEquals(exp1, slice1);
+        assertEquals(exp1, arr.slice(1));
+
+        val tf = arr.slice(1);
+        val slice1_1 = tf.slice(0);
+        assertTrue(slice1_1.isScalar());
+        assertEquals(3.0, slice1_1.getDouble(0), 1e-5);
     }
 
     @Override

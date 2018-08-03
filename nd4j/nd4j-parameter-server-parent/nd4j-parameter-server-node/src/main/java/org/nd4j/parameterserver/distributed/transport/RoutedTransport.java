@@ -1,5 +1,22 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.parameterserver.distributed.transport;
 
+import com.google.common.math.IntMath;
 import io.aeron.Aeron;
 import io.aeron.FragmentAssembler;
 import io.aeron.Publication;
@@ -9,20 +26,21 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.StringUtils;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.ClientRouter;
 import org.nd4j.parameterserver.distributed.logic.RetransmissionHandler;
 import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
+import org.nd4j.parameterserver.distributed.logic.routing.InterleavedRouter;
 import org.nd4j.parameterserver.distributed.messages.*;
 import org.nd4j.parameterserver.distributed.messages.requests.IntroductionRequestMessage;
-import org.nd4j.parameterserver.distributed.logic.routing.InterleavedRouter;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,6 +56,8 @@ import static java.lang.System.setProperty;
  */
 @Slf4j
 public class RoutedTransport extends BaseTransport {
+
+    private static final long DEFAULT_TERM_BUFFER_PROP = IntMath.pow(2,25); //32MB
 
     protected List<RemoteConnection> shards = new ArrayList<>();
     protected Map<Long, RemoteConnection> clients = new ConcurrentHashMap<>();
@@ -62,7 +82,11 @@ public class RoutedTransport extends BaseTransport {
         setProperty("aeron.client.liveness.timeout", "30000000000");
 
         // setting this property to try to increase maxmessage length, not sure if it still works though
-        setProperty("aeron.term.buffer.length", "32000000");
+        //Term buffer length: must be power of 2 and in range 64kB to 1GB: https://github.com/real-logic/aeron/wiki/Configuration-Options
+        String p = System.getProperty(ND4JSystemProperties.AERON_TERM_BUFFER_PROP);
+        if(p == null){
+            System.setProperty(ND4JSystemProperties.AERON_TERM_BUFFER_PROP, String.valueOf(DEFAULT_TERM_BUFFER_PROP));
+        }
 
         context = new Aeron.Context().publicationConnectionTimeout(30000000000L).driverTimeoutMs(30000)
                         .keepAliveInterval(100000000);

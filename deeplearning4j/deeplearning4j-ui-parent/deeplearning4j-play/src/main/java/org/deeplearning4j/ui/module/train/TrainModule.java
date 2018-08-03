@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.ui.module.train;
 
 import lombok.AllArgsConstructor;
@@ -8,6 +24,7 @@ import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.api.storage.StatsStorageListener;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -54,7 +71,11 @@ import static play.mvc.Results.redirect;
 public class TrainModule implements UIModule {
     public static final double NAN_REPLACEMENT_VALUE = 0.0; //UI front-end chokes on NaN in JSON
     public static final int DEFAULT_MAX_CHART_POINTS = 512;
-    public static final String CHART_MAX_POINTS_PROPERTY = "org.deeplearning4j.ui.maxChartPoints";
+    /**
+     * @deprecated Use {@link DL4JSystemProperties#CHART_MAX_POINTS_PROPERTY}
+     */
+    @Deprecated
+    public static final String CHART_MAX_POINTS_PROPERTY = DL4JSystemProperties.CHART_MAX_POINTS_PROPERTY;
     private static final DecimalFormat df2 = new DecimalFormat("#.00");
     private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -73,13 +94,13 @@ public class TrainModule implements UIModule {
     private Map<String, Long> lastUpdateForSession = Collections.synchronizedMap(new HashMap<>());
 
     public TrainModule() {
-        String maxChartPointsProp = System.getProperty(CHART_MAX_POINTS_PROPERTY);
+        String maxChartPointsProp = System.getProperty(DL4JSystemProperties.CHART_MAX_POINTS_PROPERTY);
         int value = DEFAULT_MAX_CHART_POINTS;
         if (maxChartPointsProp != null) {
             try {
                 value = Integer.parseInt(maxChartPointsProp);
             } catch (NumberFormatException e) {
-                log.warn("Invalid system property: {} = {}", CHART_MAX_POINTS_PROPERTY, maxChartPointsProp);
+                log.warn("Invalid system property: {} = {}", DL4JSystemProperties.CHART_MAX_POINTS_PROPERTY, maxChartPointsProp);
             }
         }
         if (value >= 10) {

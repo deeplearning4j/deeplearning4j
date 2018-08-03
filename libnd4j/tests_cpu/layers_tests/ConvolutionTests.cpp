@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // @author raver119@gmail.com
 //
@@ -11,7 +27,6 @@
 #include <Node.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
-#include <NDArrayFactory.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/convolutions.h>
 #include <ops/declarable/helpers/col2im.h>
@@ -289,8 +304,8 @@ TEST_F(ConvolutionTests, deconv2D_FF_NoBias_1) {
     auto input = new NDArray<double>('c', {2, 3, 4, 4});
     auto weights = new NDArray<double>('c', {3, 3, 5, 5});
 
-    nd4j::NDArrayFactory<double>::linspace(1, *input);
-    nd4j::NDArrayFactory<double>::linspace(1, *weights);
+    input->linspace(1);
+    weights->linspace(1);
 
     auto variableSpace = new VariableSpace<double>();
     variableSpace->putVariable(-1, input);
@@ -356,9 +371,9 @@ TEST_F(ConvolutionTests, conv2D_BP_Bias_1) {
     double _expEpsB[] = {952.0, 1540.0, 1636.0, 1180.0, 1791.0, 2886.0, 3057.0, 2193.0, 2223.0, 3570.0, 3741.0, 2673.0, 1900.0, 3028.0, 3160.0, 2240.0, 2872.0, 4612.0, 4708.0, 3356.0, 5247.0, 8358.0, 8529.0, 6033.0, 5679.0, 9042.0, 9213.0, 6513.0, 4588.0, 7252.0, 7384.0, 5184.0};
     NDArray<double> expEps(_expEpsB, input.getShapeInfo());
 
-    nd4j::NDArrayFactory<double>::linspace(1, input);
-    nd4j::NDArrayFactory<double>::linspace(1, weights);
-    nd4j::NDArrayFactory<double>::linspace(1, epsilonNext);
+    input.linspace(1);
+    weights.linspace(1);
+    epsilonNext.linspace(1);
 
     nd4j::ops::conv2d_bp<double> op;
 
@@ -405,9 +420,9 @@ TEST_F(ConvolutionTests, conv2D_BP_NoBias_1) {
     double _expEpsB[] = {952.0, 1540.0, 1636.0, 1180.0, 1791.0, 2886.0, 3057.0, 2193.0, 2223.0, 3570.0, 3741.0, 2673.0, 1900.0, 3028.0, 3160.0, 2240.0, 2872.0, 4612.0, 4708.0, 3356.0, 5247.0, 8358.0, 8529.0, 6033.0, 5679.0, 9042.0, 9213.0, 6513.0, 4588.0, 7252.0, 7384.0, 5184.0};
     NDArray<double> expEps(_expEpsB, input.getShapeInfo());
 
-    nd4j::NDArrayFactory<double>::linspace(1, input);
-    nd4j::NDArrayFactory<double>::linspace(1, weights);
-    nd4j::NDArrayFactory<double>::linspace(1, epsilonNext);
+    input.linspace(1);
+    weights.linspace(1);
+    epsilonNext.linspace(1);
 
     nd4j::ops::conv2d_bp<double> op;
 
@@ -451,9 +466,9 @@ TEST_F(ConvolutionTests, sconv2D_FF_NoBias_2) {
     NDArray<double> weightsP('c', {10, 6, 1, 1});
 
 
-    NDArrayFactory<double>::linspace(1, input);
-    NDArrayFactory<double>::linspace(1, weightsD);
-    NDArrayFactory<double>::linspace(1, weightsP);
+    input.linspace(1);
+    weightsD.linspace(1);
+    weightsP.linspace(1);
 
     weightsP.template applyScalar<simdOps::Divide<double>>(10000.0);
 
@@ -495,9 +510,9 @@ TEST_F(ConvolutionTests, sconv2D_FF_pointwise_1) {
     NDArray<double> weightsD('c', {5, 3, 5, 5});
     NDArray<double> weightsP('c', {10, 15, 1, 1});
 
-    NDArrayFactory<double>::linspace(1, input);
-    NDArrayFactory<double>::linspace(1, weightsD);
-    NDArrayFactory<double>::linspace(1, weightsP);
+    input.linspace(1);
+    weightsD.linspace(1);
+    weightsP.linspace(1);
 
     input.template applyScalar<simdOps::Divide<double>>(100.0);
     weightsD.template applyScalar<simdOps::Divide<double>>(100.0);
@@ -546,10 +561,10 @@ TEST_F(ConvolutionTests, sconv2D_BP_pointwise_1) {
     NDArray<double> epsilon('c', {2, 3, 10, 10});
     NDArray<double> epsilonNext('c', {2, 10, 6, 6});
 
-    NDArrayFactory<double>::linspace(1, input);
-    NDArrayFactory<double>::linspace(1, weightsD);
-    NDArrayFactory<double>::linspace(1, weightsP);
-    NDArrayFactory<double>::linspace(1, epsilonNext);
+    input.linspace(1);
+    weightsD.linspace(1);
+    weightsP.linspace(1);
+    epsilonNext.linspace(1);
 
     input.template applyScalar<simdOps::Divide<double>>(100.0);
     weightsD.template applyScalar<simdOps::Divide<double>>(100.0);
@@ -595,10 +610,10 @@ TEST_F(ConvolutionTests, TestSconvCrash_max_1) {
     NDArray<double> output('c', {3, 2, 8, 8});
     output.assign(0.0);
 
-    NDArrayFactory<double>::linspace(1, input);
-    NDArrayFactory<double>::linspace(1, weightsD);
-    NDArrayFactory<double>::linspace(1, weightsP);
-    NDArrayFactory<double>::linspace(1, bias);
+    input.linspace(1);
+    weightsD.linspace(1);
+    weightsP.linspace(1);
+    bias.linspace(1);
 
     NDArray<double> expOutput('c', {3, 2, 8, 8});
 
@@ -634,7 +649,7 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_1) {
     bool isSameMode = true;
 
     NDArray<double> x('c', {2, channels, inY, inX});    
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     int oY, oX;
 
@@ -689,7 +704,7 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_2) {
     bool isSameMode = true;
 
     NDArray<double> x('c', {2, channels, inY, inX});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     int oY, oX;
 
@@ -744,7 +759,7 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_3) {
     bool isSameMode = true;
 
     NDArray<double> x('c', {2, channels, inY, inX});
-    NDArrayFactory<double>::linspace(1, x);
+    x.linspace(1);
 
     int oY, oX;
 
@@ -831,10 +846,10 @@ TEST_F(ConvolutionTests, TestDeconv_bp_1) {
         Epsilon shape (3, 2, 4, 4)
      */
 
-    NDArrayFactory<double>::linspace(1, input);
-    NDArrayFactory<double>::linspace(1, weights);
-    NDArrayFactory<double>::linspace(1, bias);
-    NDArrayFactory<double>::linspace(1, epsilon);
+    input.linspace(1);
+    weights.linspace(1);
+    bias.linspace(1);
+    epsilon.linspace(1);
 
     nd4j::ops::deconv2d_bp<double> op;
 
@@ -888,10 +903,10 @@ TEST_F(ConvolutionTests, TestDeconv_bp_2) {
     NDArray<double> epsilon('c', {3, 2, 15, 15});
     
 
-    NDArrayFactory<double>::linspace(1, input);
-    NDArrayFactory<double>::linspace(1, weights);
-    NDArrayFactory<double>::linspace(1, bias);
-    NDArrayFactory<double>::linspace(1, epsilon);
+    input.linspace(1);
+    weights.linspace(1);
+    bias.linspace(1);
+    epsilon.linspace(1);
     
     nd4j::ops::deconv2d_bp<double> op;
     
@@ -913,9 +928,9 @@ TEST_F(ConvolutionTests, TestDeconv_ff_2) {
     NDArray<double> weights('c',{3, 2, 1, 1});
     NDArray<double> bias('c', {1, 2});
 
-    NDArrayFactory<double>::linspace(1, input);
-    NDArrayFactory<double>::linspace(1, weights);
-    NDArrayFactory<double>::linspace(1, bias);
+    input.linspace(1);
+    weights.linspace(1);
+    bias.linspace(1);
 
     nd4j::ops::deconv2d<double> op;
 
@@ -941,9 +956,9 @@ TEST_F(ConvolutionTests, Test_Conv1D_ff_1) {
     NDArray<double> expGB('c', {1, 3}, {105.0, 155.0, 205.0});
 
 
-    NDArrayFactory<double>::linspace(1, input);
-    NDArrayFactory<double>::linspace(1, weights);
-    NDArrayFactory<double>::linspace(1, bias);
+    input.linspace(1);
+    weights.linspace(1);
+    bias.linspace(1);
 
     nd4j::ops::conv1d<double> op;
     auto result_FF = op.execute({&input, &weights, &bias}, {}, {2, 1, 0, 0});
@@ -958,7 +973,7 @@ TEST_F(ConvolutionTests, Test_Conv1D_ff_1) {
     nd4j::ops::conv1d_bp<double> op_bp;
 
     auto epsilonNxt = z->dup();
-    NDArrayFactory<double>::linspace(1, *epsilonNxt);
+    epsilonNxt->linspace(1);
 
     auto result_BP = op_bp.execute({&input, &weights, &bias, epsilonNxt}, {}, {2, 1, 0, 0});
     ASSERT_EQ(ND4J_STATUS_OK, result_BP->status());
@@ -985,8 +1000,8 @@ TEST_F(ConvolutionTests, Test_Conv1D_ff_2) {
     NDArray<double> input('c', {2, 2, 6});
     NDArray<double> weights('c', {3, 2, 2});
 
-    NDArrayFactory<double>::linspace(1, input);
-    NDArrayFactory<double>::linspace(1, weights);
+    input.linspace(1);
+    weights.linspace(1);
 
     nd4j::ops::conv1d<double> op;
     auto result = op.execute({&input, &weights}, {}, {2, 1, 0, 1});
@@ -1004,8 +1019,8 @@ TEST_F(ConvolutionTests, Test_Conv2D_4_1) {
     NDArray<double> exp('c', {1, 4, 1, 4}, {2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8.});
 
     weights.assign(2.0);
-    NDArrayFactory<double>::linspace(1, input);
-    //NDArrayFactory<double>::linspace(1, weights);
+    input.linspace(1);
+    //weights.linspace(1);
 
     nd4j::ops::conv2d<double> op;
     auto result = op.execute({&input, &weights}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0});
@@ -1024,8 +1039,8 @@ TEST_F(ConvolutionTests, Test_Dilation2D_1) {
     NDArray<double> weights('c', {3, 2, 3});
     NDArray<double> exp('c', {2, 3, 3, 3}, {77,   79,   81,   83,   85,   87,   80,   82,   84,  113,  115,  117, 119,  121,  123,  116,  118,  120,  107,  109,  111,  113,  115,  117, 110,  112,  114,  185,  187,  189,  191,  193,  195,  188,  190,  192, 221,  223,  225,  227,  229,  231,  224,  226,  228,  215,  217,  219, 221,  223,  225,  218,  220,  222,});
 
-    NDArrayFactory<double>::linspace(1, input);
-    NDArrayFactory<double>::linspace(1, weights);
+    input.linspace(1);
+    weights.linspace(1);
 
     nd4j::ops::dilation2d<double> op;
     auto result = op.execute({&input, &weights}, {}, {1, 1,2,2,1, 1,2,2,1});
@@ -1044,8 +1059,8 @@ TEST_F(ConvolutionTests, Test_Dilation2D_2) {
     NDArray<double> weights('c', {3, 2, 3});
     NDArray<double> exp('c', {2, 1, 2, 3}, {95, 97, 99, 101, 103, 105, 203, 205, 207, 209, 211, 213});
 
-    NDArrayFactory<double>::linspace(1, input);
-    NDArrayFactory<double>::linspace(1, weights);
+    input.linspace(1);
+    weights.linspace(1);
 
     nd4j::ops::dilation2d<double> op;
     auto result = op.execute({&input, &weights}, {}, {0, 1,2,2,1, 1,2,2,1});
@@ -1083,8 +1098,8 @@ TEST_F(ConvolutionTests, conv2d_bp_test1) {
     // NDArray<double> expGradB('c', {oC},{});
 
     input = 2.;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
-    NDArrayFactory<double>::linspace(0.01, gradO, 0.01);    
+    weights.linspace(0.1, 0.1);
+    gradO.linspace(0.01, 0.01);
 
     nd4j::ops::conv2d_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &weights, &bias, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
@@ -1126,8 +1141,8 @@ TEST_F(ConvolutionTests, conv2d_bp_test2) {
     // NDArray<double> expGradB('c', {oC},{});
 
     input = 2.;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
-    NDArrayFactory<double>::linspace(0.01, gradO, 0.01);    
+    weights.linspace(0.1, 0.1);
+    gradO.linspace(0.01, 0.01);    
 
     nd4j::ops::conv2d_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &weights, &bias, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
@@ -1170,8 +1185,8 @@ TEST_F(ConvolutionTests, conv2d_bp_test3) {
     NDArray<double> expGradB('c', {oC},{0.68, 1., 1.32});
 
     input = 2.;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
-    NDArrayFactory<double>::linspace(0.01, gradO, 0.01);    
+    weights.linspace(0.1, 0.1);
+    gradO.linspace(0.01, 0.01);    
 
     nd4j::ops::conv2d_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &weights, &bias, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
@@ -1212,7 +1227,7 @@ TEST_F(ConvolutionTests, conv2d_test1) {
                                                       152. , 155.2, 158.4,152. , 155.2, 158.4, 66.4,  68. ,  69.6,170.4, 175.2, 180. ,170.4, 175.2, 180. , 70.8,  73.2,  75.6,
                                                       170.4, 175.2, 180. ,170.4, 175.2, 180. , 70.8,  73.2,  75.6, 75.2,  78.4,  81.6, 75.2,  78.4,  81.6, 28. ,  29.6,  31.2});
     input = 2.;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    weights.linspace(0.1, 0.1);
 
     nd4j::ops::conv2d<double> op;
     ResultSet<double>* results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
@@ -1241,7 +1256,7 @@ TEST_F(ConvolutionTests, conv2d_test2) {
     NDArray<double> expOutput('c', {bS, oH, oW, oC},{ 170.4,175.20001,180.,170.4,175.20001,180.,170.4,175.20001,180.,170.4,175.20001,180.,170.4,175.20001,180.,170.4,175.20001,180.,170.4,175.20001,180.,170.4,175.20001,180.});
     
     input = 2.;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    weights.linspace(0.1, 0.1);
 
     nd4j::ops::conv2d<double> op;
     ResultSet<double>* results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
@@ -1270,7 +1285,7 @@ TEST_F(ConvolutionTests, conv2d_test3) {
     NDArray<double> expOutput('c', {bS, oC, oH, oW}, {61. ,  61. , 61. ,  61. ,177.2, 177.2,177.2, 177.2,293.4, 293.4,293.4, 293.4, 61. ,  61. , 61. ,  61. ,177.2, 177.2,177.2, 177.2,293.4, 293.4,293.4, 293.4});
     
     input = 2.;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    weights.linspace(0.1, 0.1);
 
     nd4j::ops::conv2d<double> op;
     ResultSet<double>* results = op.execute({&input, &weights, &bias}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
@@ -1318,8 +1333,8 @@ TEST_F(ConvolutionTests, conv3d_bp_test1) {
     // NDArray<double> expGradB('c', {oC},{});
 
     input = 2.;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
-    NDArrayFactory<double>::linspace(0.01, gradO, 0.01);    
+    weights.linspace(0.1, 0.1);
+    gradO.linspace(0.01, 0.01);    
 
     nd4j::ops::conv3dnew_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &weights, &bias, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
@@ -1366,8 +1381,8 @@ TEST_F(ConvolutionTests, conv3d_bp_test2) {
     // NDArray<double> expGradB('c', {oC},{});
 
     input = 2.;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
-    NDArrayFactory<double>::linspace(0.01, gradO, 0.01);    
+    weights.linspace(0.1, 0.1);
+    gradO.linspace(0.01, 0.01);    
 
     nd4j::ops::conv3dnew_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &weights, &bias, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
@@ -1417,8 +1432,8 @@ TEST_F(ConvolutionTests, conv3d_bp_test3) {
     NDArray<double> expGradB('c', {oC},{2.64, 3.92, 5.2 });
 
     input = 2.;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
-    NDArrayFactory<double>::linspace(0.01, gradO, 0.01);    
+    weights.linspace(0.1, 0.1);
+    gradO.linspace(0.01, 0.01);    
 
     nd4j::ops::conv3dnew_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &weights, &bias, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
@@ -1458,7 +1473,7 @@ TEST_F(ConvolutionTests, depthwise_conv2d_test1) {
                                                      12. , 12.8, 13.6, 14.4,12. , 12.8, 13.6, 14.4, 5.2,  5.6,  6. ,  6.4,13.2, 14.4, 15.6, 16.8,13.2, 14.4, 15.6, 16.8, 5.4,  6. ,  6.6,  7.2,
                                                      13.2, 14.4, 15.6, 16.8,13.2, 14.4, 15.6, 16.8, 5.4,  6. ,  6.6,  7.2, 5.6,  6.4,  7.2,  8. , 5.6,  6.4,  7.2,  8. , 2. ,  2.4,  2.8,  3.2});
     input = 2.;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    weights.linspace(0.1, 0.1);
 
     nd4j::ops::depthwise_conv2d<double> op;
     ResultSet<double>* results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
@@ -1488,7 +1503,7 @@ TEST_F(ConvolutionTests, depthwise_conv2d_test2) {
     NDArray<double> expOutput('c', {bS, oH, oW, oC},{13.2, 14.4, 15.6, 16.8,13.2, 14.4, 15.6, 16.8,13.2, 14.4, 15.6, 16.8,13.2, 14.4, 15.6, 16.8,
                                                      13.2, 14.4, 15.6, 16.8,13.2, 14.4, 15.6, 16.8,13.2, 14.4, 15.6, 16.8,13.2, 14.4, 15.6, 16.8});
     input = 2.;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    weights.linspace(0.1, 0.1);
 
     nd4j::ops::depthwise_conv2d<double> op;
     ResultSet<double>* results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
@@ -1519,7 +1534,7 @@ TEST_F(ConvolutionTests, depthwise_conv2d_test3) {
     
     NDArray<double> expOutput('c', {bS, oC, oH, oW},{5.2, 5.2, 5.2, 5.2,20.6,20.6,20.6,20.6,14.4,14.4,14.4,14.4,29.8,29.8,29.8,29.8, 5.2, 5.2, 5.2, 5.2,20.6,20.6,20.6,20.6,14.4,14.4,14.4,14.4,29.8,29.8,29.8,29.8});
     input = 2.;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    weights.linspace(0.1, 0.1);
 
     nd4j::ops::depthwise_conv2d<double> op;
     ResultSet<double>* results = op.execute({&input, &weights, &biases}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
@@ -1555,8 +1570,8 @@ TEST_F(ConvolutionTests, depthwise_conv2d_bp_test1) {
     NDArray<double> expGradW('c', {kH, kW, iC, mC},{19.08, 19.44,19.8 , 20.16,12.24, 12.48,12.72, 12.96,22.56, 23.04,23.52, 24. ,14.4 , 14.72,15.04, 15.36,14.76, 15.12,15.48, 15.84, 9.36,  9.6 , 9.84, 10.08});
 
     input = 2.;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
-    NDArrayFactory<double>::linspace(0.01, gradO, 0.01);    
+    weights.linspace(0.1, 0.1);
+    gradO.linspace(0.01, 0.01);    
 
     nd4j::ops::depthwise_conv2d_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &weights, &bias, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
@@ -1593,8 +1608,8 @@ TEST_F(ConvolutionTests, depthwise_conv2d_bp_test2) {
     NDArray<double> expGradW('c', {kH, kW, iC, mC},{2.4 , 2.56,2.72, 2.88,2.4 , 2.56,2.72, 2.88,2.4 , 2.56,2.72, 2.88,2.4 , 2.56,2.72, 2.88,2.4 , 2.56,2.72, 2.88,2.4 , 2.56,2.72, 2.88});
 
     input = 2.;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
-    NDArrayFactory<double>::linspace(0.01, gradO, 0.01);    
+    weights.linspace(0.1, 0.1);
+    gradO.linspace(0.01, 0.01);    
 
     nd4j::ops::depthwise_conv2d_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &weights, &bias, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
@@ -1662,7 +1677,7 @@ TEST_F(ConvolutionTests, conv3d_test2) {
                                                    686.4,696. ,705.6,686.4,696. ,705.6,314.4,319.2,324. ,380.8,387.2,393.6,380.8,387.2,393.6,171.2,174.4,177.6,152. ,155.2,158.4,152. ,155.2,158.4, 66.4, 68. , 69.6,
                                                    170.4,175.2,180. ,170.4,175.2,180. , 70.8, 73.2, 75.6,170.4,175.2,180. ,170.4,175.2,180. , 70.8, 73.2, 75.6, 75.2, 78.4, 81.6, 75.2, 78.4, 81.6, 28. , 29.6, 31.2});
     input = 2.;
-    NDArrayFactory<float>::linspace(0.1, weights, 0.1);
+    weights.linspace(0.1, 0.1);
     
     nd4j::ops::conv3dnew<float> op;
     ResultSet<float>* results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
@@ -1689,7 +1704,7 @@ TEST_F(ConvolutionTests, conv3d_test3) {
                                                     686.4,696.,705.6,686.4,696.,705.6,686.4,696.,705.6,686.4,696.,705.6,
                                                     686.4,696.,705.6,686.4,696.,705.6,686.4,696.,705.6,686.4,696.,705.6});
     input = 2.;
-    NDArrayFactory<float>::linspace(0.1, weights, 0.1);
+    weights.linspace(0.1, 0.1);
     
     nd4j::ops::conv3dnew<float> op;
     ResultSet<float>* results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
@@ -1802,7 +1817,7 @@ TEST_F(ConvolutionTests, conv3d_test7) {
                                                   236.2, 236.2, 236.2, 236.2, 236.2, 236.2, 236.2, 236.2, 698. , 698. , 698. , 698. ,
                                                   698. , 698. , 698. , 698. ,1159.8,1159.8,1159.8,1159.8,1159.8,1159.8,1159.8,1159.8});
     input = 2.;
-    NDArrayFactory<float>::linspace(0.1, weights, 0.1);
+    weights.linspace(0.1, 0.1);
     
     nd4j::ops::conv3dnew<float> op;
     ResultSet<float>* results = op.execute({&input, &weights, &bias}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
@@ -1830,7 +1845,7 @@ TEST_F(ConvolutionTests, conv3d_test8) {
                                                   1156.8,1156.8,1156.8,1156.8,1156.8,1156.8,1156.8,1156.8, 235.2, 235.2, 235.2, 235.2, 235.2, 235.2, 235.2, 235.2, 
                                                   696. , 696. , 696. , 696. , 696. , 696. , 696. , 696. ,1156.8,1156.8,1156.8,1156.8,1156.8,1156.8,1156.8,1156.8});
     input = 2.;
-    NDArrayFactory<float>::linspace(0.1, weights, 0.1);
+    weights.linspace(0.1, 0.1);
     
     nd4j::ops::conv3dnew<float> op;
     ResultSet<float>* results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
@@ -1924,7 +1939,7 @@ TEST_F(ConvolutionTests, pointwise_conv2d_test1) {
                                                       6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 
                                                       5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0});
     input = 2.;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    weights.linspace(0.1, 0.1);
     bias = 1.;
 
     nd4j::ops::pointwise_conv2d<double> op;
@@ -1960,8 +1975,8 @@ TEST_F(ConvolutionTests, sconv2d_bp_test1) {
     NDArray<double> expGradW('c', {kH, kW, iC, mC},{19.08, 19.44,19.8 , 20.16,12.24, 12.48,12.72, 12.96,22.56, 23.04,23.52, 24. ,14.4 , 14.72,15.04, 15.36,14.76, 15.12,15.48, 15.84, 9.36,  9.6 , 9.84, 10.08});
 
     input = 2.;
-    NDArrayFactory<double>::linspace(0.1, weightsDepth, 0.1);
-    NDArrayFactory<double>::linspace(0.01, gradO, 0.01);    
+    weightsDepth.linspace(0.1, 0.1);
+    gradO.linspace(0.01, 0.01);    
 
     nd4j::ops::sconv2d_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &gradO, &weightsDepth, &bias}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
@@ -2056,7 +2071,7 @@ TEST_F(ConvolutionTests, vol2col_test1) {
     int       oD=2,oH=3,oW=2;
 
     NDArray<float> volume ('c', {bS, iD, iH, iW, iC});
-    nd4j::NDArrayFactory<float>::linspace(1, volume);
+    volume.linspace(1);
     NDArray<float> columns('c', {bS, iC, kD, kH, kW, oD, oH, oW});
     columns = -1.;
     NDArray<float> columnsExpected('c', {bS, iC, kD, kH, kW, oD, oH, oW}, {1., 2., 4., 5., 0., 0., 7., 8., 10., 11., 0., 0., 2., 3., 5., 6., 0., 0., 8., 9., 11., 12., 0., 0., 4., 5., 0., 0., 0., 0., 10., 11., 0., 0., 0., 0., 5., 6., 0., 0., 0., 0., 11., 12., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 7., 8., 10., 11., 0., 0., 13., 14., 
@@ -2086,7 +2101,7 @@ TEST_F(ConvolutionTests, vol2col_test2) {
     
     NDArray<float> volume ('c', {iD, bS, iH, iC, iW});
     volume.permutei({1, 0, 2, 4, 3});
-    nd4j::NDArrayFactory<float>::linspace(1, volume);
+    volume.linspace(1);
 
     NDArray<float> columns('c', {kD, iC, kH, oW, kW, bS, oD, oH});
     columns.permutei({5, 1, 0, 2, 4, 6, 7, 3});
@@ -2119,7 +2134,7 @@ TEST_F(ConvolutionTests, col2im_test1) {
     image = -2.;
     
     NDArray<float> columns('c', {bS, iC, kH, kW, oH, oW});
-    nd4j::NDArrayFactory<float>::linspace(1, columns);
+    columns.linspace(1);
 
     NDArray<float> imageExpected('c', {bS, iC, iH, iW}, {1., 7., 12., 34., 17., 39., 44., 98., 33., 71., 76., 162., 49., 103., 108., 226.});
 
@@ -2138,7 +2153,7 @@ TEST_F(ConvolutionTests, upsampling2d_test1) {
     const int isNCHW = 0;                    // data format, default is NHWC
 
     NDArray<float> input ('c', {bS, iH, iW, iC});    
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
 
     NDArray<float> expOutput('c', {bS, iH*factorH, iW*factorW, iC}, {1.,  2.,  3., 1.,  2.,  3., 1.,  2.,  3., 4.,  5.,  6., 4.,  5.,  6., 4.,  5.,  6., 1.,  2.,  3., 1.,  2.,  3., 1.,  2.,  3., 4.,  5.,  6., 4.,  5.,  6., 4.,  5.,  6.,
                                          7.,  8.,  9., 7.,  8.,  9., 7.,  8.,  9.,10., 11., 12.,10., 11., 12.,10., 11., 12., 7.,  8.,  9., 7.,  8.,  9., 7.,  8.,  9.,10., 11., 12.,10., 11., 12.,10., 11., 12.,
@@ -2166,7 +2181,7 @@ TEST_F(ConvolutionTests, upsampling2d_test2) {
     const int isNCHW = 1;                    // data format, default is NHWC
 
     NDArray<float> input ('c', {bS, iC, iH, iW});    
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
 
     NDArray<float> expOutput('c', {bS, iC, iH*factorH, iW*factorW}, {1.,  1.,  1.,  2.,  2.,  2., 1.,  1.,  1.,  2.,  2.,  2., 3.,  3.,  3.,  4.,  4.,  4., 3.,  3.,  3.,  4.,  4.,  4.,
                                  5.,  5.,  5.,  6.,  6.,  6., 5.,  5.,  5.,  6.,  6.,  6., 7.,  7.,  7.,  8.,  8.,  8., 7.,  7.,  7.,  8.,  8.,  8., 9.,  9.,  9., 10., 10., 10., 9.,  9.,  9., 10., 10., 10.,11., 11., 11., 12., 12., 12.,11., 11., 11., 12., 12., 12.,
@@ -2195,7 +2210,7 @@ TEST_F(ConvolutionTests, upsampling3d_test1) {
     const int isNCDHW = 0;                    // data format, default is NHWC
 
     NDArray<float> input ('c', {bS, iD, iH, iW, iC});    
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
 
     NDArray<float> expOutput('c', {bS, iD*factorD, iH*factorH, iW*factorW, iC}, {1.,  2.,  3., 1.,  2.,  3., 4.,  5.,  6., 4.,  5.,  6., 1.,  2.,  3., 1.,  2.,  3., 4.,  5.,  6., 4.,  5.,  6., 1.,  2.,  3., 1.,  2.,  3., 4.,  5.,  6., 4.,  5.,  6., 7.,  8.,  9., 7.,  8.,  9.,10., 11., 12.,10., 11., 12., 7.,  8.,  9., 7.,  8.,  9.,10., 11., 12.,10., 11., 12.,
              7.,  8.,  9., 7.,  8.,  9.,10., 11., 12.,10., 11., 12., 1.,  2.,  3., 1.,  2.,  3., 4.,  5.,  6., 4.,  5.,  6., 1.,  2.,  3., 1.,  2.,  3., 4.,  5.,  6., 4.,  5.,  6., 1.,  2.,  3., 1.,  2.,  3., 4.,  5.,  6., 4.,  5.,  6., 7.,  8.,  9., 7.,  8.,  9.,10., 11., 12.,10., 11., 12.,
@@ -2232,7 +2247,7 @@ TEST_F(ConvolutionTests, upsampling3d_test2) {
     const int isNCDHW = 1;                    // data format, default is NHWC
 
     NDArray<float> input ('c', {bS, iC, iD, iH, iW});    
-    NDArrayFactory<float>::linspace(1, input);
+    input.linspace(1);
 
     NDArray<float> expOutput('c', {bS, iC, iD*factorD, iH*factorH, iW*factorW}, { 1.,  1.,  2.,  2., 1.,  1.,  2.,  2., 1.,  1.,  2.,  2., 3.,  3.,  4.,  4., 3.,  3.,  4.,  4., 3.,  3.,  4.,  4., 1.,  1.,  2.,  2., 1.,  1.,  2.,  2., 1.,  1.,  2.,  2., 3.,  3.,  4.,  4., 3.,  3.,  4.,  4., 3.,  3.,  4.,  4., 5.,  5.,  6.,  6., 5.,  5.,  6.,  6., 5.,  5.,  6.,  6., 7.,  7.,  8.,  8., 7.,  7.,  8.,  8., 7.,  7.,  8.,  8.,
              5.,  5.,  6.,  6., 5.,  5.,  6.,  6., 5.,  5.,  6.,  6., 7.,  7.,  8.,  8., 7.,  7.,  8.,  8., 7.,  7.,  8.,  8., 9.,  9., 10., 10., 9.,  9., 10., 10., 9.,  9., 10., 10.,11., 11., 12., 12.,11., 11., 12., 12.,11., 11., 12., 12., 9.,  9., 10., 10., 9.,  9., 10., 10., 9.,  9., 10., 10.,11., 11., 12., 12.,11., 11., 12., 12.,11., 11., 12., 12.,
@@ -2365,27 +2380,27 @@ TEST_F(ConvolutionTests, maxpool_test6) {
 
 TEST_F(ConvolutionTests, conv2D_input_BP_test1) {
     
-    NDArray<double> input('c', {2, 1, 4, 4});
+    NDArray<double> inputShape('c', {4}, {2, 1, 4, 4});
     NDArray<double> weights('c', {2, 1, 3, 3});
     NDArray<double> epsilonNext('c', {2, 2, 4, 4});
+    NDArray<double> shapeArr('c', {2, 1, 4, 4});
 
 
     double _expEpsB[] = {952.0, 1540.0, 1636.0, 1180.0, 1791.0, 2886.0, 3057.0, 2193.0, 2223.0, 3570.0, 3741.0, 2673.0, 1900.0, 3028.0, 3160.0, 2240.0, 2872.0, 4612.0, 4708.0, 3356.0, 5247.0, 8358.0, 8529.0, 6033.0, 5679.0, 9042.0, 9213.0, 6513.0, 4588.0, 7252.0, 7384.0, 5184.0};
-    NDArray<double> expEps(_expEpsB, input.getShapeInfo());
+    NDArray<double> expEps(_expEpsB, shapeArr.getShapeInfo());
 
-    nd4j::NDArrayFactory<double>::linspace(1, input);
-    nd4j::NDArrayFactory<double>::linspace(1, weights);
-    nd4j::NDArrayFactory<double>::linspace(1, epsilonNext);
+    weights.linspace(1);
+    epsilonNext.linspace(1);
 
     nd4j::ops::conv2d_input_bp<double> op;
 
-    auto results = op.execute({&input, &weights, &epsilonNext}, {},  {3, 3, 1, 1, 0, 0, 1, 1, 1});
+    auto results = op.execute({&inputShape, &weights, &epsilonNext}, {},  {3, 3, 1, 1, 0, 0, 1, 1, 1});
 
     ASSERT_TRUE(results->size() == 1);
 
     auto epsilon = results->at(0);    
 
-    ASSERT_TRUE(input.isSameShape(epsilon));   
+    ASSERT_TRUE(shapeArr.isSameShape(epsilon));   
     ASSERT_TRUE(expEps.equalsTo(epsilon));
 
     delete results;

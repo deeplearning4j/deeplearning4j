@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.integration.testcases;
 
 import com.google.common.io.Files;
@@ -64,6 +80,11 @@ public class RNNTestCases {
                 testParamsPostTraining = true;
                 testEvaluation = true;
                 testOverfitting = false;            //Not much point on this one - it already fits very well...
+                //Gradients depend on a lot of chained steps, numerical differences can accumulate
+                maxRelativeErrorGradients = 5e-4;
+                minAbsErrorGradients = 2e-4;
+                maxRelativeErrorParamsPostTraining = 1e-4;
+                minAbsErrorParamsPostTraining = 2e-3;
             }
 
             private int miniBatchSize = 32;
@@ -118,9 +139,7 @@ public class RNNTestCases {
             public IEvaluation[] getNewEvaluations(){
                 return new IEvaluation[]{
                         new Evaluation(),
-                        new ROCMultiClass(),
-                        new EvaluationCalibration()
-                };
+                        new ROCMultiClass()};
             }
 
             @Override

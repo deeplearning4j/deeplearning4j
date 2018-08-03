@@ -1,20 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.deeplearning4j.nn.api;
 
@@ -37,7 +35,7 @@ import java.util.Collection;
  *
  * @author Adam Gibson
  */
-public interface Layer extends Serializable, Cloneable, Model {
+public interface Layer extends Serializable, Cloneable, Model, Trainable {
 
     enum Type {
         FEED_FORWARD, RECURRENT, CONVOLUTIONAL, CONVOLUTIONAL3D,
@@ -47,7 +45,6 @@ public interface Layer extends Serializable, Cloneable, Model {
     enum TrainingMode {
         TRAIN, TEST
     }
-
 
     /**
      * This method sets given CacheMode for current layer
@@ -120,24 +117,6 @@ public interface Layer extends Serializable, Cloneable, Model {
      * {@link org.deeplearning4j.nn.workspace.ArrayType#ACTIVATIONS} workspace via the workspace manager
      */
     INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr mgr);
-
-    /**
-     * Return a transposed copy of the weights/bias
-     * (this means reverse the number of inputs and outputs on the weights)
-     *
-     * @return the transposed layer
-     */
-    @Deprecated
-    Layer transpose();
-
-    /**
-     * Clone the layer
-     *
-     * @return
-     */
-    @Deprecated
-    Layer clone();
-
 
     /**
      * Get the iteration listeners for this layer.

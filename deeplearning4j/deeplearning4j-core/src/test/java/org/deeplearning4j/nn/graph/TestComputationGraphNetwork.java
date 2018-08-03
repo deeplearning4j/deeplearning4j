@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.graph;
 
 import lombok.extern.slf4j.Slf4j;
@@ -121,16 +137,16 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         DataSetIterator iris = new IrisDataSetIterator(150, 150);
         DataSet ds = iris.next();
 
-        graph.setInput(0, ds.getFeatureMatrix());
+        graph.setInput(0, ds.getFeatures());
         net.setParams(graph.params());
         Map<String, INDArray> activations = graph.feedForward(false);
 
-        List<INDArray> feedForward = net.feedForward(ds.getFeatureMatrix());
+        List<INDArray> feedForward = net.feedForward(ds.getFeatures());
         assertEquals(activations.size(),feedForward.size());
         assertEquals(activations.get("outputLayer"),feedForward.get(feedForward.size() - 1));
 
-        Map<String,INDArray> graphForward = graph.feedForward(ds.getFeatureMatrix(),0,false);
-        List<INDArray> networkForward =  net.feedForwardToLayer(0,ds.getFeatureMatrix(),false);
+        Map<String,INDArray> graphForward = graph.feedForward(ds.getFeatures(),0,false);
+        List<INDArray> networkForward =  net.feedForwardToLayer(0,ds.getFeatures(),false);
         assertEquals(graphForward.get("firstLayer"),networkForward.get(1));
     }
 
@@ -179,7 +195,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         DataSetIterator iris = new IrisDataSetIterator(150, 150);
         DataSet ds = iris.next();
 
-        graph.setInput(0, ds.getFeatureMatrix());
+        graph.setInput(0, ds.getFeatures());
         Map<String, INDArray> activations = graph.feedForward(false);
         assertEquals(3, activations.size()); //2 layers + 1 input node
         assertTrue(activations.containsKey("input"));
@@ -193,8 +209,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         graph.setParams(params.dup());
         net.setParams(params.dup());
 
-        List<INDArray> mlnAct = net.feedForward(ds.getFeatureMatrix(), false);
-        activations = graph.feedForward(ds.getFeatureMatrix(), false);
+        List<INDArray> mlnAct = net.feedForward(ds.getFeatures(), false);
+        activations = graph.feedForward(ds.getFeatures(), false);
 
         assertEquals(mlnAct.get(0), activations.get("input"));
         assertEquals(mlnAct.get(1), activations.get("firstLayer"));
@@ -221,7 +237,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         graph.setParams(params.dup());
         net.setParams(params.dup());
 
-        INDArray input = ds.getFeatureMatrix();
+        INDArray input = ds.getFeatures();
         INDArray labels = ds.getLabels();
         graph.setInput(0, input.dup());
         graph.setLabel(0, labels.dup());
@@ -327,7 +343,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         ComputationGraph g2 = graph.clone();
 
         DataSetIterator iris = new IrisDataSetIterator(150, 150);
-        INDArray in = iris.next().getFeatureMatrix();
+        INDArray in = iris.next().getFeatures();
         Map<String, INDArray> activations = graph.feedForward(in, false);
         Map<String, INDArray> activations2 = g2.feedForward(in, false);
         assertEquals(activations, activations2);

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.activations;
 
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -19,7 +35,9 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
  * Created by susaneraly on 12/8/16.
  */
 public enum Activation {
-    CUBE, ELU, HARDSIGMOID, HARDTANH, IDENTITY, LEAKYRELU, RATIONALTANH, RELU, RRELU, SIGMOID, SOFTMAX, SOFTPLUS, SOFTSIGN, TANH, RECTIFIEDTANH, SELU, SWISH;
+    CUBE, ELU, HARDSIGMOID, HARDTANH, IDENTITY, LEAKYRELU, RATIONALTANH, RELU, RELU6,
+    RRELU, SIGMOID, SOFTMAX, SOFTPLUS, SOFTSIGN, TANH, RECTIFIEDTANH, SELU, SWISH,
+    THRESHOLDEDRELU;
 
     /**
      * Creates an instance of the activation function
@@ -46,6 +64,8 @@ public enum Activation {
                 return new ActivationRectifiedTanh();
             case RELU:
                 return new ActivationReLU();
+            case RELU6:
+                return new ActivationReLU6();
             case SELU:
                 return new ActivationSELU();
             case SWISH:
@@ -62,6 +82,8 @@ public enum Activation {
                 return new ActivationSoftSign();
             case TANH:
                 return new ActivationTanH();
+            case THRESHOLDEDRELU:
+                return new ActivationThresholdedReLU();
             default:
                 throw new UnsupportedOperationException("Unknown or not supported activation function: " + this);
         }
@@ -106,7 +128,7 @@ public enum Activation {
             case HARDTANH:
                 return sd.hardTanh(variableName, input);
             case IDENTITY:
-                return input;    //TODO Is this OK in all cases?
+                return sd.identity(variableName, input);
             case LEAKYRELU:
                 return sd.leakyRelu(variableName, input, 0.0);
             case RELU:

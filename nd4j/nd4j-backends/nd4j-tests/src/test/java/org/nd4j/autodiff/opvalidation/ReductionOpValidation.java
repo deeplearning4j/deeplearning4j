@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +29,7 @@ import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
@@ -71,7 +88,6 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testZeroCount() {
-        OpValidationSuite.ignoreFailing();
         List<String> allFailed = new ArrayList<>();
         for( int i=0; i<2; i++ ) {
             SameDiff sd = SameDiff.create();
@@ -106,8 +122,6 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testZeroFraction() {
-        OpValidationSuite.ignoreFailing();
-
         List<String> allFailed = new ArrayList<>();
         for( int i=0; i<2; i++ ) {
             SameDiff sd = SameDiff.create();
@@ -138,7 +152,6 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testReductionGradientsSimple() {
-        OpValidationSuite.ignoreFailing();
         //Test reductions: final and only function
         Nd4j.getRandom().setSeed(12345);
 
@@ -288,7 +301,6 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testReductionGradients1() {
-        OpValidationSuite.ignoreFailing();
         //Test reductions: final, but *not* the only function
         Nd4j.getRandom().setSeed(12345);
 
@@ -312,6 +324,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 SDVariable loss;
                 String name;
                 TestCase tc = new TestCase(sd);
+                boolean uDistInput = false;
                 switch (i) {
                     case 0:
                         loss = sd.mean("loss", msePerEx, dim);
@@ -354,36 +367,37 @@ public class ReductionOpValidation extends BaseOpValidation {
                         name = "normmax";
                         break;
                     case 10:
-                        loss = sd.countNonZero("loss", input, dim);
+                        loss = sd.countNonZero("loss", msePerEx, dim);
                         name = "countNonZero";
                         break;
                     case 11:
-                        loss = sd.countZero("loss", input, dim);
+                        loss = sd.countZero("loss", msePerEx, dim);
                         name = "countZero";
                         break;
                     case 12:
-                        loss = sd.amax("loss", input, dim);
+                        loss = sd.amax("loss", msePerEx, dim);
                         name = "amax";
                         break;
                     case 13:
-                        loss = sd.amin("loss", input, dim);
+                        loss = sd.amin("loss", msePerEx, dim);
                         name = "amin";
                         break;
                     case 14:
-                        loss = sd.asum("loss", input, dim);
+                        loss = sd.asum("loss", msePerEx, dim);
                         name = "asum";
                         break;
                     case 15:
-                        loss = sd.amean("loss", input, dim);
+                        loss = sd.amean("loss", msePerEx, dim);
                         name = "amean";
                         break;
                     case 16:
-                        loss = sd.entropy("loss", input, dim);
+                        loss = sd.entropy("loss", msePerEx, dim);
                         name = "entropy";
                         break;
                     case 17:
                         name = "logEntropy";
-                        loss = sd.logEntropy("loss", input, dim);
+                        loss = sd.logEntropy("loss", msePerEx, dim);
+                        uDistInput = true;
                         break;
                     default:
                         throw new RuntimeException();
@@ -393,8 +407,8 @@ public class ReductionOpValidation extends BaseOpValidation {
                 String msg = "(test " + i + " - " + name + ", dimension=" + dim + ")";
                 log.info("*** Starting test: " + msg);
 
-                INDArray inputArr = Nd4j.randn(minibatch, nOut).muli(100);
-                INDArray labelArr = Nd4j.randn(minibatch, nOut).muli(100);
+                INDArray inputArr = uDistInput ? Nd4j.rand(minibatch, nOut) : Nd4j.randn(minibatch, nOut).muli(100);
+                INDArray labelArr = uDistInput ? Nd4j.rand(minibatch, nOut) : Nd4j.randn(minibatch, nOut).muli(100);
 
                 sd.associateArrayWithVariable(inputArr, input);
                 sd.associateArrayWithVariable(labelArr, label);
@@ -464,6 +478,8 @@ public class ReductionOpValidation extends BaseOpValidation {
                         break;
                     case 2:
                         reduced = sd.standardDeviation("reduced", second, true, reduceDim);
+                        inputArr.divi(1000);
+                        labelArr.divi(1000);
                         name = "stdev";
                         break;
                     case 3:
@@ -513,27 +529,27 @@ public class ReductionOpValidation extends BaseOpValidation {
                         name = "argmin";
                         break;
                     case 12:
-                        reduced = sd.countNonZero("loss", second, reduceDim);
+                        reduced = sd.countNonZero("reduced", second, reduceDim);
                         name = "countNonZero";
                         break;
                     case 13:
-                        reduced = sd.countZero("loss", second, reduceDim);
+                        reduced = sd.countZero("reduced", second, reduceDim);
                         name = "countZero";
                         break;
                     case 14:
-                        reduced = sd.amax("loss", second, reduceDim);
+                        reduced = sd.amax("reduced", second, reduceDim);
                         name = "amax";
                         break;
                     case 15:
-                        reduced = sd.amin("loss", second, reduceDim);
+                        reduced = sd.amin("reduced", second, reduceDim);
                         name = "amin";
                         break;
                     case 16:
-                        reduced = sd.asum("loss", second, reduceDim);
+                        reduced = sd.asum("reduced", second, reduceDim);
                         name = "asum";
                         break;
                     case 17:
-                        reduced = sd.amean("loss", second, reduceDim);
+                        reduced = sd.amean("reduced", second, reduceDim);
                         name = "amean";
                         break;
                     default:
@@ -553,9 +569,14 @@ public class ReductionOpValidation extends BaseOpValidation {
                 sd.associateArrayWithVariable(inputArr, in);
                 sd.associateArrayWithVariable(labelArr, label);
 
+                tc.gradCheckMaxRelativeError(maxRelError);
+                tc.gradCheckMinAbsError(minAbsError);
+
+//                sd.execAndEndResult();
+
                 String error = OpValidation.validate(tc);
                 if(error != null){
-                    failed.add(name);
+                    failed.add(name + " - " + error);
                 }
             }
         }
@@ -576,7 +597,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         List<String> failed = new ArrayList<>();
         for (int[] reduceDims : new int[][]{{Integer.MAX_VALUE}, {0, 1, 2}, {0}, {1}, {2}, {0, 1}, {0, 2}, {1, 2}}) {
-            for (int i = 0; i < 7; i++) {
+            for (int i = 5; i < 6; i++) {
 
                 SameDiff sd = SameDiff.create();
                 sd.setLogExecution(false);
@@ -596,39 +617,42 @@ public class ReductionOpValidation extends BaseOpValidation {
                     case 0:
                         reduced = sd.manhattanDistance(in, in2, reduceDims);
                         name = "manhattan";
-                        exp = Nd4j.getExecutioner().exec(new ManhattanDistance(inArr, in2Arr), reduceDims);
+                        exp = Nd4j.getExecutioner().exec(new ManhattanDistance(inArr, in2Arr, null, true, false), reduceDims);
                         break;
                     case 1:
                         reduced = sd.euclideanDistance(in, in2, reduceDims);
                         name = "euclidean";
-                        exp = Nd4j.getExecutioner().exec(new EuclideanDistance(inArr, in2Arr), reduceDims);
+                        exp = Nd4j.getExecutioner().exec(new EuclideanDistance(inArr, in2Arr, null, true, false), reduceDims);
                         break;
                     case 2:
                         reduced = sd.cosineSimilarity(in, in2, reduceDims);
                         name = "cosine";
-                        exp = Nd4j.getExecutioner().exec(new CosineSimilarity(inArr, in2Arr), reduceDims);
+                        exp = Nd4j.getExecutioner().exec(new CosineSimilarity(inArr, in2Arr, null, true, false), reduceDims);
                         break;
                     case 3:
                         reduced = sd.cosineDistance(in, in2, reduceDims);
                         name = "cosinedistance";
-                        exp = Nd4j.getExecutioner().exec(new CosineDistance(inArr, in2Arr), reduceDims);
+                        exp = Nd4j.getExecutioner().exec(new CosineDistance(inArr, in2Arr, null, true, false), reduceDims);
                         break;
                     case 4:
                         reduced = sd.hammingDistance(in, in2, reduceDims);
                         name = "hamming";
-                        exp = Nd4j.getExecutioner().exec(new HammingDistance(inArr, in2Arr), reduceDims);
+                        exp = Nd4j.getExecutioner().exec(new HammingDistance(inArr, in2Arr, null, true, false), reduceDims);
                         break;
                     case 5:
                         name = "jaccard";
                         reduced = sd.jaccardDistance(name, in, in2, reduceDims);
                         inArr.divi(100).addi(0.1);
                         in2Arr.divi(100).addi(0.1);
-                        exp = Nd4j.getExecutioner().exec(new JaccardDistance(inArr, in2Arr), reduceDims);
+                        exp = Nd4j.getExecutioner().exec(new JaccardDistance(inArr, in2Arr, null, true, false), reduceDims);
+
+                        if(OpValidationSuite.IGNORE_FAILING && reduceDims.length == 2)
+                            continue;
                         break;
                     case 6:
                         name = "dot";
                         reduced = sd.dot(name, in, in2, reduceDims);
-                        exp = Nd4j.getExecutioner().exec(new Dot(inArr, in2Arr), reduceDims);
+                        exp = Nd4j.getExecutioner().exec(new Dot(inArr, in2Arr, null, true, false), reduceDims);
                         break;
                     default:
                         throw new RuntimeException();
@@ -648,7 +672,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
                 String error = OpValidation.validate(tc, true);
                 if(error != null){
-                    failed.add(msg);
+                    failed.add(msg + " - " + error);
                 }
             }
         }
@@ -658,8 +682,6 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testMoments(){
-        OpValidationSuite.ignoreFailing();
-
         for( int[] axes : new int[][]{{0}, {1}, {0,1}}) {
             INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4);
 
@@ -670,7 +692,13 @@ public class ReductionOpValidation extends BaseOpValidation {
             INDArray expMean = input.mean(axes);
             INDArray expVar = input.var(false, axes);
 
-            SDVariable loss = moments[0].add(moments[1]).std(true);
+            SDVariable loss;
+            if(axes.length < 2){
+                loss = moments[0].add(moments[1]).std(true);
+            } else {
+                loss = moments[0].add(moments[1]).mean();
+            }
+
 
             String msg = Arrays.toString(axes);
 
@@ -686,17 +714,16 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testMomentsOp(){
-        OpValidationSuite.ignoreFailing();
         int[] axes = new int[]{0};
         INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4);
 
         INDArray outMean = Nd4j.createUninitialized(new long[]{4});
-        INDArray outStd = Nd4j.createUninitialized(new long[]{4});
+        INDArray outVar = Nd4j.createUninitialized(new long[]{4});
 
-        OpTestCase tc = new OpTestCase(new Moments(input, outMean, outStd, axes));
+        OpTestCase tc = new OpTestCase(new Moments(input, outMean, outVar, axes));
 
         tc.expectedOutput(0, input.mean(axes).reshape(4));
-        tc.expectedOutput(1, input.std(axes).reshape(4));
+        tc.expectedOutput(1, input.var(false, axes).reshape(4));
 
         String err = OpValidation.validate(tc);
         assertNull(err);
@@ -704,14 +731,12 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testNormalizeMomentsOp(){
-        OpValidationSuite.ignoreFailing();
-
         INDArray data = Nd4j.linspace(1, 100, 100).reshape(10,10);
         INDArray ssSum = data.sum(0);
         INDArray ssSqSum = data.mul(data).sum(0);
 
         INDArray meanExp = data.mean(0);
-        INDArray varExp = data.var(true, 0);
+        INDArray varExp = data.var(false, 0);
 
         INDArray mean = Nd4j.createUninitialized(meanExp.shape());
         INDArray var = Nd4j.createUninitialized(varExp.shape());
@@ -754,14 +779,11 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testIndexAccum(){
-        OpValidationSuite.ignoreFailing();
-
         List<String> failed = new ArrayList<>();
         List<int[]> dims = Arrays.asList(new int[]{0}, new int[]{1}, new int[]{0,1}, new int[0]);
 
         INDArray in = Nd4j.rand(3,4);
 
-//        for(int[] d : dims){
         for( int t=0; t<4; t++ ){
             int[] d = dims.get(t);
             for( int i=0; i<7; i++ ){
@@ -802,15 +824,15 @@ public class ReductionOpValidation extends BaseOpValidation {
                         break;
                     case 5:
                         reduce = sd.lastIndex(s, Conditions.greaterThan(0), dim);
-                        if(t == 0) exp = Nd4j.create(new double[]{2,2,2});
-                        else if(t == 1) exp = Nd4j.create(new double[]{3,3,3,3});
+                        if(t == 0) exp = Nd4j.create(new double[]{2,2,2,2});
+                        else if(t == 1) exp = Nd4j.create(new double[]{3,3,3});
                         else exp = Nd4j.create(new double[]{11});
                         name = "lastindex";
                         break;
                     case 6:
                         reduce = sd.matchConditionCount("count", s, Conditions.greaterThan(0), false, dim);
-                        if(t == 0) exp = Nd4j.create(new double[]{2,2,2});
-                        else if(t == 1) exp = Nd4j.create(new double[]{3,3,3,3});
+                        if(t == 0) exp = Nd4j.create(new double[]{3,3,3,3});
+                        else if(t == 1) exp = Nd4j.create(new double[]{4,4,4});
                         else exp = Nd4j.create(new double[]{12});
                         name = "matchConditionCount";
                         break;
@@ -843,8 +865,6 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testReduce3_2() {
-        OpValidationSuite.ignoreFailing();
-
         Nd4j.getRandom().setSeed(12345);
 
         int d0 = 3;
@@ -871,32 +891,32 @@ public class ReductionOpValidation extends BaseOpValidation {
                     case 0:
                         reduced = sd.manhattanDistance(in, in2, reduceDims);
                         name = "manhattan";
-                        expOut = Nd4j.getExecutioner().exec(new ManhattanDistance(a, b), reduceDims);
+                        expOut = Nd4j.getExecutioner().exec(new ManhattanDistance(a, b, null, true, false), reduceDims);
                         break;
                     case 1:
                         reduced = sd.euclideanDistance(in, in2, reduceDims);
                         name = "euclidean";
-                        expOut = Nd4j.getExecutioner().exec(new EuclideanDistance(a, b), reduceDims);
+                        expOut = Nd4j.getExecutioner().exec(new EuclideanDistance(a, b, null, true, false), reduceDims);
                         break;
                     case 2:
                         reduced = sd.cosineSimilarity(in, in2, reduceDims);
                         name = "cosine";
-                        expOut = Nd4j.getExecutioner().exec(new CosineSimilarity(a, b), reduceDims);
+                        expOut = Nd4j.getExecutioner().exec(new CosineSimilarity(a, b, null, true, false), reduceDims);
                         break;
                     case 3:
                         reduced = sd.jaccardDistance(in, in2, reduceDims);
                         name = "jaccard";
-                        expOut = Nd4j.getExecutioner().exec(new JaccardDistance(a, b), reduceDims);
+                        expOut = Nd4j.getExecutioner().exec(new JaccardDistance(a, b, null, true, false), reduceDims);
                         break;
                     case 4:
                         reduced = sd.hammingDistance(in, in2, reduceDims);
                         name = "hamming";
-                        expOut = Nd4j.getExecutioner().exec(new HammingDistance(a, b), reduceDims);
+                        expOut = Nd4j.getExecutioner().exec(new HammingDistance(a, b, null, true, false), reduceDims);
                         break;
                     case 5:
                         reduced = sd.cosineDistance(in, in2, reduceDims);
                         name = "reduced";
-                        expOut = Nd4j.getExecutioner().exec(new CosineDistance(a, b), reduceDims);
+                        expOut = Nd4j.getExecutioner().exec(new CosineDistance(a, b, null, true, false), reduceDims);
                         break;
                     default:
                         throw new RuntimeException();
@@ -910,15 +930,15 @@ public class ReductionOpValidation extends BaseOpValidation {
                 } else if (Arrays.equals(new int[]{2}, reduceDims)) {
                     expShape = new long[]{3, 4};
                 } else if (Arrays.equals(new int[]{Integer.MAX_VALUE}, reduceDims)) {
-                    expShape = new long[]{1, 1};
+                    expShape = new long[]{};
                 } else if (Arrays.equals(new int[]{0, 1}, reduceDims)) {
-                    expShape = new long[]{1, 5};
+                    expShape = new long[]{5};
                 } else if (Arrays.equals(new int[]{0, 2}, reduceDims)) {
-                    expShape = new long[]{1, 4};
+                    expShape = new long[]{4};
                 } else if (Arrays.equals(new int[]{1, 2}, reduceDims)) {
-                    expShape = new long[]{3, 1};
+                    expShape = new long[]{3};
                 } else if (Arrays.equals(new int[]{0, 1, 2}, reduceDims)) {
-                    expShape = new long[]{1, 1};
+                    expShape = new long[]{};
                 } else {
                     throw new RuntimeException();
                 }
@@ -940,8 +960,6 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testReductionsBackwards() {
-        OpValidationSuite.ignoreFailing();
-
         for (int i = 0; i < 7; i++) {
 
             SameDiff sd = SameDiff.create();

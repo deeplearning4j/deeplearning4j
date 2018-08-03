@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.api.ndarray;
 
 import com.google.common.primitives.Ints;
@@ -8,8 +24,6 @@ import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ops.impl.accum.Entropy;
 import org.nd4j.linalg.api.ops.impl.accum.LogEntropy;
@@ -27,7 +41,6 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.LinAlgExceptions;
 
-import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,7 +60,8 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     * */
 
     protected static final double THRESHOLD_MEMORY_ALLOCATION = 2;
-    protected int rows, columns, rank;
+    protected long rows, columns;
+    protected int rank;
     protected Boolean isVector = null;
     protected Boolean isMatrix = null;
     protected Boolean isScalar = null;
@@ -180,6 +194,11 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     @Override
     public long[] toLongVector() {
         return new long[0];
+    }
+
+    @Override
+    public long[][] toLongMatrix() {
+        return new long[0][];
     }
 
     @Override
@@ -326,7 +345,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return length;
     }
 
-    protected void init(int[] shape) {
+    protected void init(long[] shape) {
 
         if (shape.length == 1) {
             rows = 1;
@@ -1303,11 +1322,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public IComplexNumber normmaxComplex() {
-        return null;
-    }
-
-    @Override
     public INDArray norm2(int... dimension) {
         return null;
     }
@@ -1318,22 +1332,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public IComplexNumber norm2Complex() {
-        return null;
-    }
-
-    @Override
     public INDArray norm1(int... dimension) {
         return null;
     }
 
     @Override
     public Number norm1Number() {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber norm1Complex() {
         return null;
     }
 
@@ -1358,11 +1362,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public IComplexNumber stdComplex() {
-        return null;
-    }
-
-    @Override
     public INDArray prod(int... dimension) {
         return null;
     }
@@ -1373,22 +1372,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public IComplexNumber prodComplex() {
-        return null;
-    }
-
-    @Override
     public INDArray mean(int... dimension) {
         return null;
     }
 
     @Override
     public Number meanNumber() {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber meanComplex() {
         return null;
     }
 
@@ -1408,22 +1397,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public IComplexNumber varComplex() {
-        return null;
-    }
-
-    @Override
     public INDArray max(int... dimension) {
         return null;
     }
 
     @Override
     public Number maxNumber() {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber maxComplex() {
         return null;
     }
 
@@ -1438,11 +1417,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public IComplexNumber minComplex() {
-        return null;
-    }
-
-    @Override
     public INDArray sum(int... dimension) {
         return null;
     }
@@ -1452,21 +1426,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return null;
     }
 
-    @Override
-    public IComplexNumber sumComplex() {
-        return null;
-    }
-
-    @Override
-    public void setStride(int... stride) {
-
-    }
-
-    @Override
-    public void setShape(int... shape) {
-
-    }
-    
     @Override
     public void setShapeAndStride(int[] shape, int[] stride) {
 
@@ -1674,12 +1633,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public int columns() {
-        return columns;
+        return (int) columns;
     }
 
     @Override
     public int rows() {
-        return rows;
+        return (int) rows;
     }
 
     /**
@@ -1798,127 +1757,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public Object element() {
-        return null;
-    }
-
-
-    @Override
-    public IComplexNDArray rdiv(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray rdivi(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray rsub(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray rsubi(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray div(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray divi(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray mul(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray muli(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray sub(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray subi(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray add(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray addi(IComplexNumber n) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray rdiv(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray rdivi(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray rsub(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray rsubi(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray div(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray divi(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray mul(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray muli(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray sub(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray subi(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray add(IComplexNumber n, IComplexNDArray result) {
-        return null;
-    }
-
-    @Override
-    public IComplexNDArray addi(IComplexNumber n, IComplexNDArray result) {
         return null;
     }
 
@@ -2248,5 +2086,13 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     }
 
+    @Override
+    public long[] shapeInfoJava() {
+        return javaShapeInformation;
+    }
 
+    @Override
+    public DataBuffer.Type dataType() {
+        return data().dataType();
+    }
 }

@@ -1,18 +1,18 @@
-/*-
- *  * Copyright 2016 Skymind, Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
- */
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.datavec.api.records.reader.impl.jackson;
 
@@ -189,66 +189,18 @@ public class JacksonRecordReader extends BaseRecordReader {
 
 
     private List<Writable> readValues(URI uri, String fileContents) {
-        List<Writable> out = new ArrayList<>();
-        List<String[]> paths = selection.getFieldPaths();
-        List<Writable> valueIfMissing = selection.getValueIfMissing();
+        List<Writable> out = JacksonReaderUtils.parseRecord(fileContents, selection, mapper);
 
-        Map<String, Object> map;
-        try {
-            map = mapper.readValue(fileContents, typeRef);
-        } catch (IOException e) {
-            throw new RuntimeException("Error parsing file", e);
-        }
-
-        //Now, extract out values...
-        for (int i = 0; i < paths.size(); i++) {
-            //First: check if we should insert the label here...
-            if (i == labelPosition && labelGenerator != null) {
-                out.add(labelGenerator.getLabelForPath(uri));
-            }
-
-            String[] currPath = paths.get(i);
-            String value = null;
-            Map<String, Object> currMap = map;
-            for (int j = 0; j < currPath.length; j++) {
-                if (currMap.containsKey(currPath[j])) {
-                    Object o = currMap.get(currPath[j]);
-                    if (j == currPath.length - 1) {
-                        //Expect to get the final value
-                        if (o instanceof String) {
-                            value = (String) o;
-                        } else if (o instanceof Number) {
-                            value = o.toString();
-                        } else {
-                            throw new IllegalStateException(
-                                            "Expected to find String on path " + Arrays.toString(currPath) + ", found "
-                                                            + o.getClass() + " with value " + o);
-                        }
-                    } else {
-                        //Expect to get a map...
-                        if (o instanceof Map) {
-                            currMap = (Map<String, Object>) o;
-                        }
-                    }
-                } else {
-                    //Not found
-                    value = null;
-                    break;
-                }
-            }
-
-            Writable outputWritable;
-            if (value == null) {
-                outputWritable = valueIfMissing.get(i);
+        //Add label - if required
+        if(labelGenerator != null){
+            Writable label = labelGenerator.getLabelForPath(uri);
+            List<String[]> paths = selection.getFieldPaths();
+            if ((labelPosition >= paths.size() || labelPosition == -1)) {
+                //Edge case: might want label as the last value
+                out.add(label);
             } else {
-                outputWritable = new Text(value);
+                out.add(labelPosition, label);  //Add and shift existing to right
             }
-            out.add(outputWritable);
-        }
-
-        //Edge case: might want label as the last value
-        if ((labelPosition >= paths.size() || labelPosition == -1) && labelGenerator != null) {
-            out.add(labelGenerator.getLabelForPath(uri));
         }
 
         return out;

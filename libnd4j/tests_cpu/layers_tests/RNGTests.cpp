@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 //  @author raver119@gmail.com
 //
@@ -5,7 +21,6 @@
 #include "testlayers.h"
 #include <chrono>
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 #include <helpers/RandomLauncher.h>
 #include <ops/declarable/LegacyRandomOp.h>
 #include <ops/declarable/CustomOperations.h>
@@ -54,8 +69,8 @@ TEST_F(RNGTests, Test_Dropout_1) {
     NDArray<float> x0('c', {10, 10});
     NDArray<float> x1('c', {10, 10});
 
-    NDArrayFactory<float>::linspace(1, x0);
-    NDArrayFactory<float>::linspace(1, x1);
+    x0.linspace(1);
+    x1.linspace(1);
 
     float prob[] = {0.5f};
 
@@ -74,8 +89,8 @@ TEST_F(RNGTests, Test_DropoutInverted_1) {
     NDArray<float> x0('c', {10, 10});
     NDArray<float> x1('c', {10, 10});
 
-    NDArrayFactory<float>::linspace(1, x0);
-    NDArrayFactory<float>::linspace(1, x1);
+    x0.linspace(1);
+    x1.linspace(1);
 
     float prob[] = {0.5f};
 

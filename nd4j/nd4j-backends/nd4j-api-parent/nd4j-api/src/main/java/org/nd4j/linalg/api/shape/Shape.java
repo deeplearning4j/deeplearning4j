@@ -1,21 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.api.shape;
 
@@ -25,9 +22,10 @@ import com.google.common.primitives.Longs;
 import lombok.NonNull;
 import lombok.val;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -502,24 +500,26 @@ public class Shape {
         }
 
         if (left.length != 2 && right.length != 2) {
-            throw new IllegalArgumentException("Illegal shapes for matrix multiply. Must be of length 2");
+            throw new IllegalArgumentException("Illegal shapes for matrix multiply. Must be of length 2. Left shape: "
+                    + Arrays.toString(left) + ", right shape: " + Arrays.toString(right));
         }
 
         for(int i = 0; i < left.length; i++) {
             if(left[i] < 1)
-                throw new ND4JIllegalStateException("Left shape contained value < 0 at index " + i);
+                throw new ND4JIllegalStateException("Left shape contained value < 0 at index " + i + " - left shape " + Arrays.toString(left));
         }
 
 
 
         for(int i = 0; i < right.length; i++) {
             if(right[i] < 1)
-                throw new ND4JIllegalStateException("Right shape contained value < 0 at index " + i);
+                throw new ND4JIllegalStateException("Right shape contained value < 0 at index " + i + " - right shape " + Arrays.toString(right));
         }
 
 
         if (left.length > 1 && left[1] != right[0])
-            throw new IllegalArgumentException("Columns of left not equal to rows of right");
+            throw new IllegalArgumentException("Columns of left not equal to rows of right: left shape " + Arrays.toString(left)
+                    + ", right shape " + Arrays.toString(right));
 
         if(left.length < right.length) {
             if(left[0] == right[0]) {
@@ -540,25 +540,28 @@ public class Shape {
             return left;
         }
 
-        if (left.length != 2 && right.length != 2) {
-            throw new IllegalArgumentException("Illegal shapes for matrix multiply. Must be of length 2");
+        if (left.length != 2 && right.length !=2) {
+            if (left.length != 3 && right.length != 3) {
+                throw new IllegalArgumentException("Illegal shapes for matrix multiply. Must be both of length 2 or both" +
+                        "of length 3 (batch-wise matrix multiply). Left shape: "
+                        + Arrays.toString(left) + ", right shape: " + Arrays.toString(right));
+            }
         }
 
         for(int i = 0; i < left.length; i++) {
             if(left[i] < 1)
-                throw new ND4JIllegalStateException("Left shape contained value < 0 at index " + i);
+                throw new ND4JIllegalStateException("Left shape contained value < 0 at index " + i + " - left shape " + Arrays.toString(left));
         }
-
-
 
         for(int i = 0; i < right.length; i++) {
             if(right[i] < 1)
-                throw new ND4JIllegalStateException("Right shape contained value < 0 at index " + i);
+                throw new ND4JIllegalStateException("Right shape contained value < 0 at index " + i + " - right shape " + Arrays.toString(right));
         }
 
 
-        if (left.length > 1 && left[1] != right[0])
-            throw new IllegalArgumentException("Columns of left not equal to rows of right");
+        if (left.length == 2 && left[1] != right[0] || left.length == 3 && left[2] != right[1])
+            throw new IllegalArgumentException("Columns of left not equal to rows of right: left shape " + Arrays.toString(left)
+                    + ", right shape " + Arrays.toString(right));
 
         if(left.length < right.length) {
             if(left[0] == right[0]) {
@@ -566,7 +569,17 @@ public class Shape {
             }
         }
 
-        long[] shape = {left[0], right[1]};
+        if (left.length == 3 && left[0] != right[0]) {
+            throw new IllegalArgumentException("For batch matrix multiplication the leading dimension of both arguments" +
+                    "has to match, got left leading dimension" + left[0] + "and right " + right[0]);
+        }
+
+        long[] shape;
+        if (left.length == 2) {
+            shape = new long[]{left[0], right[1]};
+        } else {
+            shape = new long[]{left[0], left[1], right[2]};
+        }
         return shape;
     }
 
@@ -580,39 +593,21 @@ public class Shape {
      * elements set to zero
      */
     public static INDArray toOffsetZero(INDArray arr) {
-        if (arr.offset() < 1 && arr.data().length() == arr.length()
-                || arr instanceof IComplexNDArray && arr.length() * 2 == arr.data().length())
+        if (arr.offset() < 1 && arr.data().length() == arr.length())
             if (arr.ordering() == 'f' && arr.stride(-1) != arr.elementStride()
                     || arr.ordering() == 'c' && arr.stride(0) != arr.elementStride())
                 return arr;
 
         if (arr.isRowVector()) {
-            if (arr instanceof IComplexNDArray) {
-                /*IComplexNDArray ret = Nd4j.createComplex(arr.shape());
-                for (int i = 0; i < ret.length(); i++)
-                    ret.putScalar(i, ((IComplexNDArray) arr).getComplex(i));
-                return ret;*/
-                throw new UnsupportedOperationException("Complex arrays aren't supported yet");
-            } else {
-                INDArray ret = Nd4j.create(arr.shape());
-                for (int i = 0; i < ret.length(); i++)
-                    ret.putScalar(i, arr.getDouble(i));
-                return ret;
-            }
-        }
-
-
-        if (arr instanceof IComplexNDArray) {
-            /*IComplexNDArray ret = Nd4j.createComplex(arr.shape());
-            for (int i = 0; i < ret.slices(); i++)
-                ret.putSlice(i, arr.slice(i));
-            return ret;*/
-            throw new UnsupportedOperationException("Complex arrays aren't supported yet");
-        } else {
-            INDArray ret = Nd4j.create(arr.shape(), arr.ordering());
-            ret.assign(arr);
+            INDArray ret = Nd4j.create(arr.shape());
+            for (int i = 0; i < ret.length(); i++)
+                ret.putScalar(i, arr.getDouble(i));
             return ret;
         }
+
+        INDArray ret = Nd4j.create(arr.shape(), arr.ordering());
+        ret.assign(arr);
+        return ret;
     }
 
 
@@ -651,29 +646,13 @@ public class Shape {
     }
 
     private static INDArray toOffsetZeroCopyHelper(final INDArray arr, char order, boolean anyOrder) {
-        if (arr instanceof IComplexNDArray) {
-            /*
-            if (arr.isRowVector()) {
-                IComplexNDArray ret = Nd4j.createComplex(arr.shape(), order);
-                for (int i = 0; i < ret.length(); i++)
-                    ret.putScalar(i, ((IComplexNDArray) arr).getComplex(i));
-                return ret;
-            }
-            IComplexNDArray ret = Nd4j.createComplex(arr.shape(), order);
-            for (int i = 0; i < ret.slices(); i++)
-                ret.putSlice(i, arr.slice(i));
-            return ret;
-            */
-            throw new UnsupportedOperationException();
-        } else {
-            //Use CopyOp:
-            char outOrder = (anyOrder ? arr.ordering() : order);
-            if (outOrder == 'a')
-                outOrder = Nd4j.order();
-            INDArray z = Nd4j.createUninitialized(arr.shape(), outOrder);
-            z.assign(arr);
-            return z;
-        }
+        //Use CopyOp:
+        char outOrder = (anyOrder ? arr.ordering() : order);
+        if (outOrder == 'a')
+            outOrder = Nd4j.order();
+        INDArray z = Nd4j.createUninitialized(arr.shape(), outOrder);
+        z.assign(arr);
+        return z;
     }
 
 
@@ -2017,14 +1996,7 @@ public class Shape {
             newStrides[nk] = last_stride;
         }
 
-        if (arr instanceof IComplexNDArray)
-            //return Nd4j.createComplex(arr.data(), newShape, newStrides, arr.offset());
-            throw new UnsupportedOperationException();
-
-
         INDArray ret = Nd4j.create(arr.data(), newShape, newStrides, arr.offset(), isFOrder ? 'f' : 'c');
-
-
         return ret;
     }
 
@@ -2434,6 +2406,8 @@ public class Shape {
      * @return true if c+descending, f+ascending, false otherwise
      */
     public static boolean strideDescendingCAscendingF(INDArray array) {
+        if(array.rank() <= 1)
+            return true;
         long[] strides = array.stride();
         if (array.isVector() && strides[0] == 1 && strides[1] == 1)
             return true;
@@ -2974,6 +2948,10 @@ public class Shape {
         return ret;
     }
 
+    public static long extras(long[] buffer) {
+        return options(buffer);
+    }
+
     /**
      * Get the offset for the buffer
      *
@@ -3032,6 +3010,18 @@ public class Shape {
     public static int elementWiseStride(IntBuffer buffer) {
         int length2 = shapeInfoLength(buffer.get(0));
         return buffer.get(length2 - 2);
+    }
+
+    /**
+     * Get the element wise stride for the
+     * shape info buffer
+     * @param buffer the buffer to get the element
+     *               wise stride from
+     * @return the element wise stride for the buffer
+     */
+    public static long elementWiseStride(long[] buffer) {
+        int length2 = shapeInfoLength(buffer);
+        return buffer[length2 - 2];
     }
 
 
@@ -3474,8 +3464,21 @@ public class Shape {
         return true;
     }
 
+    /**
+     *
+     * @param shape
+     * @return
+     */
+    public static long lengthOf(long[] shape) {
+        if (shape.length == 0)
+            return 1L;
+        else
+            return ArrayUtil.prodLong(shape);
+    }
 
     public static boolean hasDefaultStridesForShape(INDArray input){
+        if(input.rank() == 0)
+            return true;
         if(!strideDescendingCAscendingF(input)){
             return false;
         }
@@ -3490,5 +3493,7 @@ public class Shape {
     }
 
 
-
+    public static boolean isEmpty(long[] shapeInfo) {
+        return ArrayOptionsHelper.arrayType(shapeInfo) == ArrayType.EMPTY;
+    }
 }

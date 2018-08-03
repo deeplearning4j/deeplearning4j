@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.datavec.arrow;
 
 import lombok.val;
@@ -18,10 +34,7 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.writable.DoubleWritable;
-import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.LongWritable;
-import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.*;
 import org.datavec.arrow.recordreader.ArrowRecordReader;
 import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
 import org.junit.Rule;
@@ -38,8 +51,10 @@ import java.io.IOException;
 import java.util.*;
 
 import static java.nio.channels.Channels.newChannel;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class ArrowConverterTest {
 
@@ -48,6 +63,66 @@ public class ArrowConverterTest {
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 
+
+
+    @Test
+    public void testToArrayFromINDArray() {
+        Schema.Builder schemaBuilder = new Schema.Builder();
+        schemaBuilder.addColumnNDArray("outputArray",new long[]{1,4});
+        Schema schema = schemaBuilder.build();
+        int numRows = 4;
+        List<List<Writable>> ret = new ArrayList<>(numRows);
+        for(int i = 0; i < numRows; i++) {
+            ret.add(Arrays.<Writable>asList(new NDArrayWritable(Nd4j.linspace(1,4,4))));
+        }
+
+        List<FieldVector> fieldVectors = ArrowConverter.toArrowColumns(bufferAllocator, schema, ret);
+        ArrowWritableRecordBatch arrowWritableRecordBatch = new ArrowWritableRecordBatch(fieldVectors,schema);
+        INDArray array = ArrowConverter.toArray(arrowWritableRecordBatch);
+        assertArrayEquals(new long[]{4,4},array.shape());
+
+        INDArray assertion = Nd4j.repeat(Nd4j.linspace(1,4,4),4).reshape(4,4);
+        assertEquals(assertion,array);
+    }
+
+    @Test
+    public void testArrowColumnINDArray() {
+        Schema.Builder schema = new Schema.Builder();
+        List<String> single = new ArrayList<>();
+        int numCols = 2;
+        INDArray arr = Nd4j.linspace(1,4,4);
+        for(int i = 0; i < numCols; i++) {
+            schema.addColumnNDArray(String.valueOf(i),new long[]{1,4});
+            single.add(String.valueOf(i));
+        }
+
+        Schema buildSchema = schema.build();
+        List<List<Writable>> list = new ArrayList<>();
+        List<Writable> firstRow = new ArrayList<>();
+        for(int i = 0 ; i < numCols; i++) {
+            firstRow.add(new NDArrayWritable(arr));
+        }
+
+        list.add(firstRow);
+
+        List<FieldVector> fieldVectors = ArrowConverter.toArrowColumns(bufferAllocator, buildSchema, list);
+        assertEquals(numCols,fieldVectors.size());
+        assertEquals(1,fieldVectors.get(0).getValueCount());
+        assertFalse(fieldVectors.get(0).isNull(0));
+
+        ArrowWritableRecordBatch arrowWritableRecordBatch = ArrowConverter.toArrowWritables(fieldVectors, buildSchema);
+        assertEquals(1,arrowWritableRecordBatch.size());
+
+        Writable writable = arrowWritableRecordBatch.get(0).get(0);
+        assertTrue(writable instanceof NDArrayWritable);
+        NDArrayWritable ndArrayWritable = (NDArrayWritable) writable;
+        assertEquals(arr,ndArrayWritable.get());
+
+        Writable writable1 = ArrowConverter.fromEntry(0, fieldVectors.get(0), ColumnType.NDArray);
+        NDArrayWritable ndArrayWritablewritable1 = (NDArrayWritable) writable1;
+        System.out.println(ndArrayWritablewritable1.get());
+
+    }
 
     @Test
     public void testArrowColumnString() {

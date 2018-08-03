@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 //  @author raver119@gmail.com
 //
@@ -5,7 +21,6 @@
 #include "testlayers.h"
 #include <ops/declarable/CustomOperations.h>
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 #include <NativeOps.h>
 #include <helpers/BitwiseUtils.h>
 
@@ -172,7 +187,7 @@ TEST_F(ScalarTests, Test_Reshape_1) {
     NDArray<float> exp('c', {1, 1, 1}, {2.0f});
 
     nd4j::ops::reshape<float> op;
-    auto result = op.execute({&x}, {}, {99, 1, 1, 1});
+    auto result = op.execute({&x}, {}, {-99, 1, 1, 1});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -252,7 +267,7 @@ TEST_F(ScalarTests, Test_Concat_Scalar_1) {
     auto result = op.execute({&t, &u, &v, &w}, {}, {0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
-    auto z = result->at(0);
+    auto z = result->at(0);    
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));

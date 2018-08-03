@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.Data;
@@ -6,6 +22,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.preprocessor.Cnn3DToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
@@ -77,6 +94,11 @@ public abstract class FeedForwardLayer extends BaseLayer {
                 //CNN -> FF
                 InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
                 return new CnnToFeedForwardPreProcessor(c.getHeight(), c.getWidth(), c.getChannels());
+            case CNN3D:
+                //CNN3D -> FF
+                InputType.InputTypeConvolutional3D c3d = (InputType.InputTypeConvolutional3D)inputType;
+                //TODO don't hardcode NCDHW
+                return new Cnn3DToFeedForwardPreProcessor(c3d.getDepth(), c3d.getHeight(), c3d.getWidth(), c3d.getChannels(), true);
             default:
                 throw new RuntimeException("Unknown input type: " + inputType);
         }
@@ -109,6 +131,11 @@ public abstract class FeedForwardLayer extends BaseLayer {
     @Override
     public boolean isPretrainParam(String paramName) {
         return false; //No pretrain params in standard FF layers
+    }
+
+    @Override
+    public boolean isPretrain() {
+        return false;
     }
 
     public abstract static class Builder<T extends Builder<T>> extends BaseLayer.Builder<T> {

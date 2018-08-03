@@ -1,21 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.api.buffer.factory;
 
@@ -388,6 +385,8 @@ public interface DataBufferFactory {
      */
     DataBuffer createLong(long length, boolean initialize);
 
+    DataBuffer createLong(long[] data, MemoryWorkspace workspace);
+
     DataBuffer createLong(long length, boolean initialize, MemoryWorkspace workspace);
 
     /**
@@ -509,6 +508,39 @@ public interface DataBufferFactory {
      * @return the new buffer
      */
     DataBuffer createInt(int[] data, boolean copy);
+
+    /**
+     * Creates a long data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createLong(int[] data, boolean copy);
+
+
+    /**
+     * Creates a double data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createDouble(long[] data, boolean copy);
+
+    /**
+     * Creates a float data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createFloat(long[] data, boolean copy);
+
+    /**
+     * Creates a int data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createInt(long[] data, boolean copy);
 
     /**
      * Creates a double data buffer

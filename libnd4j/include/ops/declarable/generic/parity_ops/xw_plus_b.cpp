@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 //  xw_plus_b op. Created by GS <george@skymind.io> 31.01.2018
 //
@@ -8,6 +24,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/matmul.h>
+#include <MmulHelper.h>
 
 namespace nd4j {
     namespace ops {
@@ -21,7 +38,7 @@ namespace nd4j {
             REQUIRE_TRUE(b->isVector() && b->lengthOf() == z->sizeAt(-1), 0, "xw_plus_b: Input vector should have proper dimension 1x%i. "
                 "But %i != %i.", z->sizeAt(-1), b->lengthOf(), z->sizeAt(-1));
             // multiply x to y
-            nd4j::NDArrayFactory<T>::mmulHelper(x, y, z, T(1.0f), T(0.0f));
+            MmulHelper<T>::mmul(x, y, z, T(1.0f), T(0.0f));
 
             // adding b vector
             z->addiRowVector(b);

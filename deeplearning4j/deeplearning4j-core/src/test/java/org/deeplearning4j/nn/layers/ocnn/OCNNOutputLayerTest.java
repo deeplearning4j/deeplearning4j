@@ -1,8 +1,23 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.nn.layers.ocnn;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
-import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -13,28 +28,26 @@ import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.activations.impl.*;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
+import org.nd4j.linalg.activations.impl.ActivationReLU;
+import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.NoOp;
-import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.schedule.ScheduleType;
 import org.nd4j.linalg.schedule.StepSchedule;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.File;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+
 
 public class OCNNOutputLayerTest {
 
@@ -58,7 +71,7 @@ public class OCNNOutputLayerTest {
 
 
         DataSet ds = dataSetIterator.next();
-        INDArray arr = ds.getFeatureMatrix();
+        INDArray arr = ds.getFeatures();
         network.setInput(arr);
 
         if (doLearningFirst) {
@@ -113,16 +126,16 @@ public class OCNNOutputLayerTest {
         }
 
         DataSet anomalies = next.filterBy(new int[] {2});
-        INDArray output = network.labelProbabilities(anomalies.getFeatureMatrix());
-        INDArray normalOutput = network.output(anomalies.getFeatureMatrix(),false);
+        INDArray output = network.labelProbabilities(anomalies.getFeatures());
+        INDArray normalOutput = network.output(anomalies.getFeatures(),false);
         assertEquals(output.lt(0.0).sumNumber().doubleValue(),normalOutput.eq(0.0).sumNumber().doubleValue(),1e-1);
 
         System.out.println("Labels " + anomalies.getLabels());
         System.out.println("Anomaly output " + normalOutput);
         System.out.println(output);
 
-        INDArray normalProbs = network.labelProbabilities(filtered.getFeatureMatrix());
-        INDArray outputForNormalSamples = network.output(filtered.getFeatureMatrix(),false);
+        INDArray normalProbs = network.labelProbabilities(filtered.getFeatures());
+        INDArray outputForNormalSamples = network.output(filtered.getFeatures(),false);
         System.out.println("Normal probabilities " + normalProbs);
         System.out.println("Normal raw output " + outputForNormalSamples);
 

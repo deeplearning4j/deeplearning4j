@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by agibsonccc on 2/21/16.
 //
@@ -3022,6 +3038,10 @@ public:
     void deleteGraphStateDouble(Nd4jPointer state);
 
     void deleteResultWrapper(Nd4jPointer ptr);
+
+    int estimateThresholdFloat(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold);
+    int estimateThresholdDouble(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold);
+    int estimateThresholdHalf(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold);
 
     // this method executes op that requires scope to be present: if/while/cond/whatever
     Nd4jStatus execCustomOpWithScopeHalf(Nd4jPointer *extraPointers, Nd4jPointer state, Nd4jLong opHash, Nd4jLong *scopes, int numScopes, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int numInputs, Nd4jPointer *outputBuffers, Nd4jPointer *outputShapes, int numOutputs);

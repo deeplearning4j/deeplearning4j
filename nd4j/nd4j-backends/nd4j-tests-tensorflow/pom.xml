@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ Copyright (c) 2015-2018 Skymind, Inc.
+  ~
+  ~ This program and the accompanying materials are made available under the
+  ~ terms of the Apache License, Version 2.0 which is available at
+  ~ https://www.apache.org/licenses/LICENSE-2.0.
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  ~ License for the specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  ~ SPDX-License-Identifier: Apache-2.0
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>nd4j-backends</artifactId>
+        <groupId>org.nd4j</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>nd4j-tests-tensorflow</artifactId>
+
+    <name>nd4j-tests-tensorflow</name>
+
+
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <scala.binary.version>2.11</scala.binary.version>
+        <maven.compiler.testTarget>1.8</maven.compiler.testTarget>
+        <maven.compiler.testSource>1.8</maven.compiler.testSource>
+    </properties>
+
+    <build>
+        <testSourceDirectory>${test.root}</testSourceDirectory>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>${maven-enforcer-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <phase>test</phase>
+                        <id>enforce-test-resources</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skipTestResourceEnforcement}</skip>
+                            <rules>
+                                <requireActiveProfile>
+                                    <profiles>nd4j-tf-cpu,nd4j-tf-gpu</profiles>
+                                    <all>false</all>
+                                </requireActiveProfile>
+                                <requireActiveProfile>
+                                    <profiles>tf-cpu,tf-gpu</profiles>
+                                    <all>false</all>
+                                </requireActiveProfile>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-tensorflow</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+        <profile>
+            <id>testresources</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+        <profile>
+            <id>tf-cpu</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco.javacpp-presets</groupId>
+                    <artifactId>tensorflow-platform</artifactId>
+                    <version>${tensorflow.javacpp.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco.javacpp-presets</groupId>
+                    <artifactId>tensorflow</artifactId>
+                    <version>${tensorflow.javacpp.version}</version>
+                    <classifier>linux-x86_64</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>tf-gpu</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco.javacpp-presets</groupId>
+                    <artifactId>tensorflow</artifactId>
+                    <version>${tensorflow.javacpp.version}</version>
+                    <classifier>linux-x86_64-gpu</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>nd4j-tf-gpu</id>
+            <properties>
+                <test.root>src/test/gpujava</test.root>
+            </properties>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>2.18</version>
+                        <executions>
+                            <!--
+                                Invokes both the integration-test and the verify goals of the
+                                Failsafe Maven plugin
+                            -->
+                            <execution>
+                                <id>integration-tests</id>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                                <configuration>
+                                    <!--
+                                        Skips integration tests if the value of skip.integration.tests
+                                        property is true
+                                    -->
+                                    <skipTests>false</skipTests>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>1.9.1</version>
+                        <executions>
+                            <execution>
+                                <id>add-integration-test-sources</id>
+                                <phase>test-compile</phase>
+                                <goals>
+                                    <goal>add-test-source</goal>
+                                </goals>
+                                <configuration>
+                                    <!-- Configures the source directory of our integration tests -->
+                                    <sources>
+                                        <source>src/gputest/java</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <version>${maven-compiler-plugin.version}</version>
+                        <configuration>
+                            <source>1.8</source>
+                            <target>1.8</target>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>2.19.1</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.maven.surefire</groupId>
+                                <artifactId>surefire-junit47</artifactId>
+                                <version>2.19.1</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <testSourceDirectory>${project.basedir}/src/test/gpujava</testSourceDirectory>
+                            <includes>
+                                <include>**/*.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.jcublas.JCublasBackend</org.nd4j.linalg.defaultbackend>
+                                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.jcublas.JCublasBackend</org.nd4j.linalg.tests.backendstorun>
+                            </systemPropertyVariables>
+                            <!--
+                                Maximum heap size was set to 6g, as a minimum required value for tests run.
+                                Depending on a build machine, default value is not always enough.
+                            -->
+                            <skip>false</skip>
+                            <argLine>-Xmx6g</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-cuda-9.2</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>nd4j-tf-cpu</id>
+            <properties>
+                <test.root>src/test/cpujava</test.root>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <version>${maven-compiler-plugin.version}</version>
+                        <configuration>
+                            <testSource>1.8</testSource>
+                            <source>1.8</source>
+                            <target>1.8</target>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>2.19.1</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.maven.surefire</groupId>
+                                <artifactId>surefire-junit47</artifactId>
+                                <version>2.19.1</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <testSourceDirectory>${project.basedir}/src/test/cpujava</testSourceDirectory>
+                            <includes>
+                                <include>**/*.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.defaultbackend>
+                                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.tests.backendstorun>
+                            </systemPropertyVariables>
+                            <!--
+                                Maximum heap size was set to 6g, as a minimum required value for tests run.
+                                Depending on a build machine, default value is not always enough.
+                            -->
+                            <argLine>-Xmx6g</argLine>
+                            <skipTests>false</skipTests>
+                            <skip>false</skip>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+
+</project>

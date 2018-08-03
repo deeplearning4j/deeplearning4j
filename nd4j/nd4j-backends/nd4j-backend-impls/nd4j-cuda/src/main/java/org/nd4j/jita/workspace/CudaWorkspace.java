@@ -1,7 +1,24 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.jita.workspace;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -136,23 +153,20 @@ public class CudaWorkspace extends Nd4jWorkspace {
         }
 
         if (kind == MemoryKind.DEVICE) {
-            if (deviceOffset.get() + requiredMemory <= currentSize.get() && !trimmer) {
+            if (deviceOffset.get() + requiredMemory <= currentSize.get() && !trimmer && Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.SPILL_EVERYTHING) {
                 cycleAllocations.addAndGet(requiredMemory);
                 long prevOffset = deviceOffset.getAndAdd(requiredMemory);
 
                 if (workspaceConfiguration.getPolicyMirroring() == MirroringPolicy.HOST_ONLY)
                     return null;
 
-                PagedPointer ptr = workspace.getDevicePointer().withOffset(prevOffset, numElements);
+                val ptr = workspace.getDevicePointer().withOffset(prevOffset, numElements);
 
                 if (isDebug.get())
                     log.info("Workspace [{}] device_{}: alloc array of {} bytes, capacity of {} elements; prevOffset: {}; newOffset: {}; size: {}; address: {}", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory, numElements, prevOffset, deviceOffset.get(), currentSize.get(), ptr.address());
 
                 if (initialize) {
-                    //CudaContext context = AtomicAllocator.getInstance().getMemoryHandler().getCudaContext();
-
-                    CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
-
+                    val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
                     int ret = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, requiredMemory, 0, context.getSpecialStream());
                     if (ret == 0)
@@ -165,7 +179,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
             } else {
 
                 // spill
-                if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0 && !trimmer) {
+                if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0 && !trimmer && Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.SPILL_EVERYTHING) {
                     //log.info("End of space reached. Current offset: {}; requiredMemory: {}", deviceOffset.get(), requiredMemory);
                     reset();
                     resetPlanned.set(true);
@@ -205,8 +219,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                             return pointer;
                         } else {
                             pinnedCount.incrementAndGet();
-                            //
-                            //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().malloc(shape, null, AllocationStatus.DEVICE).getDevicePointer()
+
                             PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, initialize), numElements);
                             //pointer.setLeaked(true);
                             pointer.isLeaked();
@@ -222,13 +235,14 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 }
             }
         } else if (kind == MemoryKind.HOST) {
-            if (hostOffset.get() + requiredMemory <= currentSize.get() && !trimmer) {
+            if (hostOffset.get() + requiredMemory <= currentSize.get() && !trimmer && Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.SPILL_EVERYTHING) {
 
                 long prevOffset = hostOffset.getAndAdd(requiredMemory);
 
                 PagedPointer ptr = workspace.getHostPointer().withOffset(prevOffset, numElements);
 
-                if (initialize && workspaceConfiguration.getPolicyMirroring() == MirroringPolicy.HOST_ONLY)
+                // && workspaceConfiguration.getPolicyMirroring() == MirroringPolicy.HOST_ONLY
+                if (initialize)
                     Pointer.memset(ptr, 0, requiredMemory);
 
                 return ptr;

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by raver119 on 04.08.17.
 //
@@ -5,7 +21,6 @@
 #include "testlayers.h"
 #include <memory>
 #include <NDArray.h>
-#include <NDArrayFactory.h>
 #include "ops/specials_sparse.h"
 using namespace nd4j;
 
@@ -107,47 +122,10 @@ TEST_F(SparseUtilsTest, SortCOOindices_Test) {
 
     NDArray<float> values ('c', {40}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
                                       22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39});
-    NDArray<float> expValues ('c', {40}, {
-                                          0,
-                                          1,
-                                          2,
-                                          4,
-                                          5,
-                                          6,
-                                          9,
-                                          12,
-                                          3,
-                                          16,
-                                          17,
-                                          18,
-                                          19,
-                                          23,
-                                          26,
-                                          28,
-                                          7,
-                                          8,
-                                          10,
-                                          11,
-                                          13,
-                                          14,
-                                          15,
-                                          21,
-                                          22,
-                                          31,
-                                          20,
-                                          24,
-                                          25,
-                                          27,
-                                          29,
-                                          30,
-                                          32,
-                                          33,
-                                          34,
-                                          35,
-                                          36,
-                                          37,
-                                          38,
-                                          39,
+    
+    NDArray<float> expValues ('c', {40}, {0,  1,  2,  8,  3,  4,  5, 16, 17,  6, 18, 19,  7, 20, 21, 22,  9,
+                                          10, 11, 12, 26, 23, 24, 13, 27, 28, 14, 29, 15, 30, 31, 25, 32, 33,
+                                          34, 35, 36, 37, 38, 39
                                           });
 
     nd4j::sparse::SparseUtils<float >::sortCooIndicesGeneric(indicesArr, values.getBuffer(), nnz, rank);
@@ -155,7 +133,10 @@ TEST_F(SparseUtilsTest, SortCOOindices_Test) {
     for ( int i = 0; i < rank * nnz; ++i){
         ASSERT_EQ(expIndicesArr[i], indicesArr[i]);
     }
+
     ASSERT_TRUE(expValues.equalsTo(values));
+
+
     delete[] indicesArr;
     delete[] expIndicesArr;
 }

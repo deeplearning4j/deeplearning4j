@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.imports;
 
 import lombok.extern.slf4j.Slf4j;
@@ -16,9 +32,11 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.graph.FlatGraph;
+import org.nd4j.graph.FlatNode;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
@@ -33,6 +51,8 @@ import org.tensorflow.framework.GraphDef;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -485,8 +505,8 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     @Test
     public void testIntermediateReduction() throws Exception {
         Nd4j.create(1);
-        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/reduce_dim.pb.txt").getInputStream());
-        val sumResultVar = tg.getVariable("Sum");
+        SameDiff tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/reduce_dim.pb.txt").getInputStream());
+        SDVariable sumResultVar = tg.getVariable("Sum");
 
       /*  val func = tg.getFunctionForVertexId(sumResultVar.getVertexId());
         assertEquals(0,func.getDimensions()[0]);
@@ -498,16 +518,16 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         assertNotNull(func.getDimensions());
         assertEquals(0,func.getDimensions()[0]);*/
 
-        val fb = tg.asFlatBuffers();
+        ByteBuffer fb = tg.asFlatBuffers();
         assertNotNull(fb);
 
-        val graph = FlatGraph.getRootAsFlatGraph(fb);
+        FlatGraph graph = FlatGraph.getRootAsFlatGraph(fb);
         assertEquals(1, graph.nodesLength());
         assertEquals(2, graph.variablesLength());
 
         assertEquals("Sum", graph.nodes(0).name());
 
-        val nodeSum = graph.nodes(0);
+        FlatNode nodeSum = graph.nodes(0);
         assertEquals(2, nodeSum.inputPairedLength());
 
 
@@ -523,8 +543,12 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         assertEquals(2, in1.first());
         assertEquals(0, in1.second());
 
+        System.out.println(tg.summary());
 
-        assertEquals(1, nodeSum.dimensions(1));
+        int dimensionsLength = nodeSum.dimensionsLength();
+        assertEquals(1, dimensionsLength);
+        int d = nodeSum.dimensions(0);
+        assertEquals(1, d);
 
 
         //log.info("nodeSum inputs length: {}; inputPaired length: {}",nodeSum.inputLength(), nodeSum.inputPairedLength());
@@ -1019,13 +1043,14 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         tg.associateArrayWithVariable(input_matrix, "input_matrix");
 
 
+        log.info("Graph: {}", tg.asFlatPrint());
+
         val array = tg.execAndEndResult();
 
         val exp = Nd4j.create(new float[] {3,6,  9,12,  15,18,  21,24,  27,30}, new int[]{5, 2});
 
         assertEquals(exp, array);
     }
-
 
     @Test(expected = ND4JIllegalStateException.class)
     public void testNonFrozenGraph1() throws Exception {

@@ -1,6 +1,24 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.api.ndarray;
 
+import lombok.val;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -29,7 +47,11 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
         this.initialType = Nd4j.dataType();
     }
 
-
+    @After
+    public void after() {
+        DataTypeUtil.setDTypeForContext(this.initialType);
+    }
+    
     @Test
     public void testSerializationFullArrayNd4jWriteRead() throws Exception {
         int length = 100;
@@ -37,7 +59,9 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
         //WRITE OUT A DOUBLE ARRAY
         //Hack before setting datatype - fix already in r119_various branch
         Nd4j.create(1);
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        val initialType = Nd4j.dataType();
+
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
         INDArray arr = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         arr.subi(50.0123456); //assures positive and negative numbers with decimal points
 
@@ -148,12 +172,6 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
 
         //assertEquals(sub,arr2);
         assertTrue(Transforms.abs(sub1.sub(arr2).div(sub1)).maxNumber().doubleValue() < 0.01);
-    }
-
-    @After
-    public void after() {
-        DataTypeUtil.setDTypeForContext(this.initialType);
-        System.out.println("AFTER DATATYPE HERE: " + Nd4j.dataType());
     }
 
     @Override

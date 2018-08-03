@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.api.ops.impl.accum;
 
 import lombok.NoArgsConstructor;
@@ -11,13 +27,14 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 
 @NoArgsConstructor
 public class NormalizeMoments extends DynamicCustomOp {
 
-    private double shift; // reporting for duty
+    private double shift = 0.0;  // reporting for duty
 
     public NormalizeMoments(SameDiff sameDiff, SDVariable counts, SDVariable means, SDVariable variances) {
         this(sameDiff, counts, means, variances, 0.0);
@@ -31,7 +48,9 @@ public class NormalizeMoments extends DynamicCustomOp {
 
     public NormalizeMoments(INDArray counts, INDArray ssSum, INDArray ssSqSum, INDArray outMean, INDArray outVar) {
         super(null, new INDArray[]{counts, ssSum, ssSqSum}, new INDArray[]{outMean, outVar},
-                Collections.<Double>emptyList(), Collections.<Integer>emptyList());
+                new ArrayList<Double>(), new ArrayList<Integer>());
+
+        addArgs();
     }
 
     private void addArgs() {

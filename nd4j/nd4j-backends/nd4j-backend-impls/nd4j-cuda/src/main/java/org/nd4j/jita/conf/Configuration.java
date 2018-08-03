@@ -1,9 +1,26 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.jita.conf;
 
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.linalg.factory.Nd4j;
@@ -193,113 +210,80 @@ public class Configuration implements Serializable {
         this.initialized.compareAndSet(false, true);
     }
 
-    /**
-     * Environment variables for
-     * controlling cuda.
-     */
-    private static final String MAX_BLOCK_SIZE = "ND4J_CUDA_MAX_BLOCK_SIZE";
-    private static final String MIN_BLOCK_SIZE = "ND4J_CUDA_MIN_BLOCK_SIZE";
-    private static final String MAX_GRID_SIZE = "ND4J_CUDA_MAX_GRID_SIZE";
-    private static final String DEBUG_ENABLED = "ND4J_DEBUG";
-    private static final String VERBOSE = "ND4J_VERBOSE";
-    private static final String USE_PREALLOCATION = "ND4J_CUDA_USE_PREALLOCATION";
-    private static final String MAX_DEVICE_CACHE = "ND4J_CUDA_MAX_DEVICE_CACHE";
-    private static final String MAX_HOST_CACHE = "ND4J_CUDA_MAX_HOST_CACHE";
-    private static final String MAX_DEVICE_ALLOCATION = "ND4J_CUDA_MAX_DEVICE_ALLOCATION";
-    private static final String FORCE_SINGLE_GPU = "ND4J_CUDA_FORCE_SINGLE_GPU";
-
 
     private void parseEnvironmentVariables() {
 
         // Do not call System.getenv(): Accessing all variables requires higher security privileges
-        if (System.getenv(MAX_BLOCK_SIZE) != null) {
+        if (System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_BLOCK_SIZE) != null) {
             try {
-                int var = Integer.parseInt(System.getenv(MAX_BLOCK_SIZE));
+                int var = Integer.parseInt(System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_BLOCK_SIZE));
                 setMaximumBlockSize(var);
             } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", MAX_BLOCK_SIZE, System.getenv(MAX_BLOCK_SIZE));
+                log.error("Can't parse {}: [{}]", ND4JEnvironmentVars.ND4J_CUDA_MAX_BLOCK_SIZE, System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_BLOCK_SIZE));
             }
         }
 
-        if (System.getenv(MIN_BLOCK_SIZE) != null) {
+        if (System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MIN_BLOCK_SIZE) != null) {
             try {
-                int var = Integer.parseInt(System.getenv(MIN_BLOCK_SIZE));
+                int var = Integer.parseInt(System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MIN_BLOCK_SIZE));
                 setMinimumBlockSize(var);
             } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", MIN_BLOCK_SIZE, System.getenv(MIN_BLOCK_SIZE));
+                log.error("Can't parse {}: [{}]", ND4JEnvironmentVars.ND4J_CUDA_MIN_BLOCK_SIZE, System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MIN_BLOCK_SIZE));
             }
         }
 
-        if (System.getenv(MAX_GRID_SIZE) != null) {
+        if (System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_GRID_SIZE) != null) {
             try {
-                int var = Integer.parseInt(System.getenv(MAX_GRID_SIZE));
+                int var = Integer.parseInt(System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_GRID_SIZE));
                 setMaximumGridSize(var);
             } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", MAX_GRID_SIZE, System.getenv(MAX_GRID_SIZE));
+                log.error("Can't parse {}: [{}]", ND4JEnvironmentVars.ND4J_CUDA_MAX_GRID_SIZE, System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_GRID_SIZE));
             }
         }
 
-        if (System.getenv(DEBUG_ENABLED) != null) {
+        if (System.getenv(ND4JEnvironmentVars.ND4J_CUDA_FORCE_SINGLE_GPU) != null) {
             try {
-                boolean var = Boolean.parseBoolean(System.getenv(DEBUG_ENABLED));
-                enableDebug(var);
-            } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", DEBUG_ENABLED, System.getenv(DEBUG_ENABLED));
-            }
-        }
-
-        if (System.getenv(FORCE_SINGLE_GPU) != null) {
-            try {
-                boolean var = Boolean.parseBoolean(System.getenv(FORCE_SINGLE_GPU));
+                boolean var = Boolean.parseBoolean(System.getenv(ND4JEnvironmentVars.ND4J_CUDA_FORCE_SINGLE_GPU));
                 allowMultiGPU(!var);
             } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", FORCE_SINGLE_GPU, System.getenv(FORCE_SINGLE_GPU));
+                log.error("Can't parse {}: [{}]", ND4JEnvironmentVars.ND4J_CUDA_FORCE_SINGLE_GPU, System.getenv(ND4JEnvironmentVars.ND4J_CUDA_FORCE_SINGLE_GPU));
             }
         }
 
-        if (System.getenv(VERBOSE) != null) {
+        if (System.getenv(ND4JEnvironmentVars.ND4J_CUDA_USE_PREALLOCATION) != null) {
             try {
-                boolean var = Boolean.parseBoolean(System.getenv(VERBOSE));
-                setVerbose(var);
-            } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", VERBOSE, System.getenv(VERBOSE));
-            }
-        }
-
-        if (System.getenv(USE_PREALLOCATION) != null) {
-            try {
-                boolean var = Boolean.parseBoolean(System.getenv(USE_PREALLOCATION));
+                boolean var = Boolean.parseBoolean(System.getenv(ND4JEnvironmentVars.ND4J_CUDA_USE_PREALLOCATION));
                 allowPreallocation(var);
             } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", USE_PREALLOCATION, System.getenv(USE_PREALLOCATION));
+                log.error("Can't parse {}: [{}]", ND4JEnvironmentVars.ND4J_CUDA_USE_PREALLOCATION, System.getenv(ND4JEnvironmentVars.ND4J_CUDA_USE_PREALLOCATION));
             }
         }
 
-        if (System.getenv(MAX_DEVICE_CACHE) != null) {
+        if (System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_DEVICE_CACHE) != null) {
             try {
-                long var = Long.parseLong(System.getenv(MAX_DEVICE_CACHE));
+                long var = Long.parseLong(System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_DEVICE_CACHE));
                 setMaximumDeviceCache(var);
             } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", MAX_DEVICE_CACHE, System.getenv(MAX_DEVICE_CACHE));
+                log.error("Can't parse {}: [{}]", ND4JEnvironmentVars.ND4J_CUDA_MAX_DEVICE_CACHE, System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_DEVICE_CACHE));
             }
         }
 
 
-        if (System.getenv(MAX_HOST_CACHE) != null) {
+        if (System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_HOST_CACHE) != null) {
             try {
-                long var = Long.parseLong(System.getenv(MAX_HOST_CACHE));
+                long var = Long.parseLong(System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_HOST_CACHE));
                 setMaximumHostCache(var);
             } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", MAX_HOST_CACHE, System.getenv(MAX_HOST_CACHE));
+                log.error("Can't parse {}: [{}]", ND4JEnvironmentVars.ND4J_CUDA_MAX_HOST_CACHE, System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_HOST_CACHE));
             }
         }
 
-        if (System.getenv(MAX_DEVICE_ALLOCATION) != null) {
+        if (System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_DEVICE_ALLOCATION) != null) {
             try {
-                long var = Long.parseLong(System.getenv(MAX_DEVICE_ALLOCATION));
+                long var = Long.parseLong(System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_DEVICE_ALLOCATION));
                 setMaximumSingleDeviceAllocation(var);
             } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", MAX_DEVICE_ALLOCATION, System.getenv(MAX_DEVICE_ALLOCATION));
+                log.error("Can't parse {}: [{}]", ND4JEnvironmentVars.ND4J_CUDA_MAX_DEVICE_ALLOCATION, System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_DEVICE_ALLOCATION));
             }
         }
 

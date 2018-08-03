@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by raver119 on 08.10.2017.
 //
@@ -78,8 +94,8 @@ namespace nd4j {
 
             REQUIRE_TRUE(output->isSameShape({ (int) batchSize, (int)nOutputPlane, (int)outputDepth, (int)outputHeight, (int)outputWidth}), 0, "Output should have shape of [%i, %i, %i, %i, %i], but got [%i, %i, %i, %i, %i] instead", (int) batchSize, (int)nOutputPlane, (int)outputDepth, (int)outputHeight, (int)outputWidth, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3), output->sizeAt(4));
 
-            std::unique_ptr<ResultSet<T>> inputs(NDArrayFactory<T>::allExamples(input));
-            std::unique_ptr<ResultSet<T>> outputs(NDArrayFactory<T>::allExamples(output));
+            std::unique_ptr<ResultSet<T>> inputs(input->allExamples());
+            std::unique_ptr<ResultSet<T>> outputs(output->allExamples());
             for (int e = 0; e < batchSize; e++) {
                 auto tadIn = inputs->at(e);
                 auto tadOut = outputs->at(e);
@@ -235,8 +251,8 @@ namespace nd4j {
             NDArray<T> *gradColumns;
             //auto gradColumns = finput->reshape('c', {nOutputPlane*kW*kH*kT, inputDepth*inputHeight*inputWidth });
 
-            std::unique_ptr<ResultSet<T>> tadsNext(NDArrayFactory<T>::allExamples(gradNext));
-            std::unique_ptr<ResultSet<T>> tadsOutput(NDArrayFactory<T>::allExamples(output));
+            std::unique_ptr<ResultSet<T>> tadsNext(gradNext->allExamples());
+            std::unique_ptr<ResultSet<T>> tadsOutput(output->allExamples());
             for (int e = 0; e < tadsNext->size(); e++) {
                 auto tadNext = tadsNext->at(e);
                 auto tadOutput = tadsOutput->at(e);
@@ -334,8 +350,8 @@ namespace nd4j {
 
             ones->assign(1.0);
 
-            std::unique_ptr<ResultSet<T>> tadsInput(NDArrayFactory<T>::allExamples(input));
-            std::unique_ptr<ResultSet<T>> tadsEpsilon(NDArrayFactory<T>::allExamples(epsilon));
+            std::unique_ptr<ResultSet<T>> tadsInput(input->allExamples());
+            std::unique_ptr<ResultSet<T>> tadsEpsilon(epsilon->allExamples());
 
             for (int e = 0; e < tadsInput->size(); e++) {
                 auto tadInput = tadsInput->at(e);
