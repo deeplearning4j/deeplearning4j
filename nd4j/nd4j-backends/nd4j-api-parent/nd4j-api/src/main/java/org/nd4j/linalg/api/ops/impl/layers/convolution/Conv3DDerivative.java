@@ -42,7 +42,7 @@ public class Conv3DDerivative extends Conv3D {
 
     @Override
     public String opName() {
-        return "conv3d_bp";
+        return "conv3dnew_bp";
     }
 
     @Override
