@@ -26,38 +26,24 @@
 
 namespace nd4j {
 namespace ops {
+
+    BROADCASTABLE_OP_IMPL(multiply, 0, 0) {
+        auto x = INPUT_VARIABLE(0);
+        auto y = INPUT_VARIABLE(1);
+        auto z = OUTPUT_VARIABLE(0);
+
+        Nd4jLong* zShapeInfo = nullptr;
+        const bool areShapesBroadcastable = ShapeUtils<T>::evalBroadcastShapeInfo(x->getShapeInfo(), y->getShapeInfo(), true, zShapeInfo, block.getWorkspace());
+        REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY OP: the shapes of x %s and y %s are not suitable for broadcast !", ShapeUtils<T>::shapeAsString(x).c_str(), ShapeUtils<T>::shapeAsString(y).c_str());
+        RELEASE(zShapeInfo, block.getWorkspace());
+
+        // z->assign(*x * *y);
+        // auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Multiply<T>>(x, y, z);
+        x->template applyTrueBroadcast<simdOps::Multiply<T>>(y, z, false);
     
-CUSTOM_OP_IMPL(multiply, 2, 1, true, 0, 0) {
-    
-    NDArray<T> *x = INPUT_VARIABLE(0);
-    NDArray<T> *y = INPUT_VARIABLE(1);
-    NDArray<T> *z = OUTPUT_VARIABLE(0);
-
-    Nd4jLong* zShapeInfo = nullptr;
-    const bool areShapesBroadcastable = ShapeUtils<T>::evalBroadcastShapeInfo(x->getShapeInfo(), y->getShapeInfo(), true, zShapeInfo, block.getWorkspace());
-    REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY OP: the shapes of x %s and y %s are not suitable for broadcast !", ShapeUtils<T>::shapeAsString(x).c_str(), ShapeUtils<T>::shapeAsString(y).c_str());
-    RELEASE(zShapeInfo, block.getWorkspace());
-
-    // z->assign(*x * *y); 
-    // auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Multiply<T>>(x, y, z);
-    x->template applyTrueBroadcast<simdOps::Multiply<T>>(y, z, false);
-    
-    return Status::OK();
-}
-
-DECLARE_SYN(Mul, multiply);
-
-DECLARE_SHAPE_FN(multiply) {
-        
-    Nd4jLong* xShapeInfo = inputShape->at(0);
-    Nd4jLong* yShapeInfo = inputShape->at(1);
-
-    Nd4jLong* zShapeInfo = nullptr;
-    const bool areShapesBroadcastable = ShapeUtils<T>::evalBroadcastShapeInfo(xShapeInfo, yShapeInfo, true, zShapeInfo, block.getWorkspace());
-    REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY OP: the shapes of x %s and y %s are not suitable for broadcast !", ShapeUtils<T>::shapeAsString(xShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(yShapeInfo).c_str());
-
-    return SHAPELIST(zShapeInfo);
-}
+        return Status::OK();
+    }
+    DECLARE_SYN(Mul, multiply);
 
 
 ///////////////////////////////////////////////////////////////////

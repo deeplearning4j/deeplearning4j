@@ -3063,7 +3063,7 @@ bool NDArray<T>::isUnitary() {
 template<typename T>
 NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
 
-    if (other.lengthOf() == lengthOf()) {
+    if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
         NDArray<T> result(this->_shapeInfo, this->_workspace);        
         functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Add<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
         return result;
@@ -3137,7 +3137,7 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     void NDArray<T>::operator+=(const NDArray<T>& other) {    
         if (!this->isScalar() && other.isScalar()) {
             functions::scalar::ScalarTransform<T>::template transform<simdOps::Add<T>>(this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other._buffer[0], nullptr);
-        } else if (other.lengthOf() == lengthOf())
+        } else if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf())
             functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Add<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
         else{
             Nd4jLong *bShape = nullptr;
@@ -3154,7 +3154,7 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     template<typename T>
     void NDArray<T>::operator-=(const NDArray<T>& other) {    
 
-        if (other.lengthOf() == lengthOf())
+        if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf())
             functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Subtract<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
         else {
             Nd4jLong *bShape = nullptr;
@@ -3189,7 +3189,7 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     template<typename T>
     NDArray<T> NDArray<T>::operator-(const NDArray<T>& other) const {
         
-        if (other.lengthOf() == lengthOf()) {
+        if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
             NDArray<T> result(_shapeInfo, _workspace);
             functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Subtract<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
             return result;
@@ -3224,7 +3224,7 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     template<typename T>
     NDArray<T> NDArray<T>::operator*(const NDArray<T>& other) const {
         
-        if (other.lengthOf() == lengthOf()) {
+        if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
             NDArray<T> result(this->_shapeInfo, this->_workspace);
             functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Multiply<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
             return result;
@@ -3278,7 +3278,7 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     template<typename T>
     NDArray<T> NDArray<T>::operator/(const NDArray<T>& other) const {
         
-        if (other.lengthOf() == lengthOf()) {
+        if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
             NDArray<T> result(this->_shapeInfo, this->_workspace);
             functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Divide<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
             return result;
@@ -3308,7 +3308,7 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
 
         if (!this->isScalar() && other.isScalar()) {
             functions::scalar::ScalarTransform<T>::template transform<simdOps::Divide<T>>(this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other._buffer[0], nullptr);
-        } else if (other.lengthOf() == lengthOf())
+        } else if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf())
             functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Divide<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
         else {
             Nd4jLong *bShape = nullptr;

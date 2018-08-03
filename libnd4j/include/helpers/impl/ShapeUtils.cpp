@@ -425,7 +425,15 @@ bool ShapeUtils<T>::evalBroadcastShapeInfo(const NDArray<T> &max, const NDArray<
 template <typename T>
 bool ShapeUtils<T>::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, nd4j::memory::Workspace* workspace) {
 
-    if ((shape::rank(max) == 0 && shape::isScalar(min))) {
+    if (shape::isScalar(max) && shape::isScalar(min)) {
+        resultShapeInfo = nullptr;
+        if (shape::rank(max) >= shape::rank(min)) {
+            COPY_SHAPE_EX(max, resultShapeInfo, workspace);
+        } else {
+            COPY_SHAPE_EX(min, resultShapeInfo, workspace);
+        }
+        return true;
+    } else if ((shape::rank(max) == 0 && shape::isScalar(min))) {
         // X is the driver here
         resultShapeInfo = ShapeUtils<T>::createScalarShapeInfo(workspace);
         return true;
@@ -435,7 +443,7 @@ bool ShapeUtils<T>::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const b
     if(!areShapesBroadcastable(max, min))
         return false;
 
-    auto maxShapeInfo = max; //max.getShapeInfo(); 
+    auto maxShapeInfo = max; //max.getShapeInfo();
     auto minShapeInfo = min; //min.getShapeInfo();
 
     if(evalMinMax && (shape::rank(max) < shape::rank(min))) {
