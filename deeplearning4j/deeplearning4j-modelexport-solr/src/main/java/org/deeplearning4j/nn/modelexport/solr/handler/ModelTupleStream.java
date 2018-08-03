@@ -19,7 +19,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.handler.SolrDefaultStreamFactory; // TODO: https://issues.apache.org/jira/browse/SOLR-12402
+import org.apache.solr.handler.SolrDefaultStreamFactory;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.util.ModelGuesser;
 import org.deeplearning4j.util.NetworkUtils;
@@ -27,9 +27,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * A <a href="https://lucene.apache.org/solr/7_3_1/solr-solrj/org/apache/solr/client/solrj/io/stream/TupleStream.html">
+ * A <a href="https://lucene.apache.org/solr/7_5_0/solr-solrj/org/apache/solr/client/solrj/io/stream/TupleStream.html">
  * org.apache.solr.client.solrj.io.stream.TupleStream</a> that uses a {@link Model} to compute output scores.
- * <a href="https://lucene.apache.org/solr/7_3_1/solr-solrj/org/apache/solr/client/solrj/io/Tuple.html">Tuple</a>
+ * <a href="https://lucene.apache.org/solr/7_5_0/solr-solrj/org/apache/solr/client/solrj/io/Tuple.html">Tuple</a>
  * fields are the model inputs and the model output(s) are added to the returned tuple.
  * <p>
  * Illustrative configuration snippet:
@@ -53,7 +53,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * <p>
  * Apache Solr Reference Guide:
  * <ul>
- * <li> <a href="https://lucene.apache.org/solr/guide/7_3/streaming-expressions.html">Streaming Expressions</a>
+ * <li> <a href="https://lucene.apache.org/solr/guide/7_5/streaming-expressions.html">Streaming Expressions</a>
  * </ul>
  */
 public class ModelTupleStream extends TupleStream implements Expressible {
