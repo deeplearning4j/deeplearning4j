@@ -42,11 +42,20 @@ TEST_F(QuantizationTests, Basic_Test_2) {
 
 TEST_F(QuantizationTests, Compression_Test_1) {
     NDArray<float> x('c', {10});
+    NDArray<float> z('c', {10});
     x.linspace(1.0f);
 
-    auto z = new char[TypeCast::estimateQuantizedSize(x.lengthOf())];
+    auto q = new char[TypeCast::estimateQuantizedSize(x.lengthOf())];
 
-    TypeCast::convertToQuantized<float>(nullptr, x.buffer(), x.lengthOf(), z);
+    TypeCast::convertToQuantized<float>(nullptr, x.buffer(), x.lengthOf(), q);
 
-    delete z;
+    TypeCast::convertFromQuantized<float>(nullptr, q, x.lengthOf(), z.buffer());
+
+
+    x.printIndexedBuffer("x");
+    z.printIndexedBuffer("z");
+
+    ASSERT_EQ(x, z);
+
+    delete q;
 }

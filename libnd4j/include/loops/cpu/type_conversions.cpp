@@ -28,6 +28,19 @@ namespace nd4j {
     template <typename T>
     _CUDA_H void TypeCast::convertFromQuantized(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz) {
         //
+        auto z = reinterpret_cast<T *>(dz);
+
+        auto fx = reinterpret_cast<float *>(dx);
+        auto amin = nd4j::math::nd4j_abs<float>(fx[0]);
+        auto amax = nd4j::math::nd4j_abs<float>(fx[1]);
+
+
+        auto x = reinterpret_cast<char *>(dx) + 8;
+
+
+        for (Nd4jLong e = 0; e < N; e++) {
+            z[e] = static_cast<T>(static_cast<float>(x[e]) / static_cast<float>(DataTypeUtils::max<char>()) * nd4j::math::nd4j_max<float>(amin, amax));
+        }
     }
 
     template <typename T>
@@ -58,15 +71,20 @@ namespace nd4j {
         //
         auto fz = reinterpret_cast<float *>(z);
 
-        float max = mx;
-        float min = mn;
+        float max = static_cast<float>(mx);
+        float min = static_cast<float>(mn);
 
         int max_byte = static_cast<int>(DataTypeUtils::max<char>());
+        fz[0] = min;
+        fz[1] = max;
+
+        auto amax = nd4j::math::nd4j_abs<float>(max);
+        auto amin = nd4j::math::nd4j_abs<float>(min);
 
         // now we actually apply quantization
-#pragma omp parallel for
+#pragma omp parallel for simd
         for (Nd4jLong e = 0; e < N; e++) {
-            rz[e] = nd4j::math::nd4j_round<float>(1.0f * x[e] / nd4j::math::nd4j_max<float>(nd4j::math::nd4j_abs<float>(max), nd4j::math::nd4j_abs<float>(min)) * max_byte);
+            rz[e] = static_cast<char>(nd4j::math::nd4j_round<float>(1.0f * x[e] / nd4j::math::nd4j_max<float>(amax, amin) * max_byte));
         }
     }
 
