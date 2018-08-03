@@ -3685,7 +3685,7 @@ NDArray<T> NDArray<T>::quantize(NDArray<T> &array) {
 template<typename T>
 NDArray<T>* NDArray<T>::quantize(NDArray<T> *array) {
     auto ws = array->getWorkspace();
-    T *buffer = nullptr;
+    char *buffer = nullptr;
     Nd4jLong *shapeInfo;
 
     // allocate buffers
@@ -3694,7 +3694,7 @@ NDArray<T>* NDArray<T>::quantize(NDArray<T> *array) {
 
     ArrayOptions::setPropertyBit(shapeInfo, ARRAY_QUANTIZED);
 
-    auto result = new NDArray<T>(buffer, shapeInfo, ws);
+    auto result = new NDArray<T>(reinterpret_cast<T *>(buffer), shapeInfo, ws);
     result->triggerAllocationFlag(true, true);
 
     return result;
