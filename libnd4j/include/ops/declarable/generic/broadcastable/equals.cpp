@@ -36,5 +36,7 @@ namespace nd4j {
 
             return Status::OK();
         }
+
         DECLARE_SYN(equal, equals);
+    }
 }
