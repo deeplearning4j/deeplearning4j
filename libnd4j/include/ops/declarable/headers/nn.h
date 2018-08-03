@@ -105,8 +105,38 @@ namespace nd4j {
         * 0: epsilon
         */
         #if NOT_EXCLUDED(OP_batchnorm)
-        DECLARE_CUSTOM_OP(batchnorm, 5, 1, false, 1, 2);
+        DECLARE_CUSTOM_OP(batchnorm, 3, 1, false, 1, 2);
         #endif
+
+        /**
+        * back prop in batch normalization
+        * 
+        * Expected arguments:
+        * input: input array (any number of dimensions)
+        * mean:
+        * variance:
+        * gamma: optional
+        * beta: optional
+        * dLdOut: next epsilon
+        * 
+        * Int args:
+        * 0: apply scale
+        * 1: apply offset 
+        * 
+        * T args:
+        * 0: epsilon
+        *
+        * output arrays:
+        * dL/dInput
+        * dL/dMean
+        * dL/dVariance
+        * dL/dGamma
+        * dL/dBeta
+        */
+        #if NOT_EXCLUDED(OP_batchnorm)
+        DECLARE_CUSTOM_OP(batchnorm_bp, 4, 3, false, 1, 2);
+        #endif
+
 
         /**
          * This operation updates parameters with provided gradients, wrt learning rate

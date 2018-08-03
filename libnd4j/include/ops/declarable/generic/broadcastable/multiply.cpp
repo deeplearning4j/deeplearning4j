@@ -86,7 +86,7 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     }
     else if (x->isSameShape(dLdz)) {
         
-        NDArray<T> yTiled = *dLdz;
+        NDArray<T> yTiled(dLdz, false, block.getWorkspace());
         y->tile(yTiled);
         std::vector<int> axesForY = ShapeUtils<T>::evalBroadcastBackwardAxis(y->getShapeInfo(), dLdz->getShapeInfo());
         
@@ -95,17 +95,17 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     } 
     else if (y->isSameShape(dLdz)) {
 
-        NDArray<T> xTiled = *dLdz;
+        NDArray<T> xTiled(dLdz, false, block.getWorkspace());
         x->tile(xTiled);
         std::vector<int> axesForX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->getShapeInfo(), dLdz->getShapeInfo());
         
         dLdx->assign( (*y * *dLdz).template reduceAlongDims<simdOps::Sum<T>>(axesForX) );
-        xTiled.template applyPairwiseTransform<simdOps::Multiply<T>>(dLdz, dLdy, nullptr);        
+        xTiled.template applyPairwiseTransform<simdOps::Multiply<T>>(dLdz, dLdy, nullptr);
     }
     else {
 
-        NDArray<T> xTiled = *dLdz;
-        NDArray<T> yTiled = *dLdz;        
+        NDArray<T> xTiled(dLdz, false, block.getWorkspace());
+        NDArray<T> yTiled(dLdz, false, block.getWorkspace());
         x->tile(xTiled);
         y->tile(yTiled);
         std::vector<int> axesForX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->getShapeInfo(), dLdz->getShapeInfo());
