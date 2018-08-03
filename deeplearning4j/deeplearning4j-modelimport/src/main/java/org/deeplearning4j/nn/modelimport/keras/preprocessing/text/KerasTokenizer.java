@@ -94,6 +94,14 @@ public class KerasTokenizer {
     }
 
 
+    /**
+     * Import Keras Tokenizer from JSON file created with `tokenizer.to_json()` in Python.
+     *
+     * @param jsonFileName Full path of the JSON file to load
+     * @return Keras Tokenizer instance loaded from JSON
+     * @throws IOException I/O exception
+     * @throws InvalidKerasConfigurationException Invalid Keras configuration
+     */
     public static KerasTokenizer fromJson(String jsonFileName) throws IOException, InvalidKerasConfigurationException {
         String json = new String(Files.readAllBytes(Paths.get(jsonFileName)));
         Map<String, Object> tokenizerBaseConfig = parseJsonString(json);
