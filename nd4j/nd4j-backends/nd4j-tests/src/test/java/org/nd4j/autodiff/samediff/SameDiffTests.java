@@ -2523,7 +2523,7 @@ public class SameDiffTests {
         DifferentialFunction[] dfsBackward = sdGrad.functions();
         assertEquals(10, dfsBackward.length);    //sub, mul, mean, mean, backward marker, meanbp, meanbp, mulbp, add (from diff.mul(diff)), subbp
 
-        List<Class> classesExp = Arrays.asList(
+        val classesExp = Arrays.asList(
                 SubOp.class, MulOp.class, Mean.class, Mean.class, GradientBackwardsMarker.class, MeanBp.class,
                 MeanBp.class, MulBpOp.class, AddOp.class, SubBpOp.class);
         for(int i=0; i<10; i++ ){
