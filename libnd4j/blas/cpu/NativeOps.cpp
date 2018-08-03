@@ -1675,8 +1675,6 @@ void flattenGeneric(Nd4jPointer *extraPointers,
 
             }
         }
-
-
     }
 }
 

@@ -26,6 +26,16 @@
 namespace nd4j {
 
     template <typename T>
+    _CUDA_H void TypeCast::convertFromQuantized(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz) {
+        //
+    }
+
+    template <typename T>
+    _CUDA_H void TypeCast::convertToQuantized(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz) {
+        //
+    }
+
+    template <typename T>
     void TypeCast::convertToThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz) {
         // we suppose that first 4 bytes are integer, second 4 bytes are float
         // integer: enc length
@@ -149,6 +159,11 @@ namespace nd4j {
         }
     };
 
+    _CUDA_H Nd4jLong TypeCast::estimateQuantizedSize(Nd4jLong rawSize) {
+        // 2 fp32 values for max/min, and rawSize number of BYTES
+        return 8 + rawSize;
+    }
+
 
     template void TypeCast::convertFromThreshold<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
     template void TypeCast::convertFromThreshold<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
@@ -157,6 +172,14 @@ namespace nd4j {
     template void TypeCast::convertToThreshold<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
     template void TypeCast::convertToThreshold<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
     template void TypeCast::convertToThreshold<double>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+
+    template void TypeCast::convertFromQuantized<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template void TypeCast::convertFromQuantized<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template void TypeCast::convertFromQuantized<double>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+
+    template void TypeCast::convertToQuantized<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template void TypeCast::convertToQuantized<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template void TypeCast::convertToQuantized<double>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
 
 #ifndef __CLION_IDE__
     BUILD_DOUBLE_TEMPLATE(template void TypeCast::convertGeneric, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES, LIBND4J_TYPES)
