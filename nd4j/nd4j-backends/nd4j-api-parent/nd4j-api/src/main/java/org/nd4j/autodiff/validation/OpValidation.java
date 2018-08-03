@@ -45,6 +45,7 @@ import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.api.ops.impl.shape.bp.ConcatBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
+import org.nd4j.linalg.api.ops.impl.shape.bp.TileBp;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
@@ -554,6 +555,9 @@ public class OpValidation {
                 RSubBpOp.class,
                 SquaredDifferenceBpOp.class,
                 SubBpOp.class,
+                CumProdBp.class,
+                DotBp.class,
+                SquaredNormBp.class,
 
                 CubeDerivative.class,
                 ELUDerivative.class,
@@ -580,6 +584,7 @@ public class OpValidation {
 
                 BiasAddGrad.class,
                 ConcatBp.class,
+                TileBp.class,
 
                 BatchNormDerivative.class,
                 Conv2DDerivative.class,

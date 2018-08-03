@@ -547,6 +547,10 @@ public class DifferentialFunctionFactory {
         return new LogEntropy(sameDiff(), in, dimensions).outputVariable();
     }
 
+    public SDVariable shannonEntropy(SDVariable in, int... dimensions){
+        return new ShannonEntropy(sameDiff(), in, dimensions).outputVariable();
+    }
+
     public SDVariable countNonZero(SDVariable input, int... dimensions) {
         return new CountNonZero(sameDiff(), input, dimensions).outputVariable();
     }
@@ -1116,6 +1120,14 @@ public class DifferentialFunctionFactory {
 
     public SDVariable confusionMatrix(SDVariable labels, SDVariable pred, Integer numClasses, SDVariable weights) {
         return new ConfusionMatrix(sameDiff(), labels, pred, numClasses, weights).outputVariable();
+    }
+
+    public SDVariable matrixDeterminant(SDVariable in){
+        return new MatrixDeterminant(sameDiff(), in, false).outputVariable();
+    }
+
+    public SDVariable matrixInverse(SDVariable in){
+        return new MatrixInverse(sameDiff(), in, false).outputVariable();
     }
 
     public SDVariable broadcast(SDVariable iX, int... shape) {

@@ -157,7 +157,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         List<String> failed = new ArrayList<>();
 
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 21; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -278,6 +278,13 @@ public class ReductionOpValidation extends BaseOpValidation {
                     loss = sd.logEntropy("loss", input);
                     double logEntropy = inputArr.logEntropyNumber().doubleValue();
                     tc.expected(loss, Nd4j.trueScalar(logEntropy));
+                    break;
+                case 20:
+                    inputArr = Nd4j.rand(minibatch, nOut);
+                    name = "shannonEntropy";
+                    loss = sd.shannonEntropy("loss", input);
+                    double shannonEntropy = inputArr.shannonEntropyNumber().doubleValue();
+                    tc.expected(loss, Nd4j.trueScalar(shannonEntropy));
                     break;
                 default:
                     throw new RuntimeException();

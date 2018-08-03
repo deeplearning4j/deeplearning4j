@@ -5848,6 +5848,30 @@ public class SameDiff {
     }
 
     /**
+     * Shannon Entropy reduction: -sum(x * log2(x))
+     *
+     * @param in         Input variable
+     * @param dimensions Dimensions to reduce on (null/empty for full array)
+     * @return Output variable
+     */
+    public SDVariable shannonEntropy(SDVariable in, int... dimensions) {
+        return shannonEntropy(null, in, dimensions);
+    }
+
+    /**
+     * Shannon Entropy reduction: -sum(x * log2(x))
+     *
+     * @param name       Name of the output variable
+     * @param in         Input variable
+     * @param dimensions Dimensions to reduce on (null/empty for full array)
+     * @return Output variable: reduced array of rank (input rank - num dimensions)
+     */
+    public SDVariable shannonEntropy(String name, SDVariable in, int... dimensions) {
+        SDVariable ret = f().shannonEntropy(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
      * Sum array reduction operation, optionally along specified dimensions
      *
      * @param x         Input variable
@@ -7193,6 +7217,46 @@ public class SameDiff {
                                          double shift) {
         SDVariable[] res = f().normalizeMoments(counts, means, variances, shift);
         return updateVariableNamesAndReferences(res, name);
+    }
+
+    /**
+     * @see #matrixDeterminant(String, SDVariable)
+     */
+    public SDVariable matrixDeterminant(SDVariable in){
+        return matrixDeterminant(null, in);
+    }
+
+    /**
+     * Matrix determinant op. For 2D input, this returns the standard matrix determinant.
+     * For higher dimensional input with shape [..., m, m] the matrix determinant is returned for each
+     * shape [m,m] sub-matrix.
+     * @param name Name of the output variable
+     * @param in   Input
+     * @return Matrix determinant variable
+     */
+    public SDVariable matrixDeterminant(String name, SDVariable in){
+        SDVariable ret = f().matrixDeterminant(in);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * @see #matrixInverse(String, SDVariable)
+     */
+    public SDVariable matrixInverse(SDVariable in){
+        return matrixInverse(null, in);
+    }
+
+    /**
+     * Matrix inverse op. For 2D input, this returns the standard matrix inverse.
+     * For higher dimensional input with shape [..., m, m] the matrix inverse is returned for each
+     * shape [m,m] sub-matrix.
+     * @param name Name of the output variable
+     * @param in   Input
+     * @return Matrix inverse variable
+     */
+    public SDVariable matrixInverse(String name, SDVariable in){
+        SDVariable ret = f().matrixInverse(in);
+        return updateVariableNameAndReference(ret, name);
     }
 
     /**
