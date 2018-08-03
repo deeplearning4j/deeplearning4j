@@ -87,12 +87,14 @@ namespace ops {
     CUSTOM_OP_IMPL(dynamic_partition_bp, 3, 2, false, 0, 1) {
         auto input = INPUT_VARIABLE(0);
         auto indices = INPUT_VARIABLE(1);
-        auto gradOut = INPUT_VARIABLE(2);
+        //auto gradOut = ;
         auto numPartition = INT_ARG(0);
 
         std::vector<NDArray<T> *> outputList(numPartition);
         std::vector<NDArray<T> *> gradOutList(numPartition);
-
+        for (Nd4jLong e = 0; e < numPartition; e++) {
+            gradOutList[e] = INPUT_VARIABLE(e + 1);
+        }
         outputList[0] = OUTPUT_VARIABLE(0);
         outputList[1] = OUTPUT_VARIABLE(1);
         helpers::dynamicPartitionFunctorBP(input, indices, gradOutList, outputList);
