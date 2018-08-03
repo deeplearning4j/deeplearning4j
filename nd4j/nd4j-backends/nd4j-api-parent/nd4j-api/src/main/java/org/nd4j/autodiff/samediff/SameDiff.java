@@ -8623,6 +8623,20 @@ public class SameDiff {
     }
 
     /**
+     * @see #scatterMax(String, SDVariable, SDVariable, SDVariable)
+     */
+    public SDVariable scatterMax(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return scatterMax(null, ref, indices, updates);
+    }
+
+    /**
+     * @see #scatterMax(String, SDVariable, SDVariable, SDVariable)
+     */
+    public SDVariable scatterMin(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return scatterMin(null, ref, indices, updates);
+    }
+
+    /**
      * Scatter division operation.<br>
      * If indices is rank 0 (a scalar), then out[index, ...] /= updates[...]<br>
      * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] /= updates[i, ...]<br>
@@ -8637,6 +8651,42 @@ public class SameDiff {
      */
     public SDVariable scatterDiv(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
         SDVariable ret = f().scatterDiv(ref, indices, updates);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Scatter division operation.<br>
+     * If indices is rank 0 (a scalar), then out[index, ...] /= updates[...]<br>
+     * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] /= updates[i, ...]<br>
+     * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] /= updates[i, ..., k, ...]<br>
+     * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
+     *
+     * @param name    Name of the output variable
+     * @param ref     Initial/source variable
+     * @param indices Indices array
+     * @param updates Updates to add to the initial/source array
+     * @return The updated variable
+     */
+    public SDVariable scatterMax(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
+        SDVariable ret = f().scatterMax(ref, indices, updates);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Scatter division operation.<br>
+     * If indices is rank 0 (a scalar), then out[index, ...] /= updates[...]<br>
+     * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] /= updates[i, ...]<br>
+     * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] /= updates[i, ..., k, ...]<br>
+     * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
+     *
+     * @param name    Name of the output variable
+     * @param ref     Initial/source variable
+     * @param indices Indices array
+     * @param updates Updates to add to the initial/source array
+     * @return The updated variable
+     */
+    public SDVariable scatterMin(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
+        SDVariable ret = f().scatterMin(ref, indices, updates);
         return updateVariableNameAndReference(ret, name);
     }
 

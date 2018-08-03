@@ -1964,6 +1964,14 @@ public class DifferentialFunctionFactory {
         return new ScatterDiv(sameDiff(), ref, indices, updates).outputVariable();
     }
 
+    public SDVariable scatterMax(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return new ScatterMax(sameDiff(), ref, indices, updates).outputVariable();
+    }
+
+    public SDVariable scatterMin(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return new ScatterMin(sameDiff(), ref, indices, updates).outputVariable();
+    }
+
     public SDVariable scatterUpdate(SDVariable ref, SDVariable indices, SDVariable updates) {
         return new ScatterUpdate(sameDiff(), ref, indices, updates).outputVariable();
     }
