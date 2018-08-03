@@ -15,7 +15,8 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 29/10/17.
+// @author raver119@gmail.com, created on on 29/10/17.
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <op_boilerplate.h>
@@ -25,40 +26,108 @@
 
 namespace nd4j {
 namespace ops {
-CUSTOM_OP_IMPL(batchnorm, 5, 1, false, 1, 2) {
+
+CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {    
 
     NDArray<T>* input    = INPUT_VARIABLE(0);
     NDArray<T>* mean     = INPUT_VARIABLE(1);
     NDArray<T>* variance = INPUT_VARIABLE(2);
-    NDArray<T>* gamma    = INPUT_VARIABLE(3);
-    NDArray<T>* beta     = INPUT_VARIABLE(4);
-    
-    NDArray<T>* output   = OUTPUT_VARIABLE(0);
+    NDArray<T>* gamma    = nullptr;
+    NDArray<T>* beta     = nullptr;
 
-    // check whether all input shapes are mutually broadcastable 
-    // if yes, evaluate output shapeInfo which is common broadcast shape for all input arrays
-    REQUIRE_TRUE(output->getShapeInfo() != nullptr, 0, "BATCHNORM op: the shapes of input arrays are not mutually broadcastable !");
+    NDArray<T>* output   = OUTPUT_VARIABLE(0);
 
     const bool applyScale  = (bool)INT_ARG(0);
     const bool applyOffset = (bool)INT_ARG(1);
     const T    epsilon     = T_ARG(0);
 
+    if(block.width() > 3 && applyScale)
+        gamma = INPUT_VARIABLE(3);    
+    if(block.width() > 3 && !applyScale && applyOffset)
+        beta = INPUT_VARIABLE(3);
+    else if(block.width() > 4 && applyOffset)
+        beta = INPUT_VARIABLE(4);
+
+    std::vector<const NDArray<T>*> inArrs(block.width());
+    for(int i = 0; i < block.width(); ++i)
+        inArrs[i] = INPUT_VARIABLE(i);
+
+    // check whether all input shapes are mutually broadcastable
+    Nd4jLong* outShapeInfo = nullptr;
+    const bool areShapesOk = ShapeUtils<T>::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
+    REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM op: the shapes of input arrays are not mutually broadcastable !");    
+
     // normalized output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
-    
-    NDArray<T> inv = (*variance + epsilon).template transform<simdOps::RSqrt<T>>();
+
+    NDArray<T> sigmaInv = (*variance + epsilon).template transform<simdOps::RSqrt<T>>();
     if(applyScale)
-        inv *= *gamma;
-    
+        sigmaInv *= *gamma;
+
     if (applyOffset)
-        *output = (*input) * inv - (*mean) * inv + *beta;
+        output->assign((*input) * sigmaInv - (*mean) * sigmaInv + *beta);
     else 
-        *output = (*input) * inv - (*mean) * inv;
+        output->assign((*input) * sigmaInv - (*mean) * sigmaInv);
 
     STORE_RESULT(*output);
  
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
+//////////////////////////////////////////////////////////////////////////
+DECLARE_SHAPE_FN(batchnorm) {        
+
+    std::vector<const NDArray<T>*> inArrs(block.width());
+    for(int i = 0; i < block.width(); ++i)
+        inArrs[i] = INPUT_VARIABLE(i);
+
+    // check whether all input shapes are mutually broadcastable
+    Nd4jLong* outShapeInfo = nullptr;
+    const bool areShapesOk = ShapeUtils<T>::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
+    REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM op: the shapes of input arrays are not mutually broadcastable !");
+
+    return SHAPELIST(outShapeInfo);
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+CUSTOM_OP_IMPL(batchnorm_bp, 4, 5, false, 1, 2) {
+
+    NDArray<T>* input    = INPUT_VARIABLE(0);
+    NDArray<T>* mean     = INPUT_VARIABLE(1);
+    NDArray<T>* variance = INPUT_VARIABLE(2);
+    NDArray<T>* gamma    = nullptr;
+    NDArray<T>* beta     = nullptr;
+    NDArray<T>* dLdO     = nullptr;                 // next epsilon
+
+    NDArray<T>* output   = OUTPUT_VARIABLE(0);
+
+    const bool applyScale  = (bool)INT_ARG(0);
+    const bool applyOffset = (bool)INT_ARG(1);
+    const T    epsilon     = T_ARG(0);
+
+    if(applyScale)
+        gamma = INPUT_VARIABLE(3);    
+    if(!applyScale && applyOffset)
+        beta = INPUT_VARIABLE(3);
+    else if(block.width() > 4 && applyScale && applyOffset)
+        beta = INPUT_VARIABLE(4);
+    if(!applyScale && !applyOffset)
+        dLdO = INPUT_VARIABLE(3);
+    else if((applyScale && !applyOffset) || (!applyScale && applyOffset))
+        dLdO = INPUT_VARIABLE(4);
+    else
+        dLdO = INPUT_VARIABLE(5);
+
+    std::vector<const NDArray<T>*> inArrs(block.width());
+    for(int i = 0; i < block.width(); ++i)
+        inArrs[i] = INPUT_VARIABLE(i);
+
+    // check whether all input shapes are mutually broadcastable
+    Nd4jLong* outShapeInfo = nullptr;
+    const bool areShapesOk = ShapeUtils<T>::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
+    REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM op: the shapes of input arrays are not mutually broadcastable !");    
+
+}
 
         // //////////////////////////////////////////////////////////////////////////
         // CONFIGURABLE_OP_IMPL(batchnorm_bp, 5, 1, true, 0, 1) {
@@ -193,18 +262,6 @@ CUSTOM_OP_IMPL(batchnorm, 5, 1, false, 1, 2) {
 
         //     return ND4J_STATUS_OK;
         // }
-
-
-
-DECLARE_SHAPE_FN(batchnorm) {
-    
-    Nd4jLong* outShapeInfo = nullptr;
-    
-    // evaluate output shapeInfo which is common broadcast shape for all input arrays
-    ShapeUtils<T>::evalCommonBroadcastShapeInfo({INPUT_VARIABLE(0),INPUT_VARIABLE(1),INPUT_VARIABLE(2),INPUT_VARIABLE(3),INPUT_VARIABLE(4)}, outShapeInfo, block.getWorkspace());
- 
-    return SHAPELIST(outShapeInfo);
-}
 
 
 
