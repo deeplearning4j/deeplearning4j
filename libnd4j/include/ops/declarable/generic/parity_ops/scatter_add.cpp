@@ -44,8 +44,17 @@ namespace nd4j {
             if(inRank == 1) {
                 REQUIRE_TRUE(indices->isSameShape(updates), 0, "SCATTER_ADD OP: when input array has rank = 1 then indices and updates must have the same shapes, but got %s and %s correspondingly !", ShapeUtils<T>::shapeAsString(indices).c_str(), ShapeUtils<T>::shapeAsString(updates).c_str());
             }
-            else {
+            else if (inRank == updRank && indices->isVector()) {
+
+                std::vector<Nd4jLong> updShape = updates->getShapeAsVector();
+                std::vector<Nd4jLong> inShape  = input->getShapeAsVector();
+                std::vector<Nd4jLong> expectedUpdShape = {indices->lengthOf()}; 
+                expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin()+1, inShape.end());
         
+                REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ADD OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString(expectedUpdShape).c_str(), ShapeUtils<T>::shapeAsString(updShape).c_str());
+            }
+            else {
+
                 REQUIRE_TRUE(updRank == indRank + inRank - 1, 0, "SCATTER_ADD OP: wrong rank of updates array, expected is %i, but got %i instead !", indRank + inRank - 1 , updRank);
                 
                 std::vector<Nd4jLong> updShape = updates->getShapeAsVector();
