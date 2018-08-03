@@ -37,6 +37,7 @@
 #include <sstream>
 #include <helpers/ArrayUtils.h>
 #include <MmulHelper.h>
+#include <helpers/threshold.h>
 
 namespace nd4j {
 
@@ -3671,6 +3672,29 @@ NDArray<T>* NDArray<T>::createUninitialized() const {
     T* buffer(nullptr);
     ALLOCATE(buffer, _workspace, _length, T);
     NDArray<T>* result = new NDArray<T>(buffer, newShape, _workspace);
+    result->triggerAllocationFlag(true, true);
+
+    return result;
+}
+
+template<typename T>
+NDArray<T> NDArray<T>::quantize(NDArray<T> &array) {
+    return *(quantize(&array));
+}
+
+template<typename T>
+NDArray<T>* NDArray<T>::quantize(NDArray<T> *array) {
+    auto ws = array->getWorkspace();
+    T *buffer = nullptr;
+    Nd4jLong *shapeInfo;
+
+    // allocate buffers
+    ALLOCATE(buffer, ws, TypeCast::estimateQuantizedSize(array->lengthOf()), char);
+    COPY_SHAPE_EX(array->shapeInfo(), shapeInfo, ws);
+
+    ArrayOptions::setPropertyBit(shapeInfo, ARRAY_QUANTIZED);
+
+    auto result = new NDArray<T>(buffer, shapeInfo, ws);
     result->triggerAllocationFlag(true, true);
 
     return result;
