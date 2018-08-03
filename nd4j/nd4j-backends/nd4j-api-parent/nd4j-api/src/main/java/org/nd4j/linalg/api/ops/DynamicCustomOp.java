@@ -586,7 +586,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     public void populateInputsAndOutputsFromSameDiff() {
         val descriptor = getDescriptor();
         if (descriptor == null)
-            throw new ND4JIllegalStateException("No op found for " + opName());
+            throw new ND4JIllegalStateException("No custom op descriptor found for op name \"" + opName() + "\"");
 
         log.debug("Op <{}>, isInplace: {}", opName(), isInplaceCall());
 

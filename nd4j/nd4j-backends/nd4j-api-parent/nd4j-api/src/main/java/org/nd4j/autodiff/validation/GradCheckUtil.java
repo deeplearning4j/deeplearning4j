@@ -316,7 +316,8 @@ public class GradCheckUtil {
                 a.putScalar(idx, orig);
 
                 double numericalGrad = (scorePlus - scoreMinus) / (2 * eps);
-                double analyticGrad = grad.get(s.getVarName()).getDouble(idx);
+                INDArray aGrad = grad.get(s.getVarName());
+                double analyticGrad = aGrad.getDouble(idx);
 
                 if (Double.isInfinite(numericalGrad) || Double.isNaN(numericalGrad)) {
                     throw new IllegalStateException("Numerical gradient was " + numericalGrad + " for variable \"" + name

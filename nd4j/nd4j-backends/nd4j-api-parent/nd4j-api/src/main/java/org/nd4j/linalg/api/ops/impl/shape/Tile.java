@@ -159,7 +159,7 @@ public class Tile extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        throw new UnsupportedOperationException();
+        return Collections.singletonList(f().tileBp(arg(), i_v.get(0), axis));
     }
 
 }
