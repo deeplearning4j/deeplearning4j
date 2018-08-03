@@ -16,7 +16,9 @@
 
 package org.nd4j.linalg.dataset;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -35,11 +37,19 @@ public class BalanceMinibatchesTest extends BaseNd4jTest {
         super(backend);
     }
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Test
-    public void testBalance() {
+    public void testBalance() throws Exception {
         DataSetIterator iterator = new IrisDataSetIterator(10, 150);
+
+        File minibatches = testDir.newFolder();
+        File saveDir = testDir.newFolder();
+
+
         BalanceMinibatches balanceMinibatches = BalanceMinibatches.builder().dataSetIterator(iterator).miniBatchSize(10)
-                        .numLabels(3).rootDir(new File("minibatches")).rootSaveDir(new File("minibatchessave")).build();
+                        .numLabels(3).rootDir(minibatches).rootSaveDir(saveDir).build();
         balanceMinibatches.balance();
         DataSetIterator balanced = new ExistingMiniBatchDataSetIterator(balanceMinibatches.getRootSaveDir());
         while (balanced.hasNext()) {
