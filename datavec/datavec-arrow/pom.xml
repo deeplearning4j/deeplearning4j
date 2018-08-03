@@ -46,16 +46,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.carrotsearch</groupId>
-            <artifactId>hppc</artifactId>
-            <version>${hppc.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.arrow</groupId>
             <artifactId>arrow-vector</artifactId>
             <version>${arrow.version}</version>

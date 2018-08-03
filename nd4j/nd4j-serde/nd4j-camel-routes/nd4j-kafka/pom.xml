@@ -42,16 +42,6 @@
         </dependency>
 
         <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty</artifactId>
-            <version>${netty.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>net.jpountz.lz4</groupId>
-            <artifactId>lz4</artifactId>
-            <version>${lz4.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.scala-lang.modules</groupId>
             <artifactId>scala-parser-combinators_2.11</artifactId>
             <version>${scala-misc.version}</version>
@@ -60,11 +50,6 @@
             <groupId>org.scala-lang.modules</groupId>
             <artifactId>scala-xml_2.11</artifactId>
             <version>${scala-misc.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.xerial.snappy</groupId>
-            <artifactId>snappy-java</artifactId>
-            <version>${snappy.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
