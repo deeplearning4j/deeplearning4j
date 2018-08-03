@@ -48,14 +48,9 @@ TEST_F(QuantizationTests, Compression_Test_1) {
     auto q = new char[TypeCast::estimateQuantizedSize(x.lengthOf())];
 
     TypeCast::convertToQuantized<float>(nullptr, x.buffer(), x.lengthOf(), q);
-
     TypeCast::convertFromQuantized<float>(nullptr, q, x.lengthOf(), z.buffer());
 
-
-    x.printIndexedBuffer("x");
-    z.printIndexedBuffer("z");
-
-    ASSERT_EQ(x, z);
+    ASSERT_TRUE(x.equalsTo(z, 0.1));
 
     delete q;
 }
