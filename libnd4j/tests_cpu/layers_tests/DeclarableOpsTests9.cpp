@@ -2088,21 +2088,24 @@ TEST_F(DeclarableOpsTests9, multiply_bp_test7) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, multiply_bp_test8) {
-            
-    NDArray<double> y('c', {2, 1, 4});
-    NDArray<double> x('c', {1, 3, 4});
-    NDArray<double> dLdz('c', {2, 3, 4});
-    x.linspace(1., 0.5);
-    y.linspace(0.1, 0.05);
+TEST_F(DeclarableOpsTests9, Dynamic_Partition_BP_1) {
 
-    const OpArgsHolder<double> argsHolderFF({&x, &y}, {}, {});
-    const OpArgsHolder<double> argsHolderBP({&x, &y, &dLdz}, {}, {});
+    NDArray<double> x('c', {2, 3, 4});
+    NDArray<double> y('c', {2, 3}, {0., 1., 2., 1., 0., 2. });
+    NDArray<double> dLdzX('c', {2, 4});
+    NDArray<double> dLdzY('c', {2, 4});
+    NDArray<double> dLdzZ('c', {2, 4});
+    x.linspace(1);
+    dLdzX.linspace(1);
+    dLdzY.linspace(2);
+    dLdzZ.linspace(3);
 
-    nd4j::ops::multiply<double> opFF;
-    nd4j::ops::multiply_bp<double> opBP;
+    nd4j::ops::dynamic_partition_bp<double> op;
+    auto res = op.execute({&x, &y, &dLdzX, &dLdzY, &dLdzZ}, {}, {3});
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
-
-    ASSERT_TRUE(isGradCorrect);
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    res->at(0)->printIndexedBuffer("PARTITION");
+    res->at(1)->printIndexedBuffer("INDICES");
+    delete res;
 }
+
