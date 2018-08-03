@@ -32,7 +32,42 @@ namespace nd4j {
 
     template <typename T>
     _CUDA_H void TypeCast::convertToQuantized(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz) {
+        // find min/max first
+
+        auto x = reinterpret_cast<T *>(dx);
+        auto z = reinterpret_cast<char *>(dz);
+
+        T mn = DataTypeUtils::max<T>();
+        T mx = -DataTypeUtils::max<T>();
+
+#pragma omp parallel for reduction(minT:mn), reduction(maxT:mx)
+        for (Nd4jLong e = 0; e < N; e++) {
+            T v = x[e];
+            if (v < mn)
+                mn = v;
+
+            if (v > mx)
+                mx = v;
+        }
+
+        nd4j_printf("min: [%f]; max: [%f]\n", (float) mn, (float) mx);
+
+        // we shift by 2 fp32 elements
+        auto rz = z + 8;
+
         //
+        auto fz = reinterpret_cast<float *>(z);
+
+        float max = mx;
+        float min = mn;
+
+        int max_byte = static_cast<int>(DataTypeUtils::max<char>());
+
+        // now we actually apply quantization
+#pragma omp parallel for
+        for (Nd4jLong e = 0; e < N; e++) {
+            rz[e] = nd4j::math::nd4j_round<float>(1.0f * x[e] / nd4j::math::nd4j_max<float>(nd4j::math::nd4j_abs<float>(max), nd4j::math::nd4j_abs<float>(min)) * max_byte);
+        }
     }
 
     template <typename T>
@@ -160,6 +195,9 @@ namespace nd4j {
     };
 
     _CUDA_H Nd4jLong TypeCast::estimateQuantizedSize(Nd4jLong rawSize) {
+        if (rawSize <= 0)
+            throw std::runtime_error("Input size for quantization can't be <= 0");
+
         // 2 fp32 values for max/min, and rawSize number of BYTES
         return 8 + rawSize;
     }

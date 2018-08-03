@@ -20,6 +20,7 @@
 
 
 #include "testlayers.h"
+#include <NDArray.h>
 #include <type_conversions.h>
 
 
@@ -32,4 +33,20 @@ class QuantizationTests : public testing::Test {
 TEST_F(QuantizationTests, Basic_Test_1) {
     auto s = TypeCast::estimateQuantizedSize(10);
     ASSERT_EQ(18, s);
+}
+
+TEST_F(QuantizationTests, Basic_Test_2) {
+    auto s = TypeCast::estimateQuantizedSize(1);
+    ASSERT_EQ(9, s);
+}
+
+TEST_F(QuantizationTests, Compression_Test_1) {
+    NDArray<float> x('c', {10});
+    x.linspace(1.0f);
+
+    auto z = new char[TypeCast::estimateQuantizedSize(x.lengthOf())];
+
+    TypeCast::convertToQuantized<float>(nullptr, x.buffer(), x.lengthOf(), z);
+
+    delete z;
 }
