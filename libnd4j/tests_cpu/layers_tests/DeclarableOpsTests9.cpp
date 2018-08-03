@@ -1246,8 +1246,8 @@ TEST_F(DeclarableOpsTests9, cumprod_bp_check_1) {
 
     x.linspace(1);
 
-    const OpArgsHolder<double> argsHolderFF({&x},         {}, {});
-    const OpArgsHolder<double> argsHolderBP({&x, &gradO}, {}, {});
+    const OpArgsHolder<double> argsHolderFF({&x},         {}, {0, 0});
+    const OpArgsHolder<double> argsHolderBP({&x, &gradO}, {}, {0, 0});
 
     nd4j::ops::cumprod<double> opFF;
     nd4j::ops::cumprod_bp<double> opBP;
@@ -1438,17 +1438,17 @@ TEST_F(DeclarableOpsTests9, cumprod_test3) {
     //************************************//
     exclusive = 0; reverse = 0;
     inputC.linspace(1);
-//    const OpArgsHolder<double> argsHolderFF({&inputC, &axis}, {}, {exclusive, reverse});
-//    const OpArgsHolder<double> argsHolderBP({&inputC, &axis, &gradO}, {}, {exclusive, reverse});
+    const OpArgsHolder<double> argsHolderFF({&inputC, &axis}, {}, {exclusive, reverse});
+    const OpArgsHolder<double> argsHolderBP({&inputC, &axis, &gradO}, {}, {exclusive, reverse});
 
     nd4j::ops::cumprod<double> opFF;
-//    nd4j::ops::cumprod_bp<double> opBP;
-    auto res = opFF.execute({&inputC, &axis}, {}, {exclusive, reverse});
-//    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
-    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
-    res->at(0)->printIndexedBuffer("Cumulative product of 4 ints");
-//    ASSERT_TRUE(isGradCorrect);
-    delete res;
+    nd4j::ops::cumprod_bp<double> opBP;
+//    auto res = opFF.execute({&inputC, &axis}, {}, {exclusive, reverse});
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {0, 0, 0, 1}, {1, 1},GradCheck::MEAN);
+//    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    //res->at(0)->printIndexedBuffer("Cumulative product of 4 ints");
+    ASSERT_TRUE(isGradCorrect);
+  //  delete res;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2100,12 +2100,18 @@ TEST_F(DeclarableOpsTests9, Dynamic_Partition_BP_1) {
     dLdzY.linspace(2);
     dLdzZ.linspace(3);
 
-    nd4j::ops::dynamic_partition_bp<double> op;
-    auto res = op.execute({&x, &y, &dLdzX, &dLdzY, &dLdzZ}, {}, {3});
+    nd4j::ops::dynamic_partition<double> op1;
+    auto res1 = op1.execute({&x, &y}, {}, {3});
+    for (size_t e = 0; e < res1->size(); ++e)
+        res1->at(e)->printIndexedBuffer("RES1");
 
-    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
-    res->at(0)->printIndexedBuffer("PARTITION");
-    res->at(1)->printIndexedBuffer("INDICES");
-    delete res;
+    nd4j::ops::dynamic_partition_bp<double> op2;
+    auto res2 = op2.execute({&x, &y, res1->at(0), res1->at(1), res1->at(2)}, {}, {3});
+    ASSERT_TRUE(res2->status() == ND4J_STATUS_OK);
+    ASSERT_TRUE(res2->size() == 2);
+    res1->at(0)->printIndexedBuffer("PARTITION");
+    res1->at(1)->printIndexedBuffer("INDICES");
+    delete res1;
+    delete res2;
 }
 

@@ -136,10 +136,15 @@ namespace nd4j {
             template <typename T>
             void dynamicPartitionFunctorBP(NDArray<T>const* input, NDArray<T>const* indices, std::vector<NDArray<T>*> const& inputGradientList, std::vector<NDArray<T>*>& outputList) {
                 std::vector<NDArray<T>*> inputGradientListY(inputGradientList.size());
+                for (size_t e = 0; e < inputGradientList.size(); e++)
+                    inputGradientListY[e] = inputGradientList[e]->dup('c');
 
                 dynamicPartitionFunctor(input, indices, inputGradientListY);
                 dynamicStitchFunctor(inputGradientList, inputGradientListY, outputList[0]);
                 //dynamicStitchFunctor(inputGradientListX, inputGradientListY, outputList[1]);
+                for (size_t e = 0; e < inputGradientListY.size(); e++)
+                    delete inputGradientListY[e];
+
             }
 
             template <typename T>

@@ -90,7 +90,7 @@ namespace ops {
         //auto gradOut = ;
         auto numPartition = INT_ARG(0);
 
-        std::vector<NDArray<T> *> outputList(numPartition);
+        std::vector<NDArray<T> *> outputList(2); // only for output
         std::vector<NDArray<T> *> gradOutList(numPartition);
         for (Nd4jLong e = 0; e < numPartition; e++) {
             gradOutList[e] = INPUT_VARIABLE(e + 1);
