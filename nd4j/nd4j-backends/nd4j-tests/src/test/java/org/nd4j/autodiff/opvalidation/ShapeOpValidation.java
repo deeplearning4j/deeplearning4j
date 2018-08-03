@@ -20,6 +20,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.math3.linear.LUDecomposition;
+import org.apache.commons.math3.linear.RealMatrix;
 import org.junit.Test;
 import org.nd4j.autodiff.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -1143,6 +1145,126 @@ public class ShapeOpValidation extends BaseOpValidation {
                 .expected(result.getVarName(), expected)
                 .gradCheckSkipVariables(seq_lengths.getVarName()));
         assertNull(err);
+    }
+
+
+    @Test
+    public void testMatrixDeterminant(){
+
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray in = Nd4j.rand(3,3);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable var = sd.var("in", in);
+        SDVariable md = sd.f().matrixDeterminant(var);
+
+        double d = new LUDecomposition(CheckUtil.convertToApacheMatrix(in)).getDeterminant();
+
+
+        INDArray outExp = Nd4j.trueScalar(d);
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expected(md.getVarName(), outExp));
+        assertNull(err);
+
+
+    }
+
+    @Test
+    public void testDeterminant22(){
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6071
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray in = Nd4j.create(new double[][]{{1, 2.5}, {3.5, 4.5}});
+
+
+        SameDiff sd = SameDiff.create();
+        SDVariable var = sd.var("in", in);
+        SDVariable md = sd.f().matrixDeterminant(var);
+
+        double d = new LUDecomposition(CheckUtil.convertToApacheMatrix(in)).getDeterminant();
+        double d2 = in.getDouble(0,0) * in.getDouble(1,1) - in.getDouble(1,0) * in.getDouble(0,1);
+        assertEquals(d, d2, 1e-5);
+
+
+        INDArray outExp = Nd4j.trueScalar(d);
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expected(md.getVarName(), outExp));
+        assertNull(err);
+    }
+
+    @Test
+    public void testMatrixDeterminant3(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray in = Nd4j.rand(3,3);
+        //System.out.println(in.shapeInfoToString());   //Rank: 2,Offset: 0 Order: c Shape: [3,3],  stride: [3,1]
+        //System.out.println(Arrays.toString(in.data().asFloat())); //[0.27620894, 0.21801452, 0.062078513, 7.348895E-4, 0.24149609, 0.4948205, 0.93483436, 0.52035654, 0.30292067]
+
+        SameDiff sd = SameDiff.create();
+        SDVariable var = sd.var("in", in);
+        SDVariable md = sd.f().matrixDeterminant(var);
+
+        double d = new LUDecomposition(CheckUtil.convertToApacheMatrix(in)).getDeterminant();
+
+        //https://en.wikipedia.org/wiki/Determinant
+        double[][] a = in.toDoubleMatrix();
+        double d2 = a[0][0] * a[1][1] * a[2][2]
+                + a[0][1] * a[1][2] * a[2][0]
+                + a[0][2] * a[1][0] * a[2][1]
+                - a[0][2] * a[1][1] * a[2][0]
+                - a[0][1] * a[1][0] * a[2][2]
+                - a[0][0] * a[1][2] * a[2][1];
+        assertEquals(d, d2, 1e-6);          //Manual calc and Apache commons both match:    0.03589524995561552
+
+        INDArray outExp = Nd4j.trueScalar(d);
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expected(md.getVarName(), outExp));
+        assertNull(err);
+    }
+
+    @Test
+    public void testMatrixDeterminant4(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray in = Nd4j.rand(4,4);
+        //System.out.println(in.shapeInfoToString());   //Rank: 2,Offset: 0 Order: c Shape: [4,4],  stride: [4,1]
+        System.out.println(Arrays.toString(in.data().asFloat())); //[0.27620894, 0.21801452, 0.062078513, 7.348895E-4, 0.24149609, 0.4948205, 0.93483436, 0.52035654, 0.30292067, 0.3289706, 0.7977864, 0.03180518, 0.1455722, 0.90352905, 0.9405744, 0.0048329555]
+
+        SameDiff sd = SameDiff.create();
+        SDVariable var = sd.var("in", in);
+        SDVariable md = sd.f().matrixDeterminant(var);
+
+        double d = new LUDecomposition(CheckUtil.convertToApacheMatrix(in)).getDeterminant();   //-0.06713878100086641
+        //System.out.println(d);
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expected(md.getVarName(), Nd4j.trueScalar(d)));
+        assertNull(err);
+    }
+
+    @Test
+    public void testSegmentOps(){
+
+        INDArray s = Nd4j.create(new double[]{0,0,0,1,2,2,3,3}, new long[]{8});
+        INDArray d = Nd4j.create(new double[]{5,1,7,2,3,4,1,3}, new long[]{8});
+
+        SameDiff sd = SameDiff.create();
+        SDVariable vs = sd.var("s", s);
+        SDVariable vd = sd.var("d", d);
+
+        SDVariable sm = sd.f().segmentMax(vd, vs);
+
+        INDArray exp = Nd4j.create(new double[]{7,2,4,3});
+
+        TestCase tc = new TestCase(sd)
+                .testName("segmentMax")
+                .expected(sm, exp)
+                .gradientCheck(false);
+
+        assertNull(OpValidation.validate(tc));
+
     }
 
     @Test

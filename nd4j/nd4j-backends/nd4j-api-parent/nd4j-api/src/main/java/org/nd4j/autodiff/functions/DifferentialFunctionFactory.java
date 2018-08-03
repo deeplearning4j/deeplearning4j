@@ -1593,8 +1593,11 @@ public class DifferentialFunctionFactory {
         for (SDVariable df : differentialFunctions)
             validateDifferentialFunctionsameDiff(df);
 
-        return new DynamicStitch(sameDiff(), indices, differentialFunctions)
-                .outputVariable();
+        return new DynamicStitch(sameDiff(), indices, differentialFunctions).outputVariable();
+    }
+
+    public SDVariable segmentMax(SDVariable data, SDVariable segmentIds){
+        return new SegmentMax(sameDiff(), data, segmentIds).outputVariable();
     }
 
     public SDVariable dilation2D(SDVariable df, SDVariable weights, int[] strides,
