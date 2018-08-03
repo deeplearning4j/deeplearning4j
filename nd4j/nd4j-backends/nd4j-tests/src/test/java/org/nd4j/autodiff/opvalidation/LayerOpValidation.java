@@ -464,10 +464,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testConv3d() {
-        OpValidationSuite.ignoreFailing();
-
         //Pooling3d, Conv3D, batch norm
-
         Nd4j.getRandom().setSeed(12345);
 
         //NCDHW format
@@ -493,7 +490,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             if (ncdhw) {
                                 w0 = sd.var("w0", Nd4j.rand(new int[]{3, shape[1], 2, 2, 2}).muli(10));  //NCDHW: [oC, iC, kD, kH, kW]
                             } else {
-                                w0 = sd.var("w0", Nd4j.rand(new int[]{2, 2, 2, 3, shape[1]}).muli(10));  //NDHWC: [kD, kH, kW, iC, oC]
+                                w0 = sd.var("w0", Nd4j.rand(new int[]{2, 2, 2, 3, shape[4]}).muli(10));  //NDHWC: [kD, kH, kW, iC, oC]
                             }
                             SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
                             out = sd.conv3d(in, w0, b0, Conv3DConfig.builder()
@@ -510,7 +507,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             if (ncdhw) {
                                 w1 = sd.var("w1", Nd4j.rand(new int[]{3, shape[1], 2, 2, 2}).muli(10));  //NCDHW: [oC, iC, kD, kH, kW]
                             } else {
-                                w1 = sd.var("w1", Nd4j.rand(new int[]{2, 2, 2, 3, shape[1]}).muli(10));  //NDHWC: [kD, kH, kW, iC, oC]
+                                w1 = sd.var("w1", Nd4j.rand(new int[]{2, 2, 2, 3, shape[4]}).muli(10));  //NDHWC: [kD, kH, kW, iC, oC]
                             }
                             out = sd.conv3d(in, w1, Conv3DConfig.builder()
                                     .isNCDHW(ncdhw)

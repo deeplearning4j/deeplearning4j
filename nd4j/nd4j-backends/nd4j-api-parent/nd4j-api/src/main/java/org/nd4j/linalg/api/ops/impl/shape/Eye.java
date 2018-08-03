@@ -90,25 +90,6 @@ public class Eye extends DynamicCustomOp {
         addArgs();
     }
 
-    @Override
-    public List<long[]> calculateOutputShape(){
-        if(isVariableInput){
-            return super.calculateOutputShape();
-        }
-        long[] outputShape = new long[2 + (batchDimension == null ? 0 : batchDimension.length)];
-        int i = 0;
-        if(batchDimension != null) {
-            for (; i < batchDimension.length; i++) {
-                outputShape[i] = batchDimension[i];
-            }
-        }
-        outputShape[i++] = numRows;
-        outputShape[i] = numCols;
-        List<long[]> ret = new ArrayList<>();
-        ret.add(outputShape);
-        return ret;
-    }
-
     protected void addArgs() {
         addIArgument(numRows);
         addIArgument(numCols);

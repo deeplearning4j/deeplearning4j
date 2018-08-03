@@ -1040,7 +1040,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
     public SDVariable sum(boolean keepDims, int... dimensions){
-        return sum(null, dimensions);
+        return sum(null, keepDims, dimensions);
     }
 
     public SDVariable sum(String name, int... dimensions){

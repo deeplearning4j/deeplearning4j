@@ -670,7 +670,9 @@ public class SameDiff {
                 }
                 variableNameToArr.remove(varName);
             } else {
-                throw new ND4JIllegalStateException("Already found an existing array!");
+                throw new ND4JIllegalStateException("Already found an existing array for variable \"" + varName
+                        + "\" with shape " + Arrays.toString(variableNameToArr.get(varName).shape())
+                        + " - attempting to put new array shape " + Arrays.toString(shape));
             }
         }
 
@@ -9556,6 +9558,10 @@ public class SameDiff {
             throw new NullPointerException("Null input: No variable found for updating!");
         }
 
+        if(newVarName != null && variableMap.containsKey(newVarName) && varToUpdate != variableMap.get(newVarName)){
+            throw new IllegalStateException("Variable name \"" + newVarName + "\" already exists for a different SDVariable");
+        }
+
         if (newVarName == null && variableMap.containsKey(varToUpdate.getVarName())) {
             //Edge case: suppose we do m1=sd.mean(in), m2=sd.mean(m1) -> both initially have the name
             // "mean" and consequently a new variable name needs to be generated
@@ -10223,6 +10229,7 @@ public class SameDiff {
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
                 Op op = (Op) differentialFunction;
+                String outVarName = ((BaseOp) op).outputVariable().getVarName();
 
                 // ops in differential function might have stale NDArrays used. we should renew them
                 if(inputs != null && inputs.length > 0) {
@@ -10236,7 +10243,7 @@ public class SameDiff {
                 List<long[]> outputShape = ((BaseOp)op).calculateOutputShape();
                 Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
                 //Update shape. DynamicCustomOp does this in populateInputsAndOutputsFromSameDiff(); for legacy ops, we'll do it here
-                putOrUpdateShapeForVarName(((BaseOp) op).outputVariable().getVarName(), outputShape.get(0), true);
+                putOrUpdateShapeForVarName(outVarName, outputShape.get(0), true);
                 INDArray z = op.z();
                 Preconditions.checkNotNull(z, "Could not get output array for op: %s", op.getClass());
                 if(!Arrays.equals(outputShape.get(0), z.shape())){
@@ -10250,8 +10257,11 @@ public class SameDiff {
                     SDVariable outputVar = getVariable(outputName);
 
                     putOrUpdateShapeForVarName(outputName, outputShape.get(0), true);
-                    INDArray newZ = outputVar.storeAndAllocateNewArray();
-                    op.setZ(newZ);
+                    z = outputVar.storeAndAllocateNewArray();
+                    op.setZ(z);
+                }
+                if(getArrForVarName(outVarName) != z){  //Also handles null case
+                    putOrUpdateArrayForVarName(outVarName, z);
                 }
 
 

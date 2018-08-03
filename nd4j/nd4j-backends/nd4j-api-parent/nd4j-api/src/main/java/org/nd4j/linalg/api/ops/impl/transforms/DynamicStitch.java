@@ -63,13 +63,17 @@ public class DynamicStitch extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         // DynamicPartition and DynamicStitch are mutually inverse
         SDVariable gradient = i_v.get(0);
-        SDVariable[] partitionData = indices.clone();
+        SDVariable[] partitionData = new SDVariable[indices.length];
         for (int i = 0; i < indices.length; i++)
             partitionData[i] = sameDiff.onesLike(indices[i]).mul(i);
-        SDVariable partitions = sameDiff.dynamicStitch(partitionData, indices);
+        SDVariable partitions = sameDiff.dynamicStitch(indices, partitionData);
 
-        SDVariable[] ret = sameDiff.dynamicPartition(gradient, partitions, numPartitions);
-        return new ArrayList<>(Arrays.asList(ret));
+        SDVariable[] partition = sameDiff.dynamicPartition(gradient, partitions, numPartitions);
+        List<SDVariable> ret = new ArrayList<>();
+        for (SDVariable i : indices)
+            ret.add(f().zerosLike(i));
+        Collections.addAll(ret, partition);
+        return ret;
     }
 
 
