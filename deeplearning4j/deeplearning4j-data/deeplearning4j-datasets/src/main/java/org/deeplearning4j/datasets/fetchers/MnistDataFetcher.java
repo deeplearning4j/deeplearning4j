@@ -188,9 +188,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
                 for (int j = 0; j < 28 * 28; j++) {
                     working[j] = img[28 * (j % 28) + j / 28];
                 }
-                byte[] temp = img;
                 img = working;
-                working = temp;
             }
 
             int label = man.readLabel(order[cursor]);
