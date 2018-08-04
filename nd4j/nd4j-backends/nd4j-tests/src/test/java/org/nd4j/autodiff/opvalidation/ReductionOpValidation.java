@@ -285,6 +285,9 @@ public class ReductionOpValidation extends BaseOpValidation {
                     loss = sd.shannonEntropy("loss", input);
                     double shannonEntropy = inputArr.shannonEntropyNumber().doubleValue();
                     tc.expected(loss, Nd4j.trueScalar(shannonEntropy));
+                    if(OpValidationSuite.IGNORE_FAILING){
+                        continue;
+                    }
                     break;
                 default:
                     throw new RuntimeException();

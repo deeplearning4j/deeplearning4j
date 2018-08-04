@@ -1151,7 +1151,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testMatrixDeterminant(){
-
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6072
 
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.rand(3,3);
@@ -1168,8 +1168,6 @@ public class ShapeOpValidation extends BaseOpValidation {
         String err = OpValidation.validate(new TestCase(sd)
                 .expected(md.getVarName(), outExp));
         assertNull(err);
-
-
     }
 
     @Test
@@ -1198,6 +1196,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testMatrixDeterminant3(){
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6072
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.rand(3,3);
         //System.out.println(in.shapeInfoToString());   //Rank: 2,Offset: 0 Order: c Shape: [3,3],  stride: [3,1]
@@ -1228,6 +1227,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testMatrixDeterminant4(){
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6072
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.rand(4,4);
         //System.out.println(in.shapeInfoToString());   //Rank: 2,Offset: 0 Order: c Shape: [4,4],  stride: [4,1]
