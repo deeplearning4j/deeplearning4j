@@ -8896,6 +8896,27 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #trace(String, SDVariable)
+     */
+    public SDVariable trace(SDVariable in){
+        return trace(null, in);
+    }
+
+    /**
+     * Matrix trace operation
+     * For rank 2 matrices, the output is a scalar vith the trace - i.e., sum of the main diagonal.<br>
+     * For higher rank inputs, output[a,b,c] = trace(in[a,b,c,:,:])
+     *
+     * @param name Name of the output variable. May be null.
+     * @param in   Input variable
+     * @return Trace
+     */
+    public SDVariable trace(String name, SDVariable in){
+        SDVariable ret = f().trace(in);
+        return updateVariableNameAndReference(ret, name);
+    }
+
 
     /**
      * Generate the variables based on the given input op and return the output variable names.

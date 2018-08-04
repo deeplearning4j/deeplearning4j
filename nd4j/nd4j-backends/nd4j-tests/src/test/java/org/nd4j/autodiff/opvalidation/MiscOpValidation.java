@@ -490,6 +490,29 @@ public class MiscOpValidation extends BaseOpValidation {
 
 
     @Test
+    public void testTrace(){
+        Nd4j.getRandom().setSeed(12345);
+        for( int[] inShape : new int[][]{{3,3}}){
+
+            INDArray in = Nd4j.rand(inShape);
+            SameDiff sd = SameDiff.create();
+            SDVariable i = sd.var("in", in);
+            SDVariable trace = sd.trace(i);
+
+            double exp = Nd4j.diag(in).sumNumber().doubleValue();
+
+            TestCase tc = new TestCase(sd)
+                    .expected(trace, Nd4j.trueScalar(exp))
+                    .testName(Arrays.toString(inShape));
+
+            String err = OpValidation.validate(tc);
+
+            assertNull(err);
+        }
+    }
+
+
+    @Test
     public void testTensorGradTensorMmul() {
         OpValidationSuite.ignoreFailing();
 

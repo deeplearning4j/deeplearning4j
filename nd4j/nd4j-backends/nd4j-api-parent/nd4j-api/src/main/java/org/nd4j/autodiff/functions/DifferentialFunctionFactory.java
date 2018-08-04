@@ -1650,6 +1650,10 @@ public class DifferentialFunctionFactory {
         return new GatherNd(sameDiff(), df, indices, false).outputVariable();
     }
 
+    public SDVariable trace(SDVariable in){
+        return new Trace(sameDiff(), in).outputVariable();
+    }
+
     public SDVariable cross(SDVariable a, SDVariable b) {
         validateDifferentialFunctionsameDiff(a);
         return new Cross(sameDiff(), new SDVariable[]{a, b}).outputVariable();
