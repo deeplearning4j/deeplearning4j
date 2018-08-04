@@ -86,7 +86,7 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
         totalBatches = baseData.numExamples() / batchSize;
         for (int i = 0; i < baseData.numExamples() / batchSize; i++) {
             paths.add(writeData(new DataSet(
-                            baseData.getFeatureMatrix().get(NDArrayIndex.interval(offset, offset + batchSize)),
+                            baseData.getFeatures().get(NDArrayIndex.interval(offset, offset + batchSize)),
                             baseData.getLabels().get(NDArrayIndex.interval(offset, offset + batchSize)))));
             offset += batchSize;
             if (offset >= totalExamples)
@@ -196,7 +196,7 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
         BufferedOutputStream dataOut =
                         new BufferedOutputStream(new FileOutputStream(new File(rootDir, dataSetId + ".bin")));
         DataOutputStream dos = new DataOutputStream(dataOut);
-        Nd4j.write(write.getFeatureMatrix(), dos);
+        Nd4j.write(write.getFeatures(), dos);
         dos.flush();
         dos.close();
 

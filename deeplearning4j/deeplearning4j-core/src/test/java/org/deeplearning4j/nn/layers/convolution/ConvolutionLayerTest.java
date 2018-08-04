@@ -27,13 +27,13 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.Convolution1DLayer;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -48,7 +48,6 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.List;
 
@@ -206,39 +205,6 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
         model.fit(trainInput);
     }
 
-    @Test(expected = Exception.class)
-    @Ignore //Test is based on the assumption that there is no default kernel size. Needs to be revisited.
-    public void testCNNKernelNoSize() {
-        int imageHeight = 20;
-        int imageWidth = 23;
-        int nChannels = 1;
-        int classes = 2;
-        int numSamples = 200;
-
-        int kernelHeight = 3;
-        int kernelWidth = 3;
-
-        DataSet trainInput;
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(123).list()
-                        .layer(0, new ConvolutionLayer.Builder().nOut(2).activation(Activation.RELU)
-                                        .weightInit(WeightInit.XAVIER).build())
-                        .layer(1, new SubsamplingLayer.Builder().poolingType(SubsamplingLayer.PoolingType.MAX).build())
-                        .layer(2, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER)
-                                        .activation(Activation.SOFTMAX).build())
-                        .setInputType(InputType.convolutionalFlat(imageHeight, imageWidth, nChannels)).backprop(true)
-                        .pretrain(false);
-
-        MultiLayerConfiguration conf = builder.build();
-        MultiLayerNetwork model = new MultiLayerNetwork(conf);
-        model.init();
-
-        INDArray emptyFeatures = Nd4j.zeros(numSamples, imageWidth * imageHeight * nChannels);
-        INDArray emptyLables = Nd4j.zeros(numSamples, classes);
-
-        trainInput = new DataSet(emptyFeatures, emptyLables);
-        model.fit(trainInput);
-    }
-
     @Test
     public void testCNNBiasInit() {
         ConvolutionLayer cnn = new ConvolutionLayer.Builder().nIn(1).nOut(3).biasInit(1).build();
@@ -331,7 +297,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
         DataSetIterator data = new MnistDataSetIterator(nExamples, nExamples);
         DataSet mnist = data.next();
         nExamples = mnist.numExamples();
-        return mnist.getFeatureMatrix().reshape(nExamples, nChannelsIn, inputHeight, inputWidth);
+        return mnist.getFeatures().reshape(nExamples, nChannelsIn, inputHeight, inputWidth);
     }
 
     public Layer getContainedConfig() {
@@ -388,12 +354,12 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
         DataSet test = mnistIter.next();
 
         Evaluation eval = new Evaluation();
-        INDArray output = model.output(test.getFeatureMatrix());
+        INDArray output = model.output(test.getFeatures());
         eval.eval(test.getLabels(), output);
         double f1Score = eval.f1();
 
         Evaluation eval2 = new Evaluation();
-        INDArray output2 = model2.output(test.getFeatureMatrix());
+        INDArray output2 = model2.output(test.getFeatures());
         eval2.eval(test.getLabels(), output2);
         double f1Score2 = eval2.f1();
 
@@ -418,12 +384,12 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
         DataSet test = mnistIter.next();
 
         Evaluation eval = new Evaluation();
-        INDArray output = model.output(test.getFeatureMatrix());
+        INDArray output = model.output(test.getFeatures());
         eval.eval(test.getLabels(), output);
         double f1Score = eval.f1();
 
         Evaluation eval2 = new Evaluation();
-        INDArray output2 = model2.output(test.getFeatureMatrix());
+        INDArray output2 = model2.output(test.getFeatures());
         eval2.eval(test.getLabels(), output2);
         double f1Score2 = eval2.f1();
 

@@ -61,6 +61,7 @@ import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.*;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -121,6 +122,10 @@ public class ParameterAveragingTrainingMaster
         this.rddTrainingApproach = builder.rddTrainingApproach;
         this.exportDirectory = builder.exportDirectory;
         this.trainingHookList = builder.trainingHooks;
+        this.collectTrainingStats = builder.collectTrainingStats;
+        if (collectTrainingStats)
+            stats = new ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper();
+
 
         if (builder.rngSeed == null) {
             this.rng = new Random();
@@ -758,6 +763,7 @@ public class ParameterAveragingTrainingMaster
         protected String exportDirectory = null;
         protected Long rngSeed;
         protected Collection<TrainingHook> trainingHooks;
+        protected boolean collectTrainingStats = false;
 
 
         /**
@@ -982,6 +988,17 @@ public class ParameterAveragingTrainingMaster
          */
         public Builder rngSeed(long rngSeed) {
             this.rngSeed = rngSeed;
+            return this;
+        }
+
+        /**
+         * Whether training stats collection should be enabled (disabled by default).
+         * @see ParameterAveragingTrainingMaster#setCollectTrainingStats(boolean)
+         * @see org.deeplearning4j.spark.stats.StatsUtils#exportStatsAsHTML(SparkTrainingStats, OutputStream)
+         * @param collectTrainingStats
+         */
+        public Builder collectTrainingStats(boolean collectTrainingStats){
+            this.collectTrainingStats = collectTrainingStats;
             return this;
         }
 

@@ -21,6 +21,7 @@ import lombok.val;
 import org.bytedeco.javacpp.Loader;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
+import org.deeplearning4j.config.DL4JEnvironmentVars;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -308,7 +309,7 @@ public class SharedTrainingWrapper {
 
                     // last resort here...
                     if (localIP == null)
-                        localIP = System.getenv("DL4J_VOID_IP");
+                        localIP = System.getenv(DL4JEnvironmentVars.DL4J_VOID_IP);
 
                     // set it to localhost, and hope for BroadcastTransport used
                     if (localIP == null) {

@@ -166,7 +166,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
                 nextRRValsBatched.put(entry.getKey(), batch);
             } else {
                 //Standard case
-                List<List<Writable>> writables = new ArrayList<>(num);
+                List<List<Writable>> writables = new ArrayList<>(Math.min(num, 100000));    //Min op: in case user puts batch size >> amount of data
                 for (int i = 0; i < num && rr.hasNext(); i++) {
                     List<Writable> record;
                     if (collectMetaData) {

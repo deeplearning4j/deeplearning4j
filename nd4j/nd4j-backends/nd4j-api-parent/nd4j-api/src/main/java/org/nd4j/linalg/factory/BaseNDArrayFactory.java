@@ -24,10 +24,6 @@ import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.LongRawIndexer;
 import org.nd4j.linalg.api.blas.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexDouble;
-import org.nd4j.linalg.api.complex.IComplexFloat;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
@@ -239,11 +235,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
     @Override
-    public IComplexNDArray createComplex(int[] ints, int[] ints1, int[] stride, long offset) {
-        return createComplex(Nd4j.createBuffer(ints), ints1, stride, offset);
-    }
-
-    @Override
     public INDArray create(int[] ints, int[] ints1, int[] stride, long offset) {
         return create(Nd4j.createBuffer(ints), ints1, stride, offset);
     }
@@ -424,24 +415,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
     /**
-     * Create float
-     *
-     * @param real real component
-     * @param imag imag component
-     * @return
-     */
-    public abstract IComplexFloat createFloat(float real, float imag);
-
-    /**
-     * Create an instance of a complex double
-     *
-     * @param real the real component
-     * @param imag the imaginary component
-     * @return a new imaginary double with the specified real and imaginary components
-     */
-    public abstract IComplexDouble createDouble(double real, double imag);
-
-    /**
      * Copy a to b
      *
      * @param a the origin matrix
@@ -520,35 +493,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         }
 
         return result;
-
     }
-
-    /**
-     * Create a complex ndarray from the passed in indarray
-     *
-     * @param arr the arr to wrap
-     * @return the complex ndarray with the specified ndarray as the
-     * real components
-     */
-    public abstract IComplexNDArray createComplex(INDArray arr);
-
-    /**
-     * Create a complex ndarray from the passed in indarray
-     *
-     * @param data the data to wrap
-     * @return the complex ndarray with the specified ndarray as the
-     * real components
-     */
-    public abstract IComplexNDArray createComplex(IComplexNumber[] data, int[] shape);
-
-    /**
-     * Create a complex ndarray from the passed in indarray
-     *
-     * @param arrs the arr to wrap
-     * @return the complex ndarray with the specified ndarray as the
-     * real components
-     */
-    public abstract IComplexNDArray createComplex(List<IComplexNDArray> arrs, int[] shape);
 
     /**
      * Create a random ndarray with the given shape using the given rng
@@ -827,19 +772,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
     /**
-     * Creates an ndarray with the specified data
-     *
-     * @param data the number of columns in the row vector
-     * @return ndarray
-     */
-    @Override
-    public IComplexNDArray createComplex(double[] data) {
-        assert data.length
-                        % 2 == 0 : "Length of data must be even. A complex ndarray is made up of pairs of real and imaginary components";
-        return createComplex(data, new int[] {1, data.length / 2});
-    }
-
-    /**
      * Creates a row vector with the specified number of columns
      *
      * @param columns the columns of the ndarray
@@ -848,18 +780,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray create(long columns) {
         return create(new long[] {1, columns});
-    }
-
-    /**
-     * Creates an ndarray
-     *
-     * @param columns the number of columns in the row vector
-     * @return ndarray
-     */
-    @Override
-    public IComplexNDArray createComplex(long columns) {
-        // return createComplex(new long[] {1, columns});
-        throw new UnsupportedOperationException();
     }
 
     /**
@@ -908,19 +828,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
     /**
-     * Creates a matrix of zeros
-     *
-     * @param rows    te number of rows in the matrix
-     * @param columns the number of columns in the row vector
-     * @return ndarray
-     */
-    @Override
-    public IComplexNDArray complexZeros(long rows, long columns) {
-        //return createComplex(new long[] {rows, columns});
-        throw new UnsupportedOperationException();
-    }
-
-    /**
      * Creates a row vector with the specified number of columns
      *
      * @param columns the columns of the ndarray
@@ -929,87 +836,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray zeros(long columns) {
         return zeros(new long[] {1, columns});
-    }
-
-    /**
-     * Creates an ndarray
-     *
-     * @param columns the number of columns in the row vector
-     * @return ndarray
-     */
-    @Override
-    public IComplexNDArray complexZeros(long columns) {
-        //return createComplex(new int[] {1, columns});
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Creates an shape ndarray with the specified value
-     *
-     * @param shape the shape of the ndarray
-     * @param value the value to assign
-     * @return a complex ndarray of the specified size
-     * and value
-     */
-    @Override
-    public IComplexNDArray complexValueOf(int[] shape, IComplexNumber value) {
-        IComplexNDArray ones = complexOnes(shape);
-        ones.assign(Nd4j.scalar(value));
-        return ones;
-    }
-
-    /**
-     * Creates an 1 x num ndarray with the specified value
-     *
-     * @param num   the number of columns
-     * @param value the value to assign
-     * @return a complex ndarray of the specified size
-     * and value
-     */
-    @Override
-    public IComplexNDArray complexValueOf(int num, double value) {
-        IComplexNDArray ones = complexOnes(num);
-        ones.assign(Nd4j.createDouble(value, 0.0));
-        return ones;
-    }
-
-    /**
-     * Creates an shape ndarray with the specified value
-     *
-     * @param shape the shape of the ndarray
-     * @param value the value to assign
-     * @return a complex ndarray of the specified size
-     * and value
-     */
-    @Override
-    public IComplexNDArray complexValueOf(int[] shape, double value) {
-        IComplexNDArray ones = complexOnes(shape);
-        ones.assign(Nd4j.scalar(value));
-        return ones;
-    }
-
-    /**
-     * Creates an 1 x num ndarray with the specified value
-     *
-     * @param num   the number of columns
-     * @param value the value to assign
-     * @return a complex ndarray of the specified size
-     * and value
-     */
-    @Override
-    public IComplexNDArray complexValueOf(int num, IComplexNumber value) {
-        IComplexNDArray ones = complexOnes(num);
-        ones.assign(Nd4j.scalar(value));
-        return ones;
-    }
-
-    @Override
-    public IComplexNDArray createComplex(int[] shape, int[] complexStrides, long offset, char ordering) {
-        //ensure shapes that wind up being scalar end up with the write shape
-        if (shape.length == 1 && shape[0] == 0) {
-            shape = new int[] {1, 1};
-        }
-        return createComplex(Nd4j.createBuffer(ArrayUtil.prodLong(shape) * 2), shape, complexStrides, offset, ordering);
     }
 
     /**
@@ -1071,19 +897,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
     /**
-     * Creates an ndarray
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the number of columns in the row vector
-     * @return ndarray
-     */
-    @Override
-    public IComplexNDArray complexOnes(long rows, long columns) {
-        //return complexOnes(new long[] {rows, columns});
-        throw new UnsupportedOperationException();
-    }
-
-    /**
      * Creates a row vector with the specified number of columns
      *
      * @param columns the columns of the ndarray
@@ -1092,22 +905,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray ones(long columns) {
         return ones(new long[] {1, columns});
-    }
-
-    /**
-     * Creates an ndarray
-     *
-     * @param columns the number of columns in the row vector
-     * @return ndarray
-     */
-    @Override
-    public IComplexNDArray complexOnes(long columns) {
-        /*
-        IComplexNDArray base = createComplex(new long[] {1, columns});
-        base.assign(1);
-        return base;
-        */
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -1210,84 +1007,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         }
 
         return ret;
-
-    }
-
-    /**
-     * concatenate ndarrays along a dimension
-     *
-     * @param dimension the dimension to concatenate along
-     * @param toConcat  the ndarrays to concatenate
-     * @return the concatenate ndarrays
-     */
-    @Override
-    public IComplexNDArray concat(int dimension, IComplexNDArray... toConcat) {
-        /*
-        if (toConcat.length == 1)
-            return toConcat[0];
-        validateConcat(dimension, toConcat);
-        int sumAlongDim = 0;
-        for (int i = 0; i < toConcat.length; i++)
-            sumAlongDim += toConcat[i].shape()[dimension];
-
-
-        long[] outputShape = ArrayUtil.copy(toConcat[0].shape());
-
-        outputShape[dimension] = sumAlongDim;
-
-
-        IComplexNDArray ret = Nd4j.createComplex(outputShape);
-        IComplexNDArray linear = ret.linearView();
-        int count = 0;
-        for (int i = 0; i < toConcat.length; i++) {
-            IComplexNDArray flattened = toConcat[i].linearView();
-
-            for (int j = 0; j < flattened.length(); j++) {
-                linear.putScalar(count++, flattened.getComplex(j));
-            }
-        }
-
-
-        return ret;
-
-        */
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public IComplexNDArray complexFlatten(IComplexNDArray[] flatten) {
-        int length = 0;
-        for (IComplexNDArray m : flatten)
-            length += m.length();
-        IComplexNDArray ret = Nd4j.createComplex(length);
-        int linearIndex = 0;
-        for (IComplexNDArray d : flatten) {
-            IComplexNDArray flattened = d.linearView();
-            for (int i = 0; i < d.length(); i++) {
-                ret.putScalar(linearIndex++, flattened.getComplex(i));
-            }
-        }
-
-        return ret;
-
-    }
-
-    @Override
-    public IComplexNDArray complexFlatten(List<IComplexNDArray> flatten) {
-        int length = 0;
-        for (IComplexNDArray m : flatten)
-            length += m.length();
-        IComplexNDArray ret = Nd4j.createComplex(length);
-        int linearIndex = 0;
-        for (IComplexNDArray d : flatten) {
-            IComplexNDArray flattened = d.linearView();
-            for (int i = 0; i < d.length(); i++) {
-                ret.putScalar(linearIndex++, flattened.getComplex(i));
-            }
-        }
-
-        return ret;
-
     }
 
     /**
@@ -1332,19 +1051,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return ret;
     }
 
-    /**
-     * Create an ndarray of ones
-     *
-     * @param shape the shape of the ndarray
-     * @return an ndarray with ones filled in
-     */
-    @Override
-    public IComplexNDArray complexZeros(int[] shape) {
-        IComplexNDArray ret = createComplex(shape);
-        return ret;
-
-    }
-
 
     /**
      * Create an ndarray of ones
@@ -1373,37 +1079,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return ret;
     }
 
-    /**
-     * Create an ndarray of ones
-     *
-     * @param shape the shape of the ndarray
-     * @return an ndarray with ones filled in
-     */
-    @Override
-    public IComplexNDArray complexOnes(int[] shape) {
-        IComplexNDArray ret = createComplex(shape);
-        ret.assign(1);
-        return ret;
-
-    }
-
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param data    the data to use with the ndarray
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @param offset  the offset of the ndarray
-     * @return the instance
-     */
-    @Override
-    public IComplexNDArray createComplex(float[] data, long rows, long columns, int[] stride, long offset) {
-        //return createComplex(data, new int[] {rows, columns}, stride, offset);
-        throw new UnsupportedOperationException();
-    }
-
 
     /**
      * Creates an ndarray with the specified shape
@@ -1418,24 +1093,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray create(float[] data, long rows, long columns, int[] stride, long offset) {
         return create(data, new long[] {rows, columns}, ArrayUtil.toLongArray(stride), offset);
-    }
-
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param data   the data to use with the ndarray
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, long offset) {
-        //ensure shapes that wind up being scalar end up with the write shape
-        if (shape.length == 1 && shape[0] == 0) {
-            shape = new int[] {1, 1};
-        }
-        return createComplex(Nd4j.createBuffer(data), shape, stride, offset, Nd4j.order());
     }
 
 
@@ -1497,85 +1154,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return create(data, shape, Nd4j.getStrides(shape), 0);
     }
 
-    /**
-     * Create an ndrray with the specified shape
-     *
-     * @param data  the data to use with tne ndarray
-     * @param shape the shape of the ndarray
-     * @return the created ndarray
-     */
-    @Override
-    public IComplexNDArray createComplex(double[] data, int[] shape) {
-        //ensure shapes that wind up being scalar end up with the write shape
-        if (shape.length == 1 && shape[0] == 0) {
-            shape = new int[] {1, 1};
-        }
-        return createComplex(data, shape, Nd4j.getComplexStrides(shape), 0);
-    }
-
-    /**
-     * Create an ndrray with the specified shape
-     *
-     * @param data  the data to use with tne ndarray
-     * @param shape the shape of the ndarray
-     * @return the created ndarray
-     */
-    @Override
-    public IComplexNDArray createComplex(float[] data, int[] shape) {
-        //ensure shapes that wind up being scalar end up with the write shape
-        if (shape.length == 1 && shape[0] == 0) {
-            shape = new int[] {1, 1};
-        }
-        return createComplex(data, shape, Nd4j.getComplexStrides(shape), 0);
-    }
-
-
-    /**
-     * Create an ndrray with the specified shape
-     *
-     * @param data   the data to use with tne ndarray
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @return the created ndarray
-     */
-    @Override
-    public IComplexNDArray createComplex(double[] data, int[] shape, int[] stride) {
-        //ensure shapes that wind up being scalar end up with the write shape
-        if (shape.length == 1 && shape[0] == 0) {
-            shape = new int[] {1, 1};
-        }
-        return createComplex(data, shape, stride, 0);
-    }
-
-    /**
-     * Create an ndrray with the specified shape
-     *
-     * @param data   the data to use with tne ndarray
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @return the created ndarray
-     */
-    @Override
-    public IComplexNDArray createComplex(float[] data, int[] shape, int[] stride) {
-        return createComplex(data, shape, stride, 0);
-    }
-
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @param offset  the offset of the ndarray
-     * @return the instance
-     */
-    @Override
-    public IComplexNDArray createComplex(double[] data, long rows, long columns, int[] stride, long offset) {
-        //return createComplex(data, new int[] {rows, columns}, stride, offset);
-        throw new UnsupportedOperationException();
-    }
-
 
     /**
      * Creates an ndarray with the specified shape
@@ -1591,17 +1169,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     public INDArray create(double[] data, long rows, long columns, int[] stride, long offset) {
         return create(data, new long[] {rows, columns}, ArrayUtil.toLongArray(stride), offset);
     }
-
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public abstract IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, long offset);
 
 
     /**
@@ -1621,32 +1188,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return the instance
      */
     public abstract INDArray create(List<INDArray> list, int[] shape);
-
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @param offset  the offset of the ndarray
-     * @return the instance
-     */
-    @Override
-    public IComplexNDArray createComplex(long rows, long columns, int[] stride, long offset) {
-        /*
-        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
-            return createComplex(new double[rows * columns * 2], new int[] {rows, columns}, stride, offset);
-        else if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.HALF)
-            return createComplex(new float[rows * columns * 2], new int[] {rows, columns}, stride, offset);
-        else if (Nd4j.dataType() == DataBuffer.Type.INT)
-            return createComplex(new int[rows * columns * 2], new int[] {rows, columns}, stride, offset);
-
-        throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
-        */
-
-        throw new UnsupportedOperationException();
-    }
 
 
     /**
@@ -1671,24 +1212,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         */
 
         throw new UnsupportedOperationException();
-    }
-
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public IComplexNDArray createComplex(int[] shape, int[] stride, long offset) {
-        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
-            return createComplex(new double[ArrayUtil.prod(shape) * 2], shape, stride, offset);
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.HALF)
-            return createComplex(new float[ArrayUtil.prod(shape) * 2], shape, stride, offset);
-        throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
-
     }
 
 
@@ -1723,21 +1246,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
     /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @return the instance
-     */
-    @Override
-    public IComplexNDArray createComplex(long rows, long columns, int[] stride) {
-        //return createComplex(new int[] {rows, columns}, stride);
-        throw new UnsupportedOperationException();
-    }
-
-
-    /**
      * Creates an ndarray with the specified shape
      *
      * @param rows    the rows of the ndarray
@@ -1765,19 +1273,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
     /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @return the instance
-     */
-    @Override
-    public IComplexNDArray createComplex(int[] shape, int[] stride) {
-        return createComplex(shape, stride, 0);
-    }
-
-
-    /**
      * Creates an ndarray with the specified shape
      *
      * @param shape  the shape of the ndarray
@@ -1791,22 +1286,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
     /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @return the instance
-     */
-    @Override
-    public IComplexNDArray createComplex(long rows, long columns) {
-        /*
-        return createComplex(new int[] {rows, columns});
-         */
-        throw new UnsupportedOperationException();
-    }
-
-
-    /**
      * Creates an ndarray with the specified shape
      *
      * @param rows    the rows of the ndarray
@@ -1816,18 +1295,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray create(long rows, long columns) {
         return create(new long[] {rows, columns});
-    }
-
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param shape the shape of the ndarray
-     * @return the instance
-     */
-    @Override
-    public IComplexNDArray createComplex(int[] shape) {
-        return createComplex(shape, Nd4j.getComplexStrides(shape), 0);
     }
 
     /**
@@ -1875,37 +1342,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if (Nd4j.dataType() == DataBuffer.Type.INT)
             return scalar(value.intValue(), offset);
         throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
-    }
-
-
-    /**
-     * Create a scalar ndarray with the specified offset
-     *
-     * @param value  the value to initialize the scalar with
-     * @param offset the offset of the ndarray
-     * @return the created ndarray
-     */
-    @Override
-    public IComplexNDArray complexScalar(Number value, long offset) {
-        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
-            return scalar(createDouble(value.doubleValue(), 0), offset);
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.INT
-                        || Nd4j.dataType() == DataBuffer.Type.HALF)
-            return scalar(createFloat(value.floatValue(), 0), offset);
-
-        throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
-    }
-
-
-    /**
-     * Create a scalar ndarray with the specified offset
-     *
-     * @param value the value to initialize the scalar with
-     * @return the created ndarray
-     */
-    @Override
-    public IComplexNDArray complexScalar(Number value) {
-        return complexScalar(value, 0);
     }
 
 
@@ -2017,128 +1453,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             return create(new double[] {value}, new int[] {1, 1}, new int[] {1, 1}, 0);
         else
             return scalar((float) value);
-    }
-
-
-    /**
-     * Create a scalar ndarray with the specified offset
-     *
-     * @param value  the value to initialize the scalar with
-     * @param offset the offset of the ndarray
-     * @return the created ndarray
-     */
-    @Override
-    public IComplexNDArray scalar(IComplexNumber value, long offset) {
-        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
-            return scalar(value.asDouble(), offset);
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.HALF)
-            return scalar(value.asFloat(), offset);
-        throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
-    }
-
-    /**
-     * Create a scalar nd array with the specified value and offset
-     *
-     * @param value the value of the scalar
-     * @return the scalar nd array
-     */
-    @Override
-    public IComplexNDArray scalar(IComplexFloat value) {
-        return createComplex(new float[] {value.realComponent(), value.imaginaryComponent()}, new int[] {1},
-                        new int[] {1}, 0);
-    }
-
-    /**
-     * Create a scalar nd array with the specified value and offset
-     *
-     * @param value the value of the scalar
-     * @return the scalar nd array
-     */
-    @Override
-    public IComplexNDArray scalar(IComplexDouble value) {
-        return createComplex(new double[] {value.realComponent(), value.imaginaryComponent()}, new int[] {1},
-                        new int[] {1}, 0);
-
-    }
-
-
-    /**
-     * Create a scalar ndarray with the specified offset
-     *
-     * @param value the value to initialize the scalar with
-     * @return the created ndarray
-     */
-    @Override
-    public IComplexNDArray scalar(IComplexNumber value) {
-        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
-            return scalar(value.asDouble(), 0);
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.HALF)
-            return scalar(value.asFloat(), 0);
-        throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
-    }
-
-    /**
-     * Create a scalar nd array with the specified value and offset
-     *
-     * @param value  the value of the scalar
-     * @param offset the offset of the ndarray
-     * @return the scalar nd array
-     */
-    @Override
-    public IComplexNDArray scalar(IComplexFloat value, long offset) {
-        return createComplex(new float[] {value.realComponent(), value.imaginaryComponent()}, new int[] {1},
-                        new int[] {1}, offset);
-    }
-
-    /**
-     * Create a scalar nd array with the specified value and offset
-     *
-     * @param value  the value of the scalar
-     * @param offset the offset of the ndarray
-     * @return the scalar nd array
-     */
-    @Override
-    public IComplexNDArray scalar(IComplexDouble value, long offset) {
-        return createComplex(new double[] {value.realComponent(), value.imaginaryComponent()}, new int[] {1},
-                        new int[] {1}, offset);
-
-    }
-
-    /**
-     * Create a complex ndarray with the given data
-     *
-     * @param data     the data to use with tne ndarray
-     * @param shape    the shape of the ndarray
-     * @param stride   the stride for the ndarray
-     * @param offset   the offset of the ndarray
-     * @param ordering the ordering for the ndarray
-     * @return the created complex ndarray
-     */
-    @Override
-    public abstract IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, long offset, char ordering);
-
-    /**
-     * @param data
-     * @param shape
-     * @param offset
-     * @param ordering
-     * @return
-     */
-    @Override
-    public IComplexNDArray createComplex(double[] data, int[] shape, long offset, char ordering) {
-        return createComplex(Nd4j.createBuffer(data), shape, offset, ordering);
-    }
-
-
-    /**
-     * @param data
-     * @param shape
-     * @param offset
-     * @return
-     */
-    @Override
-    public IComplexNDArray createComplex(double[] data, int[] shape, long offset) {
-        return createComplex(Nd4j.createBuffer(data), shape, offset);
     }
 
     @Override

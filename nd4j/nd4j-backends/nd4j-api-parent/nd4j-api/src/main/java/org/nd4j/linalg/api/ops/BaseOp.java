@@ -373,8 +373,9 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 }
             }
 
-
-            z = arr;
+            if(arr != null) {
+                setZ(arr);
+            }
             if(sameDiff.getOutputsForFunction(this) == null)
                 sameDiff.addOutgoingFor(newVars,this);
             return newVars;

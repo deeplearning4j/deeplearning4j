@@ -1247,21 +1247,21 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                    @Cast("Nd4jLong") long xStride,
                                    DoublePointer result,
                                    @Cast("Nd4jLong") long resultStride,
-                                   DoublePointer extraParams,
+                                   DoublePointer extraParams, 
                                    @Cast("Nd4jLong") long n);
     public native void execTransformDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,int opNum,
                                    DoubleBuffer dx,
                                    @Cast("Nd4jLong") long xStride,
                                    DoubleBuffer result,
                                    @Cast("Nd4jLong") long resultStride,
-                                   DoubleBuffer extraParams,
+                                   DoubleBuffer extraParams, 
                                    @Cast("Nd4jLong") long n);
     public native void execTransformDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,int opNum,
                                    double[] dx,
                                    @Cast("Nd4jLong") long xStride,
                                    double[] result,
                                    @Cast("Nd4jLong") long resultStride,
-                                   double[] extraParams,
+                                   double[] extraParams, 
                                    @Cast("Nd4jLong") long n);
 
     /**
@@ -5165,109 +5165,40 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                           @Cast("bool") boolean scalarReturned);
 
 
-/**
- *
- * @param data
- * @param shapeBuffer
- * @param wordSize
- * @param headerSize
- * @return
- */
-    public native @Cast("Nd4jPointer") Pointer numpyHeaderForNd4j(@Cast("Nd4jPointer") Pointer data,@Cast("Nd4jPointer") Pointer shapeBuffer,@Cast("Nd4jLong") long wordSize,@Cast("Nd4jLong*") LongPointer headerSize);
-    public native @Cast("Nd4jPointer") Pointer numpyHeaderForNd4j(@Cast("Nd4jPointer") Pointer data,@Cast("Nd4jPointer") Pointer shapeBuffer,@Cast("Nd4jLong") long wordSize,@Cast("Nd4jLong*") LongBuffer headerSize);
-    public native @Cast("Nd4jPointer") Pointer numpyHeaderForNd4j(@Cast("Nd4jPointer") Pointer data,@Cast("Nd4jPointer") Pointer shapeBuffer,@Cast("Nd4jLong") long wordSize,@Cast("Nd4jLong*") long[] headerSize);
 
-/**
-   * Load numpy from a header
-    * based on the cnpy parse from header method.
-   * @param data the header data to parse
-   * @return a pointer to a numpy cnpy:NpyArray struct
-   */
-    public native @Cast("Nd4jPointer") Pointer loadNpyFromHeader(@Cast("Nd4jPointer") Pointer data);
-
-
-/**
-   * Create a numpy array from an nd4j
-   * array
-   * @param data a pointer to the data
-   * @param shapeBuffer  the shapebuffer for the nd4j array
-   * @param wordSize  the word size (4 for float, 8 for doubles)
-   * @return a pointer to a numpy array
-   */
-    public native @Cast("Nd4jPointer") Pointer numpyFromNd4j(@Cast("Nd4jPointer") Pointer data,@Cast("Nd4jPointer") Pointer shapeBuffer,@Cast("Nd4jLong") long wordSize);
-
-
-/**
- *
- * @param npyArray
- * @return
- */
+    /**
+     * Get the shape buffer from a
+     * numpy array.
+     * **Warning** this allocates memory
+     * @param npyArray
+     * @return
+     */
     public native @Cast("Nd4jPointer") Pointer shapeBufferForNumpy(@Cast("Nd4jPointer") Pointer npyArray);
 
+    /**
+     * Data buffer for numpy
+     * @param npArray
+     * @return
+     */
+    public native @Cast("Nd4jPointer") Pointer dataPointForNumpy(@Cast("Nd4jPointer") Pointer npArray);
 
-/**
-* Get the shape buffer from a
-* numpy array.
-* **Warning** this allocates memory
-* @param npyArray
-* @return
-*/
-    public native @Cast("Nd4jPointer") Pointer shapeBufferForNumpyHeader(@Cast("Nd4jPointer") Pointer npyArray);
-
-
-
-/**
- *
- * @param npyArray
- * @return
- */
-    public native @Cast("Nd4jPointer") Pointer dataPointForNumpyHeader(@Cast("Nd4jPointer") Pointer npyArray);
-
-/**
- *
- * @param npyArray
- * @return
- */
-    public native @Cast("Nd4jPointer") Pointer dataPointForNumpyStruct(@Cast("Nd4jPointer") Pointer npyArrayStruct);
-
-/**
- *
- * @param npyArray
- * @param fromFile
- * @return
- */
-    public native @Cast("Nd4jPointer") Pointer dataPointForNumpy(@Cast("Nd4jPointer") Pointer npyArray);
-
-/**
- * Load a numpy array from a file
- * and return it as an Nd4jPointer
- * @param path
- * @return
- */
+    /**
+     * Create a pointer to an NDarray struct
+     * @param path  the path to create the ndarray
+     * struct from
+     * @return  a pointer to the ndarray struct
+     */
     public native @Cast("Nd4jPointer") Pointer numpyFromFile(@StdString BytePointer path);
     public native @Cast("Nd4jPointer") Pointer numpyFromFile(@StdString String path);
 
-
-/**
-  * Get the element size for a numpy array
-  * @param npyArray  the numpy array's address
-  * to get the length for
-  * @return
-  */
-    public native int elementSizeForNpyArray(@Cast("Nd4jPointer") Pointer npyArray);
-
-
-/**
-* Get the element size for a numpy array
-* @param npyArray  the numpy array's address
-* to get the length for
-* @return
-*/
-    public native int elementSizeForNpyArrayHeader(@Cast("Nd4jPointer") Pointer npyArray);
-
-
+    /**
+     * This method releases pointer.
+     *
+     * PLEASE NOTE: This method shouldn't be ever called for anything but numpy arrays created from FILE
+     *
+     * @param npyArray
+     */
     public native void releaseNumpy(@Cast("Nd4jPointer") Pointer npyArray);
-
 
     /**
      * Return the length of a shape buffer
@@ -5277,8 +5208,16 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native int lengthForShapeBufferPointer(@Cast("Nd4jPointer") Pointer buffer);
 
+    /**
+     * Get the element size for a numpy array
+     * @param npyArray  the numpy array's address
+     * to get the length for
+     * @return
+     */
+    public native int elementSizeForNpyArray(@Cast("Nd4jPointer") Pointer npyArray);
 
-      /**
+
+    /**
    * The pointer to get the address for
    *
    * @param address the address to get the pointer
@@ -5542,15 +5481,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native @Cast("Nd4jStatus") int execCustomOpWithScopeDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer state, @Cast("Nd4jLong") long opHash, @Cast("Nd4jLong*") LongPointer scopes, int numScopes, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs);
     public native @Cast("Nd4jStatus") int execCustomOpWithScopeDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer state, @Cast("Nd4jLong") long opHash, @Cast("Nd4jLong*") LongBuffer scopes, int numScopes, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs);
     public native @Cast("Nd4jStatus") int execCustomOpWithScopeDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer state, @Cast("Nd4jLong") long opHash, @Cast("Nd4jLong*") long[] scopes, int numScopes, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs);
-
-
-
-
 }
-
-
-
-
 
 
 // #endif //NATIVEOPERATIONS_NATIVEOPS_H
@@ -6722,7 +6653,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 		public native void tilei(@Cast("Nd4jLong*") @StdVector long[] repeats);
 
         /**
-        *  returns new array which is created by by repeating of this array the number of times given by reps 
+        *  returns new array which is created by repeating of this array the number of times given by reps 
         *  repeats - contains numbers of repetitions
         */
 		public native @ByVal FloatNDArray tile(@Cast("Nd4jLong*") @StdVector LongPointer repeats);
@@ -6988,7 +6919,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
         *
         *  shape  - contains new shape to broadcast array to 
-        *  target - optional argument, if target != nullptr the resulting array will be placed it target, in opposite case tile operation is done in place
+        *  target - optional argument, if target != nullptr the resulting array will be placed in target, in opposite case tile operation is done in place
         */
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape, FloatNDArray target/*=nullptr*/);
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape);
@@ -7018,7 +6949,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native FloatResultSet allTensorsAlongDimension(@StdVector IntBuffer dimensions);
         public native FloatResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
 
-        public native FloatResultSet allExamples();        
+        public native FloatResultSet allExamples();
         
         /**
         *  default destructor
@@ -7894,7 +7825,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 		public native void tilei(@Cast("Nd4jLong*") @StdVector long[] repeats);
 
         /**
-        *  returns new array which is created by by repeating of this array the number of times given by reps 
+        *  returns new array which is created by repeating of this array the number of times given by reps 
         *  repeats - contains numbers of repetitions
         */
 		public native @ByVal HalfNDArray tile(@Cast("Nd4jLong*") @StdVector LongPointer repeats);
@@ -8160,7 +8091,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
         *
         *  shape  - contains new shape to broadcast array to 
-        *  target - optional argument, if target != nullptr the resulting array will be placed it target, in opposite case tile operation is done in place
+        *  target - optional argument, if target != nullptr the resulting array will be placed in target, in opposite case tile operation is done in place
         */
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape, HalfNDArray target/*=nullptr*/);
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape);
@@ -8190,7 +8121,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native HalfResultSet allTensorsAlongDimension(@StdVector IntBuffer dimensions);
         public native HalfResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
 
-        public native HalfResultSet allExamples();        
+        public native HalfResultSet allExamples();
         
         /**
         *  default destructor
@@ -9066,7 +8997,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 		public native void tilei(@Cast("Nd4jLong*") @StdVector long[] repeats);
 
         /**
-        *  returns new array which is created by by repeating of this array the number of times given by reps 
+        *  returns new array which is created by repeating of this array the number of times given by reps 
         *  repeats - contains numbers of repetitions
         */
 		public native @ByVal DoubleNDArray tile(@Cast("Nd4jLong*") @StdVector LongPointer repeats);
@@ -9332,7 +9263,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
         *
         *  shape  - contains new shape to broadcast array to 
-        *  target - optional argument, if target != nullptr the resulting array will be placed it target, in opposite case tile operation is done in place
+        *  target - optional argument, if target != nullptr the resulting array will be placed in target, in opposite case tile operation is done in place
         */
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape, DoubleNDArray target/*=nullptr*/);
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape);
@@ -9362,7 +9293,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native DoubleResultSet allTensorsAlongDimension(@StdVector IntBuffer dimensions);
         public native DoubleResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
 
-        public native DoubleResultSet allExamples();        
+        public native DoubleResultSet allExamples();
         
         /**
         *  default destructor
@@ -12352,9 +12283,9 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native @Cast("bool") boolean equalsStrict(@Cast("Nd4jLong*") LongBuffer shapeA, @Cast("Nd4jLong*") LongBuffer shapeB);
     @Namespace("shape") public static native @Cast("bool") boolean equalsStrict(@Cast("Nd4jLong*") long[] shapeA, @Cast("Nd4jLong*") long[] shapeB);
 
-    @Namespace("shape") public static native int sizeAt(@Cast("Nd4jLong*") LongPointer shape, int dim);
-    @Namespace("shape") public static native int sizeAt(@Cast("Nd4jLong*") LongBuffer shape, int dim);
-    @Namespace("shape") public static native int sizeAt(@Cast("Nd4jLong*") long[] shape, int dim);
+    @Namespace("shape") public static native int sizeAt(@Cast("const Nd4jLong*") LongPointer shape, int dim);
+    @Namespace("shape") public static native int sizeAt(@Cast("const Nd4jLong*") LongBuffer shape, int dim);
+    @Namespace("shape") public static native int sizeAt(@Cast("const Nd4jLong*") long[] shape, int dim);
 
     @Namespace("shape") public static native void traceNew(int id);
 
@@ -12765,9 +12696,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * Returns the rank portion of
  * an information buffer
  */
-    @Namespace("shape") public static native int rank( @Cast("Nd4jLong*") LongPointer buffer);
-    @Namespace("shape") public static native int rank( @Cast("Nd4jLong*") LongBuffer buffer);
-    @Namespace("shape") public static native int rank( @Cast("Nd4jLong*") long[] buffer);
+    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") LongPointer buffer);
+    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") LongBuffer buffer);
+    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") long[] buffer);
 
 /**
  * Converts a raw int buffer of the layout:
@@ -16033,6 +15964,22 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 
 // Parsed from helpers/OpArgsHolder.h
+
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 //
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 15.07.2018

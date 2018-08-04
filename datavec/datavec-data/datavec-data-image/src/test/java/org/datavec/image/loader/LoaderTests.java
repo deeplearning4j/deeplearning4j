@@ -110,7 +110,7 @@ public class LoaderTests {
         CifarLoader loader = new CifarLoader(row, col, channels, train, preProcessCifar);
         DataSet data = loader.next(numExamples);
         assertEquals(numExamples, data.getLabels().size(0));
-        assertEquals(channels, data.getFeatureMatrix().size(1));
+        assertEquals(channels, data.getFeatures().size(1));
 
         train = true;
         preProcessCifar = true;
@@ -119,21 +119,21 @@ public class LoaderTests {
         channels = 3;
         loader = new CifarLoader(row, col, channels, train, preProcessCifar);
         data = loader.next(1);
-        assertEquals(1, data.getFeatureMatrix().size(0));
-        assertEquals(channels * row * col, data.getFeatureMatrix().ravel().length());
+        assertEquals(1, data.getFeatures().size(0));
+        assertEquals(channels * row * col, data.getFeatures().ravel().length());
 
         train = false;
         preProcessCifar = false;
         loader = new CifarLoader(row, col, channels, train, preProcessCifar);
         data = loader.next(numExamples);
-        assertEquals(row, data.getFeatureMatrix().size(2));
+        assertEquals(row, data.getFeatures().size(2));
 
         train = false;
         preProcessCifar = true;
         loader = new CifarLoader(row, col, channels, train, preProcessCifar);
         data = loader.next(numExamples);
         assertEquals(numExamples, data.getLabels().size(0));
-        assertEquals(col, data.getFeatureMatrix().size(3));
+        assertEquals(col, data.getFeatures().size(3));
 
     }
 
@@ -184,7 +184,7 @@ public class LoaderTests {
         int channels = 3;
         CifarLoader cifar = new CifarLoader(row, col, channels, null, true, true, false);
         DataSet result = cifar.next(1);
-        assertEquals(result.getFeatureMatrix().length(), 32 * 32 * 3, 0.0);
+        assertEquals(result.getFeatures().length(), 32 * 32 * 3, 0.0);
     }
 
 

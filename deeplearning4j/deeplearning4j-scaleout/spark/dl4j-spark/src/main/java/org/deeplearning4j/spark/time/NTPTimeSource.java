@@ -18,6 +18,7 @@ package org.deeplearning4j.spark.time;
 
 import org.apache.commons.net.ntp.NTPUDPClient;
 import org.apache.commons.net.ntp.TimeInfo;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,9 +44,16 @@ import java.util.TimerTask;
  */
 public class NTPTimeSource implements TimeSource {
 
-    public static final String NTP_SOURCE_UPDATE_FREQUENCY_MS_PROPERTY =
-                    "org.deeplearning4j.spark.time.NTPTimeSource.frequencyms";
-    public static final String NTP_SOURCE_SERVER_PROPERTY = "org.deeplearning4j.spark.time.NTPTimeSource.server";
+    /**
+     * @deprecated Use {@link DL4JSystemProperties#NTP_SOURCE_UPDATE_FREQUENCY_MS_PROPERTY}
+     */
+    @Deprecated
+    public static final String NTP_SOURCE_UPDATE_FREQUENCY_MS_PROPERTY = DL4JSystemProperties.NTP_SOURCE_UPDATE_FREQUENCY_MS_PROPERTY;
+    /**
+     * @deprecated Use {@link DL4JSystemProperties#NTP_SOURCE_SERVER_PROPERTY}
+     */
+    @Deprecated
+    public static final String NTP_SOURCE_SERVER_PROPERTY = DL4JSystemProperties.NTP_SOURCE_SERVER_PROPERTY;
     public static final int MAX_QUERY_RETRIES = 10;
     public static final int DEFAULT_NTP_TIMEOUT_MS = 10000;
     public static final long DEFAULT_UPDATE_FREQUENCY = 30 * 60 * 1000L; //30 Minutes
@@ -91,7 +99,7 @@ public class NTPTimeSource implements TimeSource {
 
     //Query and parse the system property
     private static long getUpdateFrequencyConfiguration() {
-        String property = System.getProperty(NTP_SOURCE_UPDATE_FREQUENCY_MS_PROPERTY);
+        String property = System.getProperty(DL4JSystemProperties.NTP_SOURCE_UPDATE_FREQUENCY_MS_PROPERTY);
         Long parseAttempt = null;
         long updateFreq;
         if (property != null) {
@@ -99,7 +107,7 @@ public class NTPTimeSource implements TimeSource {
                 parseAttempt = Long.parseLong(property);
             } catch (Exception e) {
                 log.info("Error parsing system property \"{}\" with value \"{}\"",
-                                NTP_SOURCE_UPDATE_FREQUENCY_MS_PROPERTY, property);
+                                DL4JSystemProperties.NTP_SOURCE_UPDATE_FREQUENCY_MS_PROPERTY, property);
             }
             if (parseAttempt != null) {
                 if (parseAttempt < MIN_UPDATE_FREQUENCY) {
@@ -119,7 +127,7 @@ public class NTPTimeSource implements TimeSource {
     }
 
     private static String getServerConfiguration() {
-        return System.getProperty(NTP_SOURCE_SERVER_PROPERTY, DEFAULT_NTP_SERVER);
+        return System.getProperty(DL4JSystemProperties.NTP_SOURCE_SERVER_PROPERTY, DEFAULT_NTP_SERVER);
     }
 
 

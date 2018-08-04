@@ -191,7 +191,8 @@ public class BidirectionalLayer implements RecurrentLayer {
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray out1 = fwd.activate(training, workspaceMgr);
         INDArray out2 = bwd.activate(training, workspaceMgr);
-        out2 = TimeSeriesUtils.reverseTimeSeries(out2, workspaceMgr, ArrayType.FF_WORKING_MEM);
+        //Reverse the output time series. Note: when using LastTimeStepLayer, output can be rank 2
+        out2 = out2.rank() == 2 ? out2 : TimeSeriesUtils.reverseTimeSeries(out2, workspaceMgr, ArrayType.FF_WORKING_MEM);
 
         switch (layerConf.getMode()){
             case ADD:
@@ -215,16 +216,6 @@ public class BidirectionalLayer implements RecurrentLayer {
     public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         setInput(input, workspaceMgr);
         return activate(training, workspaceMgr);
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Cannot transpose layer");
-    }
-
-    @Override
-    public Layer clone() {
-        throw new UnsupportedOperationException("Clone not supported");
     }
 
     @Override
@@ -268,12 +259,6 @@ public class BidirectionalLayer implements RecurrentLayer {
     public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         fwd.computeGradientAndScore(workspaceMgr);
         bwd.computeGradientAndScore(workspaceMgr);
-    }
-
-    @Override
-    public void accumulateScore(double accum) {
-        fwd.accumulateScore(accum);
-        bwd.accumulateScore(accum);
     }
 
     @Override
@@ -364,11 +349,6 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public void validateInput() {
-        //no op
-    }
-
-    @Override
     public ConvexOptimizer getOptimizer() {
         return null;
     }
@@ -381,11 +361,6 @@ public class BidirectionalLayer implements RecurrentLayer {
         } else {
             return bwd.getParam(sub);
         }
-    }
-
-    @Override
-    public void initParams() {
-        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override

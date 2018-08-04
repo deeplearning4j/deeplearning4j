@@ -55,13 +55,8 @@ public class KFoldIterator implements DataSetIterator {
         if (k <= 1)
             throw new IllegalArgumentException();
         if (allData.numExamples() % k != 0) {
-            if (k != 2) {
-                this.batch = allData.numExamples() / (k - 1);
-                this.lastBatch = allData.numExamples() % (k - 1);
-            } else {
-                this.lastBatch = allData.numExamples() / 2;
-                this.batch = this.lastBatch + 1;
-            }
+            this.batch = (int)Math.ceil(allData.numExamples() / (double)k);
+            this.lastBatch = allData.numExamples() - (k-1) * this.batch;
         } else {
             this.batch = allData.numExamples() / k;
             this.lastBatch = allData.numExamples() / k;

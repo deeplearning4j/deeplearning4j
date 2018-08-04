@@ -63,14 +63,13 @@
     </developers>
 
     <properties>
+        <libnd4j.build>release</libnd4j.build>
         <libnd4j.chip>cpu</libnd4j.chip>
         <libnd4j.platform>${javacpp.platform}</libnd4j.platform>
         <libnd4j.extension>${javacpp.platform.extension}</libnd4j.extension>
         <libnd4j.cuda></libnd4j.cuda>
         <libnd4j.compute></libnd4j.compute>
         <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
-        <libnd4j.tests.phase>test</libnd4j.tests.phase>
-        <libnd4j.test.is.release.build>true</libnd4j.test.is.release.build>
     </properties>
 
     <build>
@@ -102,6 +101,8 @@
                             <buildCommand>
                                 <program>bash</program>
                                 <argument>${project.basedir}/buildnativeoperations.sh</argument>
+                                <argument>--build-type</argument>
+                                <argument>${libnd4j.build}</argument>
                                 <argument>--chip</argument>
                                 <argument>${libnd4j.chip}</argument>
                                 <argument>--platform</argument>
@@ -112,6 +113,7 @@
                                 <argument>${libnd4j.cuda}</argument>
                                 <argument>--compute</argument>
                                 <argument>${libnd4j.compute}</argument>
+                                <argument>${libnd4j.tests}</argument>
                             </buildCommand>
                             <workingDirectory>${project.basedir}</workingDirectory>
                         </configuration>
@@ -163,7 +165,7 @@
                 <executions>
                     <execution>
                         <id>libnd4j.test.run</id>
-                        <phase>${libnd4j.tests.phase}</phase>
+                        <phase>test</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
@@ -173,7 +175,6 @@
                             <workingDirectory>${basedir}/tests_cpu</workingDirectory>
                             <arguments>
                                 <argument>run_tests.sh</argument>
-                                <argument>--release=${libnd4j.test.is.release.build}</argument>
                             </arguments>
                         </configuration>
                     </execution>

@@ -647,4 +647,33 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
             TestUtils.testModelSerialization(mln);
         }
     }
+
+
+    @Test
+    public void testDenseBatchNorm(){
+
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new NoOp())
+                .list()
+                .layer(new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build())
+                .layer(new BatchNormalization.Builder().nOut(5).build())
+                .layer(new OutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        INDArray in = Nd4j.rand(3, 5);
+        INDArray labels = TestUtils.randomOneHot(3, 5);
+
+        boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, null, null);
+
+        assertTrue(gradOK);
+
+        TestUtils.testModelSerialization(net);
+    }
 }

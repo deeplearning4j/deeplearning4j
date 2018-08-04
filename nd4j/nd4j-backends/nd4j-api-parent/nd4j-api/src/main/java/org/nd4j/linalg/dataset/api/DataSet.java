@@ -197,13 +197,6 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
 
     void setLabels(INDArray labels);
 
-    /**
-     * Equivalent to {@link #getFeatures()}
-     * @deprecated Use {@link #getFeatures()}
-     */
-    @Deprecated
-    INDArray getFeatureMatrix();
-
     void sortByLabel();
 
     void addRow(org.nd4j.linalg.dataset.DataSet d, int i);

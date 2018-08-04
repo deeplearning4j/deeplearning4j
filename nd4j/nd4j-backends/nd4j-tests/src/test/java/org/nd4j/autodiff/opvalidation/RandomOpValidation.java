@@ -26,6 +26,7 @@ import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
@@ -50,8 +51,6 @@ public class RandomOpValidation extends BaseOpValidation {
 
     @Test
     public void testRandomOpsSDVarShape() {
-        OpValidationSuite.ignoreFailing();
-
         List<String> failed = new ArrayList<>();
 
         for (double[] shape : Arrays.asList(new double[]{1000.0}, new double[]{100, 10}, new double[]{40, 5, 5})) {
@@ -150,8 +149,6 @@ public class RandomOpValidation extends BaseOpValidation {
 
     @Test
     public void testRandomOpsLongShape() {
-        OpValidationSuite.ignoreFailing();
-
         List<String> failed = new ArrayList<>();
 
         for (long[] shape : Arrays.asList(new long[]{1000}, new long[]{100, 10}, new long[]{40, 5, 5})) {
@@ -219,6 +216,10 @@ public class RandomOpValidation extends BaseOpValidation {
                         };
                         break;
                     case 4:
+                        if(OpValidationSuite.IGNORE_FAILING){
+                            //https://github.com/deeplearning4j/deeplearning4j/issues/6036
+                            continue;
+                        }
                         name = "truncatednormal";
                         rand = sd.randomNormalTruncated(1, 2, shape);
                         checkFn = in -> {
@@ -232,9 +233,11 @@ public class RandomOpValidation extends BaseOpValidation {
                     case 5:
                         name = "lognormal";
                         rand = sd.randomLogNormal(1, 2, shape);
+                        //Note: lognormal parameters are mean and stdev of LOGARITHM of values
                         checkFn = in -> {
-                            double mean = in.meanNumber().doubleValue();
-                            double stdev = in.std(true).getDouble(0);
+                            INDArray log = Transforms.log(in, true);
+                            double mean = log.meanNumber().doubleValue();
+                            double stdev = log.std(true).getDouble(0);
                             if (in.length() == 1 || (Math.abs(mean - 1) < 0.1 && Math.abs(stdev - 2) < 0.1))
                                 return null;
                             return "Failed: mean = " + mean + ", stdev = " + stdev;

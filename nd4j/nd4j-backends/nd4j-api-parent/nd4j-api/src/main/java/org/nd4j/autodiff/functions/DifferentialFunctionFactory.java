@@ -17,6 +17,7 @@
 package org.nd4j.autodiff.functions;
 
 import lombok.Data;
+import lombok.NonNull;
 import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -42,6 +43,7 @@ import org.nd4j.linalg.api.ops.impl.shape.*;
 import org.nd4j.linalg.api.ops.impl.shape.Stack;
 import org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
+import org.nd4j.linalg.api.ops.impl.shape.bp.TileBp;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
@@ -165,7 +167,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable constant(SDVariable input, long... shape) {
-        return new Constant(sameDiff(), input, (shape != null && shape.length > 0 ? null : shape)).outputVariable();
+        return new Constant(sameDiff(), input, (shape != null && shape.length > 0 ? shape : null)).outputVariable();
     }
 
     public SDVariable linspace(double lower, double upper, long count) {
@@ -472,11 +474,12 @@ public class DifferentialFunctionFactory {
     }
 
 
-    public SDVariable tile(SDVariable iX, int[] repeat) {
-        if (repeat == null) {
-            throw new ND4JIllegalStateException("Repeat must not be null!");
-        }
+    public SDVariable tile(@NonNull SDVariable iX, @NonNull int[] repeat) {
         return new Tile(sameDiff(), iX, repeat).outputVariable();
+    }
+
+    public SDVariable tileBp(@NonNull SDVariable in, @NonNull SDVariable grad, @NonNull int[] repeat){
+        return new TileBp(sameDiff, in, grad, repeat).outputVariable();
     }
 
 
@@ -999,7 +1002,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable floorMod(SDVariable x, SDVariable y) {
-        return new FModOp(sameDiff(), x, y).outputVariable();
+        return new FloorModOp(sameDiff(), x, y).outputVariable();
     }
 
     public List<SDVariable> floorModBp(SDVariable x, SDVariable y, SDVariable grad) {
@@ -1959,6 +1962,14 @@ public class DifferentialFunctionFactory {
 
     public SDVariable scatterDiv(SDVariable ref, SDVariable indices, SDVariable updates) {
         return new ScatterDiv(sameDiff(), ref, indices, updates).outputVariable();
+    }
+
+    public SDVariable scatterMax(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return new ScatterMax(sameDiff(), ref, indices, updates).outputVariable();
+    }
+
+    public SDVariable scatterMin(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return new ScatterMin(sameDiff(), ref, indices, updates).outputVariable();
     }
 
     public SDVariable scatterUpdate(SDVariable ref, SDVariable indices, SDVariable updates) {

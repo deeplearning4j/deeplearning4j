@@ -71,7 +71,7 @@ public class MiniBatchTests extends BaseSparkTest {
 
         @Override
         public Object call(DataSet dataSet) throws Exception {
-            assertTrue(dataSet.getFeatureMatrix().columns() == 150);
+            assertTrue(dataSet.getFeatures().columns() == 150);
             assertTrue(dataSet.numExamples() == 30);
             return null;
         }

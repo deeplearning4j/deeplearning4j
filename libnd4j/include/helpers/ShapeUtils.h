@@ -64,7 +64,7 @@ namespace nd4j {
         // check whether 2 arrays have mutually broadcastable shapes
         // shape comparison starts from the end
         static bool areShapesBroadcastable(const NDArray<T> &arr1, const NDArray<T> &arr2);
-        static bool areShapesBroadcastable(Nd4jLong* shapeX, Nd4jLong * shapeY);
+        static bool areShapesBroadcastable(Nd4jLong* shapeX, Nd4jLong* shapeY);
         static bool areShapesBroadcastable(const std::vector<Nd4jLong>& shape1, const std::vector<Nd4jLong>& shape2);
 
         // check the possibility of broadcast operation, if true then return shapeInfo of resulting array
@@ -95,7 +95,7 @@ namespace nd4j {
         // evaluate shapeInfo for diagonal array which is made using input arr elements as diagonal
         static Nd4jLong* evalDiagShapeInfo(const Nd4jLong* shapeInfo, nd4j::memory::Workspace* workspace);
 
-        static std::vector<int> evalBroadcastBackwardAxis(Nd4jLong *operand, Nd4jLong *result);
+        static std::vector<int> evalBroadcastBackwardAxis(const Nd4jLong *operand, const Nd4jLong *result);
 
         // utility to calculate matrix product shape with give source shapes and additional params 
         // returns ShapeList pointer with result shape

@@ -25,8 +25,6 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexDouble;
-import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.MemcpyDirection;
@@ -193,16 +191,6 @@ public class CompressedDataBuffer extends BaseDataBuffer {
      */
     @Override
     public DataBuffer create(int[] data) {
-        throw new UnsupportedOperationException("This operation isn't supported for CompressedDataBuffer");
-    }
-
-    @Override
-    public IComplexFloat getComplexFloat(long i) {
-        throw new UnsupportedOperationException("This operation isn't supported for CompressedDataBuffer");
-    }
-
-    @Override
-    public IComplexDouble getComplexDouble(long i) {
         throw new UnsupportedOperationException("This operation isn't supported for CompressedDataBuffer");
     }
 }

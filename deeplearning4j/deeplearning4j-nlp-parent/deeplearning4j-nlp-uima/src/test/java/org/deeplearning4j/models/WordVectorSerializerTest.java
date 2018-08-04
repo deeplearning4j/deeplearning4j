@@ -17,8 +17,11 @@
 package org.deeplearning4j.models;
 
 import com.google.common.primitives.Doubles;
+import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -64,6 +67,9 @@ import static org.junit.Assert.*;
  */
 public class WordVectorSerializerTest {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     private File textFile, binaryFile, textFile2;
     String pathToWriteto;
 
@@ -75,7 +81,9 @@ public class WordVectorSerializerTest {
             textFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
         }
         if (binaryFile == null) {
-            binaryFile = new ClassPathResource("word2vecserialization/google_news_30.bin.gz").getTempFileFromArchive();
+            File dir = testDir.newFolder();
+            binaryFile = new File(dir, "google_news_30.bin.gz");
+            FileUtils.copyFile(new ClassPathResource("word2vecserialization/google_news_30.bin.gz").getFile(), binaryFile);
         }
         pathToWriteto = new ClassPathResource("word2vecserialization/testing_word2vec_serialization.txt").getFile()
                         .getAbsolutePath();
@@ -705,8 +713,33 @@ public class WordVectorSerializerTest {
 
     @Test
     public void testVocabPeristence() throws Exception {
-        // we build vocab save it, and confirm equality
+        val vocabA = new AbstractCache.Builder<VocabWord>().build();
 
+        vocabA.addToken(new VocabWord(3.0, "alpha"));
+        vocabA.addWordToIndex(1, "alpha");
+
+        vocabA.addToken(new VocabWord(4.0, "beta"));
+        vocabA.addWordToIndex(0, "beta");
+
+        val tmpFile = File.createTempFile("sdsds","sfdsfdsgsdf");
+        tmpFile.deleteOnExit();
+
+        vocabA.setTotalWordOccurences(200);
+        vocabA.incrementTotalDocCount(100);
+
+        assertEquals(100, vocabA.totalNumberOfDocs());
+        assertEquals(200, vocabA.totalWordOccurrences());
+
+        WordVectorSerializer.writeVocabCache(vocabA, tmpFile);
+
+        val vocabB = WordVectorSerializer.readVocabCache(tmpFile);
+
+        assertEquals(vocabA.wordAtIndex(0), vocabB.wordAtIndex(0));
+        assertEquals(vocabA.wordAtIndex(1), vocabB.wordAtIndex(1));
+
+        assertEquals(vocabA.numWords(), vocabB.numWords());
+        assertEquals(vocabA.totalNumberOfDocs(), vocabB.totalNumberOfDocs());
+        assertEquals(vocabA.totalWordOccurrences(), vocabB.totalWordOccurrences());
     }
 
     @Test

@@ -40,7 +40,6 @@ import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Cos;
 import org.nd4j.linalg.api.ops.impl.transforms.Sin;
@@ -75,9 +74,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
         OptimizationAlgorithm[] toTest =
                         {OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT, OptimizationAlgorithm.LINE_GRADIENT_DESCENT,
-                                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS
-                        //OptimizationAlgorithm.HESSIAN_FREE	//Known to not work
-                        };
+                                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS};
 
         for (OptimizationAlgorithm oa : toTest) {
             MultiLayerNetwork network = new MultiLayerNetwork(getMLPConfigIris(oa));
@@ -96,9 +93,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
         OptimizationAlgorithm[] toTest =
                         {OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT, OptimizationAlgorithm.LINE_GRADIENT_DESCENT,
-                                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS
-                        //OptimizationAlgorithm.HESSIAN_FREE	//Known to not work
-                        };
+                                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS};
 
         DataSet ds = iter.next();
         ds.normalizeZeroMeanZeroUnitVariance();
@@ -524,11 +519,6 @@ public class TestOptimizers extends BaseDL4JTest {
                 public Boolean apply(Number input) {
                     return Math.abs(input.doubleValue()) > 5.12;
                 }
-
-                @Override
-                public Boolean apply(IComplexNumber input) {
-                    throw new UnsupportedOperationException();
-                }
             });
 
             int nExceeds512 = paramExceeds512.sum(Integer.MAX_VALUE).getInt(0);
@@ -727,11 +717,6 @@ public class TestOptimizers extends BaseDL4JTest {
                 public Boolean apply(Number input) {
                     return Math.abs(input.doubleValue()) > 5.0;
                 }
-
-                @Override
-                public Boolean apply(IComplexNumber input) {
-                    throw new UnsupportedOperationException();
-                }
             });
 
             int nExceeds5 = paramExceeds5.sum(Integer.MAX_VALUE).getInt(0);
@@ -906,11 +891,6 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void accumulateScore(double accum) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public INDArray params() {
             return parameters;
         }
@@ -960,9 +940,6 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void validateInput() {}
-
-        @Override
         public ConvexOptimizer getOptimizer() {
             throw new UnsupportedOperationException();
         }
@@ -970,11 +947,6 @@ public class TestOptimizers extends BaseDL4JTest {
         @Override
         public INDArray getParam(String param) {
             return parameters;
-        }
-
-        @Override
-        public void initParams() {
-            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -1009,16 +981,6 @@ public class TestOptimizers extends BaseDL4JTest {
 
         @Override
         public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr mgr) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Layer transpose() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Layer clone() {
             throw new UnsupportedOperationException();
         }
 

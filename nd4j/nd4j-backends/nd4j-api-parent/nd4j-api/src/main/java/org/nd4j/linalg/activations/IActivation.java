@@ -52,7 +52,7 @@ public interface IActivation extends Serializable {
      *
      * @param in      Input, before applying the activation function (z, or 'preOut')
      * @param epsilon Gradient to be backpropagated: dL/da, where L is the loss function
-     * @return        dL/dz and dL/dW, for weights w (null if activatino function has no weights)
+     * @return        dL/dz and dL/dW, for weights w (null if activation function has no weights)
      */
     Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon);
 

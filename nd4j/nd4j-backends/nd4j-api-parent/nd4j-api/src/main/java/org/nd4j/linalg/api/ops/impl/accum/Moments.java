@@ -51,8 +51,10 @@ public class Moments extends DynamicCustomOp {
     }
 
     private void addArgs() {
-        for (int axis: axes) {
-            addIArgument(axis);
+        if(axes != null) {
+            for (int axis : axes) {
+                addIArgument(axis);
+            }
         }
     }
 
@@ -81,8 +83,8 @@ public class Moments extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> grad){
         SDVariable dLdMean = grad.get(0);
         SDVariable dLdVar = grad.get(1);        //Note: non-bias-corrected variance
-        SDVariable meanBp = f().meanBp(arg(), dLdMean, false, dimensions);
-        SDVariable varBp = f().varianceBp(arg(), dLdVar, false, false, dimensions);
+        SDVariable meanBp = f().meanBp(arg(), dLdMean, false, axes);
+        SDVariable varBp = f().varianceBp(arg(), dLdVar, false, false, axes);
         return Collections.singletonList(meanBp.add(varBp));
     }
 

@@ -34,12 +34,6 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_CLASS_NAME = "class_name";
     private final String LAYER_FIELD_LAYER = "layer";
 
-    /* Basic layer names */
-    // Missing Layers: ActivityRegularization, Masking
-    // Conv3DTranspose, SeparableConv1D, ConvRNN2D, ConvLSTM2D
-    // CuDNNGRU, CuDNNLSTM (TF only)
-    // LocallyConnected1D
-    // Missing layers from keras 1: Highway, MaxoutDense
     private final String LAYER_CLASS_NAME_ACTIVATION = "Activation";
     private final String LAYER_CLASS_NAME_INPUT = "InputLayer";
     private final String LAYER_CLASS_NAME_PERMUTE = "Permute";
@@ -111,6 +105,8 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_CONVOLUTION_2D = ""; // 1: Convolution2D, 2: Conv2D
     private final String LAYER_CLASS_NAME_CONVOLUTION_3D = ""; // 1: Convolution2D, 2: Conv2D
     private final String LAYER_CLASS_NAME_LEAKY_RELU = "LeakyReLU";
+    private final String LAYER_CLASS_NAME_PRELU = "PReLU";
+    private final String LAYER_CLASS_NAME_THRESHOLDED_RELU = "ThresholdedReLU";
     private final String LAYER_CLASS_NAME_UPSAMPLING_1D = "UpSampling1D";
     private final String LAYER_CLASS_NAME_UPSAMPLING_2D = "UpSampling2D";
     private final String LAYER_CLASS_NAME_UPSAMPLING_3D = "UpSampling3D";

@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -74,7 +75,14 @@ public class LogSumExp extends BaseAccumulation {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        //z = log(sum_i exp(x_i)) = log(s)
+        //dL/dx = dL/dz * dz/ds * ds/dx
+        //dz/ds = 1/s
+        SDVariable exp = f().exp(arg());
+        SDVariable sumExp = exp.sum(dimensions);
+        SDVariable gradProd = f1.get(0).div(sumExp);
+        SDVariable dSumExpdx = f().sumBp(arg(), gradProd, keepDims, dimensions).mul(exp);
+        return Collections.singletonList(dSumExpdx);
     }
 
     @Override

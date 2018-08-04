@@ -377,16 +377,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
-    public Layer clone() {
-        return new SubsamplingLayer(conf.clone());
-    }
-
-    @Override
     public boolean isPretrainLayer() {
         return false;
     }
@@ -423,12 +413,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     public double score() {
         return 0;
     }
-
-    @Override
-    public void accumulateScore(double accum) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
 
     @Override
     public void update(INDArray gradient, String paramType) {

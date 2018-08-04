@@ -105,12 +105,6 @@ public class FrozenLayer extends BaseWrapperLayer {
     }
 
     @Override
-    public Layer clone() {
-        OneTimeLogger.info(log, "Frozen layers are cloned as their original versions.");
-        return new FrozenLayer(underlying.clone());
-    }
-
-    @Override
     public void fit() {
         if (!logFit) {
             OneTimeLogger.info(log, "Frozen layers cannot be fit. Warning will be issued only once per instance");

@@ -182,6 +182,7 @@ public class SameDiff {
     private static Cloner cloner = newCloner();
     private static Map<String, Method> opMethods;
 
+    @Getter
     private Map<String, DifferentialFunction> functionInstancesById;
 
     private Table<String, String, String> fieldVariableResolutionMapping;
@@ -230,7 +231,6 @@ public class SameDiff {
         //cloner.registerFastCloner(INDArray.class, new INDArrayFastCloner());  //Does not work due to interface
         IFastCloner fc = new INDArrayFastCloner();
         cloner.registerFastCloner(Nd4j.getBackend().getNDArrayClass(), fc);
-        cloner.registerFastCloner(Nd4j.getBackend().getComplexNDArrayClass(), fc);
 
         //Same thing with DataBuffers: off heap -> cloner library chokes on them, but need to know the concrete
         // buffer classes, not just the interface
@@ -670,7 +670,9 @@ public class SameDiff {
                 }
                 variableNameToArr.remove(varName);
             } else {
-                throw new ND4JIllegalStateException("Already found an existing array!");
+                throw new ND4JIllegalStateException("Already found an existing array for variable \"" + varName
+                        + "\" with shape " + Arrays.toString(variableNameToArr.get(varName).shape())
+                        + " - attempting to put new array shape " + Arrays.toString(shape));
             }
         }
 
@@ -1666,7 +1668,7 @@ public class SameDiff {
      * @return the created variable
      */
     public SDVariable var(String name, long... shape) {
-        Preconditions.checkArgument(shape != null && shape.length > 0, "Invalid shape: %s", shape);
+        Preconditions.checkNotNull(shape != null, "Invalid shape: shape may not be null");
         return var(name, shape, new ZeroInitScheme());
     }
 
@@ -1679,7 +1681,7 @@ public class SameDiff {
      * @return the created variable
      */
     public SDVariable var(String name, int... shape) {
-        Preconditions.checkArgument(shape != null && shape.length > 0, "Invalid shape: %s", shape);
+        Preconditions.checkNotNull(shape != null, "Invalid shape: shape may not be null");
         return var(name, ArrayUtil.toLongArray(shape), new ZeroInitScheme());
     }
 
@@ -8621,6 +8623,20 @@ public class SameDiff {
     }
 
     /**
+     * @see #scatterMax(String, SDVariable, SDVariable, SDVariable)
+     */
+    public SDVariable scatterMax(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return scatterMax(null, ref, indices, updates);
+    }
+
+    /**
+     * @see #scatterMax(String, SDVariable, SDVariable, SDVariable)
+     */
+    public SDVariable scatterMin(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return scatterMin(null, ref, indices, updates);
+    }
+
+    /**
      * Scatter division operation.<br>
      * If indices is rank 0 (a scalar), then out[index, ...] /= updates[...]<br>
      * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] /= updates[i, ...]<br>
@@ -8635,6 +8651,42 @@ public class SameDiff {
      */
     public SDVariable scatterDiv(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
         SDVariable ret = f().scatterDiv(ref, indices, updates);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Scatter division operation.<br>
+     * If indices is rank 0 (a scalar), then out[index, ...] /= updates[...]<br>
+     * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] /= updates[i, ...]<br>
+     * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] /= updates[i, ..., k, ...]<br>
+     * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
+     *
+     * @param name    Name of the output variable
+     * @param ref     Initial/source variable
+     * @param indices Indices array
+     * @param updates Updates to add to the initial/source array
+     * @return The updated variable
+     */
+    public SDVariable scatterMax(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
+        SDVariable ret = f().scatterMax(ref, indices, updates);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Scatter division operation.<br>
+     * If indices is rank 0 (a scalar), then out[index, ...] /= updates[...]<br>
+     * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] /= updates[i, ...]<br>
+     * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] /= updates[i, ..., k, ...]<br>
+     * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
+     *
+     * @param name    Name of the output variable
+     * @param ref     Initial/source variable
+     * @param indices Indices array
+     * @param updates Updates to add to the initial/source array
+     * @return The updated variable
+     */
+    public SDVariable scatterMin(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
+        SDVariable ret = f().scatterMin(ref, indices, updates);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -8959,31 +9011,6 @@ public class SameDiff {
         lists.put(name, list);
     }
 
-    /**
-     * An interface for representing a conditional statement
-     */
-    public interface SameDiffConditional {
-
-
-        /**
-         * @param context
-         * @param body
-         * @return
-         */
-        SDVariable eval(SameDiff context, SameDiffFunctionDefinition body, SDVariable[] inputVars);
-
-    }
-
-    public static class DefaultSameDiffConditional implements SameDiffConditional {
-
-        @Override
-        public SDVariable eval(SameDiff context, SameDiff.SameDiffFunctionDefinition body, SDVariable[] inputVars) {
-            context.defineFunction("eval", body, inputVars);
-            context.invokeFunctionOn("eval", context);
-            return new ArrayList<>(context.functionInstancesById.values()).get(context.functionInstancesById.size() - 1).outputVariables()[0];
-        }
-    }
-
 
     /**
      * Creates a while statement
@@ -8994,7 +9021,7 @@ public class SameDiff {
      */
     public While whileStatement(SameDiffConditional sameDiffConditional,
                                 SameDiffFunctionDefinition conditionBody,
-                                SameDiff.SameDiffFunctionDefinition loopBody
+                                SameDiffFunctionDefinition loopBody
             , SDVariable[] inputVars) {
         return While.builder()
                 .inputVars(inputVars)
@@ -9031,19 +9058,6 @@ public class SameDiff {
 
     public TensorArrayV3 tensorArray() {
         return new TensorArrayV3(this);
-    }
-
-    /**
-     * A function definition for samediff
-     */
-    public interface SameDiffFunctionDefinition {
-
-        /**
-         * @param inputs
-         * @param variableInputs
-         * @return
-         */
-        SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs);
     }
 
     /**
@@ -9592,6 +9606,10 @@ public class SameDiff {
     public SDVariable updateVariableNameAndReference(SDVariable varToUpdate, String newVarName) {
         if (varToUpdate == null) {
             throw new NullPointerException("Null input: No variable found for updating!");
+        }
+
+        if(newVarName != null && variableMap.containsKey(newVarName) && varToUpdate != variableMap.get(newVarName)){
+            throw new IllegalStateException("Variable name \"" + newVarName + "\" already exists for a different SDVariable");
         }
 
         if (newVarName == null && variableMap.containsKey(varToUpdate.getVarName())) {
@@ -10261,6 +10279,7 @@ public class SameDiff {
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
                 Op op = (Op) differentialFunction;
+                String outVarName = ((BaseOp) op).outputVariable().getVarName();
 
                 // ops in differential function might have stale NDArrays used. we should renew them
                 if(inputs != null && inputs.length > 0) {
@@ -10274,7 +10293,7 @@ public class SameDiff {
                 List<long[]> outputShape = ((BaseOp)op).calculateOutputShape();
                 Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
                 //Update shape. DynamicCustomOp does this in populateInputsAndOutputsFromSameDiff(); for legacy ops, we'll do it here
-                putOrUpdateShapeForVarName(((BaseOp) op).outputVariable().getVarName(), outputShape.get(0), true);
+                putOrUpdateShapeForVarName(outVarName, outputShape.get(0), true);
                 INDArray z = op.z();
                 Preconditions.checkNotNull(z, "Could not get output array for op: %s", op.getClass());
                 if(!Arrays.equals(outputShape.get(0), z.shape())){
@@ -10288,8 +10307,11 @@ public class SameDiff {
                     SDVariable outputVar = getVariable(outputName);
 
                     putOrUpdateShapeForVarName(outputName, outputShape.get(0), true);
-                    INDArray newZ = outputVar.storeAndAllocateNewArray();
-                    op.setZ(newZ);
+                    z = outputVar.storeAndAllocateNewArray();
+                    op.setZ(z);
+                }
+                if(getArrForVarName(outVarName) != z){  //Also handles null case
+                    putOrUpdateArrayForVarName(outVarName, z);
                 }
 
 
@@ -10590,7 +10612,7 @@ public class SameDiff {
         int ownId = forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
         reverseMap.put(node.getOwnName(), ownId);
 
-        val dims = node.opType() == Op.Type.REDUCE && inPaired.size() == 1 && node.getDimensions() != null ? node.getDimensions() : new int[]{};
+        val dims = node.opType() == Op.Type.REDUCE && node.getDimensions() != null ? node.getDimensions() : new int[]{};
         // TODO: Adam, just put your props here, instead of empty list, and they will be saved
         List<FunctionProperties> props = new ArrayList<>();
         int properties = FunctionProperties.asFlatProperties(bufferBuilder, props);

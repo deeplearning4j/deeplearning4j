@@ -18,7 +18,6 @@ package org.nd4j.shade.serde.jackson;
 
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.core.JsonGenerator;
 import org.nd4j.shade.jackson.databind.JsonSerializer;
@@ -56,7 +55,6 @@ public class VectorSerializer extends JsonSerializer<INDArray> {
         jsonGenerator.writeEndArray();
 
         jsonGenerator.writeNumberField("offsetField", indArray.offset());
-        jsonGenerator.writeStringField("typeField", indArray instanceof IComplexNDArray ? "complex" : "real");
         jsonGenerator.writeNumberField("rankField", indArray.rank());
         jsonGenerator.writeNumberField("numElements", view.length());
         jsonGenerator.writeStringField("orderingField", String.valueOf(indArray.ordering()));

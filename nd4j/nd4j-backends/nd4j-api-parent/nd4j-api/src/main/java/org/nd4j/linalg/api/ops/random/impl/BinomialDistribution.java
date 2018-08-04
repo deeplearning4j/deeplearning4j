@@ -132,4 +132,12 @@ public class BinomialDistribution extends BaseRandomOp {
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return Collections.emptyList();
     }
+
+    @Override
+    public void setZ(INDArray z){
+        //We want all 3 args set to z for this op
+        this.x = z;
+        this.y = z;
+        this.z = z;
+    }
 }

@@ -52,6 +52,10 @@ public class Dot extends BaseAccumulation {
         super(x, y);
     }
 
+    public Dot(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){
+        super(x, y, z, newFormat, keepDims, dimensions);
+    }
+
     @Override
     public int opNum() {
         return 3;

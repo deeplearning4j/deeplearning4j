@@ -54,7 +54,7 @@ public class TestAsyncIterator extends BaseDL4JTest {
         for (int i = 0; i < size; i++) {
             assertTrue(async.hasNext());
             DataSet ds = async.next();
-            assertEquals(ds.getFeatureMatrix().getDouble(0), i, 0.0);
+            assertEquals(ds.getFeatures().getDouble(0), i, 0.0);
             assertEquals(ds.getLabels().getDouble(0), i, 0.0);
         }
 
@@ -70,7 +70,7 @@ public class TestAsyncIterator extends BaseDL4JTest {
         for (int i = 0; i < size; i++) {
             assertTrue(async.hasNext());
             DataSet ds = async.next();
-            assertEquals(ds.getFeatureMatrix().getDouble(0), i, 0.0);
+            assertEquals(ds.getFeatures().getDouble(0), i, 0.0);
             assertEquals(ds.getLabels().getDouble(0), i, 0.0);
         }
         assertFalse(async.hasNext());
@@ -87,7 +87,7 @@ public class TestAsyncIterator extends BaseDL4JTest {
             DataSet ds = async.next();
             while (ds == null)
                 ds = async.next();
-            assertEquals(ds.getFeatureMatrix().getDouble(0), i, 0.0);
+            assertEquals(ds.getFeatures().getDouble(0), i, 0.0);
             assertEquals(ds.getLabels().getDouble(0), i, 0.0);
         }
 
@@ -102,7 +102,7 @@ public class TestAsyncIterator extends BaseDL4JTest {
         for (int i = 0; i < size; i++) {
             assertTrue(async.hasNext());
             DataSet ds = async.next();
-            assertEquals(ds.getFeatureMatrix().getDouble(0), i, 0.0);
+            assertEquals(ds.getFeatures().getDouble(0), i, 0.0);
             assertEquals(ds.getLabels().getDouble(0), i, 0.0);
         }
         assertFalse(async.hasNext());
@@ -150,7 +150,7 @@ public class TestAsyncIterator extends BaseDL4JTest {
         for (int i = 0; i < 6; i++) {
             assertTrue(async.hasNext());
             DataSet ds = async.next();
-            assertEquals(ds.getFeatureMatrix().getDouble(0), i, 0.0);
+            assertEquals(ds.getFeatures().getDouble(0), i, 0.0);
             assertEquals(ds.getLabels().getDouble(0), i, 0.0);
         }
         assertFalse(async.hasNext());
@@ -166,7 +166,7 @@ public class TestAsyncIterator extends BaseDL4JTest {
         for (int i = 0; i < 6; i++) {
             assertTrue(async.hasNext());
             DataSet ds = async.next();
-            assertEquals(ds.getFeatureMatrix().getDouble(0), i, 0.0);
+            assertEquals(ds.getFeatures().getDouble(0), i, 0.0);
             assertEquals(ds.getLabels().getDouble(0), i, 0.0);
         }
         assertFalse(async.hasNext());

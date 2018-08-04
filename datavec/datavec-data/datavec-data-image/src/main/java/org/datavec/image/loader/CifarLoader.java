@@ -316,7 +316,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
             }
         }
         for (int i = 0; i < result.numExamples(); i++) {
-            INDArray newFeatures = result.get(i).getFeatureMatrix();
+            INDArray newFeatures = result.get(i).getFeatures();
             newFeatures.tensorAlongDimension(0, new int[] {0, 2, 3}).divi(255);
             newFeatures.tensorAlongDimension(1, new int[] {0, 2, 3}).subi(uMean).divi(uStd);
             newFeatures.tensorAlongDimension(2, new int[] {0, 2, 3}).subi(vMean).divi(vStd);
@@ -383,10 +383,10 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
                     vTempMean = vChannel.meanNumber().doubleValue();
                     vStd += varManual(vChannel, vTempMean);
                     vMean += vTempMean;
-                    data.setFeatures(data.getFeatureMatrix().div(255));
+                    data.setFeatures(data.getFeatures().div(255));
                 } else {
                     // normalize if just input stream and not special preprocess
-                    data.setFeatures(data.getFeatureMatrix().div(255));
+                    data.setFeatures(data.getFeatures().div(255));
                 }
             } catch (IllegalArgumentException e) {
                 throw new IllegalStateException("The number of channels must be 3 to special preProcess Cifar with.");

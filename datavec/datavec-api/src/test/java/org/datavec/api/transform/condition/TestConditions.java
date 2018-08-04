@@ -104,6 +104,31 @@ public class TestConditions {
         assertFalse(condition.condition(Collections.singletonList((Writable) new DoubleWritable(2.0))));
     }
 
+
+    @Test
+    public void testFloatCondition() {
+        Schema schema = TestTransforms.getSchema(ColumnType.Float);
+
+        Condition condition =
+                new FloatColumnCondition("column", SequenceConditionMode.Or, ConditionOp.GreaterOrEqual, 0);
+        condition.setInputSchema(schema);
+
+        assertTrue(condition.condition(Collections.singletonList((Writable) new FloatWritable(0.0f))));
+        assertTrue(condition.condition(Collections.singletonList((Writable) new FloatWritable(0.5f))));
+        assertFalse(condition.condition(Collections.singletonList((Writable) new FloatWritable(-0.5f))));
+        assertFalse(condition.condition(Collections.singletonList((Writable) new FloatWritable(-1f))));
+
+        Set<Float> set = new HashSet<Float>();
+        set.add(0.0f);
+        set.add(3.0f);
+        condition = new FloatColumnCondition("column", SequenceConditionMode.Or, ConditionOp.InSet, set);
+        condition.setInputSchema(schema);
+        assertTrue(condition.condition(Collections.singletonList((Writable) new FloatWritable(0.0f))));
+        assertTrue(condition.condition(Collections.singletonList((Writable) new FloatWritable(3.0f))));
+        assertFalse(condition.condition(Collections.singletonList((Writable) new FloatWritable(1.0f))));
+        assertFalse(condition.condition(Collections.singletonList((Writable) new FloatWritable(2.0f))));
+    }
+
     @Test
     public void testStringCondition() {
         Schema schema = TestTransforms.getSchema(ColumnType.Integer);

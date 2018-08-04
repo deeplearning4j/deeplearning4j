@@ -112,9 +112,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public abstract Layer clone();
-
-    @Override
     public void setInput(INDArray input, LayerWorkspaceMgr workspaceMgr) {
         this.input = workspaceMgr.leverageTo(ArrayType.INPUT, input);
         dropoutApplied = false;
@@ -243,11 +240,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public void initParams() {
-        throw new UnsupportedOperationException("Deprecated - no longer used - " + layerId());
-    }
-
-    @Override
     public Map<String, INDArray> paramTable() {
         return paramTable(false);
     }
@@ -357,16 +349,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public void validateInput() {
-
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
     public void setInputMiniBatchSize(int size) {}
 
     @Override
@@ -411,12 +393,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public double score() {
-        throw new UnsupportedOperationException(
-                        "Not supported for this layer, or should be overridden for layers requiring it");
-    }
-
-    @Override
-    public void accumulateScore(double accum) {
         throw new UnsupportedOperationException(
                         "Not supported for this layer, or should be overridden for layers requiring it");
     }
