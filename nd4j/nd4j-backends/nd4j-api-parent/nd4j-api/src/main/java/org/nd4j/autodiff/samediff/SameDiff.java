@@ -8803,20 +8803,6 @@ public class SameDiff {
     }
 
     /**
-     * @see #scatterMax(String, SDVariable, SDVariable, SDVariable)
-     */
-    public SDVariable scatterMax(SDVariable ref, SDVariable indices, SDVariable updates) {
-        return scatterMax(null, ref, indices, updates);
-    }
-
-    /**
-     * @see #scatterMax(String, SDVariable, SDVariable, SDVariable)
-     */
-    public SDVariable scatterMin(SDVariable ref, SDVariable indices, SDVariable updates) {
-        return scatterMin(null, ref, indices, updates);
-    }
-
-    /**
      * Scatter division operation.<br>
      * If indices is rank 0 (a scalar), then out[index, ...] /= updates[...]<br>
      * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] /= updates[i, ...]<br>
@@ -8835,10 +8821,17 @@ public class SameDiff {
     }
 
     /**
-     * Scatter division operation.<br>
-     * If indices is rank 0 (a scalar), then out[index, ...] /= updates[...]<br>
-     * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] /= updates[i, ...]<br>
-     * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] /= updates[i, ..., k, ...]<br>
+     * @see #scatterMax(String, SDVariable, SDVariable, SDVariable)
+     */
+    public SDVariable scatterMax(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return scatterMax(null, ref, indices, updates);
+    }
+
+    /**
+     * Scatter max operation.<br>
+     * If indices is rank 0 (a scalar), then out[index, ...] = max(updates[...], in[index,...])<br>
+     * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = max(updates[i,...], in[indices[i],...])<br>
+     * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = max(updates[i, ..., k, ...], in[indices[i], ..., indices[k], ...]<br>
      * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
      *
      * @param name    Name of the output variable
@@ -8853,10 +8846,17 @@ public class SameDiff {
     }
 
     /**
-     * Scatter division operation.<br>
-     * If indices is rank 0 (a scalar), then out[index, ...] /= updates[...]<br>
-     * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] /= updates[i, ...]<br>
-     * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] /= updates[i, ..., k, ...]<br>
+     * @see #scatterMin(String, SDVariable, SDVariable, SDVariable)
+     */
+    public SDVariable scatterMin(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return scatterMin(null, ref, indices, updates);
+    }
+
+    /**
+     * Scatter min operation.<br>
+     * If indices is rank 0 (a scalar), then out[index, ...] = min(updates[...], in[index,...])<br>
+     * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = min(updates[i,...], in[indices[i],...])<br>
+     * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = min(updates[i, ..., k, ...], in[indices[i], ..., indices[k], ...]<br>
      * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
      *
      * @param name    Name of the output variable
