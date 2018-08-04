@@ -24,6 +24,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.tensorflow.framework.GraphDef;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
@@ -74,10 +75,10 @@ public class TensorflowConversionTest {
 
         String deviceName = tensorflowConversion.defaultDeviceForThread();
         if(Nd4j.getBackend().getClass().getName().toLowerCase().contains("jcu")) {
-            assertEquals("/gpu:0",deviceName);
+            assertTrue(deviceName.contains("gpu"));
         }
         else {
-            assertEquals("/cpu:0",deviceName);
+            assertTrue(deviceName.contains("cpu"));
         }
 
         byte[] content2 = IOUtils.toByteArray(new ClassPathResource("/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").getInputStream());
