@@ -45,7 +45,6 @@ import org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.TileBp;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
@@ -53,6 +52,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.segment.*;
 import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
@@ -60,7 +60,6 @@ import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
 import org.nd4j.linalg.api.ops.random.custom.RandomNormal;
 import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -1598,6 +1597,22 @@ public class DifferentialFunctionFactory {
 
     public SDVariable segmentMax(SDVariable data, SDVariable segmentIds){
         return new SegmentMax(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable segmentMin(SDVariable data, SDVariable segmentIds){
+        return new SegmentMin(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable segmentMean(SDVariable data, SDVariable segmentIds){
+        return new SegmentMean(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable segmentProd(SDVariable data, SDVariable segmentIds){
+        return new SegmentProd(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable segmentSum(SDVariable data, SDVariable segmentIds){
+        return new SegmentSum(sameDiff(), data, segmentIds).outputVariable();
     }
 
     public SDVariable dilation2D(SDVariable df, SDVariable weights, int[] strides,

@@ -14,23 +14,28 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.transforms.segment;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-public class SegmentMax extends DynamicCustomOp {
+/**
+ * Segment mean operation
+ *
+ * @author Alex Black
+ */
+public class SegmentMean extends DynamicCustomOp {
 
-    public SegmentMax(SameDiff sameDiff, SDVariable data, SDVariable segmentIds) {
+    public SegmentMean(SameDiff sameDiff, SDVariable data, SDVariable segmentIds) {
         super(null, sameDiff,  new SDVariable[] {data, segmentIds}, false);
     }
 
-    public SegmentMax(){ }
+    public SegmentMean(){ }
 
     @Override
     public String opName(){
-        return "segment_max";
+        return "segment_mean";
     }
 
 }
