@@ -2933,7 +2933,7 @@ void NativeOps::destroyRandom(Nd4jPointer ptrBuffer) {
     * @param buffer  the buffer pointer to check
     * @return
     */
-int lengthForShapeBufferPointer(Nd4jPointer buffer) {
+int NativeOps::lengthForShapeBufferPointer(Nd4jPointer buffer) {
     auto shapeBuffer = reinterpret_cast<Nd4jLong *>(buffer);
     return shape::shapeInfoLength(shape::rank(shapeBuffer));
 }
