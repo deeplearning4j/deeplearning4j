@@ -22,11 +22,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
+import java.net.URL;
 import java.util.Properties;
 
 /**
@@ -77,7 +75,9 @@ public class VersionInfo {
     }
 
     public VersionInfo(URI uri) throws IOException {
-        String path = uri.toString();
+        //Can't use new File(uri).getPath() for URIs pointing to resources in JARs
+        //But URI.toString() returns "%2520" instead of spaces in path - https://github.com/deeplearning4j/deeplearning4j/issues/6056
+        String path = uri.toString().replaceAll("%2520", " ");
         int idxOf = path.lastIndexOf('/');
         idxOf = Math.max(idxOf, path.lastIndexOf('\\'));
         String filename;
@@ -94,7 +94,8 @@ public class VersionInfo {
 
         //Extract values from properties file:
         Properties properties = new Properties();
-        try (InputStream is = uri.toURL().openStream() ) {
+        URL u = new URL(path);  //Can't use URI.toUrl() due to spaces in path
+        try (InputStream is = new BufferedInputStream(u.openStream())){ //new FileInputStream(path))) {
             properties.load(is);
         }
 
