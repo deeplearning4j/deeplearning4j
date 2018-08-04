@@ -5475,23 +5475,6 @@ int NativeOps::lengthForShapeBufferPointer(Nd4jPointer buffer) {
     return shape::shapeInfoLength(shape::rank(shapeBuffer));
 }
 
-/**
-  * Get the element size for a numpy array
-  * @param npyArray  the numpy array's address
-  * to get the length for
-  * @return
-  */
-int NativeOps::elementSizeForNpyArray(Nd4jPointer npyArray) {
-    cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
-    cnpy::NpyArray *arrPointer = &arr;
-    int size = arrPointer->wordSize;
-
-    return size;
-    /*
-    cnpy::NpyArray *arr = reinterpret_cast<cnpy::NpyArray *>(npyArray);
-    return arr->wordSize;
-     */
-}
 
 /**
   * The pointer to get the address for
