@@ -62,7 +62,7 @@ import static org.junit.Assert.*;
 
 
 @Slf4j
-@Ignore
+//@Ignore
 @RunWith(Parameterized.class)
 public class TensorFlowImportTest extends BaseNd4jTest {
     private static ExecutorConfiguration configuration = ExecutorConfiguration.builder()
@@ -97,6 +97,12 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         DifferentialFunctionClassHolder.getInstance();
     }
 
+    @Test
+    public void testAssertImport_1() throws Exception {
+        val graph = TFGraphMapper.getInstance().importGraph(new File("C:\\Users\\raver\\Downloads\\test.pb"));
+
+
+    }
 
     @Test
     public void testIfStatementNodes() throws Exception {
