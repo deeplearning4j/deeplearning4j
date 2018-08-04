@@ -129,6 +129,11 @@
 
 
     <dependencies>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>${commons-math3.version}</version>
+        </dependency>
         <!-- Tensorflow import -->
 
         <!-- Note that this is a super minimal version of flatbuffers used by apache arrow.
@@ -152,6 +157,11 @@
         mentioning java-shaded as the type for why we use this instead of google's (mainly due ot other systems packaging
         their own older protobuf versions-->
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.github.os72</groupId>
             <artifactId>protobuf-java-shaded-351</artifactId>
             <version>0.9</version>
@@ -162,6 +172,11 @@
             <version>0.9</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.objenesis</groupId>
+            <artifactId>objenesis</artifactId>
+            <version>${objenesis.version}</version>
+        </dependency>
         <dependency>
             <groupId>uk.com.robust-it</groupId>
             <artifactId>cloning</artifactId>
