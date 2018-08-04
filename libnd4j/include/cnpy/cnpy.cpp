@@ -275,9 +275,8 @@ cnpy::NpyArray cnpy::loadNpyFromFile(FILE *fp) {
     * @return
     */
 cnpy::NpyArray cnpy::loadNpyFromPointer(char *data)  {
-    //move the pointer forward by 11 immitating
+    //move the pointer forward by 11 imitating
     //the seek in loading directly from a file
-    data += 11;
     return cnpy::loadNpyFromHeader(data);
 }
 
@@ -287,6 +286,8 @@ cnpy::NpyArray cnpy::loadNpyFromPointer(char *data)  {
 * @return
 */
 cnpy::NpyArray cnpy::loadNpyFromHeader(char *data) {
+    //move passed magic
+    data += 11;
     unsigned int *shape;
     unsigned int ndims, wordSize;
     bool fortranOrder;

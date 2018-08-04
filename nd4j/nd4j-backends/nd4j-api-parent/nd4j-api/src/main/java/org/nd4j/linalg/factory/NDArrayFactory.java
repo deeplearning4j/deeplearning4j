@@ -1943,6 +1943,13 @@ public interface NDArrayFactory {
      */
     void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target, long length);
 
+    /**
+     *
+     * @param typeSrc
+     * @param source
+     * @param typeDst
+     * @param buffer
+     */
     void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, DataBuffer buffer);
 
     /**
@@ -1994,8 +2001,20 @@ public interface NDArrayFactory {
     INDArray create(double[] data, long[] shape, long[] stride, long offset, char ordering);
 
 
+    /**
+     *
+     * @param tensor
+     * @param dimensions
+     * @return
+     */
     INDArray[] tear(INDArray tensor, int... dimensions);
 
+    /**
+     *
+     * @param x
+     * @param descending
+     * @return
+     */
     INDArray sort(INDArray x, boolean descending);
 
     INDArray sort(INDArray x, boolean descending, int... dimensions);

@@ -90,6 +90,8 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
@@ -7161,11 +7163,11 @@ public class Nd4j {
         }
         return (fallback.equalsIgnoreCase("true") || fallback.equalsIgnoreCase("1"));
     }
-    
+
     /**
      * Get ensured shapes that wind up being scalar end up with the write shape
      * @param shape
-     * @return 
+     * @return
      */
     private static int[] getEnsuredShape(int[] shape) {
         if (shape.length == 1 && shape[0] == 0) {
@@ -7181,12 +7183,12 @@ public class Nd4j {
         }
         return shape;
     }
-    
+
     /**
      * Get ensured shapes that wind up being scalar end up with the write shape
      * @param rows
      * @param columns
-     * @return 
+     * @return
      */
     private static int[] getEnsuredShape(int rows, int columns) {
         return getEnsuredShape(new int[] {rows, columns});
@@ -7475,6 +7477,35 @@ public class Nd4j {
 
         return ret;
     }
+
+
+
+    public static void writeAsNumpy(INDArray arr,File file) throws IOException {
+        writeAsNumpy(arr, new FileOutputStream(file));
+    }
+
+
+
+    public static Pointer convertToNumpy(INDArray arr)  {
+        return INSTANCE.convertToNumpy(arr);
+    }
+
+
+    public static void writeAsNumpy(INDArray arr,OutputStream writeTo) throws IOException {
+        try(BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(writeTo)) {
+            Pointer asNumpy = convertToNumpy(arr);
+            WritableByteChannel channel = Channels.newChannel(bufferedOutputStream);
+
+            int written = channel.write(asNumpy.asByteBuffer());
+            if(written != asNumpy.capacity()) {
+                throw new IllegalStateException("Not all bytes were written! Original capacity " + asNumpy.capacity() + " but wrote " + written);
+            }
+
+            bufferedOutputStream.flush();
+        }
+
+    }
+
 
     /**
      * Create from an in memory numpy pointer

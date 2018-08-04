@@ -16,8 +16,8 @@
 
 package org.nd4j.linalg.jcublas;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import lombok.var;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
@@ -56,6 +56,7 @@ import org.nd4j.linalg.jcublas.complex.ComplexFloat;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.BaseNativeNDArrayFactory;
 import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -74,9 +75,9 @@ import java.util.*;
  *
  * @author mjk
  */
-public class JCublasNDArrayFactory extends BaseNDArrayFactory {
-    private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-    private static Logger log = LoggerFactory.getLogger(JCublasNDArrayFactory.class);
+@Slf4j
+public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
+
 
     public JCublasNDArrayFactory() { }
 
@@ -1569,161 +1570,6 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         return buffer;
     }
 
-
-
-    /**
-     * Create from an in memory numpy pointer
-     *
-     * @param pointer the pointer to the
-     *                numpy array
-     * @return an ndarray created from the in memory
-     * numpy pointer
-     */
-    @Override
-    public INDArray createFromNpyPointer(Pointer pointer) {
-        Pointer dataPointer = nativeOps.dataPointForNumpy(pointer);
-        int dataBufferElementSize = nativeOps.elementSizeForNpyArray(pointer);
-
-        DataBuffer data = null;
-        Pointer shapeBufferPointer = nativeOps.shapeBufferForNumpy(pointer);
-        int length = nativeOps.lengthForShapeBufferPointer(shapeBufferPointer);
-        shapeBufferPointer.capacity(8 * length);
-        shapeBufferPointer.limit(8 * length);
-        shapeBufferPointer.position(0);
-
-        val intPointer = new LongPointer(shapeBufferPointer);
-
-        DataBuffer shapeBuffer = Nd4j.createBuffer(shapeBufferPointer, DataBuffer.Type.LONG,length, LongRawIndexer.create(intPointer));
-
-        dataPointer.position(0);
-        dataPointer.limit(dataBufferElementSize * Shape.length(shapeBuffer));
-        dataPointer.capacity(dataBufferElementSize * Shape.length(shapeBuffer));
-
-        // we don't care about pointers here, they will be copied in BaseCudaDataBuffer method, and indexer will be recreated
-        if(dataBufferElementSize == (Float.SIZE / 8)) {
-            data = Nd4j.createBuffer(dataPointer,
-                    DataBuffer.Type.FLOAT,
-                    Shape.length(shapeBuffer),
-                    FloatIndexer.create(new FloatPointer(dataPointer)));
-        }
-        else if(dataBufferElementSize == (Double.SIZE / 8)) {
-            data = Nd4j.createBuffer(dataPointer,
-                    DataBuffer.Type.DOUBLE,
-                    Shape.length(shapeBuffer),
-                    DoubleIndexer.create(new DoublePointer(dataPointer)));
-        }
-
-        INDArray ret = Nd4j.create(data,Shape.shape(shapeBuffer),
-                Shape.strideArr(shapeBuffer),Shape.offset(shapeBuffer),Shape.order(shapeBuffer));
-        return ret;
-    }
-
-    @Override
-    public INDArray createFromNpyHeaderPointer(Pointer pointer) {
-        Pointer dataPointer = nativeOps.dataPointForNumpyHeader(pointer);
-        int dataBufferElementSize = nativeOps.elementSizeForNpyArrayHeader(pointer);
-        DataBuffer data = null;
-        Pointer shapeBufferPointer = nativeOps.shapeBufferForNumpyHeader(pointer);
-        int length = nativeOps.lengthForShapeBufferPointer(shapeBufferPointer);
-        shapeBufferPointer.capacity(8 * length);
-        shapeBufferPointer.limit(8 * length);
-        shapeBufferPointer.position(0);
-
-
-        val intPointer = new LongPointer(shapeBufferPointer);
-        val newPointer = new LongPointer(length);
-
-        val perfD = PerformanceTracker.getInstance().helperStartTransaction();
-
-        Pointer.memcpy(newPointer, intPointer, shapeBufferPointer.limit());
-
-        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, shapeBufferPointer.limit(), MemcpyDirection.HOST_TO_HOST);
-
-        DataBuffer shapeBuffer = Nd4j.createBuffer(
-                newPointer,
-                DataBuffer.Type.LONG,
-                length,
-                LongRawIndexer.create(newPointer));
-
-        dataPointer.position(0);
-        dataPointer.limit(dataBufferElementSize * Shape.length(shapeBuffer));
-        dataPointer.capacity(dataBufferElementSize * Shape.length(shapeBuffer));
-
-
-        if(dataBufferElementSize == (Float.SIZE / 8)) {
-            FloatPointer dPointer = new FloatPointer(dataPointer.limit() / dataBufferElementSize);
-
-            val perfX = PerformanceTracker.getInstance().helperStartTransaction();
-
-            Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
-
-            PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
-
-            data = Nd4j.createBuffer(dPointer,
-                    DataBuffer.Type.FLOAT,
-                    Shape.length(shapeBuffer),
-                    FloatIndexer.create(dPointer));
-        }
-        else if(dataBufferElementSize == (Double.SIZE / 8)) {
-            DoublePointer dPointer = new DoublePointer(dataPointer.limit() / dataBufferElementSize);
-
-            val perfX = PerformanceTracker.getInstance().helperStartTransaction();
-
-            Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
-
-            PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
-
-            data = Nd4j.createBuffer(dPointer,
-                    DataBuffer.Type.DOUBLE,
-                    Shape.length(shapeBuffer),
-                    DoubleIndexer.create(dPointer));
-        }
-
-        INDArray ret = Nd4j.create(data,
-                Shape.shape(shapeBuffer),
-                Shape.strideArr(shapeBuffer),
-                0,
-                Shape.order(shapeBuffer));
-
-        return ret;
-    }
-
-    /**
-     * Create from a given numpy file.
-     *
-     * @param file the file to create the ndarray from
-     * @return the created ndarray
-     */
-    @Override
-    public INDArray createFromNpyFile(File file) {
-        /*Pointer pointer = nativeOps.numpyFromFile(new BytePointer(file.getAbsolutePath().getBytes()));
-        log.info("Pointer here: {}", pointer.address());
-        return createFromNpyPointer(pointer);
-
-        */
-
-        byte[] pathBytes = file.getAbsolutePath().getBytes(Charset.forName("UTF-8" ));
-        String otherBytes = new String(pathBytes);
-        System.out.println(otherBytes);
-        ByteBuffer directBuffer = ByteBuffer.allocateDirect(pathBytes.length).order(ByteOrder.nativeOrder());
-        directBuffer.put(pathBytes);
-        directBuffer.rewind();
-        directBuffer.position(0);
-        Pointer pointer = nativeOps.numpyFromFile(new BytePointer(directBuffer));
-        INDArray result = createFromNpyPointer(pointer);
-
-        // releasing original pointer here
-        nativeOps.releaseNumpy(pointer);
-
-        return result;
-    }
-
-    @Override
-    public Pointer convertToNumpy(INDArray array) {
-        return NativeOpsHolder.getInstance().getDeviceNativeOps().numpyFromNd4j(
-                array.data().pointer(),array.data().pointer(),
-                array.data().getElementSize());
-    }
 
     @Override
     public INDArray[] tear(INDArray tensor, int... dimensions) {

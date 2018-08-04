@@ -511,7 +511,7 @@ public:
                                Nd4jLong xStride,
                                double *result,
                                Nd4jLong resultStride,
-                               double *extraParams, 
+                               double *extraParams,
                                Nd4jLong n);
 
     /**
@@ -2820,67 +2820,6 @@ public:
                                       float scalarB,
                                       bool scalarReturned);
 
-    /**
-    * Load numpy from a header
-     * based on the cnpy parse from header method.
-    * @param data the header data to parse
-    * @return a pointer to a numpy cnpy:NpyArray struct
-    */
-    Nd4jPointer loadNpyFromHeader(Nd4jPointer data);
-
-
-
-    /**
-     * Create a numpy array from an nd4j
-     * array
-     * @param data a pointer to the data
-     * @param shapeBuffer  the shapebuffer for the nd4j array
-     * @param wordSize  the word size (4 for float, 8 for doubles)
-     * @return a pointer to a numpy array
-     */
-    Nd4jPointer numpyFromNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize);
-
-    /**
-     * Get the shape buffer from a
-     * numpy array.
-     * **Warning** this allocates memory
-     * @param npyArray
-     * @return
-     */
-    Nd4jPointer shapeBufferForNumpy(Nd4jPointer npyArray);
-
-
-    /**
-    * Get the shape buffer from a
-    * numpy array.
-    * **Warning** this allocates memory
-    * @param npyArray
-    * @return
-    */
-    Nd4jPointer shapeBufferForNumpyHeader(Nd4jPointer npyArray);
-
-
-    /**
-     * Data buffer for numpy
-     * @param npArray
-     * @return
-     */
-    Nd4jPointer dataPointForNumpy(Nd4jPointer npArray);
-
-
-/**
- *
- * @param npyArray
- * @return
- */
-    Nd4jPointer dataPointForNumpyStruct(Nd4jPointer npyArrayStruct);
-
-    /**
-     * Data buffer for numpy
-     * @param npArray
-     * @return
-     */
-    Nd4jPointer dataPointForNumpyHeader(Nd4jPointer npArrayHeader);
 
 /**
  *
@@ -2888,28 +2827,211 @@ public:
  * @param shapeBuffer
  * @param wordSize
  * @param headerSize
- * @param wordSize
  * @return
  */
-    Nd4jPointer numpyHeaderForNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize,Nd4jLong *headerSize);
+    Nd4jPointer numpyHeaderForNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize,Nd4jLong *headerSize) {
+        Nd4jLong *shapeBufferCast = reinterpret_cast<Nd4jLong *>(shapeBuffer);
+        int  rank = shape::rank(shapeBufferCast);
+        Nd4jLong *shape = shape::shapeOf(shapeBufferCast);
+        unsigned int *npShape = new unsigned int[rank];
+        for(int i = 0; i < rank; i++) {
+            npShape[i] = shape[i];
+        }
+
+        Nd4jLong length = shape::prodLong(shape,rank);
+        auto npHeader = cnpy::createNpyHeader(data,npShape,rank,wordSize);
+        char *ret = new char[npHeader.size() + 1];
+        int count = 0;
+        for(int i = 0; i < npHeader.size(); i++) {
+            if (npHeader[i] != '\0') {
+                ret[count] = npHeader[i];
+                count++;
+            }
+            else {
+                nd4j_debug("Found null terminated at %d. Skipping\n",i);
+            }
+        }
+
+        ret[count] = '\0';
+        count++;
+        *headerSize = count;
+        return reinterpret_cast<Nd4jPointer>(ret);
+
+    }
+
+/**
+   * Load numpy from a header
+    * based on the cnpy parse from header method.
+   * @param data the header data to parse
+   * @return a pointer to a numpy cnpy:NpyArray struct
+   */
+    Nd4jPointer loadNpyFromHeader(Nd4jPointer data) {
+        char *header = reinterpret_cast<char *>(data);
+
+        cnpy::NpyArray arr = cnpy::loadNpyFromHeader(header);
+        cnpy::NpyArray *ret = new cnpy::NpyArray();
+        int totalLengthOfShape = 1;
+        for(int i = 0; i < arr.shape.size(); i++) {
+            totalLengthOfShape *= arr.shape[i];
+        }
+
+        ret->data = arr.data;
+        ret->wordSize = arr.wordSize;
+        ret->shape = arr.shape;
+        return reinterpret_cast<Nd4jPointer>(ret);
+    }
 
 
-    /**
-     * Create a pointer to an NDarray struct
-     * @param path  the path to create the ndarray
-     * struct from
-     * @return  a pointer to the ndarray struct
-     */
-    Nd4jPointer numpyFromFile(std::string path);
+/**
+   * Create a numpy array from an nd4j
+   * array
+   * @param data a pointer to the data
+   * @param shapeBuffer  the shapebuffer for the nd4j array
+   * @param wordSize  the word size (4 for float, 8 for doubles)
+   * @return a pointer to a numpy array
+   */
+    Nd4jPointer numpyFromNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize) {
+        Nd4jLong *shapeBufferCast = reinterpret_cast<Nd4jLong *>(shapeBuffer);
+        int  rank = shape::rank(shapeBufferCast);
+        Nd4jLong *shape = shape::shapeOf(shapeBufferCast);
+        unsigned int *npShape = new unsigned int[rank];
+        for(int i = 0; i < rank; i++) {
+            npShape[i] = shape[i];
+        }
 
-    /**
-     * This method releases pointer.
-     *
-     * PLEASE NOTE: This method shouldn't be ever called for anything but numpy arrays created from FILE
-     *
-     * @param npyArray
-     */
-    void releaseNumpy(Nd4jPointer npyArray);
+        Nd4jLong length = shape::prodLong(shape,rank);
+        auto npHeader = cnpy::createNpyHeader(data,npShape,rank,wordSize);
+        char *dataChar = reinterpret_cast<char *>(data);
+        char *npHeaderData = npHeader.data();
+        char *ret = new char[(wordSize * length) +  npHeader.size()];
+        char *cursorStart = ret;
+        std::memcpy(reinterpret_cast<void *>(ret), reinterpret_cast<void *>(npHeaderData), npHeader.size() * sizeof(Nd4jLong));
+        //move to next
+        cursorStart += npHeader.size();
+        std::memcpy(reinterpret_cast<void *>(ret), reinterpret_cast<void *>(dataChar), length * wordSize * sizeof(Nd4jLong));
+        Nd4jPointer  rettPointer = reinterpret_cast<Nd4jPointer>(ret);
+        return rettPointer;
+    }
+
+
+/**
+ *
+ * @param npyArray
+ * @return
+ */
+    Nd4jPointer shapeBufferForNumpy(Nd4jPointer npyArray) {
+        cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
+        auto shape = new unsigned int[arr.shape.size()];
+        for(unsigned int i = 0; i < arr.shape.size(); i++) {
+            shape[i] = arr.shape[i];
+        }
+
+        auto shapeBuffer = shape::shapeBufferOfNpy(arr.shape.size(), shape, arr.fortranOrder);
+        delete[] shape;
+        return reinterpret_cast<Nd4jPointer>(shapeBuffer);
+    }
+
+
+/**
+* Get the shape buffer from a
+* numpy array.
+* **Warning** this allocates memory
+* @param npyArray
+* @return
+*/
+    Nd4jPointer shapeBufferForNumpyHeader(Nd4jPointer npyArray) {
+        cnpy::NpyArray arr = cnpy::loadNpyFromHeader(reinterpret_cast<char *>(npyArray));
+        auto shape = new unsigned int[arr.shape.size()];
+        for(unsigned int i = 0; i < arr.shape.size(); i++) {
+            shape[i] = arr.shape[i];
+        }
+
+        auto shapeBuffer = shape::shapeBufferOfNpy(arr.shape.size(), shape, arr.fortranOrder);
+        delete[] shape;
+        return reinterpret_cast<Nd4jPointer>(shapeBuffer);
+    }
+
+
+
+/**
+ *
+ * @param npyArray
+ * @return
+ */
+    Nd4jPointer dataPointForNumpyHeader(Nd4jPointer npyArray) {
+        cnpy::NpyArray arr = cnpy::loadNpyFromHeader(reinterpret_cast<char *>(npyArray));
+        unsigned  char *dataToPrint = reinterpret_cast<unsigned  char *>(arr.data);
+        return dataToPrint;
+    }
+
+/**
+ *
+ * @param npyArray
+ * @return
+ */
+    Nd4jPointer dataPointForNumpyStruct(Nd4jPointer npyArrayStruct) {
+        cnpy::NpyArray *arrPointer = reinterpret_cast<cnpy::NpyArray *>(npyArrayStruct);
+        unsigned  char *dataToPrint = reinterpret_cast<unsigned  char *>(arrPointer->data);
+        return reinterpret_cast<Nd4jPointer>(dataToPrint);
+    }
+
+/**
+ *
+ * @param npyArray
+ * @param fromFile
+ * @return
+ */
+    Nd4jPointer dataPointForNumpy(Nd4jPointer npyArray) {
+        char *npyArrayBuffer = reinterpret_cast<  char *>(npyArray);
+        cnpy::NpyArray arr = cnpy::loadNpyFromPointer(npyArrayBuffer);
+        return dataPointForNumpyStruct(reinterpret_cast<Nd4jPointer>(&arr));
+    }
+
+/**
+ * Load a numpy array from a file
+ * and return it as an Nd4jPointer
+ * @param path
+ * @return
+ */
+    Nd4jPointer numpyFromFile(std::string path) {
+        char *numpyBuffer = cnpy::loadFile(path.data());
+        return reinterpret_cast<Nd4jPointer >(numpyBuffer);
+    }
+
+
+/**
+  * Get the element size for a numpy array
+  * @param npyArray  the numpy array's address
+  * to get the length for
+  * @return
+  */
+    int elementSizeForNpyArray(Nd4jPointer npyArray) {
+        cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
+        cnpy::NpyArray *arrPointer = &arr;
+        int size = arrPointer->wordSize;
+        // arrPointer->destruct();
+        return size;
+    }
+
+
+/**
+* Get the element size for a numpy array
+* @param npyArray  the numpy array's address
+* to get the length for
+* @return
+*/
+    int elementSizeForNpyArrayHeader(Nd4jPointer npyArray) {
+        cnpy::NpyArray arr = cnpy::loadNpyFromHeader(reinterpret_cast<char *>(npyArray));
+        cnpy::NpyArray *arrPointer = &arr;
+        int size = arrPointer->wordSize;
+        return size;
+    }
+
+
+    void releaseNumpy(Nd4jPointer npyArray) {
+        free(reinterpret_cast<void *>(npyArray));
+    }
+
 
     /**
      * Return the length of a shape buffer
@@ -2920,24 +3042,7 @@ public:
     int lengthForShapeBufferPointer(Nd4jPointer buffer);
 
 
-    /**
-  * Get the element size for a numpy array
-  * @param npyArray  the numpy array's address
-  * to get the length for
-  * @return
-  */
-    int elementSizeForNpyArrayHeader(Nd4jPointer npyArray);
-
-    /**
-     * Get the element size for a numpy array
-     * @param npyArray  the numpy array's address
-     * to get the length for
-     * @return
-     */
-    int elementSizeForNpyArray(Nd4jPointer npyArray);
-
-
-    /**
+      /**
    * The pointer to get the address for
    *
    * @param address the address to get the pointer
@@ -3112,7 +3217,15 @@ public:
     Nd4jStatus execCustomOpWithScopeHalf(Nd4jPointer *extraPointers, Nd4jPointer state, Nd4jLong opHash, Nd4jLong *scopes, int numScopes, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int numInputs, Nd4jPointer *outputBuffers, Nd4jPointer *outputShapes, int numOutputs);
     Nd4jStatus execCustomOpWithScopeFloat(Nd4jPointer *extraPointers, Nd4jPointer state, Nd4jLong opHash, Nd4jLong *scopes, int numScopes, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int numInputs, Nd4jPointer *outputBuffers, Nd4jPointer *outputShapes, int numOutputs);
     Nd4jStatus execCustomOpWithScopeDouble(Nd4jPointer *extraPointers, Nd4jPointer state, Nd4jLong opHash, Nd4jLong *scopes, int numScopes, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int numInputs, Nd4jPointer *outputBuffers, Nd4jPointer *outputShapes, int numOutputs);
+
+
+
+
 };
+
+
+
+
 
 
 #endif //NATIVEOPERATIONS_NATIVEOPS_H

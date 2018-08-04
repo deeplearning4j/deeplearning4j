@@ -18,6 +18,10 @@ package org.nd4j.linalg.factory;
 
 
 import lombok.val;
+import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.indexer.DoubleIndexer;
+import org.bytedeco.javacpp.indexer.FloatIndexer;
+import org.bytedeco.javacpp.indexer.LongRawIndexer;
 import org.nd4j.linalg.api.blas.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -25,11 +29,18 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.Charset;
 import java.util.*;
 
 /**
@@ -225,6 +236,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             ret.putScalar(i, data[i]);
         return ret;
     }
+
 
     @Override
     public IComplexNDArray createComplex(int[] ints, int[] ints1, int[] stride, long offset) {

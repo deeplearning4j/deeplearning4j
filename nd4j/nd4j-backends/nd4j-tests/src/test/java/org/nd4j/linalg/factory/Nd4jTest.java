@@ -36,12 +36,14 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 
@@ -212,7 +214,7 @@ public class Nd4jTest extends BaseNd4jTest {
 
 
     @Test
-    public void testNumpyConversion() {
+    public void testNumpyConversion() throws Exception {
         INDArray linspace = Nd4j.linspace(1,4,4);
         Pointer convert = Nd4j.getNDArrayFactory().convertToNumpy(linspace);
         convert.position(0);
@@ -237,8 +239,29 @@ public class Nd4jTest extends BaseNd4jTest {
         INDArray convertedFrom = Nd4j.getNDArrayFactory().createFromNpyHeaderPointer(convert);
         assertEquals(linspace,convertedFrom);
 
+        File tmpFile = new File(System.getProperty("java.io.tmpdir"),"nd4j-numpy-tmp-" + UUID.randomUUID().toString() + ".bin");
+        tmpFile.deleteOnExit();
+        Nd4j.writeAsNumpy(linspace,tmpFile);
+
+        INDArray numpyFromFile = Nd4j.createFromNpyFile(tmpFile);
+        assertEquals(linspace,numpyFromFile);
+
+    }
+
+
+
+    @Test
+    public void testNumpyWrite() throws Exception {
+        INDArray linspace = Nd4j.linspace(1,4,4);
+        File tmpFile = new File(System.getProperty("java.io.tmpdir"),"nd4j-numpy-tmp-" + UUID.randomUUID().toString() + ".bin");
+        tmpFile.deleteOnExit();
+        Nd4j.writeAsNumpy(linspace,tmpFile);
+
+        INDArray numpyFromFile = Nd4j.createFromNpyFile(tmpFile);
+        assertEquals(linspace,numpyFromFile);
 
     }
 
 
 }
+
