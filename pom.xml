@@ -183,7 +183,7 @@
         <oshi.version>3.4.2</oshi.version>
         <kafka.version>0.8.2.2</kafka.version>
         <akka.version>2.3.16</akka.version>
-        <typesafe.config.version>1.2.1</typesafe.config.version>
+        <typesafe.config.version>1.3.0</typesafe.config.version> <!-- Play requires 1.3.0 -->
         <py4j.version>0.10.4</py4j.version>
         <jcommander.version>1.27</jcommander.version>
         <dropwizard.version>0.8.0</dropwizard.version>

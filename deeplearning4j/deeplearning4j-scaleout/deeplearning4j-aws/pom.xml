@@ -100,7 +100,7 @@
     <dependency>
       <groupId>com.jcraft</groupId>
       <artifactId>jsch</artifactId>
-      <version>0.1.51</version>
+      <version>${jsch.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -211,6 +211,11 @@
       <groupId>org.apache.curator</groupId>
       <artifactId>curator-recipes</artifactId>
       <version>${curator.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.typesafe</groupId>
+       <artifactId>config</artifactId>
+      <version>${typesafe.config.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>

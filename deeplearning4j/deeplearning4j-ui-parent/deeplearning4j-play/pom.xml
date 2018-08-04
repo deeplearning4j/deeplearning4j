@@ -267,11 +267,11 @@
         <!-- This is a dependency for both Spark (1.2.1 for Spark 1.6.0, as a transitive dependency via Akka) and for
              Play (1.3.0). Play requires 1.3.0 (fails with 1.2.1 - missing required methods), but Spark can use 1.3.0.
              By promoting this to a direct dependency, we are more likely to resolve 1.3.0 over Spark's 1.2.1 -->
-        <!--<dependency>-->
-        <!--<groupId>com.typesafe</groupId>-->
-        <!--<artifactId>config</artifactId>-->
-        <!--<version>${typesafe.config.version}</version>-->
-        <!--</dependency>-->
+        <dependency>
+            <groupId>com.typesafe</groupId>
+            <artifactId>config</artifactId>
+            <version>${typesafe.config.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.typesafe.akka</groupId>
