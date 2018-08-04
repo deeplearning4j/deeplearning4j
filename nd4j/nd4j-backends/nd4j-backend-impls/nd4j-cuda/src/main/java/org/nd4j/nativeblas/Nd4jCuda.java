@@ -1247,21 +1247,21 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                    @Cast("Nd4jLong") long xStride,
                                    DoublePointer result,
                                    @Cast("Nd4jLong") long resultStride,
-                                   DoublePointer extraParams, 
+                                   DoublePointer extraParams,
                                    @Cast("Nd4jLong") long n);
     public native void execTransformDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,int opNum,
                                    DoubleBuffer dx,
                                    @Cast("Nd4jLong") long xStride,
                                    DoubleBuffer result,
                                    @Cast("Nd4jLong") long resultStride,
-                                   DoubleBuffer extraParams, 
+                                   DoubleBuffer extraParams,
                                    @Cast("Nd4jLong") long n);
     public native void execTransformDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,int opNum,
                                    double[] dx,
                                    @Cast("Nd4jLong") long xStride,
                                    double[] result,
                                    @Cast("Nd4jLong") long resultStride,
-                                   double[] extraParams, 
+                                   double[] extraParams,
                                    @Cast("Nd4jLong") long n);
 
     /**
@@ -5165,40 +5165,109 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                           @Cast("bool") boolean scalarReturned);
 
 
+/**
+ *
+ * @param data
+ * @param shapeBuffer
+ * @param wordSize
+ * @param headerSize
+ * @return
+ */
+    public native @Cast("Nd4jPointer") Pointer numpyHeaderForNd4j(@Cast("Nd4jPointer") Pointer data,@Cast("Nd4jPointer") Pointer shapeBuffer,@Cast("Nd4jLong") long wordSize,@Cast("Nd4jLong*") LongPointer headerSize);
+    public native @Cast("Nd4jPointer") Pointer numpyHeaderForNd4j(@Cast("Nd4jPointer") Pointer data,@Cast("Nd4jPointer") Pointer shapeBuffer,@Cast("Nd4jLong") long wordSize,@Cast("Nd4jLong*") LongBuffer headerSize);
+    public native @Cast("Nd4jPointer") Pointer numpyHeaderForNd4j(@Cast("Nd4jPointer") Pointer data,@Cast("Nd4jPointer") Pointer shapeBuffer,@Cast("Nd4jLong") long wordSize,@Cast("Nd4jLong*") long[] headerSize);
 
-    /**
-     * Get the shape buffer from a
-     * numpy array.
-     * **Warning** this allocates memory
-     * @param npyArray
-     * @return
-     */
+/**
+   * Load numpy from a header
+    * based on the cnpy parse from header method.
+   * @param data the header data to parse
+   * @return a pointer to a numpy cnpy:NpyArray struct
+   */
+    public native @Cast("Nd4jPointer") Pointer loadNpyFromHeader(@Cast("Nd4jPointer") Pointer data);
+
+
+/**
+   * Create a numpy array from an nd4j
+   * array
+   * @param data a pointer to the data
+   * @param shapeBuffer  the shapebuffer for the nd4j array
+   * @param wordSize  the word size (4 for float, 8 for doubles)
+   * @return a pointer to a numpy array
+   */
+    public native @Cast("Nd4jPointer") Pointer numpyFromNd4j(@Cast("Nd4jPointer") Pointer data,@Cast("Nd4jPointer") Pointer shapeBuffer,@Cast("Nd4jLong") long wordSize);
+
+
+/**
+ *
+ * @param npyArray
+ * @return
+ */
     public native @Cast("Nd4jPointer") Pointer shapeBufferForNumpy(@Cast("Nd4jPointer") Pointer npyArray);
 
-    /**
-     * Data buffer for numpy
-     * @param npArray
-     * @return
-     */
-    public native @Cast("Nd4jPointer") Pointer dataPointForNumpy(@Cast("Nd4jPointer") Pointer npArray);
 
-    /**
-     * Create a pointer to an NDarray struct
-     * @param path  the path to create the ndarray
-     * struct from
-     * @return  a pointer to the ndarray struct
-     */
+/**
+* Get the shape buffer from a
+* numpy array.
+* **Warning** this allocates memory
+* @param npyArray
+* @return
+*/
+    public native @Cast("Nd4jPointer") Pointer shapeBufferForNumpyHeader(@Cast("Nd4jPointer") Pointer npyArray);
+
+
+
+/**
+ *
+ * @param npyArray
+ * @return
+ */
+    public native @Cast("Nd4jPointer") Pointer dataPointForNumpyHeader(@Cast("Nd4jPointer") Pointer npyArray);
+
+/**
+ *
+ * @param npyArray
+ * @return
+ */
+    public native @Cast("Nd4jPointer") Pointer dataPointForNumpyStruct(@Cast("Nd4jPointer") Pointer npyArrayStruct);
+
+/**
+ *
+ * @param npyArray
+ * @param fromFile
+ * @return
+ */
+    public native @Cast("Nd4jPointer") Pointer dataPointForNumpy(@Cast("Nd4jPointer") Pointer npyArray);
+
+/**
+ * Load a numpy array from a file
+ * and return it as an Nd4jPointer
+ * @param path
+ * @return
+ */
     public native @Cast("Nd4jPointer") Pointer numpyFromFile(@StdString BytePointer path);
     public native @Cast("Nd4jPointer") Pointer numpyFromFile(@StdString String path);
 
-    /**
-     * This method releases pointer.
-     *
-     * PLEASE NOTE: This method shouldn't be ever called for anything but numpy arrays created from FILE
-     *
-     * @param npyArray
-     */
+
+/**
+  * Get the element size for a numpy array
+  * @param npyArray  the numpy array's address
+  * to get the length for
+  * @return
+  */
+    public native int elementSizeForNpyArray(@Cast("Nd4jPointer") Pointer npyArray);
+
+
+/**
+* Get the element size for a numpy array
+* @param npyArray  the numpy array's address
+* to get the length for
+* @return
+*/
+    public native int elementSizeForNpyArrayHeader(@Cast("Nd4jPointer") Pointer npyArray);
+
+
     public native void releaseNumpy(@Cast("Nd4jPointer") Pointer npyArray);
+
 
     /**
      * Return the length of a shape buffer
@@ -5208,16 +5277,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native int lengthForShapeBufferPointer(@Cast("Nd4jPointer") Pointer buffer);
 
-    /**
-     * Get the element size for a numpy array
-     * @param npyArray  the numpy array's address
-     * to get the length for
-     * @return
-     */
-    public native int elementSizeForNpyArray(@Cast("Nd4jPointer") Pointer npyArray);
 
-
-    /**
+      /**
    * The pointer to get the address for
    *
    * @param address the address to get the pointer
@@ -5481,7 +5542,15 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native @Cast("Nd4jStatus") int execCustomOpWithScopeDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer state, @Cast("Nd4jLong") long opHash, @Cast("Nd4jLong*") LongPointer scopes, int numScopes, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs);
     public native @Cast("Nd4jStatus") int execCustomOpWithScopeDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer state, @Cast("Nd4jLong") long opHash, @Cast("Nd4jLong*") LongBuffer scopes, int numScopes, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs);
     public native @Cast("Nd4jStatus") int execCustomOpWithScopeDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer state, @Cast("Nd4jLong") long opHash, @Cast("Nd4jLong*") long[] scopes, int numScopes, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs);
+
+
+
+
 }
+
+
+
+
 
 
 // #endif //NATIVEOPERATIONS_NATIVEOPS_H

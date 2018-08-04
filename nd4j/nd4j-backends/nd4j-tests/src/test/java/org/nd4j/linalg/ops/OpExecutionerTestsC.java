@@ -19,7 +19,6 @@ package org.nd4j.linalg.ops;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -1054,7 +1053,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testNorm2_2() throws Exception {
-        INDArray array = Nd4j.rand(127, 164, 100, 1, 1);
+        INDArray array = Nd4j.rand(127, 164, 100, 1, Nd4j.getRandom());
 
         double norm2 = array.norm2Number().doubleValue();
     }

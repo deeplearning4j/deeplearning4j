@@ -262,6 +262,16 @@ public class Nd4jTest extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testNpyByteArray() throws Exception {
+        INDArray linspace = Nd4j.linspace(1,4,4);
+        byte[] bytes = Nd4j.toNpyByteArray(linspace);
+        INDArray fromNpy = Nd4j.createNpyFromByteArray(bytes);
+        assertEquals(linspace,fromNpy);
+
+    }
+
+
 
 }
 
