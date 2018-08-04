@@ -80,7 +80,7 @@ public class IMax extends BaseIndexAccumulation {
 
     @Override
     public String tensorflowName() {
-        return "argmax";
+        return "ArgMax";
     }
 
     @Override
