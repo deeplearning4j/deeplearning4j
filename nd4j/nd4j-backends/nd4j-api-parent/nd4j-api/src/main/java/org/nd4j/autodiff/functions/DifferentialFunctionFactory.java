@@ -1631,6 +1631,10 @@ public class DifferentialFunctionFactory {
         return new Size(sameDiff(), in).outputVariable();
     }
 
+    public SDVariable sizeAt(SDVariable in, int dimension){
+        return new SizeAt(sameDiff(), in, dimension).outputVariable();
+    }
+
     public SDVariable rank(SDVariable df) {
         return new Rank(sameDiff(), df, false).outputVariable();
     }

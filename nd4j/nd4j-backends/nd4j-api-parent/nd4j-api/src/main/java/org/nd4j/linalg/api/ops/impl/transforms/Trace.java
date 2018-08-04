@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -43,8 +44,13 @@ public class Trace extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradAtOutput){
-//        SDVariable eye = sameDiff.eye(f().shape(arg()), f().siz)
-        throw new UnsupportedOperationException();
+        SDVariable rows = f().reshape(f().sizeAt(arg(), -2), new long[]{1});
+        SDVariable cols = f().reshape(f().sizeAt(arg(), -1), new long[]{1});
+        SDVariable eye = sameDiff.eye(f().shape(gradAtOutput.get(0)), rows, cols);
+        //Reshape gradient from [x,y,z] to [x,y,z,1,1]
+        SDVariable reshapedGrad = f().expandDims(gradAtOutput.get(0), -1);
+        reshapedGrad = f().expandDims(reshapedGrad, -1);
+        return Collections.singletonList(reshapedGrad.mul(eye));
     }
 
 }

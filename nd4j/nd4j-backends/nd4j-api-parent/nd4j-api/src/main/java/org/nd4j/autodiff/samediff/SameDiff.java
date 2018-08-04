@@ -5029,6 +5029,27 @@ public class SameDiff {
     }
 
     /**
+     * @see #sizeAt(String, SDVariable, int)
+     */
+    public SDVariable sizeAt(SDVariable in, int dimension){
+        return sizeAt(null, in, dimension);
+    }
+
+    /**
+     * Returns a rank 0 (scalar) variable for the size of the specified dimension.
+     * For example, if X has shape [10,20,30] then sizeAt(X,1)=20. Similarly, sizeAt(X,-1)=30
+     *
+     * @param name      Name of the output variable
+     * @param in        Input variable
+     * @param dimension Dimension to get size of
+     * @return Scalar SDVariable for size at specified variable
+     */
+    public SDVariable sizeAt(String name, SDVariable in, int dimension){
+        SDVariable ret = f().sizeAt(in, dimension);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
      * @see #cross(String, SDVariable, SDVariable)
      */
     public SDVariable cross(SDVariable a, SDVariable b) {
