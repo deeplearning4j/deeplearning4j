@@ -4815,6 +4815,122 @@ public class SameDiff {
     }
 
     /**
+     * @see #segmentMax(String, SDVariable, SDVariable)
+     */
+    public SDVariable segmentMax(SDVariable data, SDVariable segmentIds){
+        return segmentMax(null, data, segmentIds);
+    }
+
+    /**
+     * Segment max operation.<br>
+     * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
+     * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
+     * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)
+     *
+     * @param name       Name of the output variable. May be null
+     * @param data       Data to perform segment max on
+     * @param segmentIds Variable for the segment IDs
+     * @return Segment max output
+     */
+    public SDVariable segmentMax(String name, SDVariable data, SDVariable segmentIds){
+        SDVariable ret = f().segmentMax(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * @see #segmentMin(String, SDVariable, SDVariable)
+     */
+    public SDVariable segmentMin(SDVariable data, SDVariable segmentIds){
+        return segmentMin(null, data, segmentIds);
+    }
+
+    /**
+     * Segment min operation.<br>
+     * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
+     * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
+     * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)
+     *
+     * @param name       Name of the output variable. May be null
+     * @param data       Data to perform segment max on
+     * @param segmentIds Variable for the segment IDs
+     * @return Segment min output
+     */
+    public SDVariable segmentMin(String name, SDVariable data, SDVariable segmentIds){
+        SDVariable ret = f().segmentMin(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * @see #segmentMean(String, SDVariable, SDVariable)
+     */
+    public SDVariable segmentMean(SDVariable data, SDVariable segmentIds){
+        return segmentMean(null, data, segmentIds);
+    }
+
+    /**
+     * Segment mean operation.<br>
+     * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
+     * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
+     * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)
+     *
+     * @param name       Name of the output variable. May be null
+     * @param data       Data to perform segment max on
+     * @param segmentIds Variable for the segment IDs
+     * @return Segment mean output
+     */
+    public SDVariable segmentMean(String name, SDVariable data, SDVariable segmentIds){
+        SDVariable ret = f().segmentMean(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * @see #segmentProd(String, SDVariable, SDVariable)
+     */
+    public SDVariable segmentProd(SDVariable data, SDVariable segmentIds){
+        return segmentProd(null, data, segmentIds);
+    }
+
+    /**
+     * Segment product operation.<br>
+     * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
+     * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
+     * then output = [18, 36, 16] = [prod(3,6), prod(1,4,9), prod(2,8)
+     *
+     * @param name       Name of the output variable. May be null
+     * @param data       Data to perform segment max on
+     * @param segmentIds Variable for the segment IDs
+     * @return Segment product output
+     */
+    public SDVariable segmentProd(String name, SDVariable data, SDVariable segmentIds){
+        SDVariable ret = f().segmentProd(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * @see #segmentSum(String, SDVariable, SDVariable)
+     */
+    public SDVariable segmentSum(SDVariable data, SDVariable segmentIds){
+        return segmentSum(null, data, segmentIds);
+    }
+
+    /**
+     * Segment sum operation.<br>
+     * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
+     * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
+     * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)
+     *
+     * @param name       Name of the output variable. May be null
+     * @param data       Data to perform segment max on
+     * @param segmentIds Variable for the segment IDs
+     * @return Segment sum output
+     */
+    public SDVariable segmentSum(String name, SDVariable data, SDVariable segmentIds){
+        SDVariable ret = f().segmentSum(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+
+    /**
      * TODO doc string
      *
      * @param df
