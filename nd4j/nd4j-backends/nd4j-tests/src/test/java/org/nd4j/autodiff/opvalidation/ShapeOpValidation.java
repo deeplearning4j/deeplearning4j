@@ -29,10 +29,7 @@ import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
-import org.nd4j.linalg.api.ops.impl.shape.Permute;
-import org.nd4j.linalg.api.ops.impl.shape.Transpose;
-import org.nd4j.linalg.api.ops.impl.shape.Unstack;
+import org.nd4j.linalg.api.ops.impl.shape.*;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -1555,6 +1552,19 @@ public class ShapeOpValidation extends BaseOpValidation {
         assertEquals(inArr.get(point(1), point(2), interval(1, 5)), slice3.getArr());
     }
 
+    @Test
+    public void testSizeAt_1() throws Exception {
+        val array = Nd4j.create(10, 20, 30);
+        val exp = Nd4j.trueScalar(20);
+
+        val op = new SizeAt(array, 1);
+
+        Nd4j.getExecutioner().exec(op);
+
+        val output = op.outputArguments()[0];
+
+        assertEquals(exp, output);
+    }
 
     @Test
     public void testEye(){
