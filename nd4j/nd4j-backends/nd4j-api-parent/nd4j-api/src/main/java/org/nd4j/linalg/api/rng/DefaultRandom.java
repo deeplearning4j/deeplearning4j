@@ -89,6 +89,11 @@ public class DefaultRandom implements Random, RandomGenerator {
     }
 
     @Override
+    public int nextInt(int a, int n) {
+        return nextInt(n - a) + a;
+    }
+
+    @Override
     public long nextLong() {
         return getRandomGenerator().nextLong();
     }
