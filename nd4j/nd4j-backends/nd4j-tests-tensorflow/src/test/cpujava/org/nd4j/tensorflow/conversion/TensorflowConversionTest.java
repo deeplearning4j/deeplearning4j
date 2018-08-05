@@ -81,7 +81,7 @@ public class TensorflowConversionTest {
             assertTrue(deviceName.contains("cpu"));
         }
 
-        
+
         byte[] content2 = IOUtils.toByteArray(new ClassPathResource("/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").getInputStream());
         GraphDef graphDef1 = GraphDef.parseFrom(content2);
         for(int i = 0; i < graphDef1.getNodeCount(); i++)

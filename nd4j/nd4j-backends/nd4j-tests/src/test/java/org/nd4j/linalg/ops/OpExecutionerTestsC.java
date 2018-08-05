@@ -1053,7 +1053,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testNorm2_2() throws Exception {
-        INDArray array = Nd4j.rand(127, 164, 100, 1, Nd4j.getRandom());
+        INDArray array = Nd4j.rand(127, 164, 1, 100, Nd4j.getRandom());
 
         double norm2 = array.norm2Number().doubleValue();
     }
