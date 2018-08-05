@@ -667,6 +667,7 @@ TEST_F(FlatBuffersTest, Test_Stitches) {
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/partition_stitch_misc.fb");
     //graph->printOut();
 
+
     auto result = GraphExecutioner<float>::execute(graph);
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
