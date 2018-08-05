@@ -15,26 +15,35 @@
  ******************************************************************************/
 
 //
-// @author raver119@gmail.com
+// Created by raver119 on 12.02.18.
 //
 
-#include <ops/declarable/headers/broadcastable.h>
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_size_at)
+
+#include <ops/declarable/headers/shape.h>
 
 namespace nd4j {
     namespace ops {
-        BROADCASTABLE_OP_IMPL(less_equal, 0, 0) {
-            NDArray<T> *x = INPUT_VARIABLE(0);
-            NDArray<T> *y = INPUT_VARIABLE(1);
-            NDArray<T> *z = OUTPUT_VARIABLE(0);
+        CUSTOM_OP_IMPL(size_at, 1, 1, false, 0, 1) {
+            auto input = INPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::LessThanOrEqual<T>>(x, y, z);
-            if (tZ == nullptr)
-                return ND4J_STATUS_KERNEL_FAILURE;
-            else if (tZ != z) {
-                OVERWRITE_RESULT(tZ);
-            }
+            auto dim = INT_ARG(0);
+            if (dim < 0)
+                dim += input->rankOf();
+
+            REQUIRE_TRUE(dim < input->rankOf(), 0, "Size_At: Dim can't be higher then input rank")
+
+            output->assign(input->sizeAt(dim));
 
             return Status::OK();
         }
+
+        DECLARE_SHAPE_FN(size_at) {
+            return SHAPELIST(ShapeUtils<T>::createScalarShapeInfo(block.getWorkspace()));
+        }
     }
 }
+
+#endif

@@ -748,9 +748,10 @@ TEST_F(FlatBuffersTest, Test_MNIST_00_1) {
 }
 
 
+
 TEST_F(FlatBuffersTest, Test_MNIST_1) {
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/mnist.fb");
-    graph->printOut();
+    //graph->printOut();
 
     auto result = GraphExecutioner<float>::execute(graph);
     ASSERT_EQ(Status::OK(), result);

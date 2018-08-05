@@ -14,27 +14,40 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+
 //
-// @author raver119@gmail.com
+// Created by raver on 8/4/2018.
 //
 
-#include <ops/declarable/headers/broadcastable.h>
+#include "testlayers.h"
+#include <ops/declarable/CustomOperations.h>
+#include <NDArray.h>
+#include <ops/ops.h>
+#include <GradCheck.h>
 
-namespace nd4j {
-    namespace ops {
-        BROADCASTABLE_OP_IMPL(less_equal, 0, 0) {
-            NDArray<T> *x = INPUT_VARIABLE(0);
-            NDArray<T> *y = INPUT_VARIABLE(1);
-            NDArray<T> *z = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::LessThanOrEqual<T>>(x, y, z);
-            if (tZ == nullptr)
-                return ND4J_STATUS_KERNEL_FAILURE;
-            else if (tZ != z) {
-                OVERWRITE_RESULT(tZ);
-            }
+using namespace nd4j;
 
-            return Status::OK();
-        }
+
+class DeclarableOpsTests10 : public testing::Test {
+public:
+
+    DeclarableOpsTests10() {
+        printf("\n");
+        fflush(stdout);
     }
+};
+
+
+TEST_F(DeclarableOpsTests10, Test_Size_at_1) {
+    NDArray<double> x('c', {10, 20, 30});
+    NDArray<double> e(20.0);
+
+    nd4j::ops::size_at<double> op;
+    auto result = op.execute({&x}, {}, {1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
 }

@@ -26,10 +26,10 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(reversedivide, 2, 1, true, 0, 0) {
-            NDArray<T> *x = INPUT_VARIABLE(0);
-            NDArray<T> *y = INPUT_VARIABLE(1);
-            NDArray<T> *z = this->getZ(block);
+        BROADCASTABLE_OP_IMPL(reversedivide, 0, 0) {
+            auto x = INPUT_VARIABLE(0);
+            auto y = INPUT_VARIABLE(1);
+            auto z = this->getZ(block);
 
             auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::ReverseDivide<T>>(x, y, z);
             if (tZ == nullptr)
@@ -41,43 +41,6 @@ namespace nd4j {
 			return ND4J_STATUS_OK;
         }
         DECLARE_SYN(RDiv, reversedivide);
-
-        DECLARE_SHAPE_FN(reversedivide) {
-            auto shapeList = SHAPELIST();
-            auto x = inputShape->at(0);
-            auto y = inputShape->at(1);
-
-            if (shape::equalsSoft(x, y)) {
-                Nd4jLong *newshape;
-                COPY_SHAPE(x, newshape);
-
-                shapeList->push_back(newshape);
-            } else if (shape::isScalar(x) && !shape::isScalar(y)) {
-                Nd4jLong *newshape;
-                COPY_SHAPE(y, newshape);
-
-                shapeList->push_back(newshape);
-            } else if (!shape::isScalar(x) && shape::isScalar(y)) {
-                Nd4jLong *newshape;
-                COPY_SHAPE(x, newshape);
-
-                shapeList->push_back(newshape);
-            } else if (ShapeUtils<T>::areShapesBroadcastable(x, y)) {
-                Nd4jLong *newshape = nullptr;
-                ShapeUtils<T>::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
-
-                shapeList->push_back(newshape);
-            } else {
-                // in this case we'll throw exception later
-                Nd4jLong *newshape;
-                COPY_SHAPE(x, newshape);
-
-                shapeList->push_back(newshape);
-            }
-
-            return shapeList;
-        }
-
 
         CUSTOM_OP_IMPL(reversedivide_bp, 3, 2, false, 0, 0) {
             auto x = INPUT_VARIABLE(0);
