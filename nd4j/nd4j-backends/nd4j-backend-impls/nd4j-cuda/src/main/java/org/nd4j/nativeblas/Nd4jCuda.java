@@ -6179,6 +6179,21 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native FloatNDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector long[] repeats);
 
         /**
+         * This method returns quantized copy of given array
+         *
+         * @param array
+         * @return
+         */
+        public static native @ByVal FloatNDArray quantize(@ByRef FloatNDArray array);
+
+        /**
+         * This method returns quantized copy of given array
+         *
+         * @param array
+         * @return
+         */
+
+        /**
         *  fill target array by repeating current array 
         *  dimension - dimension along which to repeat elements        
         */
@@ -7351,6 +7366,21 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native HalfNDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector long[] repeats);
 
         /**
+         * This method returns quantized copy of given array
+         *
+         * @param array
+         * @return
+         */
+        public static native @ByVal HalfNDArray quantize(@ByRef HalfNDArray array);
+
+        /**
+         * This method returns quantized copy of given array
+         *
+         * @param array
+         * @return
+         */
+
+        /**
         *  fill target array by repeating current array 
         *  dimension - dimension along which to repeat elements        
         */
@@ -8521,6 +8551,21 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native DoubleNDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector LongPointer repeats);
         public native DoubleNDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector LongBuffer repeats);
         public native DoubleNDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector long[] repeats);
+
+        /**
+         * This method returns quantized copy of given array
+         *
+         * @param array
+         * @return
+         */
+        public static native @ByVal DoubleNDArray quantize(@ByRef DoubleNDArray array);
+
+        /**
+         * This method returns quantized copy of given array
+         *
+         * @param array
+         * @return
+         */
 
         /**
         *  fill target array by repeating current array 

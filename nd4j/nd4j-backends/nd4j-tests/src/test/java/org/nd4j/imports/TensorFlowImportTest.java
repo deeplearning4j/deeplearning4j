@@ -97,6 +97,17 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         DifferentialFunctionClassHolder.getInstance();
     }
 
+    @Test
+    public void testSingleExample_1() throws Exception{
+        val g =TFGraphMapper.getInstance().importGraph(new File("C:\\Users\\raver\\Downloads\\mnist.pb"));
+
+        val array = Nd4j.ones(1, 28, 28);
+        g.associateArrayWithVariable(array, "flatten_1_input");
+
+        //g.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/mnist.fb"), ExecutorConfiguration.builder().outputMode(OutputMode.VARIABLE_SPACE).build());
+
+        g.execAndEndResult();
+    }
 
     @Test
     public void testIfStatementNodes() throws Exception {
