@@ -2107,16 +2107,73 @@ TEST_F(DeclarableOpsTests9, multiply_bp_test8) {
     ASSERT_TRUE(isGradCorrect);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, Floormod_BP_Test_2) {
+
+    NDArray<double> y('c', {10, 10});
+    NDArray<double> x('c', {10, 10});
+    NDArray<double> dLdz('c', {10, 10});
+    //NDArray<double> eps('c', {10, 10});
+    x.linspace(4); //2., 2.0);
+    y.linspace(3);
+    dLdz.linspace(1);
+//    const OpArgsHolder<double> argsHolderFF({&x, &y}, {}, {});
+//    const OpArgsHolder<double> argsHolderBP({&x, &y, &dLdz}, {}, {});
+
+//    nd4j::ops::floormod<double> opFF;
+//    auto resFF = opFF.execute({&x, &y}, {}, {});
+//    resFF->at(0)->printIndexedBuffer("FF floormod");
+//    delete resFF;
+    nd4j::ops::floormod_bp<double> opBP;
+    auto resBP = opBP.execute({&x, &y, &dLdz}, {}, {});
+    ASSERT_TRUE(resBP->status() == ND4J_STATUS_OK);
+
+//    resBP->at(0)->printIndexedBuffer("BP floormod /dx");
+//    resBP->at(1)->printIndexedBuffer("BP floormod /dy");
+    ASSERT_TRUE(dLdz.equalsTo(resBP->at(0)));
+    ASSERT_TRUE(dLdz.equalsTo(resBP->at(1)));
+    delete resBP;
+
+//    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+//    ASSERT_TRUE(isGradCorrect);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, Floormod_BP_Test_4) {
+
+    NDArray<float> x('c', {2, 1, 3}, {2.0, 6.0, -3.0, 2.0, 6.0, -3.0});
+    NDArray<float> y('c', {1, 3}, {-3.0, 2.0, -2.0});
+    NDArray<float> exp('c', {1, 3}, {-1.,  0., -1.});
+    NDArray<float> eps('c', {2, 1, 3});
+    eps.assign(1.f);
+    nd4j::ops::floormod_bp<float> op;
+
+    auto result = op.execute({&x, &y, &eps}, {}, {});
+
+    ASSERT_TRUE(result->size() == 2);
+    auto gradX = result->at(0);
+    auto gradY = result->at(1);
+
+//    gradX->printIndexedBuffer("gradX");
+//    gradY->printIndexedBuffer("gradY");
+    ASSERT_TRUE(exp.isSameShape(gradY));
+
+    ASSERT_TRUE(exp.equalsTo(gradY));
+
+    delete result;
+}
+
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, batchnorm_bp_test1) {
-    
+
     NDArray<double> input   ('c', {3,2});
     NDArray<double> mean    ('c', {2,3,2});
     NDArray<double> variance('c', {2,3,1,3,2});
     NDArray<double> gamma   ('c', {1,1});
     NDArray<double> beta    ('c', {1,2});
     NDArray<double> dLdO    ('c', {2,3,2,3,2});
-    
+
     input.linspace(0.1, 0.1);
     mean.assign(1.);
     variance.assign(0.5);
@@ -2136,13 +2193,13 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test1) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, batchnorm_bp_test2) {
-    
+
     NDArray<double> input   ('c', {2,3,2,3,2});
     NDArray<double> mean    ('c', {2,3,2});
     NDArray<double> variance('c', {2,3,1,3,1});
     NDArray<double> gamma   ('c', {1,1});
     NDArray<double> dLdO    ('c', {2,3,2,3,2});
-    
+
     input.linspace(0.1, 0.1);
     mean.assign(1.);
     variance.assign(0.5);
@@ -2161,12 +2218,12 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test2) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, batchnorm_bp_test3) {
-    
+
     NDArray<double> input   ('c', {2,3,1,3});
     NDArray<double> mean    ('c', {1,3,2,1});
     NDArray<double> variance('c', {2,1,2,3});
     NDArray<double> dLdO    ('c', {2,3,2,3});
-    
+
     input.linspace(0.1, 0.1);
     mean.assign(1.);
     variance.assign(0.5);
