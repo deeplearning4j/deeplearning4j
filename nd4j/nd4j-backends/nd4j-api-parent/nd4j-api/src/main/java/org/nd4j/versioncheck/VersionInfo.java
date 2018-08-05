@@ -36,6 +36,7 @@ import java.util.Properties;
 @Builder
 public class VersionInfo {
 
+    private static final String HTML_SPACE = "%2520";   //Space: "%20" -> % character: "%25" -> "%2520"
     private static final int SUFFIX_LENGTH = "-git.properties".length();
 
     private String groupId;
@@ -77,7 +78,7 @@ public class VersionInfo {
     public VersionInfo(URI uri) throws IOException {
         //Can't use new File(uri).getPath() for URIs pointing to resources in JARs
         //But URI.toString() returns "%2520" instead of spaces in path - https://github.com/deeplearning4j/deeplearning4j/issues/6056
-        String path = uri.toString().replaceAll("%2520", " ");
+        String path = uri.toString().replaceAll(HTML_SPACE, " ");
         int idxOf = path.lastIndexOf('/');
         idxOf = Math.max(idxOf, path.lastIndexOf('\\'));
         String filename;
@@ -95,7 +96,7 @@ public class VersionInfo {
         //Extract values from properties file:
         Properties properties = new Properties();
         URL u = new URL(path);  //Can't use URI.toUrl() due to spaces in path
-        try (InputStream is = new BufferedInputStream(u.openStream())){ //new FileInputStream(path))) {
+        try (InputStream is = new BufferedInputStream(u.openStream())){
             properties.load(is);
         }
 
