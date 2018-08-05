@@ -747,6 +747,7 @@ TEST_F(FlatBuffersTest, Test_MNIST_00_1) {
     delete graph;
 }
 
+
 /*
 // FIXME: uncomment this test once conv_0 fb reexported
 TEST_F(FlatBuffersTest, nhwc_conv_0) {

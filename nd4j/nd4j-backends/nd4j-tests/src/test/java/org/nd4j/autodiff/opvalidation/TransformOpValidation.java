@@ -26,6 +26,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
+import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -417,10 +418,10 @@ public class TransformOpValidation extends BaseOpValidation {
         OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
 
-        INDArray ia = Nd4j.create(new float[]{5, 1, 3}, new int[]{1, 3});
-        INDArray ib = Nd4j.create(new float[]{7, 2, 4}, new int[]{1, 3});
-        INDArray indexA = Nd4j.create(new float[]{0, 1, 4}, new int[]{1, 3});
-        INDArray indexB = Nd4j.create(new float[]{2, 3, 5}, new int[]{1, 3});
+        INDArray ia = Nd4j.create(new float[]{5, 1, 3}, new long[]{3});
+        INDArray ib = Nd4j.create(new float[]{7, 2, 4}, new long[]{3});
+        INDArray indexA = Nd4j.create(new float[]{0, 1, 4}, new long[]{3});
+        INDArray indexB = Nd4j.create(new float[]{2, 3, 5}, new long[]{3});
 
         INDArray expOut = Nd4j.create(new long[]{6});
 
@@ -432,24 +433,22 @@ public class TransformOpValidation extends BaseOpValidation {
         INDArray expOut2 = Nd4j.create(new double[]{5,1,7,2,3,4});
         assertEquals(expOut2, expOut);
 
-        SDVariable in1 = sd.var("in1", new int[]{1, 3});
-        SDVariable in2 = sd.var("in2", new int[]{1, 3});
+        SDVariable in1 = sd.var("in1", ia);
+        SDVariable in2 = sd.var("in2", ib);
 
-        SDVariable index1 = sd.var("index1", new int[]{1, 3});
-        SDVariable index2 = sd.var("index2", new int[]{1, 3});
-
-        sd.associateArrayWithVariable(ia, in1);
-        sd.associateArrayWithVariable(ib, in2);
-        sd.associateArrayWithVariable(indexA, index1);
-        sd.associateArrayWithVariable(indexB, index2);
+        SDVariable index1 = sd.var("index1", indexA);
+        SDVariable index2 = sd.var("index2", indexB);
 
         SDVariable t = sd.dynamicStitch("ds", new SDVariable[]{index1, index2}, new SDVariable[]{in1, in2});
-        SDVariable loss = sd.mean("loss", t);
+        SDVariable loss = sd.standardDeviation("loss", t, true);
 
         String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("ds", expOut)
-                .gradientCheck(true));
-        assertNull(err, err);
+                .gradientCheck(true)
+                .gradCheckSkipVariables("index1", "index2")
+
+        );
+        assertNull(err);
     }
 
     @Test
@@ -502,7 +501,7 @@ public class TransformOpValidation extends BaseOpValidation {
         INDArray[] expOut = new INDArray[4];
 
         expOut[0] = Nd4j.eye(3);
-        expOut[1] = Nd4j.create(new double[][]{{1,0,0},{0,1,0}});
+        expOut[1] = Nd4j.create(new double[][]{{1,0},{0,1},{0,0}});
         expOut[2] = Nd4j.create(4,3,2);
         for( int i=0; i<4; i++ ){
             expOut[2].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(expOut[1]);
@@ -513,7 +512,6 @@ public class TransformOpValidation extends BaseOpValidation {
                 expOut[3].get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all()).assign(expOut[1]);
             }
         }
-
 
         for(int i=0; i<3; i++ ) {
             SameDiff sd = SameDiff.create();
@@ -527,7 +525,18 @@ public class TransformOpValidation extends BaseOpValidation {
                     .gradientCheck(true));
             assertNull(err);
         }
+    }
 
+    @Test
+    public void testEyeShape(){
+        DynamicCustomOp dco = DynamicCustomOp.builder("eye")
+                .addIntegerArguments(3,3)
+                //.addIntegerArguments(-99,3,3) //Also fails
+                .build();
+
+        List<long[]> list = Nd4j.getExecutioner().calculateOutputShape(dco);
+        assertEquals(1, list.size());   //Fails here - empty list
+        assertArrayEquals(new long[]{3,3}, list.get(0));
     }
 
     @Test

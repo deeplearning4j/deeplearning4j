@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/12/16.
@@ -46,18 +47,13 @@ public class ExpReplay<A> implements IExpReplay<A> {
 
 
     public ArrayList<Transition<A>> getBatch(int size) {
-
-        Set<Integer> intSet = new HashSet<>();
-        int storageSize = storage.size();
-        while (intSet.size() < size) {
-            int rd = random.nextInt(storageSize);
-            intSet.add(rd);
-        }
-
         ArrayList<Transition<A>> batch = new ArrayList<>(size);
-        Iterator<Integer> iter = intSet.iterator();
-        while (iter.hasNext()) {
-            Transition<A> trans = storage.get(iter.next());
+        int storageSize = storage.size();
+        int actualBatchSize = Math.min(storageSize, size);
+        int[] actualIndex = ThreadLocalRandom.current().ints(0, storageSize).distinct().limit(actualBatchSize).toArray();
+
+        for (int i = 0; i < actualBatchSize; i ++) {
+            Transition<A> trans = storage.get(actualIndex[i]);
             batch.add(trans.dup());
         }
 
