@@ -203,7 +203,6 @@
 
         <javacpp.parser.skip>false</javacpp.parser.skip>     <!-- To skip header file parsing phase: -Djavacpp.parser.skip=true  -->
         <javacpp.compiler.skip>false</javacpp.compiler.skip> <!-- To skip native compilation phase: -Djavacpp.compiler.skip=true -->
-        <javacpp.platform>${os.name}-${os.arch}</javacpp.platform> <!-- For Android: -Dplatform=android-arm -->
         <javacpp.platform.root/>      <!-- -Djavacpp.platform.root=/path/to/android-ndk/ -->
         <javacpp.platform.compiler/>  <!-- -Djavacpp.platform.compiler=/path/to/arm-linux-androideabi-g++ -->
         <javacpp.platform.sysroot/>   <!-- -Djavacpp.platform.sysroot=$(xcrun -sdk iphoneos -show-sdk-path) -->
@@ -730,6 +729,20 @@
                 <libnd4jhome>${basedir}/../../../../libnd4j/</libnd4jhome>
             </properties>
         </profile>
+
+        <!-- For Android: -Dplatform=android-arm -->
+        <profile>
+            <id>javacpp-platform-default</id>
+            <activation>
+                <property>
+                  <name>!javacpp.platform</name>
+                </property>
+            </activation>
+            <properties>
+                <javacpp.platform>${os.name}-${os.arch}</javacpp.platform>
+            </properties>
+        </profile>
+
         <!-- If someone knows a better way to do this, please do let me know! -->
         <profile>
             <id>linux</id>
