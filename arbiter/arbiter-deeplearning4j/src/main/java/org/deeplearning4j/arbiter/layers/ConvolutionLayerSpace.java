@@ -35,7 +35,6 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PRIVATE) //For Jackson JSON/YAML deserialization
 public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLayer> {
-    protected ParameterSpace<int[]> dilation;
     protected ParameterSpace<int[]> kernelSize;
     protected ParameterSpace<int[]> stride;
     protected ParameterSpace<int[]> padding;
@@ -44,7 +43,6 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
 
     private ConvolutionLayerSpace(Builder builder) {
         super(builder);
-        this.dilation = builder.dilation;
         this.kernelSize = builder.kernelSize;
         this.stride = builder.stride;
         this.padding = builder.padding;
@@ -63,8 +61,6 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
 
     protected void setLayerOptionsBuilder(ConvolutionLayer.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
-        if (dilation != null)
-            builder.dilation(dilation.getValue(values));
         if (kernelSize != null)
             builder.kernelSize(kernelSize.getValue(values));
         if (stride != null)
@@ -85,8 +81,6 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
     @Override
     public String toString(String delim) {
         StringBuilder sb = new StringBuilder("ConvolutionLayerSpace(");
-        if (dilation != null)
-            sb.append("dilation: ").append(dilation).append(delim);
         if (kernelSize != null)
             sb.append("kernelSize: ").append(kernelSize).append(delim);
         if (stride != null)
@@ -103,21 +97,11 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
 
 
     public static class Builder extends FeedForwardLayerSpace.Builder<Builder> {
-        protected ParameterSpace<int[]> dilation;
         protected ParameterSpace<int[]> kernelSize;
         protected ParameterSpace<int[]> stride;
         protected ParameterSpace<int[]> padding;
         protected ParameterSpace<ConvolutionMode> convolutionMode;
         protected ParameterSpace<Boolean> hasBias;
-
-        public Builder dilation(int... dilation) {
-            return dilation(new FixedValue<>(dilation));
-        }
-
-        public Builder dilation(ParameterSpace<int[]> dilation) {
-            this.dilation = dilation;
-            return this;
-        }
 
         public Builder kernelSize(int... kernelSize) {
             return kernelSize(new FixedValue<>(kernelSize));
