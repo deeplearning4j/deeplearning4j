@@ -97,7 +97,17 @@ namespace ops {
         }
         outputList[0] = OUTPUT_VARIABLE(0);
         outputList[1] = OUTPUT_VARIABLE(1);
-        helpers::dynamicPartitionFunctorBP(input, indices, gradOutList, outputList);
+        //helpers::dynamicPartitionFunctorBP(input, indices, gradOutList, outputList);
+        ops::dynamic_partition<T> op;
+        std::unique_ptr<ResultSet<T>> res(op.execute({input, indices}, {}, {numPartition}));
+        NDArray<T> y(*input); //'c', {1, input->lengthOf()});
+        y.linspace(1);
+        std::unique_ptr<ResultSet<T>> res2(op.execute({&y, indices}, {}, {numPartition}));
+
+        ops::dynamic_stitch<T> ds;
+        std::unique_ptr<ResultSet<T>> dsRes(ds.execute({res2->at(0), res2->at(1), res2->at(2), gradOutList[0], gradOutList[1], gradOutList[2]}, {}, {numPartition}));
+        outputList[0]->assign(dsRes->at(0));
+        outputList[1]->assign(dsRes->at(1));
 
         return ND4J_STATUS_OK;
     }
