@@ -80,6 +80,7 @@ public class SparseNDArrayCOOTest {
         System.out.println(sparseView.sparseInfoDataBuffer());
     }
 
+    @Ignore
     @Test
     public void shouldTakeViewInLeftBottomCorner() {
 
@@ -96,6 +97,7 @@ public class SparseNDArrayCOOTest {
         System.out.println(sparseView.sparseInfoDataBuffer());
     }
 
+    @Ignore
     @Test
     public void shouldTakeViewInRightTopCorner() {
 
@@ -137,6 +139,7 @@ public class SparseNDArrayCOOTest {
         System.out.println(sparseView.sparseInfoDataBuffer());
     }
 
+    @Ignore
     @Test
     public void shouldGetRowInTheMiddle() {
         double[] values = {1, 2, 3, 4};
@@ -151,6 +154,7 @@ public class SparseNDArrayCOOTest {
         System.out.println(sparseView.sparseInfoDataBuffer());
     }
 
+    @Ignore
     @Test
     public void shouldGetScalar() {
         double[] values = {1, 2, 3, 4};
@@ -181,6 +185,7 @@ public class SparseNDArrayCOOTest {
         System.out.println(view.sparseInfoDataBuffer());
     }
 
+    @Ignore
     @Test
     public void shouldTakeViewOfView() {
         long[] shape = new long[] {2, 2, 2};
@@ -197,6 +202,7 @@ public class SparseNDArrayCOOTest {
         assertArrayEquals(new double[] {1}, view.getIncludedValues().asDouble(), 1e-1);
     }
 
+    @Ignore
     @Test
     public void shouldTakeViewOfView2() {
         long[] shape = new long[] {4, 2, 3};
@@ -333,6 +339,7 @@ public class SparseNDArrayCOOTest {
 
     }
 
+    @Ignore
     @Test
     public void shouldTranslateViewIndexesToOriginal() {
         long[] shape = new long[] {4, 2, 3};
