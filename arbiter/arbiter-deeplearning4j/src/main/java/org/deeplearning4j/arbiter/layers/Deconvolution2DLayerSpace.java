@@ -21,15 +21,19 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.nn.conf.layers.Deconvolution2D;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
 public class Deconvolution2DLayerSpace extends BaseConvolutionLayerSpace<Deconvolution2D> {
+    protected ParameterSpace<int[]> dilation;
 
-    protected Deconvolution2DLayerSpace(Builder builder){
+    protected Deconvolution2DLayerSpace(Builder builder) {
         super(builder);
+        this.dilation = builder.dilation;
     }
 
     @Override
@@ -39,8 +43,23 @@ public class Deconvolution2DLayerSpace extends BaseConvolutionLayerSpace<Deconvo
         return b.build();
     }
 
-    public static class Builder extends BaseConvolutionLayerSpace.Builder<Builder> {
+    protected void setLayerOptionsBuilder(Deconvolution2D.Builder builder, double[] values) {
+        super.setLayerOptionsBuilder(builder, values);
+        if (dilation != null)
+            builder.dilation(dilation.getValue(values));
+    }
 
+    public static class Builder extends BaseConvolutionLayerSpace.Builder<Builder> {
+        protected ParameterSpace<int[]> dilation;
+
+        public Builder dilation(int... dilation) {
+            return dilation(new FixedValue<>(dilation));
+        }
+
+        public Builder dilation(ParameterSpace<int[]> dilation) {
+            this.dilation = dilation;
+            return this;
+        }
 
         @Override
         public Deconvolution2DLayerSpace build() {
