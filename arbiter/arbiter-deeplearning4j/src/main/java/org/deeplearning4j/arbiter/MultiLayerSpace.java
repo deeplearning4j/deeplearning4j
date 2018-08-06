@@ -232,6 +232,22 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         }
 
         /**
+         * duplicateConfig not supported. Will always be true
+         * @param layerSpace
+         * @param numLayersDistribution
+         * @param duplicateConfig
+         * @return
+         */
+        @Deprecated
+        public Builder addLayer(LayerSpace<? extends Layer> layerSpace, ParameterSpace<Integer> numLayersDistribution, boolean duplicateConfig) {
+            if (!duplicateConfig) throw new IllegalArgumentException("Duplicate Config false not supported");
+            String layerName = "layer_" + layerSpaces.size();
+            duplicateConfig = true; //hard coded to always duplicate layers
+            layerSpaces.add(new LayerConf(layerSpace, layerName, null, numLayersDistribution, duplicateConfig, null));
+            return this;
+        }
+
+        /**
          * @param layerSpace
          * @param numLayersDistribution Distribution for number of layers to generate
          */
