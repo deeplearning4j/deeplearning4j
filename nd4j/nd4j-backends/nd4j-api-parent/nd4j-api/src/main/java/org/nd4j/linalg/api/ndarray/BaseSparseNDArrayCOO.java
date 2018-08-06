@@ -1355,4 +1355,13 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         }
     }
 
+    @Override
+    public String toString() {
+        final StringBuffer sb = new StringBuffer("BaseSparseNDArrayCOO{");
+        sb.append("values=").append(Nd4j.create(values, new long[nnz()]));
+        sb.append(", indices=").append(Nd4j.create(indices, shape()));
+        sb.append(", isSorted=").append(isSorted);
+        sb.append('}');
+        return sb.toString();
+    }
 }
