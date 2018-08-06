@@ -242,6 +242,12 @@ public class BarnesHutTsne implements Model {
                 tree.search(d.slice(i), k + 1, results, new ArrayList<Double>());
                 double betas = beta.getDouble(i);
 
+                if(results.size() == 0){
+                    throw new IllegalStateException("Search returned no values for vector " + i +
+                            " - similarity \"" + simiarlityFunction + "\" may not be defined (for example, vector is" +
+                            " all zeros with cosine similarity)");
+                }
+
                 INDArray cArr = VPTree.buildFromData(results);
                 Pair<INDArray, Double> pair = computeGaussianKernel(cArr, beta.getDouble(i), k);
                 INDArray currP = pair.getFirst();
