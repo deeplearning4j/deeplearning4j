@@ -198,6 +198,7 @@ TEST_F(SparseUtilsTest, RavelIndices_Test) {
         ASSERT_EQ(indicesArrExp[i], indicesArr[i]);
     }
     
+    delete[] shapeInfoBuffer;
     shape[2] = 30;
     shapeInfoBuffer = shape::shapeBuffer(rank, shape);
     
