@@ -24,7 +24,7 @@ import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.layers.Deconvolution2D;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 
 /**
@@ -55,7 +55,7 @@ public abstract class BaseConvolutionLayerSpace<T extends FeedForwardLayer> exte
         this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
-    protected void setLayerOptionsBuilder(Deconvolution2D.Builder builder, double[] values) {
+    protected void setLayerOptionsBuilder(ConvolutionLayer.BaseConvBuilder<?> builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
         if (dilation != null)
             builder.dilation(dilation.getValue(values));
