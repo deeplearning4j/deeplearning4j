@@ -93,31 +93,18 @@ elseif(MSYS)
 endif()
 
 
-if (NOT DEFINED ENV{CLION_IDE})
-    message("NOT CLION")
-    add_executable(runtests ArrayOptionsTests.cpp GraphStateTests.cpp SingleDimTests.cpp ScalarTests.cpp BackpropTests.cpp RNGTests.cpp ShapeTests.cpp StashTests.cpp 
-                   VariableProxyTests.cpp SessionLocalTests.cpp FlatBuffersTests.cpp ConvolutionTests.cpp DeclarableOpsTests1.cpp DeclarableOpsTests2.cpp DeclarableOpsTests3.cpp 
-                   DeclarableOpsTests4.cpp GraphTests.cpp HashUtilsTests.cpp NDArrayTests.cpp NDArrayTests2.cpp TadTests.cpp VariableSpaceTests.cpp VariableTests.cpp WorkspaceTests.cpp 
-                   JavaInteropTests.cpp MemoryUtilsTests.cpp OpsArena.cpp OpTupleTests.cpp ParityOpsTests.cpp BooleanOpsTests.cpp SwitchTests.cpp ScopeTests.cpp ConditionalTests.cpp 
-                   LegacyOpsTests.cpp ContextTests.cpp IndexingTests.cpp ShapeUtilsTests.cpp NDArrayListTests.cpp ListOperationsTests.cpp BitwiseUtilsTests.cpp 
-                   SanityTests.cpp PlaygroundTests.cpp BroadcastableOpsTests.cpp GraphExecutionerTests.cpp GraphHolderTests.cpp OpTrackerTests.cpp HelpersTests1.cpp 
-                   DeclarableOpsTests5.cpp DeclarableOpsTests6.cpp CnpyTests.cpp BrodcastTests.cpp Reduce3Tests.cpp ReduceTests.cpp ShapeTests2.cpp PairwiseTests.cpp 
-                   DeclarableOpsTests7.cpp MmapTests.cpp DeclarableOpsTests8.cpp DeclarableOpsTests9.cpp EmptyTests.cpp TypeCastTests.cpp)
-endif ()
+file(GLOB_RECURSE TEST_SOURCES false ./*.cpp ./*.h)
 
-if ($ENV{CLION_IDE})
-    file(GLOB_RECURSE TEST_SOURCES false ./*.cpp ./*.h)
+# Filter out any source files from */CMakeFiles/* paths. these tend to cause problems such a multiple main definitions.
+set (EXCLUDE_DIR "/CMakeFiles/")
+foreach (TMP_PATH ${TEST_SOURCES})
+    string (FIND ${TMP_PATH} ${EXCLUDE_DIR} EXCLUDE_DIR_FOUND)
+    if (NOT ${EXCLUDE_DIR_FOUND} EQUAL -1)
+        list (REMOVE_ITEM TEST_SOURCES ${TMP_PATH})
+    endif ()
+endforeach(TMP_PATH)
 
-    # Filter out any source files from */CMakeFiles/* paths. these tend to cause problems such a multiple main definitions.
-    set (EXCLUDE_DIR "/CMakeFiles/")
-    foreach (TMP_PATH ${TEST_SOURCES})
-        string (FIND ${TMP_PATH} ${EXCLUDE_DIR} EXCLUDE_DIR_FOUND)
-        if (NOT ${EXCLUDE_DIR_FOUND} EQUAL -1)
-            list (REMOVE_ITEM TEST_SOURCES ${TMP_PATH})
-        endif ()
-    endforeach(TMP_PATH)
+add_executable(runtests ${TEST_SOURCES})
 
-    add_executable(runtests ${TEST_SOURCES})
-endif ()
 
 target_link_libraries(runtests ${LIBND4J_NAME}static gtest gtest_main)
