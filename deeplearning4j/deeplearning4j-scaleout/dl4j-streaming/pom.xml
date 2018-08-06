@@ -135,16 +135,6 @@
             <version>${camel.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.scala-lang.modules</groupId>
-            <artifactId>scala-parser-combinators_2.11</artifactId>
-            <version>${scala-misc.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.scala-lang.modules</groupId>
-            <artifactId>scala-xml_2.11</artifactId>
-            <version>${scala-misc.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka_2.11</artifactId>
             <version>${kafka.version}</version>

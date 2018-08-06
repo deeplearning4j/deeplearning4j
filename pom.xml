@@ -245,7 +245,8 @@
         <junit.version>4.12</junit.version>
         <logback.version>1.2.3</logback.version>
         <jackson.version>2.5.1</jackson.version>
-        <spark.jackson.version>2.4.4</spark.jackson.version>
+        <spark.jackson.version>${jackson.version}</spark.jackson.version>
+        <spark2.jackson.version>2.6.5</spark2.jackson.version>
         <lombok.version>1.18.0</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
         <lucene-solr.version>7.4.0</lucene-solr.version>
@@ -305,7 +306,6 @@
         <scalatest.version>3.0.5</scalatest.version>
         <scalafmt.version>1.3.0</scalafmt.version>
         <scalacheck.version>1.13.5</scalacheck.version>
-        <scala-misc.version>1.0.1</scala-misc.version>
 
         <libnd4j.tests>--tests</libnd4j.tests>
         <libnd4j.test.skip>false</libnd4j.test.skip>
