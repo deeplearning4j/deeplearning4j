@@ -70,8 +70,8 @@ TEST_F(DeclarableOpsTests10, Test_ArgMax_2) {
 
     auto z = *result->at(0);
 
-    z.printIndexedBuffer("z");
-    z.printShapeInfo("z shape");
+    //z.printIndexedBuffer("z");
+    //z.printShapeInfo("z shape");
 
     ASSERT_EQ(e, z);
 

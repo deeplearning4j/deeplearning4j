@@ -62,7 +62,7 @@ import static org.junit.Assert.*;
 
 
 @Slf4j
-//@Ignore
+@Ignore
 @RunWith(Parameterized.class)
 public class TensorFlowImportTest extends BaseNd4jTest {
     private static ExecutorConfiguration configuration = ExecutorConfiguration.builder()
@@ -117,7 +117,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
     @Test
     public void testArgMaxImport_1() throws Exception {
-        val graph = TFGraphMapper.getInstance().importGraph(new File("C:\\develop\\argmax.pb.txt"));
+        val graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource("/tf_graphs/argmax.pb.txt").getInputStream());
 
         log.info(graph.asFlatPrint());
         val result = graph.execAndEndResult();
