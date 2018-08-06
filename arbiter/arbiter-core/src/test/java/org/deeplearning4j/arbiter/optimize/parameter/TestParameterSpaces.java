@@ -94,9 +94,9 @@ public class TestParameterSpaces {
         bSpace.setIndices(1); //randomly setting to non zero
 
         assertEquals(true, (boolean) bSpace.getValue(new double[]{0.0, 0.0}));
-        assertEquals(true, (boolean) bSpace.getValue(new double[]{0.0, 0.5}));
-        assertEquals(false, (boolean) bSpace.getValue(new double[]{0.0, 0.7}));
-        assertEquals(false, (boolean) bSpace.getValue(new double[]{0.0, 1.0}));
+        assertEquals(true, (boolean) bSpace.getValue(new double[]{0.1, 0.5}));
+        assertEquals(false, (boolean) bSpace.getValue(new double[]{0.2, 0.7}));
+        assertEquals(false, (boolean) bSpace.getValue(new double[]{0.3, 1.0}));
     }
 
 }

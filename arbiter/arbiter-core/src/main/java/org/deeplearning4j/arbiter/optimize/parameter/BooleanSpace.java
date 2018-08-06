@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * BooleanParameterSpace is a {@code ParameterSpace<Boolean>}; i.e., defines {True, False} as a parameter space
- * If value to setValue is less than or equal to 0.5 it will return True else False
+ * BooleanParameterSpace is a {@code ParameterSpace<Boolean>}; Defines {True, False} as a parameter space
+ * If argument to setValue is less than or equal to 0.5 it will return True else False
  *
  * @author susaneraly
  */

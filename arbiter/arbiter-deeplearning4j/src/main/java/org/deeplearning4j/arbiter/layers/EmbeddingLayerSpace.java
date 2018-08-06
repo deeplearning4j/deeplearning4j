@@ -20,6 +20,8 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
@@ -33,9 +35,11 @@ import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PRIVATE) //For Jackson JSON/YAML deserialization
 public class EmbeddingLayerSpace extends FeedForwardLayerSpace<EmbeddingLayer> {
+    private ParameterSpace<Boolean> hasBias;
 
     private EmbeddingLayerSpace(Builder builder) {
         super(builder);
+        this.hasBias = builder.hasBias;
 
         this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
@@ -50,9 +54,21 @@ public class EmbeddingLayerSpace extends FeedForwardLayerSpace<EmbeddingLayer> {
 
     protected void setLayerOptionsBuilder(DenseLayer.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
+        if(hasBias != null)
+            builder.hasBias(hasBias.getValue(values));
     }
 
     public static class Builder extends FeedForwardLayerSpace.Builder<Builder> {
+        protected ParameterSpace<Boolean> hasBias;
+
+        public Builder hasBias(boolean hasBias){
+            return hasBias(new FixedValue<>(hasBias));
+        }
+
+        public Builder hasBias(ParameterSpace<Boolean> hasBias){
+            this.hasBias = hasBias;
+            return this;
+        }
 
         @Override
         @SuppressWarnings("unchecked")
