@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Absolute sum the components
+ * This operation returns number of elements matching specified condition
  *
  * @author raver119@gmail.com
  */

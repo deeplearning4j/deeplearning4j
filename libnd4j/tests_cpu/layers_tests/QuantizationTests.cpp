@@ -57,5 +57,5 @@ TEST_F(QuantizationTests, Compression_Test_1) {
     ASSERT_NEAR(1.0f, fq[0], 1e-5);
     ASSERT_NEAR(10.0f, fq[1], 1e-5);
 
-    delete q;
+    delete[] q;
 }
