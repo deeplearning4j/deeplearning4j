@@ -2517,6 +2517,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val hash = op.opHash();
 
         val result = new ArrayList<long[]>();
+        if(op.numInputArguments() < 1 && op.getDescriptor().getNumInputs() != -2) {
+            if(log.isTraceEnabled()){
+                log.trace("Could not calculate output shape for op {}: number of input args was 0",
+                        op.getClass().getName());
+            }
+            return Collections.emptyList();
+        }
 
         val inputBuffers = new PointerPointer<>(op.inputArguments().length);
         val inputShapes = new PointerPointer<>(op.inputArguments().length);
