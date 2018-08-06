@@ -49,7 +49,10 @@ TEST_F(DeclarableOpsTests10, Test_ArgMax_1) {
     auto result = op.execute({&x}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
-    ASSERT_EQ(e, *result->at(0));
+
+    auto z = *result->at(0);
+
+    ASSERT_EQ(e, z);
 
     delete result;
 }
@@ -65,7 +68,12 @@ TEST_F(DeclarableOpsTests10, Test_ArgMax_2) {
     auto result = op.execute({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
-    ASSERT_EQ(e, *result->at(0));
+    auto z = *result->at(0);
+
+    z.printIndexedBuffer("z");
+    z.printShapeInfo("z shape");
+
+    ASSERT_EQ(e, z);
 
     delete result;
 }
