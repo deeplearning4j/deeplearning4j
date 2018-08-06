@@ -235,18 +235,11 @@
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_2.11</artifactId>
             <version>${spark.version}</version>
+            <scope>provided</scope>
             <exclusions>
               <exclusion>
                 <groupId>com.google.code.findbugs</groupId>
                 <artifactId>jsr305</artifactId>
-              </exclusion>
-              <exclusion>
-                <groupId>org.slf4j</groupId>
-                <artifactId>jul-to-slf4j</artifactId>
-              </exclusion>
-              <exclusion>
-                <groupId>org.slf4j</groupId>
-                <artifactId>jcl-over-slf4j</artifactId>
               </exclusion>
               <exclusion>
                 <groupId>org.slf4j</groupId>
@@ -284,13 +277,6 @@
         <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-data-codec</artifactId>
-            <version>${project.parent.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.datavec</groupId>
-            <artifactId>datavec-geo</artifactId>
             <version>${project.parent.version}</version>
             <scope>test</scope>
         </dependency>
