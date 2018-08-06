@@ -177,7 +177,7 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
         if (l1Bias != null)
             builder.l1Bias(l1Bias.getValue(values));
         if (l2Bias != null)
-            builder.l2(l2Bias.getValue(values));
+            builder.l2Bias(l2Bias.getValue(values));
         if (updater != null)
             builder.updater(updater.getValue(values));
         if (biasUpdater != null)

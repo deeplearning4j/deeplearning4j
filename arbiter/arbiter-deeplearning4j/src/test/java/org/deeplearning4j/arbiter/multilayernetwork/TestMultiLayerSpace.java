@@ -47,6 +47,8 @@ import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.constraint.NonNegativeConstraint;
+import org.deeplearning4j.nn.conf.constraint.UnitNormConstraint;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -110,6 +112,56 @@ public class TestMultiLayerSpace {
         assertEquals(0, nParams);
 
         MultiLayerConfiguration conf = mls.getValue(new double[0]).getMultiLayerConfiguration();
+
+        assertEquals(expected, conf);
+    }
+
+    @Test
+    public void testBasic0() {
+        MultiLayerConfiguration expected =
+                new NeuralNetConfiguration.Builder()
+                        .l1Bias(0.4)
+                        .l2Bias(0.5)
+                        .constrainBias(new NonNegativeConstraint())
+                        .updater(new Sgd(0.005)).seed(12345).list()
+                        .layer(0, new DenseLayer.Builder().l1Bias(0.6).nIn(10).nOut(10).build())
+                        .layer(1, new DenseLayer.Builder().l2Bias(0.7).constrainBias(new UnitNormConstraint()).nIn(10).nOut(10).build()).layer(2,
+                        new OutputLayer.Builder().lossFunction(LossFunction.MCXENT)
+                                .nIn(10).nOut(5).build())
+                        .backprop(true).pretrain(false).build();
+
+        MultiLayerSpace mls =
+                new MultiLayerSpace.Builder()
+                        .l1Bias(0.4)
+                        .l2Bias(0.5)
+                        .constrainBias(new NonNegativeConstraint())
+                        .updater(new Sgd(0.005)).seed(12345)
+                        .addLayer(new DenseLayerSpace.Builder().l1Bias(new ContinuousParameterSpace(0,1)).nIn(10).nOut(10).build())
+                        .addLayer(new DenseLayerSpace.Builder().l2Bias(0.7).constrainBias(new UnitNormConstraint()).nIn(10).nOut(10).build())
+                        .addLayer(new OutputLayerSpace.Builder().lossFunction(LossFunction.MCXENT)
+                                .nIn(10).nOut(5).build())
+                        .backprop(true).pretrain(false).build();
+
+        int nParams = mls.numParameters();
+        assertEquals(1, nParams);
+
+        //Assign numbers to each leaf ParameterSpace object (normally done by candidate generator - manual here for testing)
+        List<ParameterSpace> noDuplicatesList = LeafUtils.getUniqueObjects(mls.collectLeaves());
+
+        //Second: assign each a number
+        int c = 0;
+        for (ParameterSpace ps : noDuplicatesList) {
+            int np = ps.numParameters();
+            if (np == 1) {
+                ps.setIndices(c++);
+            } else {
+                int[] values = new int[np];
+                for (int j = 0; j < np; j++)
+                    values[c++] = j;
+                ps.setIndices(values);
+            }
+        }
+        MultiLayerConfiguration conf = mls.getValue(new double[] {0.6}).getMultiLayerConfiguration();
 
         assertEquals(expected, conf);
     }
