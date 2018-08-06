@@ -93,10 +93,6 @@ public class Entropy extends BaseAccumulation {
         //Then we can do sumBp(z, -dL/dOut)
         //Note d/dx(x*log(x)) = log(x)+1
 
-//        SDVariable logx = f().log(arg());
-//        SDVariable xLogX = arg().mul(logx);
-//        SDVariable sumBp = f().sumBp(xLogX, f1.get(0).neg(), false, dimensions);
-//        return Collections.singletonList(sumBp.mul(logx.add(1.0)));
         return grad(f(), arg(), f1.get(0), dimensions);
     }
 

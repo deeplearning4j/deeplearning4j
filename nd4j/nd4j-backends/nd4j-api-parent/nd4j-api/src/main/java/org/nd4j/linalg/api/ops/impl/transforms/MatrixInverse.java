@@ -19,47 +19,40 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.List;
 
 /**
- * Matrix Determinant op
- *
- * Given input with shape [..., N, N] output the determinant for each sub-matrix.
+ * Matrix Inverse Function
  *
  * @author Alex Black
  */
-public class MatrixDeterminant extends DynamicCustomOp {
+public class MatrixInverse extends DynamicCustomOp {
 
-    public MatrixDeterminant() {
+    public MatrixInverse() {
         //
     }
 
-    public MatrixDeterminant(SameDiff sameDiff, SDVariable in, boolean inPlace) {
+    public MatrixInverse(SameDiff sameDiff, SDVariable in, boolean inPlace) {
         super(null, sameDiff, new SDVariable[]{in}, inPlace);
     }
 
 
     @Override
     public String opName() {
-        return "matrix_determinant";
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "MatrixDeterminant";
+        return "matrix_inverse";
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //Derivative of matrix determinant
         //From: Matrix Cookbook - Petersen & Pedersen
-        // z=det(X) then dz/dx = z * tr(X^-1)
-        SDVariable transpose = f().matrixInverse(arg());
-        SDVariable trace = f().diagPart(transpose).sum(-1);
-        SDVariable dOutdIn = outputVariable().mul(trace);
+        //if z = inverse(X)
+        //dz/dx = - z * dX/dx * z
+        //note that dX/dx is just identity matrix
+        //TODO non-matrix case
+        SDVariable dOutdIn = outputVariable().mmul(outputVariable()).neg();
         return Collections.singletonList(i_v.get(0).mul(dOutdIn));
     }
 }

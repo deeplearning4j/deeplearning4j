@@ -25,41 +25,32 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Matrix Determinant op
- *
- * Given input with shape [..., N, N] output the determinant for each sub-matrix.
+ * Matrix trace operation
  *
  * @author Alex Black
  */
-public class MatrixDeterminant extends DynamicCustomOp {
+public class Trace extends DynamicCustomOp {
 
-    public MatrixDeterminant() {
-        //
+    public Trace(SameDiff sd, SDVariable in){
+        super(null, sd, new SDVariable[]{in});
     }
 
-    public MatrixDeterminant(SameDiff sameDiff, SDVariable in, boolean inPlace) {
-        super(null, sameDiff, new SDVariable[]{in}, inPlace);
-    }
-
+    public Trace(){ }
 
     @Override
-    public String opName() {
-        return "matrix_determinant";
+    public String opName(){
+        return "trace";
     }
 
     @Override
-    public String tensorflowName() {
-        return "MatrixDeterminant";
+    public List<SDVariable> doDiff(List<SDVariable> gradAtOutput){
+        SDVariable rows = f().reshape(f().sizeAt(arg(), -2), new long[]{1});
+        SDVariable cols = f().reshape(f().sizeAt(arg(), -1), new long[]{1});
+        SDVariable eye = sameDiff.eye(f().shape(gradAtOutput.get(0)), rows, cols);
+        //Reshape gradient from [x,y,z] to [x,y,z,1,1]
+        SDVariable reshapedGrad = f().expandDims(gradAtOutput.get(0), -1);
+        reshapedGrad = f().expandDims(reshapedGrad, -1);
+        return Collections.singletonList(reshapedGrad.mul(eye));
     }
 
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        //Derivative of matrix determinant
-        //From: Matrix Cookbook - Petersen & Pedersen
-        // z=det(X) then dz/dx = z * tr(X^-1)
-        SDVariable transpose = f().matrixInverse(arg());
-        SDVariable trace = f().diagPart(transpose).sum(-1);
-        SDVariable dOutdIn = outputVariable().mul(trace);
-        return Collections.singletonList(i_v.get(0).mul(dOutdIn));
-    }
 }

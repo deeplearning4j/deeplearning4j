@@ -56,6 +56,7 @@ import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.shape.Diag;
+import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
 import org.nd4j.linalg.api.ops.impl.transforms.OldReverse;
 import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
@@ -2610,12 +2611,18 @@ public class Nd4j {
      * in the matrix
      *
      * @param x the diagonal values
-     * @param k the kth diagonal to getDouble
+     * @param k the kth diagonal to get
      * @return new matrix
      */
     public static INDArray diag(INDArray x, int k) {
-        INDArray ret = Nd4j.create(new long[] {x.length(),x.length()});
-        Nd4j.getExecutioner().exec(new Diag(new INDArray[]{x},new INDArray[]{ret}));
+        INDArray ret;
+        if(x.isMatrix()) {
+            ret = Nd4j.createUninitialized(new long[]{Math.min(x.size(0), x.size(1))});
+            Nd4j.getExecutioner().exec(new DiagPart(x,ret));
+        } else {
+            ret = Nd4j.create(new long[]{x.length(), x.length()});
+            Nd4j.getExecutioner().exec(new Diag(new INDArray[]{x},new INDArray[]{ret}));
+        }
         return ret;
     }
 

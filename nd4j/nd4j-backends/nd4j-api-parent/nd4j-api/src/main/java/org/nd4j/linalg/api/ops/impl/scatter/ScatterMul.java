@@ -55,7 +55,7 @@ public class ScatterMul extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradOut){
         //3 args: ref, indices, updates
-        //For non-modified indices, input gradient (referenc) is same as output gradient
+        //For non-modified indices, input gradient (reference) is same as output gradient
         //For modified indices, dL/dref = dL/dOut * dOut/dRef = dL/dOut * d(ref * update)/dRef = dL/dOut * update
         //And for updates, dL/du = dL/dOut * dOut/du = dL/dOut * d(ref * update)/du = dL/dOut * ref
 
