@@ -18,7 +18,7 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <artifactId>deeplearning4j-modelexport-solr</artifactId>
+    <artifactId>deeplearning4j-dataimport-solrj</artifactId>
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>deeplearning4j-parent</artifactId>
@@ -26,6 +26,9 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
     <packaging>jar</packaging>
+    <properties>
+        <hdf5.version>1.10.1</hdf5.version>
+    </properties>
     <build>
         <pluginManagement>
             <plugins>
@@ -41,22 +44,57 @@
     </build>
 
     <dependencies>
+
         <dependency>
             <groupId>org.apache.solr</groupId>
-            <artifactId>solr-ltr</artifactId>
+            <artifactId>solr-solrj</artifactId>
             <version>${lucene-solr.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>          <!-- Version set by deeplearning4j-parent dependency management -->
+        </dependency>
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+            <version>${nd4j.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-core</artifactId>
+            <artifactId>deeplearning4j-nn</artifactId>
             <version>${project.version}</version>
         </dependency>
+
         <!-- For unit tests -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>          <!-- Version set by deeplearning4j-parent dependency management -->
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-test-framework</artifactId>
+            <version>${lucene-solr.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-core</artifactId>
+            <version>${lucene-solr.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId> <!-- Version set by deeplearning4j-parent dependency management -->
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native</artifactId>

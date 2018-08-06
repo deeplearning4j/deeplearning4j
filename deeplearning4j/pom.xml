@@ -134,6 +134,7 @@
         <module>deeplearning4j-cuda</module>
         <module>deeplearning4j-nlp-parent</module>
         <module>deeplearning4j-nn</module>
+        <module>deeplearning4j-dataimport-solrj</module>
         <module>deeplearning4j-modelimport</module>
         <module>deeplearning4j-modelexport-solr</module>
         <module>deeplearning4j-zoo</module>
@@ -283,6 +284,7 @@
                         <directory>deeplearning4j-cuda</directory>
                         <directory>deeplearning4j-nlp-parent</directory>
                         <directory>deeplearning4j-nn</directory>
+                        <directory>deeplearning4j-dataimport-solrj</directory>
                         <directory>deeplearning4j-modelimport</directory>
                         <directory>deeplearning4j-modelexport-solr</directory>
                         <directory>deeplearning4j-zoo</directory>
