@@ -38,6 +38,37 @@ public:
     }
 };
 
+TEST_F(DeclarableOpsTests10, Test_ArgMax_1) {
+    NDArray<double> x('c', {3, 3});
+    NDArray<double> e(8);
+
+    x.linspace(1.0);
+
+
+    nd4j::ops::argmax<double> op;
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests10, Test_ArgMax_2) {
+    NDArray<double> x('c', {3, 3});
+    NDArray<double> y('c', {1}, {1.0});
+    NDArray<double> e('c', {3}, {2.0, 2.0, 2.0});
+
+    x.linspace(1.0);
+
+    nd4j::ops::argmax<double> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
 
 TEST_F(DeclarableOpsTests10, Test_Size_at_1) {
     NDArray<double> x('c', {10, 20, 30});

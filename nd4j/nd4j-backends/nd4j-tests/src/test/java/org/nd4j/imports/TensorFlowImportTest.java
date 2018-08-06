@@ -62,7 +62,7 @@ import static org.junit.Assert.*;
 
 
 @Slf4j
-@Ignore
+//@Ignore
 @RunWith(Parameterized.class)
 public class TensorFlowImportTest extends BaseNd4jTest {
     private static ExecutorConfiguration configuration = ExecutorConfiguration.builder()
@@ -108,12 +108,25 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         g.execAndEndResult();
     }
+
+
     @Test
     public void testAssertImport_1() throws Exception {
         val graph = TFGraphMapper.getInstance().importGraph(new File("C:\\Users\\raver\\Downloads\\test.pb"));
-
-
     }
+
+    @Test
+    public void testArgMaxImport_1() throws Exception {
+        val graph = TFGraphMapper.getInstance().importGraph(new File("C:\\develop\\argmax.pb.txt"));
+
+        log.info(graph.asFlatPrint());
+        val result = graph.execAndEndResult();
+
+        val exp = Nd4j.trueVector(new double[]{2.0, 2.0, 2.0});
+
+        assertEquals(exp, result);
+    }
+
 
     @Test
     public void testIfStatementNodes() throws Exception {
