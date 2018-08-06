@@ -32,7 +32,6 @@
     </parent>
 
     <properties>
-        <kafka.scala.exclusion.version>2.11</kafka.scala.exclusion.version>
         <!-- These Spark version properties have to defined be here, and NOT in the deeplearning4j-parent pom or in
         deeplearning4j-scaleout. Otherwise, the properties will be resolved to their defaults (and not the values present
          during the build). Whereas when defined here (the version is spark 1 vs. 2 specific) we can have different version
@@ -40,12 +39,21 @@
         <spark.version>1.6.3</spark.version>
         <spark.major.version>1</spark.major.version>
         <datavec.spark.version>1.0.0_spark_1-SNAPSHOT</datavec.spark.version>
+
+        <!-- Default scala versions, may be overwritten by build profiles -->
+        <scala.version>2.11.12</scala.version>
+        <scala.binary.version>2.11</scala.binary.version>
     </properties>
 
     <name>Dl4j Streaming</name>
     <url>http://www.deeplearning4j.org</url>
 
     <dependencies>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.datavec</groupId>
@@ -83,6 +91,14 @@
                 <groupId>com.google.code.findbugs</groupId>
                 <artifactId>jsr305</artifactId>
               </exclusion>
+              <exclusion>
+                <groupId>org.slf4j</groupId>
+                <artifactId>jul-to-slf4j</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.slf4j</groupId>
+                <artifactId>jcl-over-slf4j</artifactId>
+              </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -101,6 +117,16 @@
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-kafka</artifactId>
             <version>${camel.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
