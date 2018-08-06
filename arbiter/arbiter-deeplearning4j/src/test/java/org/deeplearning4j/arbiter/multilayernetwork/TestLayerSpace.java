@@ -34,7 +34,7 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.learning.config.Sgd;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -129,10 +129,10 @@ public class TestLayerSpace {
     public void testBatchNormConstrain() {
 
         ArrayList<List<LayerConstraint>> constrainListOptions = new ArrayList<List<LayerConstraint>>();
-        constrainListOptions.add(Arrays.asList(new LayerConstraint[]{new MaxNormConstraint(0.5, 1)}));
-        constrainListOptions.add(Arrays.asList(new LayerConstraint[]{new MinMaxNormConstraint(0.3, 0.4, 1.0, 1)}));
-        constrainListOptions.add(Arrays.asList(new LayerConstraint[]{new NonNegativeConstraint()}));
-        constrainListOptions.add(Arrays.asList(new LayerConstraint[]{new UnitNormConstraint(1)}));
+        constrainListOptions.add(Collections.singletonList((LayerConstraint) new MaxNormConstraint(0.5, 1)));
+        constrainListOptions.add(Collections.singletonList((LayerConstraint) new MinMaxNormConstraint(0.3, 0.4, 1.0, 1)));
+        constrainListOptions.add(Collections.singletonList((LayerConstraint) new NonNegativeConstraint()));
+        constrainListOptions.add(Collections.singletonList((LayerConstraint) new UnitNormConstraint(1)));
 
         DiscreteParameterSpace<List<LayerConstraint>> constrainParamSpace = new DiscreteParameterSpace<>(constrainListOptions);
         BatchNormalizationSpace sp = new BatchNormalizationSpace.Builder().gamma(1.5)
