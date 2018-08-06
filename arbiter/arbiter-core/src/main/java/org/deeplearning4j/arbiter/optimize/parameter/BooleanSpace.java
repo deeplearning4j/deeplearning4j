@@ -1,5 +1,6 @@
 package org.deeplearning4j.arbiter.optimize.parameter;
 
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 
 import java.util.Collections;
@@ -12,6 +13,7 @@ import java.util.Map;
  *
  * @author susaneraly
  */
+@EqualsAndHashCode
 public class BooleanSpace implements ParameterSpace<Boolean> {
     private int index = -1;
 
