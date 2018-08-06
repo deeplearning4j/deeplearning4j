@@ -247,6 +247,7 @@
         <jackson.version>2.5.1</jackson.version>
         <spark.jackson.version>${jackson.version}</spark.jackson.version>
         <spark2.jackson.version>2.6.5</spark2.jackson.version>
+        <geo.jackson.version>2.8.7</geo.jackson.version>
         <lombok.version>1.18.0</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
         <lucene-solr.version>7.4.0</lucene-solr.version>
