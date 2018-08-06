@@ -23,7 +23,6 @@ import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
 
 /**
@@ -52,7 +51,7 @@ public class EmbeddingLayerSpace extends FeedForwardLayerSpace<EmbeddingLayer> {
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(DenseLayer.Builder builder, double[] values) {
+    protected void setLayerOptionsBuilder(EmbeddingLayer.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
         if(hasBias != null)
             builder.hasBias(hasBias.getValue(values));

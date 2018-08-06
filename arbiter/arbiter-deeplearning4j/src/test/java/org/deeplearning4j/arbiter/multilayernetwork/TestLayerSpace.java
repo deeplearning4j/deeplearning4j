@@ -16,9 +16,11 @@
 
 package org.deeplearning4j.arbiter.multilayernetwork;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.layers.*;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.parameter.BooleanSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
@@ -229,6 +231,31 @@ public class TestLayerSpace {
             assertTrue(containsActivationFunction(actFns, activation));
             assertTrue(nOut >= 10 && nOut <= 20);
         }
+    }
+
+    @Test
+    public void testSimpleConv() {
+        ConvolutionLayer conv2d = new Convolution2D.Builder().dilation(1,2).kernelSize(2,2).nIn(2).nOut(3).build();
+        ConvolutionLayerSpace conv2dSpace = new ConvolutionLayerSpace.Builder().dilation(1,2).kernelSize(2,2).nIn(2).nOut(3).build();
+        assertEquals(0,conv2dSpace.getNumParameters());
+        assertEquals(conv2d, conv2dSpace.getValue(new double[0]));
+
+        Deconvolution2DLayerSpace deconvd2dls = new Deconvolution2DLayerSpace.Builder().dilation(2,1).nIn(2).nOut(2).hasBias(new BooleanSpace()).build();
+        assertEquals(1, deconvd2dls.getNumParameters());
+        //Set the parameter numbers...
+        List<ParameterSpace> list = deconvd2dls.collectLeaves();
+        int k = 0;
+        for(
+                int j = 0; j<list.size();j++)
+
+        {
+            if (list.get(j).numParameters() > 0) {
+                list.get(j).setIndices(k++);
+            }
+        }
+        Deconvolution2D actual = deconvd2dls.getValue(new double[]{0.9});
+        assertTrue(!actual.hasBias());
+        assertEquals(ArrayUtils.toString(new int[] {2,1} ),ArrayUtils.toString(actual.getDilation()));
     }
 
     @Test
