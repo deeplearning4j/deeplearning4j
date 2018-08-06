@@ -809,7 +809,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             return null;
         }
 
-        if (op instanceof TransformOp) {
+        if (op instanceof GradientOp) {
+            op.exec();
+        } else if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
             invoke(t);
         } else if (op instanceof Accumulation) {
@@ -2891,11 +2893,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public void enableDebugMode(boolean reallyEnable) {
+        debug.set(reallyEnable);
         nativeOps.enableDebugMode(reallyEnable);
     }
 
     @Override
     public void enableVerboseMode(boolean reallyEnable) {
+        verbose.set(reallyEnable);
         nativeOps.enableVerboseMode(reallyEnable);
     }
 

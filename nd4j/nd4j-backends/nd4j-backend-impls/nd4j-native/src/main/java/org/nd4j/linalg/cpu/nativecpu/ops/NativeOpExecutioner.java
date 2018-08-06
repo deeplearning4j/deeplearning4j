@@ -1878,11 +1878,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public void enableDebugMode(boolean reallyEnable) {
+        debug.set(reallyEnable);
         loop.enableDebugMode(reallyEnable);
     }
 
     @Override
     public void enableVerboseMode(boolean reallyEnable) {
+        verbose.set(reallyEnable);
         loop.enableVerboseMode(reallyEnable);
     }
 
