@@ -234,6 +234,7 @@ namespace nd4j {
                             // cannot throw here because of parallel region
                             nd4j_printf("sparse::IndexUtils::ravelMultiIndex Cannot ravel index at element %d, does not fit into specified shape.\n", i);
                             ++errorCount;
+                            continue;
                         }
                     }
                     raveledIndex += idx * stride[j];
@@ -274,6 +275,7 @@ void IndexUtils::unravelIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong
                     // cannot throw here because of parallel region
                     nd4j_printf("sparse::IndexUtils::unravelIndex Cannot unravel index at element %d. raveled index of %d does not fit into specified shape.\n", i, raveledIndex);                    
                     ++errorCount;
+                    continue;
                 }
 
                 for (int * it = unravelOrder; it != unravelOrder + rank; it++){
