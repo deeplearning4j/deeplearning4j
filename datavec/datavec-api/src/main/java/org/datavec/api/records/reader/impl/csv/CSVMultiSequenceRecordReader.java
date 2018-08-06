@@ -21,6 +21,7 @@ import org.datavec.api.records.Record;
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.listener.RecordListener;
 import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataInterval;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.split.InputSplit;
@@ -30,9 +31,7 @@ import org.nd4j.base.Preconditions;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collection;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 public class CSVMultiSequenceRecordReader extends CSVRecordReader implements SequenceRecordReader {
 
@@ -44,17 +43,23 @@ public class CSVMultiSequenceRecordReader extends CSVRecordReader implements Seq
 
     private String sequenceSeparatorRegex;
     private Mode mode;
+    private Writable padValue;
 
-    public CSVMultiSequenceRecordReader(String sequenceSeparatorRegex, char elementDelimiter, Mode mode){
-        this(0, DEFAULT_DELIMITER, DEFAULT_QUOTE, sequenceSeparatorRegex, elementDelimiter, mode, null);
+    public CSVMultiSequenceRecordReader(String sequenceSeparatorRegex, Mode mode){
+        this(0, DEFAULT_DELIMITER, DEFAULT_QUOTE, sequenceSeparatorRegex, mode, null);
     }
 
-    public CSVMultiSequenceRecordReader(int skipNumLines, char delimiter, char quote, String sequenceSeparatorRegex, char elementDelimiter, Mode mode, Writable padValue){
-        super(skipNumLines, delimiter, quote);
+    public CSVMultiSequenceRecordReader(String sequenceSeparatorRegex, Mode mode, Writable padValue){
+        this(0, DEFAULT_DELIMITER, DEFAULT_QUOTE, sequenceSeparatorRegex, mode, padValue);
+    }
+
+    public CSVMultiSequenceRecordReader(int skipNumLines, char elementDelimiter, char quote, String sequenceSeparatorRegex, Mode mode, Writable padValue){
+        super(skipNumLines, elementDelimiter, quote);
         Preconditions.checkState(mode != Mode.PAD || padValue != null, "Cannot use Mode.PAD with a null padding value. " +
                 "Padding value must be passed to constructor ");
         this.sequenceSeparatorRegex = sequenceSeparatorRegex;
         this.mode = mode;
+        this.padValue = padValue;
     }
 
 
@@ -68,9 +73,78 @@ public class CSVMultiSequenceRecordReader extends CSVRecordReader implements Seq
         if(!hasNext())
             throw new NoSuchElementException("No next element");
 
+        List<String> lines = new ArrayList<>();
+        int firstLine = lineIndex;
+        int lastLine = lineIndex;
         while(super.hasNext()){
-            String line = 
+            String line = readStringLine();
+            if(line.matches(sequenceSeparatorRegex)){
+                lastLine = lineIndex;
+                break;
+            }
+            lines.add(line);
         }
+
+        //Process lines
+        URI uri = (locations == null || locations.length < 1 ? null : locations[splitIndex]);
+        List<List<Writable>> out = parseLines(lines, uri, firstLine, lastLine);
+
+
+        return new org.datavec.api.records.impl.SequenceRecord(out, new RecordMetaDataInterval(firstLine, lastLine, uri));
+    }
+
+    private List<List<Writable>> parseLines(List<String> lines, URI uri, int firstLine, int lastLine){
+        List<List<Writable>> out = new ArrayList<>();
+        switch (mode){
+            case CONCAT:
+                //Output is univariate sequence - concat all lines
+                for(String s : lines){
+                    List<Writable> parsed = super.parseLine(s);
+                    for(Writable w : parsed){
+                        out.add(Collections.singletonList(w));
+                    }
+                }
+                break;
+            case EQUAL_LENGTH:
+            case PAD:
+                List<List<Writable>> columnWise = new ArrayList<>();
+                int length = -1;
+                int lineNum = 0;
+                for(String s : lines) {
+                    List<Writable> parsed = super.parseLine(s); //This is one COLUMN
+                    columnWise.add(parsed);
+                    lineNum++;
+                    if(mode == Mode.PAD){
+                        length = Math.max(length, parsed.size());
+                    } else if(length < 0)
+                        length = parsed.size();
+                    else if(mode == Mode.EQUAL_LENGTH){
+                        Preconditions.checkState(parsed.size() == length, "Invalid state: When using CSVMultiSequenceRecordReader, " +
+                                "all lines (columns) must be the same length. Prior columns had " + length + " elements, line " +
+                                lineNum + " in sequence has length " + parsed.size() + " (Sequence position: " + uri +
+                                ", lines " + firstLine + " to " + lastLine + ")");
+                    }
+                }
+
+                if(mode == Mode.PAD){
+                    for(List<Writable> w : columnWise){
+                        while(w.size() < length){
+                            w.add(padValue);
+                        }
+                    }
+                }
+
+                //Transpose: from column-wise to row-wise
+                for( int i=0; i<length; i++ ){
+                    List<Writable> step = new ArrayList<>();
+                    for( int j=0; j<columnWise.size(); j++ ){
+                        step.add(columnWise.get(j).get(i));
+                    }
+                    out.add(step);
+                }
+                break;
+        }
+        return out;
     }
 
     @Override
@@ -89,97 +163,8 @@ public class CSVMultiSequenceRecordReader extends CSVRecordReader implements Seq
     }
 
     @Override
-    public void initialize(InputSplit split) throws IOException, InterruptedException {
-
-    }
-
-    @Override
-    public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
-
-    }
-
-    @Override
     public boolean batchesSupported() {
         return false;
     }
 
-    @Override
-    public List<List<Writable>> next(int num) {
-        return null;
-    }
-
-    @Override
-    public List<Writable> next() {
-        return null;
-    }
-
-    @Override
-    public boolean hasNext() {
-        return false;
-    }
-
-    @Override
-    public List<String> getLabels() {
-        return null;
-    }
-
-    @Override
-    public void reset() {
-
-    }
-
-    @Override
-    public boolean resetSupported() {
-        return false;
-    }
-
-    @Override
-    public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
-        return null;
-    }
-
-    @Override
-    public Record nextRecord() {
-        return null;
-    }
-
-    @Override
-    public Record loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
-        return null;
-    }
-
-    @Override
-    public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
-        return null;
-    }
-
-    @Override
-    public List<RecordListener> getListeners() {
-        return null;
-    }
-
-    @Override
-    public void setListeners(RecordListener... listeners) {
-
-    }
-
-    @Override
-    public void setListeners(Collection<RecordListener> listeners) {
-
-    }
-
-    @Override
-    public void close() throws IOException {
-
-    }
-
-    @Override
-    public void setConf(Configuration conf) {
-
-    }
-
-    @Override
-    public Configuration getConf() {
-        return null;
-    }
 }
