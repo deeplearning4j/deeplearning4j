@@ -809,7 +809,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             return null;
         }
 
-        if (op instanceof TransformOp) {
+        if (op instanceof GradientOp) {
+            op.exec();
+        } else if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
             invoke(t);
         } else if (op instanceof Accumulation) {
@@ -2517,6 +2519,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val hash = op.opHash();
 
         val result = new ArrayList<long[]>();
+        if(op.numInputArguments() < 1 && op.getDescriptor().getNumInputs() != -2) {
+            if(log.isTraceEnabled()){
+                log.trace("Could not calculate output shape for op {}: number of input args was 0",
+                        op.getClass().getName());
+            }
+            return Collections.emptyList();
+        }
 
         val inputBuffers = new PointerPointer<>(op.inputArguments().length);
         val inputShapes = new PointerPointer<>(op.inputArguments().length);
@@ -2884,11 +2893,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public void enableDebugMode(boolean reallyEnable) {
+        debug.set(reallyEnable);
         nativeOps.enableDebugMode(reallyEnable);
     }
 
     @Override
     public void enableVerboseMode(boolean reallyEnable) {
+        verbose.set(reallyEnable);
         nativeOps.enableVerboseMode(reallyEnable);
     }
 

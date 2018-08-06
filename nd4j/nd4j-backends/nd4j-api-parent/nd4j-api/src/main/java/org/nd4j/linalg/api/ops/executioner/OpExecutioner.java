@@ -59,6 +59,18 @@ public interface OpExecutioner {
         BANDWIDTH,
     }
 
+    /**
+     * This method returns true if verbose mode is enabled, false otherwise
+     * @return
+     */
+    boolean isVerbose();
+
+    /**
+     * This method returns true if debug mode is enabled, false otherwise
+     * @return
+     */
+    boolean isDebug();
+
 
     /**
      * This method returns type for this executioner instance
