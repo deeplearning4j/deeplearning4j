@@ -1,20 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.deeplearning4j.clustering.util;
 
@@ -594,36 +592,6 @@ public class MathUtils {
 
         return ret;
     }//end coordSplit
-
-
-
-    /**
-     * This will partition the given whole variable data applyTransformToDestination in to the specified chunk number.
-     * @param arr the data applyTransformToDestination to pass in
-     * @param chunk the number to separate by
-     * @return a partition data applyTransformToDestination relative to the passed in chunk number
-     * @deprecated not thread-safe, unused, see https://github.com/deeplearning4j/deeplearning4j/issues/3797
-     */
-    @Deprecated
-    public static List<List<Double>> partitionVariable(List<Double> arr, int chunk) {
-        int count = 0;
-        List<List<Double>> ret = new ArrayList<>();
-
-
-        while (count < arr.size()) {
-
-            List<Double> sublist = arr.subList(count, count + chunk);
-            count += chunk;
-            ret.add(sublist);
-
-        }
-        //All data sets must be same size
-        for (List<Double> lists : ret) {
-            if (lists.size() < chunk)
-                ret.remove(lists);
-        }
-        return ret;
-    }//end partitionVariable
 
 
     /**

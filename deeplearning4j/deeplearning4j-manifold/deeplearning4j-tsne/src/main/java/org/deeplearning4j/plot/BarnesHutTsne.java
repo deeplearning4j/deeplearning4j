@@ -1,26 +1,24 @@
-
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.deeplearning4j.plot;
 
 
 import com.google.common.util.concurrent.AtomicDouble;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.clustering.sptree.DataPoint;
@@ -69,6 +67,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sign;
  * @author Adam Gibson
  */
 @Slf4j
+@Data
 public class BarnesHutTsne implements Model {
 
 
@@ -108,7 +107,7 @@ public class BarnesHutTsne implements Model {
     private INDArray gains;
     private INDArray yIncs;
     private int vpTreeWorkers;
-    protected transient TrainingListener TrainingListener;
+    protected transient TrainingListener trainingListener;
     protected WorkspaceMode workspaceMode;
     protected final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
             .initialSize(0).overallocationLimit(0.3).policyLearning(LearningPolicy.FIRST_LOOP)
@@ -131,6 +130,16 @@ public class BarnesHutTsne implements Model {
                          int switchMomentumIteration, boolean normalize, int stopLyingIteration, double tolerance,
                          double learningRate, boolean useAdaGrad, double perplexity, TrainingListener TrainingListener,
                          double minGain,int vpTreeWorkers) {
+        this(numDimensions, simiarlityFunction, theta, invert, maxIter, realMin, initialMomentum, finalMomentum,
+                momentum, switchMomentumIteration, normalize, stopLyingIteration, tolerance, learningRate,
+                useAdaGrad, perplexity, TrainingListener, minGain, vpTreeWorkers, WorkspaceMode.NONE);
+    }
+
+    public BarnesHutTsne(int numDimensions, String simiarlityFunction, double theta, boolean invert, int maxIter,
+                         double realMin, double initialMomentum, double finalMomentum, double momentum,
+                         int switchMomentumIteration, boolean normalize, int stopLyingIteration, double tolerance,
+                         double learningRate, boolean useAdaGrad, double perplexity, TrainingListener TrainingListener,
+                         double minGain,int vpTreeWorkers, WorkspaceMode workspaceMode) {
         this.maxIter = maxIter;
         this.realMin = realMin;
         this.initialMomentum = initialMomentum;
@@ -147,9 +156,12 @@ public class BarnesHutTsne implements Model {
         this.numDimensions = numDimensions;
         this.simiarlityFunction = simiarlityFunction;
         this.theta = theta;
-        this.TrainingListener = TrainingListener;
+        this.trainingListener = TrainingListener;
         this.invert = invert;
         this.vpTreeWorkers = vpTreeWorkers;
+        this.workspaceMode = workspaceMode;
+        if(this.workspaceMode == null)
+            this.workspaceMode = WorkspaceMode.NONE;
     }
 
 
@@ -230,6 +242,12 @@ public class BarnesHutTsne implements Model {
                 tree.search(d.slice(i), k + 1, results, new ArrayList<Double>());
                 double betas = beta.getDouble(i);
 
+                if(results.size() == 0){
+                    throw new IllegalStateException("Search returned no values for vector " + i +
+                            " - similarity \"" + simiarlityFunction + "\" may not be defined (for example, vector is" +
+                            " all zeros with cosine similarity)");
+                }
+
                 INDArray cArr = VPTree.buildFromData(results);
                 Pair<INDArray, Double> pair = computeGaussianKernel(cArr, beta.getDouble(i), k);
                 INDArray currP = pair.getFirst();
@@ -276,13 +294,7 @@ public class BarnesHutTsne implements Model {
                     cols.putScalar(rows.getInt(i) + l, indices.getDouble(l + 1));
                     vals.putScalar(rows.getInt(i) + l, currP.getDouble(l));
                 }
-
-
             }
-
-
-
-
         }
         return vals;
 
@@ -294,11 +306,6 @@ public class BarnesHutTsne implements Model {
     }
 
     @Override
-    public void validateInput() {
-
-    }
-
-    @Override
     public ConvexOptimizer getOptimizer() {
         return null;
     }
@@ -306,11 +313,6 @@ public class BarnesHutTsne implements Model {
     @Override
     public INDArray getParam(String param) {
         return null;
-    }
-
-    @Override
-    public void initParams() {
-
     }
 
     @Override
@@ -541,11 +543,9 @@ public class BarnesHutTsne implements Model {
                         vals.divi(12);
 
 
-                    if (TrainingListener != null) {
-                        TrainingListener.iterationDone(this, i, 0);
+                    if (trainingListener != null) {
+                        trainingListener.iterationDone(this, i, 0);
                     }
-
-
                 }
             }
         }
@@ -717,11 +717,6 @@ public class BarnesHutTsne implements Model {
     }
 
     @Override
-    public void accumulateScore(double accum) {
-
-    }
-
-    @Override
     public INDArray params() {
         return null;
     }
@@ -800,8 +795,10 @@ public class BarnesHutTsne implements Model {
             /* Calculate gradient based on barnes hut approximation with positive and negative forces */
             INDArray posF = Nd4j.create(Y.shape());
             INDArray negF = Nd4j.create(Y.shape());
-            if (tree == null)
+            if (tree == null) {
                 tree = new SpTree(Y);
+                tree.setWorkspaceMode(workspaceMode);
+            }
             tree.computeEdgeForces(rows, cols, vals, N, posF);
 
             for (int n = 0; n < N; n++)
@@ -866,6 +863,7 @@ public class BarnesHutTsne implements Model {
         private int numDim = 2;
         private String similarityFunction = "cosinesimilarity";
         private int vpTreeWorkers = 1;
+        protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
 
         public Builder vpTreeWorkers(int vpTreeWorkers) {
             this.vpTreeWorkers = vpTreeWorkers;
@@ -959,10 +957,15 @@ public class BarnesHutTsne implements Model {
             return this;
         }
 
+        public Builder workspaceMode(WorkspaceMode workspaceMode){
+            this.workspaceMode = workspaceMode;
+            return this;
+        }
+
         public BarnesHutTsne build() {
             return new BarnesHutTsne(numDim, similarityFunction, theta, invert, maxIter, realMin, initialMomentum,
                     finalMomentum, momentum, switchMomentumIteration, normalize, stopLyingIteration, tolerance,
-                    learningRate, useAdaGrad, perplexity, null, minGain,vpTreeWorkers);
+                    learningRate, useAdaGrad, perplexity, null, minGain, vpTreeWorkers, workspaceMode);
         }
 
     }

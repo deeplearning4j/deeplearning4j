@@ -1,18 +1,19 @@
-/*-
- *  * Copyright 2016 Skymind, Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
- */
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.nativeblas;
 
 import org.bytedeco.javacpp.annotation.Platform;
@@ -57,7 +58,8 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         "op_boilerplate.h",
                         "ops/InputType.h",
                         "ops/declarable/OpDescriptor.h",
-                        "ops/declarable/BroadcastableOp.h",
+                        "ops/declarable/BroadcastableOp.h",                        
+                        "helpers/OpArgsHolder.h",
                         "ops/declarable/DeclarableOp.h",
                         "ops/declarable/DeclarableListOp.h",
                         "ops/declarable/DeclarableReductionOp.h",
@@ -108,6 +110,7 @@ public class Nd4jCudaPresets implements InfoMapper {
                 "nd4j::NDArray",
                 "nd4j::NDArrayList",
                 "nd4j::ResultSet",
+                "nd4j::OpArgsHolder",
                 "nd4j::graph::GraphState",
                 "nd4j::graph::Variable",
                 "nd4j::graph::VariablesSet",

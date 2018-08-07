@@ -1,6 +1,23 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -8,6 +25,8 @@ import org.nd4j.autodiff.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
+import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -200,14 +219,12 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testCross() {
-        OpValidationSuite.ignoreFailing();
-
         INDArray a = Nd4j.create(new float[]{4, 2, 1}, new int[]{1, 3});
         INDArray b = Nd4j.create(new float[]{1, 3, 4}, new int[]{1, 3});
 
         INDArray expOut = Nd4j.create(1, 3);
 
-        DynamicCustomOp op = new Cross(a, b, expOut);
+        val op = new Cross(a, b, expOut);
         Nd4j.getExecutioner().exec(op);
 
         SameDiff sd = SameDiff.create();
@@ -401,10 +418,10 @@ public class TransformOpValidation extends BaseOpValidation {
         OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
 
-        INDArray ia = Nd4j.create(new float[]{5, 1, 3}, new int[]{1, 3});
-        INDArray ib = Nd4j.create(new float[]{7, 2, 4}, new int[]{1, 3});
-        INDArray indexA = Nd4j.create(new float[]{0, 1, 4}, new int[]{1, 3});
-        INDArray indexB = Nd4j.create(new float[]{2, 3, 5}, new int[]{1, 3});
+        INDArray ia = Nd4j.create(new float[]{5, 1, 3}, new long[]{3});
+        INDArray ib = Nd4j.create(new float[]{7, 2, 4}, new long[]{3});
+        INDArray indexA = Nd4j.create(new float[]{0, 1, 4}, new long[]{3});
+        INDArray indexB = Nd4j.create(new float[]{2, 3, 5}, new long[]{3});
 
         INDArray expOut = Nd4j.create(new long[]{6});
 
@@ -416,29 +433,26 @@ public class TransformOpValidation extends BaseOpValidation {
         INDArray expOut2 = Nd4j.create(new double[]{5,1,7,2,3,4});
         assertEquals(expOut2, expOut);
 
-        SDVariable in1 = sd.var("in1", new int[]{1, 3});
-        SDVariable in2 = sd.var("in2", new int[]{1, 3});
+        SDVariable in1 = sd.var("in1", ia);
+        SDVariable in2 = sd.var("in2", ib);
 
-        SDVariable index1 = sd.var("index1", new int[]{1, 3});
-        SDVariable index2 = sd.var("index2", new int[]{1, 3});
-
-        sd.associateArrayWithVariable(ia, in1);
-        sd.associateArrayWithVariable(ib, in2);
-        sd.associateArrayWithVariable(indexA, index1);
-        sd.associateArrayWithVariable(indexB, index2);
+        SDVariable index1 = sd.var("index1", indexA);
+        SDVariable index2 = sd.var("index2", indexB);
 
         SDVariable t = sd.dynamicStitch("ds", new SDVariable[]{index1, index2}, new SDVariable[]{in1, in2});
-        SDVariable loss = sd.mean("loss", t);
+        SDVariable loss = sd.standardDeviation("loss", t, true);
 
         String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("ds", expOut)
-                .gradientCheck(true));
-        assertNull(err, err);
+                .gradientCheck(true)
+                .gradCheckSkipVariables("index1", "index2")
+
+        );
+        assertNull(err);
     }
 
     @Test
     public void testDiag() {
-        OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
 
         INDArray ia = Nd4j.create(new float[]{4, 2}, new int[] {2});
@@ -460,7 +474,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testDiagPart() {
-        OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
 
         INDArray input = Nd4j.linspace(1,16,16).reshape(4,4);
@@ -488,7 +501,7 @@ public class TransformOpValidation extends BaseOpValidation {
         INDArray[] expOut = new INDArray[4];
 
         expOut[0] = Nd4j.eye(3);
-        expOut[1] = Nd4j.create(new double[][]{{1,0,0},{0,1,0}});
+        expOut[1] = Nd4j.create(new double[][]{{1,0},{0,1},{0,0}});
         expOut[2] = Nd4j.create(4,3,2);
         for( int i=0; i<4; i++ ){
             expOut[2].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(expOut[1]);
@@ -500,7 +513,6 @@ public class TransformOpValidation extends BaseOpValidation {
             }
         }
 
-
         for(int i=0; i<3; i++ ) {
             SameDiff sd = SameDiff.create();
             SDVariable eye = sd.eye("e", rows[i], cols[i], batch[i]);
@@ -509,15 +521,26 @@ public class TransformOpValidation extends BaseOpValidation {
 
             String err = OpValidation.validate(new TestCase(sd)
                     .expectedOutput("e", expOut[i])
+                    .gradCheckSkipVariables("e")
                     .gradientCheck(true));
-            assertNull(err, err);
+            assertNull(err);
         }
+    }
 
+    @Test
+    public void testEyeShape(){
+        DynamicCustomOp dco = DynamicCustomOp.builder("eye")
+                .addIntegerArguments(3,3)
+                //.addIntegerArguments(-99,3,3) //Also fails
+                .build();
+
+        List<long[]> list = Nd4j.getExecutioner().calculateOutputShape(dco);
+        assertEquals(1, list.size());   //Fails here - empty list
+        assertArrayEquals(new long[]{3,3}, list.get(0));
     }
 
     @Test
     public void testTransforms() {
-        OpValidationSuite.ignoreFailing();
         //Test transforms (non-pairwise)
         Nd4j.getRandom().setSeed(12345);
 
@@ -797,8 +820,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     boolean exclusive = false;
                     boolean reverseBool = false;
 
-                    SDVariable dimArg = sd.var("dim", Nd4j.trueScalar(dim));
-                    t = sd.cumsum(in, dimArg, exclusive, reverseBool);
+                    t = sd.cumsum(in, exclusive, reverseBool, dim);
                     INDArray expOut51 = Nd4j.create(ia.shape());
                     DynamicCustomOp cumsum = DynamicCustomOp.builder("cumsum")
                             .addIntegerArguments((exclusive) ? 1 : 0, (reverseBool) ? 1 : 0, dim)
@@ -807,11 +829,12 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.getVarName(), expOut51);
                     break;
                 case 52:
-                    dim = 0;
+                    if(OpValidationSuite.IGNORE_FAILING){
+                        continue;
+                    }
                     boolean ex = false;
                     boolean revBool = false;
-                    SDVariable dimArg2 = sd.var("dim", Nd4j.trueScalar(dim));
-                    t = sd.cumprod(in, dimArg2, ex, revBool);
+                    t = sd.cumprod(in, ex, revBool, 0);
                     INDArray expOut52 = Nd4j.create(ia.shape());
                     for( int s0=0; s0<ia.size(0); s0++){
                         for( int s1=0; s1<ia.size(1); s1++ ){
@@ -825,6 +848,9 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.getVarName(), expOut52);
                     break;
                 case 53:
+                    if(OpValidationSuite.IGNORE_FAILING){
+                        continue;
+                    }
                     t = sd.diag(in);
                     ia = Nd4j.create(new float[]{4, 2});
                     in = sd.var("in", new int[]{1, 2});
@@ -925,6 +951,9 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expected(t, ia.gte(1.0));
                     break;
                 case 74:
+                    if(OpValidationSuite.IGNORE_FAILING){
+                        continue;
+                    }
                     t = sd.f().noop(in);
                     tc.expected(t, ia.dup());
                     break;
@@ -941,8 +970,9 @@ public class TransformOpValidation extends BaseOpValidation {
                 case 77:
                     ia = Nd4j.rand(ia.shape());
                     t = sd.matchCondition(in, Conditions.lessThan(0.5));
-                    INDArray exp = Nd4j.getExecutioner().exec(new MatchCondition(ia.dup(), Conditions.lessThan(0.5))).z();
+                    INDArray exp = ia.dup().lt(0.5);
                     tc.expected(t, exp);
+                    break;
                 case 78:
                     ia = Nd4j.rand(ia.shape()).muli(2).subi(1);
                     t = sd.f().tanhRational(in);
@@ -995,7 +1025,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testPairwiseTransforms() {
-        OpValidationSuite.ignoreFailing();
         /*
         add, sub, mul, div, rsub, rdiv
         eq, neq, gt, lt, gte, lte, or, and, xor
@@ -1306,7 +1335,7 @@ public class TransformOpValidation extends BaseOpValidation {
         INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         Map<String, INDArray> inputs = new HashMap<>();
         inputs.put("x", sumInput);
-        sameDiff.defineFunction("expGradient", new SameDiff.SameDiffFunctionDefinition() {
+        sameDiff.defineFunction("expGradient", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable input = sameDiff.var("x", inputs.get("x"));
@@ -1347,7 +1376,7 @@ public class TransformOpValidation extends BaseOpValidation {
         INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         Map<String, INDArray> inputs = new HashMap<>();
         inputs.put("x", sumInput);
-        sameDiff.defineFunction("tanhGradient", new SameDiff.SameDiffFunctionDefinition() {
+        sameDiff.defineFunction("tanhGradient", new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable input = sameDiff.var("x", inputs.get("x"));

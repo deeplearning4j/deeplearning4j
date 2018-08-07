@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // @author raver119@gmail.com
 //
@@ -3001,7 +3017,7 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_bp2) {
 TEST_F(DeclarableOpsTests1, ArgMax1) {
     NDArray<float> x('c', {3, 5});
     x.linspace(1);
-    NDArray<float> exp('c', {3, 1});
+    NDArray<float> exp('c', {3});
     exp.assign(4.0f);
 
     nd4j::ops::argmax<float> op;
@@ -3022,7 +3038,7 @@ TEST_F(DeclarableOpsTests1, ArgMax1) {
 TEST_F(DeclarableOpsTests1, ArgMax2) {
     NDArray<float> x('c', {3, 5});
     x.linspace(1);
-    NDArray<float> exp('c', {1, 5});
+    NDArray<float> exp('c', {5});
     exp.assign(2.0f);
 
     nd4j::ops::argmax<float> op;
@@ -3044,7 +3060,7 @@ TEST_F(DeclarableOpsTests1, ArgMax3) {
     NDArray<float> x('c', {3, 5});
     NDArray<float> dim('c', {1, 1}, {0});
     x.linspace(1);
-    NDArray<float> exp('c', {1, 5});
+    NDArray<float> exp('c', {5});
     exp.assign(2.0f);
 
     nd4j::ops::argmax<float> op;
@@ -3065,7 +3081,7 @@ TEST_F(DeclarableOpsTests1, ArgMax4) {
     NDArray<float> x('c', {3, 5});
     NDArray<float> dim('c', {1, 1}, {1});
     x.linspace(1);
-    NDArray<float> exp('c', {3, 1});
+    NDArray<float> exp('c', {3});
     exp.assign(4.0f);
 
     nd4j::ops::argmax<float> op;
@@ -3087,7 +3103,7 @@ TEST_F(DeclarableOpsTests1, ArgMax5) {
     NDArray<float> x('c', {3, 5});
     NDArray<float> dim('c', {1, 2}, {0, 1});
     x.linspace(1);
-    NDArray<float> exp('c', {1, 1}, {14});
+    NDArray<float> exp(14.0f);
 
 
     nd4j::ops::argmax<float> op;
@@ -4025,6 +4041,27 @@ TEST_F(DeclarableOpsTests1, Reverse_10 ) {
     ASSERT_TRUE(e.equalsTo(z));
 
     delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, Reverse_11 ) {
+
+
+    NDArray<float> input('c', {2,3,4});
+    NDArray<float> expected('c', {2,3,4}, {24., 23., 22., 21., 20., 19., 18., 17., 16., 15., 14., 13., 12., 11., 10., 9., 8., 7., 6., 5., 4., 3., 2., 1.});
+
+    input.linspace(1);
+    nd4j::ops::reverse<float> op;
+    auto results = op.execute({&input}, {}, {0, 1, 2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
 }
 
 ////////////////////////////////////////////////////////////////////

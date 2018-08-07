@@ -1,28 +1,27 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.api.buffer;
 
+import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -35,6 +34,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.SerializationUtils;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -245,6 +245,28 @@ public class FloatDataBufferTest extends BaseNd4jTest {
         assertArrayEquals(old, newBuf, 1e-4F);
         workspace.close();
     }
+
+    @Test
+    public void testAddressPointer(){
+        if( Nd4j.getExecutioner().type() !=  OpExecutioner.ExecutionerType.NATIVE_CPU ){
+            return;
+        }
+
+        DataBuffer buffer = Nd4j.createBuffer(new float[] {1, 2, 3, 4});
+        DataBuffer wrappedBuffer = Nd4j.createBuffer(buffer, 1, 2);
+
+        FloatPointer pointer = (FloatPointer) wrappedBuffer.addressPointer();
+        Assert.assertEquals(buffer.getFloat(1), pointer.get(0), 1e-1);
+        Assert.assertEquals(buffer.getFloat(2), pointer.get(1), 1e-1);
+
+        try {
+            pointer.asBuffer().get(3); // Try to access element outside pointer capacity.
+            Assert.fail("Accessing this address should not be allowed!");
+        } catch (IndexOutOfBoundsException e) {
+            // do nothing
+        }
+    }
+
 
     @Override
     public char ordering() {

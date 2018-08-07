@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 //  @author raver119@gmail.com
 //
@@ -16,7 +32,10 @@ namespace helpers {
         int totalLength = input->lengthOf();
         int lastDim = input->sizeAt(-1);
         int chunkCount = totalLength / lastDim;
-
+        std::unique_ptr<ResultSet<T>> listOut(output->allTensorsAlongDimension({output->rankOf() - 1}));
+        std::unique_ptr<ResultSet<T>> listInput(input->allTensorsAlongDimension({input->rankOf() - 1}));
+        if (chunkCount != listOut->size()) 
+            return ND4J_STATUS_VALIDATION;
         for (int c = 0; c < chunkCount; c++) {
             for (int e = 0; e < lastDim; e++) {
                 int begin = nd4j::math::nd4j_max(0, e - depth);
@@ -24,11 +43,11 @@ namespace helpers {
                 T quadSum = 0;
 
                 for (int pos = begin; pos < end; ++pos) {
-                    T val = (*input)(c * lastDim + pos);
+                    T val = (*listInput->at(c))(pos);
                     quadSum += val * val;
                 }
                 T dividor = nd4j::math::nd4j_pow(bias + alpha * quadSum, beta);
-                (*output)(c * lastDim + e) = (*input)(c * lastDim + e) / dividor;
+                (*listOut->at(c))(e) = (*listInput->at(c))(e) / dividor;
             }
         }
 
@@ -44,7 +63,7 @@ namespace helpers {
         halfDepth = nd4j::math::nd4j_max(halfDepth, 0);
         const int channel =  input->sizeAt(1);
 
-        std::unique_ptr<NDArray<T>> activitySqr(input->createUninitialized());
+        std::unique_ptr<NDArray<T>> activitySqr(input->dup('c'));//NDArrayFactory<T>::createUninitialized(input));
         std::unique_ptr<NDArray<T>> sumPart(activitySqr->dup('c'));
 
         input->template applyPairwiseTransform<simdOps::Multiply<T>>(input, activitySqr.get(), nullptr);

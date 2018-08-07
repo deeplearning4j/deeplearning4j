@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by raver119 on 12.10.2017.
 //
@@ -625,7 +641,7 @@ TEST_F(ParityOpsTests, Test_Bias_Add_1) {
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_1) {
     NDArray<float> matrix('c', {2, 2}, {1, 2, 3, 4});
-    NDArray<float> idc('c', {1, 1}, {0});
+    NDArray<float> idc('c', {1}, {0});
     NDArray<float> updates('c', {1, 2}, {1, 1});
     NDArray<float> exp('c', {2, 2}, {2, 3, 3, 4});
 
@@ -641,13 +657,13 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_1) {
 }
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_2) {
-    NDArray<float> matrix('c', {1, 4}, {1, 2, 3, 4});
+    NDArray<float> vec('c', {4}, {1, 2, 3, 4});
     NDArray<float> idc('c', {1, 4}, {0, 1, 2, 3});
     NDArray<float> updates('c', {1, 4}, {1, 1, 1, 1});
     NDArray<float> exp('c', {1, 4}, {2, 3, 4, 5});
 
     nd4j::ops::scatter_add<float> op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    auto result = op.execute({&vec, &idc, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0); 
@@ -659,7 +675,7 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_2) {
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_3) {
     NDArray<float> matrix('c', {2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
-    NDArray<float> idc('c', {1, 1}, {0});
+    NDArray<float> idc('c', {1}, {0});
     NDArray<float> updates('c', {1, 2, 2}, {1, 1, 1, 1});
     NDArray<float> exp('c', {2, 2, 2}, {2, 3, 4, 5, 5, 6, 7, 8});
 
@@ -695,7 +711,7 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_5) {
     NDArray<float> matrix('c', {2, 2, 3}, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1});
     NDArray<float> idc('c', {2, 2}, {1, 1, 0, 0});
     NDArray<float> updates('c', {2, 2, 2, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
-    NDArray<float> exp('c', {2, 2, 3}, {9, 11, 13, 15, 17, 19, 9, 11, 13, 15, 17, 19});
+    NDArray<float> exp('c', {2, 2, 3}, {9., 11., 13.,15., 17., 19., 9., 11., 13.,15., 17., 19.});
 
     nd4j::ops::scatter_add<float> op;
     auto result = op.execute({&matrix, &idc, &updates}, {}, {});
@@ -703,17 +719,16 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_5) {
 
     auto z = result->at(0); 
 
-//    ASSERT_TRUE(exp.equalsTo(z));
+    ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
 }
-
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_6) {
     NDArray<float> matrix('c', {2, 2, 2}, {1, 1, 1, 1, 1, 1, 1, 1});
     NDArray<float> idc('c', {2, 2}, {1, 1, 0, 0});
     NDArray<float> updates('c', {2, 2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8});
-    NDArray<float> exp('c', {2, 2, 2}, {9, 11, 15, 17, 9, 11, 15, 19});
+    NDArray<float> exp('c', {2, 2, 2}, {7, 9, 11, 13, 7, 9, 11, 13});
 
     nd4j::ops::scatter_add<float> op;
     auto result = op.execute({&matrix, &idc, &updates}, {}, {});
@@ -721,7 +736,178 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_6) {
 
     auto z = result->at(0); 
 
-//    ASSERT_TRUE(exp.equalsTo(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ParityOpsTests, scatterMax_test1) {
+    NDArray<float> matrix('c', {2, 2}, {1, 2, 3, 4});
+    NDArray<float> idc('c', {1}, {0});
+    NDArray<float> updates('c', {1, 2}, {10, 1});
+    NDArray<float> exp('c', {2, 2}, {10, 2, 3, 4});
+
+    nd4j::ops::scatter_max<float> op;
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ParityOpsTests, scatterMax_test2) {
+    NDArray<float> vec('c', {4}, {1, 2, 3, 4});
+    NDArray<float> idc('c', {1, 4}, {0, 1, 2, 3});
+    NDArray<float> updates('c', {1, 4}, {10, 1, 30, 1});
+    NDArray<float> exp('c', {1, 4}, {10, 2, 30, 4});
+
+    nd4j::ops::scatter_max<float> op;
+    auto result = op.execute({&vec, &idc, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ParityOpsTests, scatterMax_test3) {
+    NDArray<float> matrix('c', {2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
+    NDArray<float> idc('c', {1}, {0});
+    NDArray<float> updates('c', {1, 2, 2}, {10, 1, 30, 1});
+    NDArray<float> exp('c', {2, 2, 2}, {10, 2, 30, 4, 5, 6, 7, 8});
+
+    nd4j::ops::scatter_max<float> op;
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ParityOpsTests, scatterMax_test4) {
+    NDArray<float> matrix('c', {2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
+    NDArray<float> idc('c', {1, 2}, {0, 0});
+    NDArray<float> updates('c', {1, 2, 2, 2}, {1,10,1,10, 1,1,10,1.});
+    NDArray<float> exp('c', {2, 2, 2}, {1, 10, 10, 10, 5, 6, 7, 8});
+
+    nd4j::ops::scatter_max<float> op;
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);     
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ParityOpsTests, scatterMax_test5) {
+    NDArray<float> matrix('c', {2, 2, 3}, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1});
+    NDArray<float> idc('c', {2, 2}, {1, 1, 0, 0});
+    NDArray<float> updates('c', {2, 2, 2, 3}, {2,10,1,10, 2,10,1,10, 2,10,1,10,  10,2,10,1, 10,2,10,1, 10,2,10,1.});
+    NDArray<float> exp('c', {2, 2, 3}, {10, 2, 10,   2, 10, 2,   2, 10, 2,   10, 2, 10});
+
+    nd4j::ops::scatter_max<float> op;
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+   ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ParityOpsTests, scatterMax_test6) {
+    NDArray<float> matrix('c', {2, 2, 2}, {1, 1, 1, 1, 1, 1, 1, 1});
+    NDArray<float> idc('c', {2, 2}, {1, 1, 0, 0});
+    NDArray<float> updates('c', {2, 2, 2, 2}, {0,2,0,2, 0,2,0,2, 2,0,2,0.,  2,0,2,0});
+    NDArray<float> exp('c', {2, 2, 2}, {2, 1, 2, 1, 1, 2, 1, 2});
+
+    nd4j::ops::scatter_max<float> op;
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+   ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(ParityOpsTests, scatterMin_test1) {
+    NDArray<float> matrix('c', {2, 2}, {1, 2, 3, 4});
+    NDArray<float> idc('c', {1}, {0});
+    NDArray<float> updates('c', {1, 2}, {-1, 1});
+    NDArray<float> exp('c', {2, 2}, {-1, 1, 3, 4});
+
+    nd4j::ops::scatter_min<float> op;
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ParityOpsTests, scatterMin_test2) {
+    NDArray<float> vec('c', {4}, {1, 2, 3, 4});
+    NDArray<float> idc('c', {1, 4}, {0, 1, 2, 3});
+    NDArray<float> updates('c', {1, 4}, {10, 1, 30, 1});
+    NDArray<float> exp('c', {1, 4}, {1, 1, 3, 1});
+
+    nd4j::ops::scatter_min<float> op;
+    auto result = op.execute({&vec, &idc, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ParityOpsTests, scatterMin_test3) {
+    NDArray<float> matrix('c', {2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
+    NDArray<float> idc('c', {1}, {0});
+    NDArray<float> updates('c', {1, 2, 2}, {10, 1, 30, 2});
+    NDArray<float> exp('c', {2, 2, 2}, {1, 1, 3, 2, 5, 6, 7, 8});
+
+    nd4j::ops::scatter_min<float> op;
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ParityOpsTests, scatterMin_test4) {
+    NDArray<float> matrix('c', {2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
+    NDArray<float> idc('c', {1, 2}, {0, 0});
+    NDArray<float> updates('c', {1, 2, 2, 2}, {1,10,1,10, 1,1,10,1.});
+    NDArray<float> exp('c', {2, 2, 2}, {1, 1, 1, 1, 5, 6, 7, 8});
+
+    nd4j::ops::scatter_min<float> op;
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);     
+
+    ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
 }

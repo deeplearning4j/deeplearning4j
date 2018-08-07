@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.arbiter.optimize;
 
 import org.apache.commons.math3.distribution.LogNormalDistribution;
@@ -8,6 +24,7 @@ import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
 import org.deeplearning4j.arbiter.optimize.generator.GridSearchCandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.generator.RandomSearchGenerator;
+import org.deeplearning4j.arbiter.optimize.parameter.BooleanSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
@@ -63,6 +80,7 @@ public class TestJson {
         l.add(new DiscreteParameterSpace<>("first", "second", "third"));
         l.add(new IntegerParameterSpace(0, 10));
         l.add(new IntegerParameterSpace(new UniformIntegerDistribution(0, 50)));
+        l.add(new BooleanSpace());
 
         for (ParameterSpace<?> ps : l) {
             String strJson = jsonMapper.writeValueAsString(ps);

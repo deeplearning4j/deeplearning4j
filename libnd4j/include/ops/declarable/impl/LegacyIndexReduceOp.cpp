@@ -1,9 +1,26 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by raver119 on 16.10.2017.
 //
 
 #include <ops/declarable/LegacyIndexReduceOp.h>
 #include <helpers/ShapeUtils.h>
+#include <Status.h>
 
 
 namespace nd4j {
@@ -65,30 +82,62 @@ namespace nd4j {
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT)) {
-                // scalar
-                T res = NativeOpExcutioner<T>::execIndexReduceScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data());
-                z->putScalar(0, res);
+            bool allAxes = false;
+
+            if (block.width() == 1) {
+                if (block.getIArguments()->size() == 0 ||
+                    (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT)) {
+                    // scalar
+                    T res = NativeOpExcutioner<T>::execIndexReduceScalar(opNum, x->getBuffer(), x->getShapeInfo(),
+                                                                         block.getTArguments()->data());
+                    z->putScalar(0, res);
+                } else {
+                    // TAD
+                    std::vector<int> dims(*block.getIArguments());
+                    for (int e = 0; e < dims.size(); e++)
+                        if (dims[e] < 0)
+                            dims[e] += x->rankOf();
+
+                    if (dims.size() > 1)
+                        std::sort(dims.begin(), dims.end());
+
+                    shape::TAD tad(x->getShapeInfo(), dims.data(), dims.size());
+                    tad.createTadOnlyShapeInfo();
+                    tad.createOffsets();
+
+                    NativeOpExcutioner<T>::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);                }
             } else {
-                // TAD
-                std::vector<int> dims(*block.getIArguments());
-                for (int e = 0; e < dims.size(); e++)
-                    if (dims[e] < 0)
-                        dims[e] += x->rankOf();
+                // TF mode
+                auto indices = INPUT_VARIABLE(1);
+                if (indices->lengthOf() == x->rankOf())
+                    allAxes = true;
 
-                if (dims.size() > 1)
-                    std::sort(dims.begin(), dims.end());
+                std::vector<int> axis(indices->lengthOf());
+                for (int e = 0; e < indices->lengthOf(); e++) {
+                    // lol otherwise we segfault on macOS
+                    int f = (int) indices->getScalar(e);
+                    axis[e] = f >= 0 ? f : f += x->rankOf();
+                }
 
-                shape::TAD tad(x->getShapeInfo(), dims.data(), dims.size());
-                tad.createTadOnlyShapeInfo();
-                tad.createOffsets();
+                if (allAxes) {
 
-                NativeOpExcutioner<T>::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                } else {
+                    if (indices->lengthOf() > 1)
+                        std::sort(axis.begin(), axis.end());
+
+                    REQUIRE_TRUE(axis.size() > 0, 0, "Some dimensions required for reduction!");
+
+                    shape::TAD tad(x->getShapeInfo(), axis.data(), axis.size());
+                    tad.createTadOnlyShapeInfo();
+                    tad.createOffsets();
+
+                    NativeOpExcutioner<T>::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                }
             }
 
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         template class ND4J_EXPORT LegacyIndexReduceOp<float>;

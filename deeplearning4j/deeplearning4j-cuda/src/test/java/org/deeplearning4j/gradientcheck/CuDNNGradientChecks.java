@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.gradientcheck;
 
 import lombok.extern.slf4j.Slf4j;
@@ -630,5 +646,34 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
             assertTrue(msg, gradOK);
             TestUtils.testModelSerialization(mln);
         }
+    }
+
+
+    @Test
+    public void testDenseBatchNorm(){
+
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new NoOp())
+                .list()
+                .layer(new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build())
+                .layer(new BatchNormalization.Builder().nOut(5).build())
+                .layer(new OutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        INDArray in = Nd4j.rand(3, 5);
+        INDArray labels = TestUtils.randomOneHot(3, 5);
+
+        boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, null, null);
+
+        assertTrue(gradOK);
+
+        TestUtils.testModelSerialization(net);
     }
 }

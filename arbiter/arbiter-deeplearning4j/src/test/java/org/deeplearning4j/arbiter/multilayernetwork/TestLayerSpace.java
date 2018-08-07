@@ -1,34 +1,42 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2016 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.arbiter.multilayernetwork;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.layers.*;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.parameter.BooleanSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.constraint.MaxNormConstraint;
+import org.deeplearning4j.nn.conf.constraint.MinMaxNormConstraint;
+import org.deeplearning4j.nn.conf.constraint.NonNegativeConstraint;
+import org.deeplearning4j.nn.conf.constraint.UnitNormConstraint;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.learning.config.Sgd;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -54,7 +62,7 @@ public class TestLayerSpace {
     @Test
     public void testBasic2() {
 
-        Activation[] actFns = new Activation[] {Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
+        Activation[] actFns = new Activation[]{Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
         Random r = new Random(12345);
 
         for (int i = 0; i < 20; i++) {
@@ -62,10 +70,10 @@ public class TestLayerSpace {
             new DenseLayer.Builder().build();
 
             DenseLayerSpace ls =
-                            new DenseLayerSpace.Builder().nOut(20)
-                                    .updater(new SgdSpace(new ContinuousParameterSpace(0.3, 0.4)))
-                                            .l2(new ContinuousParameterSpace(0.01, 0.1))
-                                            .activation(new DiscreteParameterSpace<>(actFns)).build();
+                    new DenseLayerSpace.Builder().nOut(20)
+                            .updater(new SgdSpace(new ContinuousParameterSpace(0.3, 0.4)))
+                            .l2(new ContinuousParameterSpace(0.01, 0.1))
+                            .activation(new DiscreteParameterSpace<>(actFns)).build();
 
             //Set the parameter numbers...
             List<ParameterSpace> list = ls.collectLeaves();
@@ -87,7 +95,7 @@ public class TestLayerSpace {
             DenseLayer l = ls.getValue(d);
 
             assertEquals(20, l.getNOut());
-            double lr = ((Sgd)l.getIUpdater()).getLearningRate();
+            double lr = ((Sgd) l.getIUpdater()).getLearningRate();
             double l2 = l.getL2();
             IActivation activation = l.getActivationFn();
 
@@ -102,7 +110,7 @@ public class TestLayerSpace {
     @Test
     public void testBatchNorm() {
         BatchNormalizationSpace sp = new BatchNormalizationSpace.Builder().gamma(1.5)
-                        .beta(new ContinuousParameterSpace(2, 3)).lockGammaBeta(true).build();
+                .beta(new ContinuousParameterSpace(2, 3)).lockGammaBeta(true).build();
 
         //Set the parameter numbers...
         List<ParameterSpace> list = sp.collectLeaves();
@@ -113,18 +121,52 @@ public class TestLayerSpace {
             }
         }
 
-        BatchNormalization bn = sp.getValue(new double[] {0.6});
+        BatchNormalization bn = sp.getValue(new double[]{0.6});
         assertTrue(bn.isLockGammaBeta());
         assertEquals(1.5, bn.getGamma(), 0.0);
         assertEquals(0.6 * (3 - 2) + 2, bn.getBeta(), 1e-4);
     }
 
     @Test
+    public void testBatchNormConstrain() {
+
+        ArrayList<List<LayerConstraint>> constrainListOptions = new ArrayList<List<LayerConstraint>>();
+        constrainListOptions.add(Collections.singletonList((LayerConstraint) new MaxNormConstraint(0.5, 1)));
+        constrainListOptions.add(Collections.singletonList((LayerConstraint) new MinMaxNormConstraint(0.3, 0.4, 1.0, 1)));
+        constrainListOptions.add(Collections.singletonList((LayerConstraint) new NonNegativeConstraint()));
+        constrainListOptions.add(Collections.singletonList((LayerConstraint) new UnitNormConstraint(1)));
+
+        DiscreteParameterSpace<List<LayerConstraint>> constrainParamSpace = new DiscreteParameterSpace<>(constrainListOptions);
+        BatchNormalizationSpace sp = new BatchNormalizationSpace.Builder().gamma(1.5)
+                .beta(0.6).lockGammaBeta(true).constrainBeta(constrainParamSpace).constrainGamma(new NonNegativeConstraint()).build();
+
+        BatchNormalization bnExpected = new BatchNormalization.Builder().gamma(1.5)
+                .beta(0.6).lockGammaBeta(true).constrainBeta(new NonNegativeConstraint()).constrainGamma(new NonNegativeConstraint()).build();
+        //Set the parameter numbers...
+        List<ParameterSpace> list = sp.collectLeaves();
+        int k = 0;
+            for(
+        int j = 0; j<list.size();j++)
+
+        {
+            if (list.get(j).numParameters() > 0) {
+                list.get(j).setIndices(k++);
+            }
+        }
+
+        assertEquals(1,sp.getNumParameters());
+        BatchNormalization bn = sp.getValue(new double[]{0.6});
+        assertEquals(bnExpected,bn); //0.6 should pick the 3rd value in discrete param space
+
+        //assertEquals(bn.getConstraints().size(),2); This throws an NPE but I believe this is an issue with actual impl of BatchNormalization not arbiter
+}
+
+    @Test
     public void testActivationLayer() {
-        Activation[] actFns = new Activation[] {Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
+        Activation[] actFns = new Activation[]{Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
 
         ActivationLayerSpace als =
-                        new ActivationLayerSpace.Builder().activation(new DiscreteParameterSpace<>(actFns)).build();
+                new ActivationLayerSpace.Builder().activation(new DiscreteParameterSpace<>(actFns)).build();
         //Set the parameter numbers...
         List<ParameterSpace> list = als.collectLeaves();
         for (int j = 0; j < list.size(); j++) {
@@ -155,10 +197,10 @@ public class TestLayerSpace {
     @Test
     public void testEmbeddingLayer() {
 
-        Activation[] actFns = new Activation[] {Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
+        Activation[] actFns = new Activation[]{Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
 
         EmbeddingLayerSpace els = new EmbeddingLayerSpace.Builder().activation(new DiscreteParameterSpace<>(actFns))
-                        .nIn(10).nOut(new IntegerParameterSpace(10, 20)).build();
+                .nIn(10).nOut(new IntegerParameterSpace(10, 20)).build();
         //Set the parameter numbers...
         List<ParameterSpace> list = els.collectLeaves();
         int k = 0;
@@ -192,14 +234,39 @@ public class TestLayerSpace {
     }
 
     @Test
+    public void testSimpleConv() {
+        ConvolutionLayer conv2d = new Convolution2D.Builder().dilation(1,2).kernelSize(2,2).nIn(2).nOut(3).build();
+        ConvolutionLayerSpace conv2dSpace = new ConvolutionLayerSpace.Builder().dilation(1,2).kernelSize(2,2).nIn(2).nOut(3).build();
+        assertEquals(0,conv2dSpace.getNumParameters());
+        assertEquals(conv2d, conv2dSpace.getValue(new double[0]));
+
+        Deconvolution2DLayerSpace deconvd2dls = new Deconvolution2DLayerSpace.Builder().dilation(2,1).nIn(2).nOut(2).hasBias(new BooleanSpace()).build();
+        assertEquals(1, deconvd2dls.getNumParameters());
+        //Set the parameter numbers...
+        List<ParameterSpace> list = deconvd2dls.collectLeaves();
+        int k = 0;
+        for(
+                int j = 0; j<list.size();j++)
+
+        {
+            if (list.get(j).numParameters() > 0) {
+                list.get(j).setIndices(k++);
+            }
+        }
+        Deconvolution2D actual = deconvd2dls.getValue(new double[]{0.9});
+        assertTrue(!actual.hasBias());
+        assertEquals(ArrayUtils.toString(new int[] {2,1} ),ArrayUtils.toString(actual.getDilation()));
+    }
+
+    @Test
     public void testGravesBidirectionalLayer() {
 
-        Activation[] actFns = new Activation[] {Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
+        Activation[] actFns = new Activation[]{Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
 
         GravesBidirectionalLSTMLayerSpace ls =
-                        new GravesBidirectionalLSTMLayerSpace.Builder().activation(new DiscreteParameterSpace<>(actFns))
-                                        .forgetGateBiasInit(new ContinuousParameterSpace(0.5, 0.8)).nIn(10)
-                                        .nOut(new IntegerParameterSpace(10, 20)).build();
+                new GravesBidirectionalLSTMLayerSpace.Builder().activation(new DiscreteParameterSpace<>(actFns))
+                        .forgetGateBiasInit(new ContinuousParameterSpace(0.5, 0.8)).nIn(10)
+                        .nOut(new IntegerParameterSpace(10, 20)).build();
         //Set the parameter numbers...
         List<ParameterSpace> list = ls.collectLeaves();
         int k = 0;
@@ -235,7 +302,7 @@ public class TestLayerSpace {
     }
 
     private static boolean containsActivationFunction(Activation[] activationFunctions,
-                    IActivation activationFunction) {
+                                                      IActivation activationFunction) {
         for (Activation af : activationFunctions) {
             if (activationFunction.equals(af.getActivationFunction()))
                 return true;

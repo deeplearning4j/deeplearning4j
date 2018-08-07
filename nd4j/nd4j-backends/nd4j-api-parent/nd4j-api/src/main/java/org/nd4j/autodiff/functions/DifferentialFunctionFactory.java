@@ -1,6 +1,23 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.autodiff.functions;
 
 import lombok.Data;
+import lombok.NonNull;
 import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -26,8 +43,8 @@ import org.nd4j.linalg.api.ops.impl.shape.*;
 import org.nd4j.linalg.api.ops.impl.shape.Stack;
 import org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
+import org.nd4j.linalg.api.ops.impl.shape.bp.TileBp;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
@@ -35,6 +52,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.segment.*;
 import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
@@ -42,7 +60,6 @@ import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
 import org.nd4j.linalg.api.ops.random.custom.RandomNormal;
 import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -149,7 +166,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable constant(SDVariable input, long... shape) {
-        return new Constant(sameDiff(), input, (shape != null && shape.length > 0 ? null : shape)).outputVariable();
+        return new Constant(sameDiff(), input, (shape != null && shape.length > 0 ? shape : null)).outputVariable();
     }
 
     public SDVariable linspace(double lower, double upper, long count) {
@@ -456,11 +473,12 @@ public class DifferentialFunctionFactory {
     }
 
 
-    public SDVariable tile(SDVariable iX, int[] repeat) {
-        if (repeat == null) {
-            throw new ND4JIllegalStateException("Repeat must not be null!");
-        }
+    public SDVariable tile(@NonNull SDVariable iX, @NonNull int[] repeat) {
         return new Tile(sameDiff(), iX, repeat).outputVariable();
+    }
+
+    public SDVariable tileBp(@NonNull SDVariable in, @NonNull SDVariable grad, @NonNull int[] repeat){
+        return new TileBp(sameDiff, in, grad, repeat).outputVariable();
     }
 
 
@@ -526,6 +544,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable logEntropy(SDVariable in, int... dimensions) {
         return new LogEntropy(sameDiff(), in, dimensions).outputVariable();
+    }
+
+    public SDVariable shannonEntropy(SDVariable in, int... dimensions){
+        return new ShannonEntropy(sameDiff(), in, dimensions).outputVariable();
     }
 
     public SDVariable countNonZero(SDVariable input, int... dimensions) {
@@ -645,20 +667,20 @@ public class DifferentialFunctionFactory {
         return new MatchConditionTransform(sameDiff(), in, condition).outputVariable();
     }
 
-    public SDVariable cumsum(SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
-        return new CumSum(sameDiff(), in, axis, exclusive, reverse).outputVariable();
+    public SDVariable cumsum(SDVariable in, boolean exclusive, boolean reverse, int... axis) {
+        return new CumSum(sameDiff(), in, exclusive, reverse, axis).outputVariable();
     }
 
-    public SDVariable cumsumBp(SDVariable in, SDVariable axis, SDVariable grad, boolean exclusive, boolean reverse) {
-        return new CumSumBp(sameDiff(), in, axis, grad, exclusive, reverse).outputVariable();
+    public SDVariable cumsumBp(SDVariable in, SDVariable grad, boolean exclusive, boolean reverse, int... axis) {
+        return new CumSumBp(sameDiff(), in, grad, exclusive, reverse, axis).outputVariable();
     }
 
-    public SDVariable cumprod(SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
-        return new CumProd(sameDiff(), in, axis, exclusive, reverse).outputVariable();
+    public SDVariable cumprod(SDVariable in, boolean exclusive, boolean reverse, int... axis) {
+        return new CumProd(sameDiff(), in, exclusive, reverse, axis).outputVariable();
     }
 
-    public SDVariable cumprodBp(SDVariable in, SDVariable axis, SDVariable grad, boolean exclusive, boolean reverse) {
-        return new CumProdBp(sameDiff(), in, axis, grad, exclusive, reverse).outputVariable();
+    public SDVariable cumprodBp(SDVariable in, SDVariable grad, boolean exclusive, boolean reverse, int... axis) {
+        return new CumProdBp(sameDiff(), in, grad, exclusive, reverse, axis).outputVariable();
     }
 
     public SDVariable biasAdd(SDVariable input, SDVariable bias) {
@@ -983,7 +1005,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable floorMod(SDVariable x, SDVariable y) {
-        return new FModOp(sameDiff(), x, y).outputVariable();
+        return new FloorModOp(sameDiff(), x, y).outputVariable();
     }
 
     public List<SDVariable> floorModBp(SDVariable x, SDVariable y, SDVariable grad) {
@@ -1097,6 +1119,14 @@ public class DifferentialFunctionFactory {
 
     public SDVariable confusionMatrix(SDVariable labels, SDVariable pred, Integer numClasses, SDVariable weights) {
         return new ConfusionMatrix(sameDiff(), labels, pred, numClasses, weights).outputVariable();
+    }
+
+    public SDVariable matrixDeterminant(SDVariable in){
+        return new MatrixDeterminant(sameDiff(), in, false).outputVariable();
+    }
+
+    public SDVariable matrixInverse(SDVariable in){
+        return new MatrixInverse(sameDiff(), in, false).outputVariable();
     }
 
     public SDVariable broadcast(SDVariable iX, int... shape) {
@@ -1423,9 +1453,9 @@ public class DifferentialFunctionFactory {
     }
 
 
-    public SDVariable softmaxDerivative(SDVariable functionInput, SDVariable wrt) {
+    public SDVariable softmaxDerivative(SDVariable functionInput, SDVariable wrt, Integer dimension) {
         validateDifferentialFunctionsameDiff(functionInput);
-        return new SoftMaxDerivative(sameDiff(), functionInput, wrt).outputVariable();
+        return new SoftmaxBp(sameDiff(), functionInput, wrt, dimension).outputVariable();
     }
 
 
@@ -1562,8 +1592,27 @@ public class DifferentialFunctionFactory {
         for (SDVariable df : differentialFunctions)
             validateDifferentialFunctionsameDiff(df);
 
-        return new DynamicStitch(sameDiff(), indices, differentialFunctions)
-                .outputVariable();
+        return new DynamicStitch(sameDiff(), indices, differentialFunctions).outputVariable();
+    }
+
+    public SDVariable segmentMax(SDVariable data, SDVariable segmentIds){
+        return new SegmentMax(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable segmentMin(SDVariable data, SDVariable segmentIds){
+        return new SegmentMin(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable segmentMean(SDVariable data, SDVariable segmentIds){
+        return new SegmentMean(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable segmentProd(SDVariable data, SDVariable segmentIds){
+        return new SegmentProd(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable segmentSum(SDVariable data, SDVariable segmentIds){
+        return new SegmentSum(sameDiff(), data, segmentIds).outputVariable();
     }
 
     public SDVariable dilation2D(SDVariable df, SDVariable weights, int[] strides,
@@ -1580,6 +1629,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable size(SDVariable in) {
         return new Size(sameDiff(), in).outputVariable();
+    }
+
+    public SDVariable sizeAt(SDVariable in, int dimension){
+        return new SizeAt(sameDiff(), in, dimension).outputVariable();
     }
 
     public SDVariable rank(SDVariable df) {
@@ -1599,6 +1652,10 @@ public class DifferentialFunctionFactory {
     public SDVariable gatherNd(SDVariable df, SDVariable indices) {
         validateDifferentialFunctionsameDiff(df);
         return new GatherNd(sameDiff(), df, indices, false).outputVariable();
+    }
+
+    public SDVariable trace(SDVariable in){
+        return new Trace(sameDiff(), in).outputVariable();
     }
 
     public SDVariable cross(SDVariable a, SDVariable b) {
@@ -1943,6 +2000,14 @@ public class DifferentialFunctionFactory {
 
     public SDVariable scatterDiv(SDVariable ref, SDVariable indices, SDVariable updates) {
         return new ScatterDiv(sameDiff(), ref, indices, updates).outputVariable();
+    }
+
+    public SDVariable scatterMax(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return new ScatterMax(sameDiff(), ref, indices, updates).outputVariable();
+    }
+
+    public SDVariable scatterMin(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return new ScatterMin(sameDiff(), ref, indices, updates).outputVariable();
     }
 
     public SDVariable scatterUpdate(SDVariable ref, SDVariable indices, SDVariable updates) {

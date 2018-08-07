@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by george@skymind.io on 26.01.2018.
 //
@@ -37,19 +53,29 @@ namespace nd4j {
             if (block.getTArguments()->size() > 0) {
                 shift = T_ARG(0);
             }
+//            nd4j_printf("means output %p \n",  resMeans->getBuffer())
+//            nd4j_printf("variance output %p \n",  resVariances->getBuffer())
+//            resMeans->printBuffer("Output Means");
+//            resVariances->printBuffer("Output Variance");
 
             means->template applyScalar<simdOps::Divide<T>>((*counts)(0), resMeans, nullptr);
+
             std::unique_ptr<NDArray<T>> squareMeans(resMeans->dup('c'));
             std::unique_ptr<NDArray<T>> tempVariances(resVariances->dup('c'));
 
-            resMeans->template applyTransform<simdOps::Square<T>>(squareMeans.get(), nullptr);
+            squareMeans->template applyTransform<simdOps::Square<T>>((T*)nullptr);
             variances->template applyScalar<simdOps::Divide<T>>((*counts)(0), tempVariances.get(), nullptr);
+//            tempVariances->printIndexedBuffer("varianced divided by count");
             tempVariances->template applyPairwiseTransform<simdOps::Subtract<T>>(squareMeans.get(), resVariances, nullptr);
-          
+
             if (shift != T(0)) {
                 resMeans->template applyScalar<simdOps::Add<T>>(shift, resMeans, nullptr);
             }
-
+          
+//            resMeans->printBuffer("Output Means");
+//            resVariances->printBuffer("Output Variance");
+//            nd4j_printf("means output %p \n",  resMeans->getBuffer())
+//            nd4j_printf("variance output %p \n",  resVariances->getBuffer())
             return ND4J_STATUS_OK;
         }
 

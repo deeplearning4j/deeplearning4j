@@ -1,0 +1,34 @@
+{
+  "excludes": [
+    "abstract"
+  ],
+  "indices": [
+  ],
+  "pages": [
+    {
+      "page": "index.md",
+      "class": []
+    },
+    {
+      "page": "basics.md",
+      "class": []
+    },
+    {
+      "page": "elementwise.md",
+      "class": []
+    },
+    {
+      "page": "matrix-manipulation.md",
+      "class": []
+    },
+    {
+      "page": "syntax.md",
+      "class": []
+    },
+    {
+      "page": "tensor.md",
+      "class": []
+    }
+  ]
+}
+

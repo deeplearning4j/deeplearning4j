@@ -1,20 +1,19 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2016 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.arbiter.layers;
 
 import lombok.AccessLevel;
@@ -37,6 +36,7 @@ import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
 public abstract class BaseConvolutionLayerSpace<T extends FeedForwardLayer> extends FeedForwardLayerSpace<T> {
+    protected ParameterSpace<int[]> dilation;
     protected ParameterSpace<int[]> kernelSize;
     protected ParameterSpace<int[]> stride;
     protected ParameterSpace<int[]> padding;
@@ -45,6 +45,7 @@ public abstract class BaseConvolutionLayerSpace<T extends FeedForwardLayer> exte
 
     protected BaseConvolutionLayerSpace(Builder builder) {
         super(builder);
+        this.dilation = builder.dilation;
         this.kernelSize = builder.kernelSize;
         this.stride = builder.stride;
         this.padding = builder.padding;
@@ -54,8 +55,10 @@ public abstract class BaseConvolutionLayerSpace<T extends FeedForwardLayer> exte
         this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
-    protected void setLayerOptionsBuilder(ConvolutionLayer.Builder builder, double[] values) {
+    protected void setLayerOptionsBuilder(ConvolutionLayer.BaseConvBuilder<?> builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
+        if (dilation != null)
+            builder.dilation(dilation.getValue(values));
         if (kernelSize != null)
             builder.kernelSize(kernelSize.getValue(values));
         if (stride != null)
@@ -76,6 +79,8 @@ public abstract class BaseConvolutionLayerSpace<T extends FeedForwardLayer> exte
     @Override
     public String toString(String delim) {
         StringBuilder sb = new StringBuilder();
+        if (dilation != null)
+            sb.append("dilation: ").append(dilation).append(delim);
         if (kernelSize != null)
             sb.append("kernelSize: ").append(kernelSize).append(delim);
         if (stride != null)
@@ -92,12 +97,21 @@ public abstract class BaseConvolutionLayerSpace<T extends FeedForwardLayer> exte
 
 
     public static abstract class Builder<T> extends FeedForwardLayerSpace.Builder<T> {
+        protected ParameterSpace<int[]> dilation;
         protected ParameterSpace<int[]> kernelSize;
         protected ParameterSpace<int[]> stride;
         protected ParameterSpace<int[]> padding;
         protected ParameterSpace<ConvolutionMode> convolutionMode;
         protected ParameterSpace<Boolean> hasBias;
 
+        public T dilation(int... dilation) {
+            return dilation(new FixedValue<>(dilation));
+        }
+
+        public T dilation(ParameterSpace<int[]> dilation) {
+            this.dilation = dilation;
+            return (T) this;
+        }
         public T kernelSize(int... kernelSize) {
             return kernelSize(new FixedValue<>(kernelSize));
         }

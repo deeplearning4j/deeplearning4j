@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by raver119 on 23.11.17.
 //
@@ -476,4 +492,46 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_5) {
     auto z = x * y;
 
     ASSERT_TRUE(e.equalsTo(z));
+}
+
+TEST_F(BroadcastableOpsTests, Test_Multiply_6) {
+    NDArray<float> x(2.0f);
+    NDArray<float> y('c', {1}, {4.f});
+    NDArray<float> e('c', {1}, {8.f});
+
+    auto z = x * y;
+
+    ASSERT_TRUE(e.equalsTo(z));
+}
+
+TEST_F(BroadcastableOpsTests, Test_Multiply_7) {
+    NDArray<float> x(2.0f);
+    NDArray<float> y('c', {1}, {4.f});
+    NDArray<float> e('c', {1}, {8.f});
+
+    nd4j::ops::multiply<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(BroadcastableOpsTests, Test_Multiply_8) {
+    NDArray<float> x(2.0f);
+    NDArray<float> y('c', {1, 1}, {4.f});
+    NDArray<float> e('c', {1, 1}, {8.f});
+
+    nd4j::ops::multiply<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.equalsTo(z));
+
+    delete result;
 }

@@ -1,21 +1,18 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2015 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- */
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.api.ops.executioner;
 
@@ -23,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -35,6 +31,7 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.profiler.OpProfiler;
 
 import java.util.ArrayList;
@@ -56,6 +53,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     protected ProfilingMode profilingMode = ProfilingMode.SCOPE_PANIC;
     protected ExecutionMode executionMode = ExecutionMode.JAVA;
+
+    protected AtomicBoolean verbose = new AtomicBoolean(false);
+    protected AtomicBoolean debug = new AtomicBoolean(false);
 
     public DefaultOpExecutioner() {}
 
@@ -140,37 +140,19 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
         //execute row wise
         else if (op.x().isMatrix()) {
-            if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray original = (IComplexNDArray) op.x();
-                IComplexNDArray originalZ = (IComplexNDArray) op.z();
-                IComplexNDArray y = (IComplexNDArray) op.y();
+            INDArray original = op.x();
+            INDArray originalZ = op.z();
+            INDArray y = op.y();
 
-                for (int i = 0; i < original.rows(); i++) {
-                    IComplexNDArray row = original.slice(i);
-                    IComplexNDArray zRow = originalZ.slice(i);
-                    op.setX(row.dup());
-                    op.setZ(zRow.dup());
-                    if (y != null)
-                        op.setY(y.slice(i));
-                    exec(op);
-                    originalZ.slice(i).assign(op.z());
-
-                }
-            } else {
-                INDArray original = op.x();
-                INDArray originalZ = op.z();
-                INDArray y = op.y();
-
-                for (int i = 0; i < original.rows(); i++) {
-                    INDArray row = original.getRow(i);
-                    INDArray zRow = originalZ.getRow(i);
-                    op.setX(row.dup());
-                    op.setZ(zRow.dup());
-                    if (y != null)
-                        op.setY(y.getRow(i).dup());
-                    exec(op);
-                    zRow.assign(op.z());
-                }
+            for (int i = 0; i < original.rows(); i++) {
+                INDArray row = original.getRow(i);
+                INDArray zRow = originalZ.getRow(i);
+                op.setX(row.dup());
+                op.setZ(zRow.dup());
+                if (y != null)
+                    op.setY(y.getRow(i).dup());
+                exec(op);
+                zRow.assign(op.z());
             }
         } else {
             INDArray originalX = op.x();
@@ -194,28 +176,15 @@ public class DefaultOpExecutioner implements OpExecutioner {
         else if (op.x().isMatrix() || op.x().isColumnVector()) {
             exec(op, 1);
         } else {
-            if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray originalX = (IComplexNDArray) op.x();
-                IComplexNDArray originalZ = (IComplexNDArray) op.z();
-                IComplexNDArray y = (IComplexNDArray) op.y();
-                for (int i = 0; i < op.x().slices(); i++) {
-                    op.setX(originalX.getColumn(i));
-                    op.setZ(originalZ.getColumn(i));
-                    if (y != null)
-                        op.setY(y.getColumn(i));
-                    iterateOverAllColumns(op);
-                }
-            } else {
-                INDArray originalX = op.x();
-                INDArray originalZ = op.z();
-                INDArray y = op.y();
-                for (int i = 0; i < op.x().slices(); i++) {
-                    op.setX(originalX.getColumn(i));
-                    op.setZ(originalZ.getColumn(i));
-                    if (y != null)
-                        op.setY(y.getColumn(i));
-                    iterateOverAllColumns(op);
-                }
+            INDArray originalX = op.x();
+            INDArray originalZ = op.z();
+            INDArray y = op.y();
+            for (int i = 0; i < op.x().slices(); i++) {
+                op.setX(originalX.getColumn(i));
+                op.setZ(originalZ.getColumn(i));
+                if (y != null)
+                    op.setY(y.getColumn(i));
+                iterateOverAllColumns(op);
             }
         }
     }
@@ -544,6 +513,13 @@ public class DefaultOpExecutioner implements OpExecutioner {
             default:
                 break;
         }
+
+        if (Nd4j.getExecutioner().isVerbose()) {
+            if (op.z() != null)
+                log.info("Z shapeInfo: {}; Z values: {}", op.z().shapeInfoJava(), firstX(op.z(), 10));
+
+            System.out.println();
+        }
     }
 
 
@@ -595,7 +571,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
             Nd4j.getCompressor().decompressi(op.z());
         }
 
-
         if (op.x() != null && op.x().data().dataType() != expectedType
                         && op.x().data().dataType() != DataBuffer.Type.COMPRESSED)
             throw new ND4JIllegalStateException("op.X dataType is [" + op.x().data().dataType()
@@ -611,6 +586,28 @@ public class DefaultOpExecutioner implements OpExecutioner {
                             + "] instead of expected [" + expectedType + "]");
 
 
+        if (Nd4j.getExecutioner().isVerbose()) {
+            log.info("Reporting [{}]", op.opName());
+            if (op.x() != null)
+                log.info("X shapeInfo: {}; X values: {}", op.x().shapeInfoJava(), firstX(op.x(), 10));
+
+            if (op.y() != null)
+                log.info("Y shapeInfo: {}; Y values: {}", op.y().shapeInfoJava(), firstX(op.y(), 10));
+        }
+    }
+
+    protected static String firstX(INDArray array, int x) {
+        val builder = new StringBuilder("[");
+        val limit = (int) Math.min(x, array.length());
+        for (int e = 0; e < limit; e++) {
+            builder.append(array.getDouble(e));
+
+            if (e < limit - 1)
+                builder.append(", ");
+        }
+        builder.append("]");
+
+        return builder.toString();
     }
 
     public static void validateDataType(DataBuffer.Type expectedType, INDArray... operands) {
@@ -774,6 +771,15 @@ public class DefaultOpExecutioner implements OpExecutioner {
         // no-op
     }
 
+    @Override
+    public boolean isVerbose() {
+        return verbose.get();
+    }
+
+    @Override
+    public boolean isDebug() {
+        return debug.get();
+    }
 
     @Override
     public ExecutionerType type() {

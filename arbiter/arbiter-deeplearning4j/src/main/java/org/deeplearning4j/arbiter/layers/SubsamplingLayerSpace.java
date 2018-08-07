@@ -1,20 +1,19 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2016 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.arbiter.layers;
 
 import lombok.AccessLevel;
@@ -39,6 +38,7 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
 
     protected ParameterSpace<ConvolutionMode> convolutionMode;
     protected ParameterSpace<SubsamplingLayer.PoolingType> poolingType;
+    protected ParameterSpace<int[]> dilation;
     protected ParameterSpace<int[]> kernelSize;
     protected ParameterSpace<int[]> stride;
     protected ParameterSpace<int[]> padding;
@@ -50,6 +50,7 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
         this.convolutionMode = builder.convolutionMode;
         this.poolingType = builder.poolingType;
         this.kernelSize = builder.kernelSize;
+        this.dilation = builder.dilation;
         this.stride = builder.stride;
         this.padding = builder.padding;
         this.pnorm = builder.pnorm;
@@ -71,6 +72,8 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
             builder.convolutionMode(convolutionMode.getValue(values));
         if (poolingType != null)
             builder.poolingType(poolingType.getValue(values));
+        if (dilation !=null)
+            builder.dilation(dilation.getValue(values));
         if (kernelSize != null)
             builder.kernelSize(kernelSize.getValue(values));
         if (stride != null)
@@ -95,6 +98,8 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
             sb.append("convolutionMode: ").append(convolutionMode).append(delim);
         if (poolingType != null)
             sb.append("poolingType: ").append(poolingType).append(delim);
+        if (dilation != null)
+            sb.append("dilation: ").append(dilation).append(delim);
         if (kernelSize != null)
             sb.append("kernelSize: ").append(kernelSize).append(delim);
         if (stride != null)
@@ -114,6 +119,7 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
 
         protected ParameterSpace<ConvolutionMode> convolutionMode;
         protected ParameterSpace<SubsamplingLayer.PoolingType> poolingType;
+        protected ParameterSpace<int[]> dilation;
         protected ParameterSpace<int[]> kernelSize;
         protected ParameterSpace<int[]> stride;
         protected ParameterSpace<int[]> padding;
@@ -135,6 +141,15 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
 
         public Builder poolingType(ParameterSpace<SubsamplingLayer.PoolingType> poolingType) {
             this.poolingType = poolingType;
+            return this;
+        }
+
+        public Builder dilation(int... dilation) {
+            return dilation(new FixedValue<>(dilation));
+        }
+
+        public Builder dilation(ParameterSpace<int[]> dilation) {
+            this.dilation = dilation;
             return this;
         }
 

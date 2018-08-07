@@ -1,9 +1,23 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.util;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -53,9 +67,6 @@ public class NDArrayUtil {
 
 
     public static int[] toInts(INDArray n) {
-        if (n instanceof IComplexNDArray)
-            throw new IllegalArgumentException("Unable to convert complex array");
-
         if (n.length() > Integer.MAX_VALUE)
             throw new ND4JIllegalStateException("Can't convert INDArray with length > Integer.MAX_VALUE");
 
@@ -67,9 +78,6 @@ public class NDArrayUtil {
     }
 
     public static long[] toLongs(INDArray n) {
-        if (n instanceof IComplexNDArray)
-            throw new IllegalArgumentException("Unable to convert complex array");
-
         if (n.length() > Integer.MAX_VALUE)
             throw new ND4JIllegalStateException("Can't convert INDArray with length > Integer.MAX_VALUE");
 

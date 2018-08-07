@@ -1,5 +1,22 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
-// Created by raver119 on 07.10.2017.
+// @author raver119@gmail.com, created on 07.10.2017.
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 
@@ -7,329 +24,38 @@
 #include <helpers/shape.h>
 #include <helpers/TAD.h>
 #include <specials.h>
+#include <NDArray.h>
+#include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
-    /**
-  * Concatneate multi array of the same shape together
-  * along a particular dimension
-  */
-    template <typename T>
-    void SpecialMethods<T>::concatCpuGeneric(
-            int dimension,
-            int numArrays,
-            Nd4jPointer *data,
-            Nd4jPointer *inputShapeInfo,
-            T *result,
-            Nd4jLong *resultShapeInfo) {
-        //number of total arrays, every other dimension should be the same
-        T **dataBuffers = reinterpret_cast<T **>(data);
-        Nd4jLong **inputShapeInfoPointers = reinterpret_cast<Nd4jLong **>(inputShapeInfo);
 
-        bool allC = true;
-        bool allScalar = true;
-        bool allVectors = true;
+/**
+* Concatneate multi array of the same shape together
+* along a particular dimension
+*/
+template <typename T>
+void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfo, T *result, Nd4jLong *resultShapeInfo) {
 
-        //nothing to concat
-        if(numArrays == 1)
-            return;
+    std::vector<Nd4jLong> iArgs = {dimension};
+    std::vector<T> tArgs;
+    std::vector<NDArray<T>*> inputs(numArrays);
+    std::vector<NDArray<T>*> outputs(1);
 
-        Nd4jLong zeroLen = shape::length(inputShapeInfoPointers[0]);
+    outputs[0] = new NDArray<T>(static_cast<T*>(result), static_cast<Nd4jLong*>(resultShapeInfo));
 
-        //detect whether all arrays are c ordered or not
-        //Also detect whether they are all scalars
-        for(int i = 0; i < numArrays; i++) {
-            allC &= (shape::order(inputShapeInfoPointers[i]) == 'c');
-            allScalar &= (shape::isScalar(inputShapeInfoPointers[i]));
-            allVectors &= (shape::isRowVector(inputShapeInfoPointers[i]) && shape::length(inputShapeInfoPointers[i]) == zeroLen);
-        }
+    for(int i = 0; i < numArrays; ++i)
+        inputs[i] = new NDArray<T>(static_cast<T*>(data[i]), static_cast<Nd4jLong*>(inputShapeInfo[i]));    
 
-        //we are merging all scalars
-        if(allScalar) {
-            for(int i = 0; i < numArrays; i++) {
-                result[i] = dataBuffers[i][0];
-            }
-            return;
-        }
+    nd4j::ops::concat<T> op;    
+    auto status = op.execute(inputs, outputs, tArgs, iArgs);
+    if(status != Status::OK())
+        throw std::runtime_error("concatCpuGeneric fails to be executed !");
+    
+    delete outputs[0];
 
-
-        Nd4jLong length = shape::length(resultShapeInfo);
-
-
-        if(allC && dimension == 0 && shape::order(resultShapeInfo) == 'c') {
-            if (numArrays >= 8 && allVectors) {
-
-
-#pragma omp parallel for schedule(guided)
-                for (int r = 0; r < numArrays; r++) {
-                    T *z = result + (r * zeroLen);
-                    T *x = dataBuffers[r];
-
-#pragma omp simd
-                    for (Nd4jLong e = 0; e < zeroLen; e++) {
-                        z[e] = x[e];
-                    }
-                }
-            } else {
-                int currBuffer = 0;
-                int currBufferOffset = 0;
-                for (int i = 0; i < length; i++) {
-                    result[i] = dataBuffers[currBuffer][currBufferOffset++];
-                    if (currBufferOffset >= shape::length(inputShapeInfoPointers[currBuffer])) {
-                        currBuffer++;
-                        currBufferOffset = 0;
-                    }
-                }
-            }
-
-            return;
-        }
-
-        int resultStride = shape::elementWiseStride(resultShapeInfo);
-        //vector case
-        if(shape::isVector(resultShapeInfo)) {
-            Nd4jLong coordsUse[MAX_RANK];
-            Nd4jLong idx = 0;
-            if(resultStride == 1) {
-                for(int i = 0; i < numArrays; i++) {
-                    if(shape::isVector(inputShapeInfoPointers[i]) || shape::order(inputShapeInfoPointers[i]) == shape::order(resultShapeInfo)) {
-                        int  currArrLength = shape::length(inputShapeInfoPointers[i]);
-                        Nd4jLong eleStride = shape::elementWiseStride(inputShapeInfoPointers[i]);
-
-                        // calculate early termination
-                        if (currArrLength + idx >= length)
-                            currArrLength -= ( (currArrLength + idx) - length);
-
-                        if(eleStride == 1) {
-
-                            // specially for @firasib from @raver119
-                            if (length < 2100000000) {
-#pragma omp simd
-                                for (int arrIdx = 0; arrIdx < currArrLength; arrIdx++) {
-                                    result[idx] = dataBuffers[i][arrIdx];
-                                    idx++;
-                                }
-                            } else {
-                                for (Nd4jLong arrIdx = 0; arrIdx < currArrLength; arrIdx++) {
-                                    result[idx] = dataBuffers[i][arrIdx];
-                                    idx++;
-                                }
-                            }
-                        }
-                        else {
-                            for(Nd4jLong arrIdx = 0; arrIdx < currArrLength; arrIdx++) {
-                                if(idx >= length) {
-                                    break;
-                                }
-
-                                result[idx] = dataBuffers[i][arrIdx * eleStride];
-                                idx++;
-
-                            }
-                        }
-                    }
-                        //non vector or different order (element wise stride can't be used)
-                    else {
-
-                        Nd4jLong  currArrLength = shape::length(inputShapeInfoPointers[i]);
-                        for(Nd4jLong arrIdx = 0; arrIdx < currArrLength; arrIdx++) {
-                            shape::ind2subC(shape::rank(inputShapeInfoPointers[i]),shape::shapeOf(inputShapeInfoPointers[i]),arrIdx,coordsUse);
-                            Nd4jLong offset = shape::getOffset(0,shape::shapeOf(inputShapeInfoPointers[i]),shape::stride(inputShapeInfoPointers[i]),coordsUse,shape::rank(inputShapeInfoPointers[i]));
-                            result[idx] = dataBuffers[i][offset];
-
-                            idx++;
-
-                            if(idx >= shape::length(resultShapeInfo))
-                                break;
-                        }
-                    }
-
-
-                }
-            }
-            else {
-                for(int i = 0; i < numArrays; i++) {
-                    if(shape::isVector(inputShapeInfoPointers[i]) || shape::order(inputShapeInfoPointers[i]) == shape::order(resultShapeInfo)) {
-                        Nd4jLong  currArrLength = shape::length(inputShapeInfoPointers[i]);
-                        Nd4jLong eleStride = shape::elementWiseStride(inputShapeInfoPointers[i]);
-                        if(eleStride == 1) {
-                            for(Nd4jLong arrIdx = 0; arrIdx < currArrLength; arrIdx++) {
-                                if(idx >= shape::length(resultShapeInfo)) {
-                                    break;
-                                }
-                                result[idx * resultStride] = dataBuffers[i][arrIdx];
-                                idx++;
-
-                            }
-                        }
-                        else {
-                            for(Nd4jLong arrIdx = 0; arrIdx < currArrLength; arrIdx++) {
-                                if(idx >= shape::length(resultShapeInfo)) {
-                                    break;
-                                }
-                                result[idx * resultStride] = dataBuffers[i][arrIdx * eleStride];
-                                idx++;
-                            }
-                        }
-
-                    }
-                        //non vector or different order (element wise stride can't be used)
-                    else {
-                        Nd4jLong coordsUse[MAX_RANK];
-                        Nd4jLong currArrLength = shape::length(inputShapeInfoPointers[i]);
-
-                        for(Nd4jLong arrIdx = 0; arrIdx < currArrLength; arrIdx++) {
-                            shape::ind2subC(shape::rank(inputShapeInfoPointers[i]),shape::shapeOf(inputShapeInfoPointers[i]),arrIdx,coordsUse);
-                            Nd4jLong offset = shape::getOffset(0,shape::shapeOf(inputShapeInfoPointers[i]),shape::stride(inputShapeInfoPointers[i]),coordsUse,shape::rank(inputShapeInfoPointers[i]));
-                            result[idx] = dataBuffers[i][offset];
-                            if(idx >= shape::length(resultShapeInfo)) {
-                                break;
-                            }
-
-                            idx++;
-
-                        }
-                    }
-
-                }
-            }
-
-            return;
-        }
-
-
-        //tad shape information for result
-        shape::TAD *resultTad = new shape::TAD(resultShapeInfo,&dimension,1);
-        resultTad->createTadOnlyShapeInfo();
-        resultTad->createOffsets();
-        int resultTadEleStride = shape::elementWiseStride(resultTad->tadOnlyShapeInfo);
-
-        Nd4jLong arrOffset = 0;
-        int tadEleStride = shape::elementWiseStride(resultTad->tadOnlyShapeInfo);
-        for(Nd4jLong i = 0; i < numArrays; i++) {
-            //tad info for the current array
-            shape::TAD *arrTad = new shape::TAD(inputShapeInfoPointers[i],&dimension,1);
-            arrTad->createTadOnlyShapeInfo();
-            arrTad->createOffsets();
-
-            //element wise stride and length for tad of current array
-            int arrTadEleStride = shape::elementWiseStride(arrTad->tadOnlyShapeInfo);
-            Nd4jLong arrTadLength = shape::length(arrTad->tadOnlyShapeInfo);
-            for(Nd4jLong j = 0; j < arrTad->numTads; j++) {
-                T *arrTadData = dataBuffers[i] + arrTad->tadOffsets[j];
-                //result tad offset + the current offset for each tad + array offset (matches current array)
-                T *currResultTadWithOffset = result  + resultTad->tadOffsets[j];
-                //ensure we start at the proper index, we need to move the starting index forward relative to the desired array offset
-                auto sub = shape::ind2subC(shape::rank(resultTad->tadOnlyShapeInfo),shape::shapeOf(resultTad->tadOnlyShapeInfo),arrOffset);
-                Nd4jLong baseOffset = shape::getOffset(0,shape::shapeOf(resultTad->tadOnlyShapeInfo),shape::stride(resultTad->tadOnlyShapeInfo),sub,shape::rank(resultTad->tadOnlyShapeInfo));
-                delete[] sub;
-                currResultTadWithOffset += baseOffset;
-                if(arrTadEleStride > 0 && shape::order(resultShapeInfo) == shape::order(arrTad->tadOnlyShapeInfo)) {
-                    if(arrTadEleStride == 1 && resultTadEleStride == 1) {
-                        //iterate over the specified chunk of the tad
-                        for(Nd4jLong k = 0; k < arrTadLength; k++) {
-                            currResultTadWithOffset[k] = arrTadData[k];
-                        }
-
-                    } //element wise stride isn't 1 for both can't use memcpy
-                    else if(tadEleStride > 0 && shape::order(resultShapeInfo) == shape::order(arrTad->tadOnlyShapeInfo)) {
-                        for(Nd4jLong k = 0; k < arrTadLength; k++) {
-                            currResultTadWithOffset[k * tadEleStride] = arrTadData[k * arrTadEleStride];
-                        }
-                    }
-                }
-                else {
-                    Nd4jLong idx = 0;
-                    //use element wise stride for result but not this tad
-                    if(tadEleStride > 0 && shape::order(resultShapeInfo) == shape::order(arrTad->tadOnlyShapeInfo)) {
-                        if(arrTad->wholeThing) {
-                            for(Nd4jLong k = 0; k < shape::length(arrTad->tadOnlyShapeInfo); k++) {
-                                currResultTadWithOffset[idx *resultTadEleStride] = arrTadData[k];
-
-                            }
-                        }
-                        else {
-                            Nd4jLong shapeIter[MAX_RANK];
-                            Nd4jLong coord[MAX_RANK];
-                            int dim;
-                            int rankIter = shape::rank(arrTad->tadOnlyShapeInfo);
-                            Nd4jLong xStridesIter[MAX_RANK];
-                            if (PrepareOneRawArrayIter<T>(rankIter,
-                                                          shape::shapeOf(arrTad->tadOnlyShapeInfo),
-                                                          arrTadData,
-                                                          shape::stride(arrTad->tadOnlyShapeInfo),
-                                                          &rankIter,
-                                                          shapeIter,
-                                                          &arrTadData,
-                                                          xStridesIter) >= 0) {
-                                ND4J_RAW_ITER_START(dim, shape::rank(arrTad->tadOnlyShapeInfo), coord, shapeIter); {
-                                        /* Process the innermost dimension */
-                                        currResultTadWithOffset[idx *resultTadEleStride] = arrTadData[0];
-                                    }
-                                ND4J_RAW_ITER_ONE_NEXT(dim,
-                                                       rankIter,
-                                                       coord,
-                                                       shapeIter,
-                                                       arrTadData,
-                                                       xStridesIter);
-
-                            }
-                            else {
-                                printf("Unable to prepare array\n");
-                            }
-
-
-                        }
-
-                    }
-                        //don't use element wise stride for either
-                    else {
-
-                        Nd4jLong shapeIter[MAX_RANK];
-                        Nd4jLong coord[MAX_RANK];
-                        int dim;
-                        Nd4jLong xStridesIter[MAX_RANK];
-                        Nd4jLong resultStridesIter[MAX_RANK];
-                        auto xShape = shape::shapeOf(arrTad->tadOnlyShapeInfo);
-                        auto xStride = shape::stride(arrTad->tadOnlyShapeInfo);
-                        auto resultStride = shape::stride(resultTad->tadOnlyShapeInfo);
-                        int rank = shape::rank(arrTad->tadOnlyShapeInfo);
-                        if (PrepareTwoRawArrayIter<T>(rank,
-                                                      xShape,
-                                                      arrTadData,
-                                                      xStride,
-                                                      currResultTadWithOffset,
-                                                      resultStride,
-                                                      &rank,
-                                                      shapeIter,
-                                                      &arrTadData,
-                                                      xStridesIter,
-                                                      &currResultTadWithOffset,
-                                                      resultStridesIter) >= 0) {
-                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-                                    currResultTadWithOffset[0] = arrTadData[0];
-                                } ND4J_RAW_ITER_TWO_NEXT(
-                                    dim,
-                                    rank,
-                                    coord,
-                                    shapeIter,
-                                    arrTadData,
-                                    xStridesIter,
-                                    currResultTadWithOffset,
-                                    resultStridesIter);
-
-
-                        }
-                    }
-                }
-            }
-
-            arrOffset += shape::length(arrTad->tadOnlyShapeInfo);
-            delete arrTad;
-        }
-        delete resultTad;
-
-    }
-
+    for(int i = 0; i < numArrays; ++i)
+        delete inputs[i];
+}
 
 /**
  * This kernel accumulates X arrays, and stores result into Z

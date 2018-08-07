@@ -19,6 +19,7 @@ package com.atilika.kuromoji.trie;
 import com.atilika.kuromoji.compile.ProgressLog;
 import com.atilika.kuromoji.util.KuromojiBinFilesFetcher;
 import com.atilika.kuromoji.util.ResourceResolver;
+import org.apache.commons.io.FilenameUtils;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -32,8 +33,7 @@ import java.util.List;
 public class DoubleArrayTrie {
 
     //    public static final String DOUBLE_ARRAY_TRIE_FILENAME = "doubleArrayTrie.bin";
-    public static final String DOUBLE_ARRAY_TRIE_FILENAME =
-                    KuromojiBinFilesFetcher.getRootPath() + "doubleArrayTrie.bin";
+    public static final String DOUBLE_ARRAY_TRIE_FILENAME = new File(KuromojiBinFilesFetcher.getKuromojiRoot(), "doubleArrayTrie.bin").getAbsolutePath();
     public static final char TERMINATING_CHARACTER = '\u0001';
 
     private static final int BASE_CHECK_INITIAL_SIZE = 2800000;

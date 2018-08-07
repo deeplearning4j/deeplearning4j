@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.api.ops.impl.transforms.clip;
 
 import onnx.OnnxProto3;
@@ -54,6 +70,7 @@ public class ClipByNorm extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
         //dOut/dIn is ??? if clipped, 1 otherwise
+        /*
         int origRank = Shape.rankFromShape(arg().getShape());
         SDVariable l2norm = f().norm2(arg(), true, dimensions);
         SDVariable isClippedBC = f().gte(l2norm, clipValue);
@@ -72,5 +89,8 @@ public class ClipByNorm extends DynamicCustomOp {
 
         SDVariable ret = notClippedBC.add(dOutdInClipped).mul(grad.get(0));
         return Arrays.asList(ret);
+        */
+
+        return Collections.singletonList(new ClipByNormBp(f().sameDiff(), arg(), grad.get(0), clipValue, dimensions).outputVariable());
     }
 }

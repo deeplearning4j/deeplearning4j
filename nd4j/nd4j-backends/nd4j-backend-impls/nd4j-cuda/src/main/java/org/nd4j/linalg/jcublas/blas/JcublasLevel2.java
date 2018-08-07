@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.jcublas.blas;
 
 import org.bytedeco.javacpp.DoublePointer;
@@ -7,11 +23,7 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.linalg.api.blas.impl.BaseLevel2;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexDouble;
-import org.nd4j.linalg.api.complex.IComplexFloat;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
@@ -168,134 +180,17 @@ public class JcublasLevel2 extends BaseLevel2 {
     protected void dtrsv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X,
                     int incX) {
         throw new UnsupportedOperationException();
-
     }
 
     @Override
     protected void dtbsv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda, INDArray X,
                     int incX) {
         throw new UnsupportedOperationException();
-
     }
 
     @Override
     protected void dtpsv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X, int incX) {
         throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void cgemv(char order, char TransA, int M, int N, IComplexFloat alpha, IComplexNDArray A, int lda,
-                    IComplexNDArray X, int incX, IComplexFloat beta, IComplexNDArray Y, int incY) {
-        throw new UnsupportedOperationException();
-
-
-    }
-
-    @Override
-    protected void cgbmv(char order, char TransA, int M, int N, int KL, int KU, IComplexFloat alpha, IComplexNDArray A,
-                    int lda, IComplexNDArray X, int incX, IComplexFloat beta, IComplexNDArray Y, int incY) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void ctrmv(char order, char Uplo, char TransA, char Diag, int N, IComplexNDArray A, int lda,
-                    IComplexNDArray X, int incX) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void ctbmv(char order, char Uplo, char TransA, char Diag, int N, int K, IComplexNDArray A, int lda,
-                    IComplexNDArray X, int incX) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void ctpmv(char order, char Uplo, char TransA, char Diag, int N, IComplexNDArray Ap, IComplexNDArray X,
-                    int incX) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void ctrsv(char order, char Uplo, char TransA, char Diag, int N, IComplexNDArray A, int lda,
-                    IComplexNDArray X, int incX) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void ctbsv(char order, char Uplo, char TransA, char Diag, int N, int K, IComplexNDArray A, int lda,
-                    IComplexNDArray X, int incX) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void ctpsv(char order, char Uplo, char TransA, char Diag, int N, IComplexNDArray Ap, IComplexNDArray X,
-                    int incX) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void zgemv(char order, char TransA, int M, int N, IComplexDouble alpha, IComplexNDArray A, int lda,
-                    IComplexNDArray X, int incX, IComplexDouble beta, IComplexNDArray Y, int incY) {
-        throw new UnsupportedOperationException();
-
-
-    }
-
-    @Override
-    protected void zgbmv(char order, char TransA, int M, int N, int KL, int KU, IComplexDouble alpha, IComplexNDArray A,
-                    int lda, IComplexNDArray X, int incX, IComplexDouble beta, IComplexNDArray Y, int incY) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void ztrmv(char order, char Uplo, char TransA, char Diag, int N, IComplexNDArray A, int lda,
-                    IComplexNDArray X, int incX) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void ztbmv(char order, char Uplo, char TransA, char Diag, int N, int K, IComplexNDArray A, int lda,
-                    IComplexNDArray X, int incX) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void ztpmv(char order, char Uplo, char TransA, char Diag, int N, IComplexNDArray Ap, IComplexNDArray X,
-                    int incX) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void ztrsv(char order, char Uplo, char TransA, char Diag, int N, IComplexNDArray A, int lda,
-                    IComplexNDArray X, int incX) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void ztbsv(char order, char Uplo, char TransA, char Diag, int N, int K, IComplexNDArray A, int lda,
-                    IComplexNDArray X, int incX) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void ztpsv(char order, char Uplo, char TransA, char Diag, int N, IComplexNDArray Ap, IComplexNDArray X,
-                    int incX) {
-        throw new UnsupportedOperationException();
-
     }
 
     @Override
@@ -402,129 +297,6 @@ public class JcublasLevel2 extends BaseLevel2 {
     @Override
     protected void dspr2(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray Y, int incY,
                     INDArray A) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void chemv(char order, char Uplo, int N, IComplexFloat alpha, IComplexNDArray A, int lda,
-                    IComplexNDArray X, int incX, IComplexFloat beta, IComplexNDArray Y, int incY) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void chbmv(char order, char Uplo, int N, int K, IComplexFloat alpha, IComplexNDArray A, int lda,
-                    IComplexNDArray X, int incX, IComplexFloat beta, IComplexNDArray Y, int incY) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void chpmv(char order, char Uplo, int N, IComplexFloat alpha, IComplexNDArray Ap, IComplexNDArray X,
-                    int incX, IComplexFloat beta, IComplexNDArray Y, int incY) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void cgeru(char order, int M, int N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y,
-                    int incY, IComplexNDArray A, int lda) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void cgerc(char order, int M, int N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y,
-                    int incY, IComplexNDArray A, int lda) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected void cher(char order, char Uplo, int N, float alpha, IComplexNDArray X, int incX, IComplexNDArray A,
-                    int lda) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void chpr(char order, char Uplo, int N, INDArray alpha, IComplexNDArray X, int incX, IComplexNDArray A) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void cher2(char order, char Uplo, int N, IComplexFloat alpha, IComplexNDArray X, int incX,
-                    IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void chpr2(char order, char Uplo, int N, IComplexFloat alpha, IComplexNDArray X, int incX,
-                    IComplexNDArray Y, int incY, IComplexNDArray Ap) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void zhemv(char order, char Uplo, int N, IComplexDouble alpha, IComplexNDArray A, int lda,
-                    IComplexNDArray X, int incX, IComplexDouble beta, IComplexNDArray Y, int incY) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void zhbmv(char order, char Uplo, int N, int K, IComplexDouble alpha, IComplexNDArray A, int lda,
-                    IComplexNDArray X, int incX, IComplexDouble beta, IComplexNDArray Y, int incY) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void zhpmv(char order, char Uplo, int N, IComplexDouble alpha, IComplexNDArray Ap, IComplexNDArray X,
-                    int incX, IComplexDouble beta, IComplexNDArray Y, int incY) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void zgeru(char order, int M, int N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y,
-                    int incY, IComplexNDArray A, int lda) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void zgerc(char order, int M, int N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y,
-                    int incY, IComplexNDArray A, int lda) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void zher(char order, char Uplo, int N, double alpha, IComplexNDArray X, int incX, IComplexNDArray A,
-                    int lda) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void zhpr(char order, char Uplo, int N, INDArray alpha, IComplexNDArray X, int incX, IComplexNDArray A) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void zher2(char order, char Uplo, int N, IComplexDouble alpha, IComplexNDArray X, int incX,
-                    IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void zhpr2(char order, char Uplo, int N, IComplexDouble alpha, IComplexNDArray X, int incX,
-                    IComplexNDArray Y, int incY, IComplexNDArray Ap) {
         throw new UnsupportedOperationException();
 
     }
