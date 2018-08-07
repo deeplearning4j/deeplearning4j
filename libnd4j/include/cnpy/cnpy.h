@@ -225,16 +225,6 @@ namespace cnpy {
    */
     ND4J_EXPORT NpyArray loadNpyFromHeader(char *data);
 
-    /**
-     *
-     * @tparam T
-     * @param lhs
-     * @param rhs
-     * @return
-     */
-    template<typename T>
-    std::vector<char>& operator+=(std::vector<char>& lhs, const T rhs);
-
 
 /**
 * Parse the numpy header from
@@ -273,5 +263,16 @@ namespace cnpy {
     void npy_save(std::string fname, const T* data, const unsigned int* shape, const unsigned int ndims, std::string mode = "w");
 
 }
+
+/**
+     *
+     * @tparam T
+     * @param lhs
+     * @param rhs
+     * @return
+     */
+template<typename T>
+std::vector<char>& operator+=(std::vector<char>& lhs, const T rhs);
+
 
 #endif

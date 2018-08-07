@@ -65,7 +65,7 @@ char cnpy::mapType(const std::type_info &t) {
 }
 
 template <typename T>
-std::vector<char>& cnpy::operator+=(std::vector<char>& lhs, const T rhs) {
+std::vector<char>& operator+=(std::vector<char>& lhs, const T rhs) {
     //write in little endian
     for(char byte = 0; byte < sizeof(T); byte++) {
         char val = *((char*)&rhs+byte);
@@ -82,7 +82,7 @@ std::vector<char>& cnpy::operator+=(std::vector<char>& lhs, const T rhs) {
  * @return
  */
 template<>
-std::vector<char>& cnpy::operator+=(std::vector<char>& lhs, const std::string rhs) {
+std::vector<char>& operator+=(std::vector<char>& lhs, const std::string rhs) {
     lhs.insert(lhs.end(),rhs.begin(),rhs.end());
     return lhs;
 }
@@ -94,7 +94,7 @@ std::vector<char>& cnpy::operator+=(std::vector<char>& lhs, const std::string rh
  * @return
  */
 template<>
-std::vector<char>& cnpy::operator+=(std::vector<char>& lhs, const char* rhs) {
+std::vector<char>& operator+=(std::vector<char>& lhs, const char* rhs) {
     //write in little endian
     size_t len = strlen(rhs);
     lhs.reserve(len);
