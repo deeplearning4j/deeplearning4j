@@ -90,6 +90,7 @@
     <profiles>
         <profile>
             <id>testresources</id>
+            <!-- Put nd4j-native in profile so that CUDA-only builds succeed -->
             <dependencies>
                 <dependency>
                     <groupId>org.nd4j</groupId>
