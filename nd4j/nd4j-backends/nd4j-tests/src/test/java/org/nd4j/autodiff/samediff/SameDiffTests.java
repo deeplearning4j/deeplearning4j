@@ -2320,7 +2320,7 @@ public class SameDiffTests {
     public void testScatterAdd() {
         INDArray arr1 = Nd4j.zeros(3, 3);
         INDArray arr2 = Nd4j.create(new float[]{0,1}, new long[]{2});
-        INDArray arr3 = Nd4j.ones(3, 3);
+        INDArray arr3 = Nd4j.ones(2, 3);
         INDArray expected = Nd4j.create(new float[]{1, 1, 1,
                                                     1, 1, 1,
                                                     0, 0, 0},
@@ -2341,7 +2341,7 @@ public class SameDiffTests {
     public void testScatterMul() {
         INDArray arr1 = Nd4j.ones(3, 3);
         INDArray arr2 = Nd4j.create(new float[]{0,1}, new long[]{2});
-        INDArray arr3 = Nd4j.zeros(3, 3);
+        INDArray arr3 = Nd4j.zeros(2, 3);
         INDArray expected = Nd4j.create(new float[]{0, 0, 0,
                                                     0, 0, 0,
                                                    1, 1, 1},
@@ -2362,7 +2362,7 @@ public class SameDiffTests {
     public void testScatterSub() {
         INDArray arr1 = Nd4j.ones(3, 3);
         INDArray arr2 = Nd4j.create(new float[]{0,1}, new long[]{2});
-        INDArray arr3 = Nd4j.ones(3, 3);
+        INDArray arr3 = Nd4j.ones(2, 3);
         INDArray expected = Nd4j.create(new float[]{0, 0, 0,
                                                     0, 0, 0,
                                                     1, 1, 1},
@@ -2383,7 +2383,7 @@ public class SameDiffTests {
     public void testScatterDiv() {
         INDArray arr1 = Nd4j.ones(3, 3);
         INDArray arr2 = Nd4j.create(new float[]{0,1}, new long[]{2});
-        INDArray arr3 = Nd4j.ones(3, 3).assign(2);
+        INDArray arr3 = Nd4j.ones(2, 3).assign(2);
         INDArray expected = Nd4j.create(new float[]{0.5f, 0.5f, 0.5f,
                                                     0.5f, 0.5f, 0.5f,
                                                     1.0f, 1.0f, 1.0f},
@@ -2397,7 +2397,46 @@ public class SameDiffTests {
         SDVariable result = sd.scatterDiv(refs, idxs, upds);
         assertArrayEquals(new long[]{3, 3}, result.eval().shape());
         assertEquals(expected, result.eval());
+    }
 
+    @Test
+    public void testScatterMax() {
+        INDArray arr1 = Nd4j.ones(3, 3);
+        INDArray arr2 = Nd4j.create(new float[]{0,1}, new long[]{2});
+        INDArray arr3 = Nd4j.ones(2, 3).assign(2);
+        INDArray expected = Nd4j.create(new float[]{2.0f, 2.0f, 2.0f,
+                        2.0f, 2.0f, 2.0f,
+                        1.0f, 1.0f, 1.0f},
+                new long[]{3, 3});
+
+        SameDiff sd  = SameDiff.create();
+        SDVariable refs = sd.var("refs", arr1);
+        SDVariable idxs = sd.var("idxs", arr2);
+        SDVariable upds = sd.var("upds", arr3);
+
+        SDVariable result = sd.scatterMax(refs, idxs, upds);
+        assertArrayEquals(new long[]{3, 3}, result.eval().shape());
+        assertEquals(expected, result.eval());
+    }
+
+    @Test
+    public void testScatterMin() {
+        INDArray arr1 = Nd4j.ones(3, 3);
+        INDArray arr2 = Nd4j.create(new float[]{1,2}, new long[]{2});
+        INDArray arr3 = Nd4j.ones(2, 3).assign(-2.0f);
+        INDArray expected = Nd4j.create(new float[]{1.0f, 1.0f, 1.0f,
+                        -2.0f, -2.0f, -2.0f,
+                        -2.0f, -2.0f, -2.0f},
+                new long[]{3, 3});
+
+        SameDiff sd  = SameDiff.create();
+        SDVariable refs = sd.var("refs", arr1);
+        SDVariable idxs = sd.var("idxs", arr2);
+        SDVariable upds = sd.var("upds", arr3);
+
+        SDVariable result = sd.scatterMin(refs, idxs, upds);
+        assertArrayEquals(new long[]{3, 3}, result.eval().shape());
+        assertEquals(expected, result.eval());
     }
 
     @Test
@@ -2484,7 +2523,7 @@ public class SameDiffTests {
         DifferentialFunction[] dfsBackward = sdGrad.functions();
         assertEquals(10, dfsBackward.length);    //sub, mul, mean, mean, backward marker, meanbp, meanbp, mulbp, add (from diff.mul(diff)), subbp
 
-        List<Class> classesExp = Arrays.asList(
+        val classesExp = Arrays.asList(
                 SubOp.class, MulOp.class, Mean.class, Mean.class, GradientBackwardsMarker.class, MeanBp.class,
                 MeanBp.class, MulBpOp.class, AddOp.class, SubBpOp.class);
         for(int i=0; i<10; i++ ){

@@ -75,12 +75,17 @@ public class IMax extends BaseIndexAccumulation {
 
     @Override
     public String onnxName() {
-        return "ArgMax";
+        return "arg_max";
     }
 
     @Override
     public String tensorflowName() {
         return "argmax";
+    }
+
+    @Override
+    public Type opType() {
+        return Type.INDEXREDUCE;
     }
 
     @Override

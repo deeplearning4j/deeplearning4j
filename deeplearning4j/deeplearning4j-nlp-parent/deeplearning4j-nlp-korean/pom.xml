@@ -27,12 +27,22 @@
 
     <artifactId>deeplearning4j-nlp-korean</artifactId>
 
+    <properties>
+        <!-- Default scala versions, may be overwritten by build profiles -->
+        <scala.version>2.11.12</scala.version>
+        <scala.binary.version>2.11</scala.binary.version>
+    </properties>
 
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.version}</version>
         </dependency>
         <dependency>
             <groupId>com.twitter.penguin</groupId>

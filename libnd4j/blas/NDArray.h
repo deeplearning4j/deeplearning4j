@@ -205,6 +205,22 @@ namespace nd4j {
         NDArray<T>* repeat(int dimension, const std::vector<Nd4jLong>& repeats) const;
 
         /**
+         * This method returns quantized copy of given array
+         *
+         * @param array
+         * @return
+         */
+        static NDArray<T> quantize(NDArray<T> &array);
+
+        /**
+         * This method returns quantized copy of given array
+         *
+         * @param array
+         * @return
+         */
+        static NDArray<T>* quantize(NDArray<T> *array);
+
+        /**
         *  fill target array by repeating current array 
         *  dimension - dimension along which to repeat elements        
         */

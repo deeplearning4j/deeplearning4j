@@ -24,6 +24,7 @@ import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
 import org.deeplearning4j.arbiter.optimize.generator.GridSearchCandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.generator.RandomSearchGenerator;
+import org.deeplearning4j.arbiter.optimize.parameter.BooleanSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
@@ -79,6 +80,7 @@ public class TestJson {
         l.add(new DiscreteParameterSpace<>("first", "second", "third"));
         l.add(new IntegerParameterSpace(0, 10));
         l.add(new IntegerParameterSpace(new UniformIntegerDistribution(0, 50)));
+        l.add(new BooleanSpace());
 
         for (ParameterSpace<?> ps : l) {
             String strJson = jsonMapper.writeValueAsString(ps);

@@ -14,7 +14,6 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-
 package org.nd4j.linalg.env.impl;
 
 import lombok.extern.slf4j.Slf4j;
