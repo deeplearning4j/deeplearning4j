@@ -93,7 +93,7 @@ namespace ops {
         std::vector<NDArray<T> *> outputList(2); // only for output
         std::vector<NDArray<T> *> gradOutList(numPartition);
         for (Nd4jLong e = 0; e < numPartition; e++) {
-            gradOutList[e] = INPUT_VARIABLE(e + 1);
+            gradOutList[e] = INPUT_VARIABLE(e + 2);
         }
         outputList[0] = OUTPUT_VARIABLE(0);
         outputList[1] = OUTPUT_VARIABLE(1);
@@ -103,11 +103,28 @@ namespace ops {
         NDArray<T> y(*input); //'c', {1, input->lengthOf()});
         y.linspace(1);
         std::unique_ptr<ResultSet<T>> res2(op.execute({&y, indices}, {}, {numPartition}));
-
+        for (Nd4jLong n = 0; n < numPartition; ++n) {
+            res2->at(n)->printShapeInfo("SHAPE");
+            gradOutList[n]->printShapeInfo("GRADOUT");
+        }
+        std::vector<NDArray<T>*> inputParam(numPartition * 2);
+        for (Nd4jLong n = 0; n < numPartition; ++n) {
+            inputParam[n] = res2->at(n);
+        }
+        for (Nd4jLong n = 0; n < numPartition; ++n) {
+            inputParam[numPartition + n] = gradOutList[n];
+        }
+        for (auto matx: inputParam) {
+            matx->printIndexedBuffer("DATA INPUT");
+        }
         ops::dynamic_stitch<T> ds;
-        std::unique_ptr<ResultSet<T>> dsRes(ds.execute({res2->at(0), res2->at(1), res2->at(2), gradOutList[0], gradOutList[1], gradOutList[2]}, {}, {numPartition}));
+        std::unique_ptr<ResultSet<T>> dsRes(ds.execute(inputParam, {}, {numPartition}));
+        dsRes->at(0)->printIndexedBuffer("RES2_1");
+        dsRes->at(0)->printShapeInfo("RES2_1");
+        input->printShapeInfo("INPUT SHAPE WAS");
+//        dsRes->at(1)->printIndexedBuffer("RES2_2");
         outputList[0]->assign(dsRes->at(0));
-        outputList[1]->assign(dsRes->at(1));
+        outputList[1]->assign(indices);
 
         return ND4J_STATUS_OK;
     }
