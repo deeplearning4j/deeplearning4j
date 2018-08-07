@@ -660,14 +660,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
             attached = true;
             parentWorkspace = workspace;
 
-            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer(); //new FloatPointer(length());
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer(); //new IntPointer(length());
             setIndexer(IntIndexer.create((IntPointer) pointer));
 
         } else if (dataType() == Type.LONG) {
             attached = true;
             parentWorkspace = workspace;
 
-            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer(); //new FloatPointer(length());
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asLongPointer(); //new LongPointer(length());
             setIndexer(LongIndexer.create((LongPointer) pointer));
         }
 
@@ -704,32 +704,45 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public Pointer addressPointer() {
+
         if (offset() > 0) {
+            Pointer ret;
+            final long retAddress = pointer().address() + getElementSize() * offset();
+            // directly set address at construction since Pointer.address has not setter.
             if (dataType() == Type.DOUBLE) {
-                return new DoublePointer(pointer()) {
+                ret = new DoublePointer(pointer()) {
                     {
-                        address = pointer().address() + getElementSize() * offset();
+                        address = retAddress;
                     }
                 };
             } else if (dataType() == Type.FLOAT) {
-                return new FloatPointer(pointer()) {
+                ret = new FloatPointer(pointer()) {
                     {
-                        address = pointer().address() + getElementSize() * offset();
+                        address = retAddress;
                     }
                 };
             } else if (dataType() == Type.INT) {
-                return new IntPointer(pointer()) {
+                ret = new IntPointer(pointer()) {
                     {
-                        address = pointer().address() + getElementSize() * offset();
+                        address = retAddress;
                     }
                 };
             } else if (dataType() == Type.LONG) {
-                return new LongPointer(pointer()) {
+                ret = new LongPointer(pointer()) {
                     {
-                        address = pointer().address() + getElementSize() * offset();
+                        address = retAddress;
+                    }
+                };
+            } else {
+                ret = new Pointer(pointer()) {
+                    {
+                        address = retAddress;
                     }
                 };
             }
+            ret.limit(ret.limit() - offset());
+            ret.capacity(ret.capacity() - offset());
+            return ret;
         }
         return pointer();
     }

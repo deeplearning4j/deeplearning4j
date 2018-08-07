@@ -2840,46 +2840,38 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             cnt++;
         }
 
+        val iArgs = op.iArgs().length > 0 ? new LongPointer(op.iArgs().length) : null;
+
+        cnt = 0;
+        for (val i: op.iArgs())
+            iArgs.put(cnt++, i);
+
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
             val tArgs = op.tArgs().length > 0 ? new FloatPointer(op.tArgs().length) : null;
-            val iArgs = op.iArgs().length > 0 ? new LongPointer(op.iArgs().length) : null;
 
             cnt = 0;
             for (val t: op.tArgs())
                 tArgs.put(cnt++, (float) t);
-
-            cnt = 0;
-            for (val i: op.iArgs())
-                iArgs.put(cnt++, i);
 
             val status = OpStatus.byNumber(nativeOps.execCustomOpFloat(extras, hash, inputBuffers, inputShapes, inputArgs.length, outputBuffers, outputShapes, outputArgs.length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, op.isInplaceCall()));
             if (status != OpStatus.ND4J_STATUS_OK)
                 throw new ND4JIllegalStateException("Op execution failed: " + status);
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             val tArgs = op.tArgs().length > 0 ? new DoublePointer(op.tArgs().length) : null;
-            val iArgs = op.iArgs().length > 0 ? new LongPointer(op.iArgs().length) : null;
 
             cnt = 0;
             for (val t: op.tArgs())
                 tArgs.put(cnt++, t);
-
-            for (val i: op.iArgs())
-                iArgs.put(cnt++, i);
 
             val status = OpStatus.byNumber(nativeOps.execCustomOpDouble(extras, hash, inputBuffers, inputShapes, inputArgs.length, outputBuffers, outputShapes, outputArgs.length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, op.isInplaceCall()));
             if (status != OpStatus.ND4J_STATUS_OK)
                 throw new ND4JIllegalStateException("Op execution failed: " + status);
         } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
             val tArgs = op.tArgs().length > 0 ? new ShortPointer(op.tArgs().length) : null;
-            val iArgs = op.iArgs().length > 0 ? new LongPointer(op.iArgs().length) : null;
 
             cnt = 0;
             for (val t: op.tArgs())
                 tArgs.put(cnt++, ArrayUtil.toHalf((float) t));
-
-            cnt = 0;
-            for (val i: op.iArgs())
-                iArgs.put(cnt++, i);
 
             val status = OpStatus.byNumber(nativeOps.execCustomOpHalf(extras, hash, inputBuffers, inputShapes, inputArgs.length, outputBuffers, outputShapes, outputArgs.length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, op.isInplaceCall()));
             if (status != OpStatus.ND4J_STATUS_OK)
