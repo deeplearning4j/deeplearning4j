@@ -721,7 +721,7 @@ void NDArray<T>::replacePointers(T *buffer, Nd4jLong *shapeInfo, const bool rele
 }
 
     template<typename T>
-    NDArray<T>::NDArray(const char order, const std::initializer_list<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace) {
+    NDArray<T>::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace) {
         int rank = (int) shape.size();
 
         if (rank > MAX_RANK)
@@ -770,7 +770,7 @@ void NDArray<T>::replacePointers(T *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
     template<typename T>
-    NDArray<T>::NDArray(const char order, const std::initializer_list<Nd4jLong> &shape, nd4j::memory::Workspace* workspace) {
+    NDArray<T>::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::memory::Workspace* workspace) {
 
         int rank = (int) shape.size();
 
@@ -819,7 +819,7 @@ void NDArray<T>::replacePointers(T *buffer, Nd4jLong *shapeInfo, const bool rele
 
     ////////////////////////////////////////////////////////////////////////
     template<typename T>
-    NDArray<T>::NDArray(T* buffer, const char order, const std::initializer_list<Nd4jLong> &shape, nd4j::memory::Workspace* workspace) {
+    NDArray<T>::NDArray(T* buffer, const char order, const std::vector<Nd4jLong> &shape, nd4j::memory::Workspace* workspace) {
 
         int rank = (int) shape.size();
 

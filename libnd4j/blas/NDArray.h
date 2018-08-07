@@ -155,19 +155,19 @@ namespace nd4j {
         /**
         *  this constructor creates new array using shape information contained in vector argument    
         */
-        NDArray(const char order, const std::initializer_list<Nd4jLong> &shape, nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
         * This constructor creates new array with elements copied from data and using shape information stored in shape
         *
         * PLEASE NOTE: data will be copied AS IS, without respect to specified order. You must ensure order match here.
         */
-        NDArray(const char order, const std::initializer_list<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
         *  this constructor creates new array using given buffer (without memory allocating) and shape information stored in shape
         */
-        NDArray(T *buffer, const char order, const std::initializer_list<Nd4jLong> &shape , nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(T *buffer, const char order, const std::vector<Nd4jLong> &shape , nd4j::memory::Workspace* workspace = nullptr);
 
         /**
         *  copy assignment operator
