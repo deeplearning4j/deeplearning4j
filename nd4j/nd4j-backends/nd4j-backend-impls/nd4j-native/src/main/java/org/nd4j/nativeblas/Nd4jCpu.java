@@ -7356,6 +7356,21 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native FloatNDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector long[] repeats);
 
         /**
+         * This method returns quantized copy of given array
+         *
+         * @param array
+         * @return
+         */
+        public static native @ByVal FloatNDArray quantize(@ByRef FloatNDArray array);
+
+        /**
+         * This method returns quantized copy of given array
+         *
+         * @param array
+         * @return
+         */
+
+        /**
         *  fill target array by repeating current array 
         *  dimension - dimension along which to repeat elements        
         */
@@ -8528,6 +8543,21 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native HalfNDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector long[] repeats);
 
         /**
+         * This method returns quantized copy of given array
+         *
+         * @param array
+         * @return
+         */
+        public static native @ByVal HalfNDArray quantize(@ByRef HalfNDArray array);
+
+        /**
+         * This method returns quantized copy of given array
+         *
+         * @param array
+         * @return
+         */
+
+        /**
         *  fill target array by repeating current array 
         *  dimension - dimension along which to repeat elements        
         */
@@ -9698,6 +9728,21 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native DoubleNDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector LongPointer repeats);
         public native DoubleNDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector LongBuffer repeats);
         public native DoubleNDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector long[] repeats);
+
+        /**
+         * This method returns quantized copy of given array
+         *
+         * @param array
+         * @return
+         */
+        public static native @ByVal DoubleNDArray quantize(@ByRef DoubleNDArray array);
+
+        /**
+         * This method returns quantized copy of given array
+         *
+         * @param array
+         * @return
+         */
 
         /**
         *  fill target array by repeating current array 
@@ -28755,7 +28800,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * 0: optional axis
          */
 //         #if NOT_EXCLUDED(OP_argmax)
-        @Name("nd4j::ops::argmax<float>") public static class float_argmax extends FloatDeclarableReductionOp {
+        @Name("nd4j::ops::argmax<float>") public static class float_argmax extends FloatDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public float_argmax(Pointer p) { super(p); }
@@ -28768,8 +28813,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         
                                                                                     public float_argmax() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
-        @Name("nd4j::ops::argmax<float16>") public static class half_argmax extends HalfDeclarableReductionOp {
+        @Name("nd4j::ops::argmax<float16>") public static class half_argmax extends HalfDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public half_argmax(Pointer p) { super(p); }
@@ -28782,8 +28828,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         
                                                                                     public half_argmax() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
-        @Name("nd4j::ops::argmax<double>") public static class double_argmax extends DoubleDeclarableReductionOp {
+        @Name("nd4j::ops::argmax<double>") public static class double_argmax extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public double_argmax(Pointer p) { super(p); }
@@ -28796,6 +28843,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         
                                                                                     public double_argmax() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
 //         #endif
 

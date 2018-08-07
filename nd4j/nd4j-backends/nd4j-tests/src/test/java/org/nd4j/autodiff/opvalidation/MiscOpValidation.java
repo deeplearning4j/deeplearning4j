@@ -39,9 +39,11 @@ import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.api.ops.impl.shape.ZerosLike;
 import org.nd4j.linalg.api.ops.impl.transforms.Fill;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.Max;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -338,7 +340,7 @@ public class MiscOpValidation extends BaseOpValidation {
     public void testScatterOpGradients() {
         List<String> failed = new ArrayList<>();
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 7; i++) {
             Nd4j.getRandom().setSeed(12345);
 
             SameDiff sd = SameDiff.create();
@@ -375,6 +377,14 @@ public class MiscOpValidation extends BaseOpValidation {
                     scatter = sd.scatterUpdate("s", in, indices, updates);
                     name = "scatterUpdate";
                     break;
+                case 5:
+                    scatter = sd.scatterMax("s", in, indices, updates);
+                    name = "scatterMax";
+                    break;
+                case 6:
+                    scatter = sd.scatterMin("s", in, indices, updates);
+                    name = "scatterMin";
+                    break;
                 default:
                     throw new RuntimeException();
             }
@@ -400,6 +410,14 @@ public class MiscOpValidation extends BaseOpValidation {
                     case 4:
                         destinationRow.assign(updateRow);
                         break;
+                    case 5:
+                        destinationRow.assign(Transforms.max(destinationRow, updateRow, true));
+                        break;
+                    case 6:
+                        destinationRow.assign(Transforms.min(destinationRow, updateRow, true));
+                        break;
+                    default:
+                        throw new RuntimeException();
                 }
             }
 
@@ -468,6 +486,30 @@ public class MiscOpValidation extends BaseOpValidation {
         }
 
         assertEquals(failed.toString(), 0, failed.size());
+    }
+
+
+    @Test
+    public void testTrace(){
+        OpValidationSuite.ignoreFailing();
+        Nd4j.getRandom().setSeed(12345);
+        for( int[] inShape : new int[][]{{3,3}}){
+
+            INDArray in = Nd4j.rand(inShape);
+            SameDiff sd = SameDiff.create();
+            SDVariable i = sd.var("in", in);
+            SDVariable trace = sd.trace(i);
+
+            double exp = Nd4j.diag(in).sumNumber().doubleValue();
+
+            TestCase tc = new TestCase(sd)
+                    .expected(trace, Nd4j.trueScalar(exp))
+                    .testName(Arrays.toString(inShape));
+
+            String err = OpValidation.validate(tc);
+
+            assertNull(err);
+        }
     }
 
 
