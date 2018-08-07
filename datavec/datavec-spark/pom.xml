@@ -25,7 +25,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <version>1.0.0_spark_1-SNAPSHOT</version>
-    <artifactId>datavec-spark_2.11</artifactId>
+    <artifactId>datavec-spark_2.10</artifactId>
 
     <properties>
         <!-- These Spark versions have to be here, and NOT in the datavec parent pom. Otherwise, the properties
@@ -35,8 +35,8 @@
         <spark.major.version>1</spark.major.version>
 
         <!-- Default scala versions, may be overwritten by build profiles -->
-        <scala.version>2.11.12</scala.version>
-        <scala.binary.version>2.11</scala.binary.version>
+        <scala.version>2.10.7</scala.version>
+        <scala.binary.version>2.10</scala.binary.version>
     </properties>
 
     <build>
@@ -77,7 +77,7 @@
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.module</groupId>
-                <artifactId>jackson-module-scala_2.11</artifactId>
+                <artifactId>jackson-module-scala_2.10</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
         </dependencies>
@@ -107,7 +107,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-sql_2.11</artifactId>
+            <artifactId>spark-sql_2.10</artifactId>
             <version>${spark.version}</version>
         </dependency>
 
@@ -163,17 +163,17 @@
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.11</artifactId>
+            <artifactId>akka-actor_2.10</artifactId>
             <version>${akka.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-remote_2.11</artifactId>
+            <artifactId>akka-remote_2.10</artifactId>
             <version>${akka.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-slf4j_2.11</artifactId>
+            <artifactId>akka-slf4j_2.10</artifactId>
             <version>${akka.version}</version>
         </dependency>
         <dependency>
@@ -233,7 +233,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_2.11</artifactId>
+            <artifactId>spark-core_2.10</artifactId>
             <version>${spark.version}</version>
             <scope>provided</scope>
             <exclusions>

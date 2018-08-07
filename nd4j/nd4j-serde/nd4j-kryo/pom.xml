@@ -22,7 +22,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nd4j-kryo_2.11</artifactId>
+    <artifactId>nd4j-kryo_2.10</artifactId>
     <packaging>jar</packaging>
 
     <name>nd4j-kryo</name>
@@ -68,7 +68,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_2.11</artifactId>
+            <artifactId>spark-core_2.10</artifactId>
             <version>${spark.version}</version>
             <scope>provided</scope>
             <exclusions>
