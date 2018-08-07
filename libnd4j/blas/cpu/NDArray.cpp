@@ -130,6 +130,14 @@ namespace nd4j {
     }
 
 ////////////////////////////////////////////////////////////////////////
+    template <typename T>
+    NDArray<T>::NDArray(char order, std::initializer_list<Nd4jLong> s, nd4j::memory::Workspace* workspace) {
+        std::vector<Nd4jLong> shape(s);
+        NDArray(order, shape, workspace);
+    }
+
+
+////////////////////////////////////////////////////////////////////////
 template <typename T>
 NDArray<T>::NDArray(T scalar) {
     nd4j::memory::Workspace* workspace = nullptr;
@@ -1066,7 +1074,7 @@ template <typename T>
         std::vector<int> copy(dimensions);
 
         auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
-        NDArray<T>* result = new NDArray<T>('c', newShape, _workspace);
+        NDArray<T>* result = new NDArray<T>(newShape, true, _workspace);
         RELEASE(newShape, _workspace);
 
         if(rankOf() == copy.size() || copy.empty())
