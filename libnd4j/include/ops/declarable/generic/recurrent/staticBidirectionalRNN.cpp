@@ -83,7 +83,7 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
         REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(maxTimeStep)  == ShapeUtils<T>::shapeAsString({bS}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of maxTimeStep array, expected is [%i], but got %s instead !", bS, ShapeUtils<T>::shapeAsString(maxTimeStep).c_str()); 
 
     // forward steps
-    NDArray<T>* hFW = new NDArray<T>({time, bS, numUnitsFW}, block.getWorkspace());
+    NDArray<T>* hFW = new NDArray<T>('c', {time, bS, numUnitsFW}, block.getWorkspace());
     helpers::rnnTimeLoop<T>({x, WxFW, WhFW, bFW, h0FW, maxTimeStep}, hFW, hFWFinal);
 
     NDArray<T>* seqLen = maxTimeStep;

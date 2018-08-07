@@ -1066,7 +1066,7 @@ template <typename T>
         std::vector<int> copy(dimensions);
 
         auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
-        NDArray<T>* result = new NDArray<T>(newShape, _workspace);
+        NDArray<T>* result = new NDArray<T>('c', newShape, _workspace);
         RELEASE(newShape, _workspace);
 
         if(rankOf() == copy.size() || copy.empty())
