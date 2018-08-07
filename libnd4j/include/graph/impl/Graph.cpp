@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // @author raver119@gmail.com
 //
@@ -1044,7 +1060,14 @@ namespace nd4j {
         template <typename T>
         void Graph<T>::printOut() {
             buildGraph();
-            nd4j_printf("\nPrinting out Graph...\n", "");
+
+            // print variables first
+            if (_variableSpace->totalEntries() > 0) {
+                // TODO: print variables here
+            }
+
+            if (_onion->size() > 0)
+                nd4j_printf("\nPrinting out Graph...\n", "");
             
             int opCnt = 0;
             for (int l = 0; l < _onion->size(); l++) {
@@ -1062,7 +1085,9 @@ namespace nd4j {
             }
 
 
-            nd4j_printf("\nPrinting out Scopes...\n","");
+            if (_scopes.size() > 0)
+                nd4j_printf("\nPrinting out Scopes...\n","");
+
             for (int s = 0; s < _scopes.size(); s++) {
                 Scope<T>* scope = _scopes.at(s);
                 nd4j_printf("Scope %i:<%s>:\n", scope->id(), scope->name()->c_str());

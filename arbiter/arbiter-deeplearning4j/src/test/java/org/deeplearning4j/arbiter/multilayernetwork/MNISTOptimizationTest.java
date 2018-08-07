@@ -1,20 +1,19 @@
-/*-
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
- *  * Copyright 2016 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
  *
- */
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.arbiter.multilayernetwork;
 
 import org.deeplearning4j.arbiter.MultiLayerSpace;
@@ -86,10 +85,10 @@ public class MNISTOptimizationTest {
                                                         .activation(new DiscreteParameterSpace<>(Activation.RELU,
                                                                         Activation.SOFTPLUS, Activation.LEAKYRELU))
                                                         .build(),
-                                        new IntegerParameterSpace(1, 2), true) //1-2 identical layers
+                                        new IntegerParameterSpace(1, 2)) //1-2 identical layers
                         .addLayer(new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
                                         .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
-                                        .build(), new IntegerParameterSpace(0, 1), true) //0 to 1 layers
+                                        .build(), new IntegerParameterSpace(0, 1)) //0 to 1 layers
                         .addLayer(new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .earlyStoppingConfiguration(esConf).pretrain(false).backprop(true).build();
@@ -111,7 +110,8 @@ public class MNISTOptimizationTest {
             throw new RuntimeException();
 
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
-                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
+                        .candidateGenerator(candidateGenerator)
+                        .dataProvider(dataProvider)
                         .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(new TestSetLossScoreFunction(true))
                         .terminationConditions(new MaxTimeCondition(120, TimeUnit.MINUTES),
                                         new MaxCandidatesCondition(100))

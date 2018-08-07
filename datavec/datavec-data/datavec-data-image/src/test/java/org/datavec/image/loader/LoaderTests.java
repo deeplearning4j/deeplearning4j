@@ -1,18 +1,18 @@
-/*-
- *  * Copyright 2016 Skymind, Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
- */
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.datavec.image.loader;
 
@@ -110,7 +110,7 @@ public class LoaderTests {
         CifarLoader loader = new CifarLoader(row, col, channels, train, preProcessCifar);
         DataSet data = loader.next(numExamples);
         assertEquals(numExamples, data.getLabels().size(0));
-        assertEquals(channels, data.getFeatureMatrix().size(1));
+        assertEquals(channels, data.getFeatures().size(1));
 
         train = true;
         preProcessCifar = true;
@@ -119,21 +119,21 @@ public class LoaderTests {
         channels = 3;
         loader = new CifarLoader(row, col, channels, train, preProcessCifar);
         data = loader.next(1);
-        assertEquals(1, data.getFeatureMatrix().size(0));
-        assertEquals(channels * row * col, data.getFeatureMatrix().ravel().length());
+        assertEquals(1, data.getFeatures().size(0));
+        assertEquals(channels * row * col, data.getFeatures().ravel().length());
 
         train = false;
         preProcessCifar = false;
         loader = new CifarLoader(row, col, channels, train, preProcessCifar);
         data = loader.next(numExamples);
-        assertEquals(row, data.getFeatureMatrix().size(2));
+        assertEquals(row, data.getFeatures().size(2));
 
         train = false;
         preProcessCifar = true;
         loader = new CifarLoader(row, col, channels, train, preProcessCifar);
         data = loader.next(numExamples);
         assertEquals(numExamples, data.getLabels().size(0));
-        assertEquals(col, data.getFeatureMatrix().size(3));
+        assertEquals(col, data.getFeatures().size(3));
 
     }
 
@@ -184,7 +184,7 @@ public class LoaderTests {
         int channels = 3;
         CifarLoader cifar = new CifarLoader(row, col, channels, null, true, true, false);
         DataSet result = cifar.next(1);
-        assertEquals(result.getFeatureMatrix().length(), 32 * 32 * 3, 0.0);
+        assertEquals(result.getFeatures().length(), 32 * 32 * 3, 0.0);
     }
 
 

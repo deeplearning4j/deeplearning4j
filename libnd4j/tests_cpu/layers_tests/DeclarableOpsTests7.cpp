@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // Created by raver119 on 09.02.18.
 //
@@ -4747,83 +4763,3 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_CumSum_BP_3) {
 
 }
 
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, Test_Reduce_CumProd_BP_1) {
-
-    NDArray<float> x('c', {3, 4});
-//    NDArray<float> y('c', {3, 4});
-//    NDArray<float>* z; //('c', {4});
-//    NDArray<float> eps('c', {1, 1, 1}, {1.f});
-//    NDArray<float> exp('c', {2, 3, 4});
-    x.linspace(1);
-//    y.assign(2.f);
-
-//    z = x.applyReduce3<simdOps::Dot<float>>(&y, {0}, nullptr);
-    nd4j::ops::cumprod<float> op;
-    auto result = op.execute({&x}, {}, {1,1,0});
-    auto output = result->at(0);    
-//    output->printIndexedBuffer("Result is");
-    //output->printShapeInfo("Result shape is");
-
-//    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
-
-//    ASSERT_TRUE(exp.isSameShape(output));
-//    ASSERT_TRUE(exp.equalsTo(output));
-
-    delete result;
-//    delete z;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, Test_Reduce_CumProd_BP_2) {
-
-    NDArray<float> x('c', {3, 4});
-//    NDArray<float> y('c', {3, 4});
-//    NDArray<float>* z; //('c', {4});
-//    NDArray<float> eps('c', {1, 1, 1}, {1.f});
-//    NDArray<float> exp('c', {2, 3, 4});
-    x.linspace(1);
-//    y.assign(2.f);
-
-//    z = x.applyReduce3<simdOps::Dot<float>>(&y, {0}, nullptr);
-    nd4j::ops::cumprod<float> op;
-    auto result = op.execute({&x}, {}, {0,0,0,1});
-    auto output = result->at(0);    
-//    output->printIndexedBuffer("Result is");
-//    output->printShapeInfo("Result shape is");
-
-//    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
-
-//    ASSERT_TRUE(exp.isSameShape(output));
-//    ASSERT_TRUE(exp.equalsTo(output));
-
-    delete result;
-//    delete z;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, Test_Reduce_CumProd_BP_3) {
-
-    NDArray<float> x('c', {3, 4});
-//    NDArray<float> y('c', {3, 4});
-//    NDArray<float>* z; //('c', {4});
-//    NDArray<float> eps('c', {1, 1, 1}, {1.f});
-//    NDArray<float> exp('c', {2, 3, 4});
-    x.linspace(1);
-//    y.assign(2.f);
-
-//    z = x.applyReduce3<simdOps::Dot<float>>(&y, {0}, nullptr);
-    nd4j::ops::cumprod<float> op;
-    auto result = op.execute({&x}, {}, {0,0});
-    auto output = result->at(0);    
-//    output->printIndexedBuffer("Result is");
-//    output->printShapeInfo("Result shape is");
-
-//    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
-
-//    ASSERT_TRUE(exp.isSameShape(output));
-//    ASSERT_TRUE(exp.equalsTo(output));
-
-    delete result;
-//    delete z;
-}

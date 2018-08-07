@@ -1,9 +1,26 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.rl4j.learning.sync;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/12/16.
@@ -30,18 +47,13 @@ public class ExpReplay<A> implements IExpReplay<A> {
 
 
     public ArrayList<Transition<A>> getBatch(int size) {
-
-        Set<Integer> intSet = new HashSet<>();
-        int storageSize = storage.size();
-        while (intSet.size() < size) {
-            int rd = random.nextInt(storageSize);
-            intSet.add(rd);
-        }
-
         ArrayList<Transition<A>> batch = new ArrayList<>(size);
-        Iterator<Integer> iter = intSet.iterator();
-        while (iter.hasNext()) {
-            Transition<A> trans = storage.get(iter.next());
+        int storageSize = storage.size();
+        int actualBatchSize = Math.min(storageSize, size);
+        int[] actualIndex = ThreadLocalRandom.current().ints(0, storageSize).distinct().limit(actualBatchSize).toArray();
+
+        for (int i = 0; i < actualBatchSize; i ++) {
+            Transition<A> trans = storage.get(actualIndex[i]);
             batch.add(trans.dup());
         }
 

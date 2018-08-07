@@ -1,10 +1,28 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.autodiff.samediff;
 
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.autodiff.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.impl.DefaultSameDiffConditional;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
 import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
@@ -25,7 +43,7 @@ public class FailingSameDiffTests {
 
     @Test
     public void testEye(){
-        OpValidationSuite.ignoreFailing();
+        //OpValidationSuite.ignoreFailing();
         INDArray arr = Nd4j.create(new double[]{1, 0, 0, 0, 1, 0}, new int[]{2, 3});
         List<INDArray> stack = new ArrayList<>();
         for(int i=0; i< 25; i++){
@@ -39,17 +57,29 @@ public class FailingSameDiffTests {
         assertEquals(expOut, result.eval());
     }
 
+    @Test
+    public void testEyeShape(){
+        val dco = DynamicCustomOp.builder("eye")
+                .addIntegerArguments(3,3)
+                //.addIntegerArguments(-99,3,3) //Also fails
+                .build();
+
+        List<long[]> list = Nd4j.getExecutioner().calculateOutputShape(dco);
+        assertEquals(1, list.size());   //Fails here - empty list
+        assertArrayEquals(new long[]{3,3}, list.get(0));
+    }
+
     @Test(timeout = 10000L)
     public void testWhileLoop() {
         OpValidationSuite.ignoreFailing();
         SameDiff sameDiff = SameDiff.create();
-        sameDiff.whileStatement(new SameDiff.DefaultSameDiffConditional(), new SameDiff.SameDiffFunctionDefinition() {
+        sameDiff.whileStatement(new DefaultSameDiffConditional(), new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable eqResult = sameDiff.neq(variableInputs[0], variableInputs[1]);
                 return new SDVariable[]{eqResult};
             }
-        }, new SameDiff.SameDiffFunctionDefinition() {
+        }, new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable ret = variableInputs[1].addi(1.0);
@@ -73,13 +103,13 @@ public class FailingSameDiffTests {
     public void testWhileBackwards() {
         OpValidationSuite.ignoreFailing();
         SameDiff sameDiff = SameDiff.create();
-        sameDiff.whileStatement(new SameDiff.DefaultSameDiffConditional(), new SameDiff.SameDiffFunctionDefinition() {
+        sameDiff.whileStatement(new DefaultSameDiffConditional(), new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable eqResult = sameDiff.neq(variableInputs[0], variableInputs[1]);
                 return new SDVariable[]{eqResult};
             }
-        }, new SameDiff.SameDiffFunctionDefinition() {
+        }, new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable ret = variableInputs[1].addi(1.0);
@@ -103,15 +133,15 @@ public class FailingSameDiffTests {
         TensorArrayV3 ta = sd.tensorArray();
 
         // while loop
-        val predicate = new SameDiff.DefaultSameDiffConditional();
-        val cond = new SameDiff.SameDiffFunctionDefinition(){
+        val predicate = new DefaultSameDiffConditional();
+        val cond = new SameDiffFunctionDefinition(){
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable ret = sameDiff.neq(variableInputs[0], variableInputs[1]);
                 return new SDVariable[]{ret};
             }
         };
-        val loop_body = new SameDiff.SameDiffFunctionDefinition(){
+        val loop_body = new SameDiffFunctionDefinition(){
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 ta.write(variableInputs[0], variableInputs[2]);
@@ -147,13 +177,13 @@ public class FailingSameDiffTests {
     public void testWhileLoop2() {
         OpValidationSuite.ignoreFailing();
         SameDiff sameDiff = SameDiff.create();
-        sameDiff.whileStatement(new SameDiff.DefaultSameDiffConditional(), new SameDiff.SameDiffFunctionDefinition() {
+        sameDiff.whileStatement(new DefaultSameDiffConditional(), new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable eqResult = sameDiff.neq(variableInputs[0], variableInputs[1]);
                 return new SDVariable[]{eqResult};
             }
-        }, new SameDiff.SameDiffFunctionDefinition() {
+        }, new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable ret = variableInputs[1].add(1.0);

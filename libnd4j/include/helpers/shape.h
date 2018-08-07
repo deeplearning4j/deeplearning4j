@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 /*
  * shape.h
  *
@@ -91,7 +107,7 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD bool equalsStrict(Nd4jLong *shapeA, Nd4jLong *shapeB);
 
-    ND4J_EXPORT _CUDA_HD int sizeAt(Nd4jLong *shape, int dim);
+    ND4J_EXPORT _CUDA_HD int sizeAt(const Nd4jLong *shape, const int dim);
 
     template <typename T>
     ND4J_EXPORT _CUDA_HD void fill(T* buffer, T value, Nd4jLong length);
@@ -422,7 +438,7 @@ namespace shape {
  * Returns the rank portion of
  * an information buffer
  */
-    ND4J_EXPORT _CUDA_HD int rank( Nd4jLong *buffer);
+    ND4J_EXPORT _CUDA_HD int rank(const Nd4jLong *buffer);
 
 /**
  * Converts a raw int buffer of the layout:
@@ -973,6 +989,9 @@ namespace shape {
     ND4J_EXPORT _CUDA_HD void printIntArray(Nd4jLong *arr,int length);
 
     ND4J_EXPORT _CUDA_HD void printArray(float *arr,int length);
+
+    template<typename T>
+    ND4J_EXPORT _CUDA_HD void printArray(T *arr,int length, const char *message);
 
     ND4J_EXPORT _CUDA_HD Nd4jLong* shapeBufferOfNpy(int rank, unsigned int *shape,bool fortranOrder);
 
@@ -2575,7 +2594,7 @@ template <typename T>
  * Returns the rank portion of
  * an information buffer
  */
-    INLINEDEF _CUDA_HD  int rank( Nd4jLong *buffer) {
+    INLINEDEF _CUDA_HD  int rank(const Nd4jLong *buffer) {
         return static_cast<int>(buffer[0]);
     }
 
@@ -2958,7 +2977,7 @@ template <typename T>
         return true;
     }
 
-    INLINEDEF _CUDA_HD int sizeAt(Nd4jLong *shape, int dim) {
+    INLINEDEF _CUDA_HD int sizeAt(const Nd4jLong *shape, const int dim) {
         if (dim >= 0)
             return shape[1+dim];
         else
@@ -3457,6 +3476,24 @@ template <typename T>
             }
         }
         printf("]\n");
+#ifndef __CUDACC__
+        fflush(stdout);
+#endif
+    }
+
+    template <typename T>
+    INLINEDEF _CUDA_HD void printArray(T *arr,int length, const char * message) {
+        if (message != nullptr)
+            printf("%s: [", message);
+        else
+            printf("Array: [");
+
+        for (int i = 0; i < length; i ++) {
+            printf("%f", (float) arr[i]);
+            if (i + 1 < length) printf(", ");
+        }
+        printf("]\n");
+
 #ifndef __CUDACC__
         fflush(stdout);
 #endif

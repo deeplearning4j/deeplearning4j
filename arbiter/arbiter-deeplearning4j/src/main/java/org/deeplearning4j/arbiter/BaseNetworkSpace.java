@@ -1,18 +1,18 @@
-/*-
- *  * Copyright 2016 Skymind,Inc.
- *  *
- *  *    Licensed under the Apache License, Version 2.0 (the "License");
- *  *    you may not use this file except in compliance with the License.
- *  *    You may obtain a copy of the License at
- *  *
- *  *        http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  *    Unless required by applicable law or agreed to in writing, software
- *  *    distributed under the License is distributed on an "AS IS" BASIS,
- *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *    See the License for the specific language governing permissions and
- *  *    limitations under the License.
- */
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.deeplearning4j.arbiter;
 
@@ -30,6 +30,7 @@ import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.YamlMapper;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
@@ -44,6 +45,7 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -72,6 +74,8 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
     protected ParameterSpace<StepFunction> stepFunction;
     protected ParameterSpace<Double> l1;
     protected ParameterSpace<Double> l2;
+    protected ParameterSpace<Double> l1Bias;
+    protected ParameterSpace<Double> l2Bias;
     protected ParameterSpace<IUpdater> updater;
     protected ParameterSpace<IUpdater> biasUpdater;
     protected ParameterSpace<IWeightNoise> weightNoise;
@@ -88,6 +92,10 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
     protected ParameterSpace<BackpropType> backpropType;
     protected ParameterSpace<Integer> tbpttFwdLength;
     protected ParameterSpace<Integer> tbpttBwdLength;
+
+    protected ParameterSpace<List<LayerConstraint>> allParamConstraints;
+    protected ParameterSpace<List<LayerConstraint>> weightConstraints;
+    protected ParameterSpace<List<LayerConstraint>> biasConstraints;
 
     protected int numEpochs = 1;
 
@@ -111,6 +119,8 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
         this.stepFunction = builder.stepFunction;
         this.l1 = builder.l1;
         this.l2 = builder.l2;
+        this.l1Bias = builder.l1Bias;
+        this.l2Bias = builder.l2Bias;
         this.updater = builder.updater;
         this.biasUpdater = builder.biasUpdater;
         this.weightNoise = builder.weightNoise;
@@ -118,6 +128,9 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
         this.gradientNormalization = builder.gradientNormalization;
         this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
         this.convolutionMode = builder.convolutionMode;
+        this.allParamConstraints = builder.allParamConstraints;
+        this.weightConstraints = builder.weightConstraints;
+        this.biasConstraints = builder.biasConstraints;
 
 
         this.backprop = builder.backprop;
@@ -161,6 +174,10 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
             builder.l1(l1.getValue(values));
         if (l2 != null)
             builder.l2(l2.getValue(values));
+        if (l1Bias != null)
+            builder.l1Bias(l1Bias.getValue(values));
+        if (l2Bias != null)
+            builder.l2Bias(l2Bias.getValue(values));
         if (updater != null)
             builder.updater(updater.getValue(values));
         if (biasUpdater != null)
@@ -175,6 +192,24 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
             builder.gradientNormalizationThreshold(gradientNormalizationThreshold.getValue(values));
         if (convolutionMode != null)
             builder.convolutionMode(convolutionMode.getValue(values));
+        if (allParamConstraints != null){
+            List<LayerConstraint> c = allParamConstraints.getValue(values);
+            if(c != null){
+                builder.constrainAllParameters(c.toArray(new LayerConstraint[c.size()]));
+            }
+        }
+        if (weightConstraints != null){
+            List<LayerConstraint> c = weightConstraints.getValue(values);
+            if(c != null){
+                builder.constrainWeights(c.toArray(new LayerConstraint[c.size()]));
+            }
+        }
+        if (biasConstraints != null){
+            List<LayerConstraint> c = biasConstraints.getValue(values);
+            if(c != null){
+                builder.constrainBias(c.toArray(new LayerConstraint[c.size()]));
+            }
+        }
 
         return builder;
     }
@@ -253,6 +288,8 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
         private ParameterSpace<StepFunction> stepFunction;
         private ParameterSpace<Double> l1;
         private ParameterSpace<Double> l2;
+        private ParameterSpace<Double> l1Bias;
+        private ParameterSpace<Double> l2Bias;
         private ParameterSpace<IUpdater> updater;
         private ParameterSpace<IUpdater> biasUpdater;
         private ParameterSpace<IWeightNoise> weightNoise;
@@ -260,6 +297,10 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
         private ParameterSpace<GradientNormalization> gradientNormalization;
         private ParameterSpace<Double> gradientNormalizationThreshold;
         private ParameterSpace<ConvolutionMode> convolutionMode;
+
+        private ParameterSpace<List<LayerConstraint>> allParamConstraints;
+        private ParameterSpace<List<LayerConstraint>> weightConstraints;
+        private ParameterSpace<List<LayerConstraint>> biasConstraints;
 
         //NeuralNetConfiguration.ListBuilder/MultiLayerConfiguration.Builder<T> options:
         private ParameterSpace<Boolean> backprop;
@@ -380,6 +421,23 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
             this.l2 = l2;
             return (T) this;
         }
+        public T l1Bias(double l1Bias) {
+            return l1Bias(new FixedValue<>(l1Bias));
+        }
+
+        public T l1Bias(ParameterSpace<Double> l1Bias) {
+            this.l1Bias = l1Bias;
+            return (T) this;
+        }
+
+        public T l2Bias(double l2Bias) {
+            return l2Bias(new FixedValue<>(l2Bias));
+        }
+
+        public T l2Bias(ParameterSpace<Double> l2Bias) {
+            this.l2Bias = l2Bias;
+            return (T) this;
+        }
 
         public T updater(IUpdater updater){
             return updater(new FixedValue<>(updater));
@@ -494,6 +552,33 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
 
         public T tbpttBwdLength(ParameterSpace<Integer> tbpttBwdLength) {
             this.tbpttBwdLength = tbpttBwdLength;
+            return (T) this;
+        }
+
+        public T constrainWeights(LayerConstraint... constraints){
+            return constrainWeights(new FixedValue<List<LayerConstraint>>(Arrays.asList(constraints)));
+        }
+
+        public T constrainWeights(ParameterSpace<List<LayerConstraint>> constraints){
+            this.weightConstraints = constraints;
+            return (T) this;
+        }
+
+        public T constrainBias(LayerConstraint... constraints){
+            return constrainBias(new FixedValue<List<LayerConstraint>>(Arrays.asList(constraints)));
+        }
+
+        public T constrainBias(ParameterSpace<List<LayerConstraint>> constraints){
+            this.biasConstraints = constraints;
+            return (T) this;
+        }
+
+        public T constrainAllParams(LayerConstraint... constraints){
+            return constrainAllParams(new FixedValue<List<LayerConstraint>>(Arrays.asList(constraints)));
+        }
+
+        public T constrainAllParams(ParameterSpace<List<LayerConstraint>> constraints){
+            this.allParamConstraints = constraints;
             return (T) this;
         }
 

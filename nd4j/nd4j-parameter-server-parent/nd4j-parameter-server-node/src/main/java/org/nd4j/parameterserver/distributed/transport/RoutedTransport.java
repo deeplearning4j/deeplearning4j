@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.parameterserver.distributed.transport;
 
 import com.google.common.math.IntMath;
@@ -10,6 +26,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
@@ -40,8 +57,6 @@ import static java.lang.System.setProperty;
 @Slf4j
 public class RoutedTransport extends BaseTransport {
 
-    //Apparently buffer requirements are a multiple of this?? https://github.com/akka/akka/issues/21923#issuecomment-264707476
-    private static final String AERON_TERM_BUFFER_PROP = "aeron.term.buffer.length";
     private static final long DEFAULT_TERM_BUFFER_PROP = IntMath.pow(2,25); //32MB
 
     protected List<RemoteConnection> shards = new ArrayList<>();
@@ -68,9 +83,9 @@ public class RoutedTransport extends BaseTransport {
 
         // setting this property to try to increase maxmessage length, not sure if it still works though
         //Term buffer length: must be power of 2 and in range 64kB to 1GB: https://github.com/real-logic/aeron/wiki/Configuration-Options
-        String p = System.getProperty(AERON_TERM_BUFFER_PROP);
+        String p = System.getProperty(ND4JSystemProperties.AERON_TERM_BUFFER_PROP);
         if(p == null){
-            System.setProperty(AERON_TERM_BUFFER_PROP, String.valueOf(DEFAULT_TERM_BUFFER_PROP));
+            System.setProperty(ND4JSystemProperties.AERON_TERM_BUFFER_PROP, String.valueOf(DEFAULT_TERM_BUFFER_PROP));
         }
 
         context = new Aeron.Context().publicationConnectionTimeout(30000000000L).driverTimeoutMs(30000)

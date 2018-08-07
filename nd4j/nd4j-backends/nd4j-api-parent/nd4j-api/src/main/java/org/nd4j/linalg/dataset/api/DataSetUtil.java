@@ -1,8 +1,25 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.dataset.api;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -178,6 +195,7 @@ public class DataSetUtil {
      */
     public static Pair<INDArray, INDArray> mergeFeatures(@NonNull INDArray[] featuresToMerge,
                     INDArray[] featureMasksToMerge) {
+        Preconditions.checkNotNull(featuresToMerge[0], "Encountered null feature array when merging");
         int rankFeatures = featuresToMerge[0].rank();
 
         switch (rankFeatures) {
@@ -215,6 +233,7 @@ public class DataSetUtil {
      * @return Merged features and mask. Mask may be null
      */
     public static Pair<INDArray, INDArray> mergeLabels(INDArray[] labelsToMerge, INDArray[] labelMasksToMerge) {
+        Preconditions.checkNotNull(labelsToMerge[0], "Cannot merge data: Encountered null labels array");
         int rankFeatures = labelsToMerge[0].rank();
 
         switch (rankFeatures) {
@@ -286,6 +305,7 @@ public class DataSetUtil {
         INDArray[] temp = new INDArray[arrays.length];
         boolean hasMasks = false;
         for (int i = 0; i < arrays.length; i++) {
+            Preconditions.checkNotNull(arrays[i], "Encountered null array at position %s when merging data", i);
             if (arrays[i].columns() != cols) {
                 throw new IllegalStateException("Cannot merge 2d arrays with different numbers of columns (firstNCols="
                                 + cols + ", ithNCols=" + arrays[i].columns() + ")");
@@ -308,13 +328,20 @@ public class DataSetUtil {
     }
 
 
-    public static INDArray mergePerOutputMasks2d(long[] outShape, INDArray[][] arrays, INDArray[][] masks,
-                    int inOutIdx) {
+    public static INDArray mergePerOutputMasks2d(long[] outShape, INDArray[][] arrays, INDArray[][] masks, int inOutIdx) {
         Pair<INDArray[], INDArray[]> p = selectColumnFromMDSData(arrays, masks, inOutIdx);
         return mergePerOutputMasks2d(outShape, p.getFirst(), p.getSecond());
     }
 
+    /**
+     * @deprecated USe {@link #mergeMasks2d(long[], INDArray[], INDArray[])}
+     */
+    @Deprecated
     public static INDArray mergePerOutputMasks2d(long[] outShape, INDArray[] arrays, INDArray[] masks) {
+        return mergeMasks2d(outShape, arrays, masks);
+    }
+
+    public static INDArray mergeMasks2d(long[] outShape, INDArray[] arrays, INDArray[] masks) {
         val numExamplesPerArr = new long[arrays.length];
         for (int i = 0; i < numExamplesPerArr.length; i++) {
             numExamplesPerArr[i] = arrays[i].size(0);
@@ -332,6 +359,52 @@ public class DataSetUtil {
             outMask.put(new INDArrayIndex[] {NDArrayIndex.interval(rowsSoFar, rowsSoFar + thisRows),
                             NDArrayIndex.all()}, masks[i]);
             rowsSoFar += thisRows;
+        }
+        return outMask;
+    }
+
+    public static INDArray mergeMasks4d(INDArray[] featuresOrLabels, INDArray[] masks) {
+        long[] outShape = null;
+        long mbCountNoMask = 0;
+        for (int i = 0; i < masks.length; i++) {
+            if(masks[i] == null) {
+                mbCountNoMask += featuresOrLabels[i].size(0);
+                continue;
+            }
+            if(masks[i].rank() != 4)
+                throw new IllegalStateException("Cannot merge mask arrays: expected mask array of rank 4. Got mask array of rank " + masks[i].rank()
+                        + " with shape " + Arrays.toString(masks[i].shape()));
+            if(outShape == null)
+                outShape = masks[i].shape().clone();
+            else {
+                INDArray m = masks[i];
+                if(m.size(1) != outShape[1] || m.size(2) != outShape[2] || m.size(3) != outShape[3]){
+                    throw new IllegalStateException("Mismatched mask shapes: masks should have same depth/height/width for all examples." +
+                            " Prior examples had shape [mb," + masks[1] + "," + masks[2] + "," + masks[3] + "], next example has shape " +
+                            Arrays.toString(m.shape()));
+                }
+                outShape[0] += m.size(0);
+            }
+        }
+
+        if(outShape == null)
+            return null;    //No masks to merge
+
+        outShape[0] += mbCountNoMask;
+
+        INDArray outMask = Nd4j.ones(outShape); //Initialize to 'all present' (1s)
+
+        int exSoFar = 0;
+        for (int i = 0; i < masks.length; i++) {
+            if (masks[i] == null) {
+                exSoFar += featuresOrLabels[i].size(0);
+                continue;
+            }
+            long nEx = masks[i].size(0);
+
+            outMask.put(new INDArrayIndex[] {NDArrayIndex.interval(exSoFar, exSoFar + nEx),
+                    NDArrayIndex.all()}, masks[i]);
+            exSoFar += nEx;
         }
         return outMask;
     }
@@ -505,7 +578,9 @@ public class DataSetUtil {
         long[] shape = arrays[0].shape();
         INDArray[] temp = new INDArray[arrays.length];
         boolean hasMasks = false;
+        int maskRank = -1;
         for (int i = 0; i < arrays.length; i++) {
+            Preconditions.checkNotNull(arrays[i], "Encountered null array when merging data at position %s", i);
             nExamples += arrays[i].size(0);
             long[] thisShape = arrays[i].shape();
             if (thisShape.length != 4) {
@@ -520,19 +595,20 @@ public class DataSetUtil {
             }
 
             temp[i] = arrays[i];
-            if (masks != null && masks[i] != null && masks[i] != null) {
+            if (masks != null && masks[i] != null ) {
                 hasMasks = true;
-                if (masks[i].rank() != 2) {
-                    throw new UnsupportedOperationException("Cannot merged 4d arrays with masks that are not rank 2."
-                                    + " Got mask array with rank: " + masks[i].rank());
-                }
+                maskRank = masks[i].rank();
             }
         }
 
         INDArray out = Nd4j.specialConcat(0, temp);
         INDArray outMask = null;
         if (hasMasks) {
-            outMask = DataSetUtil.mergePerOutputMasks2d(out.shape(), arrays, masks);
+            if(maskRank == 2) {
+                outMask = DataSetUtil.mergeMasks2d(out.shape(), arrays, masks);
+            } else if(maskRank == 4){
+                outMask = DataSetUtil.mergeMasks4d(arrays, masks);
+            }
         }
 
         return new Pair<>(out, outMask);

@@ -1,17 +1,27 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.api.blas.impl;
 
-import lombok.val;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexDouble;
-import org.nd4j.linalg.api.complex.IComplexFloat;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
@@ -81,20 +91,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     }
 
     /**
-     * computes a vector-vector dot product.
-     *
-     * @param n
-     * @param alpha
-     * @param X
-     * @param Y
-     * @return
-     */
-    @Override
-    public IComplexNumber dot(long n, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
      * computes the Euclidean norm of a vector.
      *
      * @param arr
@@ -119,17 +115,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
             return snrm2(arr.length(), arr, BlasBufferUtil.getBlasStride(arr));
         }
         // TODO: add nrm2 for half, as call to appropriate NativeOp<HALF>
-    }
-
-    /**
-     * computes the Euclidean norm of a vector.
-     *
-     * @param arr
-     * @return
-     */
-    @Override
-    public IComplexNumber nrm2(IComplexNDArray arr) {
-        throw new UnsupportedOperationException();
     }
 
     /**
@@ -175,20 +160,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
             INDArray arrX = Nd4j.create(x, shapex, stridex, offsetX, 'c');
             return asum(arrX);
         }
-    }
-
-    /**
-     * computes the sum of magnitudes
-     * of all vector elements or,
-     * for a complex vector x, the sum
-     *
-     * @param arr the array to get the sum for
-     * @return
-     */
-    @Override
-    public IComplexNumber asum(IComplexNDArray arr) {
-        throw new UnsupportedOperationException();
-
     }
 
     @Override
@@ -246,19 +217,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     }
 
     /**
-     * finds the element of a vector that has the largest absolute value.
-     *
-     * @param arr
-     * @return
-     */
-    @Override
-    public int iamax(IComplexNDArray arr) {
-        if (arr.data().dataType() == DataBuffer.Type.DOUBLE)
-            return izamax(arr.length(), arr, BlasBufferUtil.getBlasStride(arr));
-        return icamax(arr.length(), arr, BlasBufferUtil.getBlasStride(arr));
-    }
-
-    /**
      * finds the element of a vector that has the minimum absolute value.
      *
      * @param arr
@@ -271,18 +229,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
         } else {
             throw new UnsupportedOperationException();
         }
-    }
-
-    /**
-     * finds the element of
-     * a vector that has the minimum absolute value.
-     *
-     * @param arr
-     * @return
-     */
-    @Override
-    public int iamin(IComplexNDArray arr) {
-        throw new UnsupportedOperationException();
     }
 
     /**
@@ -308,14 +254,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, x, y);
             sswap(x.length(), x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
         }
-    }
-
-    @Override
-    public void swap(IComplexNDArray x, IComplexNDArray y) {
-        if (x.data().dataType() == DataBuffer.Type.DOUBLE)
-            zswap(x.length(), x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
-        else
-            cswap(x.length(), x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
     }
 
 
@@ -364,22 +302,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
             INDArray arrY = Nd4j.create(x, shapey, stridey, offsetY, 'c');
             copy(arrX, arrY);
         }
-    }
-
-
-
-    /**
-     * copy a vector to another vector.
-     *
-     * @param x
-     * @param y
-     */
-    @Override
-    public void copy(IComplexNDArray x, IComplexNDArray y) {
-        if (x.data().dataType() == DataBuffer.Type.DOUBLE)
-            zcopy(x.length(), x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
-        else
-            ccopy(x.length(), x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
     }
 
 
@@ -434,22 +356,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     }
 
     /**
-     * computes a vector-scalar product and adds the result to a vector.
-     *
-     * @param n
-     * @param alpha
-     * @param x
-     * @param y
-     */
-    @Override
-    public void axpy(long n, IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y) {
-        if (x.data().dataType() == DataBuffer.Type.DOUBLE)
-            zaxpy(n, alpha.asDouble(), x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
-        else
-            caxpy(n, alpha.asFloat(), x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
-    }
-
-    /**
      * computes parameters for a Givens rotation.
      *
      * @param a
@@ -489,20 +395,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     }
 
     /**
-     * performs rotation of points in the plane.
-     *
-     * @param N
-     * @param X
-     * @param Y
-     * @param c
-     * @param s
-     */
-    @Override
-    public void rot(long N, IComplexNDArray X, IComplexNDArray Y, IComplexNumber c, IComplexNumber s) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
      * computes the modified parameters for a Givens rotation.
      *
      * @param d1
@@ -513,21 +405,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public void rotmg(INDArray d1, INDArray d2, INDArray b1, double b2, INDArray P) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * computes the modified parameters for a Givens rotation.
-     *
-     * @param d1
-     * @param d2
-     * @param b1
-     * @param b2
-     * @param P
-     */
-    @Override
-    public void rotmg(IComplexNDArray d1, IComplexNDArray d2, IComplexNDArray b1, IComplexNumber b2,
-                    IComplexNDArray P) {
         throw new UnsupportedOperationException();
     }
 
@@ -553,22 +430,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
             Nd4j.getExecutioner().exec(new ScalarMultiplication(X, alpha));
     }
 
-    /**
-     * computes a vector by a scalar product.
-     *
-     * @param N
-     * @param alpha
-     * @param X
-     */
-    @Override
-    public void scal(long N, IComplexNumber alpha, IComplexNDArray X) {
-        if (X.data().dataType() == DataBuffer.Type.DOUBLE)
-            zscal(N, alpha.asDouble(), X, BlasBufferUtil.getBlasStride(X));
-        else
-            cscal(N, alpha.asFloat(), X, BlasBufferUtil.getBlasStride(X));
-
-    }
-
 
 
     /*
@@ -592,21 +453,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
 
     protected abstract double ddot(long N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY);
 
-    /*
-     * Functions having prefixes Z and C only
-     */
-    protected abstract void cdotu_sub(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY,
-                    IComplexNDArray dotu);
-
-    protected abstract void cdotc_sub(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY,
-                    IComplexNDArray dotc);
-
-    protected abstract void zdotu_sub(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY,
-                    IComplexNDArray dotu);
-
-    protected abstract void zdotc_sub(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY,
-                    IComplexNDArray dotc);
-
 
     /*
      * Functions having prefixes S D SC DZ
@@ -627,14 +473,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
 
     protected abstract double dasum(long N, DataBuffer X, int offsetX, int incX);
 
-    protected abstract float scnrm2(long N, IComplexNDArray X, int incX);
-
-    protected abstract float scasum(long N, IComplexNDArray X, int incX);
-
-    protected abstract double dznrm2(long N, IComplexNDArray X, int incX);
-
-    protected abstract double dzasum(long N, IComplexNDArray X, int incX);
-
 
     /*
      * Functions having standard 4 prefixes (S D C Z)
@@ -646,11 +484,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     protected abstract int idamax(long N, INDArray X, int incX);
 
     protected abstract int idamax(long N, DataBuffer X, int offsetX, int incX);
-
-    protected abstract int icamax(long N, IComplexNDArray X, int incX);
-
-    protected abstract int izamax(long N, IComplexNDArray X, int incX);
-
     /*
      * ===========================================================================
      * Prototypes for level 1 BLAS routines
@@ -687,19 +520,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     protected abstract void daxpy(long N, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY,
                     int incrY);
 
-    protected abstract void cswap(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY);
-
-    protected abstract void ccopy(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY);
-
-    protected abstract void caxpy(long N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY);
-
-    protected abstract void zswap(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY);
-
-    protected abstract void zcopy(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY);
-
-    protected abstract void zaxpy(long N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y,
-                    int incY);
-
 
     /*
      * Routines with S and D prefix only
@@ -727,14 +547,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     protected abstract void sscal(long N, float alpha, INDArray X, int incX);
 
     protected abstract void dscal(long N, double alpha, INDArray X, int incX);
-
-    protected abstract void cscal(long N, IComplexFloat alpha, IComplexNDArray X, int incX);
-
-    protected abstract void zscal(long N, IComplexDouble alpha, IComplexNDArray X, int incX);
-
-    protected abstract void csscal(long N, float alpha, IComplexNDArray X, int incX);
-
-    protected abstract void zdscal(long N, double alpha, IComplexNDArray X, int incX);
 
     @Override
     public boolean supportsDataBufferL1Ops() {

@@ -1,14 +1,28 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.regressiontest;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyLayerDeserializer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -214,6 +228,16 @@ public class RegressionTest100a extends BaseDL4JTest {
         File f3 = new ClassPathResource("regression_testing/100a/HouseNumberDetection_Input_100a.bin").getTempFileFromArchive();
         try(DataInputStream dis = new DataInputStream(new FileInputStream(f3))){
             in = Nd4j.read(dis);
+        }
+
+        //Minor bug in 1.0.0-beta and earlier: not adding epsilon value to forward pass for batch norm
+        //Which means: the record output doesn't have this. To account for this, we'll manually set eps to 0.0 here
+        //https://github.com/deeplearning4j/deeplearning4j/issues/5836#issuecomment-405526228
+        for(Layer l : net.getLayers()){
+            if(l.conf().getLayer() instanceof BatchNormalization){
+                BatchNormalization bn = (BatchNormalization) l.conf().getLayer();
+                bn.setEps(0.0);
+            }
         }
 
         INDArray outAct = net.outputSingle(in);

@@ -1,6 +1,24 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.dataset;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -19,11 +37,18 @@ public class BalanceMinibatchesTest extends BaseNd4jTest {
         super(backend);
     }
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Test
-    public void testBalance() {
+    public void testBalance() throws Exception {
         DataSetIterator iterator = new IrisDataSetIterator(10, 150);
+
+        File minibatches = testDir.newFolder();
+        File saveDir = testDir.newFolder();
+
         BalanceMinibatches balanceMinibatches = BalanceMinibatches.builder().dataSetIterator(iterator).miniBatchSize(10)
-                        .numLabels(3).rootDir(new File("minibatches")).rootSaveDir(new File("minibatchessave")).build();
+                        .numLabels(3).rootDir(minibatches).rootSaveDir(saveDir).build();
         balanceMinibatches.balance();
         DataSetIterator balanced = new ExistingMiniBatchDataSetIterator(balanceMinibatches.getRootSaveDir());
         while (balanced.hasNext()) {
@@ -33,13 +58,17 @@ public class BalanceMinibatchesTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testMiniBatchBalanced() {
+    public void testMiniBatchBalanced() throws Exception {
 
         int miniBatchSize = 100;
         DataSetIterator iterator = new IrisDataSetIterator(miniBatchSize, 150);
+
+        File minibatches = testDir.newFolder();
+        File saveDir = testDir.newFolder();
+
         BalanceMinibatches balanceMinibatches = BalanceMinibatches.builder().dataSetIterator(iterator)
                         .miniBatchSize(miniBatchSize).numLabels(iterator.totalOutcomes())
-                        .rootDir(new File("minibatches")).rootSaveDir(new File("minibatchessave")).build();
+                        .rootDir(minibatches).rootSaveDir(saveDir).build();
         balanceMinibatches.balance();
         DataSetIterator balanced = new ExistingMiniBatchDataSetIterator(balanceMinibatches.getRootSaveDir());
 

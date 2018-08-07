@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
@@ -105,7 +121,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testReduceSumAlongDim1BP() {
-        OpValidationSuite.ignoreFailing();
         //Reduction along dimension
         //Inputs/outputs as before - but note that the output is no longer a scalar
 
@@ -178,7 +193,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testMeanAlongDim0BP() {
-        OpValidationSuite.ignoreFailing();
         //Reduction along dimension
         //Inputs/outputs as before - but note that the output is no longer a scalar
 
@@ -207,7 +221,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testMeanAlongDim1BP() {
-        OpValidationSuite.ignoreFailing();
         //Reduction along dimension
         //Inputs/outputs as before - but note that the output is no longer a scalar
 
@@ -236,7 +249,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testMinBP() {
-        OpValidationSuite.ignoreFailing();
         //Full array min reduction
 
         //dL/dIn_i  = dL/dOut * dOut/dIn_i
@@ -276,7 +288,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testMinAlongDimensionBP() {
-        OpValidationSuite.ignoreFailing();
         //Full array min reduction
 
         //dL/dIn_i  = dL/dOut * dOut/dIn_i
@@ -320,7 +331,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testMaxBP() {
-        OpValidationSuite.ignoreFailing();
         //Full array max reduction
 
         //dL/dIn_i  = dL/dOut * dOut/dIn_i
@@ -351,7 +361,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testMaxAlongDimensionBP() {
-        OpValidationSuite.ignoreFailing();
         //Full array min reduction
 
         //dL/dIn_i  = dL/dOut * dOut/dIn_i
@@ -424,7 +433,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testProdAlongDimensionBP() {
-        OpValidationSuite.ignoreFailing();
         //dL/dIn_i  = dL/dOut * dOut/dIn_i
         //          = dL/dOut * d(prod(in))/dIn_i
         //          = dL/dOut * (prod(in) / in_i)
@@ -481,8 +489,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testStdevBP() {
-        OpValidationSuite.ignoreFailing();
-
         //If out = stdev(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
         //dOut/dIn_i = (in_i-mean)/(stdev * (n-1))
@@ -519,8 +525,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testStdevBP_Rank1() {
-        OpValidationSuite.ignoreFailing();
-        //fail(); //https://github.com/deeplearning4j/deeplearning4j/issues/5582
         INDArray dLdOut = Nd4j.trueScalar(0.5);
         INDArray preReduceInput = Nd4j.create(new double[]{2,3,4}, new long[]{3});
         double stdev = preReduceInput.stdNumber(true).doubleValue();
@@ -542,7 +546,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testStdevAlongDimensionBP() {
-        OpValidationSuite.ignoreFailing();
         //If out = stdev(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
         //dOut/dIn_i = (in_i-mean)/(stdev * (n-1))
@@ -624,7 +627,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testVarianceAlongDimensionBP() {
-        OpValidationSuite.ignoreFailing();
         //If out = variance(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
         //dOut/dIn_i = 2*(in_i-mean)/(n-1)
@@ -692,19 +694,50 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
 
 
-//        for(boolean exclusive : new boolean[]{false, true}) {
-//            for(boolean reverse : new boolean[]{false, true}) {
-//
-//                INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
-//                INDArray dLdOut = preReduceInput.dup().addi(100);
-//                INDArray dLdInExpected = Nd4j.valueArrayOf(preReduceInput.shape(), 0.5);
-//                INDArray dLdIn = Nd4j.createUninitialized(3, 4);
-//
-//                String err = OpValidation.validate(new OpTestCase(new CumSumBp(preReduceInput, dLdOut, dLdIn, keepDims))
-//                        .expectedOutput(0, dLdInExpected));
-//                assertNull(err);
-//            }
-//        }
+        for(boolean exclusive : new boolean[]{false, true}) {
+            for(boolean reverse : new boolean[]{false, true}) {
+
+                INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+                INDArray dLdOut = Nd4j.valueArrayOf(new long[]{3,4}, 0.5);
+                INDArray dLdIn = Nd4j.createUninitialized(3, 4);
+
+                INDArray dLdInExpected;
+                if(exclusive){
+                    if(reverse){
+                        dLdInExpected = Nd4j.create(new double[][]{
+                                {0.0, 0.0, 0.0, 0.0},
+                                {0.5, 0.5, 0.5, 0.5},
+                                {1.0, 1.0, 1.0, 1.0}});
+                    } else {
+                        dLdInExpected = Nd4j.create(new double[][]{
+                                {1.0, 1.0, 1.0, 1.0},
+                                {0.5, 0.5, 0.5, 0.5},
+                                {0.0, 0.0, 0.0, 0.0}});
+                    }
+                } else {
+                    if(reverse){
+                        dLdInExpected = Nd4j.create(new double[][]{
+                                {0.5, 0.5, 0.5, 0.5},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.5, 1.5, 1.5, 1.5}});
+                    } else {
+                        //Standard case
+                        dLdInExpected = Nd4j.create(new double[][]{
+                                {1.5, 1.5, 1.5, 1.5},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {0.5, 0.5, 0.5, 0.5}});
+                    }
+                }
+
+                String err = OpValidation.validate(new OpTestCase(
+                        new CumSumBp(preReduceInput, dLdOut, dLdIn, exclusive, reverse, 0))
+                        .expectedOutput(0, dLdInExpected));
+                if(err != null){
+                    err = err + " - exclusive=" + exclusive + ", reverse=" + reverse;
+                }
+                assertNull(err);
+            }
+        }
     }
 
 
@@ -726,15 +759,11 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
         //Exclusive case
         //
-
-
-        fail();
     }
 
 
     @Test
     public void testNorm2Bp(){
-        OpValidationSuite.ignoreFailing();
         //dL/dIn = dL/dOut * dOut/dIn
         //       = dL/dOut * x/|x|_2
 
@@ -762,7 +791,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testNorm2AlongDimensionBP() {
-        OpValidationSuite.ignoreFailing();
         //dL/dIn = dL/dOut * dOut/dIn
         //       = dL/dOut * x/|x|_2
 
@@ -796,7 +824,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testNorm1Bp(){
-        OpValidationSuite.ignoreFailing();
         //dL/dIn = dL/dOut * dOut/dIn
         //       = dL/dOut * sgn(in)
 
@@ -824,7 +851,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testNorm1AlongDimensionBP() {
-        OpValidationSuite.ignoreFailing();
         //dL/dIn = dL/dOut * dOut/dIn
         //       = dL/dOut * sgn(in)
 
@@ -857,7 +883,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testNormMaxBp(){
-        OpValidationSuite.ignoreFailing();
         //out = max_i (|in_i|)
         //dL/dIn = dL/dOut * dOut/dIn
         //       = dL/dOut * (0 if |x_i| is not max; or sgn(x_i) otherwise)
@@ -888,14 +913,13 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testNormMaxAlongDimensionBP() {
-        OpValidationSuite.ignoreFailing();
         //out = max_i (|in_i|)
         //dL/dIn = dL/dOut * dOut/dIn
         //       = dL/dOut * (0 if |x_i| is not max; or sgn(x_i) otherwise)
 
         for (boolean keepDims : new boolean[]{false, true}) {
 
-            long[] reducedShape_0 = (keepDims ? new long[]{3, 4} : new long[]{4});
+            long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
             INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
             INDArray sgn = Transforms.sign(preReduceInput, true);
             INDArray max_0 = Nd4j.create(3,4);

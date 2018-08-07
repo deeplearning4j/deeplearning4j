@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 package org.nd4j.linalg.dimensionalityreduction;
 
@@ -46,7 +61,29 @@ public class TestPCA extends BaseNd4jTest {
             assertEquals("Reconstructed matrix is very different from the original.", 0.0, Diff.getDouble(i), 1.0);
         }
     }
+    
+    @Test
+    public void testFactorSVDTransposed() {
+        int m = 4;
+        int n = 13;
 
+        double f[] = new double[] {7, 1, 11, 11, 7, 11, 3, 1, 2, 21, 1, 11, 10, 26, 29, 56, 31, 52, 55, 71, 31, 54, 47,
+                        40, 66, 68, 6, 15, 8, 8, 6, 9, 17, 22, 18, 4, 23, 9, 8, 60, 52, 20, 47, 33, 22, 6, 44, 22, 26,
+                        34, 12, 12};
+
+        INDArray A = Nd4j.create(f, new int[] {m, n}, 'f');
+
+        INDArray A1 = A.dup('f');
+        INDArray factor = org.nd4j.linalg.dimensionalityreduction.PCA.pca_factor(A1, 3, true);
+        A1 = A.subiRowVector(A.mean(0));
+
+        INDArray reduced = A1.mmul(factor);
+        INDArray reconstructed = reduced.mmul(factor.transpose());
+        INDArray diff = reconstructed.sub(A1);
+        for (int i = 0; i < m * n; i++) {
+            assertEquals("Reconstructed matrix is very different from the original.", 0.0, diff.getDouble(i), 1.0);
+        }
+    }
 
     @Test
     public void testFactorVariance() {

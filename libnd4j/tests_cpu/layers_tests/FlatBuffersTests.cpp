@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 //
 // @author raver119@gmail.com
 //
@@ -651,6 +667,7 @@ TEST_F(FlatBuffersTest, Test_Stitches) {
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/partition_stitch_misc.fb");
     //graph->printOut();
 
+
     auto result = GraphExecutioner<float>::execute(graph);
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
@@ -727,6 +744,18 @@ TEST_F(FlatBuffersTest, Test_MNIST_00_1) {
     auto z = graph->getVariableSpace()->getVariable(6,0)->getNDArray();
 
     ASSERT_EQ(e, *z);
+
+    delete graph;
+}
+
+
+
+TEST_F(FlatBuffersTest, Test_MNIST_1) {
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/mnist.fb");
+    //graph->printOut();
+
+    auto result = GraphExecutioner<float>::execute(graph);
+    ASSERT_EQ(Status::OK(), result);
 
     delete graph;
 }

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.linalg.api.ops.impl.broadcast;
 
 import lombok.NoArgsConstructor;
@@ -5,6 +21,7 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -33,22 +50,6 @@ public class BiasAdd extends DynamicCustomOp {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
 
     }
-
-    @Override
-    public List<long[]> calculateOutputShape() {
-        val args = args();
-        for(int i = 0; i < args.length; i++)
-            if(args[i].getShape() == null)
-                return Collections.emptyList();
-        val firstShape = ArrayUtil.prod(args[0].getShape());
-        val secondShape = ArrayUtil.prod(args[1].getShape());
-
-        if(firstShape > secondShape)
-            return Arrays.asList(args[0].getShape());
-        else
-            return Arrays.asList(args[1].getShape());
-    }
-
 
     @Override
     public String onnxName() {

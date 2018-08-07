@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.datavec.spark.transform.model;
 
 import lombok.AllArgsConstructor;
@@ -36,7 +52,7 @@ public class SingleCSVRecord implements Serializable {
      * @return the record from this {@link DataSet}
      */
     public static SingleCSVRecord fromRow(DataSet row) {
-        if (!row.getFeatureMatrix().isVector() && !row.getFeatureMatrix().isScalar())
+        if (!row.getFeatures().isVector() && !row.getFeatures().isScalar())
             throw new IllegalArgumentException("Passed in dataset must represent a scalar or vector");
         if (!row.getLabels().isVector() && !row.getLabels().isScalar())
             throw new IllegalArgumentException("Passed in dataset labels must be a scalar or vector");
@@ -44,9 +60,9 @@ public class SingleCSVRecord implements Serializable {
         SingleCSVRecord record;
         int idx = 0;
         if (row.getLabels().sumNumber().doubleValue() == 1.0) {
-            String[] values = new String[row.getFeatureMatrix().columns() + 1];
-            for (int i = 0; i < row.getFeatureMatrix().length(); i++) {
-                values[idx++] = String.valueOf(row.getFeatureMatrix().getDouble(i));
+            String[] values = new String[row.getFeatures().columns() + 1];
+            for (int i = 0; i < row.getFeatures().length(); i++) {
+                values[idx++] = String.valueOf(row.getFeatures().getDouble(i));
             }
             int maxIdx = 0;
             for (int i = 0; i < row.getLabels().length(); i++) {
@@ -60,9 +76,9 @@ public class SingleCSVRecord implements Serializable {
         }
         //regression (any number of values)
         else {
-            String[] values = new String[row.getFeatureMatrix().columns() + row.getLabels().columns()];
-            for (int i = 0; i < row.getFeatureMatrix().length(); i++) {
-                values[idx++] = String.valueOf(row.getFeatureMatrix().getDouble(i));
+            String[] values = new String[row.getFeatures().columns() + row.getLabels().columns()];
+            for (int i = 0; i < row.getFeatures().length(); i++) {
+                values[idx++] = String.valueOf(row.getFeatures().getDouble(i));
             }
             for (int i = 0; i < row.getLabels().length(); i++) {
                 values[idx++] = String.valueOf(row.getLabels().getDouble(i));

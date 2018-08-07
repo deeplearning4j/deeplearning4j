@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.versioncheck;
 
 import lombok.AllArgsConstructor;
@@ -6,11 +22,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
+import java.net.URL;
 import java.util.Properties;
 
 /**
@@ -22,6 +36,7 @@ import java.util.Properties;
 @Builder
 public class VersionInfo {
 
+    private static final String HTML_SPACE = "%2520";   //Space: "%20" -> % character: "%25" -> "%2520"
     private static final int SUFFIX_LENGTH = "-git.properties".length();
 
     private String groupId;
@@ -61,7 +76,9 @@ public class VersionInfo {
     }
 
     public VersionInfo(URI uri) throws IOException {
-        String path = uri.toString();
+        //Can't use new File(uri).getPath() for URIs pointing to resources in JARs
+        //But URI.toString() returns "%2520" instead of spaces in path - https://github.com/deeplearning4j/deeplearning4j/issues/6056
+        String path = uri.toString().replaceAll(HTML_SPACE, " ");
         int idxOf = path.lastIndexOf('/');
         idxOf = Math.max(idxOf, path.lastIndexOf('\\'));
         String filename;
@@ -78,7 +95,8 @@ public class VersionInfo {
 
         //Extract values from properties file:
         Properties properties = new Properties();
-        try (InputStream is = uri.toURL().openStream() ) {
+        URL u = new URL(path);  //Can't use URI.toUrl() due to spaces in path
+        try (InputStream is = new BufferedInputStream(u.openStream())){
             properties.load(is);
         }
 
