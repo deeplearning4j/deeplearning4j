@@ -39,6 +39,88 @@
         </license>
     </licenses>
 
+    <developers>
+        <developer>
+            <id>agibsonccc</id>
+            <name>Adam Gibson</name>
+            <email>adam@skymind.io</email>
+        </developer>
+        <developer>
+            <id>chrisvnicholson</id>
+            <name>Chris Nicholson</name>
+            <email>chris@skymind.io</email>
+        </developer>
+        <developer>
+            <id>jpatanooga</id>
+            <name>Josh Patterson</name>
+        </developer>
+        <developer>
+            <id>AlexDBlack</id>
+            <name>Alex Black</name>
+        </developer>
+        <developer>
+            <id>nyghtowl</id>
+            <name>Melanie Warrick</name>
+        </developer>
+        <developer>
+            <id>raver119</id>
+            <name>raver119</name>
+        </developer>
+        <developer>
+            <id>saudet</id>
+            <name>Samuel Audet</name>
+        </developer>
+        <developer>
+            <id>eraly</id>
+            <name>Susan Eraly</name>
+        </developer>
+        <developer>
+            <id>kepricon</id>
+            <name>Daehyun Kim</name>
+        </developer>
+        <developer>
+            <id>turambar</id>
+            <name>Dave kale</name>
+        </developer>
+        <!--current & previous core contributers and company developers-->
+        <developer>
+            <id>rubenfiszel</id>
+            <name>Ruben Fiszel</name>
+        </developer>
+        <developer>
+            <id>smarthi</id>
+            <name>Suneel Marthi</name>
+        </developer>
+        <developer>
+            <id>taisukeoe</id>
+            <name>Taisuke Oe</name>
+        </developer>
+        <developer>
+            <id>treo</id>
+            <name>Paul Dubs</name>
+        </developer>
+        <developer>
+            <id>EronWright</id>
+            <name>Eron Wright</name>
+        </developer>
+        <developer>
+            <id>jyt109</id>
+            <name>Jeffrey Tang</name>
+        </developer>
+        <developer>
+            <id>sonaliii</id>
+            <name>Sonali Dayal</name>
+        </developer>
+        <developer>
+            <id>emmjaykay</id>
+            <name>emmjaykay</name>
+        </developer>
+        <developer>
+            <id>crockpotveggies</id>
+            <name>Justin Long</name>
+        </developer>
+    </developers>
+
     <modules>
         <module>libnd4j</module>
         <module>nd4j</module>
