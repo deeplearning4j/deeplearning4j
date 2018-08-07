@@ -98,7 +98,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
                         .backprop(true).pretrain(false)
                         .setInputType(InputType.convolutional(numRows, numColumns, nChannels));
 
-        DataSet d = new DataSet(Nd4j.rand(12345, 10, nChannels, numRows, numColumns),
+        DataSet d = new DataSet(Nd4j.rand(12345, 10, nChannels, numRows, Nd4j.getRandom()),
                         FeatureUtil.toOutcomeMatrix(new int[] {1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 6));
         MultiLayerNetwork network = new MultiLayerNetwork(builder.build());
         network.init();

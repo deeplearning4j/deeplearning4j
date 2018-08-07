@@ -23,15 +23,15 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>datavec-spark-inference-server_2.11</artifactId>
+    <artifactId>datavec-spark-inference-server_2.10</artifactId>
     <packaging>jar</packaging>
     <version>1.0.0_spark_1-SNAPSHOT</version>
     <name>datavec-spark-inference-server</name>
 
     <properties>
         <!-- Default scala versions, may be overwritten by build profiles -->
-        <scala.version>2.11.12</scala.version>
-        <scala.binary.version>2.11</scala.binary.version>
+        <scala.version>2.10.7</scala.version>
+        <scala.binary.version>2.10</scala.binary.version>
     </properties>
 
     <build>
@@ -53,7 +53,7 @@
         </dependency>
         <dependency>
             <groupId>org.datavec</groupId>
-            <artifactId>datavec-spark_2.11</artifactId>
+            <artifactId>datavec-spark_2.10</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -70,7 +70,7 @@
 
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-cluster_2.11</artifactId>
+            <artifactId>akka-cluster_2.10</artifactId>
             <version>${akka.version}</version>
         </dependency>
         <dependency>
@@ -130,7 +130,7 @@
         </dependency>
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-java_2.11</artifactId>
+            <artifactId>play-java_2.10</artifactId>
             <version>${play.version}</version>
             <exclusions>
                 <exclusion>
@@ -141,22 +141,22 @@
         </dependency>
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-json_2.11</artifactId>
+            <artifactId>play-json_2.10</artifactId>
             <version>${play.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-server_2.11</artifactId>
+            <artifactId>play-server_2.10</artifactId>
             <version>${play.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play_2.11</artifactId>
+            <artifactId>play_2.10</artifactId>
             <version>${play.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-netty-server_2.11</artifactId>
+            <artifactId>play-netty-server_2.10</artifactId>
             <version>${play.version}</version>
         </dependency>
 
