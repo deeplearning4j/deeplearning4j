@@ -42,7 +42,7 @@ namespace ops {
             auto inputY = INPUT_VARIABLE(1);
             auto epsilon = INPUT_VARIABLE(2);
             auto output1 = OUTPUT_VARIABLE(0);
-            auto output2 = OUTPUT_VARIABLE(0);
+            auto output2 = OUTPUT_VARIABLE(1);
             //
             // L(x,y) = SUM(x_i * y_i)
             // dL/dx_i = y_i
