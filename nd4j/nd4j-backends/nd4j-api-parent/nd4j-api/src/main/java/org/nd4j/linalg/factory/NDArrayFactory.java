@@ -279,6 +279,13 @@ public interface NDArrayFactory {
      */
     INDArray create(double[][] data);
 
+    /**
+     * Create a matrix from the given
+     * data and ordering
+     * @param data
+     * @param ordering
+     * @return
+     */
     INDArray create(double[][] data, char ordering);
 
 
@@ -314,7 +321,8 @@ public interface NDArrayFactory {
     INDArray pullRows(INDArray source, int sourceDimension, long[] indexes);
 
     /**
-     * This method produces concatenated array, that consist from tensors, fetched from source array, against some dimension and specified indexes
+     * This method produces concatenated array, that consist from tensors,
+     * fetched from source array, against some dimension and specified indexes
      *
      * @param source source tensor
      * @param sourceDimension dimension of source tensor
@@ -325,6 +333,16 @@ public interface NDArrayFactory {
     INDArray pullRows(INDArray source, int sourceDimension, int[] indexes, char order);
 
 
+    /**
+     * * This method produces concatenated array, that consist from tensors,
+     * fetched from source array, against some dimension and specified indexes
+     * in to the destination array
+     * @param source
+     * @param destination
+     * @param sourceDimension
+     * @param indexes
+     * @return
+     */
     INDArray pullRows(INDArray source, INDArray destination, int sourceDimension, int[] indexes);
 
     /**
@@ -517,6 +535,14 @@ public interface NDArrayFactory {
      */
     INDArray rand(int[] shape);
 
+
+    /**
+     * Create a random ndarray with the given shape using
+     * the current time as the seed
+     *
+     * @param shape the shape of the ndarray
+     * @return the random ndarray with the specified shape
+     */
     INDArray rand(long[] shape);
 
     /**
@@ -527,6 +553,13 @@ public interface NDArrayFactory {
      */
     INDArray rand(char order, int[] shape);
 
+    /**
+     * Create a random ndarray with the given shape
+     * and specified output order
+     * @param order the order of the array
+     * @param shape the shape of the array
+     * @return the created ndarray
+     */
     INDArray rand(char order, long[] shape);
 
     /**
@@ -546,6 +579,13 @@ public interface NDArrayFactory {
      * @param shape the shape of the ndarray
      */
     INDArray randn(int[] shape);
+
+    /**
+     * Random normal N(0,1) using the current time stamp
+     * as the seed
+     *
+     * @param shape the shape of the ndarray
+     */
     INDArray randn(long[] shape);
 
     /**
@@ -555,6 +595,13 @@ public interface NDArrayFactory {
      * @param shape the shape of the ndarray
      */
     INDArray randn(char order, int[] shape);
+
+    /**
+     * Random normal N(0,1) with the specified shape and order
+     *
+     * @param order the order ('c' or 'f') of the output array
+     * @param shape the shape of the ndarray
+     */
     INDArray randn(char order, long[] shape);
 
     /**
@@ -564,6 +611,14 @@ public interface NDArrayFactory {
      * @return
      */
     INDArray randn(int[] shape, long seed);
+
+
+    /**
+     * Random normal using the specified seed
+     *
+     * @param shape the shape of the ndarray
+     * @return
+     */
     INDArray randn(long[] shape, long seed);
 
 
@@ -1267,6 +1322,13 @@ public interface NDArrayFactory {
      */
     void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target, long length);
 
+    /**
+     *
+     * @param typeSrc
+     * @param source
+     * @param typeDst
+     * @param buffer
+     */
     void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, DataBuffer buffer);
 
     /**
@@ -1278,6 +1340,19 @@ public interface NDArrayFactory {
      */
     INDArray createFromNpyPointer(Pointer pointer);
 
+
+    /**
+     * Create from an in memory numpy header.
+     * Use this when not interopping
+     * directly from python.
+     *
+     * @param pointer the pointer to the
+     *                numpy header
+     * @return an ndarray created from the in memory
+     * numpy pointer
+     */
+    INDArray createFromNpyHeaderPointer(Pointer pointer);
+
     /**
      * Create from a given numpy file.
      * @param file the file to create the ndarray from
@@ -1285,14 +1360,40 @@ public interface NDArrayFactory {
      */
     INDArray createFromNpyFile(File file);
 
+    /**
+     * Convert an {@link INDArray}
+     * to a numpy array.
+     * This will usually be used
+     * for writing out to an external source.
+     * Note that this will create a zero copy reference
+     * to this ndarray's underlying data.
+     *
+     *
+     * @param array the array to convert
+     * @returnthe created pointer representing
+     * a pointer to a numpy header
+     */
+    Pointer convertToNumpy(INDArray array);
 
     INDArray create(float[] data, long[] shape, long[] stride, long offset, char ordering);
 
     INDArray create(double[] data, long[] shape, long[] stride, long offset, char ordering);
 
 
+    /**
+     *
+     * @param tensor
+     * @param dimensions
+     * @return
+     */
     INDArray[] tear(INDArray tensor, int... dimensions);
 
+    /**
+     *
+     * @param x
+     * @param descending
+     * @return
+     */
     INDArray sort(INDArray x, boolean descending);
 
     INDArray sort(INDArray x, boolean descending, int... dimensions);

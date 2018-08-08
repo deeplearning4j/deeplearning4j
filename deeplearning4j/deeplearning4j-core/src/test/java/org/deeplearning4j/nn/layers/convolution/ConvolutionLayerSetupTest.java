@@ -73,6 +73,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
 
     @Test
     public void testDenseToOutputLayer() {
+        Nd4j.getRandom().setSeed(12345);
         final int numRows = 76;
         final int numColumns = 76;
         int nChannels = 3;
@@ -98,7 +99,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
                         .backprop(true).pretrain(false)
                         .setInputType(InputType.convolutional(numRows, numColumns, nChannels));
 
-        DataSet d = new DataSet(Nd4j.rand(12345, 10, nChannels, numRows, numColumns),
+        DataSet d = new DataSet(Nd4j.rand(new int[]{10, nChannels, numRows, numColumns}),
                         FeatureUtil.toOutcomeMatrix(new int[] {1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 6));
         MultiLayerNetwork network = new MultiLayerNetwork(builder.build());
         network.init();

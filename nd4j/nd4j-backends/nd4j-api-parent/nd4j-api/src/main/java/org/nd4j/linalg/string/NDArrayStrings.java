@@ -16,6 +16,8 @@
 
 package org.nd4j.linalg.string;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -35,6 +37,18 @@ import java.text.DecimalFormat;
  * @author Susan Eraly
  */
 public class NDArrayStrings {
+
+    /**
+     * The default number of elements for printing INDArrays (via NDArrayStrings or INDArray.toString)
+     */
+    public static final long DEFAULT_MAX_PRINT_ELEMENTS = 1000;
+    /**
+     * The maximum number of elements to print by default for INDArray.toString()
+     * Default value is 1000 - given by {@link #DEFAULT_MAX_PRINT_ELEMENTS}
+     */
+    @Setter @Getter
+    private static long maxPrintElements = DEFAULT_MAX_PRINT_ELEMENTS;
+
 
     private String colSep = ",";
     private String newLineSep = ",";
@@ -125,8 +139,7 @@ public class NDArrayStrings {
         if (this.scientificFormat.length() + 2  > this.padding) this.padding = this.scientificFormat.length() + 2;
         this.maxToPrintWithoutSwitching = Math.pow(10,this.precision);
         this.minToPrintWithoutSwitching = 1.0/(this.maxToPrintWithoutSwitching);
-        if (summarize && arr.length() > 1000) return format(arr, 0, true);
-        return format(arr, 0, false);
+        return format(arr, 0, summarize && arr.length() > maxPrintElements);
     }
 
     private String format(INDArray arr, int offset, boolean summarize) {

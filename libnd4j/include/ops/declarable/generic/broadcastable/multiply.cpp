@@ -26,38 +26,24 @@
 
 namespace nd4j {
 namespace ops {
+
+    BROADCASTABLE_OP_IMPL(multiply, 0, 0) {
+        auto x = INPUT_VARIABLE(0);
+        auto y = INPUT_VARIABLE(1);
+        auto z = OUTPUT_VARIABLE(0);
+
+        Nd4jLong* zShapeInfo = nullptr;
+        const bool areShapesBroadcastable = ShapeUtils<T>::evalBroadcastShapeInfo(x->getShapeInfo(), y->getShapeInfo(), true, zShapeInfo, block.getWorkspace());
+        REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY OP: the shapes of x %s and y %s are not suitable for broadcast !", ShapeUtils<T>::shapeAsString(x).c_str(), ShapeUtils<T>::shapeAsString(y).c_str());
+        RELEASE(zShapeInfo, block.getWorkspace());
+
+        // z->assign(*x * *y);
+        // auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Multiply<T>>(x, y, z);
+        x->template applyTrueBroadcast<simdOps::Multiply<T>>(y, z, false);
     
-CUSTOM_OP_IMPL(multiply, 2, 1, true, 0, 0) {
-    
-    NDArray<T> *x = INPUT_VARIABLE(0);
-    NDArray<T> *y = INPUT_VARIABLE(1);
-    NDArray<T> *z = OUTPUT_VARIABLE(0);
-
-    Nd4jLong* zShapeInfo = nullptr;
-    const bool areShapesBroadcastable = ShapeUtils<T>::evalBroadcastShapeInfo(x->getShapeInfo(), y->getShapeInfo(), true, zShapeInfo, block.getWorkspace());
-    REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY OP: the shapes of x %s and y %s are not suitable for broadcast !", ShapeUtils<T>::shapeAsString(x).c_str(), ShapeUtils<T>::shapeAsString(y).c_str());
-    RELEASE(zShapeInfo, block.getWorkspace());
-
-    // z->assign(*x * *y); 
-    // auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Multiply<T>>(x, y, z);
-    x->template applyTrueBroadcast<simdOps::Multiply<T>>(y, z, false);
-    
-    return Status::OK();
-}
-
-DECLARE_SYN(Mul, multiply);
-
-DECLARE_SHAPE_FN(multiply) {
-        
-    Nd4jLong* xShapeInfo = inputShape->at(0);
-    Nd4jLong* yShapeInfo = inputShape->at(1);
-
-    Nd4jLong* zShapeInfo = nullptr;
-    const bool areShapesBroadcastable = ShapeUtils<T>::evalBroadcastShapeInfo(xShapeInfo, yShapeInfo, true, zShapeInfo, block.getWorkspace());
-    REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY OP: the shapes of x %s and y %s are not suitable for broadcast !", ShapeUtils<T>::shapeAsString(xShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(yShapeInfo).c_str());
-
-    return SHAPELIST(zShapeInfo);
-}
+        return Status::OK();
+    }
+    DECLARE_SYN(Mul, multiply);
 
 
 ///////////////////////////////////////////////////////////////////
@@ -100,7 +86,7 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     }
     else if (x->isSameShape(dLdz)) {
         
-        NDArray<T> yTiled = *dLdz;
+        NDArray<T> yTiled(dLdz, false, block.getWorkspace());
         y->tile(yTiled);
         std::vector<int> axesForY = ShapeUtils<T>::evalBroadcastBackwardAxis(y->getShapeInfo(), dLdz->getShapeInfo());
         
@@ -109,17 +95,17 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     } 
     else if (y->isSameShape(dLdz)) {
 
-        NDArray<T> xTiled = *dLdz;
+        NDArray<T> xTiled(dLdz, false, block.getWorkspace());
         x->tile(xTiled);
         std::vector<int> axesForX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->getShapeInfo(), dLdz->getShapeInfo());
         
         dLdx->assign( (*y * *dLdz).template reduceAlongDims<simdOps::Sum<T>>(axesForX) );
-        xTiled.template applyPairwiseTransform<simdOps::Multiply<T>>(dLdz, dLdy, nullptr);        
+        xTiled.template applyPairwiseTransform<simdOps::Multiply<T>>(dLdz, dLdy, nullptr);
     }
     else {
 
-        NDArray<T> xTiled = *dLdz;
-        NDArray<T> yTiled = *dLdz;        
+        NDArray<T> xTiled(dLdz, false, block.getWorkspace());
+        NDArray<T> yTiled(dLdz, false, block.getWorkspace());
         x->tile(xTiled);
         y->tile(yTiled);
         std::vector<int> axesForX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->getShapeInfo(), dLdz->getShapeInfo());

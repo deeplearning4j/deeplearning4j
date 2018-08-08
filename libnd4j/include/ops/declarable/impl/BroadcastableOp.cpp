@@ -41,7 +41,19 @@ namespace nd4j {
             auto x = inputShape->at(0);
             auto y = inputShape->at(1);
 
-            if (shape::equalsSoft(x, y)) {
+            if (shape::isScalar(x) && shape::isScalar(y)) {
+                if (shape::rank(x) >= shape::rank(y)) {
+                    Nd4jLong *newshape;
+                    COPY_SHAPE(x, newshape);
+
+                    shapeList->push_back(newshape);
+                } else {
+                    Nd4jLong *newshape;
+                    COPY_SHAPE(y, newshape);
+
+                    shapeList->push_back(newshape);
+                }
+            } else if (shape::equalsSoft(x, y)) {
                 Nd4jLong *newshape;
                 COPY_SHAPE(x, newshape);
 

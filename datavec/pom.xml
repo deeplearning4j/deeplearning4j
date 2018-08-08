@@ -71,10 +71,6 @@
         <module>datavec-perf</module>
     </modules>
 
-    <properties>
-        <jackson.version>2.8.7</jackson.version> <!-- To match spark and geoip2 -->
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>junit</groupId>

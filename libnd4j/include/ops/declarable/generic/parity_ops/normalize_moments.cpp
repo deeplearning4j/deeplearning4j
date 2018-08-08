@@ -53,19 +53,29 @@ namespace nd4j {
             if (block.getTArguments()->size() > 0) {
                 shift = T_ARG(0);
             }
+//            nd4j_printf("means output %p \n",  resMeans->getBuffer())
+//            nd4j_printf("variance output %p \n",  resVariances->getBuffer())
+//            resMeans->printBuffer("Output Means");
+//            resVariances->printBuffer("Output Variance");
 
             means->template applyScalar<simdOps::Divide<T>>((*counts)(0), resMeans, nullptr);
+
             std::unique_ptr<NDArray<T>> squareMeans(resMeans->dup('c'));
             std::unique_ptr<NDArray<T>> tempVariances(resVariances->dup('c'));
 
-            resMeans->template applyTransform<simdOps::Square<T>>(squareMeans.get(), nullptr);
+            squareMeans->template applyTransform<simdOps::Square<T>>((T*)nullptr);
             variances->template applyScalar<simdOps::Divide<T>>((*counts)(0), tempVariances.get(), nullptr);
+//            tempVariances->printIndexedBuffer("varianced divided by count");
             tempVariances->template applyPairwiseTransform<simdOps::Subtract<T>>(squareMeans.get(), resVariances, nullptr);
-          
+
             if (shift != T(0)) {
                 resMeans->template applyScalar<simdOps::Add<T>>(shift, resMeans, nullptr);
             }
-
+          
+//            resMeans->printBuffer("Output Means");
+//            resVariances->printBuffer("Output Variance");
+//            nd4j_printf("means output %p \n",  resMeans->getBuffer())
+//            nd4j_printf("variance output %p \n",  resVariances->getBuffer())
             return ND4J_STATUS_OK;
         }
 

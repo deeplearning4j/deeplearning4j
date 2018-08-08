@@ -36,7 +36,7 @@ public class TestParameterSpaces {
 
         for (int i = 0; i < 10; i++) {
             double d = i / 10.0;
-            assertEquals(d, cps.getValue(new double[] {d}), 0.0);
+            assertEquals(d, cps.getValue(new double[]{d}), 0.0);
         }
 
         cps = new ContinuousParameterSpace(10, 20);
@@ -45,7 +45,7 @@ public class TestParameterSpaces {
         for (int i = 0; i < 10; i++) {
             double d = i / 10.0;
             double exp = d * 10 + 10;
-            assertEquals(exp, cps.getValue(new double[] {d}), 0.0);
+            assertEquals(exp, cps.getValue(new double[]{d}), 0.0);
         }
 
 
@@ -54,7 +54,7 @@ public class TestParameterSpaces {
         cps.setIndices(0);
         for (int i = 0; i < 11; i++) {
             double d = i / 10.0;
-            assertEquals(nd.inverseCumulativeProbability(d), cps.getValue(new double[] {d}), 1e-4);
+            assertEquals(nd.inverseCumulativeProbability(d), cps.getValue(new double[]{d}), 1e-4);
         }
     }
 
@@ -67,9 +67,9 @@ public class TestParameterSpaces {
             double d = i / 5.0 + 0.1; //Center
             double dEdgeLower = i / 5.0 + 1e-8; //Edge case: just above split threshold
             double dEdgeUpper = (i + 1) / 5.0 - 1e-8; //Edge case: just below split threshold
-            assertEquals(i, (int) dps.getValue(new double[] {d}));
-            assertEquals(i, (int) dps.getValue(new double[] {dEdgeLower}));
-            assertEquals(i, (int) dps.getValue(new double[] {dEdgeUpper}));
+            assertEquals(i, (int) dps.getValue(new double[]{d}));
+            assertEquals(i, (int) dps.getValue(new double[]{dEdgeLower}));
+            assertEquals(i, (int) dps.getValue(new double[]{dEdgeUpper}));
         }
     }
 
@@ -82,10 +82,21 @@ public class TestParameterSpaces {
             double d = i / 5.0 + 0.1; //Center
             double dEdgeLower = i / 5.0 + 1e-8; //Edge case: just above split threshold
             double dEdgeUpper = (i + 1) / 5.0 - 1e-8; //Edge case: just below split threshold
-            assertEquals(i, (int) ips.getValue(new double[] {d}));
-            assertEquals(i, (int) ips.getValue(new double[] {dEdgeLower}));
-            assertEquals(i, (int) ips.getValue(new double[] {dEdgeUpper}));
+            assertEquals(i, (int) ips.getValue(new double[]{d}));
+            assertEquals(i, (int) ips.getValue(new double[]{dEdgeLower}));
+            assertEquals(i, (int) ips.getValue(new double[]{dEdgeUpper}));
         }
+    }
+
+    @Test
+    public void testBooleanSpace() {
+        ParameterSpace<Boolean> bSpace = new BooleanSpace();
+        bSpace.setIndices(1); //randomly setting to non zero
+
+        assertEquals(true, (boolean) bSpace.getValue(new double[]{0.0, 0.0}));
+        assertEquals(true, (boolean) bSpace.getValue(new double[]{0.1, 0.5}));
+        assertEquals(false, (boolean) bSpace.getValue(new double[]{0.2, 0.7}));
+        assertEquals(false, (boolean) bSpace.getValue(new double[]{0.3, 1.0}));
     }
 
 }

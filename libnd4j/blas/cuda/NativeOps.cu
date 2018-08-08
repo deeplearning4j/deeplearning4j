@@ -5722,72 +5722,6 @@ void NativeOps::reSeedBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer 
 }
 
 
-/**
- *
- * @param npyArray
- * @return
- */
-Nd4jPointer NativeOps::shapeBufferForNumpy(Nd4jPointer npyArray) {
-    /*
-	cnpy::NpyArray *arrPointer = reinterpret_cast<cnpy::NpyArray *>(npyArray);
-	int *shapeBuffer = shape::shapeBufferOfNpy(*arrPointer);
-	return reinterpret_cast<Nd4jPointer>(shapeBuffer);
-     */
-    cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
-    unsigned int *shape = new unsigned int[arr.shape.size()];
-    for(int i = 0; i < arr.shape.size(); i++) {
-        shape[i] = arr.shape[i];
-    }
-
-    auto shapeBuffer = shape::shapeBufferOfNpy(arr.shape.size(),
-                                               shape,
-                                               arr.fortranOrder);
-    delete[] shape;
-    return reinterpret_cast<Nd4jPointer>(shapeBuffer);
-}
-
-
-/**
- *
- * @param npyArray
- * @return
- */
-Nd4jPointer NativeOps::dataPointForNumpy(Nd4jPointer npyArray) {
-    char *buff = reinterpret_cast<char *>(npyArray);
-    //printf("Pointer contents %s\n",buff);
-    cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
-    cnpy::NpyArray *arrPointer = &arr;
-    char *data = arrPointer->data;
-    if(arrPointer->wordSize == sizeof(float)) {
-        float *floatData = reinterpret_cast<float *>(data);
-        return reinterpret_cast<Nd4jPointer>(floatData);
-    }
-    else if(arrPointer->wordSize == sizeof(double)) {
-        double *doubleData = reinterpret_cast<double *>(data);
-        return reinterpret_cast<Nd4jPointer >(doubleData);
-    }
-
-    return reinterpret_cast<Nd4jPointer >(0);
-}
-
-/**
- * Load a numpy array from a file
- * and return it as an Nd4jPointer
- * @param path
- * @return
- */
-Nd4jPointer NativeOps::numpyFromFile(std::string path) {
-    /*cnpy::NpyArray arr = cnpy::npyLoad(path);
-    return reinterpret_cast<Nd4jPointer >(&arr);
-     */
-	char *numpyBuffer = cnpy::loadFile(path.data());
-	return reinterpret_cast<Nd4jPointer >(numpyBuffer);
-}
-
-void NativeOps::releaseNumpy(Nd4jPointer npyArray) {
-    free(reinterpret_cast<void *>(npyArray));
-}
-
 
 /**
     * Return the length of a shape buffer
@@ -5800,23 +5734,6 @@ int NativeOps::lengthForShapeBufferPointer(Nd4jPointer buffer) {
     return shape::shapeInfoLength(shape::rank(shapeBuffer));
 }
 
-/**
-  * Get the element size for a numpy array
-  * @param npyArray  the numpy array's address
-  * to get the length for
-  * @return
-  */
-int NativeOps::elementSizeForNpyArray(Nd4jPointer npyArray) {
-    cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
-    cnpy::NpyArray *arrPointer = &arr;
-    int size = arrPointer->wordSize;
-
-    return size;
-    /*
-    cnpy::NpyArray *arr = reinterpret_cast<cnpy::NpyArray *>(npyArray);
-    return arr->wordSize;
-     */
-}
 
 /**
   * The pointer to get the address for
@@ -6562,18 +6479,21 @@ nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::D
     for (int e = 0; e < numTArgs; e++)
         block.getTArguments()->push_back(tArgs[e]);
 
-    for (int e = 0; e < numInputShapes; e++) {
-        auto shape_ = reinterpret_cast<Nd4jLong *>(inputShapes[e]);
-        auto buffer_ = reinterpret_cast<T *>(inputBuffers[e]);
-        auto array = new nd4j::NDArray<T>(buffer_, shape_);
-        array->triggerAllocationFlag(false, false);
+	for (int e = 0; e < numInputShapes; e++) {
+		auto shape_ = reinterpret_cast<Nd4jLong *>(inputShapes[e]);
 
-        // block should contain references to proper variable
-        varSpace.putVariable(1, e, array);
-        block.pickInput(1, e);
+		// we shouldn't copy buffer if that's empty array
+		T *buffer_ = nd4j::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : reinterpret_cast<T *>(inputBuffers[e]);
 
-        inShapes.push_back(shape_);
-    }
+		auto array = new nd4j::NDArray<T>(buffer_, shape_);
+		array->triggerAllocationFlag(false, false);
+
+		// block should contain references to proper variable
+		varSpace.putVariable(1, e, array);
+		block.pickInput(1, e);
+
+		inShapes.push_back(shape_);
+	}
 
     auto shapeList = op->calculateOutputShape(&inShapes, block);
 
@@ -6614,7 +6534,7 @@ nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::D
 		block.getTArguments()->push_back(tArgs[e]);
 
 	for (int e = 0; e < numInputShapes; e++)
-		inShapes.push_back(static_cast<Nd4jLong *>(inputShapes[e]));
+		inShapes.push_back(reinterpret_cast<Nd4jLong *>(inputShapes[e]));
 
 	auto shapeList = op->calculateOutputShape(&inShapes, block);
 
@@ -6653,8 +6573,8 @@ static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPoint
 
 	// filling block now with inputs
 	for (int e = 0; e < numInputs; e++) {
-		auto buffer = reinterpret_cast<T *>(inputBuffers[e]);
 		auto shape = reinterpret_cast<Nd4jLong *>(inputShapes[e]);
+		T *buffer = nd4j::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : reinterpret_cast<T *>(inputBuffers[e]);
 
 		inputs[e] = new nd4j::NDArray<T>(buffer, shape);
 	}
@@ -6663,10 +6583,9 @@ static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPoint
 
 	if (!isInplace)
 		for (int e = 0; e < numOutputs; e++) {
-			auto buffer = reinterpret_cast<T *>(outputBuffers[e]);
-
 			// we want to keep original output shape intact
 			auto shape = shape::copyShape(reinterpret_cast<Nd4jLong *>(outputShapes[e]));
+			T *buffer = nd4j::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : reinterpret_cast<T *>(outputBuffers[e]);
 
 			auto array = new nd4j::NDArray<T>(buffer, shape);
 			outputs[e] = array;

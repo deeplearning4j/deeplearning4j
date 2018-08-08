@@ -5762,7 +5762,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      *      - when abs value is greater than or equal to 10000
      *      - when abs value is less than or equal to 0.0001 and not zero
      *
-     *  If the number of elements in the array is greater than 1000 only the first and last three elements in a dimension are included
+     *  If the number of elements in the array is greater than 1000 (by default) only the first and last three elements
+     *  in a dimension are included. This can be changed globally using {@link NDArrayStrings#setMaxPrintElements(long)}
+     *
      *
      */
     @Override
@@ -5774,7 +5776,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         else if (preventUnpack)
             return "Array string unpacking is disabled.";
         return new NDArrayStrings().format(this);
-
     }
 
     /**

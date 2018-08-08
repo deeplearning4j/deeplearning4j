@@ -37,6 +37,7 @@
 #include <sstream>
 #include <helpers/ArrayUtils.h>
 #include <MmulHelper.h>
+#include <helpers/threshold.h>
 
 namespace nd4j {
 
@@ -3043,7 +3044,7 @@ bool NDArray<T>::isUnitary() {
 template<typename T>
 NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
 
-    if (other.lengthOf() == lengthOf()) {
+    if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
         NDArray<T> result(this->_shapeInfo, this->_workspace);        
         functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Add<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
         return result;
@@ -3138,7 +3139,7 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     void NDArray<T>::operator+=(const NDArray<T>& other) {    
         if (!this->isScalar() && other.isScalar()) {
             functions::scalar::ScalarTransform<T>::template transform<simdOps::Add<T>>(this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other._buffer[0], nullptr);
-        } else if (other.lengthOf() == lengthOf())
+        } else if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf())
             functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Add<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
         else{
             Nd4jLong *bShape = nullptr;
@@ -3155,7 +3156,7 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     template<typename T>
     void NDArray<T>::operator-=(const NDArray<T>& other) {    
 
-        if (other.lengthOf() == lengthOf())
+        if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf())
             functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Subtract<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
         else {
             Nd4jLong *bShape = nullptr;
@@ -3190,7 +3191,7 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     template<typename T>
     NDArray<T> NDArray<T>::operator-(const NDArray<T>& other) const {
         
-        if (other.lengthOf() == lengthOf()) {
+        if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
             NDArray<T> result(_shapeInfo, _workspace);
             functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Subtract<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
             return result;
@@ -3225,7 +3226,7 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     template<typename T>
     NDArray<T> NDArray<T>::operator*(const NDArray<T>& other) const {
         
-        if (other.lengthOf() == lengthOf()) {
+        if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
             NDArray<T> result(this->_shapeInfo, this->_workspace);
             functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Multiply<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
             return result;
@@ -3279,7 +3280,7 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     template<typename T>
     NDArray<T> NDArray<T>::operator/(const NDArray<T>& other) const {
         
-        if (other.lengthOf() == lengthOf()) {
+        if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
             NDArray<T> result(this->_shapeInfo, this->_workspace);
             functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Divide<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
             return result;
@@ -3309,7 +3310,7 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
 
         if (!this->isScalar() && other.isScalar()) {
             functions::scalar::ScalarTransform<T>::template transform<simdOps::Divide<T>>(this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other._buffer[0], nullptr);
-        } else if (other.lengthOf() == lengthOf())
+        } else if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf())
             functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Divide<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
         else {
             Nd4jLong *bShape = nullptr;
@@ -3672,6 +3673,29 @@ NDArray<T>* NDArray<T>::createUninitialized() const {
     T* buffer(nullptr);
     ALLOCATE(buffer, _workspace, _length, T);
     NDArray<T>* result = new NDArray<T>(buffer, newShape, _workspace);
+    result->triggerAllocationFlag(true, true);
+
+    return result;
+}
+
+template<typename T>
+NDArray<T> NDArray<T>::quantize(NDArray<T> &array) {
+    return *(quantize(&array));
+}
+
+template<typename T>
+NDArray<T>* NDArray<T>::quantize(NDArray<T> *array) {
+    auto ws = array->getWorkspace();
+    char *buffer = nullptr;
+    Nd4jLong *shapeInfo;
+
+    // allocate buffers
+    ALLOCATE(buffer, ws, TypeCast::estimateQuantizedSize(array->lengthOf()), char);
+    COPY_SHAPE_EX(array->shapeInfo(), shapeInfo, ws);
+
+    ArrayOptions::setPropertyBit(shapeInfo, ARRAY_QUANTIZED);
+
+    auto result = new NDArray<T>(reinterpret_cast<T *>(buffer), shapeInfo, ws);
     result->triggerAllocationFlag(true, true);
 
     return result;
