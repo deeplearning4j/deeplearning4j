@@ -74,4 +74,9 @@ public class DefaultRepartitioner implements Repartitioner {
         }
         return EqualRepartitioner.repartition(rdd, numPartitions, partitionCounts);
     }
+
+    @Override
+    public String toString(){
+        return "DefaultRepartitioner(maxPartitions=" + maxPartitions + ")";
+    }
 }

@@ -64,7 +64,7 @@ public class BalancedPartitioner extends Partitioner {
             if (outputPartition >= numPartitions) {
                 //Should never happen, unless there's some up-stream problem with calculating elementsPerPartition
                 outputPartition = getRandom().nextInt(numPartitions);
-                log.warn("**** Random partition assigned (1): elementIdx={}, numPartitions={}, elementsPerPartition={}, remainder={}",
+                log.trace("Random partition assigned (1): elementIdx={}, numPartitions={}, elementsPerPartition={}, remainder={}",
                         elementIdx, numPartitions, elementsPerPartition, remainder);
             }
             return outputPartition;
@@ -77,7 +77,7 @@ public class BalancedPartitioner extends Partitioner {
             if (outputPartition >= numPartitions) {
                 //Should never happen, unless there's some up-stream problem with calculating elementsPerPartition
                 outputPartition = getRandom().nextInt(numPartitions);
-                log.warn("**** Random partition assigned (2): elementIdx={}, numPartitions={}, elementsPerPartition={}, remainder={}",
+                log.trace("Random partition assigned (2): elementIdx={}, numPartitions={}, elementsPerPartition={}, remainder={}",
                         elementIdx, numPartitions, elementsPerPartition, remainder);
             }
             return outputPartition;
