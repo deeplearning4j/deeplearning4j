@@ -141,7 +141,6 @@ namespace helpers {
             determinant *= (*compoundMatrix)(e, e);
         }
         if (swapCount % 2) determinant = -determinant;
-        nd4j_printf("SWAP count %i\n", swapCount);
         if (compound != nullptr)
             *compound = *compoundMatrix;
         if (permutation != nullptr)

@@ -852,7 +852,7 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_5) {
     x.linspace(1);
     x(5) = 4.0;
     x(12) = 12.0;
-    
+
     nd4j::ops::matrix_determinant<double> op;
     auto result = op.execute({&x}, {}, {});
 
