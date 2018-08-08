@@ -4666,26 +4666,22 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Dot_BP_3) {
     NDArray<float> x('c', {3, 4});
     NDArray<float> y('c', {3, 4});
     NDArray<float> eps('c', {3});
-    NDArray<float> expX('c', {2, 3, 4}, {2.f, 2.f, 2f, 2.f, 4.f, 4.f, 4.f, 4.f, 6.f, 6.f, 6.f, 6.f});
-    NDArray<float> expY('c', {2, 3, 4}, {1.f, 1.f, 1f, 1.f, 2.f, 2.f, 2.f, 2.f, 3.f, 3.f, 3.f, 3.f});
+    NDArray<float> expX('c', {3, 4}, {2.f, 2.f, 2.f, 2.f, 4.f, 4.f, 4.f, 4.f, 6.f, 6.f, 6.f, 6.f});
+    NDArray<float> expY('c', {3, 4}, {1.f, 2.f, 3.f, 4.f, 10.f, 12.f, 14.f, 16.f, 27.f, 30.f, 33.f, 36.f});
     x.linspace(1);
     eps.linspace(1);
     y.assign(2.f);
-    expX.linspace(1);
-    expY.linspace(2);
+
     nd4j::ops::reduce_dot_bp<float> op;
     auto result = op.execute({&x,&y, &eps}, {}, {1});
     auto outputX = result->at(0);
     auto outputY = result->at(1);
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
-    //tputX->printIndexedBuffer("outputX");
-    //tputY->printIndexedBuffer("outputY");
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
     ASSERT_TRUE(expX.equalsTo(outputX));
     ASSERT_TRUE(expY.equalsTo(outputY));
 
     delete result;
-//    delete z;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
