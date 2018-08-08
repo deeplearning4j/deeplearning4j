@@ -24,7 +24,7 @@
 
     <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0-beta2</version>
     <packaging>pom</packaging>
 
     <name>deeplearning4j</name>
@@ -226,11 +226,11 @@
         <maven.compiler.testSource>1.8</maven.compiler.testSource>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <deeplearning4j.version>1.0.0-SNAPSHOT</deeplearning4j.version>
-        <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
-        <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
-        <datavec.version>1.0.0-SNAPSHOT</datavec.version>
-        <dl4j-test-resources.version>1.0.0-SNAPSHOT</dl4j-test-resources.version>
+        <deeplearning4j.version>1.0.0-beta2</deeplearning4j.version>
+        <dl4j.version>1.0.0-beta2</dl4j.version>
+        <nd4j.version>1.0.0-beta2</nd4j.version>
+        <datavec.version>1.0.0-beta2</datavec.version>
+        <dl4j-test-resources.version>1.0.0-beta2</dl4j-test-resources.version>
 
         <jackson-asl.version>1.9.13</jackson-asl.version>
         <asm.version>5.1</asm.version>

@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>deeplearning4j</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.0-beta2</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
