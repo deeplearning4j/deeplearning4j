@@ -123,7 +123,9 @@ namespace ops {
         dsRes->at(0)->printShapeInfo("RES2_1");
         input->printShapeInfo("INPUT SHAPE WAS");
 //        dsRes->at(1)->printIndexedBuffer("RES2_2");
-        outputList[0]->assign(dsRes->at(0));
+//        outputList[0]->assign(dsRes->at(0));
+        outputList[0]->assign(input);
+
         outputList[1]->assign(indices);
 
         return ND4J_STATUS_OK;
