@@ -32,7 +32,7 @@ namespace nd4j {
 
         template <typename T>
         void GraphHolder::registerGraph(Nd4jLong graphId, Graph<T>* graph) {
-            const std::map<Nd4jLong, Graph<T>*> &graphmap = getGraphMap<T>();
+            std::map<Nd4jLong, Graph<T>*> &graphmap = getGraphMap<T>();
             graphmap[graphId] = graph;
         }
 
@@ -126,14 +126,19 @@ namespace nd4j {
             return getGraphMap<T>().count(graphId) > 0;
         }
 
+        GraphHolder* GraphHolder::_INSTANCE = 0;
+
+        template void GraphHolder::registerGraph<float>(Nd4jLong, Graph<float>*);
+        template void GraphHolder::registerGraph<float16>(Nd4jLong, Graph<float16>*);
+        template void GraphHolder::registerGraph<double>(Nd4jLong, Graph<double>*);
+        template void GraphHolder::registerGraph<int>(Nd4jLong, Graph<int>*);
+        template void GraphHolder::registerGraph<Nd4jLong>(Nd4jLong, Graph<Nd4jLong>*);
+
         template bool GraphHolder::hasGraph<float>(Nd4jLong);
         template bool GraphHolder::hasGraph<float16>(Nd4jLong);
         template bool GraphHolder::hasGraph<double>(Nd4jLong);
         template bool GraphHolder::hasGraph<int>(Nd4jLong);
         template bool GraphHolder::hasGraph<Nd4jLong>(Nd4jLong);
-
-
-        GraphHolder* GraphHolder::_INSTANCE = 0;
 
         template Graph<float>* GraphHolder::cloneGraph<float>(Nd4jLong);
         template Graph<float16>* GraphHolder::cloneGraph<float16>(Nd4jLong);

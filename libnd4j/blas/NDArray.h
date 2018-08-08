@@ -118,7 +118,7 @@ namespace nd4j {
         NDArray(T *buffer = nullptr, Nd4jLong* shapeInfo = nullptr, nd4j::memory::Workspace* workspace = nullptr);
 
 
-        NDArray(char order, std::initializer_list<Nd4jLong> shape, nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(char order, std::initializer_list<Nd4jLong> shape, nd4j::memory::Workspace* workspace = nullptr): NDArray(order, std::vector<Nd4jLong>(shape), workspace){};
 
          /**
          * Constructor for scalar NDArray
