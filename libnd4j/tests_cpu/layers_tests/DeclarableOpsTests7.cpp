@@ -4617,7 +4617,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Dot_BP_1) {
     nd4j::ops::reduce_dot_bp<float> op;
     auto result = op.execute({&x, &y, &eps}, {}, {});
     auto output = result->at(0);    
-//    output->printIndexedBuffer("Result is");
+    output->printIndexedBuffer("Result is");
 
 //    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
@@ -4635,9 +4635,12 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Dot_BP_2) {
     NDArray<float> y('c', {2, 3, 4});
 //    NDArray<float>* z; //('c', {4});
     NDArray<float> eps('c', {2, 4});
-    NDArray<float> exp('c', {2, 3, 4}, {2.f, 4.f, 6.f, 8.f, 2.f, 4.f, 6.f, 8.f, 2.f, 4.f, 6.f, 8.f,
+    NDArray<float> expX('c', {2, 3, 4}, {2.f, 4.f, 6.f, 8.f, 2.f, 4.f, 6.f, 8.f, 2.f, 4.f, 6.f, 8.f,
                                         10.f, 12.f, 14.f, 16.f, 10.f, 12.f, 14.f, 16.f, 10.f, 12.f, 14.f, 16.f
                                         });
+    NDArray<float> expY('c', {2, 3, 4}, {1.f, 2.f, 3.f, 4.f, 1.f, 2.f, 3.f, 4.f, 1.f, 2.f, 3.f, 4.f,
+                                         5.f, 6.f, 7.f, 8.f, 5.f, 6.f, 7.f, 8.f, 5.f, 6.f, 7.f, 8.f
+    });
     x.assign(1.f);
     eps.linspace(1);
     y.assign(2.f);
@@ -4647,16 +4650,10 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Dot_BP_2) {
     ASSERT_EQ(result->size(), 2);
     auto outputX = result->at(0);
     auto outputY = result->at(1);
-    outputX->printIndexedBuffer("ResultX is");
-    outputY->printIndexedBuffer("ResultY is");
-    exp.printIndexedBuffer("ExpectedX is");
-    //outputY->printIndexedBuffer("ResultY is");
-//    z->printShapeInfo("Result shape is");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
-    ASSERT_TRUE(exp.equalsTo(outputX));
-//    ASSERT_TRUE(eps.equalsTo(outputY));
-//    ASSERT_TRUE(exp.equalsTo(output));
+    ASSERT_TRUE(expX.equalsTo(outputX));
+    ASSERT_TRUE(expY.equalsTo(outputY));
 
     delete result;
 //    delete z;
