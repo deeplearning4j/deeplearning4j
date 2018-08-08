@@ -2140,6 +2140,36 @@ TEST_F(DeclarableOpsTests9, Floormod_BP_Test_2) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, Dynamic_Partition_BP_1) {
+
+    NDArray<double> x('c', {2, 3, 4});
+    NDArray<double> y('c', {2, 3}, {0., 1., 2., 1., 0., 2. });
+    NDArray<double> dLdzX('c', {2, 4});
+    NDArray<double> dLdzY('c', {2, 4});
+    NDArray<double> dLdzZ('c', {2, 4});
+    x.linspace(1);
+    dLdzX.linspace(1);
+    dLdzY.linspace(2);
+    dLdzZ.linspace(3);
+
+    nd4j::ops::dynamic_partition<double> op1;
+    auto res1 = op1.execute({&x, &y}, {}, {3});
+    for (size_t e = 0; e < res1->size(); ++e) {
+        res1->at(e)->printIndexedBuffer("RES1");
+        res1->at(e)->printShapeInfo("RES1");
+    }
+
+    nd4j::ops::dynamic_partition_bp<double> op2;
+    auto res2 = op2.execute({&x, &y, res1->at(0), res1->at(1), res1->at(2)}, {}, {3});
+    ASSERT_TRUE(res2->status() == ND4J_STATUS_OK);
+    ASSERT_TRUE(res2->size() == 2);
+    res2->at(0)->printIndexedBuffer("PARTITION");
+    res2->at(1)->printIndexedBuffer("INDICES");
+    delete res1;
+    delete res2;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, Floormod_BP_Test_4) {
 
     NDArray<float> x('c', {2, 1, 3}, {2.0, 6.0, -3.0, 2.0, 6.0, -3.0});
