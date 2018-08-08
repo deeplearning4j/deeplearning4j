@@ -19,7 +19,7 @@
 
     <groupId>org.nd4j</groupId>
     <artifactId>nd4j-jdbc-api</artifactId>
-    <version>1.0.0-beta2</version>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>nd4j-jdbc-api</name>
@@ -28,7 +28,7 @@
     <parent>
         <groupId>org.nd4j</groupId>
         <artifactId>nd4j-jdbc</artifactId>
-        <version>1.0.0-beta2</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
 
     <properties>

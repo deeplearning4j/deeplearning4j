@@ -20,11 +20,11 @@
     <parent>
         <artifactId>datavec-parent</artifactId>
         <groupId>org.datavec</groupId>
-        <version>1.0.0-beta2</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <version>1.0.0-beta2_spark_1</version>
+    <version>1.0.0_spark_1-SNAPSHOT</version>
     <artifactId>datavec-spark_2.10</artifactId>
 
     <properties>

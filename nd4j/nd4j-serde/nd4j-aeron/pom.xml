@@ -27,7 +27,7 @@
   <parent>
     <groupId>org.nd4j</groupId>
     <artifactId>nd4j-serde</artifactId>
-    <version>1.0.0-beta2</version>
+    <version>1.0.0-SNAPSHOT</version>
   </parent>
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>

@@ -19,11 +19,11 @@ lazy val commonSettings = Seq(
   scalaVersion := "2.11.8",
   crossScalaVersions := Seq("2.10.6", "2.11.8"),
   name := "nd4s",
-  version := sys.props.getOrElse("currentVersion", default = "1.0.0-beta2"),
+  version := sys.props.getOrElse("currentVersion", default = "1.0.0-SNAPSHOT"),
   organization := "org.nd4j",
   resolvers += Resolver.mavenLocal,
   resolvers in ThisBuild ++= Seq(Opts.resolver.sonatypeSnapshots),
-  nd4jVersion := sys.props.getOrElse("nd4jVersion", default = "1.0.0-beta2"),
+  nd4jVersion := sys.props.getOrElse("nd4jVersion", default = "1.0.0-SNAPSHOT"),
   libraryDependencies ++= Seq(
     "com.nativelibs4java" %% "scalaxy-loops" % "0.3.4",
     "org.nd4j" % "nd4j-api" % nd4jVersion.value,

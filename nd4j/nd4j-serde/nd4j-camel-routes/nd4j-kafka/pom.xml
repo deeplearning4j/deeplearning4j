@@ -18,7 +18,7 @@
     <parent>
         <artifactId>nd4j-camel-routes</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>1.0.0-beta2</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
