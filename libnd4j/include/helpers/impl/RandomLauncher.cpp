@@ -93,4 +93,6 @@ namespace nd4j {
     template class ND4J_EXPORT RandomLauncher<float>;
     template class ND4J_EXPORT RandomLauncher<float16>;
     template class ND4J_EXPORT RandomLauncher<double>;
+    template class ND4J_EXPORT RandomLauncher<int>;
+    template class ND4J_EXPORT RandomLauncher<Nd4jLong>;
 }

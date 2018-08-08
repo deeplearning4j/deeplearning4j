@@ -40,7 +40,7 @@ void softMaxForVector(const NDArray<T>& input, NDArray<T>& output) {
     auto inShapeInfo  = input.getShapeInfo();
     auto outShapeInfo = output.getShapeInfo();
 
-    T max = -FLOAT_MAX_VALUE;
+    T max = -nd4j::math::nd4j_dtype_max<T>();
     T sum = 0.;
     int inEWS = shape::elementWiseStride(inShapeInfo);
     int outEWS = shape::elementWiseStride(outShapeInfo);
@@ -95,7 +95,7 @@ void logSoftMaxForVector(const NDArray<T>& input, NDArray<T>& output) {
     auto inShapeInfo  = input.getShapeInfo();
     auto outShapeInfo = output.getShapeInfo();
 
-    T max = -FLOAT_MAX_VALUE;
+    T max = -nd4j::math::nd4j_dtype_max<T>();
     T sum = 0;
 
     auto inEWS  = shape::elementWiseStride(inShapeInfo);
@@ -201,26 +201,35 @@ void preluBP(const NDArray<T>& input, const NDArray<T>& alpha, const NDArray<T>&
     }
 }
 
-
-template void softMaxForVector<float>  (const NDArray<float  >& input, NDArray<float  >& output);
+template void softMaxForVector<float>(const NDArray<float>& input, NDArray<float>& output);
 template void softMaxForVector<float16>(const NDArray<float16>& input, NDArray<float16>& output);
-template void softMaxForVector<double> (const NDArray<double >& input, NDArray<double >& output);
+template void softMaxForVector<double>(const NDArray<double>& input, NDArray<double>& output);
+template void softMaxForVector<int>(const NDArray<int>& input, NDArray<int>& output);
+template void softMaxForVector<Nd4jLong>(const NDArray<Nd4jLong>& input, NDArray<Nd4jLong>& output);
 
-template void logSoftMaxForVector<float>  (const NDArray<float  >& input, NDArray<float  >& output);
+template void logSoftMaxForVector<float>(const NDArray<float>& input, NDArray<float>& output);
 template void logSoftMaxForVector<float16>(const NDArray<float16>& input, NDArray<float16>& output);
-template void logSoftMaxForVector<double> (const NDArray<double >& input, NDArray<double >& output);
+template void logSoftMaxForVector<double>(const NDArray<double>& input, NDArray<double>& output);
+template void logSoftMaxForVector<int>(const NDArray<int>& input, NDArray<int>& output);
+template void logSoftMaxForVector<Nd4jLong>(const NDArray<Nd4jLong>& input, NDArray<Nd4jLong>& output);
 
 template void softmax<float>(const NDArray<float>& input, NDArray<float>& output, const int dimension);
 template void softmax<float16>(const NDArray<float16>& input, NDArray<float16>& output, const int dimension);
 template void softmax<double>(const NDArray<double>& input, NDArray<double>& output, const int dimension);
+template void softmax<int>(const NDArray<int>& input, NDArray<int>& output, const int dimension);
+template void softmax<Nd4jLong>(const NDArray<Nd4jLong>& input, NDArray<Nd4jLong>& output, const int dimension);
 
-template void prelu<float16>(const NDArray<float16>& input, const NDArray<float16>& alpha, NDArray<float16>& output);
 template void prelu<float>(const NDArray<float>& input, const NDArray<float>& alpha, NDArray<float>& output);
+template void prelu<float16>(const NDArray<float16>& input, const NDArray<float16>& alpha, NDArray<float16>& output);
 template void prelu<double>(const NDArray<double>& input, const NDArray<double>& alpha, NDArray<double>& output);
+template void prelu<int>(const NDArray<int>& input, const NDArray<int>& alpha, NDArray<int>& output);
+template void prelu<Nd4jLong>(const NDArray<Nd4jLong>& input, const NDArray<Nd4jLong>& alpha, NDArray<Nd4jLong>& output);
 
-template void preluBP<float16>(const NDArray<float16>& input, const NDArray<float16>& alpha, const NDArray<float16>& dLdO, NDArray<float16>& dLdI, NDArray<float16>& dLdA);
 template void preluBP<float>(const NDArray<float>& input, const NDArray<float>& alpha, const NDArray<float>& dLdO, NDArray<float>& dLdI, NDArray<float>& dLdA);
+template void preluBP<float16>(const NDArray<float16>& input, const NDArray<float16>& alpha, const NDArray<float16>& dLdO, NDArray<float16>& dLdI, NDArray<float16>& dLdA);
 template void preluBP<double>(const NDArray<double>& input, const NDArray<double>& alpha, const NDArray<double>& dLdO, NDArray<double>& dLdI, NDArray<double>& dLdA);
+template void preluBP<int>(const NDArray<int>& input, const NDArray<int>& alpha, const NDArray<int>& dLdO, NDArray<int>& dLdI, NDArray<int>& dLdA);
+template void preluBP<Nd4jLong>(const NDArray<Nd4jLong>& input, const NDArray<Nd4jLong>& alpha, const NDArray<Nd4jLong>& dLdO, NDArray<Nd4jLong>& dLdI, NDArray<Nd4jLong>& dLdA);
 
 }
 }

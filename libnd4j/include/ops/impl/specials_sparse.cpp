@@ -220,5 +220,7 @@ namespace nd4j {
         template class ND4J_EXPORT SparseUtils<float>;
         template class ND4J_EXPORT SparseUtils<float16>;
         template class ND4J_EXPORT SparseUtils<double>;
+        template class ND4J_EXPORT SparseUtils<int>;
+        template class ND4J_EXPORT SparseUtils<Nd4jLong>;
     }
 }

@@ -65,6 +65,8 @@ OpArgsHolder<T>::~OpArgsHolder() noexcept {
 template class ND4J_EXPORT OpArgsHolder<float>;
 template class ND4J_EXPORT OpArgsHolder<float16>;
 template class ND4J_EXPORT OpArgsHolder<double>;
+template class ND4J_EXPORT OpArgsHolder<int>;
+template class ND4J_EXPORT OpArgsHolder<Nd4jLong>;
 
 }
 

@@ -247,5 +247,7 @@ namespace functions {
         template class ND4J_EXPORT IndexReduce<float>;
         template class ND4J_EXPORT IndexReduce<float16>;
         template class ND4J_EXPORT IndexReduce<double>;
+        template class ND4J_EXPORT IndexReduce<int>;
+        template class ND4J_EXPORT IndexReduce<Nd4jLong>;
     };
 }

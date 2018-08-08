@@ -1872,7 +1872,7 @@ template <typename T>
     Nd4jLong NDArray<T>::argMax(std::initializer_list<int> dimensions) {
         if (dimensions.size() == 0) {
             Nd4jLong max = 0;
-            T mv = -MAX_FLOAT;
+            T mv = -nd4j::math::nd4j_dtype_max<T>();
             for (Nd4jLong e = 0; e < this->lengthOf(); e++) {
                 T val = this->getScalar(e);
                 if (mv < val) {
@@ -3087,6 +3087,12 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     ND4J_EXPORT NDArray<double> operator+(const double scalar, const NDArray<double>& arr) {
         return arr + scalar;        
     }
+    ND4J_EXPORT NDArray<int> operator+(const int scalar, const NDArray<int>& arr) {
+        return arr + scalar;
+    }
+    ND4J_EXPORT NDArray<Nd4jLong> operator+(const Nd4jLong scalar, const NDArray<Nd4jLong>& arr) {
+        return arr + scalar;
+    }
 
     ////////////////////////////////////////////////////////////////////////
     // subtraction operator scalar - array
@@ -3100,25 +3106,40 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     // }    
     ND4J_EXPORT NDArray<float16> operator-(const float16 scalar, const NDArray<float16>& arr) {
         
-        NDArray<float16> result(arr._shapeInfo, arr._workspace);
-        functions::scalar::ScalarTransform<float16>::template transform<simdOps::ReverseSubtract<float16>>(arr._buffer, arr._shapeInfo, result._buffer, result._shapeInfo, scalar, nullptr);
+        NDArray<float16> result(arr.getShapeInfo(), true, arr.getWorkspace());
+        functions::scalar::ScalarTransform<float16>::template transform<simdOps::ReverseSubtract<float16>>(arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), scalar, nullptr);
 
         return result;
     }        
     ND4J_EXPORT NDArray<float> operator-(const float scalar, const NDArray<float>& arr) {
         
-        NDArray<float> result(arr._shapeInfo, arr._workspace);
-        functions::scalar::ScalarTransform<float>::template transform<simdOps::ReverseSubtract<float>>(arr._buffer, arr._shapeInfo, result._buffer, result._shapeInfo, scalar, nullptr);
+        NDArray<float> result(arr.getShapeInfo(), true, arr.getWorkspace());
+        functions::scalar::ScalarTransform<float>::template transform<simdOps::ReverseSubtract<float>>(arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), scalar, nullptr);
 
         return result;
     }        
     ND4J_EXPORT NDArray<double> operator-(const double scalar, const NDArray<double>& arr) {
         
-        NDArray<double> result(arr._shapeInfo, arr._workspace);
-        functions::scalar::ScalarTransform<double>::template transform<simdOps::ReverseSubtract<double>>(arr._buffer, arr._shapeInfo, result._buffer, result._shapeInfo, scalar, nullptr);
+        NDArray<double> result(arr.getShapeInfo(), true, arr.getWorkspace());
+        functions::scalar::ScalarTransform<double>::template transform<simdOps::ReverseSubtract<double>>(arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), scalar, nullptr);
 
         return result;
-    }    
+    }
+    ND4J_EXPORT NDArray<int> operator-(const int scalar, const NDArray<int>& arr) {
+
+        NDArray<int> result(arr.getShapeInfo(), true,  arr.getWorkspace());
+        functions::scalar::ScalarTransform<int>::template transform<simdOps::ReverseSubtract<int>>(arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), scalar, nullptr);
+
+        return result;
+    }
+    ND4J_EXPORT NDArray<Nd4jLong> operator-(const Nd4jLong scalar, const NDArray<Nd4jLong>& arr) {
+
+        NDArray<Nd4jLong> result(arr.getShapeInfo(), true, arr.getWorkspace());
+        functions::scalar::ScalarTransform<Nd4jLong>::template transform<simdOps::ReverseSubtract<Nd4jLong>>(arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), scalar, nullptr);
+
+        return result;
+    }
+
     
     ////////////////////////////////////////////////////////////////////////
     template<typename T>
@@ -3777,19 +3798,39 @@ ResultSet<T>* NDArray<T>::allExamples() const {
 template class ND4J_EXPORT NDArray<float>;
 template class ND4J_EXPORT NDArray<float16>;
 template class ND4J_EXPORT NDArray<double>;
+template class ND4J_EXPORT NDArray<int>;
+template class ND4J_EXPORT NDArray<Nd4jLong>;
 
 
 template NDArray<float>* NDArray<float>::asT<float>();
 template NDArray<float16>* NDArray<float>::asT<float16>();
 template NDArray<double>* NDArray<float>::asT<double>();
+template NDArray<int>* NDArray<float>::asT<int>();
+template NDArray<Nd4jLong>* NDArray<float>::asT<Nd4jLong>();
 
 template NDArray<float>* NDArray<float16>::asT<float>();
 template NDArray<float16>* NDArray<float16>::asT<float16>();
 template NDArray<double>* NDArray<float16>::asT<double>();
+template NDArray<int>* NDArray<float16>::asT<int>();
+template NDArray<Nd4jLong>* NDArray<float16>::asT<Nd4jLong>();
 
 template NDArray<float>* NDArray<double>::asT<float>();
 template NDArray<float16>* NDArray<double>::asT<float16>();
 template NDArray<double>* NDArray<double>::asT<double>();
+template NDArray<int>* NDArray<double>::asT<int>();
+template NDArray<Nd4jLong>* NDArray<double>::asT<Nd4jLong>();
+
+template NDArray<float>* NDArray<int>::asT<float>();
+template NDArray<float16>* NDArray<int>::asT<float16>();
+template NDArray<double>* NDArray<int>::asT<double>();
+template NDArray<int>* NDArray<int>::asT<int>();
+template NDArray<Nd4jLong>* NDArray<int>::asT<Nd4jLong>();
+
+template NDArray<float>* NDArray<Nd4jLong>::asT<float>();
+template NDArray<float16>* NDArray<Nd4jLong>::asT<float16>();
+template NDArray<double>* NDArray<Nd4jLong>::asT<double>();
+template NDArray<int>* NDArray<Nd4jLong>::asT<int>();
+template NDArray<Nd4jLong>* NDArray<Nd4jLong>::asT<Nd4jLong>();
 
 
 #ifndef __CLION_IDE__

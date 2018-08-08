@@ -153,14 +153,20 @@ namespace functions {
         template class ND4J_EXPORT Transform<float>;
         template class ND4J_EXPORT Transform<float16>;
         template class ND4J_EXPORT Transform<double>;
+        template class ND4J_EXPORT Transform<int>;
+        template class ND4J_EXPORT Transform<Nd4jLong>;
 
 
         BUILD_CALL_1(template void Transform<float>::exec, float, (float*, Nd4jLong*, float*, Nd4jLong*, float*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
         BUILD_CALL_1(template void Transform<float16>::exec, float16, (float16*, Nd4jLong*, float16*, Nd4jLong*, float16*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
         BUILD_CALL_1(template void Transform<double>::exec, double, (double*, Nd4jLong*, double*, Nd4jLong*, double*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
+        BUILD_CALL_1(template void Transform<int>::exec, int, (int*, Nd4jLong*, int*, Nd4jLong*, int*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
+        BUILD_CALL_1(template void Transform<Nd4jLong>::exec, Nd4jLong, (Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
 
         BUILD_CALL_1(template void Transform<float>::exec, float, (float*, Nd4jLong, float*, Nd4jLong, float*, const Nd4jLong), TRANSFORM_OPS)
         BUILD_CALL_1(template void Transform<float16>::exec, float16, (float16*, Nd4jLong, float16*, Nd4jLong, float16*, const Nd4jLong), TRANSFORM_OPS)
         BUILD_CALL_1(template void Transform<double>::exec, double, (double*, Nd4jLong, double*, Nd4jLong, double*, const Nd4jLong), TRANSFORM_OPS)
+        BUILD_CALL_1(template void Transform<int>::exec, int, (int*, Nd4jLong, int*, Nd4jLong, int*, const Nd4jLong), TRANSFORM_OPS)
+        BUILD_CALL_1(template void Transform<Nd4jLong>::exec, Nd4jLong, (Nd4jLong*, Nd4jLong, Nd4jLong*, Nd4jLong, Nd4jLong*, const Nd4jLong), TRANSFORM_OPS)
     }
 }

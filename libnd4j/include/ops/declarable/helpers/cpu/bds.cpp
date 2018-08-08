@@ -57,6 +57,8 @@ namespace helpers {
     template int bdsFunctor(NDArray<float>* x_shape, NDArray<float>* y_shape, NDArray<float>* output);
     template int bdsFunctor(NDArray<float16>* x_shape, NDArray<float16>* y_shape, NDArray<float16>* output);
     template int bdsFunctor(NDArray<double>* x_shape, NDArray<double>* y_shape, NDArray<double>* output);
+    template int bdsFunctor(NDArray<int>* x_shape, NDArray<int>* y_shape, NDArray<int>* output);
+    template int bdsFunctor(NDArray<Nd4jLong>* x_shape, NDArray<Nd4jLong>* y_shape, NDArray<Nd4jLong>* output);
 }
 }
 }

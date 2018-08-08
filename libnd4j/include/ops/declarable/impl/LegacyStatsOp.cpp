@@ -111,7 +111,9 @@ namespace nd4j {
         }
 
         template class ND4J_EXPORT LegacyStatsOp<float>;
-        template class ND4J_EXPORT LegacyStatsOp<double>;
         template class ND4J_EXPORT LegacyStatsOp<float16>;
+        template class ND4J_EXPORT LegacyStatsOp<double>;
+        template class ND4J_EXPORT LegacyStatsOp<int>;
+        template class ND4J_EXPORT LegacyStatsOp<Nd4jLong>;
     }
 }

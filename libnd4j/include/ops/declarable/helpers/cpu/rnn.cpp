@@ -109,10 +109,14 @@ void rnnTimeLoop(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* h, NDArray<
 template void rnnCell<float>(const std::vector<NDArray<float>*>& inArrs, NDArray<float>* ht);
 template void rnnCell<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>* ht);
 template void rnnCell<double>(const std::vector<NDArray<double>*>& inArrs, NDArray<double>* ht);
+template void rnnCell<int>(const std::vector<NDArray<int>*>& inArrs, NDArray<int>* ht);
+template void rnnCell<Nd4jLong>(const std::vector<NDArray<Nd4jLong>*>& inArrs, NDArray<Nd4jLong>* ht);
 
-template void rnnTimeLoop<float>  (const std::vector<NDArray<float>*>&   inArrs, NDArray<float>*   h, NDArray<float>*   hFinal);
+template void rnnTimeLoop<float>(const std::vector<NDArray<float>*>& inArrs, NDArray<float>* h, NDArray<float>* hFinal);
 template void rnnTimeLoop<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>* h, NDArray<float16>* hFinal);
-template void rnnTimeLoop<double> (const std::vector<NDArray<double>*>&  inArrs, NDArray<double>*  h, NDArray<double>*  hFinal);
+template void rnnTimeLoop<double>(const std::vector<NDArray<double>*>& inArrs, NDArray<double>* h, NDArray<double>* hFinal);
+template void rnnTimeLoop<int>(const std::vector<NDArray<int>*>& inArrs, NDArray<int>* h, NDArray<int>* hFinal);
+template void rnnTimeLoop<Nd4jLong>(const std::vector<NDArray<Nd4jLong>*>& inArrs, NDArray<Nd4jLong>* h, NDArray<Nd4jLong>* hFinal);
 
 
 }

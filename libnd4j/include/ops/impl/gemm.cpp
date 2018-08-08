@@ -138,9 +138,13 @@ namespace nd4j {
         template class ND4J_EXPORT GEMM<float>;
         template class ND4J_EXPORT GEMM<float16>;
         template class ND4J_EXPORT GEMM<double>;
+        template class ND4J_EXPORT GEMM<int>;
+        template class ND4J_EXPORT GEMM<Nd4jLong>;
 
         template class ND4J_EXPORT GEMV<float>;
         template class ND4J_EXPORT GEMV<float16>;
         template class ND4J_EXPORT GEMV<double>;
+        template class ND4J_EXPORT GEMV<int>;
+        template class ND4J_EXPORT GEMV<Nd4jLong>;
     }
 }

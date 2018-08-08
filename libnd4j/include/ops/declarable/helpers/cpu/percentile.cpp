@@ -79,6 +79,8 @@ void percentile(const NDArray<T>& input, NDArray<T>& output, std::vector<int>& a
 template void percentile(const NDArray<float>& input, NDArray<float>& output, std::vector<int>& axises, const float q, const int interpolation);
 template void percentile(const NDArray<float16>& input, NDArray<float16>& output, std::vector<int>& axises, const float16 q, const int interpolation);
 template void percentile(const NDArray<double>& input, NDArray<double>& output, std::vector<int>& axises, const double q, const int interpolation);
+template void percentile(const NDArray<int>& input, NDArray<int>& output, std::vector<int>& axises, const int q, const int interpolation);
+template void percentile(const NDArray<Nd4jLong>& input, NDArray<Nd4jLong>& output, std::vector<int>& axises, const Nd4jLong q, const int interpolation);
 
 }
 }

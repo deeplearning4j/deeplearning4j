@@ -36,6 +36,8 @@ namespace helpers {
     template void swapRows(NDArray<float>* matrix, int theFirst, int theSecond);
     template void swapRows(NDArray<float16>* matrix, int theFirst, int theSecond);
     template void swapRows(NDArray<double>* matrix, int theFirst, int theSecond);
+    template void swapRows(NDArray<int>* matrix, int theFirst, int theSecond);
+    template void swapRows(NDArray<Nd4jLong>* matrix, int theFirst, int theSecond);
 
     template <typename T>
     void invertLowerMatrix(NDArray<T>* inputMatrix, NDArray<T>* invertedMatrix) {
@@ -62,6 +64,8 @@ namespace helpers {
     template void invertLowerMatrix(NDArray<float>* inputMatrix, NDArray<float>* invertedMatrix);
     template void invertLowerMatrix(NDArray<float16>* inputMatrix, NDArray<float16>* invertedMatrix);
     template void invertLowerMatrix(NDArray<double>* inputMatrix, NDArray<double>* invertedMatrix);
+    template void invertLowerMatrix(NDArray<int>* inputMatrix, NDArray<int>* invertedMatrix);
+    template void invertLowerMatrix(NDArray<Nd4jLong>* inputMatrix, NDArray<Nd4jLong>* invertedMatrix);
 
     template <typename T>
     void invertUpperMatrix(NDArray<T>* inputMatrix, NDArray<T>* invertedMatrix) {
@@ -91,6 +95,8 @@ namespace helpers {
     template void invertUpperMatrix(NDArray<float>* inputMatrix, NDArray<float>* invertedMatrix);
     template void invertUpperMatrix(NDArray<float16>* inputMatrix, NDArray<float16>* invertedMatrix);
     template void invertUpperMatrix(NDArray<double>* inputMatrix, NDArray<double>* invertedMatrix);
+    template void invertUpperMatrix(NDArray<int>* inputMatrix, NDArray<int>* invertedMatrix);
+    template void invertUpperMatrix(NDArray<Nd4jLong>* inputMatrix, NDArray<Nd4jLong>* invertedMatrix);
 
     template <typename T>
     T lup(NDArray<T>* input, NDArray<T>* compound, NDArray<T>* permutation) {
@@ -148,9 +154,11 @@ namespace helpers {
         return determinant;
     }
 
-    template float lup(NDArray<float>* input, NDArray<float>* output, NDArray<float>* permutation);
+    template float lup(NDArray<float>* input, NDArray<float>* compound, NDArray<float>* permutation);
     template float16 lup(NDArray<float16>* input, NDArray<float16>* compound, NDArray<float16>* permutation);
     template double lup(NDArray<double>* input, NDArray<double>* compound, NDArray<double>* permutation);
+    template int lup(NDArray<int>* input, NDArray<int>* compound, NDArray<int>* permutation);
+    template Nd4jLong lup(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* compound, NDArray<Nd4jLong>* permutation);
 
 
     template <typename T>
@@ -175,6 +183,8 @@ namespace helpers {
     template int determinant(NDArray<float>* input, NDArray<float>* output);
     template int determinant(NDArray<float16>* input, NDArray<float16>* output);
     template int determinant(NDArray<double>* input, NDArray<double>* output);
+    template int determinant(NDArray<int>* input, NDArray<int>* output);
+    template int determinant(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* output);
 
     template <typename T>
     int inverse(NDArray<T>* input, NDArray<T>* output) {
@@ -231,6 +241,8 @@ namespace helpers {
     template int inverse(NDArray<float>* input, NDArray<float>* output);
     template int inverse(NDArray<float16>* input, NDArray<float16>* output);
     template int inverse(NDArray<double>* input, NDArray<double>* output);
+    template int inverse(NDArray<int>* input, NDArray<int>* output);
+    template int inverse(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* output);
 }
 }
 }

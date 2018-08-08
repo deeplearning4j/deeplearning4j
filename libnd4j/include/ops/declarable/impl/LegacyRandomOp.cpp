@@ -418,5 +418,7 @@ namespace nd4j {
         template class ND4J_EXPORT LegacyRandomOp<float>;
         template class ND4J_EXPORT LegacyRandomOp<double>;
         template class ND4J_EXPORT LegacyRandomOp<float16>;
+        template class ND4J_EXPORT LegacyRandomOp<int>;
+        template class ND4J_EXPORT LegacyRandomOp<Nd4jLong>;
     }
 }

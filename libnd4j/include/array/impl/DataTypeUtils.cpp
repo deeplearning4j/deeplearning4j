@@ -79,4 +79,13 @@ namespace nd4j {
         return DataType_DOUBLE;
     }
 
+    template <>
+    DataType DataTypeUtils::fromT<int>() {
+        return DataType_INT32;
+    }
+
+    template <>
+    DataType DataTypeUtils::fromT<Nd4jLong>() {
+        return DataType_INT64;
+    }
 }

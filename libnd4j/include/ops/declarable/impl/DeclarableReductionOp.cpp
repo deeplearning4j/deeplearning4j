@@ -77,5 +77,7 @@ namespace nd4j {
         template class ND4J_EXPORT DeclarableReductionOp<float>;
         template class ND4J_EXPORT DeclarableReductionOp<float16>;
         template class ND4J_EXPORT DeclarableReductionOp<double>;
+        template class ND4J_EXPORT DeclarableReductionOp<int>;
+        template class ND4J_EXPORT DeclarableReductionOp<Nd4jLong>;
     }
 }

@@ -174,9 +174,13 @@ namespace functions {
         template class ND4J_EXPORT Broadcast<float>;
         template class ND4J_EXPORT Broadcast<float16>;
         template class ND4J_EXPORT Broadcast<double>;
+        template class ND4J_EXPORT Broadcast<int>;
+        template class ND4J_EXPORT Broadcast<Nd4jLong>;
 
         BUILD_CALL_1(template void Broadcast<float>::exec, float, (float*, Nd4jLong*, float*, Nd4jLong*, float*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
         BUILD_CALL_1(template void Broadcast<float16>::exec, float16, (float16*, Nd4jLong*, float16*, Nd4jLong*, float16*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
         BUILD_CALL_1(template void Broadcast<double>::exec, double, (double*, Nd4jLong*, double*, Nd4jLong*, double*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
+        BUILD_CALL_1(template void Broadcast<int>::exec, int, (int*, Nd4jLong*, int*, Nd4jLong*, int*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
+        BUILD_CALL_1(template void Broadcast<Nd4jLong>::exec, Nd4jLong, (Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
     }
 }

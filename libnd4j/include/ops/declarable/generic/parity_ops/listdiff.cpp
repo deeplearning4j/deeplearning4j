@@ -38,7 +38,7 @@ namespace nd4j {
 
             for (Nd4jLong e = 0; e < values->lengthOf(); e++) {
                 T v = values->getScalar(e);
-                T extras[] = {v, (T) 0.0f, (T) 10.0f};
+                T extras[] = {v, (T) 0, (T) 10};
                 auto idx = keep->template indexReduceNumber<simdOps::FirstIndex<T>>(extras);
                 if (idx < 0) {
                     saved.emplace_back(v);

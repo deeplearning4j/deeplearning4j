@@ -866,7 +866,7 @@ template<typename OpType>
                 Nd4jLong xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 Nd4jLong yElementWiseStride = shape::elementWiseStride(yShapeInfo);
 
-                T extraParamsVals[3] = {(T) 0.0, (T) 0.0, (T) 0.0};
+                T extraParamsVals[3] = {(T) 0, (T) 0, (T) 0};
                 // it's possible case for EqualsWithEps op
                 if (extraParams != nullptr) {
                     extraParamsVals[2] = extraParams[0];
@@ -1125,7 +1125,7 @@ template<typename OpType>
                 nd4j_printf("dimLength: %i\n", dimensionLength);
 */
 
-                T extraParamsVals[3] = {(T) 0.0, (T) 0.0, (T) 0.0};
+                T extraParamsVals[3] = {(T) 0, (T) 0, (T) 0};
 
 
                 if(shape::isScalar(resultShapeInfoBuffer)) {

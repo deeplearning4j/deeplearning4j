@@ -974,6 +974,8 @@ void SVD<T>::evalData(const NDArray<T>& matrix) {
 template class ND4J_EXPORT SVD<float>;
 template class ND4J_EXPORT SVD<float16>;
 template class ND4J_EXPORT SVD<double>;
+template class ND4J_EXPORT SVD<int>;
+template class ND4J_EXPORT SVD<Nd4jLong>;
 
 
 
@@ -1023,6 +1025,8 @@ void svd(const NDArray<T>* x, const std::vector<NDArray<T>*>& outArrs, const boo
 template void svd<float>(const NDArray<float>* x, const std::vector<NDArray<float>*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum);
 template void svd<float16>(const NDArray<float16>* x, const std::vector<NDArray<float16>*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum);
 template void svd<double>(const NDArray<double>* x, const std::vector<NDArray<double>*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum);
+template void svd<int>(const NDArray<int>* x, const std::vector<NDArray<int>*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum);
+template void svd<Nd4jLong>(const NDArray<Nd4jLong>* x, const std::vector<NDArray<Nd4jLong>*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum);
 
 
 

@@ -112,8 +112,11 @@ namespace nd4j {
             };
 
             template void _bgemm<float>(std::vector<NDArray<float>*>& vA, std::vector<NDArray<float>*>& vB, std::vector<NDArray<float>*>& vC, NDArray<float>* alphas, NDArray<float>* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC);
-            template void _bgemm<double>(std::vector<NDArray<double>*>& vA, std::vector<NDArray<double>*>& vB, std::vector<NDArray<double>*>& vC, NDArray<double>* alphas, NDArray<double>* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC);
             template void _bgemm<float16>(std::vector<NDArray<float16>*>& vA, std::vector<NDArray<float16>*>& vB, std::vector<NDArray<float16>*>& vC, NDArray<float16>* alphas, NDArray<float16>* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC);
+            template void _bgemm<double>(std::vector<NDArray<double>*>& vA, std::vector<NDArray<double>*>& vB, std::vector<NDArray<double>*>& vC, NDArray<double>* alphas, NDArray<double>* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC);
+            template void _bgemm<int>(std::vector<NDArray<int>*>& vA, std::vector<NDArray<int>*>& vB, std::vector<NDArray<int>*>& vC, NDArray<int>* alphas, NDArray<int>* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC);
+            template void _bgemm<Nd4jLong>(std::vector<NDArray<Nd4jLong>*>& vA, std::vector<NDArray<Nd4jLong>*>& vB, std::vector<NDArray<Nd4jLong>*>& vC, NDArray<Nd4jLong>* alphas, NDArray<Nd4jLong>* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC);
+
         }
     }
 }

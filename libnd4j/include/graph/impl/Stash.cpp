@@ -102,5 +102,7 @@ void nd4j::graph::Stash<T>::storeArray(nd4j::graph::Block<T>& block, const char 
         template class ND4J_EXPORT Stash<float>;
         template class ND4J_EXPORT Stash<float16>;
         template class ND4J_EXPORT Stash<double>;
+        template class ND4J_EXPORT Stash<int>;
+        template class ND4J_EXPORT Stash<Nd4jLong>;
     }
 }

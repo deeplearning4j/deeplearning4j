@@ -396,6 +396,8 @@ void NativeOpExcutioner<T>::execReduce3(int opNum, T *x, Nd4jLong *xShapeInfo, T
 template class ND4J_EXPORT NativeOpExcutioner<float16>;
 template class ND4J_EXPORT NativeOpExcutioner<float>;
 template class ND4J_EXPORT NativeOpExcutioner<double>;
+template class ND4J_EXPORT NativeOpExcutioner<int>;
+template class ND4J_EXPORT NativeOpExcutioner<Nd4jLong>;
 
 
 

@@ -41,6 +41,8 @@ namespace helpers {
     template void confusionFunctor(NDArray<float>* labels, NDArray<float>* predictions, NDArray<float>* weights, NDArray<float>* output);
     template void confusionFunctor(NDArray<float16>* labels, NDArray<float16>* predictions, NDArray<float16>* weights, NDArray<float16>* output);
     template void confusionFunctor(NDArray<double>* labels, NDArray<double>* predictions, NDArray<double>* weights, NDArray<double>* output);
+    template void confusionFunctor(NDArray<int>* labels, NDArray<int>* predictions, NDArray<int>* weights, NDArray<int>* output);
+    template void confusionFunctor(NDArray<Nd4jLong>* labels, NDArray<Nd4jLong>* predictions, NDArray<Nd4jLong>* weights, NDArray<Nd4jLong>* output);
 }
 }
 }

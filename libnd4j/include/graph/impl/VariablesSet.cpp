@@ -57,5 +57,7 @@ namespace nd4j {
         template class ND4J_EXPORT VariablesSet<float>;
         template class ND4J_EXPORT VariablesSet<float16>;
         template class ND4J_EXPORT VariablesSet<double>;
+        template class ND4J_EXPORT VariablesSet<int>;
+        template class ND4J_EXPORT VariablesSet<Nd4jLong>;
     }
 }

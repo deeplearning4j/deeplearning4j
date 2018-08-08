@@ -580,6 +580,8 @@ void MmulHelper<T>::matmul(const nd4j::NDArray<T>* x, const nd4j::NDArray<T>* y,
 template class ND4J_EXPORT MmulHelper<float>;
 template class ND4J_EXPORT MmulHelper<float16>;
 template class ND4J_EXPORT MmulHelper<double>;
+template class ND4J_EXPORT MmulHelper<int>;
+template class ND4J_EXPORT MmulHelper<Nd4jLong>;
 }
 
 

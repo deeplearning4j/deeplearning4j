@@ -74,5 +74,7 @@ namespace nd4j {
         template class ND4J_EXPORT LogicEnter<float>;
         template class ND4J_EXPORT LogicEnter<float16>;
         template class ND4J_EXPORT LogicEnter<double>;
+        template class ND4J_EXPORT LogicEnter<int>;
+        template class ND4J_EXPORT LogicEnter<Nd4jLong>;
     }
 }

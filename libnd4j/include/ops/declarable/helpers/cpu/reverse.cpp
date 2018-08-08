@@ -245,14 +245,20 @@ void reverse(const NDArray<T>* input, NDArray<T>* output, const std::vector<int>
 template void reverseSequence<float>(const NDArray<float>* input, const NDArray<float>* seqLengths, NDArray<float>* output, int seqDim, const int batchDim);
 template void reverseSequence<float16>(const NDArray<float16>* input, const NDArray<float16>* seqLengths, NDArray<float16>* output, int seqDim, const int batchDim);
 template void reverseSequence<double>(const NDArray<double>* input, const NDArray<double>* seqLengths, NDArray<double>* output, int seqDim, const int batchDim);
+template void reverseSequence<int>(const NDArray<int>* input, const NDArray<int>* seqLengths, NDArray<int>* output, int seqDim, const int batchDim);
+template void reverseSequence<Nd4jLong>(const NDArray<Nd4jLong>* input, const NDArray<Nd4jLong>* seqLengths, NDArray<Nd4jLong>* output, int seqDim, const int batchDim);
 
 template void reverseArray<float>(float *inArr, Nd4jLong *inShapeBuffer, float *outArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse);
 template void reverseArray<float16>(float16 *inArr, Nd4jLong *inShapeBuffer, float16 *outArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse);
 template void reverseArray<double>(double *inArr, Nd4jLong *inShapeBuffer, double *outArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse);
+template void reverseArray<int>(int *inArr, Nd4jLong *inShapeBuffer, int *outArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse);
+template void reverseArray<Nd4jLong>(Nd4jLong *inArr, Nd4jLong *inShapeBuffer, Nd4jLong *outArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse);
 
 template void reverse<float>(const NDArray<float>* input, NDArray<float>* output, const std::vector<int>* intArgs, bool);
 template void reverse<float16>(const NDArray<float16>* input, NDArray<float16>* output, const std::vector<int>* intArgs, bool);
 template void reverse<double>(const NDArray<double>* input, NDArray<double>* output, const std::vector<int>* intArgs, bool);
+template void reverse<int>(const NDArray<int>* input, NDArray<int>* output, const std::vector<int>* intArgs, bool);
+template void reverse<Nd4jLong>(const NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* output, const std::vector<int>* intArgs, bool);
 
 
 }

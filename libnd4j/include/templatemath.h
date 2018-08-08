@@ -33,6 +33,9 @@
 #define HALF_MAX_VALUE 65504.
 #define FLOAT_MAX_VALUE 3.4028235E38
 #define DOUBLE_MAX_VALUE 1.7976931348623157E308
+#define INT_MAX_VALUE 2147483647
+#define LONG_MAX_VALUE 9223372036854775807
+
 #define FLOAT_MIN_NORMAL 1.17549435e-38
 
 #ifndef M_E
@@ -88,7 +91,7 @@ namespace nd4j {
 		template<typename T>
 		math_def inline T nd4j_abs(T value);
 
-template<typename T>
+        template<typename T>
         math_def inline void nd4j_swap(T &val1, T &val2);
 
 		template<typename T>
@@ -223,6 +226,17 @@ template<typename T>
 			return atan2(value1, value2);
 		}
 
+		template<>
+        math_def inline int nd4j_atan2<int>(int value1, int value2) {
+            return (int) atan2f((float) value1, (float) value2);
+        }
+
+		template<>
+        math_def inline Nd4jLong nd4j_atan2<Nd4jLong>(Nd4jLong value1, Nd4jLong value2) {
+            return (Nd4jLong) atan2((double) value1, (double) value2);
+        }
+
+
         template<typename T>
         math_def inline T nd4j_tan(T val) {
             return nd4j_log((val + 1 / (1 - val)) * 0.5);
@@ -312,6 +326,8 @@ template<typename T>
         template<typename T>
         math_def inline T nd4j_atanh(T val);
 
+        template<typename T>
+        math_def inline T nd4j_dtype_max();
 
         template<>
         math_def inline float16 nd4j_abs<float16>(float16 value) {
@@ -492,15 +508,9 @@ template<typename T>
 		}
 
 		template<>
-		math_def inline Nd4jLong nd4j_min<Nd4jLong>(Nd4jLong val1, Nd4jLong val2) {
-			return val1 < val2 ? val1 : val2;
-		}
-
-		template<>
         math_def inline float16 nd4j_min<float16>(float16 val1, float16 val2) {
 			return val1 < val2 ? val1 : val2;
 		}
-
 
 		template<>
         math_def inline float nd4j_min<float>(float val1, float val2) {
@@ -513,6 +523,11 @@ template<typename T>
 		}
 		template<>
         math_def inline int nd4j_min<int>(int val1, int val2) {
+			return val1 < val2 ? val1 : val2;
+		}
+
+		template<>
+		math_def inline Nd4jLong nd4j_min<Nd4jLong>(Nd4jLong val1, Nd4jLong val2) {
 			return val1 < val2 ? val1 : val2;
 		}
 
@@ -537,8 +552,13 @@ template<typename T>
 
 		template<>
         math_def inline int nd4j_ceil<int>(int val) {
-			return ceil((float) val);
+			return val;
 		}
+
+        template<>
+        math_def inline Nd4jLong nd4j_ceil<Nd4jLong>(Nd4jLong val) {
+            return val;
+        }
 
 		template<>
         math_def inline float16 nd4j_cos<float16>(float16 val) {
@@ -564,6 +584,10 @@ template<typename T>
 			return cosf((float) val);
 		}
 
+		template<>
+        math_def inline Nd4jLong nd4j_cos<Nd4jLong>(Nd4jLong val) {
+			return cos((double) val);
+		}
 
         template<>
         math_def inline float16 nd4j_cosh<float16>(float16 val) {
@@ -583,6 +607,11 @@ template<typename T>
         template<>
         math_def inline int nd4j_cosh<int>(int val) {
             return coshf((float) val);
+        }
+
+        template<>
+        math_def inline Nd4jLong nd4j_cosh<Nd4jLong>(Nd4jLong val) {
+            return cosh((double) val);
         }
 
 
@@ -612,6 +641,11 @@ template<typename T>
 		}
 
 		template<>
+        math_def inline Nd4jLong nd4j_exp<Nd4jLong>(Nd4jLong val) {
+			return exp((double) val);
+		}
+
+		template<>
         math_def inline float16 nd4j_floor<float16>(float16 val) {
 #ifdef NATIVE_HALFS
             return hfloor(val.data);
@@ -633,9 +667,13 @@ template<typename T>
 
 		template<>
         math_def inline int nd4j_floor<int>(int val) {
-			return floorf((float) val);
+			return val;
 		}
 
+        template<>
+        math_def inline Nd4jLong nd4j_floor<Nd4jLong>(Nd4jLong val) {
+            return val;
+        }
 
 		template<>
         math_def inline float16 nd4j_log<float16>(float16 val) {
@@ -659,9 +697,13 @@ template<typename T>
 
 		template<>
         math_def inline int nd4j_log<int>(int val) {
-			return logf((int) val);
+			return logf((float) val);
 		}
 
+		template<>
+        math_def inline Nd4jLong nd4j_log<Nd4jLong>(Nd4jLong val) {
+			return log((double) val);
+		}
 
 		template<>
         math_def inline float16 nd4j_pow<float16>(float16 val, float16 val2) {
@@ -680,7 +722,28 @@ template<typename T>
 
 		template<>
         math_def inline int nd4j_pow<int>(int val, int val2) {
-			return powf((float) val, (float) val2);
+			if (val2 == 0){
+			    return 0;
+			}
+
+			auto ret = val;
+			for (auto i = 1; i++ < val2;){
+			    ret *= val;
+			}
+			return ret;
+		}
+
+		template<>
+        math_def inline Nd4jLong nd4j_pow<Nd4jLong>(Nd4jLong val, Nd4jLong val2) {
+			if (val2 == 0){
+			    return 0;
+			}
+
+			auto ret = val;
+			for (auto i = 1; i++ < val2;){
+			    ret *= val;
+			}
+			return ret;
 		}
 
 		template<typename T>
@@ -702,6 +765,22 @@ template<typename T>
 			return roundf(val);
 		}
 
+		template<>
+        math_def inline double nd4j_round<double>(double val) {
+			return round(val);
+		}
+
+		template<>
+        math_def inline int nd4j_round<int>(int val) {
+			return val;
+		}
+
+		template<>
+        math_def inline Nd4jLong nd4j_round<Nd4jLong>(Nd4jLong val) {
+			return val;
+		}
+
+
         template<>
         math_def inline float nd4j_remainder<float>(float num, float denom) {
             return remainderf(num, denom);
@@ -717,6 +796,15 @@ template<typename T>
             return (float16) remainderf((float) num, (float) denom);
         }
 
+        template<>
+        math_def inline int nd4j_remainder<int>(int num, int denom) {
+            return (int) remainderf((float) num, (float) denom);
+        }
+
+        template<>
+        math_def inline Nd4jLong nd4j_remainder<Nd4jLong>(Nd4jLong num, Nd4jLong denom) {
+                    return (Nd4jLong) remainder((Nd4jLong) num, (Nd4jLong) denom);
+                }
 
         template<>
         math_def inline float nd4j_fmod<float>(float num, float denom) {
@@ -731,6 +819,16 @@ template<typename T>
         template<>
         math_def inline float16 nd4j_fmod<float16>(float16 num, float16 denom) {
             return (float16) fmodf((float) num, (float) denom);
+        }
+
+        template<>
+        math_def inline int nd4j_fmod<int>(int num, int denom) {
+            return num % denom;
+        }
+
+        template<>
+        math_def inline Nd4jLong nd4j_fmod<Nd4jLong>(Nd4jLong num, Nd4jLong denom) {
+            return num % denom;
         }
 
 		template<>
@@ -748,6 +846,16 @@ template<typename T>
             return (float16) erff((float) num);
         }
 
+        template<>
+        math_def inline int nd4j_erf<int>(int num) {
+            return (int) erff((float) num);
+        }
+
+        template<>
+        math_def inline Nd4jLong nd4j_erf<Nd4jLong>(Nd4jLong num) {
+            return (Nd4jLong) erf((double) num);
+        }
+
 		template<>
         math_def inline float nd4j_erfc<float>(float num) {
             return erfcf(num);
@@ -763,17 +871,15 @@ template<typename T>
             return (float16) erfcf((float) num);
         }
 
+        template<>
+        math_def inline int nd4j_erfc<int>(int num) {
+            return (int) erfcf((float) num);
+        }
 
-
-		template<>
-        math_def inline double nd4j_round<double>(double val) {
-			return round(val);
-		}
-
-		template<>
-        math_def inline int nd4j_round<int>(int val) {
-			return round((float) val);
-		}
+        template<>
+        math_def inline Nd4jLong nd4j_erfc<Nd4jLong>(Nd4jLong num) {
+            return (Nd4jLong) erfc((double) num);
+        }
 
 		template<>
         math_def inline float16 nd4j_sin<float16>(float16 val) {
@@ -800,6 +906,10 @@ template<typename T>
 			return sin((float) val);
 		}
 
+		template<>
+        math_def inline Nd4jLong nd4j_sin<Nd4jLong>(Nd4jLong val) {
+			return sin((double) val);
+		}
 
 
 		template<>
@@ -827,6 +937,10 @@ template<typename T>
 			return sinhf((float) val);
 		}
 
+		template<>
+		math_def inline Nd4jLong nd4j_sinh<Nd4jLong>(Nd4jLong val) {
+			return sinh((float) val);
+		}
 
 		template<>
         math_def inline float16 nd4j_sqrt<float16>(float16 val) {
@@ -854,6 +968,11 @@ template<typename T>
 		}
 
 		template<>
+        math_def inline Nd4jLong nd4j_sqrt<Nd4jLong>(Nd4jLong val) {
+			return sqrt((double) val);
+		}
+
+		template<>
         math_def inline float16 nd4j_tanh<float16>(float16 val) {
 			return (float16) tanhf((float) val);
 		}
@@ -873,6 +992,10 @@ template<typename T>
 			return tanhf((float) val);
 		}
 
+		template<>
+        math_def inline Nd4jLong nd4j_tanh<Nd4jLong>(Nd4jLong val) {
+			return tanh((double) val);
+		}
 
         template<>
         math_def inline float16 nd4j_tan<float16>(float16 val) {
@@ -892,6 +1015,11 @@ template<typename T>
         template<>
         math_def inline int nd4j_tan<int>(int val) {
             return tanf((float) val);
+        }
+
+        template<>
+        math_def inline Nd4jLong nd4j_tan<Nd4jLong>(Nd4jLong val) {
+            return tan((double) val);
         }
 
 
@@ -916,6 +1044,10 @@ template<typename T>
 			return acosf((float) val);
 		}
 
+		template<>
+        math_def inline Nd4jLong nd4j_acos<Nd4jLong>(Nd4jLong val) {
+			return acos((double) val);
+		}
 
 		template<>
 		math_def inline float16 nd4j_acosh<float16>(float16 val) {
@@ -938,12 +1070,15 @@ template<typename T>
 			return acoshf((float) val);
 		}
 
+		template<>
+		math_def inline Nd4jLong nd4j_acosh<Nd4jLong>(Nd4jLong val) {
+			return acosh((double) val);
+		}
 
 		template<>
         math_def inline float16 nd4j_asin<float16>(float16 val) {
 			return (float16) asinf((float) val);
 		}
-
 
 		template<>
         math_def inline float nd4j_asin<float>(float val) {
@@ -960,6 +1095,10 @@ template<typename T>
 			return asinf((float) val);
 		}
 
+        template<>
+        math_def inline Nd4jLong nd4j_asin<Nd4jLong>(Nd4jLong val) {
+			return asin((double) val);
+		}
 
 		template<>
         math_def inline float16 nd4j_atan<float16>(float16 val) {
@@ -982,8 +1121,10 @@ template<typename T>
 			return atanf((float) val);
 		}
 
-
-
+		template<>
+        math_def inline Nd4jLong nd4j_atan<Nd4jLong>(Nd4jLong val) {
+			return atan((double) val);
+		}
 
 
         template<>
@@ -1007,13 +1148,41 @@ template<typename T>
             return atanhf((float) val);
         }
 
-
-
+        template<>
+        math_def inline Nd4jLong nd4j_atanh<Nd4jLong>(Nd4jLong val) {
+            return atanh((double) val);
+        }
 
         template<typename T>
         math_def inline void nd4j_swap(T &val1, T &val2) {
             T temp = val1; val1=val2; val2=temp;
 		};
+
+        template<>
+        math_def inline float16 nd4j_dtype_max<float16>() {
+            return (float16) HALF_MAX_VALUE;
+        }
+
+
+        template<>
+        math_def inline float nd4j_dtype_max<float>() {
+            return (float) FLOAT_MAX_VALUE;
+        }
+
+        template<>
+        math_def inline double nd4j_dtype_max<double>() {
+            return (double) DOUBLE_MAX_VALUE;
+        }
+
+        template<>
+        math_def inline int nd4j_dtype_max<int>() {
+            return (int) INT_MAX_VALUE;
+        }
+
+        template<>
+        math_def inline Nd4jLong nd4j_dtype_max<Nd4jLong>() {
+            return (Nd4jLong) LONG_MAX_VALUE;
+        }
 
 #ifdef __CUDACC__
 		namespace atomics {

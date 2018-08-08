@@ -136,5 +136,7 @@ namespace nd4j {
         template class ND4J_EXPORT LogicMerge<float>;
         template class ND4J_EXPORT LogicMerge<float16>;
         template class ND4J_EXPORT LogicMerge<double>;
+        template class ND4J_EXPORT LogicMerge<int>;
+        template class ND4J_EXPORT LogicMerge<Nd4jLong>;
     }
 }

@@ -160,5 +160,7 @@ namespace nd4j {
         template class ND4J_EXPORT DeclarableListOp<float>;
         template class ND4J_EXPORT DeclarableListOp<float16>;
         template class ND4J_EXPORT DeclarableListOp<double>;
+        template class ND4J_EXPORT DeclarableListOp<int>;
+        template class ND4J_EXPORT DeclarableListOp<Nd4jLong>;
     }
 }

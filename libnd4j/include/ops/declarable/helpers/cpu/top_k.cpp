@@ -132,9 +132,13 @@ namespace helpers {
     template int topKFunctor<float>(NDArray<float>* input, NDArray<float>* values, NDArray<float>* indeces, int k, bool needSort);
     template int topKFunctor<float16>(NDArray<float16>* input, NDArray<float16>* values, NDArray<float16>* indeces, int k, bool needSort);
     template int topKFunctor<double>(NDArray<double>* input, NDArray<double>* values, NDArray<double>* indeces, int k, bool needSort);
+    template int topKFunctor<int>(NDArray<int>* input, NDArray<int>* values, NDArray<int>* indeces, int k, bool needSort);
+    template int topKFunctor<Nd4jLong>(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* values, NDArray<Nd4jLong>* indeces, int k, bool needSort);
     template int inTopKFunctor<float>(NDArray<float>* input, NDArray<float>* target, NDArray<float>* result, int k);
     template int inTopKFunctor<float16>(NDArray<float16>* input, NDArray<float16>* target, NDArray<float16>* result, int k);
     template int inTopKFunctor<double>(NDArray<double>* input, NDArray<double>* target, NDArray<double>* result, int k);
+    template int inTopKFunctor<int>(NDArray<int>* input, NDArray<int>* target, NDArray<int>* result, int k);
+    template int inTopKFunctor<Nd4jLong>(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* target, NDArray<Nd4jLong>* result, int k);
 
 }
 }

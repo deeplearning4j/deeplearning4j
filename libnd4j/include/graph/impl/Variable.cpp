@@ -307,18 +307,38 @@ namespace nd4j {
         template class ND4J_EXPORT Variable<float>;
         template class ND4J_EXPORT Variable<float16>;
         template class ND4J_EXPORT Variable<double>;
+        template class ND4J_EXPORT Variable<int>;
+        template class ND4J_EXPORT Variable<Nd4jLong>;
 
 
         template Variable<float>* Variable<float>::asT<float>();
         template Variable<float16>* Variable<float>::asT<float16>();
         template Variable<double>* Variable<float>::asT<double>();
+        template Variable<int>* Variable<float>::asT<int>();
+        template Variable<Nd4jLong>* Variable<float>::asT<Nd4jLong>();
 
         template Variable<float>* Variable<float16>::asT<float>();
         template Variable<float16>* Variable<float16>::asT<float16>();
         template Variable<double>* Variable<float16>::asT<double>();
+        template Variable<int>* Variable<float16>::asT<int>();
+        template Variable<Nd4jLong>* Variable<float16>::asT<Nd4jLong>();
 
         template Variable<float>* Variable<double>::asT<float>();
         template Variable<float16>* Variable<double>::asT<float16>();
         template Variable<double>* Variable<double>::asT<double>();
+        template Variable<int>* Variable<double>::asT<int>();
+        template Variable<Nd4jLong>* Variable<double>::asT<Nd4jLong>();
+
+        template Variable<float>* Variable<int>::asT<float>();
+        template Variable<float16>* Variable<int>::asT<float16>();
+        template Variable<double>* Variable<int>::asT<double>();
+        template Variable<int>* Variable<int>::asT<int>();
+        template Variable<Nd4jLong>* Variable<int>::asT<Nd4jLong>();
+
+        template Variable<float>* Variable<Nd4jLong>::asT<float>();
+        template Variable<float16>* Variable<Nd4jLong>::asT<float16>();
+        template Variable<double>* Variable<Nd4jLong>::asT<double>();
+        template Variable<int>* Variable<Nd4jLong>::asT<int>();
+        template Variable<Nd4jLong>* Variable<Nd4jLong>::asT<Nd4jLong>();
     }
 }

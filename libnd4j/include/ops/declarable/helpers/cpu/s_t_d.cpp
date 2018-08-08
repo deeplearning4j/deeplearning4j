@@ -92,6 +92,8 @@ namespace helpers {
     template void _spaceTodepth<float>(NDArray<float> *input, NDArray<float> *output, int block_size, bool isNHWC);
     template void _spaceTodepth<float16>(NDArray<float16> *input, NDArray<float16> *output, int block_size, bool isNHWC);
     template void _spaceTodepth<double>(NDArray<double> *input, NDArray<double> *output, int block_size, bool isNHWC);
+    template void _spaceTodepth<int>(NDArray<int> *input, NDArray<int> *output, int block_size, bool isNHWC);
+    template void _spaceTodepth<Nd4jLong>(NDArray<Nd4jLong> *input, NDArray<Nd4jLong> *output, int block_size, bool isNHWC);
 }
 }
 }

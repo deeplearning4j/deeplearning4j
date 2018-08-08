@@ -167,14 +167,20 @@ void lstmTimeLoop(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDAr
 template void clipping<float>(NDArray<float>* arr, float limit);
 template void clipping<float16>(NDArray<float16>* arr, float16 limit);
 template void clipping<double>(NDArray<double>* arr, double limit);
+template void clipping<int>(NDArray<int>* arr, int limit);
+template void clipping<Nd4jLong>(NDArray<Nd4jLong>* arr, Nd4jLong limit);
 
 template void lstmCell<float>(const std::vector<NDArray<float>*>& inArrs, const std::vector<NDArray<float>*>& outArrs, const std::vector<float>& params);
 template void lstmCell<float16>(const std::vector<NDArray<float16>*>& inArrs, const std::vector<NDArray<float16>*>& outArrs, const std::vector<float16>& params);
 template void lstmCell<double>(const std::vector<NDArray<double>*>& inArrs, const std::vector<NDArray<double>*>& outArrs, const std::vector<double>& params);
+template void lstmCell<int>(const std::vector<NDArray<int>*>& inArrs, const std::vector<NDArray<int>*>& outArrs, const std::vector<int>& params);
+template void lstmCell<Nd4jLong>(const std::vector<NDArray<Nd4jLong>*>& inArrs, const std::vector<NDArray<Nd4jLong>*>& outArrs, const std::vector<Nd4jLong>& params);
 
 template void lstmTimeLoop<float>(const std::vector<NDArray<float>*>& inArrs, const std::vector<NDArray<float>*>& outArrs, const std::vector<float>& params);
 template void lstmTimeLoop<float16>(const std::vector<NDArray<float16>*>& inArrs, const std::vector<NDArray<float16>*>& outArrs, const std::vector<float16>& params);
 template void lstmTimeLoop<double>(const std::vector<NDArray<double>*>& inArrs, const std::vector<NDArray<double>*>& outArrs, const std::vector<double>& params);
+template void lstmTimeLoop<int>(const std::vector<NDArray<int>*>& inArrs, const std::vector<NDArray<int>*>& outArrs, const std::vector<int>& params);
+template void lstmTimeLoop<Nd4jLong>(const std::vector<NDArray<Nd4jLong>*>& inArrs, const std::vector<NDArray<Nd4jLong>*>& outArrs, const std::vector<Nd4jLong>& params);
 
 
 }

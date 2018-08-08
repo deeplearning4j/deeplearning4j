@@ -78,6 +78,16 @@ namespace helpers {
     template void _execute<double, 2, false>(double *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, double *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
     template void _execute<double, 1, false>(double *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, double *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
 
+    template void _execute<int, 4, false>(int *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, int *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
+    template void _execute<int, 3, false>(int *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, int *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
+    template void _execute<int, 2, false>(int *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, int *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
+    template void _execute<int, 1, false>(int *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, int *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
+
+    template void _execute<Nd4jLong, 4, false>(Nd4jLong *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, Nd4jLong *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
+    template void _execute<Nd4jLong, 3, false>(Nd4jLong *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, Nd4jLong *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
+    template void _execute<Nd4jLong, 2, false>(Nd4jLong *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, Nd4jLong *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
+    template void _execute<Nd4jLong, 1, false>(Nd4jLong *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, Nd4jLong *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
+
 
     template void _execute<float, 4, true>(float *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, float *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
     template void _execute<float, 3, true>(float *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, float *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
@@ -93,6 +103,17 @@ namespace helpers {
     template void _execute<double, 3, true>(double *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, double *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
     template void _execute<double, 2, true>(double *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, double *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
     template void _execute<double, 1, true>(double *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, double *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
+
+    template void _execute<int, 4, true>(int *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, int *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
+    template void _execute<int, 3, true>(int *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, int *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
+    template void _execute<int, 2, true>(int *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, int *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
+    template void _execute<int, 1, true>(int *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, int *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
+
+    template void _execute<Nd4jLong, 4, true>(Nd4jLong *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, Nd4jLong *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
+    template void _execute<Nd4jLong, 3, true>(Nd4jLong *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, Nd4jLong *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
+    template void _execute<Nd4jLong, 2, true>(Nd4jLong *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, Nd4jLong *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
+    template void _execute<Nd4jLong, 1, true>(Nd4jLong *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, Nd4jLong *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
+
 }
 }
 }

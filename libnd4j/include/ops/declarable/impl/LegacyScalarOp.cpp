@@ -83,5 +83,7 @@ namespace nd4j {
         template class ND4J_EXPORT LegacyScalarOp<float>;
         template class ND4J_EXPORT LegacyScalarOp<float16>;
         template class ND4J_EXPORT LegacyScalarOp<double>;
+        template class ND4J_EXPORT LegacyScalarOp<int>;
+        template class ND4J_EXPORT LegacyScalarOp<Nd4jLong>;
     }
 }

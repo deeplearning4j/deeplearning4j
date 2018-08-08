@@ -237,4 +237,6 @@ namespace nd4j {
     template class ND4J_EXPORT NDArrayList<float>;
     template class ND4J_EXPORT NDArrayList<float16>;
     template class ND4J_EXPORT NDArrayList<double>;
+    template class ND4J_EXPORT NDArrayList<int>;
+    template class ND4J_EXPORT NDArrayList<Nd4jLong>;
 }

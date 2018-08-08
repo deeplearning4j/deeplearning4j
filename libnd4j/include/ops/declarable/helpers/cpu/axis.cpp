@@ -39,6 +39,9 @@ namespace helpers {
     template void adjustAxis(NDArray<float>* input, NDArray<float>* axisVector, std::vector<int>& output);
     template void adjustAxis(NDArray<float16>* input, NDArray<float16>* axisVector, std::vector<int>& output);
     template void adjustAxis(NDArray<double>* input, NDArray<double>* axisVector, std::vector<int>& output);
+    template void adjustAxis(NDArray<int>* input, NDArray<int>* axisVector, std::vector<int>& output);
+    template void adjustAxis(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* axisVector, std::vector<int>& output);
+
 }
 }
 }

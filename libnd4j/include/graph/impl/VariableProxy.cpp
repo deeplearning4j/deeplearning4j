@@ -262,5 +262,7 @@ namespace nd4j {
         template class ND4J_EXPORT VariableProxy<float>;
         template class ND4J_EXPORT VariableProxy<float16>;
         template class ND4J_EXPORT VariableProxy<double>;
+        template class ND4J_EXPORT VariableProxy<int>;
+        template class ND4J_EXPORT VariableProxy<Nd4jLong>;
     }
 }

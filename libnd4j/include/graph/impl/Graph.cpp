@@ -1360,19 +1360,39 @@ namespace nd4j {
         template class ND4J_EXPORT Graph<float>;
         template class ND4J_EXPORT Graph<float16>;
         template class ND4J_EXPORT Graph<double>;
+        template class ND4J_EXPORT Graph<int>;
+        template class ND4J_EXPORT Graph<Nd4jLong>;
 
 
         template Graph<float>* Graph<float>::asT<float>();
         template Graph<float16>* Graph<float>::asT<float16>();
         template Graph<double>* Graph<float>::asT<double>();
+        template Graph<int>* Graph<float>::asT<int>();
+        template Graph<Nd4jLong>* Graph<float>::asT<Nd4jLong>();
 
         template Graph<float>* Graph<float16>::asT<float>();
         template Graph<float16>* Graph<float16>::asT<float16>();
         template Graph<double>* Graph<float16>::asT<double>();
+        template Graph<int>* Graph<float16>::asT<int>();
+        template Graph<Nd4jLong>* Graph<float16>::asT<Nd4jLong>();
 
         template Graph<float>* Graph<double>::asT<float>();
         template Graph<float16>* Graph<double>::asT<float16>();
         template Graph<double>* Graph<double>::asT<double>();
+        template Graph<int>* Graph<double>::asT<int>();
+        template Graph<Nd4jLong>* Graph<double>::asT<Nd4jLong>();
+
+        template Graph<float>* Graph<int>::asT<float>();
+        template Graph<float16>* Graph<int>::asT<float16>();
+        template Graph<double>* Graph<int>::asT<double>();
+        template Graph<int>* Graph<int>::asT<int>();
+        template Graph<Nd4jLong>* Graph<int>::asT<Nd4jLong>();
+
+        template Graph<float>* Graph<Nd4jLong>::asT<float>();
+        template Graph<float16>* Graph<Nd4jLong>::asT<float16>();
+        template Graph<double>* Graph<Nd4jLong>::asT<double>();
+        template Graph<int>* Graph<Nd4jLong>::asT<int>();
+        template Graph<Nd4jLong>* Graph<Nd4jLong>::asT<Nd4jLong>();
     }
 }
 

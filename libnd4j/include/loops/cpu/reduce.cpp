@@ -342,6 +342,8 @@ namespace functions {
         template class ND4J_EXPORT ReduceFunction<float>;
         template class ND4J_EXPORT ReduceFunction<float16>;
         template class ND4J_EXPORT ReduceFunction<double>;
+        template class ND4J_EXPORT ReduceFunction<int>;
+        template class ND4J_EXPORT ReduceFunction<Nd4jLong>;
 
         //template void ReduceFunction<float16>::exec<simdOps::LogSumExp<float16>>(float16*, int*, float16*, float16*, int*, int*, int, int*, Nd4jLong*);
         //template void ReduceFunction<float>::exec<simdOps::LogSumExp<float>>(float*, int*, float*, float*, int*, int*, int, int*, Nd4jLong*);
@@ -350,9 +352,13 @@ namespace functions {
         BUILD_CALL_1(template void ReduceFunction<float>::exec, float, (float*, Nd4jLong*, float*, float*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*), REDUCE_OPS)
         BUILD_CALL_1(template void ReduceFunction<float16>::exec, float16, (float16*, Nd4jLong*, float16*, float16*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*), REDUCE_OPS)
         BUILD_CALL_1(template void ReduceFunction<double>::exec, double, (double*, Nd4jLong*, double*, double*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*), REDUCE_OPS)
+        BUILD_CALL_1(template void ReduceFunction<int>::exec, int, (int*, Nd4jLong*, int*, int*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*), REDUCE_OPS)
+        BUILD_CALL_1(template void ReduceFunction<Nd4jLong>::exec, Nd4jLong, (Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*), REDUCE_OPS)
 
         BUILD_CALL_1(template float ReduceFunction<float>::execScalar, float, (float *x, Nd4jLong *, float*), REDUCE_OPS)
         BUILD_CALL_1(template float16 ReduceFunction<float16>::execScalar, float16, (float16 *x, Nd4jLong *, float16*), REDUCE_OPS)
         BUILD_CALL_1(template double ReduceFunction<double>::execScalar, double, (double *x, Nd4jLong *, double*), REDUCE_OPS)
+        BUILD_CALL_1(template int ReduceFunction<int>::execScalar, int, (int *x, Nd4jLong *, int*), REDUCE_OPS)
+        BUILD_CALL_1(template Nd4jLong ReduceFunction<Nd4jLong>::execScalar, Nd4jLong, (Nd4jLong *x, Nd4jLong *, Nd4jLong*), REDUCE_OPS)
     }
 }

@@ -43,6 +43,8 @@ void diagFunctor(const NDArray<T>* input, NDArray<T>* output) {
 template void diagFunctor<float>(const NDArray<float>* input, NDArray<float>* output);
 template void diagFunctor<float16>(const NDArray<float16>* input, NDArray<float16>* output);
 template void diagFunctor<double>(const NDArray<double>* input, NDArray<double>* output);
+template void diagFunctor<int>(const NDArray<int>* input, NDArray<int>* output);
+template void diagFunctor<Nd4jLong>(const NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* output);
 
 
 }

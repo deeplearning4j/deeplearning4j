@@ -219,18 +219,26 @@ namespace functions {
         BUILD_CALL_1(template void RandomFunction<float>::execTransform, float, (Nd4jPointer state, float *x, Nd4jLong *xShapeBuffer, float *y, Nd4jLong *yShapeBuffer, float *z, Nd4jLong *zShapeBuffer, float *extraArguments), RANDOM_OPS)
         BUILD_CALL_1(template void RandomFunction<float16>::execTransform, float16, (Nd4jPointer state, float16 *x, Nd4jLong *xShapeBuffer, float16 *y, Nd4jLong *yShapeBuffer, float16 *z, Nd4jLong *zShapeBuffer, float16 *extraArguments), RANDOM_OPS)
         BUILD_CALL_1(template void RandomFunction<double>::execTransform, double, (Nd4jPointer state, double *x, Nd4jLong *xShapeBuffer, double *y, Nd4jLong *yShapeBuffer, double *z, Nd4jLong *zShapeBuffer, double *extraArguments), RANDOM_OPS)
+        BUILD_CALL_1(template void RandomFunction<int>::execTransform, int, (Nd4jPointer state, int *x, Nd4jLong *xShapeBuffer, int *y, Nd4jLong *yShapeBuffer, int *z, Nd4jLong *zShapeBuffer, int *extraArguments), RANDOM_OPS)
+        BUILD_CALL_1(template void RandomFunction<Nd4jLong>::execTransform, Nd4jLong, (Nd4jPointer state, Nd4jLong *x, Nd4jLong *xShapeBuffer, Nd4jLong *y, Nd4jLong *yShapeBuffer, Nd4jLong *z, Nd4jLong *zShapeBuffer, Nd4jLong *extraArguments), RANDOM_OPS)
 
         BUILD_CALL_1(template void RandomFunction<float>::execTransform, float, (Nd4jPointer state, float *x, Nd4jLong *xShapeBuffer, float *z, Nd4jLong *zShapeBuffer, float *extraArguments), RANDOM_OPS)
         BUILD_CALL_1(template void RandomFunction<float16>::execTransform, float16, (Nd4jPointer state, float16 *x, Nd4jLong *xShapeBuffer, float16 *z, Nd4jLong *zShapeBuffer, float16 *extraArguments), RANDOM_OPS)
         BUILD_CALL_1(template void RandomFunction<double>::execTransform, double, (Nd4jPointer state, double *x, Nd4jLong *xShapeBuffer, double *z, Nd4jLong *zShapeBuffer, double *extraArguments), RANDOM_OPS)
+        BUILD_CALL_1(template void RandomFunction<int>::execTransform, int, (Nd4jPointer state, int *x, Nd4jLong *xShapeBuffer, int *z, Nd4jLong *zShapeBuffer, int *extraArguments), RANDOM_OPS)
+        BUILD_CALL_1(template void RandomFunction<Nd4jLong>::execTransform, Nd4jLong, (Nd4jPointer state, Nd4jLong *x, Nd4jLong *xShapeBuffer, Nd4jLong *z, Nd4jLong *zShapeBuffer, Nd4jLong *extraArguments), RANDOM_OPS)
 
         BUILD_CALL_1(template void RandomFunction<float>::execTransform, float, (Nd4jPointer state, float *z, Nd4jLong *zShapeBuffer, float *extraArguments), RANDOM_OPS)
         BUILD_CALL_1(template void RandomFunction<float16>::execTransform, float16, (Nd4jPointer state, float16 *z, Nd4jLong *zShapeBuffer, float16 *extraArguments), RANDOM_OPS)
         BUILD_CALL_1(template void RandomFunction<double>::execTransform, double, (Nd4jPointer state, double *z, Nd4jLong *zShapeBuffer, double *extraArguments), RANDOM_OPS)
+        BUILD_CALL_1(template void RandomFunction<int>::execTransform, int, (Nd4jPointer state, int *z, Nd4jLong *zShapeBuffer, int *extraArguments), RANDOM_OPS)
+        BUILD_CALL_1(template void RandomFunction<Nd4jLong>::execTransform, Nd4jLong, (Nd4jPointer state, Nd4jLong *z, Nd4jLong *zShapeBuffer, Nd4jLong *extraArguments), RANDOM_OPS)
 #endif
 
         template class ND4J_EXPORT RandomFunction<float>;
         template class ND4J_EXPORT RandomFunction<float16>;
         template class ND4J_EXPORT RandomFunction<double>;
+        template class ND4J_EXPORT RandomFunction<int>;
+        template class ND4J_EXPORT RandomFunction<Nd4jLong>;
     }
 }

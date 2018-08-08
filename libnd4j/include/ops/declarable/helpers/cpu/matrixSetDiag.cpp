@@ -68,6 +68,8 @@ void matrixSetDiag(const NDArray<T>* input, const NDArray<T>* diagonal, NDArray<
 template void matrixSetDiag<float>(const NDArray<float>* input, const NDArray<float>* diagonal, NDArray<float>* output);
 template void matrixSetDiag<float16>(const NDArray<float16>* input, const NDArray<float16>* diagonal, NDArray<float16>* output);
 template void matrixSetDiag<double>(const NDArray<double>* input, const NDArray<double>* diagonal, NDArray<double>* output);
+template void matrixSetDiag<int>(const NDArray<int>* input, const NDArray<int>* diagonal, NDArray<int>* output);
+template void matrixSetDiag<Nd4jLong>(const NDArray<Nd4jLong>* input, const NDArray<Nd4jLong>* diagonal, NDArray<Nd4jLong>* output);
 
 
 }

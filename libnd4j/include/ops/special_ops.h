@@ -315,7 +315,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = -MAX_FLOAT;
+                        sum = -nd4j::math::nd4j_dtype_max<T>();
                                                                     
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
@@ -1480,7 +1480,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 				delete[] maxResultShapeBuffer;
 			}
 			else if (shape::isVector(xShapeBuffer)) {
-				T max = -FLOAT_MAX_VALUE;
+				T max = -nd4j::math::nd4j_dtype_max<T>();
 				T sum = 0;
 				int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
 				int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer);
@@ -1640,7 +1640,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 				delete[] maxResultShapeBuffer;
 			}
 			else if (shape::isVector(xShapeBuffer, 2)) {
-				T max = -FLOAT_MAX_VALUE;
+				T max = -nd4j::math::nd4j_dtype_max<T>();
 				T sum = 0;
 
 				auto elementWiseStride = shape::elementWiseStride(xShapeBuffer);
@@ -1840,7 +1840,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 				delete[] maxResultShapeBuffer;
 			}
 			else if (shape::isVector(xShapeBuffer, 2)) {
-				T max = -FLOAT_MAX_VALUE;
+				T max = -nd4j::math::nd4j_dtype_max<T>();
 				T sum = 0;
 
 				auto elementWiseStride = shape::elementWiseStride(xShapeBuffer);

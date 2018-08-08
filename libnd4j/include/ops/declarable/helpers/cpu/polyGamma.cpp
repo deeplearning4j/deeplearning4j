@@ -38,7 +38,7 @@ static T getFactorial(const int n) {
 
 	T result = (T)1.;
 
-#pragma omp declare reduction (dot : double,float,float16 : omp_out *= omp_in) initializer(omp_priv = (T)1.)
+#pragma omp declare reduction (dot : double,float,float16,int,Nd4jLong : omp_out *= omp_in) initializer(omp_priv = (T)1.)
 #pragma omp parallel for reduction(dot : result) schedule(static)
 	for(int i = 2; i <= n; ++i)
 		result *= i;
@@ -81,13 +81,17 @@ NDArray<T> polyGamma(const NDArray<T>& n, const NDArray<T>& x) {
 }
 
 
-template float   polyGamma<float>  (const int n, const float   x);
+template float polyGamma<float>(const int n, const float x);
 template float16 polyGamma<float16>(const int n, const float16 x);
-template double  polyGamma<double> (const int n, const double  x);
+template double polyGamma<double>(const int n, const double x);
+template int polyGamma<int>(const int n, const int x);
+template Nd4jLong polyGamma<Nd4jLong>(const int n, const Nd4jLong x);
 
-template NDArray<float>   polyGamma<float>  (const NDArray<float>&   n, const NDArray<float>&   x);
+template NDArray<float> polyGamma<float>(const NDArray<float>& n, const NDArray<float>& x);
 template NDArray<float16> polyGamma<float16>(const NDArray<float16>& n, const NDArray<float16>& x);
-template NDArray<double>  polyGamma<double> (const NDArray<double>&  n, const NDArray<double>&  x);
+template NDArray<double> polyGamma<double>(const NDArray<double>& n, const NDArray<double>& x);
+template NDArray<int> polyGamma<int>(const NDArray<int>& n, const NDArray<int>& x);
+template NDArray<Nd4jLong> polyGamma<Nd4jLong>(const NDArray<Nd4jLong>& n, const NDArray<Nd4jLong>& x);
 
 
 }

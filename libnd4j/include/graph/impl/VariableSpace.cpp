@@ -460,17 +460,37 @@ namespace nd4j {
         template class ND4J_EXPORT VariableSpace<float>;
         template class ND4J_EXPORT VariableSpace<float16>;
         template class ND4J_EXPORT VariableSpace<double>;
+        template class ND4J_EXPORT VariableSpace<int>;
+        template class ND4J_EXPORT VariableSpace<Nd4jLong>;
 
         template VariableSpace<float>* VariableSpace<float>::asT<float>();
         template VariableSpace<float16>* VariableSpace<float>::asT<float16>();
         template VariableSpace<double>* VariableSpace<float>::asT<double>();
+        template VariableSpace<int>* VariableSpace<float>::asT<int>();
+        template VariableSpace<Nd4jLong>* VariableSpace<float>::asT<Nd4jLong>();
 
         template VariableSpace<float>* VariableSpace<float16>::asT<float>();
         template VariableSpace<float16>* VariableSpace<float16>::asT<float16>();
         template VariableSpace<double>* VariableSpace<float16>::asT<double>();
+        template VariableSpace<int>* VariableSpace<float16>::asT<int>();
+        template VariableSpace<Nd4jLong>* VariableSpace<float16>::asT<Nd4jLong>();
 
         template VariableSpace<float>* VariableSpace<double>::asT<float>();
         template VariableSpace<float16>* VariableSpace<double>::asT<float16>();
         template VariableSpace<double>* VariableSpace<double>::asT<double>();
+        template VariableSpace<int>* VariableSpace<double>::asT<int>();
+        template VariableSpace<Nd4jLong>* VariableSpace<double>::asT<Nd4jLong>();
+
+        template VariableSpace<float>* VariableSpace<int>::asT<float>();
+        template VariableSpace<float16>* VariableSpace<int>::asT<float16>();
+        template VariableSpace<double>* VariableSpace<int>::asT<double>();
+        template VariableSpace<int>* VariableSpace<int>::asT<int>();
+        template VariableSpace<Nd4jLong>* VariableSpace<int>::asT<Nd4jLong>();
+
+        template VariableSpace<float>* VariableSpace<Nd4jLong>::asT<float>();
+        template VariableSpace<float16>* VariableSpace<Nd4jLong>::asT<float16>();
+        template VariableSpace<double>* VariableSpace<Nd4jLong>::asT<double>();
+        template VariableSpace<int>* VariableSpace<Nd4jLong>::asT<int>();
+        template VariableSpace<Nd4jLong>* VariableSpace<Nd4jLong>::asT<Nd4jLong>();
     }
 }

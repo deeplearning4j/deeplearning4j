@@ -108,5 +108,7 @@ namespace nd4j {
         template class ND4J_EXPORT LegacyReduce3Op<float>;
         template class ND4J_EXPORT LegacyReduce3Op<float16>;
         template class ND4J_EXPORT LegacyReduce3Op<double>;
+        template class ND4J_EXPORT LegacyReduce3Op<int>;
+        template class ND4J_EXPORT LegacyReduce3Op<Nd4jLong>;
     }
 }

@@ -44,5 +44,7 @@ namespace nd4j {
         template class ND4J_EXPORT LogicOp<float>;
         template class ND4J_EXPORT LogicOp<float16>;
         template class ND4J_EXPORT LogicOp<double>;
+        template class ND4J_EXPORT LogicOp<int>;
+        template class ND4J_EXPORT LogicOp<Nd4jLong>;
     }
 }

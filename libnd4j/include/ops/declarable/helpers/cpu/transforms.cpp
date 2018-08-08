@@ -553,7 +553,7 @@ void mergeMaxIndex(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output) {
 
 #pragma omp parallel for if(x->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
     for (Nd4jLong e = 0; e < x->lengthOf(); e++) {
-        T max = -MAX_FLOAT;
+        T max = -nd4j::math::nd4j_dtype_max<T>();
         Nd4jLong idx = 0;
             
         for (int i = 0; i < numArgs; i++){
@@ -578,7 +578,7 @@ void mergeMax(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output) {
 
 #pragma omp parallel for if(x->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided) proc_bind(close)
      for (Nd4jLong e = 0; e < x->lengthOf(); e++) {
-        T max = -MAX_FLOAT;
+        T max = -nd4j::math::nd4j_dtype_max<T>();
         for (int i = 0; i < numArgs; i++) { 
             T v = (*inArrs[i])(e);
             if (v > max)
@@ -968,82 +968,122 @@ void tileBP(const NDArray<T>& gradO /*input*/, NDArray<T>& gradI /*output*/, con
 template void triu<float>(const NDArray<float>& input, NDArray<float>& output, const int diagonal);
 template void triu<float16>(const NDArray<float16>& input, NDArray<float16>& output, const int diagonal);
 template void triu<double>(const NDArray<double>& input, NDArray<double>& output, const int diagonal);
+template void triu<int>(const NDArray<int>& input, NDArray<int>& output, const int diagonal);
+template void triu<Nd4jLong>(const NDArray<Nd4jLong>& input, NDArray<Nd4jLong>& output, const int diagonal);
 
 template void triuBP<float>(const NDArray<float>& input, const NDArray<float>& gradO, NDArray<float>& gradI, const int diagonal);
 template void triuBP<float16>(const NDArray<float16>& input, const NDArray<float16>& gradO, NDArray<float16>& gradI, const int diagonal);
 template void triuBP<double>(const NDArray<double>& input, const NDArray<double>& gradO, NDArray<double>& gradI, const int diagonal);
+template void triuBP<int>(const NDArray<int>& input, const NDArray<int>& gradO, NDArray<int>& gradI, const int diagonal);
+template void triuBP<Nd4jLong>(const NDArray<Nd4jLong>& input, const NDArray<Nd4jLong>& gradO, NDArray<Nd4jLong>& gradI, const int diagonal);
 
 template void trace<float>(const NDArray<float>& input, NDArray<float>& output);
 template void trace<float16>(const NDArray<float16>& input, NDArray<float16>& output);
 template void trace<double>(const NDArray<double>& input, NDArray<double>& output);
+template void trace<int>(const NDArray<int>& input, NDArray<int>& output);
+template void trace<Nd4jLong>(const NDArray<Nd4jLong>& input, NDArray<Nd4jLong>& output);
 
 template void randomShuffle<float>(NDArray<float>& input, NDArray<float>& output, nd4j::random::RandomBuffer& rng, const bool isInplace);
 template void randomShuffle<float16>(NDArray<float16>& input, NDArray<float16>& output, nd4j::random::RandomBuffer& rng, const bool isInplace);
 template void randomShuffle<double>(NDArray<double>& input, NDArray<double>& output, nd4j::random::RandomBuffer& rng, const bool isInplace);
+template void randomShuffle<int>(NDArray<int>& input, NDArray<int>& output, nd4j::random::RandomBuffer& rng, const bool isInplace);
+template void randomShuffle<Nd4jLong>(NDArray<Nd4jLong>& input, NDArray<Nd4jLong>& output, nd4j::random::RandomBuffer& rng, const bool isInplace);
 
 template void recursiveLoopForPad<float>(const int mode, NDArray<float>& input, const NDArray<float>& paddings, NDArray<float>& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx);
 template void recursiveLoopForPad<float16>(const int mode, NDArray<float16>& input, const NDArray<float16>& paddings, NDArray<float16>& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx);
 template void recursiveLoopForPad<double>(const int mode, NDArray<double>& input, const NDArray<double>& paddings, NDArray<double>& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx);
+template void recursiveLoopForPad<int>(const int mode, NDArray<int>& input, const NDArray<int>& paddings, NDArray<int>& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx);
+template void recursiveLoopForPad<Nd4jLong>(const int mode, NDArray<Nd4jLong>& input, const NDArray<Nd4jLong>& paddings, NDArray<Nd4jLong>& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx);
 
 template void invertPermutation<float>(const NDArray<float>& input, NDArray<float>& output);
 template void invertPermutation<float16>(const NDArray<float16>& input, NDArray<float16>& output);
 template void invertPermutation<double>(const NDArray<double>& input, NDArray<double>& output);
+template void invertPermutation<int>(const NDArray<int>& input, NDArray<int>& output);
+template void invertPermutation<Nd4jLong>(const NDArray<Nd4jLong>& input, NDArray<Nd4jLong>& output);
 
 template void gatherND<float>(NDArray<float>& input, NDArray<float>& indices, NDArray<float>& output);
 template void gatherND<float16>(NDArray<float16>& input, NDArray<float16>& indices, NDArray<float16>& output);
 template void gatherND<double>(NDArray<double>& input, NDArray<double>& indices, NDArray<double>& output);
+template void gatherND<int>(NDArray<int>& input, NDArray<int>& indices, NDArray<int>& output);
+template void gatherND<Nd4jLong>(NDArray<Nd4jLong>& input, NDArray<Nd4jLong>& indices, NDArray<Nd4jLong>& output);
 
 template void gather<float>(NDArray<float>* input, const NDArray<float>* indices, NDArray<float>* output, const std::vector<int>& intArgs);
 template void gather<float16>(NDArray<float16>* input, const NDArray<float16>* indices, NDArray<float16>* output, const std::vector<int>& intArgs);
 template void gather<double>(NDArray<double>* input, const NDArray<double>* indices, NDArray<double>* output, const std::vector<int>& intArgs);
+template void gather<int>(NDArray<int>* input, const NDArray<int>* indices, NDArray<int>* output, const std::vector<int>& intArgs);
+template void gather<Nd4jLong>(NDArray<Nd4jLong>* input, const NDArray<Nd4jLong>* indices, NDArray<Nd4jLong>* output, const std::vector<int>& intArgs);
 
 template void eye<float>(NDArray<float>& output);
 template void eye<float16>(NDArray<float16>& output);
 template void eye<double>(NDArray<double>& output);
+template void eye<int>(NDArray<int>& output);
+template void eye<Nd4jLong>(NDArray<Nd4jLong>& output);
 
 template void scatterUpdate<float>(NDArray<float>& operand, NDArray<float>& updates, const std::vector<int>* intArgs);
 template void scatterUpdate<float16>(NDArray<float16>& operand, NDArray<float16>& updates, const std::vector<int>* intArgs);
 template void scatterUpdate<double>(NDArray<double>& operand, NDArray<double>& updates, const std::vector<int>* intArgs);
+template void scatterUpdate<int>(NDArray<int>& operand, NDArray<int>& updates, const std::vector<int>* intArgs);
+template void scatterUpdate<Nd4jLong>(NDArray<Nd4jLong>& operand, NDArray<Nd4jLong>& updates, const std::vector<int>* intArgs);
 
 template void mergeMaxIndex<float>(const std::vector<NDArray<float>*>& inArrs, NDArray<float>& output);
 template void mergeMaxIndex<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>& output);
 template void mergeMaxIndex<double>(const std::vector<NDArray<double>*>& inArrs, NDArray<double>& output);
+template void mergeMaxIndex<int>(const std::vector<NDArray<int>*>& inArrs, NDArray<int>& output);
+template void mergeMaxIndex<Nd4jLong>(const std::vector<NDArray<Nd4jLong>*>& inArrs, NDArray<Nd4jLong>& output);
 
 template void mergeMax<float>(const std::vector<NDArray<float>*>& inArrs, NDArray<float>& output);
 template void mergeMax<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>& output);
 template void mergeMax<double>(const std::vector<NDArray<double>*>& inArrs, NDArray<double>& output);
+template void mergeMax<int>(const std::vector<NDArray<int>*>& inArrs, NDArray<int>& output);
+template void mergeMax<Nd4jLong>(const std::vector<NDArray<Nd4jLong>*>& inArrs, NDArray<Nd4jLong>& output);
 
 template void mergeAvg<float>(const std::vector<NDArray<float>*>& inArrs, NDArray<float>& output);
 template void mergeAvg<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>& output);
 template void mergeAvg<double>(const std::vector<NDArray<double>*>& inArrs, NDArray<double>& output);
+template void mergeAvg<int>(const std::vector<NDArray<int>*>& inArrs, NDArray<int>& output);
+template void mergeAvg<Nd4jLong>(const std::vector<NDArray<Nd4jLong>*>& inArrs, NDArray<Nd4jLong>& output);
 
 template void mergeAdd<float>(const std::vector<NDArray<float>*>& inArrs, NDArray<float>& output);
 template void mergeAdd<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>& output);
 template void mergeAdd<double>(const std::vector<NDArray<double>*>& inArrs, NDArray<double>& output);
+template void mergeAdd<int>(const std::vector<NDArray<int>*>& inArrs, NDArray<int>& output);
+template void mergeAdd<Nd4jLong>(const std::vector<NDArray<Nd4jLong>*>& inArrs, NDArray<Nd4jLong>& output);
 
 template void clipByNorm<float>(NDArray<float>& input, NDArray<float>& output, const std::vector<int>& dimensions, const float clipNorm, const bool isInplace);
 template void clipByNorm<float16>(NDArray<float16>& input, NDArray<float16>& output, const std::vector<int>& dimensions, const float16 clipNorm, const bool isInplace);
 template void clipByNorm<double>(NDArray<double>& input, NDArray<double>& output, const std::vector<int>& dimensions, const double clipNorm, const bool isInplace);
+template void clipByNorm<int>(NDArray<int>& input, NDArray<int>& output, const std::vector<int>& dimensions, const int clipNorm, const bool isInplace);
+template void clipByNorm<Nd4jLong>(NDArray<Nd4jLong>& input, NDArray<Nd4jLong>& output, const std::vector<int>& dimensions, const Nd4jLong clipNorm, const bool isInplace);
 
 template void clipByNormBP<float>(const NDArray<float>& input, const NDArray<float>& gradO, NDArray<float>& gradI, const std::vector<int>& dimensions, const float clipNorm);
 template void clipByNormBP<float16>(const NDArray<float16>& input, const NDArray<float16>& gradO, NDArray<float16>& gradI, const std::vector<int>& dimensions, const float16 clipNorm);
 template void clipByNormBP<double>(const NDArray<double>& input, const NDArray<double>& gradO, NDArray<double>& gradI, const std::vector<int>& dimensions, const double clipNorm);
+template void clipByNormBP<int>(const NDArray<int>& input, const NDArray<int>& gradO, NDArray<int>& gradI, const std::vector<int>& dimensions, const int clipNorm);
+template void clipByNormBP<Nd4jLong>(const NDArray<Nd4jLong>& input, const NDArray<Nd4jLong>& gradO, NDArray<Nd4jLong>& gradI, const std::vector<int>& dimensions, const Nd4jLong clipNorm);
 
 template void clipByAveraged<float>(NDArray<float>& input, NDArray<float>& output, const std::vector<int>& dimensions, const float clipNorm, const bool isInplace);
 template void clipByAveraged<float16>(NDArray<float16>& input, NDArray<float16>& output, const std::vector<int>& dimensions, const float16 clipNorm, const bool isInplace);
 template void clipByAveraged<double>(NDArray<double>& input, NDArray<double>& output, const std::vector<int>& dimensions, const double clipNorm, const bool isInplace);
+template void clipByAveraged<int>(NDArray<int>& input, NDArray<int>& output, const std::vector<int>& dimensions, const int clipNorm, const bool isInplace);
+template void clipByAveraged<Nd4jLong>(NDArray<Nd4jLong>& input, NDArray<Nd4jLong>& output, const std::vector<int>& dimensions, const Nd4jLong clipNorm, const bool isInplace);
 
 template void mirrorPad<float>(const NDArray<float>& input, const NDArray<float>& paddings, NDArray<float>& output, const int mode);
 template void mirrorPad<float16>(const NDArray<float16>& input, const NDArray<float16>& paddings, NDArray<float16>& output, const int mode);
 template void mirrorPad<double>(const NDArray<double>& input, const NDArray<double>& paddings, NDArray<double>& output, const int mode);
+template void mirrorPad<int>(const NDArray<int>& input, const NDArray<int>& paddings, NDArray<int>& output, const int mode);
+template void mirrorPad<Nd4jLong>(const NDArray<Nd4jLong>& input, const NDArray<Nd4jLong>& paddings, NDArray<Nd4jLong>& output, const int mode);
 
 template void tileBP<float>(const NDArray<float>& gradO, NDArray<float>& gradI, const std::vector<Nd4jLong> reps);
 template void tileBP<float16>(const NDArray<float16>& gradO, NDArray<float16>& gradI, const std::vector<Nd4jLong> reps);
 template void tileBP<double>(const NDArray<double>& gradO, NDArray<double>& gradI, const std::vector<Nd4jLong> reps);
+template void tileBP<int>(const NDArray<int>& gradO, NDArray<int>& gradI, const std::vector<Nd4jLong> reps);
+template void tileBP<Nd4jLong>(const NDArray<Nd4jLong>& gradO, NDArray<Nd4jLong>& gradI, const std::vector<Nd4jLong> reps);
 
 template void concat<float>(const std::vector<NDArray<float>*>& inArrs, NDArray<float>& output, const int axis);
 template void concat<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>& output, const int axis);
 template void concat<double>(const std::vector<NDArray<double>*>& inArrs, NDArray<double>& output, const int axis);
+template void concat<int>(const std::vector<NDArray<int>*>& inArrs, NDArray<int>& output, const int axis);
+template void concat<Nd4jLong>(const std::vector<NDArray<Nd4jLong>*>& inArrs, NDArray<Nd4jLong>& output, const int axis);
 
 }
 }

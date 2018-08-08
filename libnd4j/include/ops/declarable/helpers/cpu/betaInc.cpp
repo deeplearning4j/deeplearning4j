@@ -141,7 +141,7 @@ static T gausLegQuad(const T a, const T b, const T x) {
 	}	
 
 	// Gauss-Legendre
-#pragma omp declare reduction (add : double,float,float16 : omp_out += omp_in) initializer(omp_priv = (T)0.)
+#pragma omp declare reduction (add : double,float,float16,int,Nd4jLong : omp_out += omp_in) initializer(omp_priv = (T)0.)
 #pragma omp simd private(t) reduction(add:sum)
 	for (int i = 0; i < 18; ++i) {	
 		t = x + (upLim - x) * (T)abscissas[i];
@@ -205,22 +205,30 @@ NDArray<T> betaInc(const NDArray<T>& a, const NDArray<T>& b, const NDArray<T>& x
 }
 
 
-template float   continFract<float>  (const float   a, const float   b, const float   x);
+
+template float continFract<float>(const float a, const float b, const float x);
 template float16 continFract<float16>(const float16 a, const float16 b, const float16 x);
-template double  continFract<double> (const double  a, const double  b, const double  x);
+template double continFract<double>(const double a, const double b, const double x);
+template int continFract<int>(const int a, const int b, const int x);
+template Nd4jLong continFract<Nd4jLong>(const Nd4jLong a, const Nd4jLong b, const Nd4jLong x);
 
-template float   gausLegQuad<float>  (const float   a, const float   b, const float   x);
+template float gausLegQuad<float>(const float a, const float b, const float x);
 template float16 gausLegQuad<float16>(const float16 a, const float16 b, const float16 x);
-template double  gausLegQuad<double> (const double  a, const double  b, const double  x);
+template double gausLegQuad<double>(const double a, const double b, const double x);
+template int gausLegQuad<int>(const int a, const int b, const int x);
+template Nd4jLong gausLegQuad<Nd4jLong>(const Nd4jLong a, const Nd4jLong b, const Nd4jLong x);
 
-template float   betaInc<float>  (const float   a, const float   b, const float   x);
+template float betaInc<float>(const float a, const float b, const float x);
 template float16 betaInc<float16>(const float16 a, const float16 b, const float16 x);
-template double  betaInc<double> (const double  a, const double  b, const double  x);
+template double betaInc<double>(const double a, const double b, const double x);
+template int betaInc<int>(const int a, const int b, const int x);
+template Nd4jLong betaInc<Nd4jLong>(const Nd4jLong a, const Nd4jLong b, const Nd4jLong x);
 
-template NDArray<float>   betaInc<float>  (const NDArray<float>&   a, const NDArray<float>&   b, const NDArray<float>&  x);
+template NDArray<float> betaInc<float>(const NDArray<float>& a, const NDArray<float>& b, const NDArray<float>& x);
 template NDArray<float16> betaInc<float16>(const NDArray<float16>& a, const NDArray<float16>& b, const NDArray<float16>& x);
-template NDArray<double>  betaInc<double> (const NDArray<double>&  a, const NDArray<double>&  b, const NDArray<double>& x);
-
+template NDArray<double> betaInc<double>(const NDArray<double>& a, const NDArray<double>& b, const NDArray<double>& x);
+template NDArray<int> betaInc<int>(const NDArray<int>& a, const NDArray<int>& b, const NDArray<int>& x);
+template NDArray<Nd4jLong> betaInc<Nd4jLong>(const NDArray<Nd4jLong>& a, const NDArray<Nd4jLong>& b, const NDArray<Nd4jLong>& x);
 
 }
 }

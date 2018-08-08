@@ -304,5 +304,7 @@ namespace functions {
         BUILD_CALL_1(template __device__ void Transform<float>::transformCuda, float, (float*, Nd4jLong*, float*, float*,Nd4jLong*, int*,float*, UnifiedSharedMemory*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
         BUILD_CALL_1(template __device__ void Transform<float16>::transformCuda, float16, (float16*, Nd4jLong*, float16*, float16*,Nd4jLong*, int*, float16*, UnifiedSharedMemory*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
         BUILD_CALL_1(template __device__ void Transform<double>::transformCuda, double, (double*, Nd4jLong*, double*, double*,Nd4jLong*, int*, double*, UnifiedSharedMemory*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
+        BUILD_CALL_1(template __device__ void Transform<int>::transformCuda, int, (int*, Nd4jLong*, int*, int*,Nd4jLong*, int*, int*, UnifiedSharedMemory*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
+        BUILD_CALL_1(template __device__ void Transform<Nd4jLong>::transformCuda, Nd4jLong, (Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*,Nd4jLong*, int*, Nd4jLong*, UnifiedSharedMemory*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
     }
 }

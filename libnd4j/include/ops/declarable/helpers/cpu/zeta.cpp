@@ -127,13 +127,17 @@ NDArray<T> zeta(const NDArray<T>& x, const NDArray<T>& q) {
 }
 
 
-template float   zeta<float>  (const float   x, const float   q);
+template float zeta<float>(const float x, const float q);
 template float16 zeta<float16>(const float16 x, const float16 q);
-template double  zeta<double> (const double  x, const double  q);
+template double zeta<double>(const double x, const double q);
+template int zeta<int>(const int x, const int q);
+template Nd4jLong zeta<Nd4jLong>(const Nd4jLong x, const Nd4jLong q);
 
-template NDArray<float>   zeta<float>  (const NDArray<float>&   x, const NDArray<float>&   q);
+template NDArray<float> zeta<float>(const NDArray<float>& x, const NDArray<float>& q);
 template NDArray<float16> zeta<float16>(const NDArray<float16>& x, const NDArray<float16>& q);
-template NDArray<double>  zeta<double> (const NDArray<double>&  x, const NDArray<double>&  q);
+template NDArray<double> zeta<double>(const NDArray<double>& x, const NDArray<double>& q);
+template NDArray<int> zeta<int>(const NDArray<int>& x, const NDArray<int>& q);
+template NDArray<Nd4jLong> zeta<Nd4jLong>(const NDArray<Nd4jLong>& x, const NDArray<Nd4jLong>& q);
 
 
 }

@@ -93,5 +93,7 @@ namespace nd4j {
         template class ND4J_EXPORT LegacyBroadcastOp<float>;
         template class ND4J_EXPORT LegacyBroadcastOp<float16>;
         template class ND4J_EXPORT LegacyBroadcastOp<double>;
+        template class ND4J_EXPORT LegacyBroadcastOp<int>;
+        template class ND4J_EXPORT LegacyBroadcastOp<Nd4jLong>;
     }
 }

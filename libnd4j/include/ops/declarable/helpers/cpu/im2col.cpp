@@ -37,6 +37,8 @@ void _im2col(nd4j::graph::LaunchContext& context, T *col, T *im, Nd4jLong *colSh
 template void _im2col<float>(nd4j::graph::LaunchContext& context, float *output, float *in, Nd4jLong *zShape, Nd4jLong *xShape, int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, float zeroPadVal);
 template void _im2col<float16>(nd4j::graph::LaunchContext& context, float16 *output, float16 *in, Nd4jLong *zShape, Nd4jLong *xShape, int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, float16 zeroPadVal);
 template void _im2col<double>(nd4j::graph::LaunchContext& context, double *output, double *in, Nd4jLong *zShape, Nd4jLong *xShape, int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, double zeroPadVal);
+template void _im2col<int>(nd4j::graph::LaunchContext& context, int *output, int *in, Nd4jLong *zShape, Nd4jLong *xShape, int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, int zeroPadVal);
+template void _im2col<Nd4jLong>(nd4j::graph::LaunchContext& context, Nd4jLong *output, Nd4jLong *in, Nd4jLong *zShape, Nd4jLong *xShape, int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, Nd4jLong zeroPadVal);
 
 
 }

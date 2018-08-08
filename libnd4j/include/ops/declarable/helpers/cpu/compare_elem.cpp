@@ -51,6 +51,8 @@ namespace nd4j {
             template void compare_elem<float>(NDArray<float> *A, bool isStrictlyIncreasing, bool& output);
             template void compare_elem<float16>(NDArray<float16> *A, bool isStrictlyIncreasing, bool& output);
             template void compare_elem<double>(NDArray<double> *A, bool isStrictlyIncreasing, bool& output);
+            template void compare_elem<int>(NDArray<int> *A, bool isStrictlyIncreasing, bool& output);
+            template void compare_elem<Nd4jLong>(NDArray<Nd4jLong> *A, bool isStrictlyIncreasing, bool& output);
         }
     }
 }

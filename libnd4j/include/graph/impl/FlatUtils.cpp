@@ -62,5 +62,7 @@ namespace nd4j {
         template NDArray<float> *FlatUtils::fromFlatArray<float>(const nd4j::graph::FlatArray *flatArray);
         template NDArray<float16> *FlatUtils::fromFlatArray<float16>(const nd4j::graph::FlatArray *flatArray);
         template NDArray<double> *FlatUtils::fromFlatArray<double>(const nd4j::graph::FlatArray *flatArray);
+        template NDArray<int> *FlatUtils::fromFlatArray<int>(const nd4j::graph::FlatArray *flatArray);
+        template NDArray<Nd4jLong> *FlatUtils::fromFlatArray<Nd4jLong>(const nd4j::graph::FlatArray *flatArray);
     }
 }

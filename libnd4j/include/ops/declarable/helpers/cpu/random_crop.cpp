@@ -58,9 +58,11 @@ namespace helpers {
         }
         return ND4J_STATUS_OK;
     }
-    template int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<float>* input, NDArray<float>* shape, NDArray<float>* output,  int seed);
+    template int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<float>* input, NDArray<float>* shape, NDArray<float>* output, int seed);
     template int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<float16>* input, NDArray<float16>* shape, NDArray<float16>* output, int seed);
     template int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<double>* input, NDArray<double>* shape, NDArray<double>* output, int seed);
+    template int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<int>* input, NDArray<int>* shape, NDArray<int>* output, int seed);
+    template int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* shape, NDArray<Nd4jLong>* output, int seed);
 
 }
 }

@@ -154,6 +154,8 @@ void HHcolPivQR<T>::evalData() {
 template class ND4J_EXPORT HHcolPivQR<float>;
 template class ND4J_EXPORT HHcolPivQR<float16>;
 template class ND4J_EXPORT HHcolPivQR<double>;
+template class ND4J_EXPORT HHcolPivQR<int>;
+template class ND4J_EXPORT HHcolPivQR<Nd4jLong>;
 
 
 

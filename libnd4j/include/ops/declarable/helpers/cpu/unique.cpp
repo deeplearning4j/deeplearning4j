@@ -43,6 +43,8 @@ namespace helpers {
     template int uniqueCount(NDArray<float>* input);
     template int uniqueCount(NDArray<float16>* input);
     template int uniqueCount(NDArray<double>* input);
+    template int uniqueCount(NDArray<int>* input);
+    template int uniqueCount(NDArray<Nd4jLong>* input);
 
 
     template <typename T>
@@ -82,6 +84,8 @@ namespace helpers {
     template int uniqueFunctor(NDArray<float>* input, NDArray<float>* values, NDArray<float>* indices, NDArray<float>* counts);
     template int uniqueFunctor(NDArray<float16>* input, NDArray<float16>* values, NDArray<float16>* indices, NDArray<float16>* counts);
     template int uniqueFunctor(NDArray<double>* input, NDArray<double>* values, NDArray<double>* indices, NDArray<double>* counts);
+    template int uniqueFunctor(NDArray<int>* input, NDArray<int>* values, NDArray<int>* indices, NDArray<int>* counts);
+    template int uniqueFunctor(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* values, NDArray<Nd4jLong>* indices, NDArray<Nd4jLong>* counts);
 
 }
 }

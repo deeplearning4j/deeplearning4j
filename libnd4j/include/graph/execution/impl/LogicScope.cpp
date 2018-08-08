@@ -33,5 +33,7 @@ namespace nd4j {
         template class ND4J_EXPORT LogicScope<float>;
         template class ND4J_EXPORT LogicScope<float16>;
         template class ND4J_EXPORT LogicScope<double>;
+        template class ND4J_EXPORT LogicScope<int>;
+        template class ND4J_EXPORT LogicScope<Nd4jLong>;
     }
 }

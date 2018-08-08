@@ -30,124 +30,133 @@ namespace nd4j {
             return _INSTANCE;
         };
 
-        template <>
-        void GraphHolder::registerGraph(Nd4jLong graphId, Graph<float>* graph) {
-            _graphF[graphId] = graph;
+        template <typename T>
+        void GraphHolder::registerGraph(Nd4jLong graphId, Graph<T>* graph) {
+            const std::map<Nd4jLong, Graph<T>*> &graphmap = getGraphMap<T>();
+            graphmap[graphId] = graph;
         }
 
         template <>
-        void GraphHolder::registerGraph(Nd4jLong graphId, Graph<float16>* graph) {
-            _graphH[graphId] = graph;
+        std::map<Nd4jLong, Graph<float>*>& GraphHolder::getGraphMap() {
+            std::map<Nd4jLong, Graph<float>*> &mapref = _graphF;
+            return mapref;
         }
 
         template <>
-        void GraphHolder::registerGraph(Nd4jLong graphId, Graph<double>* graph) {
-            _graphD[graphId] = graph;
+        std::map<Nd4jLong, Graph<float16>*>& GraphHolder::getGraphMap() {
+            std::map<Nd4jLong, Graph<float16>*> &mapref = _graphH;
+            return mapref;
         }
-            
+
         template <>
-        Graph<float>* GraphHolder::cloneGraph(Nd4jLong graphId) {
-            if (!this->hasGraph<float>(graphId)) {
+        std::map<Nd4jLong, Graph<double>*>& GraphHolder::getGraphMap() {
+            std::map<Nd4jLong, Graph<double>*> &mapref = _graphD;
+            return mapref;
+        }
+
+        template <>
+        std::map<Nd4jLong, Graph<int>*>& GraphHolder::getGraphMap() {
+            std::map<Nd4jLong, Graph<int>*> &mapref = _graphI;
+            return mapref;
+        }
+
+        template <>
+        std::map<Nd4jLong, Graph<Nd4jLong>*>& GraphHolder::getGraphMap() {
+            std::map<Nd4jLong, Graph<Nd4jLong>*> &mapref = _graphL;
+            return mapref;
+        }
+
+        template <typename T>
+        Graph<T>* GraphHolder::cloneGraph(Nd4jLong graphId) {
+            std::map<Nd4jLong, Graph<T>*> &graphmap = getGraphMap<T>();
+            auto it = graphmap.find(graphId);
+
+            if (it == graphmap.end()) {
                 nd4j_printf("GraphHolder doesn't have graph stored for [%lld]\n", graphId);
                 throw std::runtime_error("Bad argument");
             }
 
-            auto graph = _graphF[graphId]->clone();
-
+            auto graph = it->second->clone();
             return graph;
         }
 
-        template <>
-        Graph<float>* GraphHolder::pullGraph(Nd4jLong graphId) {
-            if (!this->hasGraph<float>(graphId)) {
+        template <typename T>
+        Graph<T>* GraphHolder::pullGraph(Nd4jLong graphId) {
+            std::map<Nd4jLong, Graph<T>*> &graphmap = getGraphMap<T>();
+            auto it = graphmap.find(graphId);
+
+            if (it == graphmap.end()) {
                 nd4j_printf("GraphHolder doesn't have graph stored for [%lld]\n", graphId);
                 throw std::runtime_error("Bad argument");
             }
 
-            auto graph = _graphF[graphId];
-
-            return graph;
-        }
-
-        template <>
-        Graph<float16>* GraphHolder::pullGraph(Nd4jLong graphId) {
-            if (!this->hasGraph<float16>(graphId)) {
-                nd4j_printf("GraphHolder doesn't have graph stored for [%lld]\n", graphId);
-                throw std::runtime_error("Bad argument");
-            }
-
-            auto graph = _graphH[graphId];
-
-            return graph;
-        }
-
-        template <>
-        Graph<double>* GraphHolder::pullGraph(Nd4jLong graphId) {
-            if (!this->hasGraph<double>(graphId)) {
-                nd4j_printf("GraphHolder doesn't have graph stored for [%lld]\n", graphId);
-                throw std::runtime_error("Bad argument");
-            }
-
-            auto graph = _graphD[graphId];
-
+            auto graph = it->second;
             return graph;
         }
 
         template <typename T>
         void GraphHolder::forgetGraph(Nd4jLong graphId) {
-            if (sizeof(T) == 4) {
-                if (this->hasGraph<float>(graphId))
-                    _graphF.erase(graphId);
-            } else if (sizeof(T) == 2) {
-                if (this->hasGraph<double>(graphId))
-                    _graphD.erase(graphId);
-            } else if (sizeof(T) == 8) {
-                if (this->hasGraph<float16>(graphId))
-                    _graphH.erase(graphId);
-            }
+            std::map<Nd4jLong, Graph<T>*> &graphmap = getGraphMap<T>();
+            graphmap.erase(graphId);
         }
 
         template <typename T>
         void GraphHolder::dropGraph(Nd4jLong graphId) {
-            // FIXME: we don't want this sizeof(T) here really. especially once we add multi-dtype support
-            if (sizeof(T) == 4) {
-                if (this->hasGraph<float>(graphId)) {
-                    auto g = _graphF[graphId];
-                    forgetGraph<float>(graphId);
-                    delete g;
-                }
-            } else if (sizeof(T) == 8) {
-                if (this->hasGraph<double>(graphId)) {
-                    auto g = _graphD[graphId];
-                    forgetGraph<double>(graphId);
-                    delete g;
-                }
-            } else if (sizeof(T) == 2) {
-                if (this->hasGraph<float16>(graphId)) {
-                    auto g = _graphH[graphId];
-                    forgetGraph<float16>(graphId);
-                    delete g;
-                }
+            std::map<Nd4jLong, Graph<T>*> &graphmap = getGraphMap<T>();
+            auto it = graphmap.find(graphId);
+
+            if (it == graphmap.end()) {
+                return;
             }
+            auto graph = it->second;
+            graphmap.erase(it);
+            delete graph;
         }
 
         void GraphHolder::dropGraphAny(Nd4jLong graphId) {
             this->dropGraph<float>(graphId);
             this->dropGraph<float16>(graphId);
             this->dropGraph<double>(graphId);
+            this->dropGraph<int>(graphId);
+            this->dropGraph<Nd4jLong>(graphId);
         }
 
         template<typename T>
         bool GraphHolder::hasGraph(Nd4jLong graphId) {
-            return _graphF.count(graphId) > 0;
+            return getGraphMap<T>().count(graphId) > 0;
         }
 
-
-        template bool GraphHolder::hasGraph<float>(Nd4jLong graphId);
-        template void GraphHolder::forgetGraph<float>(Nd4jLong graphId);
-        template void GraphHolder::dropGraph<float>(Nd4jLong graphId);
+        template bool GraphHolder::hasGraph<float>(Nd4jLong);
+        template bool GraphHolder::hasGraph<float16>(Nd4jLong);
+        template bool GraphHolder::hasGraph<double>(Nd4jLong);
+        template bool GraphHolder::hasGraph<int>(Nd4jLong);
+        template bool GraphHolder::hasGraph<Nd4jLong>(Nd4jLong);
 
 
         GraphHolder* GraphHolder::_INSTANCE = 0;
+
+        template Graph<float>* GraphHolder::cloneGraph<float>(Nd4jLong);
+        template Graph<float16>* GraphHolder::cloneGraph<float16>(Nd4jLong);
+        template Graph<double>* GraphHolder::cloneGraph<double>(Nd4jLong);
+        template Graph<int>* GraphHolder::cloneGraph<int>(Nd4jLong);
+        template Graph<Nd4jLong>* GraphHolder::cloneGraph<Nd4jLong>(Nd4jLong);
+
+        template Graph<float>* GraphHolder::pullGraph<float>(Nd4jLong);
+        template Graph<float16>* GraphHolder::pullGraph<float16>(Nd4jLong);
+        template Graph<double>* GraphHolder::pullGraph<double>(Nd4jLong);
+        template Graph<int>* GraphHolder::pullGraph<int>(Nd4jLong);
+        template Graph<Nd4jLong>* GraphHolder::pullGraph<Nd4jLong>(Nd4jLong);
+
+        template void GraphHolder::forgetGraph<float>(Nd4jLong);
+        template void GraphHolder::forgetGraph<float16>(Nd4jLong);
+        template void GraphHolder::forgetGraph<double>(Nd4jLong);
+        template void GraphHolder::forgetGraph<int>(Nd4jLong);
+        template void GraphHolder::forgetGraph<Nd4jLong>(Nd4jLong);       
+
+        template void GraphHolder::dropGraph<float>(Nd4jLong);
+        template void GraphHolder::dropGraph<float16>(Nd4jLong);
+        template void GraphHolder::dropGraph<double>(Nd4jLong);
+        template void GraphHolder::dropGraph<int>(Nd4jLong);
+        template void GraphHolder::dropGraph<Nd4jLong>(Nd4jLong);                   
     }
 }

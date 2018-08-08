@@ -129,6 +129,8 @@ HHsequence<T> BiDiagonalUp<T>::makeHHsequence(const char type) const {
 template class ND4J_EXPORT BiDiagonalUp<float>;
 template class ND4J_EXPORT BiDiagonalUp<float16>;
 template class ND4J_EXPORT BiDiagonalUp<double>;
+template class ND4J_EXPORT BiDiagonalUp<int>;
+template class ND4J_EXPORT BiDiagonalUp<Nd4jLong>;
 
 
 

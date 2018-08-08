@@ -76,5 +76,7 @@ namespace nd4j {
         template class ND4J_EXPORT LegacyPairwiseTransformOp<float>;
         template class ND4J_EXPORT LegacyPairwiseTransformOp<double>;
         template class ND4J_EXPORT LegacyPairwiseTransformOp<float16>;
+        template class ND4J_EXPORT LegacyPairwiseTransformOp<int>;
+        template class ND4J_EXPORT LegacyPairwiseTransformOp<Nd4jLong>;
     }
 }

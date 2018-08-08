@@ -46,9 +46,11 @@ namespace helpers {
 
     }
 
-    template void minMaxReduceFunctor(NDArray<float>* input, NDArray<float>* gradOut, NDArray<float>* tempVals, NDArray<float>* output, bool normalize);
+    template void minMaxReduceFunctor(NDArray<float>* input, NDArray<float>* gradOut, NDArray<float>* tempVals, NDArray<float>*  output, bool normalize);
     template void minMaxReduceFunctor(NDArray<float16>* input, NDArray<float16>* gradOut, NDArray<float16>* tempVals, NDArray<float16>*  output, bool normalize);
-    template void minMaxReduceFunctor(NDArray<double>* input, NDArray<double>* gradOut, NDArray<double>* tempVals, NDArray<double>* output, bool normalize);
+    template void minMaxReduceFunctor(NDArray<double>* input, NDArray<double>* gradOut, NDArray<double>* tempVals, NDArray<double>*  output, bool normalize);
+    template void minMaxReduceFunctor(NDArray<int>* input, NDArray<int>* gradOut, NDArray<int>* tempVals, NDArray<int>*  output, bool normalize);
+    template void minMaxReduceFunctor(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* gradOut, NDArray<Nd4jLong>* tempVals, NDArray<Nd4jLong>*  output, bool normalize);
 }
 }
 }

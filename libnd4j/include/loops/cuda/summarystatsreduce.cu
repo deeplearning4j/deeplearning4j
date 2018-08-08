@@ -779,5 +779,7 @@ namespace functions {
         template class ND4J_EXPORT SummaryStatsReduce<float>;
         template class ND4J_EXPORT SummaryStatsReduce<float16>;
         template class ND4J_EXPORT SummaryStatsReduce<double>;
+        template class ND4J_EXPORT SummaryStatsReduce<int>;
+        template class ND4J_EXPORT SummaryStatsReduce<Nd4jLong>;
     }
 }

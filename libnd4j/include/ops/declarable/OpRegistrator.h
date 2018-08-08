@@ -68,9 +68,17 @@ namespace nd4j {
             std::map<Nd4jLong, nd4j::ops::DeclarableOp<float16> *> _declarablesLH;
             std::map<std::string, nd4j::ops::DeclarableOp<float16> *> _declarablesH;
 
+            std::map<Nd4jLong, nd4j::ops::DeclarableOp<int> *> _declarablesLI;
+            std::map<std::string, nd4j::ops::DeclarableOp<int> *> _declarablesI;
+
+            std::map<Nd4jLong, nd4j::ops::DeclarableOp<Nd4jLong> *> _declarablesLL;
+            std::map<std::string, nd4j::ops::DeclarableOp<Nd4jLong> *> _declarablesL;
+
             std::vector<nd4j::ops::DeclarableOp<float> *> _uniqueF;
             std::vector<nd4j::ops::DeclarableOp<double> *> _uniqueD;
             std::vector<nd4j::ops::DeclarableOp<float16> *> _uniqueH;
+            std::vector<nd4j::ops::DeclarableOp<int> *> _uniqueI;
+            std::vector<nd4j::ops::DeclarableOp<Nd4jLong> *> _uniqueL;
 
             std::mutex _locker;
             std::string _opsList;
@@ -95,14 +103,18 @@ namespace nd4j {
             *
             * @param op
             */
-            bool registerOperationFloat(nd4j::ops::DeclarableOp<float>* op);
             bool registerOperationFloat(const char* name, nd4j::ops::DeclarableOp<float>* op);
-
             bool registerOperationDouble(const char* name, nd4j::ops::DeclarableOp<double>* op);
             bool registerOperationHalf(const char* name, nd4j::ops::DeclarableOp<float16>* op);
+            bool registerOperationInt(const char* name, nd4j::ops::DeclarableOp<int>* op);
+            bool registerOperationLong(const char* name, nd4j::ops::DeclarableOp<Nd4jLong>* op);
+
+            bool registerOperationFloat(nd4j::ops::DeclarableOp<float>* op);
             bool registerOperationHalf(nd4j::ops::DeclarableOp<float16> *op);
             bool registerOperationDouble(nd4j::ops::DeclarableOp<double> *op);
-            nd4j::ops::DeclarableOp<float>* getOperationFloat(const char *name);
+            bool registerOperationInt(nd4j::ops::DeclarableOp<int> *op);
+            bool registerOperationLong(nd4j::ops::DeclarableOp<Nd4jLong> *op);
+
 
 
             /**
@@ -111,16 +123,25 @@ namespace nd4j {
             * @param name
             * @return
             */
+            nd4j::ops::DeclarableOp<float>* getOperationFloat(const char *name);
             nd4j::ops::DeclarableOp<float> *getOperationFloat(std::string& name);
-
-
             nd4j::ops::DeclarableOp<float> *getOperationFloat(Nd4jLong hash);
+
             nd4j::ops::DeclarableOp<float16> *getOperationHalf(Nd4jLong hash);
             nd4j::ops::DeclarableOp<float16>* getOperationHalf(const char *name);
             nd4j::ops::DeclarableOp<float16> *getOperationHalf(std::string& name);
-            nd4j::ops::DeclarableOp<double >* getOperationDouble(const char *name);
+
+            nd4j::ops::DeclarableOp<double>* getOperationDouble(const char *name);
             nd4j::ops::DeclarableOp<double> *getOperationDouble(Nd4jLong hash);
             nd4j::ops::DeclarableOp<double> *getOperationDouble(std::string& name);
+
+            nd4j::ops::DeclarableOp<int>* getOperationInt(const char *name);
+            nd4j::ops::DeclarableOp<int> *getOperationInt(Nd4jLong hash);
+            nd4j::ops::DeclarableOp<int> *getOperationInt(std::string& name);
+
+            nd4j::ops::DeclarableOp<Nd4jLong>* getOperationLong(const char *name);
+            nd4j::ops::DeclarableOp<Nd4jLong> *getOperationLong(Nd4jLong hash);
+            nd4j::ops::DeclarableOp<Nd4jLong> *getOperationLong(std::string& name);
 
             template <typename T>
             DeclarableOp<T> * getOperationT(Nd4jLong hash);
@@ -150,6 +171,18 @@ namespace nd4j {
             __registratorDouble();
         };
 
+
+        template <typename OpName>
+        struct __registratorInt {
+            __registratorInt();
+        };
+
+
+        template <typename OpName>
+        struct __registratorLong {
+            __registratorLong();
+        };
+
         template <typename OpName>
         struct __registratorSynonymFloat {
             __registratorSynonymFloat(const char *name, const char *oname);
@@ -165,6 +198,15 @@ namespace nd4j {
             __registratorSynonymDouble(const char *name, const char *oname);
         };
 
+        template <typename OpName>
+        struct __registratorSynonymInt {
+            __registratorSynonymInt(const char *name, const char *oname);
+        };
+
+        template <typename OpName>
+        struct __registratorSynonymLong {
+            __registratorSynonymLong(const char *name, const char *oname);
+        };
     }
 }
 

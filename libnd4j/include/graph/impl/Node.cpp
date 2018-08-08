@@ -721,18 +721,39 @@ namespace nd4j {
         template class ND4J_EXPORT Node<float>;
         template class ND4J_EXPORT Node<float16>;
         template class ND4J_EXPORT Node<double>;
+        template class ND4J_EXPORT Node<int>;
+        template class ND4J_EXPORT Node<Nd4jLong>;
 
 
         template Node<float>* Node<float>::asT<float>();
         template Node<float16>* Node<float>::asT<float16>();
         template Node<double>* Node<float>::asT<double>();
+        template Node<int>* Node<float>::asT<int>();
+        template Node<Nd4jLong>* Node<float>::asT<Nd4jLong>();
 
         template Node<float>* Node<float16>::asT<float>();
         template Node<float16>* Node<float16>::asT<float16>();
         template Node<double>* Node<float16>::asT<double>();
+        template Node<int>* Node<float16>::asT<int>();
+        template Node<Nd4jLong>* Node<float16>::asT<Nd4jLong>();
 
         template Node<float>* Node<double>::asT<float>();
         template Node<float16>* Node<double>::asT<float16>();
         template Node<double>* Node<double>::asT<double>();
+        template Node<int>* Node<double>::asT<int>();
+        template Node<Nd4jLong>* Node<double>::asT<Nd4jLong>();
+
+        template Node<float>* Node<int>::asT<float>();
+        template Node<float16>* Node<int>::asT<float16>();
+        template Node<double>* Node<int>::asT<double>();
+        template Node<int>* Node<int>::asT<int>();
+        template Node<Nd4jLong>* Node<int>::asT<Nd4jLong>();
+
+        template Node<float>* Node<Nd4jLong>::asT<float>();
+        template Node<float16>* Node<Nd4jLong>::asT<float16>();
+        template Node<double>* Node<Nd4jLong>::asT<double>();
+        template Node<int>* Node<Nd4jLong>::asT<int>();
+        template Node<Nd4jLong>* Node<Nd4jLong>::asT<Nd4jLong>();
+
     }
 }

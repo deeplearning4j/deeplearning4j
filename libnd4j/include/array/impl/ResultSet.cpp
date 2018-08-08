@@ -101,5 +101,7 @@ namespace nd4j {
     template class ND4J_EXPORT ResultSet<float>;
     template class ND4J_EXPORT ResultSet<float16>;
     template class ND4J_EXPORT ResultSet<double>;
+    template class ND4J_EXPORT ResultSet<int>;
+    template class ND4J_EXPORT ResultSet<Nd4jLong>;
 }
 

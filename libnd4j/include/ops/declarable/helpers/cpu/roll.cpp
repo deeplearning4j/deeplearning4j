@@ -132,12 +132,16 @@ namespace helpers {
         }
     }
 
-    template void rollFunctorLinear(NDArray<float>*   input, NDArray<float>*   output, int shift, bool inplace);
+    template void rollFunctorLinear(NDArray<float>* input, NDArray<float>* output, int shift, bool inplace);
     template void rollFunctorLinear(NDArray<float16>* input, NDArray<float16>* output, int shift, bool inplace);
-    template void rollFunctorLinear(NDArray<double>*  input, NDArray<double>*  output, int shift, bool inplace);
-    template void rollFunctorFull(NDArray<float>*   input, NDArray<float>* axisVector, int shift, std::vector<int> const& axes, bool inplace);
+    template void rollFunctorLinear(NDArray<double>* input, NDArray<double>* output, int shift, bool inplace);
+    template void rollFunctorLinear(NDArray<int>* input, NDArray<int>* output, int shift, bool inplace);
+    template void rollFunctorLinear(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* output, int shift, bool inplace);
+    template void rollFunctorFull(NDArray<float>* input, NDArray<float>* axisVector, int shift, std::vector<int> const& axes, bool inplace);
     template void rollFunctorFull(NDArray<float16>* input, NDArray<float16>* axisVector, int shift, std::vector<int> const& axes, bool inplace);
-    template void rollFunctorFull(NDArray<double>*  input, NDArray<double>* axisVector, int shift, std::vector<int> const& axes, bool inplace);
+    template void rollFunctorFull(NDArray<double>* input, NDArray<double>* axisVector, int shift, std::vector<int> const& axes, bool inplace);
+    template void rollFunctorFull(NDArray<int>* input, NDArray<int>* axisVector, int shift, std::vector<int> const& axes, bool inplace);
+    template void rollFunctorFull(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* axisVector, int shift, std::vector<int> const& axes, bool inplace);
 }
 }
 }

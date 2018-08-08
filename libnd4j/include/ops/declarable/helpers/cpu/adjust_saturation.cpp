@@ -100,10 +100,11 @@ namespace helpers {
             _adjust_saturation_single(array, output, delta, isNHWC);
         }
     }
-
-    template void _adjust_saturation<float>(NDArray<float> *array, NDArray<float> *output, float delta, bool isNHWC);
-    template void _adjust_saturation<float16>(NDArray<float16> *array, NDArray<float16> *output, float16 delta, bool isNHWC);
-    template void _adjust_saturation<double>(NDArray<double> *array, NDArray<double> *output, double delta, bool isNHWC);
+template void _adjust_saturation<float>(NDArray<float> *array, NDArray<float> *output, float delta, bool isNHWC);
+template void _adjust_saturation<float16>(NDArray<float16> *array, NDArray<float16> *output, float16 delta, bool isNHWC);
+template void _adjust_saturation<double>(NDArray<double> *array, NDArray<double> *output, double delta, bool isNHWC);
+template void _adjust_saturation<int>(NDArray<int> *array, NDArray<int> *output, int delta, bool isNHWC);
+template void _adjust_saturation<Nd4jLong>(NDArray<Nd4jLong> *array, NDArray<Nd4jLong> *output, Nd4jLong delta, bool isNHWC);
 }
 }
 }

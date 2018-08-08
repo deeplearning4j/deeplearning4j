@@ -62,13 +62,30 @@
 #ifdef _OPENMP
 #pragma omp declare reduction(maxT : float,double,float16 :              \
                 omp_out = nd4j::math::nd4j_max(omp_in, omp_out) )\
-                initializer (omp_priv=-MAX_FLOAT)
+                initializer (omp_priv=-FLOAT_MAX_VALUE)
+
+#pragma omp declare reduction(maxT : int :              \
+                omp_out = nd4j::math::nd4j_max(omp_in, omp_out) )\
+                initializer (omp_priv=-INT_MAX_VALUE)
+
+#pragma omp declare reduction(maxT : Nd4jLong :              \
+                omp_out = nd4j::math::nd4j_max(omp_in, omp_out) )\
+                initializer (omp_priv=-LONG_MAX_VALUE)
 
 #pragma omp declare reduction(minT : float,double,float16 :              \
                 omp_out = nd4j::math::nd4j_min(omp_in, omp_out) )\
-                initializer (omp_priv=MAX_FLOAT)
+                initializer (omp_priv=FLOAT_MAX_VALUE)
 
-#pragma omp declare reduction(sumT : float,double,float16 :              \
+#pragma omp declare reduction(minT :  int :              \
+                omp_out = nd4j::math::nd4j_min(omp_in, omp_out) )\
+                initializer (omp_priv=INT_MAX_VALUE)
+
+#pragma omp declare reduction(minT :  Nd4jLong :              \
+                omp_out = nd4j::math::nd4j_min(omp_in, omp_out) )\
+                initializer (omp_priv=LONG_MAX_VALUE)
+
+
+#pragma omp declare reduction(sumT : float,double,float16,int,Nd4jLong :              \
                 omp_out = omp_in + omp_out)\
                 initializer (omp_priv=0.0f)
 #endif

@@ -144,5 +144,7 @@ namespace nd4j {
         template class ND4J_EXPORT LogicWhile<float>;
         template class ND4J_EXPORT LogicWhile<float16>;
         template class ND4J_EXPORT LogicWhile<double>;
+        template class ND4J_EXPORT LogicWhile<int>;
+        template class ND4J_EXPORT LogicWhile<Nd4jLong>;
     }
 }

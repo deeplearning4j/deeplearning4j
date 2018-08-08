@@ -133,6 +133,8 @@ namespace nd4j {
         template class ND4J_EXPORT SessionLocalStorage<float>;
         template class ND4J_EXPORT SessionLocalStorage<float16>;
         template class ND4J_EXPORT SessionLocalStorage<double>;
+        template class ND4J_EXPORT SessionLocalStorage<int>;
+        template class ND4J_EXPORT SessionLocalStorage<Nd4jLong>;
     }
 }
 

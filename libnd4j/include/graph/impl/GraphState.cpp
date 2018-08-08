@@ -180,5 +180,7 @@ namespace graph {
     template class ND4J_EXPORT GraphState<float>;
     template class ND4J_EXPORT GraphState<double>;
     template class ND4J_EXPORT GraphState<float16>;
+    template class ND4J_EXPORT GraphState<int>;
+    template class ND4J_EXPORT GraphState<Nd4jLong>;
 }
 }

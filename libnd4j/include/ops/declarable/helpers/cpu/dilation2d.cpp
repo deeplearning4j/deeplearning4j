@@ -70,6 +70,8 @@ namespace helpers {
     template void _dilation2d<float>(NDArray<float> *input, NDArray<float> *weights, NDArray<float> *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left);
     template void _dilation2d<float16>(NDArray<float16> *input, NDArray<float16> *weights, NDArray<float16> *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left);
     template void _dilation2d<double>(NDArray<double> *input, NDArray<double> *weights, NDArray<double> *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left);
+    template void _dilation2d<int>(NDArray<int> *input, NDArray<int> *weights, NDArray<int> *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left);
+    template void _dilation2d<Nd4jLong>(NDArray<Nd4jLong> *input, NDArray<Nd4jLong> *weights, NDArray<Nd4jLong> *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left);
 }
 }
 }

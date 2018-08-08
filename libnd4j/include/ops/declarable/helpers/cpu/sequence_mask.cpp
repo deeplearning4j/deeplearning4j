@@ -36,6 +36,8 @@ namespace helpers {
     template void sequenceMask(NDArray<float>* input, NDArray<float>* output, int maxIndex);
     template void sequenceMask(NDArray<float16>* input, NDArray<float16>* output, int maxIndex);
     template void sequenceMask(NDArray<double>* input, NDArray<double>* output, int maxIndex);
+    template void sequenceMask(NDArray<int>* input, NDArray<int>* output, int maxIndex);
+    template void sequenceMask(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* output, int maxIndex);
 }
 }
 }

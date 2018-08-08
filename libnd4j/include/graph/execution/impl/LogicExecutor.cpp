@@ -72,5 +72,7 @@ namespace nd4j {
         template class ND4J_EXPORT LogicExecutor<float>;
         template class ND4J_EXPORT LogicExecutor<float16>;
         template class ND4J_EXPORT LogicExecutor<double>;
+        template class ND4J_EXPORT LogicExecutor<int>;
+        template class ND4J_EXPORT LogicExecutor<Nd4jLong>;
     }
 }

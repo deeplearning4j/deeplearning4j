@@ -52,9 +52,11 @@ void stack(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& outArr, const int
 }
 
 
-template void stack<float>  (const std::vector<NDArray<float  >*>& inArrs, NDArray<float  >& outArr, const int dim);
+template void stack<float>(const std::vector<NDArray<float>*>& inArrs, NDArray<float>& outArr, const int dim);
 template void stack<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>& outArr, const int dim);
-template void stack<double> (const std::vector<NDArray<double >*>& inArrs, NDArray<double >& outArr, const int dim);
+template void stack<double>(const std::vector<NDArray<double>*>& inArrs, NDArray<double>& outArr, const int dim);
+template void stack<int>(const std::vector<NDArray<int>*>& inArrs, NDArray<int>& outArr, const int dim);
+template void stack<Nd4jLong>(const std::vector<NDArray<Nd4jLong>*>& inArrs, NDArray<Nd4jLong>& outArr, const int dim);
 
 
 }

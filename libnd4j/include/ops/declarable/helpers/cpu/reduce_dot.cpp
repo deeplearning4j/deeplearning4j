@@ -45,9 +45,11 @@ namespace helpers {
 
     }
 
-    template void reduceDotBP(NDArray<float>* inputX,  NDArray<float>* inputY,   NDArray<float>* epsilon, NDArray<float>* output, std::vector<int> const& axes);
+    template void reduceDotBP(NDArray<float>* inputX,NDArray<float>* inputY, NDArray<float>* epsilon, NDArray<float>* output, std::vector<int> const& axes);
     template void reduceDotBP(NDArray<float16>* inputX,NDArray<float16>* inputY, NDArray<float16>* epsilon, NDArray<float16>* output, std::vector<int> const& axes);
-    template void reduceDotBP(NDArray<double>* inputX, NDArray<double>* inputY,  NDArray<double>* epsilon, NDArray<double>* output, std::vector<int> const& axes);
+    template void reduceDotBP(NDArray<double>* inputX,NDArray<double>* inputY, NDArray<double>* epsilon, NDArray<double>* output, std::vector<int> const& axes);
+    template void reduceDotBP(NDArray<int>* inputX,NDArray<int>* inputY, NDArray<int>* epsilon, NDArray<int>* output, std::vector<int> const& axes);
+    template void reduceDotBP(NDArray<Nd4jLong>* inputX,NDArray<Nd4jLong>* inputY, NDArray<Nd4jLong>* epsilon, NDArray<Nd4jLong>* output, std::vector<int> const& axes);
 }
 }
 }

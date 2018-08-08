@@ -48,6 +48,8 @@ namespace helpers {
     template void reduceProductBP(NDArray<float>* input, NDArray<float>* epsilon, NDArray<float>* tempProd, NDArray<float>* output, std::vector<int> const& axes);
     template void reduceProductBP(NDArray<float16>* input, NDArray<float16>* epsilon, NDArray<float16>* tempProd, NDArray<float16>* output, std::vector<int> const& axes);
     template void reduceProductBP(NDArray<double>* input, NDArray<double>* epsilon, NDArray<double>* tempProd, NDArray<double>* output, std::vector<int> const& axes);
+    template void reduceProductBP(NDArray<int>* input, NDArray<int>* epsilon, NDArray<int>* tempProd, NDArray<int>* output, std::vector<int> const& axes);
+    template void reduceProductBP(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* epsilon, NDArray<Nd4jLong>* tempProd, NDArray<Nd4jLong>* output, std::vector<int> const& axes);
 }
 }
 }

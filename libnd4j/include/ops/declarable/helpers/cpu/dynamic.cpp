@@ -128,10 +128,14 @@ namespace nd4j {
             template void dynamicPartitionFunctor(NDArray<float>* input, NDArray<float>* indices, std::vector<NDArray<float>*>& outputList);
             template void dynamicPartitionFunctor(NDArray<float16>* input, NDArray<float16>* indices, std::vector<NDArray<float16>*>& outputList);
             template void dynamicPartitionFunctor(NDArray<double>* input, NDArray<double>* indices, std::vector<NDArray<double>*>& outputList);
+            template void dynamicPartitionFunctor(NDArray<int>* input, NDArray<int>* indices, std::vector<NDArray<int>*>& outputList);
+            template void dynamicPartitionFunctor(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* indices, std::vector<NDArray<Nd4jLong>*>& outputList);
 
             template int dynamicStitchFunctor(std::vector<NDArray<float>*>& inputs, std::vector<NDArray<float>*>& indices, NDArray<float>* output);
             template int dynamicStitchFunctor(std::vector<NDArray<float16>*>& inputs, std::vector<NDArray<float16>*>& indices, NDArray<float16>* output);
             template int dynamicStitchFunctor(std::vector<NDArray<double>*>& inputs, std::vector<NDArray<double>*>& indices, NDArray<double>* output);
+            template int dynamicStitchFunctor(std::vector<NDArray<int>*>& inputs, std::vector<NDArray<int>*>& indices, NDArray<int>* output);
+            template int dynamicStitchFunctor(std::vector<NDArray<Nd4jLong>*>& inputs, std::vector<NDArray<Nd4jLong>*>& indices, NDArray<Nd4jLong>* output);
         }
     }
 }

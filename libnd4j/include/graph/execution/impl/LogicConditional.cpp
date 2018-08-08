@@ -136,5 +136,7 @@ namespace nd4j {
         template class ND4J_EXPORT LogicConditional<float>;
         template class ND4J_EXPORT LogicConditional<float16>;
         template class ND4J_EXPORT LogicConditional<double>;
+        template class ND4J_EXPORT LogicConditional<int>;
+        template class ND4J_EXPORT LogicConditional<Nd4jLong>;
     }
 }

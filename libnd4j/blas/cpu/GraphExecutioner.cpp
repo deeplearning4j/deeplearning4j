@@ -880,5 +880,7 @@ Graph<T>* GraphExecutioner<T>::importFromFlatBuffers(const char *filename) {
         template class ND4J_EXPORT GraphExecutioner<float>;
         template class ND4J_EXPORT GraphExecutioner<float16>;
         template class ND4J_EXPORT GraphExecutioner<double>;
+        template class ND4J_EXPORT GraphExecutioner<int>;
+        template class ND4J_EXPORT GraphExecutioner<Nd4jLong>;
     }
 }

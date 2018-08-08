@@ -213,14 +213,20 @@ void gruCellBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray
 template void gruCell<float>(const std::vector<NDArray<float>*>& inArrs, NDArray<float>* h);
 template void gruCell<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>* h);
 template void gruCell<double>(const std::vector<NDArray<double>*>& inArrs, NDArray<double>* h);
+template void gruCell<int>(const std::vector<NDArray<int>*>& inArrs, NDArray<int>* h);
+template void gruCell<Nd4jLong>(const std::vector<NDArray<Nd4jLong>*>& inArrs, NDArray<Nd4jLong>* h);
 
 template void gruTimeLoop<float>(const std::vector<NDArray<float>*>& inArrs, NDArray<float>* h);
 template void gruTimeLoop<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>* h);
 template void gruTimeLoop<double>(const std::vector<NDArray<double>*>& inArrs, NDArray<double>* h);
+template void gruTimeLoop<int>(const std::vector<NDArray<int>*>& inArrs, NDArray<int>* h);
+template void gruTimeLoop<Nd4jLong>(const std::vector<NDArray<Nd4jLong>*>& inArrs, NDArray<Nd4jLong>* h);
 
 template void gruCellBP<float>(const std::vector<NDArray<float>*>& inArrs, const std::vector<NDArray<float>*>& outArrs);
 template void gruCellBP<float16>(const std::vector<NDArray<float16>*>& inArrs, const std::vector<NDArray<float16>*>& outArrs);
 template void gruCellBP<double>(const std::vector<NDArray<double>*>& inArrs, const std::vector<NDArray<double>*>& outArrs);
+template void gruCellBP<int>(const std::vector<NDArray<int>*>& inArrs, const std::vector<NDArray<int>*>& outArrs);
+template void gruCellBP<Nd4jLong>(const std::vector<NDArray<Nd4jLong>*>& inArrs, const std::vector<NDArray<Nd4jLong>*>& outArrs);
 
 
 }

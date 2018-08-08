@@ -3911,18 +3911,26 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd
 template void flattenGeneric<float16>(Nd4jPointer*, int, char, float16*, Nd4jLong*, float16*, Nd4jLong*);
 template void flattenGeneric<float>(Nd4jPointer*, int, char, float*, Nd4jLong*, float*, Nd4jLong*);
 template void flattenGeneric<double>(Nd4jPointer*, int, char, double*, Nd4jLong*, double*, Nd4jLong*);;
+template void flattenGeneric<int>(Nd4jPointer*, int, char, int*, Nd4jLong*, int*, Nd4jLong*);;
+template void flattenGeneric<Nd4jLong>(Nd4jPointer*, int, char, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*);;
 
 template void pullRowsGeneric<float16>(float16*, Nd4jLong*, float16*, Nd4jLong*, const int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*);
 template void pullRowsGeneric<float>(float*, Nd4jLong*, float*, Nd4jLong*, const int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*);
 template void pullRowsGeneric<double>(double*, Nd4jLong*, double*, Nd4jLong*, const int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*);
+template void pullRowsGeneric<int>(int*, Nd4jLong*, int*, Nd4jLong*, const int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*);
+template void pullRowsGeneric<Nd4jLong>(Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, const int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*);
 
 template void tearGeneric<float16>(float16*, Nd4jLong*, Nd4jPointer*, Nd4jLong*, Nd4jLong*, Nd4jLong*);
 template void tearGeneric<float>(float*, Nd4jLong*, Nd4jPointer*, Nd4jLong*, Nd4jLong*, Nd4jLong*);
 template void tearGeneric<double>(double*, Nd4jLong*, Nd4jPointer*, Nd4jLong*, Nd4jLong*, Nd4jLong*);
+template void tearGeneric<int>(int*, Nd4jLong*, Nd4jPointer*, Nd4jLong*, Nd4jLong*, Nd4jLong*);
+template void tearGeneric<Nd4jLong>(Nd4jLong*, Nd4jLong*, Nd4jPointer*, Nd4jLong*, Nd4jLong*, Nd4jLong*);
 
 template void shuffleGeneric<float16>(float16**, Nd4jLong**, float16**, Nd4jLong**, int, int*, Nd4jLong**, Nd4jLong**);
 template void shuffleGeneric<float>(float**, Nd4jLong**, float**, Nd4jLong**, int, int*, Nd4jLong**, Nd4jLong**);
 template void shuffleGeneric<double>(double**, Nd4jLong**, double**, Nd4jLong**, int, int*, Nd4jLong**, Nd4jLong**);
+template void shuffleGeneric<int>(int**, Nd4jLong**, int**, Nd4jLong**, int, int*, Nd4jLong**, Nd4jLong**);
+template void shuffleGeneric<Nd4jLong>(Nd4jLong**, Nd4jLong**, Nd4jLong**, Nd4jLong**, int, int*, Nd4jLong**, Nd4jLong**);
 
 
 

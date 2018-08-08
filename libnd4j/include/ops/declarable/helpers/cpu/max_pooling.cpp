@@ -76,6 +76,8 @@ namespace helpers {
     template void maxPoolingFunctor<float>(NDArray<float>* input, NDArray<float>* values, std::vector<int> const& params, NDArray<float>* indices);
     template void maxPoolingFunctor<float16>(NDArray<float16>* input, NDArray<float16>* values, std::vector<int> const& params, NDArray<float16>* indices);
     template void maxPoolingFunctor<double>(NDArray<double>* input, NDArray<double>* values, std::vector<int> const& params, NDArray<double>* indices);
+    template void maxPoolingFunctor<int>(NDArray<int>* input, NDArray<int>* values, std::vector<int> const& params, NDArray<int>* indices);
+    template void maxPoolingFunctor<Nd4jLong>(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* values, std::vector<int> const& params, NDArray<Nd4jLong>* indices);
 
 }
 }

@@ -31,9 +31,15 @@ namespace nd4j {
             std::map<Nd4jLong, Graph<float>*> _graphF;
             std::map<Nd4jLong, Graph<double>*> _graphD;
             std::map<Nd4jLong, Graph<float16>*> _graphH;
+            std::map<Nd4jLong, Graph<int>*> _graphI;
+            std::map<Nd4jLong, Graph<Nd4jLong>*> _graphL;
 
             GraphHolder() = default;
             ~GraphHolder() = default;
+
+            template <typename T>
+            std::map<Nd4jLong, Graph<T>*>& getGraphMap();
+
         public:
             static GraphHolder* getInstance();
 
@@ -45,6 +51,8 @@ namespace nd4j {
 
             template <typename T>
             Graph<T>* pullGraph(Nd4jLong graphId);
+
+            
 
             template <typename T>
             void forgetGraph(Nd4jLong graphId);

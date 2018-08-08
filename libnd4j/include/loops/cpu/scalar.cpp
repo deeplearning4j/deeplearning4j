@@ -297,5 +297,7 @@ namespace functions {
         template class ND4J_EXPORT ScalarTransform<float>;
         template class ND4J_EXPORT ScalarTransform<float16>;
         template class ND4J_EXPORT ScalarTransform<double>;
+        template class ND4J_EXPORT ScalarTransform<int>;
+        template class ND4J_EXPORT ScalarTransform<Nd4jLong>;
     }
 }

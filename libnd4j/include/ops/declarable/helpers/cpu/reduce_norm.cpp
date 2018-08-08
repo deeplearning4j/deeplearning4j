@@ -82,14 +82,20 @@ namespace helpers {
     template void reduceNorm1BP(NDArray<float>* input, NDArray<float>* epsilon, NDArray<float>* tempNorm, NDArray<float>* output, std::vector<int> const& axes);
     template void reduceNorm1BP(NDArray<float16>* input, NDArray<float16>* epsilon, NDArray<float16>* tempNorm, NDArray<float16>* output, std::vector<int> const& axes);
     template void reduceNorm1BP(NDArray<double>* input, NDArray<double>* epsilon, NDArray<double>* tempNorm, NDArray<double>* output, std::vector<int> const& axes);
+    template void reduceNorm1BP(NDArray<int>* input, NDArray<int>* epsilon, NDArray<int>* tempNorm, NDArray<int>* output, std::vector<int> const& axes);
+    template void reduceNorm1BP(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* epsilon, NDArray<Nd4jLong>* tempNorm, NDArray<Nd4jLong>* output, std::vector<int> const& axes);
 
     template void reduceNorm2BP(NDArray<float>* input, NDArray<float>* epsilon, NDArray<float>* tempNorm, NDArray<float>* output, std::vector<int> const& axes);
     template void reduceNorm2BP(NDArray<float16>* input, NDArray<float16>* epsilon, NDArray<float16>* tempNorm, NDArray<float16>* output, std::vector<int> const& axes);
     template void reduceNorm2BP(NDArray<double>* input, NDArray<double>* epsilon, NDArray<double>* tempNorm, NDArray<double>* output, std::vector<int> const& axes);
+    template void reduceNorm2BP(NDArray<int>* input, NDArray<int>* epsilon, NDArray<int>* tempNorm, NDArray<int>* output, std::vector<int> const& axes);
+    template void reduceNorm2BP(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* epsilon, NDArray<Nd4jLong>* tempNorm, NDArray<Nd4jLong>* output, std::vector<int> const& axes);
 
     template void reduceSquareNormBP(NDArray<float>* input, NDArray<float>* epsilon, NDArray<float>* tempNorm, NDArray<float>* output, std::vector<int> const& axes);
     template void reduceSquareNormBP(NDArray<float16>* input, NDArray<float16>* epsilon, NDArray<float16>* tempNorm, NDArray<float16>* output, std::vector<int> const& axes);
     template void reduceSquareNormBP(NDArray<double>* input, NDArray<double>* epsilon, NDArray<double>* tempNorm, NDArray<double>* output, std::vector<int> const& axes);
+    template void reduceSquareNormBP(NDArray<int>* input, NDArray<int>* epsilon, NDArray<int>* tempNorm, NDArray<int>* output, std::vector<int> const& axes);
+    template void reduceSquareNormBP(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* epsilon, NDArray<Nd4jLong>* tempNorm, NDArray<Nd4jLong>* output, std::vector<int> const& axes);
 
 }
 }

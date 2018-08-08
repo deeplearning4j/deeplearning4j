@@ -304,26 +304,38 @@ namespace helpers {
     template bool segmentIndicesValidate(NDArray<float>* indices, float& expected, float& output);
     template bool segmentIndicesValidate(NDArray<float16>* indices, float16& expected, float16& output);
     template bool segmentIndicesValidate(NDArray<double>* indices, double& expected, double& output);
+    template bool segmentIndicesValidate(NDArray<int>* indices, int& expected, int& output);
+    template bool segmentIndicesValidate(NDArray<Nd4jLong>* indices, Nd4jLong& expected, Nd4jLong& output);
 
-    template void segmentMaxFunctor<float>(NDArray<float>* input, NDArray<float>* indices, NDArray<float>* output);
+    template void segmentMaxFunctor<float>(NDArray<float>* input, NDArray<float>* , NDArray<float>* output);
     template void segmentMaxFunctor<float16>(NDArray<float16>* input, NDArray<float16>* , NDArray<float16>* output);
     template void segmentMaxFunctor<double>(NDArray<double>* input, NDArray<double>* , NDArray<double>* output);
+    template void segmentMaxFunctor<int>(NDArray<int>* input, NDArray<int>* , NDArray<int>* output);
+    template void segmentMaxFunctor<Nd4jLong>(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* , NDArray<Nd4jLong>* output);
 
     template void segmentMinFunctor<float>(NDArray<float>* input, NDArray<float>* , NDArray<float>* output);
     template void segmentMinFunctor<float16>(NDArray<float16>* input, NDArray<float16>* , NDArray<float16>* output);
     template void segmentMinFunctor<double>(NDArray<double>* input, NDArray<double>* , NDArray<double>* output);
+    template void segmentMinFunctor<int>(NDArray<int>* input, NDArray<int>* , NDArray<int>* output);
+    template void segmentMinFunctor<Nd4jLong>(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* , NDArray<Nd4jLong>* output);
 
     template void segmentMeanFunctor<float>(NDArray<float>* input, NDArray<float>* , NDArray<float>* output);
     template void segmentMeanFunctor<float16>(NDArray<float16>* input, NDArray<float16>* , NDArray<float16>* output);
     template void segmentMeanFunctor<double>(NDArray<double>* input, NDArray<double>* , NDArray<double>* output);
+    template void segmentMeanFunctor<int>(NDArray<int>* input, NDArray<int>* , NDArray<int>* output);
+    template void segmentMeanFunctor<Nd4jLong>(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* , NDArray<Nd4jLong>* output);
 
     template void segmentSumFunctor<float>(NDArray<float>* input, NDArray<float>* , NDArray<float>* output);
     template void segmentSumFunctor<float16>(NDArray<float16>* input, NDArray<float16>* , NDArray<float16>* output);
     template void segmentSumFunctor<double>(NDArray<double>* input, NDArray<double>* , NDArray<double>* output);
+    template void segmentSumFunctor<int>(NDArray<int>* input, NDArray<int>* , NDArray<int>* output);
+    template void segmentSumFunctor<Nd4jLong>(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* , NDArray<Nd4jLong>* output);
 
     template void segmentProdFunctor<float>(NDArray<float>* input, NDArray<float>* , NDArray<float>* output);
     template void segmentProdFunctor<float16>(NDArray<float16>* input, NDArray<float16>* , NDArray<float16>* output);
     template void segmentProdFunctor<double>(NDArray<double>* input, NDArray<double>* , NDArray<double>* output);
+    template void segmentProdFunctor<int>(NDArray<int>* input, NDArray<int>* , NDArray<int>* output);
+    template void segmentProdFunctor<Nd4jLong>(NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* , NDArray<Nd4jLong>* output);
 
 }
 }

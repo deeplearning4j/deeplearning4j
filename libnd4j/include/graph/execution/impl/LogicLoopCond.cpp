@@ -55,5 +55,7 @@ namespace nd4j {
         template class ND4J_EXPORT LogicLoopCond<float>;
         template class ND4J_EXPORT LogicLoopCond<float16>;
         template class ND4J_EXPORT LogicLoopCond<double>;
+        template class ND4J_EXPORT LogicLoopCond<int>;
+        template class ND4J_EXPORT LogicLoopCond<Nd4jLong>;
     }
 }

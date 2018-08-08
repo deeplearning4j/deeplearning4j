@@ -1019,6 +1019,8 @@ Nd4jLong* ShapeUtils<T>::createShapeInfo(const char order, const std::vector<Nd4
 template class ND4J_EXPORT ShapeUtils<float>;
 template class ND4J_EXPORT ShapeUtils<float16>;
 template class ND4J_EXPORT ShapeUtils<double>;
+template class ND4J_EXPORT ShapeUtils<int>;
+template class ND4J_EXPORT ShapeUtils<Nd4jLong>;
 
 }
 

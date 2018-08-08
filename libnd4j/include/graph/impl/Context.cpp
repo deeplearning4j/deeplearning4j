@@ -342,6 +342,8 @@ namespace nd4j {
         template class ND4J_EXPORT Context<float>;
         template class ND4J_EXPORT Context<float16>;
         template class ND4J_EXPORT Context<double>;
+        template class ND4J_EXPORT Context<int>;
+        template class ND4J_EXPORT Context<Nd4jLong>;
     }
 }
 

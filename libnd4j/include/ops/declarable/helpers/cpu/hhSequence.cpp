@@ -102,6 +102,8 @@ void HHsequence<T>::applyTo(NDArray<T>& dest) const{
 template class ND4J_EXPORT HHsequence<float>;
 template class ND4J_EXPORT HHsequence<float16>;
 template class ND4J_EXPORT HHsequence<double>;
+template class ND4J_EXPORT HHsequence<int>;
+template class ND4J_EXPORT HHsequence<Nd4jLong>;
 
 
 

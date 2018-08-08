@@ -143,19 +143,27 @@ namespace nd4j {
             template void _prefix<float, simdOps::Add<float>>(float* x, Nd4jLong* xShapeInfo, float* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse);
             template void _prefix<float16, simdOps::Add<float16>>(float16* x, Nd4jLong* xShapeInfo, float16* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse);
             template void _prefix<double, simdOps::Add<double>>(double* x, Nd4jLong* xShapeInfo, double* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse);
+            template void _prefix<int, simdOps::Add<int>>(int* x, Nd4jLong* xShapeInfo, int* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse);
+            template void _prefix<Nd4jLong, simdOps::Add<Nd4jLong>>(Nd4jLong* x, Nd4jLong* xShapeInfo, Nd4jLong* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse);
 
             template void _prefix<float, simdOps::Multiply<float>>(float* x, Nd4jLong* xShapeInfo, float* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse);
             template void _prefix<float16, simdOps::Multiply<float16>>(float16* x, Nd4jLong* xShapeInfo, float16* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse);
             template void _prefix<double, simdOps::Multiply<double>>(double* x, Nd4jLong* xShapeInfo, double* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse);
+            template void _prefix<int, simdOps::Multiply<int>>(int* x, Nd4jLong* xShapeInfo, int* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse);
+            template void _prefix<Nd4jLong, simdOps::Multiply<Nd4jLong>>(Nd4jLong* x, Nd4jLong* xShapeInfo, Nd4jLong* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse);
 
 
             template void _prefix<float, simdOps::Add<float>>(NDArray<float>* x, NDArray<float>* z, std::vector<int>& dims, bool exclusive, bool reverse);
             template void _prefix<float16, simdOps::Add<float16>>(NDArray<float16>* x, NDArray<float16>* z, std::vector<int>& dims, bool exclusive, bool reverse);
             template void _prefix<double, simdOps::Add<double>>(NDArray<double>* x, NDArray<double>* z, std::vector<int>& dims, bool exclusive, bool reverse);
+            template void _prefix<int, simdOps::Add<int>>(NDArray<int>* x, NDArray<int>* z, std::vector<int>& dims, bool exclusive, bool reverse);
+            template void _prefix<Nd4jLong, simdOps::Add<Nd4jLong>>(NDArray<Nd4jLong>* x, NDArray<Nd4jLong>* z, std::vector<int>& dims, bool exclusive, bool reverse);
 
             template void _prefix<float, simdOps::Multiply<float>>(NDArray<float>* x, NDArray<float>* z, std::vector<int>& dims, bool exclusive, bool reverse);
             template void _prefix<float16, simdOps::Multiply<float16>>(NDArray<float16>* x, NDArray<float16>* z, std::vector<int>& dims, bool exclusive, bool reverse);
             template void _prefix<double, simdOps::Multiply<double>>(NDArray<double>* x, NDArray<double>* z, std::vector<int>& dims, bool exclusive, bool reverse);
+            template void _prefix<int, simdOps::Multiply<int>>(NDArray<int>* x, NDArray<int>* z, std::vector<int>& dims, bool exclusive, bool reverse);
+            template void _prefix<Nd4jLong, simdOps::Multiply<Nd4jLong>>(NDArray<Nd4jLong>* x, NDArray<Nd4jLong>* z, std::vector<int>& dims, bool exclusive, bool reverse);
         }
     }
 }

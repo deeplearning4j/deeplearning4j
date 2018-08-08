@@ -75,5 +75,7 @@ namespace nd4j {
         template class ND4J_EXPORT BroadcastableOp<float>;
         template class ND4J_EXPORT BroadcastableOp<float16>;
         template class ND4J_EXPORT BroadcastableOp<double>;
+        template class ND4J_EXPORT BroadcastableOp<int>;
+        template class ND4J_EXPORT BroadcastableOp<Nd4jLong>;
     }
 }

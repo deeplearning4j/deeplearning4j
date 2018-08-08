@@ -167,18 +167,38 @@ namespace nd4j {
         template class ND4J_EXPORT ContextPrototype<float>;
         template class ND4J_EXPORT ContextPrototype<float16>;
         template class ND4J_EXPORT ContextPrototype<double>;
+        template class ND4J_EXPORT ContextPrototype<int>;
+        template class ND4J_EXPORT ContextPrototype<Nd4jLong>;
 
 
         template ContextPrototype<float>* ContextPrototype<float>::asT<float>();
         template ContextPrototype<float16>* ContextPrototype<float>::asT<float16>();
         template ContextPrototype<double>* ContextPrototype<float>::asT<double>();
+        template ContextPrototype<int>* ContextPrototype<float>::asT<int>();
+        template ContextPrototype<Nd4jLong>* ContextPrototype<float>::asT<Nd4jLong>();
 
         template ContextPrototype<float>* ContextPrototype<float16>::asT<float>();
         template ContextPrototype<float16>* ContextPrototype<float16>::asT<float16>();
         template ContextPrototype<double>* ContextPrototype<float16>::asT<double>();
+        template ContextPrototype<int>* ContextPrototype<float16>::asT<int>();
+        template ContextPrototype<Nd4jLong>* ContextPrototype<float16>::asT<Nd4jLong>();
 
         template ContextPrototype<float>* ContextPrototype<double>::asT<float>();
         template ContextPrototype<float16>* ContextPrototype<double>::asT<float16>();
         template ContextPrototype<double>* ContextPrototype<double>::asT<double>();
+        template ContextPrototype<int>* ContextPrototype<double>::asT<int>();
+        template ContextPrototype<Nd4jLong>* ContextPrototype<double>::asT<Nd4jLong>();
+
+        template ContextPrototype<float>* ContextPrototype<int>::asT<float>();
+        template ContextPrototype<float16>* ContextPrototype<int>::asT<float16>();
+        template ContextPrototype<double>* ContextPrototype<int>::asT<double>();
+        template ContextPrototype<int>* ContextPrototype<int>::asT<int>();
+        template ContextPrototype<Nd4jLong>* ContextPrototype<int>::asT<Nd4jLong>();
+
+        template ContextPrototype<float>* ContextPrototype<Nd4jLong>::asT<float>();
+        template ContextPrototype<float16>* ContextPrototype<Nd4jLong>::asT<float16>();
+        template ContextPrototype<double>* ContextPrototype<Nd4jLong>::asT<double>();
+        template ContextPrototype<int>* ContextPrototype<Nd4jLong>::asT<int>();
+        template ContextPrototype<Nd4jLong>* ContextPrototype<Nd4jLong>::asT<Nd4jLong>();
     }
 }

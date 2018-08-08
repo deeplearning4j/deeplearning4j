@@ -110,10 +110,12 @@ namespace helpers {
             _adjust_hue_single(array, output, delta, isNHWC);
         }
     }
-
-    template void _adjust_hue<float>(NDArray<float> *array, NDArray<float> *output, float delta, bool isNHWC);
-    template void _adjust_hue<float16>(NDArray<float16> *array, NDArray<float16> *output, float16 delta, bool isNHWC);
-    template void _adjust_hue<double>(NDArray<double> *array, NDArray<double> *output, double delta, bool isNHWC);
+    
+template void _adjust_hue<float>(NDArray<float> *array, NDArray<float> *output, float delta, bool isNHWC);
+template void _adjust_hue<float16>(NDArray<float16> *array, NDArray<float16> *output, float16 delta, bool isNHWC);
+template void _adjust_hue<double>(NDArray<double> *array, NDArray<double> *output, double delta, bool isNHWC);
+template void _adjust_hue<int>(NDArray<int> *array, NDArray<int> *output, int delta, bool isNHWC);
+template void _adjust_hue<Nd4jLong>(NDArray<Nd4jLong> *array, NDArray<Nd4jLong> *output, Nd4jLong delta, bool isNHWC);
 }
 }
 }

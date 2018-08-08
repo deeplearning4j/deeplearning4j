@@ -56,6 +56,8 @@ namespace nd4j {
             template void _matmul<float>(NDArray<float> *A, NDArray<float> *B, NDArray<float> *C, int transA, int transB, float alpha, float beta);
             template void _matmul<float16>(NDArray<float16> *A, NDArray<float16> *B, NDArray<float16> *C, int transA, int transB, float16 alpha, float16 beta);
             template void _matmul<double>(NDArray<double> *A, NDArray<double> *B, NDArray<double> *C, int transA, int transB, double alpha, double beta);
+            template void _matmul<int>(NDArray<int> *A, NDArray<int> *B, NDArray<int> *C, int transA, int transB, int alpha, int beta);
+            template void _matmul<Nd4jLong>(NDArray<Nd4jLong> *A, NDArray<Nd4jLong> *B, NDArray<Nd4jLong> *C, int transA, int transB, Nd4jLong alpha, Nd4jLong beta);
         }
     }
 }

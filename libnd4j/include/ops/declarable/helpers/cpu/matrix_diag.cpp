@@ -57,6 +57,8 @@ int matrixDiag(const NDArray<T>* input, NDArray<T>* output) {
 template int matrixDiag<float>(const NDArray<float>* input, NDArray<float>* output);
 template int matrixDiag<float16>(const NDArray<float16>* input, NDArray<float16>* output);
 template int matrixDiag<double>(const NDArray<double>* input, NDArray<double>* output);
+template int matrixDiag<int>(const NDArray<int>* input, NDArray<int>* output);
+template int matrixDiag<Nd4jLong>(const NDArray<Nd4jLong>* input, NDArray<Nd4jLong>* output);
 
 
 }

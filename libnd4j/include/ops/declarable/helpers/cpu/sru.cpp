@@ -187,10 +187,14 @@ void sruTimeLoop(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArr
 template void sruCell<float>(const std::vector<NDArray<float>*>& inArrs, const std::vector<NDArray<float>*>& outArrs);
 template void sruCell<float16>(const std::vector<NDArray<float16>*>& inArrs, const std::vector<NDArray<float16>*>& outArrs);
 template void sruCell<double>(const std::vector<NDArray<double>*>& inArrs, const std::vector<NDArray<double>*>& outArrs);
+template void sruCell<int>(const std::vector<NDArray<int>*>& inArrs, const std::vector<NDArray<int>*>& outArrs);
+template void sruCell<Nd4jLong>(const std::vector<NDArray<Nd4jLong>*>& inArrs, const std::vector<NDArray<Nd4jLong>*>& outArrs);
 
 template void sruTimeLoop<float>(const std::vector<NDArray<float>*>& inArrs, const std::vector<NDArray<float>*>& outArrs);
 template void sruTimeLoop<float16>(const std::vector<NDArray<float16>*>& inArrs, const std::vector<NDArray<float16>*>& outArrs);
 template void sruTimeLoop<double>(const std::vector<NDArray<double>*>& inArrs, const std::vector<NDArray<double>*>& outArrs);
+template void sruTimeLoop<int>(const std::vector<NDArray<int>*>& inArrs, const std::vector<NDArray<int>*>& outArrs);
+template void sruTimeLoop<Nd4jLong>(const std::vector<NDArray<Nd4jLong>*>& inArrs, const std::vector<NDArray<Nd4jLong>*>& outArrs);
 
 
 }

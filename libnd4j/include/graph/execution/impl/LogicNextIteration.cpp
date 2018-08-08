@@ -51,5 +51,7 @@ namespace nd4j {
         template class ND4J_EXPORT LogicNextIeration<float>;
         template class ND4J_EXPORT LogicNextIeration<float16>;
         template class ND4J_EXPORT LogicNextIeration<double>;
+        template class ND4J_EXPORT LogicNextIeration<int>;
+        template class ND4J_EXPORT LogicNextIeration<Nd4jLong>;
     }
 }

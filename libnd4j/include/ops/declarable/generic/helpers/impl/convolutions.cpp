@@ -288,7 +288,7 @@ void ConvolutionUtils<T>::avgPool3D(NDArray<T>& input, NDArray<T>& output, const
                             T *indP = indBuff + k * otime * owidth * oheight + ti * owidth * oheight + i * owidth + j;
 
                             /* compute local max: */
-                            T maxval = -MAX_FLOAT;
+                            T maxval = -nd4j::math::nd4j_dtype_max<T>();
                             int x,y,z;
                             int mx, my, mz;
                             mx = my = mz = -1;
@@ -1451,7 +1451,7 @@ void ConvolutionUtils<T>::maxPool2d(NDArray<T>* input, NDArray<T>* output, const
         ConvolutionUtils<T>::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, pH, pW);                    
 
     // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; poolingMode; 9 - divisor;
-    std::vector<T> argT = {(T) kH, (T) kW, (T) sH, (T) sW, (T) pH, (T) pW, (T) dH, (T)dW, 0., 1.};
+    std::vector<T> argT = {(T) kH, (T) kW, (T) sH, (T) sW, (T) pH, (T) pW, (T) dH, (T)dW, 0, 1};
 
     ConvolutionUtils<T>::pooling2d(*input, *output, argT.data());
     
@@ -1537,7 +1537,7 @@ void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = -MAX_FLOAT;
+                        sum = -nd4j::math::nd4j_dtype_max<T>();
                                                                     
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
@@ -1741,7 +1741,7 @@ void ConvolutionUtils<T>::pooling3d(NDArray<T>& input, NDArray<T>& output, const
                             wstart *= iStride4;
                             wend   *= iStride4;
 
-                            sum = -MAX_FLOAT;
+                            sum = -nd4j::math::nd4j_dtype_max<T>();
                                             
                             for (Nd4jLong kd = dstart; kd < dend; kd += iStep2) 
                                 for (Nd4jLong kh = hstart; kh < hend; kh += iStep3) 
@@ -1953,7 +1953,7 @@ void ConvolutionUtils<T>::pooling2dBP(NDArray<T>& input, NDArray<T>& gradO, NDAr
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = -MAX_FLOAT;
+                        sum = -nd4j::math::nd4j_dtype_max<T>();
                         valO = gO[b*oStride0 + c*oStride1 + oh*oStride2 + ow*oStride3];
                                                     
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
@@ -2168,7 +2168,7 @@ void ConvolutionUtils<T>::pooling3dBP(NDArray<T>& input, NDArray<T>& gradO, NDAr
                             wstart *= iStride4;
                             wend   *= iStride4;
 
-                            sum = -MAX_FLOAT;
+                            sum = -nd4j::math::nd4j_dtype_max<T>();
                             valO = gO[b*oStride0 + c*oStride1+ od*oStride2 + oh*oStride3 + ow*oStride4];
                             
                             for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
@@ -2312,6 +2312,8 @@ void ConvolutionUtils<T>::pooling3dBP(NDArray<T>& input, NDArray<T>& gradO, NDAr
 template class ND4J_EXPORT ConvolutionUtils<float>;
 template class ND4J_EXPORT ConvolutionUtils<float16>;
 template class ND4J_EXPORT ConvolutionUtils<double>;
-    
+template class ND4J_EXPORT ConvolutionUtils<int>;
+template class ND4J_EXPORT ConvolutionUtils<Nd4jLong>;
+
 }
 }

@@ -426,5 +426,7 @@ namespace functions {
         template class ND4J_EXPORT RandomFunction<float>;
         template class ND4J_EXPORT RandomFunction<float16>;
         template class ND4J_EXPORT RandomFunction<double>;
+        template class ND4J_EXPORT RandomFunction<int>;
+        template class ND4J_EXPORT RandomFunction<Nd4jLong>;
     }
 }

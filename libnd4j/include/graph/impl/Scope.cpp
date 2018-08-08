@@ -92,19 +92,39 @@ namespace nd4j {
         template class Scope<float>;
         template class Scope<float16>;
         template class Scope<double>;
+        template class Scope<int>;
+        template class Scope<Nd4jLong>;
 
 
         template Scope<float>* Scope<float>::asT<float>();
         template Scope<float16>* Scope<float>::asT<float16>();
         template Scope<double>* Scope<float>::asT<double>();
+        template Scope<int>* Scope<float>::asT<int>();
+        template Scope<Nd4jLong>* Scope<float>::asT<Nd4jLong>();
 
         template Scope<float>* Scope<float16>::asT<float>();
         template Scope<float16>* Scope<float16>::asT<float16>();
         template Scope<double>* Scope<float16>::asT<double>();
+        template Scope<int>* Scope<float16>::asT<int>();
+        template Scope<Nd4jLong>* Scope<float16>::asT<Nd4jLong>();
 
         template Scope<float>* Scope<double>::asT<float>();
         template Scope<float16>* Scope<double>::asT<float16>();
         template Scope<double>* Scope<double>::asT<double>();
+        template Scope<int>* Scope<double>::asT<int>();
+        template Scope<Nd4jLong>* Scope<double>::asT<Nd4jLong>();
+
+        template Scope<float>* Scope<int>::asT<float>();
+        template Scope<float16>* Scope<int>::asT<float16>();
+        template Scope<double>* Scope<int>::asT<double>();
+        template Scope<int>* Scope<int>::asT<int>();
+        template Scope<Nd4jLong>* Scope<int>::asT<Nd4jLong>();
+
+        template Scope<float>* Scope<Nd4jLong>::asT<float>();
+        template Scope<float16>* Scope<Nd4jLong>::asT<float16>();
+        template Scope<double>* Scope<Nd4jLong>::asT<double>();
+        template Scope<int>* Scope<Nd4jLong>::asT<int>();
+        template Scope<Nd4jLong>* Scope<Nd4jLong>::asT<Nd4jLong>();
     }
 }
 
