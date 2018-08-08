@@ -109,10 +109,10 @@ namespace ops {
         std::vector<int> partitionSizes(numPartition, 0);
 
         auto shapes = SHAPELIST();
-        // just copy shape info from gradient input list to output
-        for (Nd4jLong i = 0; i < numPartition; i++) {
+        // just copy shape info from input and indices to output
+        for (Nd4jLong i = 0; i < 2; i++) {
             Nd4jLong *newShape;
-            COPY_SHAPE(inputShape->at(i + 2), newShape);
+            COPY_SHAPE(inputShape->at(i), newShape);
             shapes->push_back(newShape);
         }
 
