@@ -51,6 +51,8 @@ namespace ops {
             if (epsilon->isScalar()) {
                 output1->assign(epsilon);
                 output1->template applyPairwiseTransform<simdOps::Multiply<T>>(inputY, output1, nullptr);
+                output2->assign(epsilon);
+                output2->template applyPairwiseTransform<simdOps::Multiply<T>>(inputX, output2, nullptr);
             }
             else {
                 auto axes = *block.getIArguments();

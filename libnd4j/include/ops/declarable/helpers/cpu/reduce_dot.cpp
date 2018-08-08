@@ -35,12 +35,16 @@ namespace helpers {
                     }
                 }
                 std::unique_ptr<ResultSet<T>> outListX(outputX->allTensorsAlongDimension(dimensions));
+                std::unique_ptr<ResultSet<T>> outListY(outputY->allTensorsAlongDimension(dimensions));
                 std::unique_ptr<ResultSet<T>> yList(inputY->allTensorsAlongDimension(dimensions));
+                std::unique_ptr<ResultSet<T>> xList(inputX->allTensorsAlongDimension(dimensions));
                 //output->
 #pragma omp parallel for if (outListX->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                 for (Nd4jLong e = 0; e < outListX->size(); ++e) {
                     outListX->at(e)->assign(epsilon);
+                    outListY->at(e)->assign(epsilon);
                     outListX->at(e)->template applyPairwiseTransform<simdOps::Multiply<T>>(yList->at(e), outListX->at(e), nullptr);
+                    outListY->at(e)->template applyPairwiseTransform<simdOps::Multiply<T>>(xList->at(e), outListY->at(e), nullptr);
                 }
 
     }

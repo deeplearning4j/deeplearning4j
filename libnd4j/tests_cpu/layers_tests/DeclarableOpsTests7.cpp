@@ -4642,8 +4642,12 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Dot_BP_2) {
     
     nd4j::ops::reduce_dot_bp<float> op;
     auto result = op.execute({&x, &y, &eps}, {}, {1});
-    auto output = result->at(0);    
-//    output->printIndexedBuffer("Result is");
+    ASSERT_EQ(result->status(), ND4J_STATUS_OK);
+    ASSERT_EQ(result->size(), 2);
+    auto outputX = result->at(0);
+    auto outputY = result->at(1);
+    outputX->printIndexedBuffer("ResultX is");
+    outputY->printIndexedBuffer("ResultY is");
 //    z->printShapeInfo("Result shape is");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
