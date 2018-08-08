@@ -4635,11 +4635,12 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Dot_BP_2) {
     NDArray<float> y('c', {2, 3, 4});
 //    NDArray<float>* z; //('c', {4});
     NDArray<float> eps('c', {2, 4});
-//    NDArray<float> exp('c', {2, 3, 4});
-    x.linspace(1);
+    NDArray<float> exp('c', {2, 3, 4}, {2.f, 4.f, 6.f, 8.f, 2.f, 4.f, 6.f, 8.f, 2.f, 4.f, 6.f, 8.f,
+                                        10.f, 12.f, 14.f, 16.f, 10.f, 12.f, 14.f, 16.f, 10.f, 12.f, 14.f, 16.f
+                                        });
+    x.assign(1.f);
     eps.linspace(1);
     y.assign(2.f);
-    
     nd4j::ops::reduce_dot_bp<float> op;
     auto result = op.execute({&x, &y, &eps}, {}, {1});
     ASSERT_EQ(result->status(), ND4J_STATUS_OK);
@@ -4648,10 +4649,13 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Dot_BP_2) {
     auto outputY = result->at(1);
     outputX->printIndexedBuffer("ResultX is");
     outputY->printIndexedBuffer("ResultY is");
+    exp.printIndexedBuffer("ExpectedX is");
+    //outputY->printIndexedBuffer("ResultY is");
 //    z->printShapeInfo("Result shape is");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
-//    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(outputX));
+//    ASSERT_TRUE(eps.equalsTo(outputY));
 //    ASSERT_TRUE(exp.equalsTo(output));
 
     delete result;
