@@ -676,8 +676,14 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats)
             stats.logRepartitionStart();
 
-        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy,
-                        numObjectsEachWorker(rddDataSetNumExamples), numWorkers);
+        if(repartitioner != null){
+            log.info("Repartitioning training data using repartitioner: {}", repartitioner);
+            int minPerWorker = Math.max(1, batchSizePerWorker/rddDataSetNumExamples);
+            splitData = repartitioner.repartition(splitData, minPerWorker, numWorkers);
+        } else {
+            log.info("Repartitioning training data using SparkUtils repartitioner");
+            splitData = SparkUtils.repartitionEqually(splitData, repartition, numWorkers);
+        }
         int nPartitions = splitData.partitions().size();
 
         if (collectTrainingStats && repartition != Repartition.Never)
@@ -708,8 +714,14 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats)
             stats.logRepartitionStart();
 
-        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy,
-                        numObjectsEachWorker(rddDataSetNumExamples), numWorkers);
+        if(repartitioner != null){
+            log.info("Repartitioning training data using repartitioner: {}", repartitioner);
+            int minPerWorker = Math.max(1, batchSizePerWorker/rddDataSetNumExamples);
+            splitData = repartitioner.repartition(splitData, minPerWorker, numWorkers);
+        } else {
+            log.info("Repartitioning training data using SparkUtils repartitioner");
+            splitData = SparkUtils.repartitionEqually(splitData, repartition, numWorkers);
+        }
         int nPartitions = splitData.partitions().size();
 
         if (collectTrainingStats && repartition != Repartition.Never)

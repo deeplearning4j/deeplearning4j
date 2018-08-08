@@ -93,6 +93,7 @@ public class DefaultTrainer extends Thread implements Trainer {
     protected int threadId;
     protected Model originalModel;
 
+    protected final Object PARAMS_SYNC_LOCK_OBJECT = new Object();
 
     @Override
     public void feedMultiDataSet(@NonNull MultiDataSet dataSet, long etlTime) {
@@ -276,7 +277,7 @@ public class DefaultTrainer extends Thread implements Trainer {
                     replicatedModel.init();
 
                     // we replicate original model params & updater state, just in case it's pre-trained model
-                    synchronized (originalModel) {
+                    synchronized (PARAMS_SYNC_LOCK_OBJECT){
                         replicatedModel.setParams(originalModel.params().unsafeDuplication(true));
 
                         Updater updaterReplica = ((MultiLayerNetwork) replicatedModel).getUpdater();
@@ -306,7 +307,7 @@ public class DefaultTrainer extends Thread implements Trainer {
                     this.replicatedModel.init();
 
                     // we replicate original model params & updater state, just in case it's pre-trained model
-                    synchronized (originalModel) {
+                    synchronized (PARAMS_SYNC_LOCK_OBJECT){
                         replicatedModel.setParams(originalModel.params().unsafeDuplication(true));
 
                         ComputationGraphUpdater updaterReplica = ((ComputationGraph) replicatedModel).getUpdater();

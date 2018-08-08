@@ -26,7 +26,7 @@
     <artifactId>deeplearning4j-nearestneighbor-server_2.10</artifactId>
     <packaging>jar</packaging>
 
-    <name>deeplearning4j-nearestneighbor-server_2.11</name>
+    <name>deeplearning4j-nearestneighbor-server</name>
 
     <properties>
         <!-- Default scala versions, may be overwritten by build profiles -->
@@ -158,24 +158,8 @@
             <version>${playframework.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>logback-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>logback-classic</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>com.google.code.findbugs</groupId>
                     <artifactId>jsr305</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>jul-to-slf4j</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>jcl-over-slf4j</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.apache.tomcat</groupId>

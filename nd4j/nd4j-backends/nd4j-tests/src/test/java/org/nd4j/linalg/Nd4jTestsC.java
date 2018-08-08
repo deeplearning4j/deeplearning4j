@@ -6673,8 +6673,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testMatmul_vs_tf() throws Exception {
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
 
         // uncomment this line to initialize & propagate sgemm/dgemm pointer
         //Nd4j.getBlasWrapper().level3();
@@ -6687,10 +6685,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         val op = new Mmul(arrayA, arrayB, arrayC, null);
         Nd4j.getExecutioner().exec(op);
-
-
-        Nd4j.getExecutioner().enableDebugMode(false);
-        Nd4j.getExecutioner().enableVerboseMode(false);
 
         assertEquals(exp, arrayC);
         assertNotEquals(badExp, arrayC);

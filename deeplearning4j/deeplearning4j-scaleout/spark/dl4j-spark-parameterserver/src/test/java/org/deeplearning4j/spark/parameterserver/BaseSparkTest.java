@@ -127,9 +127,6 @@ public abstract class BaseSparkTest implements Serializable {
                                         LossFunctions.LossFunction.MCXENT).nIn(3).nOut(nOut)
                                                         .activation(Activation.SOFTMAX).build())
                         .backprop(true).pretrain(false).build();
-
         return conf;
     }
-
-
 }

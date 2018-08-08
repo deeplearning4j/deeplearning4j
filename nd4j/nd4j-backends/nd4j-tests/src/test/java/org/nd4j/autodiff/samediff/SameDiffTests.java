@@ -1106,9 +1106,6 @@ public class SameDiffTests {
          *
          */
 
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
-
 
         Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> opsBackward = outside.getFunction("activate").execBackwards();
         SameDiff gradSameDiff = outside.getFunction("activate").getFunction("grad");
