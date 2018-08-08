@@ -28,30 +28,33 @@ namespace ops {
 
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
     
-        Nd4jLong* outShapeInfo;// = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims);
-        COPY_SHAPE(inputShape->at(0), outShapeInfo);
+        Nd4jLong* outShapeInfo1;// = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims);
+        Nd4jLong* outShapeInfo2;// = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims);
+        COPY_SHAPE(inputShape->at(0), outShapeInfo1);
+        COPY_SHAPE(inputShape->at(1), outShapeInfo2);
 
-        return SHAPELIST(outShapeInfo);
+        return SHAPELIST(outShapeInfo1, outShapeInfo2);
     }
 
-    CUSTOM_OP_IMPL(reduce_dot_bp, 3, 1, false, 0, 0) {
+    CUSTOM_OP_IMPL(reduce_dot_bp, 3, 2, false, 0, 0) {
 
             auto inputX = INPUT_VARIABLE(0);
             auto inputY = INPUT_VARIABLE(1);
             auto epsilon = INPUT_VARIABLE(2);
-            auto output = OUTPUT_VARIABLE(0);
+            auto output1 = OUTPUT_VARIABLE(0);
+            auto output2 = OUTPUT_VARIABLE(0);
             //
             // L(x,y) = SUM(x_i * y_i)
             // dL/dx_i = y_i
             //    
             //REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_sum_bp: The second param shape should be the same as result shape.");
             if (epsilon->isScalar()) {
-                output->assign(epsilon);
-                output->template applyPairwiseTransform<simdOps::Multiply<T>>(inputY, output, nullptr);
+                output1->assign(epsilon);
+                output1->template applyPairwiseTransform<simdOps::Multiply<T>>(inputY, output1, nullptr);
             }
             else {
                 auto axes = *block.getIArguments();
-                helpers::reduceDotBP(inputX, inputY, epsilon, output, axes);
+                helpers::reduceDotBP(inputX, inputY, epsilon, output1, output2, axes);
             }
 
             return ND4J_STATUS_OK;

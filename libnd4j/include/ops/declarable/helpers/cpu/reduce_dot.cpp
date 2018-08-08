@@ -26,7 +26,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void reduceDotBP(NDArray<T>* inputX, NDArray<T>* inputY, NDArray<T>* epsilon, NDArray<T>* output, std::vector<int> const& axes) {
+    void reduceDotBP(NDArray<T>* inputX, NDArray<T>* inputY, NDArray<T>* epsilon, NDArray<T>* outputX, NDArray<T>* outputY, std::vector<int> const& axes) {
 //                std::unique_ptr<ResultSet<T>> outList(output->allTensorsAlongDimension(dimensions));
                 std::vector<int> dimensions; //(input->rankOf() - axes.size());
                 for (Nd4jLong e = 0; e < inputX->rankOf(); e++) {
@@ -34,20 +34,20 @@ namespace helpers {
                         dimensions.emplace_back(e);
                     }
                 }
-                std::unique_ptr<ResultSet<T>> outList(output->allTensorsAlongDimension(dimensions));
+                std::unique_ptr<ResultSet<T>> outListX(outputX->allTensorsAlongDimension(dimensions));
                 std::unique_ptr<ResultSet<T>> yList(inputY->allTensorsAlongDimension(dimensions));
                 //output->
-#pragma omp parallel for if (outList->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static) 
-                for (Nd4jLong e = 0; e < outList->size(); ++e) {
-                    outList->at(e)->assign(epsilon);
-                    outList->at(e)->template applyPairwiseTransform<simdOps::Multiply<T>>(yList->at(e), outList->at(e), nullptr);
+#pragma omp parallel for if (outListX->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                for (Nd4jLong e = 0; e < outListX->size(); ++e) {
+                    outListX->at(e)->assign(epsilon);
+                    outListX->at(e)->template applyPairwiseTransform<simdOps::Multiply<T>>(yList->at(e), outListX->at(e), nullptr);
                 }
 
     }
 
-    template void reduceDotBP(NDArray<float>* inputX,  NDArray<float>* inputY,   NDArray<float>* epsilon, NDArray<float>* output, std::vector<int> const& axes);
-    template void reduceDotBP(NDArray<float16>* inputX,NDArray<float16>* inputY, NDArray<float16>* epsilon, NDArray<float16>* output, std::vector<int> const& axes);
-    template void reduceDotBP(NDArray<double>* inputX, NDArray<double>* inputY,  NDArray<double>* epsilon, NDArray<double>* output, std::vector<int> const& axes);
+    template void reduceDotBP(NDArray<float>* inputX,  NDArray<float>* inputY,   NDArray<float>* epsilon, NDArray<float>* outputX, NDArray<float>* outputY, std::vector<int> const& axes);
+    template void reduceDotBP(NDArray<float16>* inputX,NDArray<float16>* inputY, NDArray<float16>* epsilon, NDArray<float16>* outputX, NDArray<float16>* outputY, std::vector<int> const& axes);
+    template void reduceDotBP(NDArray<double>* inputX, NDArray<double>* inputY,  NDArray<double>* epsilon, NDArray<double>* outputX, NDArray<double>* outputY, std::vector<int> const& axes);
 }
 }
 }
