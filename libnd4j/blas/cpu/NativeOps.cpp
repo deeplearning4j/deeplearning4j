@@ -378,7 +378,7 @@ void   NativeOps::execReduce3Double(Nd4jPointer *extraPointers,int opNum,
                                     Nd4jLong *yShapeInfo,
                                     double *result,
                                     Nd4jLong *resultShapeInfo) {
-        NativeOpExcutioner<double>::execReduce3(opNum, x, xShapeInfo, extraParams, y, yShapeInfo, result, resultShapeInfo);
+    NativeOpExcutioner<double>::execReduce3(opNum, x, xShapeInfo, extraParams, y, yShapeInfo, result, resultShapeInfo);
 }
 
 /**
@@ -1140,58 +1140,58 @@ void   NativeOps::execReduce3Half(Nd4jPointer *extraPointers,int opNum,
 }
 
 void NativeOps::execReduce3AllDouble(Nd4jPointer *extraPointers,
-                          int opNum,
-                          double *x,
-                          Nd4jLong *xInfo,
-                          double *extraParamsVals,
-                          double *y,
-                          Nd4jLong *yInfo,
-                          double *result,
-                          Nd4jLong *resultShapeInfoBuffer,
-                          int *dimension,
-                          int dimensionLength,
-                          Nd4jLong *xTadShapeInfo,
-                          Nd4jLong *xOffsets,
-                          Nd4jLong *yTadShapeInfo,
-                          Nd4jLong *yOffsets) {
+                                     int opNum,
+                                     double *x,
+                                     Nd4jLong *xInfo,
+                                     double *extraParamsVals,
+                                     double *y,
+                                     Nd4jLong *yInfo,
+                                     double *result,
+                                     Nd4jLong *resultShapeInfoBuffer,
+                                     int *dimension,
+                                     int dimensionLength,
+                                     Nd4jLong *xTadShapeInfo,
+                                     Nd4jLong *xOffsets,
+                                     Nd4jLong *yTadShapeInfo,
+                                     Nd4jLong *yOffsets) {
 
     NativeOpExcutioner<double>::execReduce3All(opNum, x, xInfo, extraParamsVals, y, yInfo, result, resultShapeInfoBuffer, dimension, dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
 }
 
 void NativeOps::execReduce3AllFloat(Nd4jPointer *extraPointers,
-                         int opNum,
-                         float *x,
-                         Nd4jLong *xInfo,
-                         float *extraParamsVals,
-                         float *y,
-                         Nd4jLong *yInfo,
-                         float *result,
-                         Nd4jLong *resultShapeInfoBuffer,
-                         int *dimension,
-                         int dimensionLength,
-                         Nd4jLong *xTadShapeInfo,
-                         Nd4jLong *xOffsets,
-                         Nd4jLong *yTadShapeInfo,
-                         Nd4jLong *yOffsets) {
+                                    int opNum,
+                                    float *x,
+                                    Nd4jLong *xInfo,
+                                    float *extraParamsVals,
+                                    float *y,
+                                    Nd4jLong *yInfo,
+                                    float *result,
+                                    Nd4jLong *resultShapeInfoBuffer,
+                                    int *dimension,
+                                    int dimensionLength,
+                                    Nd4jLong *xTadShapeInfo,
+                                    Nd4jLong *xOffsets,
+                                    Nd4jLong *yTadShapeInfo,
+                                    Nd4jLong *yOffsets) {
 
     NativeOpExcutioner<float>::execReduce3All(opNum, x, xInfo, extraParamsVals, y, yInfo, result, resultShapeInfoBuffer, dimension, dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
 }
 
 void NativeOps::execReduce3AllHalf(Nd4jPointer *extraPointers,
-                        int opNum,
-                        float16 *x,
-                        Nd4jLong *xInfo,
-                        float16 *extraParamsVals,
-                        float16 *y,
-                        Nd4jLong *yInfo,
-                        float16 *result,
-                        Nd4jLong *resultShapeInfoBuffer,
-                        int *dimension,
-                        int dimensionLength,
-                        Nd4jLong *xTadShapeInfo,
-                        Nd4jLong *xOffsets,
-                        Nd4jLong *yTadShapeInfo,
-                        Nd4jLong *yOffsets) {
+                                   int opNum,
+                                   float16 *x,
+                                   Nd4jLong *xInfo,
+                                   float16 *extraParamsVals,
+                                   float16 *y,
+                                   Nd4jLong *yInfo,
+                                   float16 *result,
+                                   Nd4jLong *resultShapeInfoBuffer,
+                                   int *dimension,
+                                   int dimensionLength,
+                                   Nd4jLong *xTadShapeInfo,
+                                   Nd4jLong *xOffsets,
+                                   Nd4jLong *yTadShapeInfo,
+                                   Nd4jLong *yOffsets) {
 
 #ifndef __ANDROID__
     // TODO: make this work with android-x86 as well
@@ -2923,57 +2923,7 @@ void NativeOps::destroyRandom(Nd4jPointer ptrBuffer) {
 }
 
 
-/**
- *
- * @param npyArray
- * @return
- */
-Nd4jPointer NativeOps::shapeBufferForNumpy(Nd4jPointer npyArray) {
-    cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
-    auto shape = new unsigned int[arr.shape.size()];
-    for(unsigned int i = 0; i < arr.shape.size(); i++) {
-        shape[i] = arr.shape[i];
-    }
 
-    auto shapeBuffer = shape::shapeBufferOfNpy(arr.shape.size(), shape, arr.fortranOrder);
-    delete[] shape;
-    return reinterpret_cast<Nd4jPointer>(shapeBuffer);
-}
-
-
-/**
- *
- * @param npyArray
- * @return
- */
-Nd4jPointer NativeOps::dataPointForNumpy(Nd4jPointer npyArray) {
-    //char *buff = reinterpret_cast<char *>(npyArray);
-    //printf("Pointer contents %s\n",buff);
-    cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
-    cnpy::NpyArray *arrPointer = &arr;
-    char *data = arrPointer->data;
-    if(arrPointer->wordSize == sizeof(float)) {
-        auto floatData = reinterpret_cast<float *>(data);
-        return reinterpret_cast<Nd4jPointer>(floatData);
-    }
-    else if(arrPointer->wordSize == sizeof(double)) {
-        auto doubleData = reinterpret_cast<double *>(data);
-        return reinterpret_cast<Nd4jPointer >(doubleData);
-    }
-
-    return reinterpret_cast<Nd4jPointer >(0);
-}
-
-/**
- * Load a numpy array from a file
- * and return it as an Nd4jPointer
- * @param path
- * @return
- */
-Nd4jPointer NativeOps::numpyFromFile(std::string path) {
-    char *numpyBuffer = cnpy::loadFile(path.data());
-    return reinterpret_cast<Nd4jPointer >(numpyBuffer);
-}
 
 /**
     * Return the length of a shape buffer
@@ -2986,23 +2936,6 @@ int NativeOps::lengthForShapeBufferPointer(Nd4jPointer buffer) {
     return shape::shapeInfoLength(shape::rank(shapeBuffer));
 }
 
-/**
-  * Get the element size for a numpy array
-  * @param npyArray  the numpy array's address
-  * to get the length for
-  * @return
-  */
-int NativeOps::elementSizeForNpyArray(Nd4jPointer npyArray) {
-    cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
-    cnpy::NpyArray *arrPointer = &arr;
-    int size = arrPointer->wordSize;
-   // arrPointer->destruct();
-    return size;
-}
-
-void NativeOps::releaseNumpy(Nd4jPointer npyArray) {
-    free(reinterpret_cast<void *>(npyArray));
-}
 
 /**
   * The pointer to get the address for
@@ -3048,7 +2981,7 @@ void NativeOps::sortCooIndicesDouble(Nd4jPointer *extraPointers, Nd4jLong *indic
 }
 
 void NativeOps::sortCooIndicesHalf(Nd4jPointer *extraPointers, Nd4jLong *indices, float16 *values, Nd4jLong length, int rank) {
- //   NativeOpExcutioner<float>::execSortCooIndices(indices, values, length, rank);
+    //   NativeOpExcutioner<float>::execSortCooIndices(indices, values, length, rank);
 }
 
 Nd4jLong NativeOps::encodeBitmapFloat(Nd4jPointer *extraPointers, float *dx, Nd4jLong N, int *dz, float threshold) {
@@ -3078,21 +3011,21 @@ void NativeOps::decodeBitmapHalf(Nd4jPointer *extraPointers, void *dx, Nd4jLong 
 
 
 Nd4jLong* NativeOps::mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jLong length) {
-auto result = new Nd4jLong[2];errno = 0;
+    auto result = new Nd4jLong[2];errno = 0;
 
 #if defined(_WIN32) || defined(_WIN64)
     _mmap(result, static_cast<size_t>(length), fileName);
 #else
-int fd = open(fileName, O_RDWR, 0);// checking for failed fopen
-if (fd < 0) {
-    nd4j_printf("Errno: %i\n", errno);
-    throw std::runtime_error("Failed to open file for MMAP");
-}
-void * ptr = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    int fd = open(fileName, O_RDWR, 0);// checking for failed fopen
+    if (fd < 0) {
+        nd4j_printf("Errno: %i\n", errno);
+        throw std::runtime_error("Failed to open file for MMAP");
+    }
+    void * ptr = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
 // check for failed allocation
-if (ptr == MAP_FAILED)
-return nullptr;
+    if (ptr == MAP_FAILED)
+        return nullptr;
 
     result[0] = (Nd4jLong) ptr;
     result[1] = fd;
@@ -3104,7 +3037,7 @@ return nullptr;
 }
 
 void NativeOps::munmapFile(Nd4jPointer *extraPointers, Nd4jLong *ptrMap, Nd4jLong length) {
-munmap((Nd4jPointer) ptrMap[0], length);
+    munmap((Nd4jPointer) ptrMap[0], length);
 #if defined(_WIN32) || defined(_WIN64)
     CloseHandle(reinterpret_cast<HANDLE>(ptrMap[1]));
 #else
@@ -3570,7 +3503,7 @@ Nd4jStatus execCustomOpWithScope(Nd4jPointer *extraPointers, nd4j::graph::GraphS
         auto shapeInfo = reinterpret_cast<Nd4jLong *>(inputShapes[e]);
 
         auto array = new nd4j::NDArray<T>(buffer, shapeInfo, varSpace->workspace());
-        
+
         // now we just put array to VarSpace
         varSpace->putVariable(0, e, array);
         node.pickInput(0, e);
@@ -3598,7 +3531,7 @@ Nd4jStatus execCustomOpWithScope(Nd4jPointer *extraPointers, nd4j::graph::GraphS
         auto shapeInfo = reinterpret_cast<Nd4jLong *>(outputShapes[e]);
 
         NDArray<T> array(buffer, shapeInfo, varSpace->workspace());
-        
+
         // now we just put array to VarSpace to the same ID
         //varSpace->putVariable(0, e, array);
 

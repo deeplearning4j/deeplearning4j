@@ -23,15 +23,15 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nd4j-parameter-server-status_2.11</artifactId>
+    <artifactId>nd4j-parameter-server-status_2.10</artifactId>
     <packaging>jar</packaging>
 
     <name>nd4j-parameter-server-status</name>
 
     <properties>
         <!-- Default scala versions, may be overwritten by build profiles -->
-        <scala.version>2.11.12</scala.version>
-        <scala.binary.version>2.11</scala.binary.version>
+        <scala.version>2.10.7</scala.version>
+        <scala.binary.version>2.10</scala.binary.version>
     </properties>
 
     <dependencies>
@@ -49,12 +49,12 @@
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.11</artifactId>
+            <artifactId>akka-actor_2.10</artifactId>
             <version>${akka.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-slf4j_2.11</artifactId>
+            <artifactId>akka-slf4j_2.10</artifactId>
             <version>${akka.version}</version>
         </dependency>
         <dependency>
@@ -119,7 +119,7 @@
         </dependency>
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-java_2.11</artifactId>
+            <artifactId>play-java_2.10</artifactId>
             <version>${playframework.version}</version>
             <exclusions>
               <exclusion>
@@ -151,7 +151,7 @@
 
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-netty-server_2.11</artifactId>
+            <artifactId>play-netty-server_2.10</artifactId>
             <version>${playframework.version}</version>
         </dependency>
 

@@ -1401,4 +1401,16 @@ public class TransformOpValidation extends BaseOpValidation {
         System.out.println(executions);
         //assertEquals(Nd4j.ones(2,2),executions);
     }
+
+    @Test
+    public void testRank0EdgeCase(){
+        SameDiff sd = SameDiff.create();
+        SDVariable v1 = sd.sum(sd.var(Nd4j.create(new double[]{4, 4})));
+        double d0 = sd.execAndEndResult().getDouble(0);
+        assertEquals(8, d0, 0);
+
+        SDVariable v2 = sd.sum(sd.var(Nd4j.create(new double[]{4, 4}))).div(2.0);
+        double d1 = sd.execAndEndResult().getDouble(0);
+        assertEquals(4, d1, 0);
+    }
 }
