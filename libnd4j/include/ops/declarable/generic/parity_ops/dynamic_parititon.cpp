@@ -97,36 +97,8 @@ namespace ops {
         }
         outputList[0] = OUTPUT_VARIABLE(0);
         outputList[1] = OUTPUT_VARIABLE(1);
-        //helpers::dynamicPartitionFunctorBP(input, indices, gradOutList, outputList);
-        ops::dynamic_partition<T> op;
-        std::unique_ptr<ResultSet<T>> res(op.execute({input, indices}, {}, {numPartition}));
-        NDArray<T> y(*input); //'c', {1, input->lengthOf()});
-        y.linspace(1);
-        std::unique_ptr<ResultSet<T>> res2(op.execute({&y, indices}, {}, {numPartition}));
-        for (Nd4jLong n = 0; n < numPartition; ++n) {
-            res2->at(n)->printShapeInfo("SHAPE");
-            gradOutList[n]->printShapeInfo("GRADOUT");
-        }
-        std::vector<NDArray<T>*> inputParam(numPartition * 2);
-        for (Nd4jLong n = 0; n < numPartition; ++n) {
-            inputParam[n] = res2->at(n);
-        }
-        for (Nd4jLong n = 0; n < numPartition; ++n) {
-            inputParam[numPartition + n] = gradOutList[n];
-        }
-        for (auto matx: inputParam) {
-            matx->printIndexedBuffer("DATA INPUT");
-        }
-        ops::dynamic_stitch<T> ds;
-        std::unique_ptr<ResultSet<T>> dsRes(ds.execute(inputParam, {}, {numPartition}));
-        dsRes->at(0)->printIndexedBuffer("RES2_1");
-        dsRes->at(0)->printShapeInfo("RES2_1");
-        input->printShapeInfo("INPUT SHAPE WAS");
-//        dsRes->at(1)->printIndexedBuffer("RES2_2");
-//        outputList[0]->assign(dsRes->at(0));
-        outputList[0]->assign(input);
 
-        outputList[1]->assign(indices);
+        helpers::dynamicPartitionFunctorBP(input, indices, gradOutList, outputList);
 
         return ND4J_STATUS_OK;
     }
