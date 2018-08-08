@@ -30,18 +30,18 @@ namespace nd4j {
                 if (sourceDimsLen) {
                     std::vector<int> sourceDims(sourceDimsLen);
 
-//#pragma omp parallel for if(sourceDims.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for if(sourceDims.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                     for (int i = sourceDimsLen; i > 0; i--)
                         sourceDims[sourceDimsLen - i] = input->rankOf() - i;
 
                     std::unique_ptr<ResultSet<T>> listOfTensors(input->allTensorsAlongDimension(sourceDims));
 
-//#pragma omp parallel for if(outputList.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for if(outputList.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                     for (unsigned int i = 0; i < outputList.size(); i++) {
                         outputs[i].first = outputList[i];
                         std::vector<int> outDims(outputs[i].first->rankOf() - 1);
 
-//#pragma omp parallel for if(outputs[i].first->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for if(outputs[i].first->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                         for (int k = 1; k < outputs[i].first->rankOf(); k++)
                             outDims[k - 1] = k;
 
@@ -50,14 +50,14 @@ namespace nd4j {
 
                         outputs[i].second = 0;
 
-//#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                         for (int e = 0; e < indices->lengthOf(); ++e)
                             if ((*indices)(e) == T(i))
                                 listOutForCurrent->at(outputs[i].second++)->assign(listOfTensors->at(e));
                     }
 
                 } else
-//#pragma omp parallel for if(outputList.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for if(outputList.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                     for (unsigned int i = 0; i < outputList.size(); i++) {
                         outputs[i].first = outputList[i];
                         outputs[i].second = 0;
@@ -135,18 +135,51 @@ namespace nd4j {
 
             template <typename T>
             void dynamicPartitionFunctorBP(NDArray<T>const* input, NDArray<T>const* indices, std::vector<NDArray<T>*> const& inputGradientList, std::vector<NDArray<T>*>& outputList) {
-                std::vector<NDArray<T>*> inputGradientListY(inputGradientList.size());
-                for (size_t e = 0; e < inputGradientList.size(); e++) {
-                    inputGradientListY[e] = inputGradientList[e]->dup('c');
-                    inputGradientListY[e]->printShapeInfo("inputGradientListY");
+                std::vector<std::pair<NDArray<T> *, int>> outputs(inputGradientList.size());
+
+                int sourceDimsLen = input->rankOf() - indices->rankOf();
+                if (sourceDimsLen) { // multidimensional case
+                    std::vector<int> sourceDims(sourceDimsLen);
+
+#pragma omp parallel for if(sourceDims.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                    for (int i = sourceDimsLen; i > 0; i--)
+                        sourceDims[sourceDimsLen - i] = input->rankOf() - i;
+
+                    std::unique_ptr<ResultSet<T>> listOfTensors(outputList[0]->allTensorsAlongDimension(sourceDims));
+
+#pragma omp parallel for if(outputList.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                    for (unsigned int i = 0; i < inputGradientList.size(); i++) {
+                        outputs[i].first = inputGradientList[i];
+                        std::vector<int> outDims(outputs[i].first->rankOf() - 1);
+
+#pragma omp parallel for if(outputs[i].first->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                        for (int k = 1; k < outputs[i].first->rankOf(); k++)
+                            outDims[k - 1] = k;
+
+                        std::unique_ptr<ResultSet<T>> listOutForCurrent(
+                                outputs[i].first->allTensorsAlongDimension(outDims));
+
+                        outputs[i].second = 0;
+
+#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                        for (int e = 0; e < indices->lengthOf(); ++e)
+                            if ((*indices)(e) == T(i))
+                                listOfTensors->at(e)->assign(listOutForCurrent->at(outputs[i].second++));
+                    }
+                }
+                else { // one-dimensional case
+                    NDArray<T>* output = outputList[0];
+#pragma omp parallel for if(outputList.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                    for (unsigned int i = 0; i < inputGradientList.size(); i++) {
+                        outputs[i].first = inputGradientList[i];
+                        outputs[i].second = 0;
+                        for (int e = 0; e < indices->lengthOf(); ++e)
+                            if ((*indices)(e) == T(i))
+                                (*output)(e) = outputs[i].first->getScalar(outputs[i].second++);
+                    }
                 }
 
-                dynamicPartitionFunctor(input, indices, inputGradientListY);
-                dynamicStitchFunctor(inputGradientList, inputGradientListY, outputList[0]);
-                //dynamicStitchFunctor(inputGradientListX, inputGradientListY, outputList[1]);
-                for (size_t e = 0; e < inputGradientListY.size(); e++)
-                    delete inputGradientListY[e];
-
+                outputList[1]->assign(indices);
             }
 
             template <typename T>
