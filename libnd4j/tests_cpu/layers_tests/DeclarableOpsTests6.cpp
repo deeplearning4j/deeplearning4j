@@ -803,6 +803,72 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_2) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, MatrixDeterminant_3) {
+
+    NDArray<double> x('c', {1, 3, 3}, {3.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 3.0});
+    NDArray<double> exp({-54.0});
+
+    nd4j::ops::matrix_determinant<double> op;
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    //z->printIndexedBuffer("Output ");
+    //exp.printIndexedBuffer("Expected ");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, MatrixDeterminant_4) {
+
+    NDArray<double> x('c', {1, 3, 3}, {12.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 13.0});
+    NDArray<double> exp({189.0});
+
+    nd4j::ops::matrix_determinant<double> op;
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    //z->printIndexedBuffer("Output ");
+    //exp.printIndexedBuffer("Expected ");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, MatrixDeterminant_5) {
+
+    NDArray<double> x('c', {1, 4, 4});
+    NDArray<double> exp({-16.0});
+    x.linspace(1);
+    x(5) = 4.0;
+    x(12) = 12.0;
+    
+    nd4j::ops::matrix_determinant<double> op;
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    //z->printIndexedBuffer("Output ");
+    //exp.printIndexedBuffer("Expected ");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, MatrixInverse_1) {
 
     NDArray<double> x('c', {2, 5, 5}, {
