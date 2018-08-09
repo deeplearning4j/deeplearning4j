@@ -18,6 +18,7 @@ package org.nd4j.parameterserver.distributed.util;
 
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.parameterserver.distributed.enums.MeshBuildMode;
 
 import static org.junit.Assert.*;
 
@@ -44,8 +45,22 @@ public class MeshOrganizerTest {
     }
 
     @Test
+    public void testDistanceFromRoot_1() {
+        val rootNode = new MeshOrganizer.Node(true);
+
+        val node0 = rootNode.addDownstreamNode(new MeshOrganizer.Node());
+        val node1 = node0.addDownstreamNode(new MeshOrganizer.Node());
+
+        assertEquals(2, node1.distanceFromRoot());
+
+        val node2 = node1.addDownstreamNode(new MeshOrganizer.Node());
+
+        assertEquals(3, node2.distanceFromRoot());
+    }
+
+    @Test
     public void testBasicMesh_1() {
-        val mesh = new MeshOrganizer();
+        val mesh = new MeshOrganizer(MeshBuildMode.SYMMETRIC_MODE);
 
         val node1 = mesh.addNode("192.168.1.1");
         val node2 = mesh.addNode("192.168.2.1");
