@@ -1232,7 +1232,7 @@ namespace nd4j {
         */
 
         #if NOT_EXCLUDED(OP_reduce_dot_bp)
-        DECLARE_CUSTOM_OP(reduce_dot_bp, 3, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_dot_bp, 3, 2, false, 0, 0);
         #endif
 
     }
