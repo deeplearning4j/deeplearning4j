@@ -21,10 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -37,12 +34,17 @@ import java.util.concurrent.atomic.AtomicLong;
 public class MeshOrganizer implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    // this value determines max number of direct downstream connections for any given node (affects root node as well)
+    private static final int MAX_DOWNSTREAMS = 3;
+
     // just shortcut to the root node of the tree
-    private Node rootNode;
+    @Getter(AccessLevel.PROTECTED) private Node rootNode = new Node();
+
+    // SortedSet, with sort by number of downstreams
+    private List<Node> sortedNodes = new ArrayList<>();
 
     // flattened map of the tree, ID -> Node
     private Map<String, Node> nodeMap = new HashMap<>();
-
 
     /**
      * This method adds new node to the network
@@ -68,10 +70,15 @@ public class MeshOrganizer implements Serializable {
     }
 
 
-    public Node addNode(@NonNull Node node) {
+    public synchronized Node addNode(@NonNull Node node) {
         // if node isn't mapped yet - in this case we're mapping node automatically here
         if (node.getUpstreamNode() == null) {
-
+            if (rootNode.numberOfDownstreams() < MAX_DOWNSTREAMS) {
+                rootNode.addDownstreamNode(node);
+            } else {
+                val f = sortedNodes.get(0);
+                f.addDownstreamNode(node);
+            }
         }
 
         // we should check if this node has any descendants
@@ -81,6 +88,10 @@ public class MeshOrganizer implements Serializable {
 
         // after all we add this node to the flattened map, for future access
         nodeMap.put(node.getId(), node);
+
+        // we update sorted list, so we always know node with least number of
+        sortedNodes.add(node);
+        Collections.sort(sortedNodes);
 
         return node;
     }
@@ -184,7 +195,7 @@ public class MeshOrganizer implements Serializable {
 
         @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE) private Node upstream;
 
-        @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE) @Builder.Default private Collection<Node> downstream = new ArrayList<>();
+        @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)  private final Collection<Node> downstream = new ArrayList<>();
 
         /**
          * This method adds downstream node to the list of connections
@@ -193,6 +204,7 @@ public class MeshOrganizer implements Serializable {
          */
         protected Node addDownstreamNode(@NonNull Node node) {
             this.downstream.add(node);
+            node.setUpstreamNode(this);
             return node;
         }
 
@@ -245,7 +257,7 @@ public class MeshOrganizer implements Serializable {
 
         @Override
         public int compareTo(@NonNull Node o) {
-            return Long.compare(this.numberOfDescendants(), o.numberOfDescendants());
+            return Long.compare(this.numberOfDownstreams(), o.numberOfDownstreams());
         }
     }
 }

@@ -47,6 +47,27 @@ public class MeshOrganizerTest {
     public void testBasicMesh_1() {
         val mesh = new MeshOrganizer();
 
-        mesh.addNode("192.168.1.1");
+        val node1 = mesh.addNode("192.168.1.1");
+        val node2 = mesh.addNode("192.168.2.1");
+        val node3 = mesh.addNode("192.168.2.2");
+
+        assertEquals(4, mesh.totalNodes());
+        assertEquals(3, mesh.getRootNode().numberOfDownstreams());
+
+        // now we're adding one more node, and it should go elsewhere
+        val node4 = mesh.addNode("192.168.3.1");
+
+        assertEquals(5, mesh.totalNodes());
+        assertEquals(3, mesh.getRootNode().numberOfDownstreams());
+
+        // now we're adding one more node, and it should go elsewhere
+        val node5 = mesh.addNode("192.168.4.1");
+        val node6 = mesh.addNode("192.168.5.1");
+
+        assertEquals(7, mesh.totalNodes());
+        // now we expect flat distribution of descendants for all 3 first nodes
+        assertEquals(1, node1.numberOfDownstreams());
+        assertEquals(1, node2.numberOfDownstreams());
+        assertEquals(1, node3.numberOfDownstreams());
     }
 }
