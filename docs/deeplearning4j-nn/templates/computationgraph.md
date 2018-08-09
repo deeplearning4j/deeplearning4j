@@ -96,13 +96,13 @@ For the sake of this example, lets assume our input data is of size 5. Our confi
 
 ```java
 ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-		.updater(new Sgd(0.01))
-        .graphBuilder()
-        .addInputs("input") //can use any label for this
-        .addLayer("L1", new GravesLSTM.Builder().nIn(5).nOut(5).build(), "input")
-        .addLayer("L2",new RnnOutputLayer.Builder().nIn(5+5).nOut(5).build(), "input", "L1")
-        .setOutputs("L2")	//We need to specify the network outputs and their order
-        .build();
+    .updater(new Sgd(0.01))
+    .graphBuilder()
+    .addInputs("input") //can use any label for this
+    .addLayer("L1", new GravesLSTM.Builder().nIn(5).nOut(5).build(), "input")
+    .addLayer("L2",new RnnOutputLayer.Builder().nIn(5+5).nOut(5).build(), "input", "L1")
+    .setOutputs("L2")	//We need to specify the network outputs and their order
+    .build();
 
 ComputationGraph net = new ComputationGraph(conf);
 net.init();
@@ -124,14 +124,14 @@ To build the above network, we use the following configuration:
 ```java
 ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
 		.updater(new Sgd(0.01))
-        .graphBuilder()
-        .addInputs("input1", "input2")
-        .addLayer("L1", new DenseLayer.Builder().nIn(3).nOut(4).build(), "input1")
-        .addLayer("L2", new DenseLayer.Builder().nIn(3).nOut(4).build(), "input2")
-        .addVertex("merge", new MergeVertex(), "L1", "L2")
-        .addLayer("out", new OutputLayer.Builder().nIn(4+4).nOut(3).build(), "merge")
-        .setOutputs("out")
-        .build();
+    .graphBuilder()
+    .addInputs("input1", "input2")
+    .addLayer("L1", new DenseLayer.Builder().nIn(3).nOut(4).build(), "input1")
+    .addLayer("L2", new DenseLayer.Builder().nIn(3).nOut(4).build(), "input2")
+    .addVertex("merge", new MergeVertex(), "L1", "L2")
+    .addLayer("out", new OutputLayer.Builder().nIn(4+4).nOut(3).build(), "merge")
+    .setOutputs("out")
+    .build();
 ```
 
 ### <a name="multitask">Example 3: Multi-Task Learning</a>

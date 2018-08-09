@@ -1,3 +1,11 @@
+---
+title: Keras Import Loss Functions
+short_title: Losses
+description: Supported Keras loss functions.
+category: Keras Import
+weight: 4
+---
+
 ## Supported loss functions
 
 DL4J supports all available [Keras losses](https://keras.io/losses) (except for `logcosh`), namely:

@@ -132,14 +132,16 @@ class DocumentationGenerator:
     def get_constructor_data(self, class_string, class_name, use_contructor):
         constructors = []
         if 'public ' + class_name in class_string and use_contructor:
-            while 'public ' + class_name in class_string:
-                doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n[\S\s]*?(public ' \
-                            + class_name + '.[\S\s]*?){'
-                result = re.search(doc_regex, class_string)
+            doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n[\S\s]*?(public ' \
+                        + class_name + '.[\S\s]*?){'
+            result = re.search(doc_regex, class_string)
+            if result:
                 doc_string, signature = result.groups()
                 doc = self.process_docstring(doc_string)
                 class_string = class_string[result.end():]
                 constructors.append((signature, doc))
+            else:
+                print("Warning, no doc string found for constructor {}".format(class_name))
         return constructors, class_string
 
 
@@ -208,6 +210,7 @@ class DocumentationGenerator:
         module = data.get('module', "")
         if module:
             classes = os.listdir(self.source_code_path + module)
+            classes = [c for c in classes if '.' in c]
 
         cls = data.get('class', "")
         if cls:
@@ -352,12 +355,16 @@ if __name__ == '__main__':
             if not any(ex in class_string for ex in doc_generator.excludes):
                 sub_blocks = []
                 link = doc_generator.class_to_source_link(module_name, class_name)
-                if module_name:
-                    sub_blocks.append('### {}'.format(class_name.rsplit('/',1)[1]))
-                    sub_blocks.append('<span style="float:right;"> {} </span>\n'.format(link))
+                try:
+                    class_name = class_name.rsplit('/',1)[1]
+                except:
+                    print('Skipping split on '+class_name)
+                # if module_name:
+                #     sub_blocks.append('### {}'.format(module_name))
+                #     sub_blocks.append('<span style="float:right;"> {} </span>\n'.format(link))
 
                 if doc_string:
-                    sub_blocks.append('### {}'.format(class_name.rsplit('/',1)[1]))
+                    sub_blocks.append('### {}'.format(class_name))
                     sub_blocks.append('<span style="float:right;"> {} </span>\n'.format(link))
                     sub_blocks.append(doc_string)
 
