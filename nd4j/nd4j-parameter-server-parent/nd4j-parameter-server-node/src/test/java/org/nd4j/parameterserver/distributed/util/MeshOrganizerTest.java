@@ -21,6 +21,8 @@ import lombok.val;
 import org.junit.Test;
 import org.nd4j.parameterserver.distributed.enums.MeshBuildMode;
 
+import java.util.ArrayList;
+
 import static org.junit.Assert.*;
 
 /**
@@ -183,4 +185,28 @@ public class MeshOrganizerTest {
 
         assertEquals(1, node2.numberOfDownstreams());
     }
+
+    @Test
+    public void testBasicMesh_4() {
+        val mesh = new MeshOrganizer(MeshBuildMode.DEPTH_FIRST);
+
+        // smoke test
+        for (int e = 0; e < 8192; e++)
+            mesh.addNode(java.util.UUID.randomUUID().toString());
+
+        // 8192 nodes + root node
+        assertEquals(8193, mesh.totalNodes());
+
+        // and now we'll make sure there's no nodes with number of downstreams > MAX_DOWNSTREAMS
+        for (val v: mesh.flatNodes()) {
+            assertTrue(v.numberOfDownstreams() <= MeshOrganizer.MAX_DOWNSTREAMS);
+            assertTrue(v.distanceFromRoot() <= MeshOrganizer.MAX_DEPTH);
+        }
+
+        // each of the root nodes should have limited number of descendants
+        val rootDownstreams = new ArrayList<MeshOrganizer.Node>(mesh.getRootNode().getDownstreamNodes());
+        for (val r: rootDownstreams)
+            assertTrue(r.numberOfDescendants() <= MeshOrganizer.MAX_DOWNSTREAMS * MeshOrganizer.MAX_DEPTH);
+    }
+
 }
