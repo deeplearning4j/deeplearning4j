@@ -208,7 +208,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         int hw = 15;
 
         Nd4j.getRandom().setSeed(12345);
-        INDArray randInput = Nd4j.rand(12345, 100, nOut, hw, Nd4j.getRandom());
+        INDArray randInput = Nd4j.rand(new int[]{100, nOut, hw, hw});
         INDArray output = l.activate(randInput, true, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(4, output.rank());

@@ -642,6 +642,10 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(dynamic_partition, 2, 1, false, 0, 1);
         #endif
 
+        #if NOT_EXCLUDED(OP_dynamic_partition_bp)
+        DECLARE_CUSTOM_OP(dynamic_partition_bp, 3, 2, false, 0, 1);
+        #endif
+
         /**
          * dynamic_stitch - merge partitions from the second param a input tensor 
          * into a single tensor accordingly to index array given.
@@ -1228,7 +1232,7 @@ namespace nd4j {
         */
 
         #if NOT_EXCLUDED(OP_reduce_dot_bp)
-        DECLARE_CUSTOM_OP(reduce_dot_bp, 3, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_dot_bp, 3, 2, false, 0, 0);
         #endif
 
     }
