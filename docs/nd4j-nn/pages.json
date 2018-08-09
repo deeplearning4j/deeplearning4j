@@ -7,11 +7,11 @@
   "pages": [
     {
       "page": "activations.md",
-      "module": "nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/activations/impl/"
+      "module": "/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/activations/impl/"
     },
     {
       "page": "updaters.md",
-      "module": "nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/learning/"
+      "module": "/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/learning/"
     }
   ]
 }
