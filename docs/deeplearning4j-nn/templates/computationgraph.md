@@ -90,7 +90,7 @@ Finally, it is also possible to define custom graph vertices by implementing bot
 ### <a name="rnnskip">Example 1: Recurrent Network with Skip Connections</a>
 
 Suppose we wish to build the following recurrent neural network architecture:
-![RNN with Skip connections](./img/lstm_skip_connection.png)
+![RNN with Skip connections](/images/guide/lstm_skip_connection.png)
 
 For the sake of this example, lets assume our input data is of size 5. Our configuration would be as follows:
 
@@ -115,7 +115,7 @@ Note that in the .addLayer(...) methods, the first string ("L1", "L2") is the na
 
 Consider the following architecture:
 
-![Computation Graph with Merge Vertex](./img/compgraph_merge.png)
+![Computation Graph with Merge Vertex](/images/guide/compgraph_merge.png)
 
 Here, the merge vertex takes the activations out of layers L1 and L2, and merges (concatenates) them: thus if layers L1 and L2 both have has 4 output activations (.nOut(4)) then the output size of the merge vertex is 4+4=8 activations.
 
@@ -139,7 +139,7 @@ ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
 In multi-task learning, a neural network is used to make multiple independent predictions.
 Consider for example a simple network used for both classification and regression simultaneously. In this case, we have two output layers, "out1" for classification, and "out2" for regression.
 
-![Computation Graph for MultiTask Learning](./img/compgraph_multitask.png)
+![Computation Graph for MultiTask Learning](/images/guide/compgraph_multitask.png)
 
 In this case, the network configuration is:
 
