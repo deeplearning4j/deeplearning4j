@@ -37,6 +37,9 @@ namespace nd4j {
             for (Nd4jLong nextI = 1; nextI < block.width(); ++nextI) {
                 NDArray<T>* nextM = INPUT_VARIABLE(nextI);
                 // TO DO: the rest of op here.
+                for (Nd4jLong e = 0; e < z->lengthOf(); ++e) {
+
+                }
             }
             return ND4J_STATUS_OK;
         }
