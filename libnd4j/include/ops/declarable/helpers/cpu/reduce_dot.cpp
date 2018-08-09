@@ -52,9 +52,11 @@ namespace helpers {
         }
     }
 
-    template void reduceDotBP(NDArray<float>* inputX,  NDArray<float>* inputY,   NDArray<float>* epsilon, NDArray<float>* outputX, NDArray<float>* outputY, std::vector<int> const& axes);
+    template void reduceDotBP(NDArray<float>* inputX,NDArray<float>* inputY, NDArray<float>* epsilon, NDArray<float>* outputX, NDArray<float>* outputY, std::vector<int> const& axes);
     template void reduceDotBP(NDArray<float16>* inputX,NDArray<float16>* inputY, NDArray<float16>* epsilon, NDArray<float16>* outputX, NDArray<float16>* outputY, std::vector<int> const& axes);
-    template void reduceDotBP(NDArray<double>* inputX, NDArray<double>* inputY,  NDArray<double>* epsilon, NDArray<double>* outputX, NDArray<double>* outputY, std::vector<int> const& axes);
+    template void reduceDotBP(NDArray<double>* inputX,NDArray<double>* inputY, NDArray<double>* epsilon, NDArray<double>* outputX, NDArray<double>* outputY, std::vector<int> const& axes);
+    template void reduceDotBP(NDArray<int>* inputX,NDArray<int>* inputY, NDArray<int>* epsilon, NDArray<int>* outputX, NDArray<int>* outputY, std::vector<int> const& axes);
+    template void reduceDotBP(NDArray<Nd4jLong>* inputX,NDArray<Nd4jLong>* inputY, NDArray<Nd4jLong>* epsilon, NDArray<Nd4jLong>* outputX, NDArray<Nd4jLong>* outputY, std::vector<int> const& axes);
 }
 }
 }
