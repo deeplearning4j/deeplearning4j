@@ -399,6 +399,21 @@
         <profile>
             <id>testresources</id>
         </profile>
+
+        <profile>
+            <id>nd4j-testresources</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>dl4j-test-resources</artifactId>
+                    <version>${dl4j-test-resources.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
     </profiles>
 
     <reporting>

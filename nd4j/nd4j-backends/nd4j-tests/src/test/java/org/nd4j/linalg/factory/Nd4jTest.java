@@ -17,19 +17,33 @@
 package org.nd4j.linalg.factory;
 
 import lombok.val;
+import org.bytedeco.javacpp.BytePointer;
+import org.bytedeco.javacpp.CharPointer;
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.CharIndexer;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.io.File;
+import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 
@@ -114,11 +128,11 @@ public class Nd4jTest extends BaseNd4jTest {
         INDArray data = Nd4j.create(new double[] {4., 4., 4., 4., 8., 8., 8., 8., 4., 4., 4., 4., 8., 8., 8., 8., 4.,
                         4., 4., 4., 8., 8., 8., 8., 4., 4., 4., 4., 8., 8., 8., 8, 2., 2., 2., 2., 4., 4., 4., 4., 2.,
                         2., 2., 2., 4., 4., 4., 4., 2., 2., 2., 2., 4., 4., 4., 4., 2., 2., 2., 2., 4., 4., 4., 4.},
-                        new int[] {2, 2, 4, 4});
+                new int[] {2, 2, 4, 4});
 
         INDArray actualResult = data.mean(0);
         INDArray expectedResult = Nd4j.create(new double[] {3., 3., 3., 3., 6., 6., 6., 6., 3., 3., 3., 3., 6., 6., 6.,
-                        6., 3., 3., 3., 3., 6., 6., 6., 6., 3., 3., 3., 3., 6., 6., 6., 6.}, new int[] {2, 4, 4});
+                6., 3., 3., 3., 3., 6., 6., 6., 6., 3., 3., 3., 3., 6., 6., 6., 6.}, new int[] {2, 4, 4});
         assertEquals(getFailureMessage(), expectedResult, actualResult);
     }
 
@@ -128,11 +142,11 @@ public class Nd4jTest extends BaseNd4jTest {
         INDArray data = Nd4j.create(new double[] {4., 4., 4., 4., 8., 8., 8., 8., 4., 4., 4., 4., 8., 8., 8., 8., 4.,
                         4., 4., 4., 8., 8., 8., 8., 4., 4., 4., 4., 8., 8., 8., 8, 2., 2., 2., 2., 4., 4., 4., 4., 2.,
                         2., 2., 2., 4., 4., 4., 4., 2., 2., 2., 2., 4., 4., 4., 4., 2., 2., 2., 2., 4., 4., 4., 4.},
-                        new int[] {2, 2, 4, 4});
+                new int[] {2, 2, 4, 4});
 
         INDArray actualResult = data.var(false, 0);
         INDArray expectedResult = Nd4j.create(new double[] {1., 1., 1., 1., 4., 4., 4., 4., 1., 1., 1., 1., 4., 4., 4.,
-                        4., 1., 1., 1., 1., 4., 4., 4., 4., 1., 1., 1., 1., 4., 4., 4., 4.}, new int[] {2, 4, 4});
+                4., 1., 1., 1., 1., 4., 4., 4., 4., 1., 1., 1., 1., 4., 4., 4., 4.}, new int[] {2, 4, 4});
         assertEquals(getFailureMessage(), expectedResult, actualResult);
     }
 
@@ -186,7 +200,7 @@ public class Nd4jTest extends BaseNd4jTest {
             val shape = testMatrix.shape();
             final INDArray squeezed = Nd4j.squeeze(testMatrix, 1);
             final long[] expShape = ArrayUtil.removeIndex(shape, 1);
-            final String message = "Squeezing in dimension 1; Shape before squeezing: " + Arrays.toString(shape) + " "+ordering+" Order; Shape after expanding: " + Arrays.toString(squeezed.shape()) +  " "+squeezed.ordering()+"; Input Created via: " + recreation;
+            final String message = "Squeezing in dimension 1; Shape before squeezing: " + Arrays.toString(shape) + " " + ordering + " Order; Shape after expanding: " + Arrays.toString(squeezed.shape()) +  " "+squeezed.ordering()+"; Input Created via: " + recreation;
 
             assertArrayEquals(message, expShape, squeezed.shape());
             assertEquals(message, ordering, squeezed.ordering());
@@ -198,4 +212,66 @@ public class Nd4jTest extends BaseNd4jTest {
         }
     }
 
+
+    @Test
+    public void testNumpyConversion() throws Exception {
+        INDArray linspace = Nd4j.linspace(1,4,4);
+        Pointer convert = Nd4j.getNDArrayFactory().convertToNumpy(linspace);
+        convert.position(0);
+
+        Pointer pointer = NativeOpsHolder.getInstance().getDeviceNativeOps().loadNpyFromHeader(convert);
+        Pointer pointer1 = NativeOpsHolder.getInstance().getDeviceNativeOps().dataPointForNumpyStruct(pointer);
+        pointer1.capacity(linspace.data().getElementSize() * linspace.data().length());
+        ByteBuffer byteBuffer = linspace.data().pointer().asByteBuffer();
+        byte[] originalData = new byte[byteBuffer.capacity()];
+        byteBuffer.get(originalData);
+
+
+        ByteBuffer floatBuffer = pointer1.asByteBuffer();
+        byte[] dataTwo = new byte[floatBuffer.capacity()];
+        floatBuffer.get(dataTwo);
+        Assert.assertArrayEquals(originalData,dataTwo);
+        floatBuffer.position(0);
+
+        DataBuffer dataBuffer = Nd4j.createBuffer(new FloatPointer(floatBuffer.asFloatBuffer()),linspace.length());
+        assertEquals(Nd4j.createBuffer(new float[]{1,2,3,4}),dataBuffer);
+
+        INDArray convertedFrom = Nd4j.getNDArrayFactory().createFromNpyHeaderPointer(convert);
+        assertEquals(linspace,convertedFrom);
+
+        File tmpFile = new File(System.getProperty("java.io.tmpdir"),"nd4j-numpy-tmp-" + UUID.randomUUID().toString() + ".bin");
+        tmpFile.deleteOnExit();
+        Nd4j.writeAsNumpy(linspace,tmpFile);
+
+        INDArray numpyFromFile = Nd4j.createFromNpyFile(tmpFile);
+        assertEquals(linspace,numpyFromFile);
+
+    }
+
+
+
+    @Test
+    public void testNumpyWrite() throws Exception {
+        INDArray linspace = Nd4j.linspace(1,4,4);
+        File tmpFile = new File(System.getProperty("java.io.tmpdir"),"nd4j-numpy-tmp-" + UUID.randomUUID().toString() + ".bin");
+        tmpFile.deleteOnExit();
+        Nd4j.writeAsNumpy(linspace,tmpFile);
+
+        INDArray numpyFromFile = Nd4j.createFromNpyFile(tmpFile);
+        assertEquals(linspace,numpyFromFile);
+
+    }
+
+    @Test
+    public void testNpyByteArray() throws Exception {
+        INDArray linspace = Nd4j.linspace(1,4,4);
+        byte[] bytes = Nd4j.toNpyByteArray(linspace);
+        INDArray fromNpy = Nd4j.createNpyFromByteArray(bytes);
+        assertEquals(linspace,fromNpy);
+
+    }
+
+
+
 }
+

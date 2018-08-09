@@ -39,10 +39,6 @@ public class NGramTokenizerFactory implements TokenizerFactory {
 
     @Override
     public Tokenizer create(String toTokenize) {
-        if (toTokenize == null || toTokenize.isEmpty()) {
-            throw new IllegalArgumentException("Unable to proceed; no sentence to tokenize");
-        }
-
         Tokenizer t1 = tokenizerFactory.create(toTokenize);
         t1.setTokenPreProcessor(preProcess);
         Tokenizer ret = new NGramTokenizer(t1, minN, maxN);

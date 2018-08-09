@@ -21,6 +21,7 @@ import lombok.val;
 import org.bytedeco.javacpp.Loader;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
+import org.deeplearning4j.config.DL4JEnvironmentVars;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -107,7 +108,7 @@ public class SharedTrainingWrapper {
 
     public static synchronized SharedTrainingWrapper getInstance(long id) {
         if(LAST_INSTANCE_ID.get() != Long.MIN_VALUE && LAST_INSTANCE_ID.get() != id){
-            log.info("Shutting down existing SharedTrainingWrapper instances; resetting state - previous instance ID {}," +
+            log.debug("Shutting down existing SharedTrainingWrapper instances; resetting state - previous instance ID {}," +
                     " new instance ID {}", LAST_INSTANCE_ID.get(), id);
             if(INSTANCE.wrapper != null){
                 INSTANCE.wrapper.shutdown();
@@ -136,7 +137,7 @@ public class SharedTrainingWrapper {
      * @param iterator
      */
     public void attachDS(Iterator<DataSet> iterator) {
-        log.info("Attaching thread...");
+        log.debug("Attaching thread...");
 
         //Count the number of minibatches - used for reporting/debugging purposes
         if(iteratorDataSetCount.get() == null)
@@ -164,7 +165,7 @@ public class SharedTrainingWrapper {
      * @param iterator
      */
     public void attachMDS(Iterator<MultiDataSet> iterator) {
-        log.info("Attaching thread...");
+        log.debug("Attaching thread...");
 
         //Count the number of minibatches - used for reporting/debugging purposes
         if(iteratorDataSetCount.get() == null)
@@ -308,7 +309,7 @@ public class SharedTrainingWrapper {
 
                     // last resort here...
                     if (localIP == null)
-                        localIP = System.getenv("DL4J_VOID_IP");
+                        localIP = System.getenv(DL4JEnvironmentVars.DL4J_VOID_IP);
 
                     // set it to localhost, and hope for BroadcastTransport used
                     if (localIP == null) {
@@ -335,7 +336,7 @@ public class SharedTrainingWrapper {
 
                 // we're launching PW only if number of workers is more then 1
                 if (numWorkers > 1) {
-                    log.info("Params at PW: {}", originalModel.params().meanNumber().doubleValue());
+                    //log.debug("Params at PW: {}", originalModel.params().meanNumber().doubleValue());
 
                     wrapper = new ParallelWrapper.Builder<>(originalModel).workers(numWorkers)
                                     .workspaceMode(trainingConfiguration.getWorkspaceMode())
@@ -344,7 +345,7 @@ public class SharedTrainingWrapper {
                                     .build();
                     wrapper.setExceptionEncountered(exceptionEncountered);
                 } else {
-                    log.info("Using standalone model instead...");
+                    log.debug("Using standalone model instead...");
 
                     // since there'll be only one consumer, we don't need complex sync logic anymore
                     accumulator.fallbackToSingleConsumerMode(true);
@@ -444,7 +445,7 @@ public class SharedTrainingWrapper {
                 observer.get().waitTillDone();
                 //observer.get().wait();
 
-                log.info("Feeder thread done...");
+                log.debug("Feeder thread done...");
 
                 if(exceptionEncountered.get()){
                     //Propagate exception

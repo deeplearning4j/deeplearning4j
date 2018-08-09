@@ -18,7 +18,6 @@ package org.nd4j.linalg.convolution;
 
 
 import lombok.val;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
@@ -358,16 +357,6 @@ public class Convolution {
     }
 
     /**
-     * @param input
-     * @param kernel
-     * @param type
-     * @return
-     */
-    public static INDArray conv2d(IComplexNDArray input, IComplexNDArray kernel, Type type) {
-        return Nd4j.getConvolution().conv2d(input, kernel, type);
-    }
-
-    /**
      * ND Convolution
      *
      * @param input  the input to op
@@ -386,36 +375,9 @@ public class Convolution {
      * @param input  the input to op
      * @param kernel the kernel to op with
      * @param type   the opType of convolution
-     * @param axes   the axes to do the convolution along
-     * @return the convolution of the given input and kernel
-     */
-    public static IComplexNDArray convn(IComplexNDArray input, IComplexNDArray kernel, Type type, int[] axes) {
-        return Nd4j.getConvolution().convn(input, kernel, type, axes);
-    }
-
-    /**
-     * ND Convolution
-     *
-     * @param input  the input to op
-     * @param kernel the kernel to op with
-     * @param type   the opType of convolution
      * @return the convolution of the given input and kernel
      */
     public static INDArray convn(INDArray input, INDArray kernel, Type type) {
         return Nd4j.getConvolution().convn(input, kernel, type);
     }
-
-    /**
-     * ND Convolution
-     *
-     * @param input  the input to op
-     * @param kernel the kernel to op with
-     * @param type   the opType of convolution
-     * @return the convolution of the given input and kernel
-     */
-    public static IComplexNDArray convn(IComplexNDArray input, IComplexNDArray kernel, Type type) {
-        return Nd4j.getConvolution().convn(input, kernel, type);
-    }
-
-
 }

@@ -32,6 +32,7 @@ import org.deeplearning4j.api.loader.impl.SerializedMultiDataSetLoader;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.StorageMetaData;
+import org.deeplearning4j.config.DL4JEnvironmentVars;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.spark.api.*;
@@ -425,7 +426,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         if (voidConfiguration.getControllerAddress() == null)
-            voidConfiguration.setControllerAddress(System.getenv("DL4J_VOID_IP"));
+            voidConfiguration.setControllerAddress(DL4JEnvironmentVars.DL4J_VOID_IP);
 
         if (voidConfiguration.getControllerAddress() == null)
             throw new DL4JInvalidConfigException(
@@ -675,8 +676,14 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats)
             stats.logRepartitionStart();
 
-        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy,
-                        numObjectsEachWorker(rddDataSetNumExamples), numWorkers);
+        if(repartitioner != null){
+            log.info("Repartitioning training data using repartitioner: {}", repartitioner);
+            int minPerWorker = Math.max(1, batchSizePerWorker/rddDataSetNumExamples);
+            splitData = repartitioner.repartition(splitData, minPerWorker, numWorkers);
+        } else {
+            log.info("Repartitioning training data using SparkUtils repartitioner");
+            splitData = SparkUtils.repartitionEqually(splitData, repartition, numWorkers);
+        }
         int nPartitions = splitData.partitions().size();
 
         if (collectTrainingStats && repartition != Repartition.Never)
@@ -707,8 +714,14 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats)
             stats.logRepartitionStart();
 
-        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy,
-                        numObjectsEachWorker(rddDataSetNumExamples), numWorkers);
+        if(repartitioner != null){
+            log.info("Repartitioning training data using repartitioner: {}", repartitioner);
+            int minPerWorker = Math.max(1, batchSizePerWorker/rddDataSetNumExamples);
+            splitData = repartitioner.repartition(splitData, minPerWorker, numWorkers);
+        } else {
+            log.info("Repartitioning training data using SparkUtils repartitioner");
+            splitData = SparkUtils.repartitionEqually(splitData, repartition, numWorkers);
+        }
         int nPartitions = splitData.partitions().size();
 
         if (collectTrainingStats && repartition != Repartition.Never)

@@ -30,7 +30,6 @@ import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -42,7 +41,6 @@ import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
-import org.nd4j.linalg.api.ops.random.impl.TruncatedNormalDistribution;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.TADManager;
@@ -797,7 +795,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         checkForCompression(op);
 
         //linear views and oblong offsets can't be handled by the gpu (due to the way the buffers are interpreted as vectors)
-        if (op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA || op instanceof CopyOp) {
+        if ( executionMode() == ExecutionMode.JAVA || op instanceof CopyOp) {
             // we dont' care about op.Z sync state, since it'll be overwritten
             if (op.x() != null)
                 AtomicAllocator.getInstance().synchronizeHostData(op.x());
@@ -811,7 +809,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             return null;
         }
 
-        if (op instanceof TransformOp) {
+        if (op instanceof GradientOp) {
+            op.exec();
+        } else if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
             invoke(t);
         } else if (op instanceof Accumulation) {
@@ -2519,6 +2519,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val hash = op.opHash();
 
         val result = new ArrayList<long[]>();
+        if(op.numInputArguments() < 1 && op.getDescriptor().getNumInputs() != -2) {
+            if(log.isTraceEnabled()){
+                log.trace("Could not calculate output shape for op {}: number of input args was 0",
+                        op.getClass().getName());
+            }
+            return Collections.emptyList();
+        }
 
         val inputBuffers = new PointerPointer<>(op.inputArguments().length);
         val inputShapes = new PointerPointer<>(op.inputArguments().length);
@@ -2833,46 +2840,38 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             cnt++;
         }
 
+        val iArgs = op.iArgs().length > 0 ? new LongPointer(op.iArgs().length) : null;
+
+        cnt = 0;
+        for (val i: op.iArgs())
+            iArgs.put(cnt++, i);
+
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
             val tArgs = op.tArgs().length > 0 ? new FloatPointer(op.tArgs().length) : null;
-            val iArgs = op.iArgs().length > 0 ? new LongPointer(op.iArgs().length) : null;
 
             cnt = 0;
             for (val t: op.tArgs())
                 tArgs.put(cnt++, (float) t);
-
-            cnt = 0;
-            for (val i: op.iArgs())
-                iArgs.put(cnt++, i);
 
             val status = OpStatus.byNumber(nativeOps.execCustomOpFloat(extras, hash, inputBuffers, inputShapes, inputArgs.length, outputBuffers, outputShapes, outputArgs.length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, op.isInplaceCall()));
             if (status != OpStatus.ND4J_STATUS_OK)
                 throw new ND4JIllegalStateException("Op execution failed: " + status);
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             val tArgs = op.tArgs().length > 0 ? new DoublePointer(op.tArgs().length) : null;
-            val iArgs = op.iArgs().length > 0 ? new LongPointer(op.iArgs().length) : null;
 
             cnt = 0;
             for (val t: op.tArgs())
                 tArgs.put(cnt++, t);
-
-            for (val i: op.iArgs())
-                iArgs.put(cnt++, i);
 
             val status = OpStatus.byNumber(nativeOps.execCustomOpDouble(extras, hash, inputBuffers, inputShapes, inputArgs.length, outputBuffers, outputShapes, outputArgs.length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, op.isInplaceCall()));
             if (status != OpStatus.ND4J_STATUS_OK)
                 throw new ND4JIllegalStateException("Op execution failed: " + status);
         } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
             val tArgs = op.tArgs().length > 0 ? new ShortPointer(op.tArgs().length) : null;
-            val iArgs = op.iArgs().length > 0 ? new LongPointer(op.iArgs().length) : null;
 
             cnt = 0;
             for (val t: op.tArgs())
                 tArgs.put(cnt++, ArrayUtil.toHalf((float) t));
-
-            cnt = 0;
-            for (val i: op.iArgs())
-                iArgs.put(cnt++, i);
 
             val status = OpStatus.byNumber(nativeOps.execCustomOpHalf(extras, hash, inputBuffers, inputShapes, inputArgs.length, outputBuffers, outputShapes, outputArgs.length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, op.isInplaceCall()));
             if (status != OpStatus.ND4J_STATUS_OK)
@@ -2886,11 +2885,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public void enableDebugMode(boolean reallyEnable) {
+        debug.set(reallyEnable);
         nativeOps.enableDebugMode(reallyEnable);
     }
 
     @Override
     public void enableVerboseMode(boolean reallyEnable) {
+        verbose.set(reallyEnable);
         nativeOps.enableVerboseMode(reallyEnable);
     }
 

@@ -87,8 +87,8 @@ public class  LogEntropy extends BaseAccumulation {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        //If y=log(x) then dL/dx = dL/dy * dy/dx; d(log(x))/dx = 1/x
+        //If y=log(x), and x=entropy(in) then dL/dx = dL/dy * dy/dx; d(log(x))/dx = 1/x
         List<SDVariable> entropyGrad = Entropy.grad(f(), arg(), f1.get(0), dimensions);
-        return Collections.singletonList(entropyGrad.get(0).div(outputVariable()));
+        return Collections.singletonList(entropyGrad.get(0).div(f().exp(outputVariable())));
     }
 }

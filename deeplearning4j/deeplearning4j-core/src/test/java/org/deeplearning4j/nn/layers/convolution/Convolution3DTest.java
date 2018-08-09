@@ -101,7 +101,7 @@ public class Convolution3DTest {
         DataSetIterator data = new MnistDataSetIterator(5, 5);
         DataSet mnist = data.next();
         nExamples = mnist.numExamples();
-        return mnist.getFeatureMatrix().reshape(nExamples, nChannelsIn, inputDepth, inputHeight, inputWidth);
+        return mnist.getFeatures().reshape(nExamples, nChannelsIn, inputDepth, inputHeight, inputWidth);
     }
 
     private INDArray getContainedData() {

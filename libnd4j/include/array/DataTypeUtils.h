@@ -64,6 +64,11 @@ FORCEINLINE _CUDA_HD int DataTypeUtils::min<int>() {
 }
 
 template<>
+FORCEINLINE _CUDA_HD char DataTypeUtils::min<char>() {
+    return 1;
+}
+
+template<>
 FORCEINLINE _CUDA_HD Nd4jLong DataTypeUtils::min<Nd4jLong>() {
     return 1L;
 }
@@ -71,6 +76,11 @@ FORCEINLINE _CUDA_HD Nd4jLong DataTypeUtils::min<Nd4jLong>() {
 template<>
 FORCEINLINE _CUDA_HD uint64_t DataTypeUtils::min<uint64_t>() {
     return 1L;
+}
+
+template<>
+FORCEINLINE _CUDA_HD uint32_t DataTypeUtils::min<uint32_t>() {
+    return 1;
 }
 
 template<>
@@ -96,8 +106,18 @@ FORCEINLINE _CUDA_HD int DataTypeUtils::max<int>() {
 }
 
 template <>
+FORCEINLINE _CUDA_HD char DataTypeUtils::max<char>() {
+    return 127;
+}
+
+template <>
 FORCEINLINE _CUDA_HD Nd4jLong DataTypeUtils::max<Nd4jLong>() {
     return 9223372036854775807LL;
+}
+
+template <>
+FORCEINLINE _CUDA_HD uint32_t DataTypeUtils::max<uint32_t>() {
+    return ((uint32_t)-1);
 }
 
 template <>
@@ -117,7 +137,7 @@ FORCEINLINE _CUDA_HD double DataTypeUtils::max<double>() {
 
 template <>
 FORCEINLINE _CUDA_HD float16 DataTypeUtils::max<float16>() {       
-    return (float16) 65504.f;   
+    return static_cast<float16>(65504.f);
 }
 
 ///////////////////////////////////////////////////////////////////

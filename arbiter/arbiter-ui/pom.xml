@@ -26,7 +26,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>arbiter-ui_2.11</artifactId>
+    <artifactId>arbiter-ui_2.10</artifactId>
     <name>arbiter-ui</name>
 
     <properties>
@@ -101,6 +101,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>arbiter-core</artifactId>
             <version>${project.version}</version>
@@ -108,7 +114,7 @@
 
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-ui_2.11</artifactId>
+            <artifactId>deeplearning4j-ui_2.10</artifactId>
             <version>${dl4j.version}</version>
         </dependency>
 

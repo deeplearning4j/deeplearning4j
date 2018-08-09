@@ -23,18 +23,12 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nd4j-parameter-server-node_2.11</artifactId>
+    <artifactId>nd4j-parameter-server-node_2.10</artifactId>
     <packaging>jar</packaging>
 
     <name>nd4j-parameter-server-node</name>
 
     <dependencies>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-parameter-server-client</artifactId>
@@ -47,7 +41,7 @@
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-parameter-server-status_2.11</artifactId>
+            <artifactId>nd4j-parameter-server-status_2.10</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -60,6 +54,15 @@
     <profiles>
         <profile>
             <id>testresources</id>
+            <!-- Put nd4j-native in profile so that CUDA-only builds succeed -->
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 </project>

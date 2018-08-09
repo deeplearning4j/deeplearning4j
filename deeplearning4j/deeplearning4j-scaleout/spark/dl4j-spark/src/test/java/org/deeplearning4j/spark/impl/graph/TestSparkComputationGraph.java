@@ -274,7 +274,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
     }
 
 
-    @Test
+    @Test(timeout = 60000L)
     public void testEvaluationAndRoc() {
         for( int evalWorkers : new int[]{1, 4, 8}) {
             DataSetIterator iter = new IrisDataSetIterator(5, 150);

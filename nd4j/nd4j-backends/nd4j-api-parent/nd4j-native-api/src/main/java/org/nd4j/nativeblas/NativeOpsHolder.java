@@ -19,6 +19,7 @@ package org.nd4j.nativeblas;
 import lombok.Getter;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -47,7 +48,7 @@ public class NativeOpsHolder {
 
             deviceNativeOps.initializeDevicesAndFunctions();
             int numThreads;
-            String numThreadsString = System.getenv("OMP_NUM_THREADS");
+            String numThreadsString = System.getenv(ND4JEnvironmentVars.OMP_NUM_THREADS);
             if (numThreadsString != null && !numThreadsString.isEmpty()) {
                 numThreads = Integer.parseInt(numThreadsString);
                 deviceNativeOps.setOmpNumThreads(numThreads);

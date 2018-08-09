@@ -28,7 +28,7 @@ import org.deeplearning4j.nn.conf.layers.Deconvolution2D;
 @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
 public class Deconvolution2DLayerSpace extends BaseConvolutionLayerSpace<Deconvolution2D> {
 
-    protected Deconvolution2DLayerSpace(Builder builder){
+    protected Deconvolution2DLayerSpace(Builder builder) {
         super(builder);
     }
 
@@ -39,9 +39,11 @@ public class Deconvolution2DLayerSpace extends BaseConvolutionLayerSpace<Deconvo
         return b.build();
     }
 
+    protected void setLayerOptionsBuilder(Deconvolution2D.Builder builder, double[] values) {
+        super.setLayerOptionsBuilder(builder, values);
+    }
+
     public static class Builder extends BaseConvolutionLayerSpace.Builder<Builder> {
-
-
         @Override
         public Deconvolution2DLayerSpace build() {
             return new Deconvolution2DLayerSpace(this);

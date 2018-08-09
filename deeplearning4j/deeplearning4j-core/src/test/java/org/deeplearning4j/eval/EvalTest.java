@@ -220,7 +220,7 @@ public class EvalTest extends BaseDL4JTest {
         // Test
         DataSet test = trainTest.getTest();
         test.normalizeZeroMeanZeroUnitVariance();
-        INDArray testFeature = test.getFeatureMatrix();
+        INDArray testFeature = test.getFeatures();
         INDArray testLabel = test.getLabels();
 
         // Fitting model
@@ -678,7 +678,7 @@ public class EvalTest extends BaseDL4JTest {
         for (Prediction t : errors) {
             System.out.println(t + "\t\tRaw Data: "
                             + csv.loadFromMetaData((RecordMetaData) t.getRecordMetaData()).getRecord() //*** New - load subset of data from MetaData object (usually batched for efficiency) ***
-                            + "\tNormalized: " + ds.getFeatureMatrix().getRow(count) + "\tLabels: "
+                            + "\tNormalized: " + ds.getFeatures().getRow(count) + "\tLabels: "
                             + ds.getLabels().getRow(count) + "\tNetwork predictions: " + output.getRow(count));
             count++;
         }

@@ -47,30 +47,22 @@ public class ManhattanDistance extends BaseAccumulation {
 
     public ManhattanDistance(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
-        extraArgs = new Object[2];
-        extraArgs[0] = 0.0f;
-        extraArgs[1] = 0.0f;
+        extraArgs = new Object[]{0.0f, 0.0f};
     }
 
     public ManhattanDistance(INDArray x, INDArray y, long n) {
         super(x, y, n);
-        extraArgs = new Object[2];
-        extraArgs[0] = 0.0f;
-        extraArgs[1] = 0.0f;
+        extraArgs = new Object[]{0.0f, 0.0f};
     }
 
     public ManhattanDistance(INDArray x) {
         super(x);
-        extraArgs = new Object[2];
-        extraArgs[0] = 0.0f;
-        extraArgs[1] = 0.0f;
+        extraArgs = new Object[]{0.0f, 0.0f};
     }
 
     public ManhattanDistance(INDArray x, INDArray y) {
         super(x, y);
-        extraArgs = new Object[2];
-        extraArgs[0] = 0.0f;
-        extraArgs[1] = 0.0f;
+        extraArgs = new Object[]{0.0f, 0.0f};
     }
 
     public ManhattanDistance(INDArray x, INDArray y, boolean allDistances) {
@@ -81,6 +73,11 @@ public class ManhattanDistance extends BaseAccumulation {
     public ManhattanDistance(INDArray x, INDArray y, INDArray z, boolean allDistances) {
         this(x, y, z, x.lengthLong());
         this.isComplex = allDistances;
+    }
+
+    public ManhattanDistance(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){
+        super(x, y, z, newFormat, keepDims, dimensions);
+        extraArgs = new Object[]{0.0f, 0.0f};
     }
 
     @Override
@@ -111,12 +108,7 @@ public class ManhattanDistance extends BaseAccumulation {
         SDVariable difference = larg().sub(rarg());
         SDVariable gradBroadcastable;
         int origRank = Shape.rankFromShape(arg().getShape());   //TODO shape may not always be defined?
-        if(!(dimensions.length == 1 && dimensions[0] == Integer.MAX_VALUE) ){
-            //1x1 output case
-            gradBroadcastable = i_v1.get(0);
-        } else {
-            gradBroadcastable = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
-        }
+        gradBroadcastable = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
 
         SDVariable gradX = sameDiff.sign(difference).mul(gradBroadcastable);
         SDVariable gradY = f().neg(gradX);

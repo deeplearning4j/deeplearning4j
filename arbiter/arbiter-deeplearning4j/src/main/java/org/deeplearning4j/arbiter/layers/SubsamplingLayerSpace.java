@@ -38,6 +38,7 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
 
     protected ParameterSpace<ConvolutionMode> convolutionMode;
     protected ParameterSpace<SubsamplingLayer.PoolingType> poolingType;
+    protected ParameterSpace<int[]> dilation;
     protected ParameterSpace<int[]> kernelSize;
     protected ParameterSpace<int[]> stride;
     protected ParameterSpace<int[]> padding;
@@ -49,6 +50,7 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
         this.convolutionMode = builder.convolutionMode;
         this.poolingType = builder.poolingType;
         this.kernelSize = builder.kernelSize;
+        this.dilation = builder.dilation;
         this.stride = builder.stride;
         this.padding = builder.padding;
         this.pnorm = builder.pnorm;
@@ -70,6 +72,8 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
             builder.convolutionMode(convolutionMode.getValue(values));
         if (poolingType != null)
             builder.poolingType(poolingType.getValue(values));
+        if (dilation !=null)
+            builder.dilation(dilation.getValue(values));
         if (kernelSize != null)
             builder.kernelSize(kernelSize.getValue(values));
         if (stride != null)
@@ -94,6 +98,8 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
             sb.append("convolutionMode: ").append(convolutionMode).append(delim);
         if (poolingType != null)
             sb.append("poolingType: ").append(poolingType).append(delim);
+        if (dilation != null)
+            sb.append("dilation: ").append(dilation).append(delim);
         if (kernelSize != null)
             sb.append("kernelSize: ").append(kernelSize).append(delim);
         if (stride != null)
@@ -113,6 +119,7 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
 
         protected ParameterSpace<ConvolutionMode> convolutionMode;
         protected ParameterSpace<SubsamplingLayer.PoolingType> poolingType;
+        protected ParameterSpace<int[]> dilation;
         protected ParameterSpace<int[]> kernelSize;
         protected ParameterSpace<int[]> stride;
         protected ParameterSpace<int[]> padding;
@@ -134,6 +141,15 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
 
         public Builder poolingType(ParameterSpace<SubsamplingLayer.PoolingType> poolingType) {
             this.poolingType = poolingType;
+            return this;
+        }
+
+        public Builder dilation(int... dilation) {
+            return dilation(new FixedValue<>(dilation));
+        }
+
+        public Builder dilation(ParameterSpace<int[]> dilation) {
+            this.dilation = dilation;
             return this;
         }
 

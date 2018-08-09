@@ -50,7 +50,7 @@ public class SerializationUtilsTest extends BaseDL4JTest {
 
         DataSet readDataSet = org.nd4j.linalg.util.SerializationUtils.readObject(f);
 
-        assertEquals(freshDataSet.getFeatureMatrix(), readDataSet.getFeatureMatrix());
+        assertEquals(freshDataSet.getFeatures(), readDataSet.getFeatures());
         assertEquals(freshDataSet.getLabels(), readDataSet.getLabels());
     }
 

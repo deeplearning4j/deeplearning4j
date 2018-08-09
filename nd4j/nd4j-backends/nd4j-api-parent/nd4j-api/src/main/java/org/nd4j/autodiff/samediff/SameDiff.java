@@ -231,7 +231,6 @@ public class SameDiff {
         //cloner.registerFastCloner(INDArray.class, new INDArrayFastCloner());  //Does not work due to interface
         IFastCloner fc = new INDArrayFastCloner();
         cloner.registerFastCloner(Nd4j.getBackend().getNDArrayClass(), fc);
-        cloner.registerFastCloner(Nd4j.getBackend().getComplexNDArrayClass(), fc);
 
         //Same thing with DataBuffers: off heap -> cloner library chokes on them, but need to know the concrete
         // buffer classes, not just the interface
@@ -671,7 +670,9 @@ public class SameDiff {
                 }
                 variableNameToArr.remove(varName);
             } else {
-                throw new ND4JIllegalStateException("Already found an existing array!");
+                throw new ND4JIllegalStateException("Already found an existing array for variable \"" + varName
+                        + "\" with shape " + Arrays.toString(variableNameToArr.get(varName).shape())
+                        + " - attempting to put new array shape " + Arrays.toString(shape));
             }
         }
 
@@ -4814,6 +4815,122 @@ public class SameDiff {
     }
 
     /**
+     * @see #segmentMax(String, SDVariable, SDVariable)
+     */
+    public SDVariable segmentMax(SDVariable data, SDVariable segmentIds){
+        return segmentMax(null, data, segmentIds);
+    }
+
+    /**
+     * Segment max operation.<br>
+     * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
+     * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
+     * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)
+     *
+     * @param name       Name of the output variable. May be null
+     * @param data       Data to perform segment max on
+     * @param segmentIds Variable for the segment IDs
+     * @return Segment max output
+     */
+    public SDVariable segmentMax(String name, SDVariable data, SDVariable segmentIds){
+        SDVariable ret = f().segmentMax(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * @see #segmentMin(String, SDVariable, SDVariable)
+     */
+    public SDVariable segmentMin(SDVariable data, SDVariable segmentIds){
+        return segmentMin(null, data, segmentIds);
+    }
+
+    /**
+     * Segment min operation.<br>
+     * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
+     * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
+     * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)
+     *
+     * @param name       Name of the output variable. May be null
+     * @param data       Data to perform segment max on
+     * @param segmentIds Variable for the segment IDs
+     * @return Segment min output
+     */
+    public SDVariable segmentMin(String name, SDVariable data, SDVariable segmentIds){
+        SDVariable ret = f().segmentMin(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * @see #segmentMean(String, SDVariable, SDVariable)
+     */
+    public SDVariable segmentMean(SDVariable data, SDVariable segmentIds){
+        return segmentMean(null, data, segmentIds);
+    }
+
+    /**
+     * Segment mean operation.<br>
+     * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
+     * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
+     * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)
+     *
+     * @param name       Name of the output variable. May be null
+     * @param data       Data to perform segment max on
+     * @param segmentIds Variable for the segment IDs
+     * @return Segment mean output
+     */
+    public SDVariable segmentMean(String name, SDVariable data, SDVariable segmentIds){
+        SDVariable ret = f().segmentMean(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * @see #segmentProd(String, SDVariable, SDVariable)
+     */
+    public SDVariable segmentProd(SDVariable data, SDVariable segmentIds){
+        return segmentProd(null, data, segmentIds);
+    }
+
+    /**
+     * Segment product operation.<br>
+     * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
+     * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
+     * then output = [18, 36, 16] = [prod(3,6), prod(1,4,9), prod(2,8)
+     *
+     * @param name       Name of the output variable. May be null
+     * @param data       Data to perform segment max on
+     * @param segmentIds Variable for the segment IDs
+     * @return Segment product output
+     */
+    public SDVariable segmentProd(String name, SDVariable data, SDVariable segmentIds){
+        SDVariable ret = f().segmentProd(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * @see #segmentSum(String, SDVariable, SDVariable)
+     */
+    public SDVariable segmentSum(SDVariable data, SDVariable segmentIds){
+        return segmentSum(null, data, segmentIds);
+    }
+
+    /**
+     * Segment sum operation.<br>
+     * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
+     * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
+     * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)
+     *
+     * @param name       Name of the output variable. May be null
+     * @param data       Data to perform segment max on
+     * @param segmentIds Variable for the segment IDs
+     * @return Segment sum output
+     */
+    public SDVariable segmentSum(String name, SDVariable data, SDVariable segmentIds){
+        SDVariable ret = f().segmentSum(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+
+    /**
      * TODO doc string
      *
      * @param df
@@ -4908,6 +5025,27 @@ public class SameDiff {
      */
     public SDVariable rank(String name, SDVariable in) {
         SDVariable ret = f().rank(in);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * @see #sizeAt(String, SDVariable, int)
+     */
+    public SDVariable sizeAt(SDVariable in, int dimension){
+        return sizeAt(null, in, dimension);
+    }
+
+    /**
+     * Returns a rank 0 (scalar) variable for the size of the specified dimension.
+     * For example, if X has shape [10,20,30] then sizeAt(X,1)=20. Similarly, sizeAt(X,-1)=30
+     *
+     * @param name      Name of the output variable
+     * @param in        Input variable
+     * @param dimension Dimension to get size of
+     * @return Scalar SDVariable for size at specified variable
+     */
+    public SDVariable sizeAt(String name, SDVariable in, int dimension){
+        SDVariable ret = f().sizeAt(in, dimension);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -5843,6 +5981,30 @@ public class SameDiff {
      */
     public SDVariable logEntropy(String name, SDVariable in, int... dimensions) {
         SDVariable ret = f().logEntropy(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Shannon Entropy reduction: -sum(x * log2(x))
+     *
+     * @param in         Input variable
+     * @param dimensions Dimensions to reduce on (null/empty for full array)
+     * @return Output variable
+     */
+    public SDVariable shannonEntropy(SDVariable in, int... dimensions) {
+        return shannonEntropy(null, in, dimensions);
+    }
+
+    /**
+     * Shannon Entropy reduction: -sum(x * log2(x))
+     *
+     * @param name       Name of the output variable
+     * @param in         Input variable
+     * @param dimensions Dimensions to reduce on (null/empty for full array)
+     * @return Output variable: reduced array of rank (input rank - num dimensions)
+     */
+    public SDVariable shannonEntropy(String name, SDVariable in, int... dimensions) {
+        SDVariable ret = f().shannonEntropy(in, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -7192,6 +7354,46 @@ public class SameDiff {
                                          double shift) {
         SDVariable[] res = f().normalizeMoments(counts, means, variances, shift);
         return updateVariableNamesAndReferences(res, name);
+    }
+
+    /**
+     * @see #matrixDeterminant(String, SDVariable)
+     */
+    public SDVariable matrixDeterminant(SDVariable in){
+        return matrixDeterminant(null, in);
+    }
+
+    /**
+     * Matrix determinant op. For 2D input, this returns the standard matrix determinant.
+     * For higher dimensional input with shape [..., m, m] the matrix determinant is returned for each
+     * shape [m,m] sub-matrix.
+     * @param name Name of the output variable
+     * @param in   Input
+     * @return Matrix determinant variable
+     */
+    public SDVariable matrixDeterminant(String name, SDVariable in){
+        SDVariable ret = f().matrixDeterminant(in);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * @see #matrixInverse(String, SDVariable)
+     */
+    public SDVariable matrixInverse(SDVariable in){
+        return matrixInverse(null, in);
+    }
+
+    /**
+     * Matrix inverse op. For 2D input, this returns the standard matrix inverse.
+     * For higher dimensional input with shape [..., m, m] the matrix inverse is returned for each
+     * shape [m,m] sub-matrix.
+     * @param name Name of the output variable
+     * @param in   Input
+     * @return Matrix inverse variable
+     */
+    public SDVariable matrixInverse(String name, SDVariable in){
+        SDVariable ret = f().matrixInverse(in);
+        return updateVariableNameAndReference(ret, name);
     }
 
     /**
@@ -8640,6 +8842,56 @@ public class SameDiff {
     }
 
     /**
+     * @see #scatterMax(String, SDVariable, SDVariable, SDVariable)
+     */
+    public SDVariable scatterMax(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return scatterMax(null, ref, indices, updates);
+    }
+
+    /**
+     * Scatter max operation.<br>
+     * If indices is rank 0 (a scalar), then out[index, ...] = max(updates[...], in[index,...])<br>
+     * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = max(updates[i,...], in[indices[i],...])<br>
+     * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = max(updates[i, ..., k, ...], in[indices[i], ..., indices[k], ...]<br>
+     * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
+     *
+     * @param name    Name of the output variable
+     * @param ref     Initial/source variable
+     * @param indices Indices array
+     * @param updates Updates to add to the initial/source array
+     * @return The updated variable
+     */
+    public SDVariable scatterMax(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
+        SDVariable ret = f().scatterMax(ref, indices, updates);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * @see #scatterMin(String, SDVariable, SDVariable, SDVariable)
+     */
+    public SDVariable scatterMin(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return scatterMin(null, ref, indices, updates);
+    }
+
+    /**
+     * Scatter min operation.<br>
+     * If indices is rank 0 (a scalar), then out[index, ...] = min(updates[...], in[index,...])<br>
+     * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = min(updates[i,...], in[indices[i],...])<br>
+     * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = min(updates[i, ..., k, ...], in[indices[i], ..., indices[k], ...]<br>
+     * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
+     *
+     * @param name    Name of the output variable
+     * @param ref     Initial/source variable
+     * @param indices Indices array
+     * @param updates Updates to add to the initial/source array
+     * @return The updated variable
+     */
+    public SDVariable scatterMin(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
+        SDVariable ret = f().scatterMin(ref, indices, updates);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
      * @see #scatterUpdate(String, SDVariable, SDVariable, SDVariable)
      */
     public SDVariable scatterUpdate(SDVariable ref, SDVariable indices, SDVariable updates) {
@@ -8662,6 +8914,27 @@ public class SameDiff {
      */
     public SDVariable scatterUpdate(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
         SDVariable ret = f().scatterUpdate(ref, indices, updates);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * @see #trace(String, SDVariable)
+     */
+    public SDVariable trace(SDVariable in){
+        return trace(null, in);
+    }
+
+    /**
+     * Matrix trace operation
+     * For rank 2 matrices, the output is a scalar vith the trace - i.e., sum of the main diagonal.<br>
+     * For higher rank inputs, output[a,b,c] = trace(in[a,b,c,:,:])
+     *
+     * @param name Name of the output variable. May be null.
+     * @param in   Input variable
+     * @return Trace
+     */
+    public SDVariable trace(String name, SDVariable in){
+        SDVariable ret = f().trace(in);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -9557,6 +9830,10 @@ public class SameDiff {
             throw new NullPointerException("Null input: No variable found for updating!");
         }
 
+        if(newVarName != null && variableMap.containsKey(newVarName) && varToUpdate != variableMap.get(newVarName)){
+            throw new IllegalStateException("Variable name \"" + newVarName + "\" already exists for a different SDVariable");
+        }
+
         if (newVarName == null && variableMap.containsKey(varToUpdate.getVarName())) {
             //Edge case: suppose we do m1=sd.mean(in), m2=sd.mean(m1) -> both initially have the name
             // "mean" and consequently a new variable name needs to be generated
@@ -10224,6 +10501,7 @@ public class SameDiff {
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
                 Op op = (Op) differentialFunction;
+                String outVarName = ((BaseOp) op).outputVariable().getVarName();
 
                 // ops in differential function might have stale NDArrays used. we should renew them
                 if(inputs != null && inputs.length > 0) {
@@ -10237,7 +10515,7 @@ public class SameDiff {
                 List<long[]> outputShape = ((BaseOp)op).calculateOutputShape();
                 Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
                 //Update shape. DynamicCustomOp does this in populateInputsAndOutputsFromSameDiff(); for legacy ops, we'll do it here
-                putOrUpdateShapeForVarName(((BaseOp) op).outputVariable().getVarName(), outputShape.get(0), true);
+                putOrUpdateShapeForVarName(outVarName, outputShape.get(0), true);
                 INDArray z = op.z();
                 Preconditions.checkNotNull(z, "Could not get output array for op: %s", op.getClass());
                 if(!Arrays.equals(outputShape.get(0), z.shape())){
@@ -10251,8 +10529,11 @@ public class SameDiff {
                     SDVariable outputVar = getVariable(outputName);
 
                     putOrUpdateShapeForVarName(outputName, outputShape.get(0), true);
-                    INDArray newZ = outputVar.storeAndAllocateNewArray();
-                    op.setZ(newZ);
+                    z = outputVar.storeAndAllocateNewArray();
+                    op.setZ(z);
+                }
+                if(getArrForVarName(outVarName) != z){  //Also handles null case
+                    putOrUpdateArrayForVarName(outVarName, z);
                 }
 
 

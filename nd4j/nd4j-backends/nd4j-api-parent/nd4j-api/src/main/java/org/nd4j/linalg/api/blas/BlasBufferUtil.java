@@ -17,7 +17,6 @@
 package org.nd4j.linalg.api.blas;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDArrayFactory;
 
@@ -46,9 +45,6 @@ public class BlasBufferUtil {
      * @return the blas stride
      */
     public static int getBlasStride(INDArray arr) {
-        if (arr instanceof IComplexNDArray)
-            return arr.elementWiseStride() / 2;
-
         return arr.elementWiseStride();
     }
 
@@ -127,8 +123,6 @@ public class BlasBufferUtil {
         if (arr.ordering() == NDArrayFactory.FORTRAN) {
             return getBlasStride(arr);
         } else {
-            if (arr instanceof IComplexNDArray)
-                return arr.stride(1) / 2;
             return arr.stride(1);
         }
     }

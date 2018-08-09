@@ -73,7 +73,7 @@ public class DataSetLossCalculatorCG implements ScoreCalculator<ComputationGraph
 
             while (dataSetIterator.hasNext()) {
                 DataSet dataSet = dataSetIterator.next();
-                val nEx = dataSet.getFeatureMatrix().size(0);
+                val nEx = dataSet.getFeatures().size(0);
                 lossSum += network.score(dataSet) * nEx;
                 exCount += nEx;
             }

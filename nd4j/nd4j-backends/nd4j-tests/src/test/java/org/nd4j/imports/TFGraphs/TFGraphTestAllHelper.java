@@ -112,8 +112,6 @@ public class TFGraphTestAllHelper {
 
     protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, String baseDir, ExecuteWith execType, Double precisionOverride) throws IOException {
         Nd4j.EPS_THRESHOLD = 1e-3;
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
 
         val graph = getGraphAfterExec(baseDir, modelName, inputs, execType);
 
@@ -163,8 +161,6 @@ public class TFGraphTestAllHelper {
 
     public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, String baseDir, ExecuteWith execType) throws IOException {
         Nd4j.EPS_THRESHOLD = 1e-3;
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
         val graph = getGraphAfterExec(baseDir, modelName, inputs, execType);
         if (!execType.equals(ExecuteWith.JUST_PRINT)) {
             for (String varName : graph.variableMap().keySet()) {
@@ -202,9 +198,6 @@ public class TFGraphTestAllHelper {
             for (String input : inputs.keySet()) {
                 graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));
             }
-
-            Nd4j.getExecutioner().enableDebugMode(true);
-            Nd4j.getExecutioner().enableVerboseMode(true);
 
 //            val string = graph.asFlatPrint();
 //            log.info("Graph structure: \n{}", string);

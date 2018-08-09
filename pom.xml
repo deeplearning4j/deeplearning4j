@@ -39,6 +39,88 @@
         </license>
     </licenses>
 
+    <developers>
+        <developer>
+            <id>agibsonccc</id>
+            <name>Adam Gibson</name>
+            <email>adam@skymind.io</email>
+        </developer>
+        <developer>
+            <id>chrisvnicholson</id>
+            <name>Chris Nicholson</name>
+            <email>chris@skymind.io</email>
+        </developer>
+        <developer>
+            <id>jpatanooga</id>
+            <name>Josh Patterson</name>
+        </developer>
+        <developer>
+            <id>AlexDBlack</id>
+            <name>Alex Black</name>
+        </developer>
+        <developer>
+            <id>nyghtowl</id>
+            <name>Melanie Warrick</name>
+        </developer>
+        <developer>
+            <id>raver119</id>
+            <name>raver119</name>
+        </developer>
+        <developer>
+            <id>saudet</id>
+            <name>Samuel Audet</name>
+        </developer>
+        <developer>
+            <id>eraly</id>
+            <name>Susan Eraly</name>
+        </developer>
+        <developer>
+            <id>kepricon</id>
+            <name>Daehyun Kim</name>
+        </developer>
+        <developer>
+            <id>turambar</id>
+            <name>Dave kale</name>
+        </developer>
+        <!--current & previous core contributers and company developers-->
+        <developer>
+            <id>rubenfiszel</id>
+            <name>Ruben Fiszel</name>
+        </developer>
+        <developer>
+            <id>smarthi</id>
+            <name>Suneel Marthi</name>
+        </developer>
+        <developer>
+            <id>taisukeoe</id>
+            <name>Taisuke Oe</name>
+        </developer>
+        <developer>
+            <id>treo</id>
+            <name>Paul Dubs</name>
+        </developer>
+        <developer>
+            <id>EronWright</id>
+            <name>Eron Wright</name>
+        </developer>
+        <developer>
+            <id>jyt109</id>
+            <name>Jeffrey Tang</name>
+        </developer>
+        <developer>
+            <id>sonaliii</id>
+            <name>Sonali Dayal</name>
+        </developer>
+        <developer>
+            <id>emmjaykay</id>
+            <name>emmjaykay</name>
+        </developer>
+        <developer>
+            <id>crockpotveggies</id>
+            <name>Justin Long</name>
+        </developer>
+    </developers>
+
     <modules>
         <module>libnd4j</module>
         <module>nd4j</module>
@@ -150,17 +232,47 @@
         <datavec.version>1.0.0-SNAPSHOT</datavec.version>
         <dl4j-test-resources.version>1.0.0-SNAPSHOT</dl4j-test-resources.version>
 
+        <jackson-asl.version>1.9.13</jackson-asl.version>
+        <asm.version>5.1</asm.version>
+        <arrow.version>0.9.0</arrow.version>
+        <avro.version>1.7.7</avro.version>
+        <curator.version>2.8.0</curator.version>
+        <guice.version>4.0</guice.version>
+        <hibernate.version>5.1.3.Final</hibernate.version>
+        <hppc.version>0.8.1</hppc.version>
+        <httpclient.version>4.5.3</httpclient.version>
+        <httpcore.version>4.4.6</httpcore.version>
+        <httpmime.version>4.5.3</httpmime.version>
+        <janino.version>2.7.8</janino.version>
+        <javassist.version>3.19.0-GA</javassist.version>
+        <jaxb.version>2.2.11</jaxb.version>
+        <jets3t.version>0.7.1</jets3t.version>
+        <jetty.version>9.4.10.v20180503</jetty.version>
+        <jsch.version>0.1.51</jsch.version>
+        <leveldb.version>1.8</leveldb.version>
+        <lz4.version>1.3.0</lz4.version>
+        <metrics.version>3.1.2</metrics.version>
+        <netty.version>3.10.4.Final</netty.version>
+        <objenesis.version>2.6</objenesis.version>
+        <paranamer.version>2.6</paranamer.version>
+        <ws.rs.version>2.0</ws.rs.version>
+        <servlet.version>3.1.0</servlet.version>
+        <snakeyaml.version>1.12</snakeyaml.version>
+        <snappy.version>1.1.2.6</snappy.version>
+        <spring.version>4.1.6.RELEASE</spring.version>
+        <t-digest.version>3.2</t-digest.version>
+
         <oshi.version>3.4.2</oshi.version>
-        <kafka.version>0.10.1.1</kafka.version>
+        <kafka.version>0.8.2.2</kafka.version>
         <akka.version>2.3.16</akka.version>
-        <typesafe.config.version>1.3.0</typesafe.config.version>
+        <typesafe.config.version>1.3.0</typesafe.config.version> <!-- Play requires 1.3.0 -->
         <py4j.version>0.10.4</py4j.version>
         <jcommander.version>1.27</jcommander.version>
         <dropwizard.version>0.8.0</dropwizard.version>
-        <jodatime.version>2.9.2</jodatime.version>
+        <jodatime.version>2.2</jodatime.version>
         <protonpack.version>1.15</protonpack.version>
         <poi.version>3.17</poi.version>
-        <play.version>2.4.6</play.version>
+        <play.version>2.4.8</play.version>
         <freemarker.version>2.3.23</freemarker.version>
         <geoip2.version>2.8.1</geoip2.version>
         <stream.analytics.version>2.7.0</stream.analytics.version>
@@ -173,7 +285,6 @@
 
         <javacpp.parser.skip>false</javacpp.parser.skip>     <!-- To skip header file parsing phase: -Djavacpp.parser.skip=true  -->
         <javacpp.compiler.skip>false</javacpp.compiler.skip> <!-- To skip native compilation phase: -Djavacpp.compiler.skip=true -->
-        <javacpp.platform>${os.name}-${os.arch}</javacpp.platform> <!-- For Android: -Dplatform=android-arm -->
         <javacpp.platform.root/>      <!-- -Djavacpp.platform.root=/path/to/android-ndk/ -->
         <javacpp.platform.compiler/>  <!-- -Djavacpp.platform.compiler=/path/to/arm-linux-androideabi-g++ -->
         <javacpp.platform.sysroot/>   <!-- -Djavacpp.platform.sysroot=$(xcrun -sdk iphoneos -show-sdk-path) -->
@@ -195,16 +306,20 @@
         <tensorflow.javacpp.version>${tensorflow.version}-${javacpp-presets.version}</tensorflow.javacpp.version>
 
         <commons-compress.version>1.16.1</commons-compress.version>
-        <commonsmath.version>3.4.1</commonsmath.version>
-        <commonslang.version>3.4</commonslang.version>
-        <commonsio.version>2.4</commonsio.version>
+        <commonsmath.version>3.5</commonsmath.version>
+        <commonslang.version>3.6</commonslang.version>
+        <commonsio.version>2.5</commonsio.version>
         <commons-codec.version>1.10</commons-codec.version>
         <commons.math.version>${commonsmath.version}</commons.math.version>
         <commons.lang.version>${commonslang.version}</commons.lang.version>
         <commons.io.version>${commonsio.version}</commons.io.version>
         <commons-math3.version>${commonsmath.version}</commons-math3.version>
+        <commons-lang.version>2.6</commons-lang.version>
         <commons-lang3.version>${commonslang.version}</commons-lang3.version>
+        <commons-logging.version>1.2</commons-logging.version>
+        <commons-net.version>3.1</commons-net.version>
         <commons-io.version>${commonsio.version}</commons-io.version>
+        <commons-collections.version>3.2.2</commons-collections.version>
         <commons-collections4.version>4.1</commons-collections4.version>
 
         <args4j.version>2.0.29</args4j.version>
@@ -212,8 +327,9 @@
         <junit.version>4.12</junit.version>
         <logback.version>1.2.3</logback.version>
         <jackson.version>2.5.1</jackson.version>
-        <spark.jackson.version>2.4.4</spark.jackson.version>
-        <typesafe.config.version>1.3.0</typesafe.config.version>
+        <spark.jackson.version>${jackson.version}</spark.jackson.version>
+        <spark2.jackson.version>2.6.5</spark2.jackson.version>
+        <geo.jackson.version>2.8.7</geo.jackson.version>
         <lombok.version>1.18.0</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
         <lucene-solr.version>7.4.0</lucene-solr.version>
@@ -223,7 +339,7 @@
         <hadoop.version>2.2.0
         </hadoop.version>  <!-- Hadoop version used by Spark 1.6.3 and 2.2.1 (and likely others) -->
         <spark.version>1.6.3</spark.version>
-        <camel.version>2.18.2</camel.version>
+        <camel.version>2.16.3</camel.version>
         <zookeeper.version>3.4.6</zookeeper.version>
         <agrona.version>0.5.4</agrona.version>
         <mapdb.version>3.0.5</mapdb.version>
@@ -274,6 +390,9 @@
         <scalafmt.version>1.3.0</scalafmt.version>
         <scalacheck.version>1.13.5</scalacheck.version>
 
+        <libnd4j.tests>--tests</libnd4j.tests>
+        <libnd4j.test.skip>false</libnd4j.test.skip>
+        <skipBackendChoice>false</skipBackendChoice>
         <skipTestResourceEnforcement>false
         </skipTestResourceEnforcement> <!-- Test resource profile must be enabled unless using -DskipTests etc -->
     </properties>
@@ -491,17 +610,6 @@
         </profile>
         <!-- This controls skipping the test backend choice enforcement below -->
         <profile>
-            <id>default</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <libnd4j.test.skip>false</libnd4j.test.skip>
-                <skipBackendChoice>false</skipBackendChoice>
-                <skipTestResourceEnforcement>false</skipTestResourceEnforcement>
-            </properties>
-        </profile>
-        <profile>
             <id>skipTestCompileAndRun</id>
             <activation>
                 <property>
@@ -510,6 +618,7 @@
                 </property>
             </activation>
             <properties>
+                <libnd4j.tests></libnd4j.tests>
                 <libnd4j.test.skip>true</libnd4j.test.skip>
                 <skipBackendChoice>true</skipBackendChoice>
                 <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
@@ -523,6 +632,7 @@
                 </property>
             </activation>
             <properties>
+                <libnd4j.tests></libnd4j.tests>
                 <libnd4j.test.skip>true</libnd4j.test.skip>
                 <skipBackendChoice>true</skipBackendChoice>
                 <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
@@ -702,6 +812,20 @@
                 <libnd4jhome>${basedir}/../../../../libnd4j/</libnd4jhome>
             </properties>
         </profile>
+
+        <!-- For Android: -Dplatform=android-arm -->
+        <profile>
+            <id>javacpp-platform-default</id>
+            <activation>
+                <property>
+                  <name>!javacpp.platform</name>
+                </property>
+            </activation>
+            <properties>
+                <javacpp.platform>${os.name}-${os.arch}</javacpp.platform>
+            </properties>
+        </profile>
+
         <!-- If someone knows a better way to do this, please do let me know! -->
         <profile>
             <id>linux</id>

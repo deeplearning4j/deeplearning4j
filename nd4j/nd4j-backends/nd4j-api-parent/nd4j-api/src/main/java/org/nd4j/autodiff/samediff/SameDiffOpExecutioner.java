@@ -575,4 +575,14 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     public ExecutionerType type() {
         return backendExecutioner.type();
     }
+
+    @Override
+    public boolean isVerbose() {
+        return backendExecutioner.isVerbose();
+    }
+
+    @Override
+    public boolean isDebug() {
+        return backendExecutioner.isDebug();
+    }
 }

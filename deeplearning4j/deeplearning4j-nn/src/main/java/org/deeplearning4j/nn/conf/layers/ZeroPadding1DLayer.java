@@ -51,6 +51,18 @@ public class ZeroPadding1DLayer extends NoParamLayer {
         this.padding = builder.padding;
     }
 
+    public ZeroPadding1DLayer(int padding){
+        this(new Builder(padding));
+    }
+
+    public ZeroPadding1DLayer(int padLeft, int padRight){
+        this(new Builder(padLeft, padRight));
+    }
+
+    public ZeroPadding1DLayer(int[] padding){
+        this(new Builder(padding));
+    }
+
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
                                                        Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,

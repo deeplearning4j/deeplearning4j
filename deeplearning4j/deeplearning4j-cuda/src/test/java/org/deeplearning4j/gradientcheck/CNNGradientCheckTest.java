@@ -76,7 +76,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
 
         DataSet ds = new IrisDataSetIterator(150, 150).next();
         ds.normalizeZeroMeanZeroUnitVariance();
-        INDArray input = ds.getFeatureMatrix();
+        INDArray input = ds.getFeatures();
         INDArray labels = ds.getLabels();
 
         for (Activation afn : activFns) {
@@ -152,7 +152,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
 
         DataSet ds = new IrisDataSetIterator(150, 150).next();
         ds.normalizeZeroMeanZeroUnitVariance();
-        INDArray input = ds.getFeatureMatrix();
+        INDArray input = ds.getFeatures();
         INDArray labels = ds.getLabels();
 
         //use l2vals[i] with l1vals[i]

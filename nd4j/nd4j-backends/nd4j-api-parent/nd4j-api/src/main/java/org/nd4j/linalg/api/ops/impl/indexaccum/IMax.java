@@ -18,12 +18,9 @@ package org.nd4j.linalg.api.ops.impl.indexaccum;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
-import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -77,18 +74,18 @@ public class IMax extends BaseIndexAccumulation {
     }
 
     @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(-Double.MAX_VALUE, 0);
-    }
-
-    @Override
     public String onnxName() {
-        return "ArgMax";
+        return "arg_max";
     }
 
     @Override
     public String tensorflowName() {
         return "argmax";
+    }
+
+    @Override
+    public Type opType() {
+        return Type.INDEXREDUCE;
     }
 
     @Override

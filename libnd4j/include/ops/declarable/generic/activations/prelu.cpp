@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 //
-// @author Yurii Shyrma, created on 24.07.2018
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 24.07.2018
 //
 
 

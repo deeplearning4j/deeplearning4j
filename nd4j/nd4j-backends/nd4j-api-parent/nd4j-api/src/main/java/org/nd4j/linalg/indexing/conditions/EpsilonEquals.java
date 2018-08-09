@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.indexing.conditions;
 
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -40,10 +39,6 @@ public class EpsilonEquals extends BaseCondition {
         this.eps = eps.doubleValue();
     }
 
-    public EpsilonEquals(IComplexNumber complexNumber) {
-        super(complexNumber);
-    }
-
     @Override
     public double epsThreshold() {
         return this.eps;
@@ -62,11 +57,5 @@ public class EpsilonEquals extends BaseCondition {
     @Override
     public Boolean apply(Number input) {
         return Math.abs(input.floatValue() - value.floatValue()) < Nd4j.EPS_THRESHOLD;
-    }
-
-    @Override
-    public Boolean apply(IComplexNumber input) {
-        return Math.abs(input.absoluteValue().floatValue() - input.absoluteValue().floatValue()) < Nd4j.EPS_THRESHOLD;
-
     }
 }
