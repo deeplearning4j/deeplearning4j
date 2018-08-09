@@ -39,7 +39,7 @@ public class MeshOrganizer implements Serializable {
     private MeshBuildMode buildMode = MeshBuildMode.SYMMETRIC_MODE;
 
     // this value determines max number of direct downstream connections for any given node (affects root node as well)
-    private static final int MAX_DOWNSTREAMS = 3;
+    public static final int MAX_DOWNSTREAMS = 3;
 
     // max distance from root
     private static final int MAX_DEPTH = 5;
@@ -52,6 +52,9 @@ public class MeshOrganizer implements Serializable {
 
     // flattened map of the tree, ID -> Node
     private Map<String, Node> nodeMap = new HashMap<>();
+
+    // used in DEPTH_MODE
+    private Node lastRoot = null;
 
     public MeshOrganizer(@NonNull MeshBuildMode mode) {
         this.buildMode = mode;
@@ -82,22 +85,51 @@ public class MeshOrganizer implements Serializable {
 
 
     public synchronized Node addNode(@NonNull Node node) {
+
         // if node isn't mapped yet - in this case we're mapping node automatically here
         if (node.getUpstreamNode() == null) {
-            switch (buildMode) {
-                case SYMMETRIC_MODE: {
-                    if (rootNode.numberOfDownstreams() < MAX_DOWNSTREAMS) {
-                        rootNode.addDownstreamNode(node);
-                    } else {
-                        val f = sortedNodes.get(0);
-                        f.addDownstreamNode(node);
-                    }
-                }
+            if (rootNode.numberOfDownstreams() < MAX_DOWNSTREAMS) {
+                if (lastRoot == null)
+                    lastRoot = node;
 
-                // we update sorted list, so we always know node with least number of
+                rootNode.addDownstreamNode(node);
                 sortedNodes.add(node);
-                Collections.sort(sortedNodes);
-            }
+            } else
+                switch (buildMode) {
+                    case DEPTH_FIRST:
+                    case WIDTH_FIRST: {
+                            // if lastRoot isn't full yet - we'll just add new node to it (this one)
+                            if (lastRoot.numberOfDownstreams() < MAX_DOWNSTREAMS)
+                                lastRoot.addDownstreamNode(node);
+                            else { // or we'll pull next node otherwise
+                                val upstream = lastRoot.getUpstreamNode();
+
+                                Node c = upstream.getNextCandidate(lastRoot);
+
+                                if (c == null)
+                                    c = upstream.getNextCandidate(null);
+
+                                // if we've maxed out number of downstreams - just step down
+                                if (c.numberOfDownstreams() >= MAX_DOWNSTREAMS)
+                                    c = c.downstream.get(0);
+
+                                c.addDownstreamNode(node);
+                                lastRoot = c;
+                            }
+                        };
+                        break;
+                    case SYMMETRIC_MODE: {
+                            val f = sortedNodes.get(0);
+                            f.addDownstreamNode(node);
+
+                            // we update sorted list, so we always know node with least number of
+                            sortedNodes.add(node);
+                            Collections.sort(sortedNodes);
+                        }
+                        break;
+                    default:
+                        throw new UnsupportedOperationException();
+                }
         }
 
         // we should check if this node has any descendants
@@ -179,6 +211,14 @@ public class MeshOrganizer implements Serializable {
     }
 
     /**
+     * This method returns our mesh as collection of nodes
+     * @return
+     */
+    protected Collection<Node> flatNodes() {
+        return nodeMap.values();
+    }
+
+    /**
      * This method returns Node representing given Id
      * @return
      */
@@ -224,7 +264,31 @@ public class MeshOrganizer implements Serializable {
 
         @Getter(AccessLevel.NONE)
         @Setter(AccessLevel.NONE)
-        private final Collection<Node> downstream = new ArrayList<>();
+        private final List<Node> downstream = new ArrayList<>();
+
+
+        protected Node getNextCandidate(Node node) {
+            // if there's no candidates - just connect to this node
+            if (downstream.size() == 0)
+                return this;
+
+            if (node == null)
+                return downstream.get(0);
+
+            // TODO: we can get rid of flat scan here, but it's one-off step anyway...
+
+            // we return next node node after this node
+            boolean b = false;
+            for (val v: downstream) {
+                if (b)
+                    return v;
+
+                if (Objects.equals(node, v))
+                    b = true;
+            }
+
+            return null;
+        }
 
         protected Node(boolean rootNode) {
             this.rootNode = rootNode;

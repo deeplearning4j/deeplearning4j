@@ -16,6 +16,7 @@
 
 package org.nd4j.parameterserver.distributed.util;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.parameterserver.distributed.enums.MeshBuildMode;
@@ -25,6 +26,7 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class MeshOrganizerTest {
 
     @Test(timeout = 1000L)
@@ -59,6 +61,23 @@ public class MeshOrganizerTest {
     }
 
     @Test
+    public void testNextCandidate_1() {
+        val rootNode = new MeshOrganizer.Node(true);
+
+        val node0 = rootNode.addDownstreamNode(new MeshOrganizer.Node());
+        val node1 = rootNode.addDownstreamNode(new MeshOrganizer.Node());
+        val node2 = rootNode.addDownstreamNode(new MeshOrganizer.Node());
+
+        val c1_0 = node1.getNextCandidate(null);
+        assertEquals(node1, c1_0);
+
+        val nn = c1_0.addDownstreamNode(new MeshOrganizer.Node());
+
+
+
+    }
+
+    @Test
     public void testBasicMesh_1() {
         val mesh = new MeshOrganizer(MeshBuildMode.SYMMETRIC_MODE);
 
@@ -84,5 +103,66 @@ public class MeshOrganizerTest {
         assertEquals(1, node1.numberOfDownstreams());
         assertEquals(1, node2.numberOfDownstreams());
         assertEquals(1, node3.numberOfDownstreams());
+
+
+
+        // smoke test
+        for (int e = 0; e < 8192; e++)
+            mesh.addNode(java.util.UUID.randomUUID().toString());
+
+
+        for (val v: mesh.flatNodes())
+            assertTrue(v.numberOfDownstreams() <= MeshOrganizer.MAX_DOWNSTREAMS);
+    }
+
+    @Test
+    public void testBasicMesh_2() {
+        val mesh = new MeshOrganizer(MeshBuildMode.WIDTH_FIRST);
+
+        val node1 = mesh.addNode("192.168.1.1");
+        val node2 = mesh.addNode("192.168.2.1");
+        val node3 = mesh.addNode("192.168.2.2");
+
+        assertEquals(4, mesh.totalNodes());
+        assertEquals(3, mesh.getRootNode().numberOfDownstreams());
+
+        val node4 = mesh.addNode("192.168.4.1");
+        val node5 = mesh.addNode("192.168.5.1");
+
+        assertEquals(2, node1.numberOfDownstreams());
+
+        val node6 = mesh.addNode("192.168.6.1");
+        val node7 = mesh.addNode("192.168.7.1");
+
+        assertEquals(3, node1.numberOfDownstreams());
+        assertEquals(1, node2.numberOfDownstreams());
+
+        // now we just drop in 20 nodes
+        for (int e = 0; e < 20; e++)
+            mesh.addNode(java.util.UUID.randomUUID().toString());
+
+
+        for (val v: mesh.flatNodes())
+            assertTrue(v.numberOfDownstreams() <= MeshOrganizer.MAX_DOWNSTREAMS);
+
+        // smoke test
+        for (int e = 0; e < 8192; e++)
+            mesh.addNode(java.util.UUID.randomUUID().toString());
+
+
+        for (val v: mesh.flatNodes())
+            assertTrue(v.numberOfDownstreams() <= MeshOrganizer.MAX_DOWNSTREAMS);
+    }
+
+    @Test
+    public void testBasicMesh_3() {
+        val mesh = new MeshOrganizer(MeshBuildMode.DEPTH_FIRST);
+
+        val node1 = mesh.addNode("192.168.1.1");
+        val node2 = mesh.addNode("192.168.2.1");
+        val node3 = mesh.addNode("192.168.2.2");
+
+        assertEquals(4, mesh.totalNodes());
+        assertEquals(3, mesh.getRootNode().numberOfDownstreams());
     }
 }
