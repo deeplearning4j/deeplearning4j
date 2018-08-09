@@ -42,10 +42,10 @@ public class MeshOrganizer implements Serializable {
     public static final int MAX_DOWNSTREAMS = 3;
 
     // max distance from root
-    private static final int MAX_DEPTH = 5;
+    public static final int MAX_DEPTH = 5;
 
     // just shortcut to the root node of the tree
-    @Getter(AccessLevel.PROTECTED) private Node rootNode = new Node();
+    @Getter(AccessLevel.PROTECTED) private Node rootNode = new Node(true);
 
     // SortedSet, with sort by number of downstreams
     private List<Node> sortedNodes = new ArrayList<>();
@@ -87,17 +87,21 @@ public class MeshOrganizer implements Serializable {
     public synchronized Node addNode(@NonNull Node node) {
 
         // if node isn't mapped yet - in this case we're mapping node automatically here
-        if (node.getUpstreamNode() == null) {
-            if (rootNode.numberOfDownstreams() < MAX_DOWNSTREAMS) {
-                if (lastRoot == null)
-                    lastRoot = node;
-
-                rootNode.addDownstreamNode(node);
-                sortedNodes.add(node);
-            } else
                 switch (buildMode) {
-                    case DEPTH_FIRST:
+                    case DEPTH_FIRST: {
+                            return rootNode.pushDownstreamNode(node);
+                        }
                     case WIDTH_FIRST: {
+                            if (rootNode.numberOfDownstreams() < MAX_DOWNSTREAMS) {
+                                if (lastRoot == null)
+                                    lastRoot = node;
+
+                                rootNode.addDownstreamNode(node);
+                                sortedNodes.add(node);
+                                return node;
+                            }
+
+
                             // if lastRoot isn't full yet - we'll just add new node to it (this one)
                             if (lastRoot.numberOfDownstreams() < MAX_DOWNSTREAMS)
                                 lastRoot.addDownstreamNode(node);
@@ -119,6 +123,15 @@ public class MeshOrganizer implements Serializable {
                         };
                         break;
                     case SYMMETRIC_MODE: {
+                            if (rootNode.numberOfDownstreams() < MAX_DOWNSTREAMS) {
+                                if (lastRoot == null)
+                                    lastRoot = node;
+
+                                rootNode.addDownstreamNode(node);
+                                sortedNodes.add(node);
+                                return node;
+                            }
+
                             val f = sortedNodes.get(0);
                             f.addDownstreamNode(node);
 
@@ -130,7 +143,6 @@ public class MeshOrganizer implements Serializable {
                     default:
                         throw new UnsupportedOperationException();
                 }
-        }
 
         // we should check if this node has any descendants
         if (node.numberOfDownstreams() > 0) {
@@ -266,6 +278,8 @@ public class MeshOrganizer implements Serializable {
         @Setter(AccessLevel.NONE)
         private final List<Node> downstream = new ArrayList<>();
 
+        private AtomicInteger position = new AtomicInteger(0);
+
 
         protected Node getNextCandidate(Node node) {
             // if there's no candidates - just connect to this node
@@ -303,6 +317,35 @@ public class MeshOrganizer implements Serializable {
             this.downstream.add(node);
             node.setUpstreamNode(this);
             return node;
+        }
+
+        /**
+         * This method pushes node to the bottom of this node downstream
+         * @param node
+         * @return
+         */
+        protected Node pushDownstreamNode(@NonNull Node node) {
+            if (isRootNode()) {
+                if (downstream.size() == 0) {
+                    return addDownstreamNode(node);
+                } else {
+                    // we should find first not full sub-branch
+                    for (val d: downstream)
+                        if (d.numberOfDescendants() < MeshOrganizer.MAX_DEPTH * MeshOrganizer.MAX_DOWNSTREAMS)
+                            return d.pushDownstreamNode(node);
+
+                     // if we're here - we'll have to add new branch to the root
+                    return addDownstreamNode(node);
+                }
+            } else {
+                val distance = distanceFromRoot();
+
+                for (val d: downstream)
+                    if (d.numberOfDescendants() < MeshOrganizer.MAX_DOWNSTREAMS * (MeshOrganizer.MAX_DEPTH - distance))
+                        return d.pushDownstreamNode(node);
+
+                return addDownstreamNode(node);
+            }
         }
 
         /**

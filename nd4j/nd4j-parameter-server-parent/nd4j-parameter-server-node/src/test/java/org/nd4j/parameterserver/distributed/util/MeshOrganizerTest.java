@@ -72,9 +72,17 @@ public class MeshOrganizerTest {
         assertEquals(node1, c1_0);
 
         val nn = c1_0.addDownstreamNode(new MeshOrganizer.Node());
+    }
 
+    @Test
+    public void testPushDownstream_1() {
+        val rootNode = new MeshOrganizer.Node(true);
 
+        for (int e = 0; e < MeshOrganizer.MAX_DOWNSTREAMS  * MeshOrganizer.MAX_DEPTH * 2; e++ )
+            rootNode.pushDownstreamNode(new MeshOrganizer.Node());
 
+        assertEquals(2, rootNode.numberOfDownstreams());
+        assertEquals(MeshOrganizer.MAX_DOWNSTREAMS * MeshOrganizer.MAX_DEPTH  * 2, rootNode.numberOfDescendants());
     }
 
     @Test
@@ -149,7 +157,7 @@ public class MeshOrganizerTest {
         for (int e = 0; e < 8192; e++)
             mesh.addNode(java.util.UUID.randomUUID().toString());
 
-
+        // and now we'll make sure there's no nodes with number of downstreams > MAX_DOWNSTREAMS
         for (val v: mesh.flatNodes())
             assertTrue(v.numberOfDownstreams() <= MeshOrganizer.MAX_DOWNSTREAMS);
     }
@@ -163,6 +171,16 @@ public class MeshOrganizerTest {
         val node3 = mesh.addNode("192.168.2.2");
 
         assertEquals(4, mesh.totalNodes());
-        assertEquals(3, mesh.getRootNode().numberOfDownstreams());
+        assertEquals(1, mesh.getRootNode().numberOfDownstreams());
+
+        val node4 = mesh.addNode("192.168.2.3");
+        val node5 = mesh.addNode("192.168.2.4");
+        val node6 = mesh.addNode("192.168.2.5");
+
+        assertEquals(1, node1.numberOfDownstreams());
+        assertEquals(1, node4.numberOfDownstreams());
+        assertEquals(1, node5.numberOfDownstreams());
+
+        assertEquals(1, node2.numberOfDownstreams());
     }
 }
