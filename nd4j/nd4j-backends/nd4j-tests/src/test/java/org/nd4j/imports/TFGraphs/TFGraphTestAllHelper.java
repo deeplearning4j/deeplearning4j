@@ -167,6 +167,10 @@ public class TFGraphTestAllHelper {
     public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, String baseDir, ExecuteWith execType) throws IOException {
         Nd4j.EPS_THRESHOLD = 1e-3;
         val graph = getGraphAfterExec(baseDir, modelName, inputs, execType);
+
+        //Collect coverage info about ops
+        OpValidation.collectTensorflowImportCoverage(graph);
+
         if (!execType.equals(ExecuteWith.JUST_PRINT)) {
             for (String varName : graph.variableMap().keySet()) {
                 if (!inputs.containsKey(varName)) { //avoiding placeholders

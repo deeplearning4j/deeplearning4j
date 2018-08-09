@@ -18,6 +18,7 @@ package org.nd4j.imports.TFGraphs;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -51,6 +52,11 @@ public class TFGraphTestAllLibnd4j {
             "conv_5" // still RNG differences
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
+
+    @Before
+    public void setup(){
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+    }
 
     @After
     public void tearDown() throws Exception {

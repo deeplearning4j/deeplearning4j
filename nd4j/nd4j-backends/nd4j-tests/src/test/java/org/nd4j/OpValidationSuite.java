@@ -22,6 +22,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.nd4j.autodiff.opvalidation.*;
 import org.nd4j.autodiff.validation.OpValidation;
+import org.nd4j.imports.TFGraphs.TFGraphTestAllLibnd4j;
 import org.nd4j.imports.TFGraphs.TFGraphTestAllSameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
@@ -51,17 +52,18 @@ import static org.junit.Assume.assumeFalse;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         //Note: these will be run as part of the suite only, and will NOT be run again separately
-//        LayerOpValidation.class,
-//        LossOpValidation.class,
-//        MiscOpValidation.class,
-//        RandomOpValidation.class,
-//        ReductionBpOpValidation.class,
-//        ReductionOpValidation.class,
-//        ShapeOpValidation.class,
-//        TransformOpValidation.class,
+        LayerOpValidation.class,
+        LossOpValidation.class,
+        MiscOpValidation.class,
+        RandomOpValidation.class,
+        ReductionBpOpValidation.class,
+        ReductionOpValidation.class,
+        ShapeOpValidation.class,
+        TransformOpValidation.class,
 
         //TF import tests
-        TFGraphTestAllSameDiff.class
+        TFGraphTestAllSameDiff.class,
+        TFGraphTestAllLibnd4j.class
 })
 public class OpValidationSuite {
 
@@ -95,7 +97,7 @@ public class OpValidationSuite {
         Nd4j.setDataType(initialType);
 
         // Log coverage information
-        OpValidation.logCoverageInformation(true, true, true);
+        OpValidation.logCoverageInformation(true, true, true, true, true);
     }
 
 
