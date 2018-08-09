@@ -104,7 +104,7 @@ class DocumentationGenerator:
             name = re.findall(method_regex, signature)[0]
         else:  # Constructor takes class name
             name = class_name
-        sub_blocks = ['#### {} \n{}'.format(name, self.to_code_snippet(signature))]
+        sub_blocks = ['##### {} \n{}'.format(name, self.to_code_snippet(signature))]
         if doc_string:
             sub_blocks.append(doc_string + '\n')
         return '\n\n'.join(sub_blocks)
@@ -372,10 +372,10 @@ if __name__ == '__main__':
                     sub_blocks.append("".join([doc_generator.render(cs, cd, class_name, False) for (cs, cd) in constructors]))
 
                 if methods:
-                    sub_blocks.append('<button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#'+class_name+'" aria-expanded="false" aria-controls="'+class_name+'">Show methods</button>')
-                    sub_blocks.append('<div class="collapse" id="'+class_name+'"><div class="card card-body">\n')
+                    # sub_blocks.append('<button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#'+class_name+'" aria-expanded="false" aria-controls="'+class_name+'">Show methods</button>')
+                    # sub_blocks.append('<div class="collapse" id="'+class_name+'"><div class="card card-body">\n')
                     sub_blocks.append("".join([doc_generator.render(ms, md, class_name, True) for (ms, md) in methods]))
-                    sub_blocks.append('</div></div>')                   
+                    # sub_blocks.append('</div></div>')                   
                 blocks.append('\n'.join(sub_blocks))
 
         doc_generator.write_content(blocks, page_data)
