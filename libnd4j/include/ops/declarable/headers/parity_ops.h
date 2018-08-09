@@ -1235,6 +1235,23 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(reduce_dot_bp, 3, 2, false, 0, 0);
         #endif
 
+        /**
+        * This op provide matrices multiplication with 2 and more matricies as input
+        *
+        * input array:
+        *    2D-tensor (matrix) with dimension MxK as start param
+        *    2D-tensor (matrix) with dimension KxN as finish param
+        *
+        *
+        * output array:
+        *   the 2D-tensor as matrix product of all input matricies
+        *
+        */
+
+        #if NOT_EXCLUDED(OP_multimmul2)
+        DECLARE_CUSTOM_OP(multimmul2, 2, 1, false, 0, 0);
+        #endif
+
     }
 }
 
