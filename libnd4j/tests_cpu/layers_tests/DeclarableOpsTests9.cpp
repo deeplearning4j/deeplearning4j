@@ -2123,17 +2123,11 @@ TEST_F(DeclarableOpsTests9, Dynamic_Partition_BP_1) {
 
     nd4j::ops::dynamic_partition<double> op1;
     auto res1 = op1.execute({&x, &y}, {}, {3});
-//    for (size_t e = 0; e < res1->size(); ++e) {
-  //      res1->at(e)->printIndexedBuffer("RES1");
-    //    res1->at(e)->printShapeInfo("RES1");
-    //}
 
     nd4j::ops::dynamic_partition_bp<double> op2;
     auto res2 = op2.execute({&x, &y, res1->at(0), res1->at(1), res1->at(2)}, {}, {3});
     ASSERT_TRUE(res2->status() == ND4J_STATUS_OK);
     ASSERT_TRUE(res2->size() == 2);
-//    res2->at(0)->printIndexedBuffer("PARTITION");
-//    res2->at(1)->printIndexedBuffer("INDICES");
     delete res1;
     delete res2;
 }
