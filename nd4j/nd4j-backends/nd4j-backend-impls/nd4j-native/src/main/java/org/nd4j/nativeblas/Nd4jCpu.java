@@ -254,6 +254,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_moments.class,
         float_embedding_lookup.class,
         float_dynamic_partition.class,
+        float_dynamic_partition_bp.class,
         float_dynamic_stitch.class,
         float_zero_fraction.class,
         float_xw_plus_b.class,
@@ -623,6 +624,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_moments.class,
         half_embedding_lookup.class,
         half_dynamic_partition.class,
+        half_dynamic_partition_bp.class,
         half_dynamic_stitch.class,
         half_zero_fraction.class,
         half_xw_plus_b.class,
@@ -992,6 +994,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_moments.class,
         double_embedding_lookup.class,
         double_dynamic_partition.class,
+        double_dynamic_partition_bp.class,
         double_dynamic_stitch.class,
         double_zero_fraction.class,
         double_xw_plus_b.class,
@@ -31860,6 +31863,54 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public double_dynamic_partition() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+//         #endif
+
+//         #if NOT_EXCLUDED(OP_dynamic_partition_bp)
+        @Name("nd4j::ops::dynamic_partition_bp<float>") public static class float_dynamic_partition_bp extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_dynamic_partition_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_dynamic_partition_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_dynamic_partition_bp position(long position) {
+                return (float_dynamic_partition_bp)super.position(position);
+            }
+        
+                                                                                    public float_dynamic_partition_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::dynamic_partition_bp<float16>") public static class half_dynamic_partition_bp extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_dynamic_partition_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_dynamic_partition_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_dynamic_partition_bp position(long position) {
+                return (half_dynamic_partition_bp)super.position(position);
+            }
+        
+                                                                                    public half_dynamic_partition_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::dynamic_partition_bp<double>") public static class double_dynamic_partition_bp extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_dynamic_partition_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_dynamic_partition_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_dynamic_partition_bp position(long position) {
+                return (double_dynamic_partition_bp)super.position(position);
+            }
+        
+                                                                                    public double_dynamic_partition_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
