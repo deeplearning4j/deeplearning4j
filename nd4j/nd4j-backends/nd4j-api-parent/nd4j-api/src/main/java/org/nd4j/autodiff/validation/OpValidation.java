@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
@@ -240,6 +241,8 @@ public class OpValidation {
     private static Map<Class, Integer> gradCheckCoverageCountPerClass = new LinkedHashMap<>();
     private static Map<Class, Integer> fwdPassCoverageCountPerClass = new LinkedHashMap<>();
     private static Map<Class, Integer> singleOpTestCountPerClass = new LinkedHashMap<>();
+    private static Map<Class, Integer> opsWithTFMappingTFImportCounts = new LinkedHashMap<>();
+    private static Map<String, Integer> tfMappedOpsImportTestCounts = new LinkedHashMap<>();
 
 
     private static void collectCoverageInformation(TestCase testCase) {
@@ -284,6 +287,38 @@ public class OpValidation {
         //TODO we're basically assuming subtypes of DynamicCustomOp here, for coverage... not DCO itself
         singleOpTestCountPerClass.put(testCase.op().getClass(),
                 singleOpTestCountPerClass.get(testCase.op().getClass()) + 1);
+    }
+
+
+    public static void collectTensorflowImportCoverage(SameDiff graph){
+
+        Map<String,DifferentialFunction> map = graph.getFunctionInstancesById();
+        for(DifferentialFunction d : map.values()){
+            String[] tfNames = null;
+            try{
+                tfNames = d.tensorflowNames();
+            } catch (Throwable t){
+                //Ignore
+                continue;
+            }
+
+            if(tfNames != null && tfNames.length > 0){
+                Integer currCount = opsWithTFMappingTFImportCounts.get(d.getClass());
+                if(currCount == null)
+                    currCount = 0;
+                currCount++;
+                opsWithTFMappingTFImportCounts.put(d.getClass(), currCount);
+
+                for(String s : tfNames){
+                    currCount = tfMappedOpsImportTestCounts.get(s);
+                    if(currCount == null)
+                        currCount = 0;
+                    currCount++;
+                    tfMappedOpsImportTestCounts.put(s, currCount);
+                }
+            }
+        }
+
     }
 
     //Collect coverage information
@@ -462,6 +497,22 @@ public class OpValidation {
             }
         }
 
+        //Log info for TF import op coverage:
+        int totalTFMappedOps = DifferentialFunctionClassHolder.getInstance().getTensorFlowNames().size();
+        int tfOpsWithImportTests = 0;
+        if(true){       //TODO add config option
+            log.info(" --- Ops with TF Mapping but No TF Import Tests ---");
+            for(Map.Entry<String, DifferentialFunction> e : DifferentialFunctionClassHolder.getInstance().getTensorFlowNames().entrySet()){
+                String s = e.getKey();
+                Integer count = tfMappedOpsImportTestCounts.get(s);
+                if(count == null || count == 0){
+                    log.info("TF mapped op with no import tests: {}", s);
+                } else {
+                    tfOpsWithImportTests++;
+                }
+            }
+        }
+
 
         int totalFwd = 0;
         for(Class c : allOps){
@@ -490,15 +541,17 @@ public class OpValidation {
         int countLibnd4jMapped = countTotalLibnd4jOps - nonMappedLibnd4jOps.size();
         String fracLibnd4j = String.format("%.2f", 100.0 * (countLibnd4jMapped / (double)countTotalLibnd4jOps));
 
+        String fracTFMappedTested = String.format("%.2f", 100.0 * tfOpsWithImportTests / (double)totalTFMappedOps);
 
         log.info("*****************************************************");
-        log.info("Op Validation:        {} of {} classes with adequate tests ({}% coverage)", countAdequate, totalFwd, pc);
-        log.info("Forward pass tests:   {} of {} classes ({}% coverage)", countAdequateFwd, totalFwd, pcFwd);
-        log.info("Gradient check tests: {} of {} classes ({}% coverage)", countAdequateBwd, totalBwd, pcBwd);
+        log.info("Op Validation:                    {} of {} classes with adequate tests ({}% coverage)", countAdequate, totalFwd, pc);
+        log.info("Forward pass tests:               {} of {} classes ({}% coverage)", countAdequateFwd, totalFwd, pcFwd);
+        log.info("Gradient check tests:             {} of {} classes ({}% coverage)", countAdequateBwd, totalBwd, pcBwd);
         log.info("({} ops excluded from gradient check coverage)", excludedFromBackpropCoverage.size());
         log.info("({} ops excluded from fwd+gradient tests)", excludedFromAllTestCoverage.size());
-        log.info("TF mapped ops:        {} of {} ({}%)", countTfMapped, countTf, fracTfStr);
-        log.info("Libnd4j mapped ops:   {} of {} ({}%)", countLibnd4jMapped, countTotalLibnd4jOps, fracLibnd4j);
+        log.info("TF mapped ops:                    {} of {} ({}%)", countTfMapped, countTf, fracTfStr);
+        log.info("TF mapped ops w/ import test:     {} of {} ({}%)", tfOpsWithImportTests, totalTFMappedOps, fracTFMappedTested);
+        log.info("Libnd4j mapped ops:               {} of {} ({}%)", countLibnd4jMapped, countTotalLibnd4jOps, fracLibnd4j);
         log.info("*****************************************************");
     }
 

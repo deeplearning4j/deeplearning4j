@@ -18,7 +18,7 @@ package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
-import org.nd4j.autodiff.OpValidationSuite;
+import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.loss.LossFunctions;
 import org.nd4j.autodiff.loss.LossInfo;
 import org.nd4j.autodiff.samediff.SDVariable;

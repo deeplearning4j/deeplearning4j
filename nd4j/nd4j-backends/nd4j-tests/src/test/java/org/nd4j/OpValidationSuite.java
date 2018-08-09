@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.autodiff;
+package org.nd4j;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -22,6 +22,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.nd4j.autodiff.opvalidation.*;
 import org.nd4j.autodiff.validation.OpValidation;
+import org.nd4j.imports.TFGraphs.TFGraphTestAllSameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.Function;
@@ -50,14 +51,17 @@ import static org.junit.Assume.assumeFalse;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         //Note: these will be run as part of the suite only, and will NOT be run again separately
-        LayerOpValidation.class,
-        LossOpValidation.class,
-        MiscOpValidation.class,
-        RandomOpValidation.class,
-        ReductionBpOpValidation.class,
-        ReductionOpValidation.class,
-        ShapeOpValidation.class,
-        TransformOpValidation.class
+//        LayerOpValidation.class,
+//        LossOpValidation.class,
+//        MiscOpValidation.class,
+//        RandomOpValidation.class,
+//        ReductionBpOpValidation.class,
+//        ReductionOpValidation.class,
+//        ShapeOpValidation.class,
+//        TransformOpValidation.class,
+
+        //TF import tests
+        TFGraphTestAllSameDiff.class
 })
 public class OpValidationSuite {
 
