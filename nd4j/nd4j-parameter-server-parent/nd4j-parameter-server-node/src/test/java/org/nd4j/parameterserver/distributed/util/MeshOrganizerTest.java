@@ -16,11 +16,37 @@
 
 package org.nd4j.parameterserver.distributed.util;
 
+import lombok.val;
+import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 /**
  * @author raver119@gmail.com
  */
-public class TreeOrganizerTest {
+public class MeshOrganizerTest {
 
+    @Test(timeout = 1000L)
+    public void testDescendantsCount_1() {
+        val node = MeshOrganizer.Node.builder().build();
+
+        val eNode = MeshOrganizer.Node.builder().build();
+        eNode.addDownstreamNode(MeshOrganizer.Node.builder().build());
+
+        node.addDownstreamNode(MeshOrganizer.Node.builder().build());
+        node.addDownstreamNode(eNode);
+        node.addDownstreamNode(MeshOrganizer.Node.builder().build());
+
+        assertEquals(4, node.numberOfDescendants());
+        assertEquals(3, node.numberOfDownstreams());
+        assertEquals(1, eNode.numberOfDownstreams());
+        assertEquals(1, eNode.numberOfDescendants());
+    }
+
+    @Test
+    public void testBasicMesh_1() {
+        val mesh = new MeshOrganizer();
+
+        mesh.addNode("192.168.1.1");
+    }
 }
