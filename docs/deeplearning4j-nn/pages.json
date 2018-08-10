@@ -18,6 +18,23 @@
       "class": []
     },
     {
+      "page": "listeners.md",
+      "module": [
+        "/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/listeners/"
+      ]
+    },
+    {
+      "page": "iterators.md",
+      "module": [
+        "/deeplearning4j-data/deeplearning4j-datasets/src/main/java/org/deeplearning4j/datasets/iterator/impl/",
+        "/deeplearning4j-data/deeplearning4j-datavec-iterators/src/main/java/org/deeplearning4j/datasets/datavec/",
+        "/deeplearning4j-data/deeplearning4j-utility-iterators/src/main/java/org/deeplearning4j/datasets/iterator/"
+      ],
+      "class": [
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/datasets/iterator/impl/MultiDataSetIteratorAdapter.java"
+      ]
+    },
+    {
       "page": "computationgraph.md",
       "class": [
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/ComputationGraph.java"

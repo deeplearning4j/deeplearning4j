@@ -194,6 +194,20 @@ class DocumentationGenerator:
         print(index_string)
         return ['', index_string]
 
+
+    '''Grabs page data for each class and allows for iteration in modules and specific classes.
+    '''
+    def organize_page_data(self, module, cls, tag, use_constructors, includes, excludes):
+        class_string = self.inspect_class_string(module, cls)
+        class_string = self.get_tag_data(class_string, tag)
+        class_string = class_string.replace('<p>', '').replace('</p>', '')
+        class_name = cls.replace('.' + self.language, '')
+        doc_string, class_string = self.get_main_doc_string(class_string, class_name)
+        constructors, class_string = self.get_constructor_data(class_string, class_name, use_constructors)
+        methods = self.get_public_method_data(class_string, includes, excludes)
+        return module, class_name, doc_string, constructors, methods
+
+    
     '''Main workhorse of this script. Inspects source files per class or module and reads
             - class names
             - doc strings of classes / objects
@@ -207,30 +221,31 @@ class DocumentationGenerator:
         page_data = []
         classes = []
 
-        module = data.get('module', "")
-        if module:
-            classes = os.listdir(self.source_code_path + module)
-            classes = [c for c in classes if '.' in c]
-
-        cls = data.get('class', "")
-        if cls:
-            classes = cls
-
         includes = data.get('include', [])
         excludes = data.get('exclude', [])
 
         use_constructors = data.get('constructors', True)
         tag = data.get('autogen_tag', '')
 
-        for cls in sorted(classes):
-            class_string = self.inspect_class_string(module, cls)
-            class_string = self.get_tag_data(class_string, tag)
-            class_string = class_string.replace('<p>', '').replace('</p>', '')
-            class_name = cls.replace('.' + self.language, '')
-            doc_string, class_string = self.get_main_doc_string(class_string, class_name)
-            constructors, class_string = self.get_constructor_data(class_string, class_name, use_constructors)
-            methods = self.get_public_method_data(class_string, includes, excludes)
+        modules = data.get('module', "")
+        if modules:
+            for module in modules:
+                module_files = os.listdir(self.source_code_path + module)
+                print(module_files)
+                for cls in module_files:
+                    if '.' in cls:
+                        module, class_name, doc_string, constructors, methods = self.organize_page_data(module, cls, tag, use_constructors, includes, excludes)
+                        page_data.append([module, class_name, doc_string, constructors, methods])
 
+        
+        class_files = data.get('class', "")
+        if class_files:
+            for cls in class_files:
+                classes.append(cls)
+
+        for cls in sorted(classes):
+            module = ""
+            module, class_name, doc_string, constructors, methods = self.organize_page_data(module, cls, tag, use_constructors, includes, excludes)
             page_data.append([module, class_name, doc_string, constructors, methods])
 
         return page_data
