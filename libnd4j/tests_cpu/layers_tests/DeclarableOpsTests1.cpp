@@ -809,6 +809,32 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractTest_2) {
 }
 
 //////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, ReverseSubtractTest_3) {
+
+//    NDArray<float> x('c', {1, 6});
+    NDArray<float> x('c', {6});
+    NDArray<float> y('c', {3, 4, 5, 1});
+    NDArray<float> exp('c', {3, 4, 5, 6});
+    NDArray<float> z(exp);
+    x.assign(1);
+    y.assign(3);
+    exp.assign(-2);
+    auto tZ = BroadcastHelper<float>::template broadcastApply<simdOps::ReverseSubtract<float>>(&y, &x, &z);
+    tZ->printIndexedBuffer("ReverseSubtract Legacy3");
+    if (tZ != &z)
+        delete tZ;
+    nd4j::ops::reversesubtract<float> subOp;
+
+    auto res = subOp.execute({&y, &x}, {}, {});
+
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    res->at(0)->printIndexedBuffer("OUtput REVERSED SUB3");
+    ASSERT_TRUE(res->at(0)->equalsTo(&exp));
+
+    delete res;
+}
+
+//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, ReverseSubtractVectorVector1) {
     
     auto x = new NDArray<float>   ('c', {1, 15});
