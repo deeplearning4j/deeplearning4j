@@ -3,7 +3,7 @@ title: Deeplearning4j Model Zoo
 short_title: Zoo Usage
 description: Prebuilt model architectures and weights for out-of-the-box application.
 category: Models
-weight: 3
+weight: 10
 ---
 
 ## About the Deeplearning4j model zoo

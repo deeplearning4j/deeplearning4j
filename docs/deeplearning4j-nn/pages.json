@@ -6,6 +6,18 @@
   ],
   "pages": [
     {
+      "page": "evaluation.md",
+      "class": []
+    },
+    {
+      "page": "visualization.md",
+      "class": []
+    },
+    {
+      "page": "tsne-visualization.md",
+      "class": []
+    },
+    {
       "page": "computationgraph.md",
       "class": [
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/ComputationGraph.java"
