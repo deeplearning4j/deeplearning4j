@@ -19,12 +19,14 @@ package org.nd4j.parameterserver.distributed.util;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.parameterserver.distributed.enums.MeshBuildMode;
+import org.nd4j.parameterserver.distributed.enums.NodeStatus;
 
 
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * This class provides methods for ephemeral mesh network management
@@ -83,12 +85,18 @@ public class MeshOrganizer implements Serializable {
          return this.addNode(node);
     }
 
-
+    /**
+     * This method adds new node to the mesh
+     *
+     * @param node
+     * @return
+     */
     public synchronized Node addNode(@NonNull Node node) {
 
         // if node isn't mapped yet - in this case we're mapping node automatically here
                 switch (buildMode) {
                     case DEPTH_FIRST: {
+                            sortedNodes.add(node);
                             return rootNode.pushDownstreamNode(node);
                         }
                     case WIDTH_FIRST: {
@@ -100,6 +108,8 @@ public class MeshOrganizer implements Serializable {
                                 sortedNodes.add(node);
                                 return node;
                             }
+
+                            sortedNodes.add(node);
 
 
                             // if lastRoot isn't full yet - we'll just add new node to it (this one)
@@ -144,17 +154,72 @@ public class MeshOrganizer implements Serializable {
                         throw new UnsupportedOperationException();
                 }
 
-        // we should check if this node has any descendants
-        if (node.numberOfDownstreams() > 0) {
-            // if true - we should ensure they have their room in this mesh
-        }
-
         // after all we add this node to the flattened map, for future access
         nodeMap.put(node.getId(), node);
 
         return node;
     }
 
+    /**
+     * This method marks Node (specified by IP) as offline, and remaps its downstreams
+     *
+     * @param ip
+     * @throws NoSuchElementException
+     */
+    public void markNodeOffline(@NonNull String ip) throws NoSuchElementException {
+        markNodeOffline(getNodeByIp(ip));
+    }
+
+    /**
+     * This method marks given Node as offline, remapping its downstreams
+     * @param node
+     */
+    public  void markNodeOffline(@NonNull Node node) {
+        synchronized (node) {
+            node.status(NodeStatus.OFFLINE);
+
+            for (val n : node.getDownstreamNodes())
+                remapNode(n);
+        }
+    }
+
+
+    /**
+     * This method reconnects given node to another node
+     */
+    public void remapNode(@NonNull String ip) {
+        remapNode(getNodeByIp(ip));
+    }
+
+    /**
+     * This method reconnects given node to another node
+     */
+    public void remapNode(@NonNull Node node) {
+        synchronized (node) {
+
+            node.getUpstreamNode().removeFromDownstreams(node);
+
+            boolean m = false;
+            for (val n: sortedNodes) {
+                // we dont want to remap node to itself
+                if (!Objects.equals(n, node) && n.status().equals(NodeStatus.ONLINE)) {
+                    n.addDownstreamNode(node);
+                    m = true;
+                    break;
+                }
+            }
+
+            // if we were unable to find good enough node - we'll map this node to the rootNode
+            if (!m) {
+                rootNode.addDownstreamNode(node);
+            }
+
+            // i hope we won't deadlock here? :)
+            synchronized (this) {
+                Collections.sort(sortedNodes);
+            }
+        }
+    }
 
     /**
      * This method removes  node from tree
@@ -172,26 +237,22 @@ public class MeshOrganizer implements Serializable {
         return nodeMap.containsKey(ip);
     }
 
-
-    /**
-     * This method reconnects given node to another node
-     */
-    public void remapNode() {
-        //
-    }
-
     /**
      * This method returns upstream connection for a given node
      */
-    public void getUpstreamForNode() {
-        //
+    public Node getUpstreamForNode(@NonNull String ip) throws NoSuchElementException {
+        val node = getNodeByIp(ip);
+
+        return node.getUpstreamNode();
     }
 
     /**
      * This method returns downstream connections for a given node
      */
-    public void getDownstreamsForNode() {
-        //
+    public Collection<Node> getDownstreamsForNode(@NonNull String ip) throws NoSuchElementException {
+        val node = getNodeByIp(ip);
+
+        return node.getDownstreamNodes();
     }
 
     /**
@@ -242,8 +303,12 @@ public class MeshOrganizer implements Serializable {
      * This method returns Node representing given IP
      * @return
      */
-    protected Node getNodeByIp() {
-        return null;
+    protected Node getNodeByIp(@NonNull String ip) throws NoSuchElementException {
+        val node = nodeMap.get(ip);
+        if (node == null)
+            throw new NoSuchElementException(ip);
+
+        return node;
     }
 
     /**
@@ -280,7 +345,33 @@ public class MeshOrganizer implements Serializable {
 
         private AtomicInteger position = new AtomicInteger(0);
 
+        @Getter(AccessLevel.NONE)
+        @Setter(AccessLevel.NONE)
+        @Builder.Default
+        private AtomicReference<NodeStatus> status = new AtomicReference<>(NodeStatus.ONLINE);
 
+        /**
+         * This method returns current status of this node
+         * @return
+         */
+        public synchronized NodeStatus status() {
+            return status.get();
+        }
+
+        /**
+         * This method ret
+         * @param status
+         */
+        protected synchronized void status(@NonNull NodeStatus status) {
+            this.status.set(status);
+        }
+
+        /**
+         * This method return candidate for new connection
+         *
+         * @param node
+         * @return
+         */
         protected Node getNextCandidate(Node node) {
             // if there's no candidates - just connect to this node
             if (downstream.size() == 0)
@@ -404,6 +495,17 @@ public class MeshOrganizer implements Serializable {
                 return 1;
             else
                 return upstream.distanceFromRoot() + 1;
+        }
+
+        /**
+         * This method removes
+         * @param node
+         */
+        protected synchronized void removeFromDownstreams(@NonNull Node node) {
+            val r = downstream.remove(node);
+
+            if (!r)
+                throw new NoSuchElementException(node.getIp());
         }
 
         @Override

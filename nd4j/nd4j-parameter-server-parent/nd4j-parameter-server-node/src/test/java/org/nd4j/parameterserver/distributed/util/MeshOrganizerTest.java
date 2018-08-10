@@ -209,4 +209,27 @@ public class MeshOrganizerTest {
             assertTrue(r.numberOfDescendants() <= MeshOrganizer.MAX_DOWNSTREAMS * MeshOrganizer.MAX_DEPTH);
     }
 
+
+    @Test
+    public void testRemap_1() {
+        val mesh = new MeshOrganizer(MeshBuildMode.SYMMETRIC_MODE);
+
+        val node1 = mesh.addNode("192.168.1.1");
+        val node2 = mesh.addNode("192.168.2.1");
+        val node3 = mesh.addNode("192.168.2.2");
+
+        mesh.markNodeOffline(node3);
+
+        assertEquals(3, mesh.getRootNode().numberOfDownstreams());
+
+        val node4 = mesh.addNode("192.168.1.7");
+
+        assertEquals(1, node1.numberOfDownstreams());
+
+
+        mesh.remapNode(node4);
+
+        assertEquals(1, node2.numberOfDownstreams());
+        assertEquals(0, node1.numberOfDownstreams());
+    }
 }
