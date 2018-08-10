@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
+ * Activation layer is a simple layer that applies the specified activation function to the input activations
  */
 @Data
 @NoArgsConstructor
@@ -49,10 +50,16 @@ public class ActivationLayer extends NoParamLayer {
         initializeConstraints(builder);
     }
 
+    /**
+     * @param activation Activation function for the layer
+     */
     public ActivationLayer(Activation activation){
         this(new Builder().activation(activation));
     }
 
+    /**
+     * @param activationFn Activation function for the layer
+     */
     public ActivationLayer(IActivation activationFn){
         this(new Builder().activation(activationFn));
     }
@@ -95,23 +102,6 @@ public class ActivationLayer extends NoParamLayer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
-    public boolean isPretrainParam(String paramName) {
-        throw new UnsupportedOperationException("Activation layer does not contain parameters");
-    }
-
-    @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         val actElementsPerEx = inputType.arrayElementsPerExample();
 
@@ -147,11 +137,17 @@ public class ActivationLayer extends NoParamLayer {
             return activation(Activation.fromString(activationFunction));
         }
 
+        /**
+         * @param activationFunction Activation function for the layer
+         */
         public Builder activation(IActivation activationFunction) {
             this.activationFn = activationFunction;
             return this;
         }
 
+        /**
+         * @param activation Activation function for the layer
+         */
         public Builder activation(Activation activation) {
             return activation(activation.getActivationFunction());
         }
