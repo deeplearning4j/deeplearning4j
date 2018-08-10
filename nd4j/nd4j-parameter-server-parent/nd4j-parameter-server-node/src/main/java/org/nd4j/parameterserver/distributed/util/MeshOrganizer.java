@@ -18,6 +18,7 @@ package org.nd4j.parameterserver.distributed.util;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.parameterserver.distributed.enums.MeshBuildMode;
 import org.nd4j.parameterserver.distributed.enums.NodeStatus;
 
@@ -348,7 +349,7 @@ public class MeshOrganizer implements Serializable {
         @Getter(AccessLevel.NONE)
         @Setter(AccessLevel.NONE)
         @Builder.Default
-        private AtomicReference<NodeStatus> status = new AtomicReference<>(NodeStatus.ONLINE);
+        private Atomic<NodeStatus> status = new Atomic<>(NodeStatus.ONLINE);
 
         /**
          * This method returns current status of this node
@@ -495,6 +496,31 @@ public class MeshOrganizer implements Serializable {
                 return 1;
             else
                 return upstream.distanceFromRoot() + 1;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Node node = (Node) o;
+
+            val rn = this.upstream == null ? "root" : this.upstream.getIp();
+            val on = node.upstream == null ? "root" : node.upstream.getIp();
+
+            return rootNode == node.rootNode &&
+                    port == node.port &&
+                    Objects.equals(id, node.id) &&
+                    Objects.equals(ip, node.ip) &&
+                    Objects.equals(downstream, node.downstream) &&
+                    Objects.equals(position, node.position) &&
+                    Objects.equals(status, node.status) &&
+                    Objects.equals(rn, on);
+
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(upstream == null ? "root" : upstream.getIp(), rootNode, id, ip, port, downstream, position, status);
         }
 
         /**
