@@ -471,6 +471,55 @@ TEST_F(DeclarableOpsTests1, SubtractMatrices1) {
     delete block;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, SubtractTest_1) {
+
+    auto x = new NDArray<float>('c', {1, 6});
+    auto y = new NDArray<float>('c', {1, 6});
+    NDArray<float> exp('c', {1, 6});
+    x->assign(3);
+    y->assign(1);
+    exp.assign(2);
+
+    VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, x);
+    variableSpace->putVariable(-2, y);
+    Context<float>* block = new Context<float>(1, variableSpace, true);
+    block->fillInputs({-1, -2});
+
+    nd4j::ops::subtract<float> subOp;
+
+    subOp.execute(block);
+
+    ASSERT_TRUE(x->equalsTo(&exp));
+
+
+    delete variableSpace;
+    delete block;
+}
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, SubtractTest_2) {
+
+    NDArray<float> x('c', {3, 4, 5, 1});
+    NDArray<float> y('c', {1, 6});
+//    NDArray<float> y({6}, {1,1,1,1,1,1});
+    NDArray<float> exp('c', {3, 4, 5, 6});
+    x.assign(3);
+    y.assign(1);
+    exp.assign(2);
+
+
+    nd4j::ops::subtract<float> subOp;
+
+    auto res = subOp.execute({&x, &y}, {}, {});
+
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+
+    ASSERT_TRUE(res->at(0)->equalsTo(&exp));
+
+    delete res;
+}
+
 TEST_F(DeclarableOpsTests1, TestRng1) {
     Nd4jLong *buffer = new Nd4jLong[100000];
 
@@ -711,6 +760,52 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractMatrices1) {
 
     delete variableSpace;
     delete block;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, ReverseSubtractTest_1) {
+
+    NDArray<float> x('c', {1, 6});
+    NDArray<float> y('c', {1, 6});
+    NDArray<float> exp('c', {1, 6});
+    x.assign(3);
+    y.assign(1);
+    exp.assign(-2);
+
+    nd4j::ops::reversesubtract<float> subOp;
+
+    auto res = subOp.execute({&x, &y}, {}, {});
+
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    ASSERT_TRUE(res->at(0)->equalsTo(&exp));
+
+    delete res;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, ReverseSubtractTest_2) {
+
+//    NDArray<float> x('c', {1, 6});
+    NDArray<float> x('c', {6});
+    NDArray<float> y('c', {3, 4, 5, 1});
+    NDArray<float> exp('c', {3, 4, 5, 6});
+    NDArray<float> z(exp);
+    x.assign(3);
+    y.assign(1);
+    exp.assign(-2);
+    auto tZ = BroadcastHelper<float>::template broadcastApply<simdOps::ReverseSubtract<float>>(&x, &y, &z);
+    tZ->printIndexedBuffer("ReverseSubtract Legacy");
+    if (tZ != &z)
+        delete tZ;
+    nd4j::ops::reversesubtract<float> subOp;
+
+    auto res = subOp.execute({&x, &y}, {}, {});
+
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    res->at(0)->printIndexedBuffer("OUtput REVERSED SUB");
+    ASSERT_TRUE(res->at(0)->equalsTo(&exp));
+
+    delete res;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -984,6 +1079,48 @@ TEST_F(DeclarableOpsTests1, TestSoftMax_bp_1) {
     delete block;
     delete exp;
 
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, BroadcastDivideTest_1) {
+
+    NDArray<float>  x('c', {3, 4, 5, 1});
+    NDArray<float>  y('c', {1, 6});
+    NDArray<float>  exp('c', {3, 4, 5, 6});
+    x.assign(6);
+    y.assign(2);
+    exp.assign(3);
+
+    nd4j::ops::divide<float> div;
+
+    auto res = div.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    ASSERT_TRUE(res->at(0)->equalsTo(exp));
+
+    delete res;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, BroadcastReverseDivideTest_1) {
+
+    NDArray<float>  x('c', {3, 4, 5, 1});
+    NDArray<float>  y('c', {1, 6});
+    NDArray<float>  exp('c', {3, 4, 5, 6});
+    x.assign(2);
+    y.assign(6);
+    exp.assign(3);
+
+    nd4j::ops::reversedivide<float> div;
+
+    auto res = div.execute({&y, &x}, {}, {});
+
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    res->at(0)->printIndexedBuffer("OUtput REVERSED DIV");
+
+    ASSERT_TRUE(res->at(0)->equalsTo(exp));
+
+    delete res;
 }
 
 //////////////////////////////////////////////////////////////////////
