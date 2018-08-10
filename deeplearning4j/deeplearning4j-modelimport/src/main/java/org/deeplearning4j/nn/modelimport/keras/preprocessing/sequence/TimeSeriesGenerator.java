@@ -17,12 +17,21 @@
 package org.deeplearning4j.nn.modelimport.keras.preprocessing.sequence;
 
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.preprocessing.text.KerasTokenizer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils.parseJsonString;
 
 /**
  * Java port of Keras' TimeSeriesGenerator, see https://keras.io/preprocessing/sequence/
@@ -52,6 +61,39 @@ public class TimeSeriesGenerator {
 
     // TODO: pad_sequences, make_sampling_table, skipgrams util?
 
+    public static TimeSeriesGenerator fromJson(String jsonFileName)
+            throws IOException, InvalidKerasConfigurationException {
+        String json = new String(Files.readAllBytes(Paths.get(jsonFileName)));
+        Map<String, Object> timeSeriesBaseConfig = parseJsonString(json);
+        Map<String, Object> timeSeriesConfig;
+        if (timeSeriesBaseConfig.containsKey("config"))
+            timeSeriesConfig = (Map<String, Object>) timeSeriesBaseConfig.get("config");
+        else
+            throw new InvalidKerasConfigurationException("No configuration found for Keras tokenizer");
+
+
+        int length = (int) timeSeriesConfig.get("length");
+        int samplingRate = (int) timeSeriesConfig.get("sampling_rate");
+        int stride = (int) timeSeriesConfig.get("stride");
+        int startIndex = (int) timeSeriesConfig.get("start_index");
+        int endIndex = (int) timeSeriesConfig.get("end_index");
+        int batchSize = (int) timeSeriesConfig.get("batch_size");
+
+        boolean shuffle = (boolean) timeSeriesConfig.get("shuffle");
+        boolean reverse = (boolean) timeSeriesConfig.get("reverse");
+
+
+//        @SuppressWarnings("unchecked")
+//        Map<Double, Double> data = (Map) parseJsonString((String) timeSeriesConfig.get("data"));
+//        @SuppressWarnings("unchecked")
+//        Map<Double, Double> targets = (Map) parseJsonString((String) timeSeriesConfig.get("targets"));
+
+
+        TimeSeriesGenerator gen = new TimeSeriesGenerator(Nd4j.create(10,10), Nd4j.create(10, 10), length,
+                samplingRate, stride, startIndex, endIndex, shuffle, reverse, batchSize);
+
+        return gen;
+    }
     public TimeSeriesGenerator(INDArray data, INDArray targets, int length, int samplingRate, int stride,
                                Integer startIndex, Integer endIndex, boolean shuffle, boolean reverse,
                                int batchSize) throws InvalidKerasConfigurationException {
