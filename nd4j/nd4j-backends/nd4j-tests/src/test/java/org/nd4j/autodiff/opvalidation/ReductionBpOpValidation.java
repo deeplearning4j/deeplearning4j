@@ -694,19 +694,50 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
 
 
-//        for(boolean exclusive : new boolean[]{false, true}) {
-//            for(boolean reverse : new boolean[]{false, true}) {
-//
-//                INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
-//                INDArray dLdOut = preReduceInput.dup().addi(100);
-//                INDArray dLdInExpected = Nd4j.valueArrayOf(preReduceInput.shape(), 0.5);
-//                INDArray dLdIn = Nd4j.createUninitialized(3, 4);
-//
-//                String err = OpValidation.validate(new OpTestCase(new CumSumBp(preReduceInput, dLdOut, dLdIn, keepDims))
-//                        .expectedOutput(0, dLdInExpected));
-//                assertNull(err);
-//            }
-//        }
+        for(boolean exclusive : new boolean[]{false, true}) {
+            for(boolean reverse : new boolean[]{false, true}) {
+
+                INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+                INDArray dLdOut = Nd4j.valueArrayOf(new long[]{3,4}, 0.5);
+                INDArray dLdIn = Nd4j.createUninitialized(3, 4);
+
+                INDArray dLdInExpected;
+                if(exclusive){
+                    if(reverse){
+                        dLdInExpected = Nd4j.create(new double[][]{
+                                {0.0, 0.0, 0.0, 0.0},
+                                {0.5, 0.5, 0.5, 0.5},
+                                {1.0, 1.0, 1.0, 1.0}});
+                    } else {
+                        dLdInExpected = Nd4j.create(new double[][]{
+                                {1.0, 1.0, 1.0, 1.0},
+                                {0.5, 0.5, 0.5, 0.5},
+                                {0.0, 0.0, 0.0, 0.0}});
+                    }
+                } else {
+                    if(reverse){
+                        dLdInExpected = Nd4j.create(new double[][]{
+                                {0.5, 0.5, 0.5, 0.5},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.5, 1.5, 1.5, 1.5}});
+                    } else {
+                        //Standard case
+                        dLdInExpected = Nd4j.create(new double[][]{
+                                {1.5, 1.5, 1.5, 1.5},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {0.5, 0.5, 0.5, 0.5}});
+                    }
+                }
+
+                String err = OpValidation.validate(new OpTestCase(
+                        new CumSumBp(preReduceInput, dLdOut, dLdIn, exclusive, reverse, 0))
+                        .expectedOutput(0, dLdInExpected));
+                if(err != null){
+                    err = err + " - exclusive=" + exclusive + ", reverse=" + reverse;
+                }
+                assertNull(err);
+            }
+        }
     }
 
 
@@ -728,9 +759,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
         //Exclusive case
         //
-
-
-        fail();
     }
 
 

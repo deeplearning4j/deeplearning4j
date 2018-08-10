@@ -158,6 +158,11 @@ public abstract class NativeRandom implements Random {
     }
 
     @Override
+    public int nextInt(int a, int n) {
+        return nextInt(n - a) + a;
+    }
+
+    @Override
     public long nextLong() {
         long next = 0;
         synchronized (this) {

@@ -493,3 +493,45 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_5) {
 
     ASSERT_TRUE(e.equalsTo(z));
 }
+
+TEST_F(BroadcastableOpsTests, Test_Multiply_6) {
+    NDArray<float> x(2.0f);
+    NDArray<float> y('c', {1}, {4.f});
+    NDArray<float> e('c', {1}, {8.f});
+
+    auto z = x * y;
+
+    ASSERT_TRUE(e.equalsTo(z));
+}
+
+TEST_F(BroadcastableOpsTests, Test_Multiply_7) {
+    NDArray<float> x(2.0f);
+    NDArray<float> y('c', {1}, {4.f});
+    NDArray<float> e('c', {1}, {8.f});
+
+    nd4j::ops::multiply<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(BroadcastableOpsTests, Test_Multiply_8) {
+    NDArray<float> x(2.0f);
+    NDArray<float> y('c', {1, 1}, {4.f});
+    NDArray<float> e('c', {1, 1}, {8.f});
+
+    nd4j::ops::multiply<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.equalsTo(z));
+
+    delete result;
+}

@@ -70,8 +70,6 @@
         <libnd4j.cuda></libnd4j.cuda>
         <libnd4j.compute></libnd4j.compute>
         <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
-        <libnd4j.tests.phase>test</libnd4j.tests.phase>
-<!--        <libnd4j.test.is.release.build>true</libnd4j.test.is.release.build>-->
     </properties>
 
     <build>
@@ -167,7 +165,7 @@
                 <executions>
                     <execution>
                         <id>libnd4j.test.run</id>
-                        <phase>${libnd4j.tests.phase}</phase>
+                        <phase>test</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
@@ -177,7 +175,6 @@
                             <workingDirectory>${basedir}/tests_cpu</workingDirectory>
                             <arguments>
                                 <argument>run_tests.sh</argument>
-                                <argument>--release=${libnd4j.test.is.release.build}</argument>
                             </arguments>
                         </configuration>
                     </execution>

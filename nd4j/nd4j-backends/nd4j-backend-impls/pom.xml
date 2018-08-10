@@ -41,19 +41,24 @@
         <dependency.artifactId>${project.artifactId}</dependency.artifactId>
         <dependency.version>${project.version}</dependency.version>
         <dependency.packaging>${project.packaging}</dependency.packaging>
-        <dependency.classifier>${javacpp.platform}</dependency.classifier>
+        <dependency.classifier>${javacpp.platform}${javacpp.platform.extension}</dependency.classifier>
         <dependency.platform></dependency.platform>
         <javacpp.platform.android-arm>android-arm</javacpp.platform.android-arm>
         <javacpp.platform.android-arm64>android-arm64</javacpp.platform.android-arm64>
         <javacpp.platform.android-x86>android-x86</javacpp.platform.android-x86>
         <javacpp.platform.android-x86_64>android-x86_64</javacpp.platform.android-x86_64>
+        <javacpp.platform.ios-arm>ios-arm</javacpp.platform.ios-arm>
         <javacpp.platform.ios-arm64>ios-arm64</javacpp.platform.ios-arm64>
+        <javacpp.platform.ios-x86>ios-x86</javacpp.platform.ios-x86>
         <javacpp.platform.ios-x86_64>ios-x86_64</javacpp.platform.ios-x86_64>
+        <javacpp.platform.linux-armhf>linux-armhf</javacpp.platform.linux-armhf>
+        <javacpp.platform.linux-arm64>linux-arm64</javacpp.platform.linux-arm64>
+        <javacpp.platform.linux-ppc64le>linux-ppc64le</javacpp.platform.linux-ppc64le>
+        <javacpp.platform.linux-x86>linux-x86</javacpp.platform.linux-x86>
         <javacpp.platform.linux-x86_64>linux-x86_64</javacpp.platform.linux-x86_64>
         <javacpp.platform.macosx-x86_64>macosx-x86_64</javacpp.platform.macosx-x86_64>
+        <javacpp.platform.windows-x86>windows-x86</javacpp.platform.windows-x86>
         <javacpp.platform.windows-x86_64>windows-x86_64</javacpp.platform.windows-x86_64>
-        <javacpp.platform.linux-ppc64le>linux-ppc64le</javacpp.platform.linux-ppc64le>
-        <javacpp.platform.linux-armhf>linux-armhf</javacpp.platform.linux-armhf>
     </properties>
 
 
@@ -183,6 +188,22 @@
                 </file>
             </activation>
             <properties>
+                <javacpp.platform.android-arm></javacpp.platform.android-arm>
+                <javacpp.platform.android-arm64></javacpp.platform.android-arm64>
+                <javacpp.platform.android-x86></javacpp.platform.android-x86>
+                <javacpp.platform.android-x86_64></javacpp.platform.android-x86_64>
+                <javacpp.platform.ios-arm></javacpp.platform.ios-arm>
+                <javacpp.platform.ios-arm64></javacpp.platform.ios-arm64>
+                <javacpp.platform.ios-x86></javacpp.platform.ios-x86>
+                <javacpp.platform.ios-x86_64></javacpp.platform.ios-x86_64>
+                <javacpp.platform.linux-armhf></javacpp.platform.linux-armhf>
+                <javacpp.platform.linux-arm64></javacpp.platform.linux-arm64>
+                <javacpp.platform.linux-ppc64le></javacpp.platform.linux-ppc64le>
+                <javacpp.platform.linux-x86></javacpp.platform.linux-x86>
+                <javacpp.platform.linux-x86_64></javacpp.platform.linux-x86_64>
+                <javacpp.platform.macosx-x86_64></javacpp.platform.macosx-x86_64>
+                <javacpp.platform.windows-x86></javacpp.platform.windows-x86>
+                <javacpp.platform.windows-x86_64></javacpp.platform.windows-x86_64>
                 <dependency.groupId>${project.parent.groupId}</dependency.groupId>
                 <dependency.artifactId>${project.parent.artifactId}</dependency.artifactId>
                 <dependency.version>${project.parent.version}</dependency.version>
@@ -199,7 +220,6 @@
                 </file>
             </activation>
             <properties>
-                <javacpp.platform>${os.name}-${os.arch}</javacpp.platform>
                 <dependency.platform>${javacpp.platform}</dependency.platform>
             </properties>
         </profile>
@@ -216,12 +236,50 @@
                 <javacpp.platform.android-arm64>${javacpp.platform}</javacpp.platform.android-arm64>
                 <javacpp.platform.android-x86>${javacpp.platform}</javacpp.platform.android-x86>
                 <javacpp.platform.android-x86_64>${javacpp.platform}</javacpp.platform.android-x86_64>
+                <javacpp.platform.ios-arm>${javacpp.platform}</javacpp.platform.ios-arm>
                 <javacpp.platform.ios-arm64>${javacpp.platform}</javacpp.platform.ios-arm64>
+                <javacpp.platform.ios-x86>${javacpp.platform}</javacpp.platform.ios-x86>
                 <javacpp.platform.ios-x86_64>${javacpp.platform}</javacpp.platform.ios-x86_64>
+                <javacpp.platform.linux-armhf>${javacpp.platform}</javacpp.platform.linux-armhf>
+                <javacpp.platform.linux-arm64>${javacpp.platform}</javacpp.platform.linux-arm64>
+                <javacpp.platform.linux-ppc64le>${javacpp.platform}</javacpp.platform.linux-ppc64le>
+                <javacpp.platform.linux-x86>${javacpp.platform}</javacpp.platform.linux-x86>
                 <javacpp.platform.linux-x86_64>${javacpp.platform}</javacpp.platform.linux-x86_64>
                 <javacpp.platform.macosx-x86_64>${javacpp.platform}</javacpp.platform.macosx-x86_64>
+                <javacpp.platform.windows-x86>${javacpp.platform}</javacpp.platform.windows-x86>
                 <javacpp.platform.windows-x86_64>${javacpp.platform}</javacpp.platform.windows-x86_64>
-                <javacpp.platform.linux-ppc64le>${javacpp.platform}</javacpp.platform.linux-ppc64le>
+                <dependency.classifier>${javacpp.platform}${javacpp.platform.extension}</dependency.classifier>
+                <dependency.platform>${javacpp.platform}</dependency.platform>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>javacpp-platform-host</id>
+            <activation>
+                <property>
+                    <name>javacpp.platform.host</name>
+                </property>
+            </activation>
+            <properties>
+                <javacpp.platform>${os.name}-${os.arch}</javacpp.platform>
+                <javacpp.platform.android-arm>${os.name}-${os.arch}</javacpp.platform.android-arm>
+                <javacpp.platform.android-arm64>${os.name}-${os.arch}</javacpp.platform.android-arm64>
+                <javacpp.platform.android-x86>${os.name}-${os.arch}</javacpp.platform.android-x86>
+                <javacpp.platform.android-x86_64>${os.name}-${os.arch}</javacpp.platform.android-x86_64>
+                <javacpp.platform.ios-arm>${os.name}-${os.arch}</javacpp.platform.ios-arm>
+                <javacpp.platform.ios-arm64>${os.name}-${os.arch}</javacpp.platform.ios-arm64>
+                <javacpp.platform.ios-x86>${os.name}-${os.arch}</javacpp.platform.ios-x86>
+                <javacpp.platform.ios-x86_64>${os.name}-${os.arch}</javacpp.platform.ios-x86_64>
+                <javacpp.platform.linux-armhf>${os.name}-${os.arch}</javacpp.platform.linux-armhf>
+                <javacpp.platform.linux-arm64>${os.name}-${os.arch}</javacpp.platform.linux-arm64>
+                <javacpp.platform.linux-ppc64le>${os.name}-${os.arch}</javacpp.platform.linux-ppc64le>
+                <javacpp.platform.linux-x86>${os.name}-${os.arch}</javacpp.platform.linux-x86>
+                <javacpp.platform.linux-x86_64>${os.name}-${os.arch}</javacpp.platform.linux-x86_64>
+                <javacpp.platform.macosx-x86_64>${os.name}-${os.arch}</javacpp.platform.macosx-x86_64>
+                <javacpp.platform.windows-x86>${os.name}-${os.arch}</javacpp.platform.windows-x86>
+                <javacpp.platform.windows-x86_64>${os.name}-${os.arch}</javacpp.platform.windows-x86_64>
+                <dependency.classifier>${os.name}-${os.arch}${javacpp.platform.extension}</dependency.classifier>
+                <dependency.platform>${os.name}-${os.arch}</dependency.platform>
             </properties>
         </profile>
 
@@ -229,41 +287,29 @@
             <id>javacpp-platform-none</id>
             <activation>
                 <property>
-                  <name>javacpp.platform.none</name>
+                    <name>javacpp.platform.none</name>
                 </property>
             </activation>
             <properties>
+                <javacpp.platform></javacpp.platform>
                 <javacpp.platform.android-arm></javacpp.platform.android-arm>
                 <javacpp.platform.android-arm64></javacpp.platform.android-arm64>
                 <javacpp.platform.android-x86></javacpp.platform.android-x86>
                 <javacpp.platform.android-x86_64></javacpp.platform.android-x86_64>
+                <javacpp.platform.ios-arm></javacpp.platform.ios-arm>
                 <javacpp.platform.ios-arm64></javacpp.platform.ios-arm64>
+                <javacpp.platform.ios-x86></javacpp.platform.ios-x86>
                 <javacpp.platform.ios-x86_64></javacpp.platform.ios-x86_64>
+                <javacpp.platform.linux-armhf></javacpp.platform.linux-armhf>
+                <javacpp.platform.linux-arm64></javacpp.platform.linux-arm64>
+                <javacpp.platform.linux-ppc64le></javacpp.platform.linux-ppc64le>
+                <javacpp.platform.linux-x86></javacpp.platform.linux-x86>
                 <javacpp.platform.linux-x86_64></javacpp.platform.linux-x86_64>
                 <javacpp.platform.macosx-x86_64></javacpp.platform.macosx-x86_64>
+                <javacpp.platform.windows-x86></javacpp.platform.windows-x86>
                 <javacpp.platform.windows-x86_64></javacpp.platform.windows-x86_64>
-                <javacpp.platform.linux-ppc64le></javacpp.platform.linux-ppc64le>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>javacpp-platform-build</id>
-            <activation>
-                <file>
-                    <exists>${basedir}</exists>
-                </file>
-            </activation>
-            <properties>
-                <javacpp.platform.android-arm></javacpp.platform.android-arm>
-                <javacpp.platform.android-arm64></javacpp.platform.android-arm64>
-                <javacpp.platform.android-x86></javacpp.platform.android-x86>
-                <javacpp.platform.android-x86_64></javacpp.platform.android-x86_64>
-                <javacpp.platform.ios-arm64></javacpp.platform.ios-arm64>
-                <javacpp.platform.ios-x86_64></javacpp.platform.ios-x86_64>
-                <javacpp.platform.linux-x86_64></javacpp.platform.linux-x86_64>
-                <javacpp.platform.macosx-x86_64></javacpp.platform.macosx-x86_64>
-                <javacpp.platform.windows-x86_64></javacpp.platform.windows-x86_64>
-                <javacpp.platform.linux-ppc64le></javacpp.platform.linux-ppc64le>
+                <dependency.classifier></dependency.classifier>
+                <dependency.platform></dependency.platform>
             </properties>
         </profile>
 

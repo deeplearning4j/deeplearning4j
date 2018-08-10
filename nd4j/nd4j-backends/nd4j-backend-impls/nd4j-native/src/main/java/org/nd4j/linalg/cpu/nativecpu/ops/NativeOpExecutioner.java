@@ -1780,7 +1780,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val hash = op.opHash();
 
         val result = new ArrayList<long[]>();
-        if(op.numInputArguments() < 1 && op.getDescriptor().getNumInputs() != -2) {   //Some ops legitimately have 0 inputs - and "-2" means "0 or more"
+        if(op.numInputArguments() < 1 && op.getDescriptor().getNumInputs() != -2) {
             if(log.isTraceEnabled()){
                 log.trace("Could not calculate output shape for op {}: number of input args was 0",
                         op.getClass().getName());
@@ -1878,11 +1878,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public void enableDebugMode(boolean reallyEnable) {
+        debug.set(reallyEnable);
         loop.enableDebugMode(reallyEnable);
     }
 
     @Override
     public void enableVerboseMode(boolean reallyEnable) {
+        verbose.set(reallyEnable);
         loop.enableVerboseMode(reallyEnable);
     }
 

@@ -25,3 +25,27 @@ def zeros(shape):
 
 def ones(shape):
     return ndarray(Nd4j.ones(*shape))
+
+
+def zeros_like(array):
+    array = ndarray(array).array
+    return ndarray(Nd4j.zerosLike(array))
+
+
+def ones_like(array):
+    array = ndarray(array).array
+    return ndarray(Nd4j.onesLike(array))
+
+
+def eye(size):
+    return ndarray(Nd4j.eye(size))
+
+
+def arange(m, n=None):
+    if n is None:
+        return ndarray(Nd4j.arange(m))
+    return ndarray(Nd4j.arange(m, n))
+
+
+def linspace(start, stop, num):
+    return ndarray(Nd4j.linspace(start, stop, num))

@@ -22,7 +22,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nd4j-kryo_2.11</artifactId>
+    <artifactId>nd4j-kryo_2.10</artifactId>
     <packaging>jar</packaging>
 
     <name>nd4j-kryo</name>
@@ -47,8 +47,28 @@
         </dependency>
 
         <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>${commons-codec.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${commons-io.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons-lang3.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+            <version>${asm.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_2.11</artifactId>
+            <artifactId>spark-core_2.10</artifactId>
             <version>${spark.version}</version>
             <scope>provided</scope>
             <exclusions>
@@ -57,13 +77,6 @@
                 <artifactId>jsr305</artifactId>
               </exclusion>
             </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -77,6 +90,15 @@
     <profiles>
         <profile>
             <id>testresources</id>
+            <!-- Put nd4j-native in profile so that CUDA-only builds succeed -->
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 </project>

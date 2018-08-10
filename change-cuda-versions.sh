@@ -29,7 +29,7 @@ CUDNN_60_VERSION="6\.0"
 CUDNN_70_VERSION="7\.0"
 CUDNN_71_VERSION="7\.1"
 JAVACPP_141_VERSION="1\.4\.1"
-JAVACPP_142_VERSION="1\.4\.2-SNAPSHOT"
+JAVACPP_142_VERSION="1\.4\.2"
 
 usage() {
   echo "Usage: $(basename $0) [-h|--help] <cuda version to be used>

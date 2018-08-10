@@ -22,6 +22,7 @@ import org.nd4j.autodiff.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.impl.DefaultSameDiffConditional;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
 import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
@@ -42,7 +43,7 @@ public class FailingSameDiffTests {
 
     @Test
     public void testEye(){
-        OpValidationSuite.ignoreFailing();
+        //OpValidationSuite.ignoreFailing();
         INDArray arr = Nd4j.create(new double[]{1, 0, 0, 0, 1, 0}, new int[]{2, 3});
         List<INDArray> stack = new ArrayList<>();
         for(int i=0; i< 25; i++){
@@ -54,6 +55,18 @@ public class FailingSameDiffTests {
         SDVariable result = sd.eye(2, 3, 5, 5);
 
         assertEquals(expOut, result.eval());
+    }
+
+    @Test
+    public void testEyeShape(){
+        val dco = DynamicCustomOp.builder("eye")
+                .addIntegerArguments(3,3)
+                //.addIntegerArguments(-99,3,3) //Also fails
+                .build();
+
+        List<long[]> list = Nd4j.getExecutioner().calculateOutputShape(dco);
+        assertEquals(1, list.size());   //Fails here - empty list
+        assertArrayEquals(new long[]{3,3}, list.get(0));
     }
 
     @Test(timeout = 10000L)

@@ -157,7 +157,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         List<String> failed = new ArrayList<>();
 
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 21; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -278,6 +278,16 @@ public class ReductionOpValidation extends BaseOpValidation {
                     loss = sd.logEntropy("loss", input);
                     double logEntropy = inputArr.logEntropyNumber().doubleValue();
                     tc.expected(loss, Nd4j.trueScalar(logEntropy));
+                    break;
+                case 20:
+                    inputArr = Nd4j.rand(minibatch, nOut);
+                    name = "shannonEntropy";
+                    loss = sd.shannonEntropy("loss", input);
+                    double shannonEntropy = inputArr.shannonEntropyNumber().doubleValue();
+                    tc.expected(loss, Nd4j.trueScalar(shannonEntropy));
+                    if(OpValidationSuite.IGNORE_FAILING){
+                        continue;
+                    }
                     break;
                 default:
                     throw new RuntimeException();
@@ -597,7 +607,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         List<String> failed = new ArrayList<>();
         for (int[] reduceDims : new int[][]{{Integer.MAX_VALUE}, {0, 1, 2}, {0}, {1}, {2}, {0, 1}, {0, 2}, {1, 2}}) {
-            for (int i = 5; i < 6; i++) {
+            for (int i = 6; i < 7; i++) {
 
                 SameDiff sd = SameDiff.create();
                 sd.setLogExecution(false);
@@ -625,6 +635,8 @@ public class ReductionOpValidation extends BaseOpValidation {
                         exp = Nd4j.getExecutioner().exec(new EuclideanDistance(inArr, in2Arr, null, true, false), reduceDims);
                         break;
                     case 2:
+                        inArr.muli(1e-4);
+                        in2Arr.muli(1e-4);
                         reduced = sd.cosineSimilarity(in, in2, reduceDims);
                         name = "cosine";
                         exp = Nd4j.getExecutioner().exec(new CosineSimilarity(inArr, in2Arr, null, true, false), reduceDims);
@@ -650,6 +662,10 @@ public class ReductionOpValidation extends BaseOpValidation {
                             continue;
                         break;
                     case 6:
+                        if(OpValidationSuite.IGNORE_FAILING){
+                            //https://github.com/deeplearning4j/deeplearning4j/issues/6069
+                            continue;
+                        }
                         name = "dot";
                         reduced = sd.dot(name, in, in2, reduceDims);
                         exp = Nd4j.getExecutioner().exec(new Dot(inArr, in2Arr, null, true, false), reduceDims);
