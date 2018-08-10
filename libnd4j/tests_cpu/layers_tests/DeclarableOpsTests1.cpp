@@ -792,7 +792,7 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractTest_2) {
     NDArray<float> z(exp);
     x.assign(3);
     y.assign(1);
-    exp.assign(-2);
+    exp.assign(2);
     auto tZ = BroadcastHelper<float>::template broadcastApply<simdOps::ReverseSubtract<float>>(&x, &y, &z);
     tZ->printIndexedBuffer("ReverseSubtract Legacy");
     if (tZ != &z)
