@@ -8,7 +8,7 @@ weight: 2
 
 # IRIS Classifier Demo
 
-The example application trains a small neural network on the device using Anderson’s Iris data set for iris flower type classification. For a more indepth look at optimizing android for DL4J, please see the Prerequisites and Configuration documentation [here](https://deeplearning4j.org/android-prerequisites-configuration). This application has a simple UI to take measurements of petal length, petal width, sepal length, and sepal width from the user and returns the probability that the measurements belong to one of three types of Iris (*Iris serosa*, *Iris versicolor*, and *Iris virginica*). A data set includes 150 measurement values (50 for each iris type) and training the model takes anywhere from 5-20 seconds, depending on the device.
+The example application trains a small neural network on the device using Anderson’s Iris data set for iris flower type classification. For a more indepth look at optimizing android for DL4J, please see the Prerequisites and Configuration documentation [here](./deeplearning4j-android-prerequisites). This application has a simple UI to take measurements of petal length, petal width, sepal length, and sepal width from the user and returns the probability that the measurements belong to one of three types of Iris (*Iris serosa*, *Iris versicolor*, and *Iris virginica*). A data set includes 150 measurement values (50 for each iris type) and training the model takes anywhere from 5-20 seconds, depending on the device.
 
 Contents
 
@@ -27,24 +27,24 @@ Contents
 ## <a name="head_link1">Setting the Dependencies</a>
 Deeplearning4J applications require several dependencies in the build.gradle file. The Deeplearning library in turn depends on the libraries of ND4J and OpenBLAS, thus these must also be added to the dependencies declaration. Starting with Android Studio 3.0, annotationProcessors need to be defined as well, requiring dependencies for -x86 or -arm processors. 
 ```java
-	compile (group: 'org.deeplearning4j', name: 'deeplearning4j-nn', version: '{{page.version}}') {
-            exclude group: 'org.bytedeco.javacpp-presets', module: 'opencv-platform'
-            exclude group: 'org.bytedeco.javacpp-presets', module: 'leptonica-platform'
-            exclude group: 'org.bytedeco.javacpp-presets', module: 'hdf5-platform'
-        }
-        compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}'
-        compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-arm"
-        compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-arm64"
-        compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-x86"
-        compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-x86_64"
-        compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.2.20-{{presetsversion}}', classifier: "android-arm"
-        compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.2.20-{{presetsversion}}', classifier: "android-arm64"
-        compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.2.20-{{presetsversion}}', classifier: "android-x86"
-        compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.2.20-{{presetsversion}}', classifier: "android-x86_64"
-        compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.1-{{presetsversion}}', classifier: "android-arm"
-        compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.1-{{presetsversion}}', classifier: "android-arm64"
-        compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.1-{{presetsversion}}', classifier: "android-x86"
-        compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.1-{{presetsversion}}', classifier: "android-x86_64"
+compile (group: 'org.deeplearning4j', name: 'deeplearning4j-nn', version: '{{page.version}}') {
+    exclude group: 'org.bytedeco.javacpp-presets', module: 'opencv-platform'
+    exclude group: 'org.bytedeco.javacpp-presets', module: 'leptonica-platform'
+    exclude group: 'org.bytedeco.javacpp-presets', module: 'hdf5-platform'
+}
+compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}'
+compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-arm"
+compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-arm64"
+compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-x86"
+compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-x86_64"
+compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.2.20-{{presetsversion}}', classifier: "android-arm"
+compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.2.20-{{presetsversion}}', classifier: "android-arm64"
+compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.2.20-{{presetsversion}}', classifier: "android-x86"
+compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.2.20-{{presetsversion}}', classifier: "android-x86_64"
+compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.1-{{presetsversion}}', classifier: "android-arm"
+compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.1-{{presetsversion}}', classifier: "android-arm64"
+compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.1-{{presetsversion}}', classifier: "android-x86"
+compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.1-{{presetsversion}}', classifier: "android-x86_64"
 ```
 
 Compiling these dependencies involves a large number of files, thus it is necessary to set multiDexEnabled to true in defaultConfig.

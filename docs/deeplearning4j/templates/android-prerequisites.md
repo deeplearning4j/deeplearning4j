@@ -5,7 +5,9 @@ description: Setting up and configuring Android Studio for DL4J.
 category: Mobile
 weight: 1
 ---
-# Prerequisites and Configurations for DL4J in Android
+
+## Prerequisites and Configurations for DL4J in Android
+
 Contents
 * [Prerequisites](#head_link1)
 * [Required Dependencies](#head_link2)
@@ -13,7 +15,7 @@ Contents
 * [Memory Management](#head_link4)
 * [Saving and Loading Networks on Android](#head_link5)
 
-While neural networks are typically run on powerful computers using multiple GPUs, the compatibility of Deeplearning4J with the Android platform makes using DL4J neural networks in android applications a possibility. This tutorial will cover the basics of setting up android studio for building DL4J applications. Several configurations for dependencies, memory management, and compilation exclusions needed to mitigate the limitations of low powered mobile device are outlined below. If you just want to get a DL4J app running on your device, you can jump ahead to a simple demo application which trains a neural network for Iris flower classification available [here](https://deeplearning4j.org/android-DL4JIrisClassifierDemo).
+While neural networks are typically run on powerful computers using multiple GPUs, the compatibility of Deeplearning4J with the Android platform makes using DL4J neural networks in android applications a possibility. This tutorial will cover the basics of setting up android studio for building DL4J applications. Several configurations for dependencies, memory management, and compilation exclusions needed to mitigate the limitations of low powered mobile device are outlined below. If you just want to get a DL4J app running on your device, you can jump ahead to a simple demo application which trains a neural network for Iris flower classification available [here](./deeplearning4j-android-linear-classifier).
 
 
 ## <a name="head_link1">Prerequisites</a>
@@ -22,10 +24,15 @@ While neural networks are typically run on powerful computers using multiple GPU
 * Android Studio version 2.2 and higher comes with the latest OpenJDK embedded; however, it is recommended to have the JDK installed on your own as you are then able to update it independent of Android Studio. Android Studio 3.0 and later supports all of Java 7 and a subset of Java 8 language features. Java JDKs can be downloaded from Oracle's website.
 * Within Android studio, the Android SDK Manager can be used to install Android Build tools 24.0.1 or later, SDK platform 24 or later, and the Android Support Repository. 
 * An Android device or an emulator running API level 21 or higher. A minimum of 200 MB of internal storage space free is recommended.
-It is also recommended that you download and install IntelliJ IDEA, Maven, and the complete dl4j-examples directory for building and building and training neural nets on your desktop instead of android studio. A quickstart guide for setting up DL4j projects can be found [here](https://deeplearning4j.org/quickstart).
+
+It is also recommended that you download and install IntelliJ IDEA, Maven, and the complete dl4j-examples directory for building and building and training neural nets on your desktop instead of android studio.
+
+
 ## <a name="head_link2">Required Dependencies</a>
+
 In order to use Deeplearning4J in your Android projects, you will need to add the following dependencies to your app module’s build.gradle file. Depending on the type of neural network used in your application, you may need to add additional dependencies.
-``` java
+
+```java
 compile 'org.deeplearning4j:deeplearning4j-nn:{{page.version}}'
 compile 'org.nd4j:nd4j-native:{{page.version}}'
 compile 'org.nd4j:nd4j-native:{{page.version}}:android-x86'
@@ -35,30 +42,35 @@ compile 'org.bytedeco.javacpp-presets:openblas:0.2.19-1.3:android-x86'
 compile 'org.bytedeco.javacpp-presets:openblas:0.2.19-1.3:android-arm'
 testCompile 'junit:junit:4.12'
 ```
+
 DL4J depends on ND4J, which is a library that offers fast n-dimensional arrays. ND4J in turn depends on a platform-specific native code library called JavaCPP, therefore you must load a version of ND4J that matches the architecture of the Android device. Both -x86 and -arm types can be included to support multiple device processor types.
 
 The above dependencies contain several files with identical names which must be handled with the following exclude parameters to your packagingOptions.
+
 ```java
 packagingOptions {
-            exclude 'META-INF/DEPENDENCIES'
-            exclude 'META-INF/DEPENDENCIES.txt'
-            exclude 'META-INF/LICENSE'
-            exclude 'META-INF/LICENSE.txt'
-            exclude 'META-INF/license.txt'
-            exclude 'META-INF/NOTICE'
-            exclude 'META-INF/NOTICE.txt'
-            exclude 'META-INF/notice.txt'
-            exclude 'META-INF/INDEX.LIST'
+    exclude 'META-INF/DEPENDENCIES'
+    exclude 'META-INF/DEPENDENCIES.txt'
+    exclude 'META-INF/LICENSE'
+    exclude 'META-INF/LICENSE.txt'
+    exclude 'META-INF/license.txt'
+    exclude 'META-INF/NOTICE'
+    exclude 'META-INF/NOTICE.txt'
+    exclude 'META-INF/notice.txt'
+    exclude 'META-INF/INDEX.LIST'
 
-        }
+}
  ```       
 After adding the above dependencies and exclusions to the build.gradle file, try syncing Gradle with to see if any other exclusions are needed. The error message will identify the file path that should be added to the list of exclusions. An example error message with file path is: *> More than one file was found with OS independent path 'org/bytedeco/javacpp/ windows-x86_64/msvp120.dll'*
 Compiling these dependencies involves a large number of files, thus it is necessary to set multiDexEnabled to true in defaultConfig.
+
 ```java
 multiDexEnabled true
 ```
+
 A conflict in the junit module versions often causes the following error:  *> Conflict with dependency 'junit:junit' in project ':app'. Resolved versions for app (4.8.2) and test app (4.12) differ*. This can be suppressed by forcing all of the junit modules to use the same version with the following:
-``` java
+
+```java
 configurations.all {
     resolutionStrategy.force 'junit:junit:4.12'
 }
@@ -69,6 +81,7 @@ configurations.all {
 
 The DL4J dependencies compile a large number of files. ProGuard can be used to minimize your APK file size. ProGuard detects and removes unused classes, fields, methods, and attributes from your packaged app, including those from code libraries. You can learn more about using Proguard [here](https://developer.android.com/studio/build/shrink-code.html).
 To enable code shrinking with ProGuard, add minifyEnabled true to the appropriate build type in your build.gradle file.
+
 ```java
 buildTypes {
     release {
@@ -77,7 +90,9 @@ buildTypes {
     }
 }
 ```
+
 It is recommended to upgrade your ProGuard in the Android SDK to the latest release (5.1 or higher). Note that upgrading the build tools or other aspects of your SDK might cause Proguard to reset to the version shipped with the SDK. In order to force ProGuard to use a version of other than the Android Gradle default, you can include this in the buildscript of `build.gradle` file:
+
 ``` java
 buildscript {
     configurations.all {
@@ -90,7 +105,7 @@ buildscript {
 
 Proguard optimizes and reduces the amount of code in your Android application in order to make if  smaller and faster. Unfortunately, proguard removes annotations by default, including the @Platform annotation used by javaCV. To make proguard preserve these annotations and keep native methods add the following flags to the progaurd-rules.pro file. 
 
-``` java
+```java
 # enable optimization
 -optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
 -optimizationpasses 5
@@ -180,7 +195,7 @@ Proguard optimizes and reduces the amount of code in your Android application in
 Testing your app is the best way to check if any errors are being caused by inappropriately removed code; however, you can also inspect what was removed by reviewing the usage.txt output file saved in <module-name>/build/outputs/mapping/release/.
 
 To fix errors and force ProGuard to retain certain code, add a -keep line in the ProGuard configuration file. For example:
-``` java
+```java
 -keep public class MyClass
 ```
 
@@ -188,20 +203,25 @@ To fix errors and force ProGuard to retain certain code, add a -keep line in the
 ## <a name="head_link4">Memory Management</a>
 
 It may also be advantageous to increase the allocated memory to your app by adding android:largeHeap="true" to the manifest file. Allocating a larger heap means that you decrease the risk of throwing an OutOfMemoryError during memory intensive operations. 
-``` xml
+
+```xml
 android:largeHeap="true"
 ```
+
 As of release 0.9.0, ND4J offers an additional memory-management model: workspaces. Workspaces allow you to reuse memory for cyclic workloads without the JVM Garbage Collector for off-heap memory tracking. D4j Workspace allows for memory to be preallocated before a try / catch block and reused over in over within that block.
 
 If your training process uses workspaces, it is recommended that you disable or reduce the frequency of periodic GC calls prior to your model.fit() call.
-``` java
+
+```java
 // this will limit frequency of gc calls to 5000 milliseconds
 Nd4j.getMemoryManager().setAutoGcWindow(5000)
 
 // this will totally disable it
 Nd4j.getMemoryManager().togglePeriodicGc(false);
 ```
+
 The example below illustrates the use of a Workspace for memory allocation in the AsyncTask of and Android Application. More information concerning ND4J Workspaces can be found [here](https://deeplearning4j.org/workspaces).
+
 ```java
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -211,57 +231,57 @@ import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 
 private class AsyncTaskRunner extends AsyncTask<String, Integer, INDArray> {
 
-        // Runs in UI before background thread is called
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-        }
-
-        //Runs on background thread, this is where we will initiate the Workspace
-        protected INDArray doInBackground(String... params) {
-
-            // we will create configuration with 10MB memory space preallocated
-            WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder()
-                    .initialSize(10 * 1024L * 1024L)
-                    .policyAllocation(AllocationPolicy.STRICT)
-                    .policyLearning(LearningPolicy.NONE)
-                    .build();
-
-            INDArray result = null;
-
-            try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "SOME_ID")) {
-            // now, INDArrays created within this try block will be allocated from this workspace pool
-
-                //Load a trained model
-                File file = new File(Environment.getExternalStorageDirectory() + "/trained_model.zip");
-                MultiLayerNetwork restored = ModelSerializer.restoreMultiLayerNetwork(file);
-
-                // Create input in INDArray
-                INDArray inputData = Nd4j.zeros(1, 4);
-
-                inputData.putScalar(new int[]{0, 0}, 1);
-                inputData.putScalar(new int[]{0, 1}, 0);
-                inputData.putScalar(new int[]{0, 2}, 1);
-                inputData.putScalar(new int[]{0, 3}, 0);
-
-                result = restored.output(inputData);
-
-            }
-            catch(IOException ex){Log.d("AsyncTaskRunner2 ", "catchIOException = " + ex  );}
-
-            return result;
-        }
-
-        protected void onProgressUpdate(Integer... values) {
-            super.onProgressUpdate(values);
-        }
-
-        protected void onPostExecute(INDArray result) {
-            super.onPostExecute(result);
-         //Handle results and update UI here.
-        }
-
+    // Runs in UI before background thread is called
+    @Override
+    protected void onPreExecute() {
+        super.onPreExecute();
     }
+
+    //Runs on background thread, this is where we will initiate the Workspace
+    protected INDArray doInBackground(String... params) {
+
+        // we will create configuration with 10MB memory space preallocated
+        WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder()
+                .initialSize(10 * 1024L * 1024L)
+                .policyAllocation(AllocationPolicy.STRICT)
+                .policyLearning(LearningPolicy.NONE)
+                .build();
+
+        INDArray result = null;
+
+        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "SOME_ID")) {
+        // now, INDArrays created within this try block will be allocated from this workspace pool
+
+            //Load a trained model
+            File file = new File(Environment.getExternalStorageDirectory() + "/trained_model.zip");
+            MultiLayerNetwork restored = ModelSerializer.restoreMultiLayerNetwork(file);
+
+            // Create input in INDArray
+            INDArray inputData = Nd4j.zeros(1, 4);
+
+            inputData.putScalar(new int[]{0, 0}, 1);
+            inputData.putScalar(new int[]{0, 1}, 0);
+            inputData.putScalar(new int[]{0, 2}, 1);
+            inputData.putScalar(new int[]{0, 3}, 0);
+
+            result = restored.output(inputData);
+
+        }
+        catch(IOException ex){Log.d("AsyncTaskRunner2 ", "catchIOException = " + ex  );}
+
+        return result;
+    }
+
+    protected void onProgressUpdate(Integer... values) {
+        super.onProgressUpdate(values);
+    }
+
+    protected void onPostExecute(INDArray result) {
+        super.onPostExecute(result);
+     //Handle results and update UI here.
+    }
+
+}
 ```
 
 
@@ -272,14 +292,17 @@ Practical considerations regarding performance limits are needed when building A
 When training on a device is a reasonable option, the application performance can be improved by saving the trained model on the phone's external storage once an initial training is complete. The trained model can then be used as an application resource. This approach is useful for training networks with data obtained from user input. The following code illustrates how to train a network and save it on the phone's external resources.
 
 For API 23 and greater, you will need to include the permissions in your manifest and also programmatically request the read and write permissions in your activity. The required Manifest permissions are:
-``` xml
+
+```xml
 <manifest>
         <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
         <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
         ...
 ```
+
 You need to implement ActivityCompat.OnRequestPermissionsResultCallback in the activity and then check for permission status.
-``` java
+
+```java
 public class MainActivity extends AppCompatActivity
         implements ActivityCompat.OnRequestPermissionsResultCallback {
 
@@ -314,7 +337,7 @@ public class MainActivity extends AppCompatActivity
 
 To save a network after training on the device use a OutputStream within a try  catch block.
 
-``` java 
+```java 
 try {
     File file = new File(Environment.getExternalStorageDirectory() + "/trained_model.zip");
     OutputStream outputStream = new FileOutputStream(file);
@@ -328,7 +351,7 @@ try {
 
 To load the trained network from storage you can use the restoreMultiLayerNetwork method.
 
-``` java 
+```java 
 try{
     //Load the model
     File file = new File(Environment.getExternalStorageDirectory() + "/trained_model.zip");
@@ -340,12 +363,13 @@ try{
 ```
 
 For larger or more complex neural networks like Convolutional or Recurrent Neural Networks, training on the device is not a realistic option as long processing times during network training run the risk of generating an OutOfMemoryError and make for a poor user experience. As an alternative, the Neural Network can be trained on the desktop, saved via ModelSerializer, and then loaded as a pre-trained model in the application. Using a pre-trained model in you Android application can be achieved with the following steps:
+
 * Train the yourModel on desktop and save via modelSerializer.
 * Create a raw resource folder in the res directory of the application.
 * Copy yourModel.zip file into the raw folder.
 * Access it from your resources using an inputStream within a try / catch block.
 
-``` java
+```java
 try {
 // Load name of model file (yourModel.zip).
         InputStream is = getResources().openRawResource(R.raw.yourModel);
@@ -365,4 +389,4 @@ try {
 
 ## Next Step: Pretrained DL4J Models on Android
 
-An example application which uses a pretrained model can be found [here](./android-DL4JImageRecognitionDemo.html).
+An example application which uses a pretrained model can be found [here](./deeplearning4j-android-image-classification).
