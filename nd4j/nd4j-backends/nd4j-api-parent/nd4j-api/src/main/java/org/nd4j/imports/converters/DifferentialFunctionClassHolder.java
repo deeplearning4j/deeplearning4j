@@ -332,4 +332,7 @@ public class DifferentialFunctionClassHolder {
         return INSTANCE;
     }
 
+    public Map<String,DifferentialFunction> getTensorFlowNames(){
+        return Collections.unmodifiableMap(tensorFlowNames);
+    }
 }
