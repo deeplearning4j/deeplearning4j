@@ -19,6 +19,7 @@ package org.nd4j.imports.TFGraphs;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -49,6 +50,11 @@ public class TFGraphTestAllSameDiff {
             "conv_5" // this test runs, but we can't make it pass atm due to different RNG algorithms
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
+
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+    }
 
     @Before
     public void setup() {
