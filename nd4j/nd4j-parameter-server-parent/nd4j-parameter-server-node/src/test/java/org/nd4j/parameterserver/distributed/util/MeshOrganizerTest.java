@@ -18,9 +18,12 @@ package org.nd4j.parameterserver.distributed.util;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang3.SerializationUtils;
 import org.junit.Test;
 import org.nd4j.parameterserver.distributed.enums.MeshBuildMode;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 
 import static org.junit.Assert.*;
@@ -316,4 +319,25 @@ public class MeshOrganizerTest {
         assertEquals(mesh1, mesh2);
         assertNotEquals(mesh1, mesh3);
     }
+
+
+    @Test
+    public void testSerialization_1() throws Exception {
+        val mesh1 = new MeshOrganizer(MeshBuildMode.DEPTH_FIRST);
+
+        for (int e = 0; e < 1000; e++)
+            mesh1.addNode(java.util.UUID.randomUUID().toString());
+
+
+        try(val baos = new ByteArrayOutputStream();) {
+            SerializationUtils.serialize(mesh1, baos);
+
+            try(val bais = new ByteArrayInputStream(baos.toByteArray())) {
+
+                MeshOrganizer mesh2 = SerializationUtils.deserialize(bais);
+                assertEquals(mesh1, mesh2);
+            }
+        }
+    }
+
 }

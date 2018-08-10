@@ -189,8 +189,10 @@ public class MeshOrganizer implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         MeshOrganizer that = (MeshOrganizer) o;
+
         val bm = buildMode == that.buildMode;
         val rn = Objects.equals(rootNode, that.rootNode);
+
         return  bm && rn;
     }
 

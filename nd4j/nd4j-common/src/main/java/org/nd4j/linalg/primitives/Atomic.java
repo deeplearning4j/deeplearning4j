@@ -18,6 +18,8 @@ package org.nd4j.linalg.primitives;
 
 import lombok.NoArgsConstructor;
 
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -26,7 +28,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @param <T>
  */
 @NoArgsConstructor
-public class Atomic<T extends Object> {
+public class Atomic<T extends Serializable> implements Serializable {
     private T value;
     private transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -62,6 +64,8 @@ public class Atomic<T extends Object> {
         }
     }
 
+
+
     /**
      * This method implements compare-and-swap
      *
@@ -83,6 +87,11 @@ public class Atomic<T extends Object> {
         }
     }
 
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        lock = new ReentrantReadWriteLock();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -92,10 +101,12 @@ public class Atomic<T extends Object> {
             this.lock.readLock().lock();
             atomic.lock.readLock().lock();
 
-            return Objects.equals(value, atomic.value);
+            return Objects.equals(this.value, atomic.value);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         } finally {
-            this.lock.readLock().unlock();
             atomic.lock.readLock().unlock();
+            this.lock.readLock().unlock();
         }
     }
 
