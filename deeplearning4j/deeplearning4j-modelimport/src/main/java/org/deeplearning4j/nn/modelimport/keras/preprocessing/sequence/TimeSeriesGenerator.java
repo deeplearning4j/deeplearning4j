@@ -16,8 +16,12 @@
 
 package org.deeplearning4j.nn.modelimport.keras.preprocessing.sequence;
 
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
 
 /**
@@ -50,13 +54,15 @@ public class TimeSeriesGenerator {
 
     public TimeSeriesGenerator(INDArray data, INDArray targets, int length, int samplingRate, int stride,
                                Integer startIndex, Integer endIndex, boolean shuffle, boolean reverse,
-                               int batchSize) {
+                               int batchSize) throws InvalidKerasConfigurationException {
 
 
         this.data = data;
         this.targets = targets;
         this.length = length;
         this.samplingRate = samplingRate;
+        if (stride != 1)
+            throw new InvalidKerasConfigurationException("currently no strides > 1 supported, got: " + stride);
         this.stride = stride;
         this.startIndex = startIndex + length;
         if (endIndex == null)
@@ -71,7 +77,7 @@ public class TimeSeriesGenerator {
                     "startIndex : " + this.startIndex + " and endIndex: " + this.endIndex);
     }
 
-    public TimeSeriesGenerator(INDArray data, INDArray targets, int length) {
+    public TimeSeriesGenerator(INDArray data, INDArray targets, int length) throws InvalidKerasConfigurationException {
         this(data, targets, length, DEFAULT_SAMPLING_RATE, DEFAULT_STRIDE, DEFAULT_START_INDEX, DEFAULT_END_INDEX,
                 DEFAULT_SHUFFLE, DEFAULT_REVERSE, DEFAULT_BATCH_SIZE);
     }
@@ -80,24 +86,30 @@ public class TimeSeriesGenerator {
         return (endIndex - startIndex + batchSize * stride) / (batchSize * stride);
     }
 
-    private void emptyBatch(int numRows) {
-        long[] dataShape = new long[] {numRows, length / samplingRate, data.columns()};
-        long[] targetShape = new long[] {numRows, targets.columns()};
-    }
-
     public Pair<INDArray, INDArray> next(int index) {
         INDArray rows;
         if (shuffle) {
-            rows = Nd4j.getRandom().nextInt(endIndex, new int[] { batchSize});
+            rows = Nd4j.getRandom().nextInt(endIndex, new int[] {batchSize});
             rows.addi(startIndex);
         } else {
             int i = startIndex + batchSize + stride * index;
-            // TODO: add stride
+            // TODO: add stride arg to arange
             rows = Nd4j.arange(i, Math.min(i + batchSize * stride, endIndex + 1));
-
         }
+        INDArray samples = Nd4j.create(rows.length(), length / samplingRate, data.columns());
+        INDArray targets = Nd4j.create(rows.length(), this.targets.columns());
 
-        return new Pair<>(data, targets); // TODO
+        for (int j = 0; j < rows.rows(); j++) {
+            long idx = (long) rows.getDouble(j);
+            INDArrayIndex indices = NDArrayIndex.interval(idx - this.length, this.samplingRate, idx);
+            samples.put(j, this.data.get(indices));
+            INDArrayIndex point = NDArrayIndex.point((long) rows.getDouble(j));
+            targets.put(j, this.targets.get(point));
+        }
+        if (reverse)
+            samples = Nd4j.reverse(samples);
+
+        return new Pair<>(samples, targets);
     }
 }
 
