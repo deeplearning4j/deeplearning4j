@@ -23,7 +23,7 @@ The idea behind early stopping is relatively simple:
 
 This is shown graphically below:
 
-![Early Stopping](./img/earlystopping.png)
+![Early Stopping](/images/guide/earlystopping.png)
 
 The best model is the one saved at the time of the vertical dotted line - i.e., the model with the best accuracy on the test set.
 

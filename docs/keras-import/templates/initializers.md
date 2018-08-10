@@ -1,3 +1,11 @@
+---
+title: Keras Initializers
+short_title: Initializers
+description: Supported Keras weight initializers.
+category: Keras Import
+weight: 4
+---
+
 ## Supported initializers
 
 DL4J supports all available [Keras initializers](https://keras.io/initializers), namely:
