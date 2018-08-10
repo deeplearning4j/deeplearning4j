@@ -184,6 +184,20 @@ public class MeshOrganizer implements Serializable {
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MeshOrganizer that = (MeshOrganizer) o;
+        val bm = buildMode == that.buildMode;
+        val rn = Objects.equals(rootNode, that.rootNode);
+        return  bm && rn;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(buildMode, rootNode);
+    }
 
     /**
      * This method reconnects given node to another node
@@ -512,7 +526,6 @@ public class MeshOrganizer implements Serializable {
                     Objects.equals(id, node.id) &&
                     Objects.equals(ip, node.ip) &&
                     Objects.equals(downstream, node.downstream) &&
-                    Objects.equals(position, node.position) &&
                     Objects.equals(status, node.status) &&
                     Objects.equals(rn, on);
 
@@ -520,7 +533,7 @@ public class MeshOrganizer implements Serializable {
 
         @Override
         public int hashCode() {
-            return Objects.hash(upstream == null ? "root" : upstream.getIp(), rootNode, id, ip, port, downstream, position, status);
+            return Objects.hash(upstream == null ? "root" : upstream.getIp(), rootNode, id, ip, port, downstream, status);
         }
 
         /**

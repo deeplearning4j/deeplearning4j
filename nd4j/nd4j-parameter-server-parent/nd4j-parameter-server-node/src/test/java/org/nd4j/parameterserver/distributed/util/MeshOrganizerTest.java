@@ -288,4 +288,32 @@ public class MeshOrganizerTest {
         assertEquals(node1, node2);
         assertNotEquals(node1, node3);
     }
+
+
+    @Test
+    public void testEquality_3() throws Exception {
+        val mesh1 = new MeshOrganizer();
+        val mesh2 = new MeshOrganizer();
+        val mesh3 = new MeshOrganizer(MeshBuildMode.DEPTH_FIRST);
+        val mesh4 = new MeshOrganizer(MeshBuildMode.WIDTH_FIRST);
+
+        assertEquals(mesh1, mesh2);
+        assertNotEquals(mesh1, mesh3);
+        assertNotEquals(mesh1, mesh4);
+        assertNotEquals(mesh4, mesh3);
+    }
+
+    @Test
+    public void testEquality_4() throws Exception {
+        val mesh1 = new MeshOrganizer(MeshBuildMode.DEPTH_FIRST);
+        val mesh2 = new MeshOrganizer(MeshBuildMode.DEPTH_FIRST);
+        val mesh3 = new MeshOrganizer(MeshBuildMode.WIDTH_FIRST);
+
+        mesh1.addNode("192.168.1.1");
+        mesh2.addNode("192.168.1.1");
+        mesh3.addNode("192.168.1.1");
+
+        assertEquals(mesh1, mesh2);
+        assertNotEquals(mesh1, mesh3);
+    }
 }
