@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.preprocessing.sequence;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import lombok.Data;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.preprocessing.text.KerasTokenizer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -41,6 +42,7 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils.pars
  *
  * @author Max Pumperla
  */
+@Data
 public class TimeSeriesGenerator {
 
     private final static int DEFAULT_SAMPLING_RATE = 1;
@@ -157,9 +159,9 @@ public class TimeSeriesGenerator {
         for (int j = 0; j < rows.rows(); j++) {
             long idx = (long) rows.getDouble(j);
             INDArrayIndex indices = NDArrayIndex.interval(idx - this.length, this.samplingRate, idx);
-            samples.put(j, this.data.get(indices));
+            samples.putSlice(j, this.data.get(indices));
             INDArrayIndex point = NDArrayIndex.point((long) rows.getDouble(j));
-            targets.put(j, this.targets.get(point));
+            targets.putSlice(j, this.targets.get(point));
         }
         if (reverse)
             samples = Nd4j.reverse(samples);
