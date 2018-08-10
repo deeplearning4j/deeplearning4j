@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.nn.modelimport.keras.preprocessing.sequence;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.preprocessing.text.KerasTokenizer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,6 +31,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils.parseJsonString;
@@ -83,13 +86,23 @@ public class TimeSeriesGenerator {
         boolean reverse = (boolean) timeSeriesConfig.get("reverse");
 
 
-//        @SuppressWarnings("unchecked")
-//        Map<Double, Double> data = (Map) parseJsonString((String) timeSeriesConfig.get("data"));
-//        @SuppressWarnings("unchecked")
-//        Map<Double, Double> targets = (Map) parseJsonString((String) timeSeriesConfig.get("targets"));
+        Gson gson = new Gson();
+        List<List<Double>> dataList = gson.fromJson((String) timeSeriesConfig.get("data"), new TypeToken<List<List<Double>>>() {}.getType());
+        List<List<Double>> targetsList = gson.fromJson((String) timeSeriesConfig.get("targets"), new TypeToken<List<List<Double>>>() {}.getType());
+
+        int dataPoints = dataList.size();
+        int dataPointsPerRow = dataList.get(0).size();
 
 
-        TimeSeriesGenerator gen = new TimeSeriesGenerator(Nd4j.create(10,10), Nd4j.create(10, 10), length,
+        INDArray data = Nd4j.create(dataPoints, dataPointsPerRow);
+        INDArray targets = Nd4j.create(dataPoints, dataPointsPerRow);
+        for (int i = 0; i < dataPoints; i ++) {
+            data.put(i, Nd4j.create(dataList.get(i)));
+            targets.put(i, Nd4j.create(targetsList.get(i)));
+        }
+
+
+        TimeSeriesGenerator gen = new TimeSeriesGenerator(data, targets, length,
                 samplingRate, stride, startIndex, endIndex, shuffle, reverse, batchSize);
 
         return gen;
