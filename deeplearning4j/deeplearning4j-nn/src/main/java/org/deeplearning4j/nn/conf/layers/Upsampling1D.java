@@ -33,11 +33,21 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Upsampling 1D layer
+ * Upsampling 1D layer<br>
+ * Repeats each step {@code size} times along the temporal/sequence axis (dimension 2)<br>
+ * For input shape {@code [minibatch, channels, sequenceLength]} output has shape {@code [minibatch, channels, size * sequenceLength]}<br>
+ * Example:
+ * <pre>
+ * If input (for a single example, with channels down page, and sequence from left to right) is:
+ * [ A1, A2, A3]
+ * [ B1, B2, B3]
+ * Then output with size = 2 is:
+ * [ A1, A1, A2, A2, A3, A3]
+ * [ B1, B1, B2, B2, B3, B2]
+ * </pre>
  *
  * @author Max Pumperla
  */
-
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
@@ -121,7 +131,7 @@ public class Upsampling1D extends BaseUpsamplingLayer {
         }
 
         /**
-         * Upsampling size int
+         * Upsampling size
          *
          * @param size    upsampling size in single spatial dimension of this 1D layer
          */
@@ -132,12 +142,12 @@ public class Upsampling1D extends BaseUpsamplingLayer {
         }
 
         /**
-         * Upsampling size int array with a single element
+         * Upsampling size int array with a single element. Array must be length 1
          *
          * @param size    upsampling size in single spatial dimension of this 1D layer
          */
         public Builder size(int[] size) {
-            Preconditions.checkArgument(size.length == 1);
+            Preconditions.checkArgument(size.length == 1, "Input array must be length 1");
             this.size = new int[] {size[0], size[0]}; // Since this is 2D under the hood, we need to hide this.
             return this;
         }
