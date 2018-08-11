@@ -25,43 +25,43 @@
     },
     {
       "page": "layers-core.md",
-      "module": "layers/core"
+      "module": ["layers/core"]
     },
     {
       "page": "layers-convolutional.md",
-      "module": "layers/convolutional"
+      "module": ["layers/convolutional"]
     },
     {
       "page": "layers-pooling.md",
-      "module": "layers/pooling"
+      "module": ["layers/pooling"]
     },
     {
       "page": "layers-local.md",
-      "module": "layers/local"
+      "module": ["layers/local"]
     },
     {
       "page": "layers-recurrent.md",
-      "module": "layers/recurrent"
+      "module": ["layers/recurrent"]
     },
     {
       "page": "layers-embeddings.md",
-      "module": "layers/embeddings"
+      "module": ["layers/embeddings"]
     },
     {
       "page": "layers-normalization.md",
-      "module": "layers/normalization"
+      "module": ["layers/normalization"]
     },
     {
       "page": "layers-advanced-activations.md",
-      "module": "layers/advanced/activations"
+      "module": ["layers/advanced/activations"]
     },
     {
       "page": "layers-noise.md",
-      "module": "layers/noise"
+      "module": ["layers/noise"]
     },
     {
       "page": "layers-wrappers.md",
-      "module": "layers/wrappers"
+      "module": ["layers/wrappers"]
     }
   ]
 }

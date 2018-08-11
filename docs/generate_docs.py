@@ -379,6 +379,7 @@ if __name__ == '__main__':
                 #     sub_blocks.append('<span style="float:right;"> {} </span>\n'.format(link))
 
                 if doc_string:
+                    sub_blocks.append('\n---\n')
                     sub_blocks.append('### {}'.format(class_name))
                     sub_blocks.append('<span style="float:right;"> {} </span>\n'.format(link))
                     sub_blocks.append(doc_string)
