@@ -18,6 +18,12 @@
       "class": []
     },
     {
+      "page": "transfer-learning.md",
+      "module": [
+        "/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/transferlearning/"
+      ]
+    },
+    {
       "page": "listeners.md",
       "module": [
         "/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/listeners/"

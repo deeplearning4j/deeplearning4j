@@ -287,7 +287,7 @@ private class AsyncTaskRunner extends AsyncTask<String, Integer, INDArray> {
 
 ## <a name="head_link5">Saving and Loading Networks on Android</a>
 
-Practical considerations regarding performance limits are needed when building Android applications that run neural networks. Training a neural network on a device is possible, but should only be attempted with networks with limited numbers of layers, nodes, and iterations. The first Demo app [DL4JIrisClassifierDemo](https://deeplearning4j.org/android-DL4JIrisClassifierDemo) is able to train on a standard device in about 15 seconds. 
+Practical considerations regarding performance limits are needed when building Android applications that run neural networks. Training a neural network on a device is possible, but should only be attempted with networks with limited numbers of layers, nodes, and iterations. The first Demo app [DL4JIrisClassifierDemo](./deeplearning4j-android-linear-classifier) is able to train on a standard device in about 15 seconds. 
 
 When training on a device is a reasonable option, the application performance can be improved by saving the trained model on the phone's external storage once an initial training is complete. The trained model can then be used as an application resource. This approach is useful for training networks with data obtained from user input. The following code illustrates how to train a network and save it on the phone's external resources.
 

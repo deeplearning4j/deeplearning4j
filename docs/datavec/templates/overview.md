@@ -62,7 +62,7 @@ A video tutorial of a simple DataVec transform along with code is available belo
 
 ## Example Java Code
 
-Our [examples](https://deeplearning4j.org/quickstart#examples) include a collection of DataVec examples.   
+Our [examples](https://github.com/deeplearning4j/dl4j-examples) include a collection of DataVec examples.   
 
 <!-- Note to Tom, write DataVec setup content
 
