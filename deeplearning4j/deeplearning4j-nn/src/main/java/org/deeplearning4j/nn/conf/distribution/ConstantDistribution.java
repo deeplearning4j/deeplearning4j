@@ -16,13 +16,17 @@
 
 package org.deeplearning4j.nn.conf.distribution;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
- * Constant distribution.
+ * Constant distribution: a "distribution" where all values are set to the specified constant
  *
  */
+@Data
+@EqualsAndHashCode(callSuper = false)
 public class ConstantDistribution extends Distribution {
 
     private double value;
@@ -35,38 +39,6 @@ public class ConstantDistribution extends Distribution {
     @JsonCreator
     public ConstantDistribution(@JsonProperty("value") double value) {
         this.value = value;
-    }
-
-    public double getValue() {
-        return value;
-    }
-
-    public void setValue(double value) {
-        this.value = value;
-    }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        long temp;
-        temp = Double.doubleToLongBits(value);
-        result = prime * result + (int) (temp ^ (temp >>> 32));
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        ConstantDistribution other = (ConstantDistribution) obj;
-        if (Double.doubleToLongBits(value) != Double.doubleToLongBits(other.value))
-            return false;
-        return true;
     }
 
     public String toString() {
