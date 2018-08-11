@@ -27,19 +27,18 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
 
-/*
- Wrapper which masks timesteps with 0 activation.
- Assumes that the input shape is [batch_size, input_size, timesteps].
- @author Martin Boyanov mboyanov@gmail.com
+/**
+ * Wrapper which masks timesteps with 0 activation.
+ * Assumes that the input shape is [batch_size, input_size, timesteps].
+ * @author Martin Boyanov mboyanov@gmail.com
  */
 public class MaskZeroLayer extends BaseWrapperLayer {
 
-
-    /**
-     *
-     */
     private static final long serialVersionUID = 9074525846200921839L;
 
+    /**
+     * @param underlying The underlying layer to wrap and mask activations for
+     */
     public MaskZeroLayer(Layer underlying) {
         this.underlying = underlying;
     }
