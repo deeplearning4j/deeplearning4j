@@ -14,14 +14,10 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.messages.v2;
+package org.nd4j.parameterserver.distributed.util;
 
-import java.io.Serializable;
+import static org.junit.Assert.*;
 
-public interface VoidMessage_v2 extends Serializable {
-    /**
-     * This method returns unique messageId
-     * @return
-     */
-    String getMessageId();
+public class MessageSplitterTest {
+
 }

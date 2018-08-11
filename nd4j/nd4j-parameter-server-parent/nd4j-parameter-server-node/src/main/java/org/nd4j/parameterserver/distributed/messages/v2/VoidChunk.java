@@ -17,19 +17,47 @@
 package org.nd4j.parameterserver.distributed.messages.v2;
 
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class VoidChunk implements VoidMessage_v2 {
     /**
      * This field contains position of this chunk in merger
      */
+    @Getter
     private int chunkId;
 
     /**
      * This field contains number of bytes of original message
      */
+    @Getter
     private long totalSize;
 
     /**
      * Unique messageId used to distringuish chunks from each other
      */
+    @Getter
     private String messageId;
+
+    /**
+     * This method
+     */
+    @Getter
+    private String originalId;
+
+    /**
+     * Actual chunk
+     */
+    @Getter
+    private byte[] payload;
+
+
+    public void exec() {
+        // basically all we want to do here, is merge
+    }
 }
