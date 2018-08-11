@@ -6,7 +6,7 @@ category: ND4J
 weight: 0
 ---
 
-This user guide is designed to explain (and provide examples for) the main functionality in ND4J. It is still a work in progress.
+This user guide is designed to explain (and provide examples for) the main functionality in ND4J.
 
 * <a href="#intro">Introduction</a>
   * <a href="#inmemory">NDArrays: How Are They Stored in Memory?</a>

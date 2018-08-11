@@ -8,7 +8,7 @@ weight: 10
 
 ## Survey of DeepLearning4j Examples
 
-Deeplearning4j's Github repository has many examples to cover its functionality. The [Quick Start Guide](https://deeplearning4j.org/quickstart) shows you how to set up Intellij and clone the repository. This page provides an overview of some of those examples.
+Deeplearning4j's Github repository has many examples to cover its functionality. The [Quick Start Guide](./deeplearning4j-quickstart) shows you how to set up Intellij and clone the repository. This page provides an overview of some of those examples.
 
 ## DataVec examples
 
