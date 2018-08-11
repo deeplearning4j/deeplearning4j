@@ -16,10 +16,6 @@ In the case of Deeplearning4j, you should know Java well and be comfortable with
 
 Below you'll find a list of resources. The sections are roughly organized in the order they will be useful. 
 
-<p align="center">
-<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
-</p>
-
 ## Free Machine- and Deep-learning Courses Online
 
 * [Andrew Ng's Machine-Learning Class on YouTube](https://www.youtube.com/watch?v=qeHZOdmJvFU) 
