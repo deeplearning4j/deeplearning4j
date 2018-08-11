@@ -14,24 +14,22 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.transport;
+package org.nd4j.parameterserver.distributed.messages.v2;
 
-import io.reactivex.functions.Consumer;
-import org.nd4j.parameterserver.distributed.messages.VoidMessage;
-import org.nd4j.parameterserver.distributed.util.MeshOrganizer;
-import org.reactivestreams.Publisher;
 
-public interface Transport_v2 {
+public class VoidChunk implements VoidMessage_v2 {
+    /**
+     * This field contains position of this chunk in merger
+     */
+    private int chunkId;
 
     /**
-     * This method returns consumer that accepts messages for delivery
-     * @return
+     * This field contains number of bytes of original message
      */
-    Consumer<VoidMessage> outgoingConsumer();
+    private long totalSize;
 
     /**
-     * This method returns flow of messages
-     * @return
+     * Unique messageId used to distringuish chunks from each other
      */
-    Publisher<VoidMessage> incomingPublisher();
+    private String messageId;
 }
