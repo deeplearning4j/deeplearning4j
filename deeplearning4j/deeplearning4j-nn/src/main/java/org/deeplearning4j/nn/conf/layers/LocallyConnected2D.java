@@ -230,7 +230,7 @@ public class LocallyConnected2D extends SameDiffLayer {
         private int[] dilation = new int[]{1, 1};
         private int[] inputSize;
         private ConvolutionMode cm = ConvolutionMode.Same;
-        private boolean hasBias = false;
+        private boolean hasBias = true;
 
         /**
          * @param nIn Number of inputs to the layer (input size)

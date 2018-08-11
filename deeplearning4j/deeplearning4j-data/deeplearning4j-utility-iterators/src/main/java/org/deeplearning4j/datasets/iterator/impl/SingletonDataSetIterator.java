@@ -27,7 +27,7 @@ import java.util.NoSuchElementException;
 
 /**
  * A very simple adapter class for converting a single DataSet to a DataSetIterator.
- * Returns a single DataSet as-is, for each epoch
+ * Returns a single DataSet as-is, once for each epoch
  *
  * @author Alex Black
  */
@@ -39,6 +39,9 @@ public class SingletonDataSetIterator implements DataSetIterator {
     @Getter @Setter
     private DataSetPreProcessor preProcessor;
 
+    /**
+     * @param multiDataSet The underlying dataset to return
+     */
     public SingletonDataSetIterator(DataSet multiDataSet) {
         this.dataSet = multiDataSet;
     }

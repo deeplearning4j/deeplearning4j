@@ -37,7 +37,13 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Async prefetching iterator wrapper for MultiDataSetIterator implementations
+ * Async prefetching iterator wrapper for DataSetIterator implementations.
+ * This will asynchronously prefetch the specified number of minibatches from the underlying iterator.<br>
+ * Also has the option (enabled by default for most constructors) to use a cyclical workspace to avoid creating INDArrays
+ * with off-heap memory that needs to be cleaned up by the JVM garbage collector.<br>
+ *
+ * Note that appropriate DL4J fit methods automatically utilize this iterator, so users don't need to manually wrap
+ * their iterators when fitting a network
  *
  * @author raver119@gmail.com
  */
@@ -63,10 +69,19 @@ public class AsyncDataSetIterator implements DataSetIterator {
         //
     }
 
+    /**
+     * Create an Async iterator with the default queue size of 8
+     * @param baseIterator Underlying iterator to wrap and fetch asynchronously from
+     */
     public AsyncDataSetIterator(DataSetIterator baseIterator) {
         this(baseIterator, 8);
     }
 
+    /**
+     * Create an Async iterator with the default queue size of 8
+     * @param iterator Underlying iterator to wrap and fetch asynchronously from
+     * @param queue    Queue size - number of iterators to
+     */
     public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue) {
         this(iterator, queueSize, queue, true);
     }
