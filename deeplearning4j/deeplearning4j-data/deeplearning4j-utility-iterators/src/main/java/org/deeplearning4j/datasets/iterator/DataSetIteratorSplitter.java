@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * This iterator virtually splits given MultiDataSetIterator into Train and Test parts.
  * I.e. you have 100000 examples. Your batch size is 32. That means you have 3125 total batches. With split ratio of 0.7 that will give you 2187 training batches, and 938 test batches.
  *
- * PLEASE NOTE: You can't use Test iterator twice in a row. Train iterator should be used before Test iterator use.
+ * PLEASE NOTE: You can't use Test iterator twice in a row. Train iterator should be used before Test iterator use.<br>
  * PLEASE NOTE: You can't use this iterator, if underlying iterator uses randomization/shuffle between epochs.
  *
  * @author raver119@gmail.com
