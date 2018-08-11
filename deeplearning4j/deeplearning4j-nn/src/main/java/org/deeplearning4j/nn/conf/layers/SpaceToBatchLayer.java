@@ -40,18 +40,21 @@ import java.util.Map;
  * into batch dimension according to the "blocks" specified (a vector of length 2). Afterwards the spatial
  * dimensions are optionally padded, as specified in "padding", a tensor of dim (2, 2), denoting the padding range.
  * <p>
+ * <pre>
  * Example:
  * input:         [[[[1], [2]], [[3], [4]]]]
  * input shape:   [1, 2, 2, 1]
  * blocks:        [2, 2]
  * padding:       [[0, 0], [0, 0]]
+ * </pre>
  * <p>
+ * <pre>
  * output:        [[[[1]]], [[[2]]], [[[3]]], [[[4]]]]
  * output shape:  [4, 1, 1, 1]
+ * </pre>
  *
  * @author Max Pumperla
  */
-
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
