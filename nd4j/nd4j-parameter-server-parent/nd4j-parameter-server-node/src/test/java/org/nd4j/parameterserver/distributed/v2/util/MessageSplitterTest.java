@@ -16,6 +16,7 @@
 
 package org.nd4j.parameterserver.distributed.v2.util;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
@@ -24,6 +25,7 @@ import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMess
 
 import static org.junit.Assert.*;
 
+@Slf4j
 public class MessageSplitterTest {
 
     @Test
@@ -33,10 +35,12 @@ public class MessageSplitterTest {
 
         val message = new GradientsUpdateMessage("123", array);
 
-        val messages = splitter.split(message, 1024);
+        val messages = splitter.split(message, 16384);
 
         assertNotNull(messages);
         assertFalse(messages.isEmpty());
+
+        log.info("Number of messages: {}" , messages.size());
 
         for (val m:messages)
             assertEquals("123", m.getOriginalId());

@@ -14,10 +14,11 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.v2.messages;
+package org.nd4j.parameterserver.distributed.v2.chunks;
 
 
 import lombok.*;
+import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 
 @AllArgsConstructor
 @NoArgsConstructor

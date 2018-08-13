@@ -23,7 +23,7 @@ import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.parameterserver.distributed.v2.chunks.ChunksTracker;
-import org.nd4j.parameterserver.distributed.v2.messages.VoidChunk;
+import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 
 import java.io.*;

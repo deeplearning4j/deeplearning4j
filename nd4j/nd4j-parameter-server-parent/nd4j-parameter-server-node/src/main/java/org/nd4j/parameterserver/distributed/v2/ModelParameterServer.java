@@ -24,6 +24,8 @@ import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.impl.ModelParametersMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.impl.UpdaterParametersMessage;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
 
 import java.util.ArrayList;
@@ -47,6 +49,7 @@ public final class ModelParameterServer {
 
     // this flag is true once mps is launched
     private final AtomicBoolean launchLock = new AtomicBoolean(false);
+    private final AtomicBoolean stopLock = new AtomicBoolean(false);
 
     private Disposable disposable;
 
@@ -64,6 +67,10 @@ public final class ModelParameterServer {
              */
             if (message instanceof GradientsUpdateMessage) {
                 updatesQueue.add(message.getPayload());
+            } else if (message instanceof ModelParametersMessage) {
+                //
+            } else if (message instanceof UpdaterParametersMessage) {
+                //
             }
         });
 
@@ -74,7 +81,13 @@ public final class ModelParameterServer {
      * This method stops parameter server
      */
     public synchronized void shutdown() {
+        if (stopLock.get())
+            return;
+
+        // disposing INDArray flow
         disposable.dispose();
+
+        stopLock.set(true);
     }
 
     /**

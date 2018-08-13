@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;
 import org.nd4j.parameterserver.distributed.v2.chunks.impl.FileChunksTracker;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
 import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
@@ -36,7 +37,7 @@ public class FileChunksTrackerTest {
         val splitter = MessageSplitter.getInstance();
 
         val message = new GradientsUpdateMessage("123", array);
-        val messages = new ArrayList<VoidChunk>(splitter.split(message, 1024));
+        val messages = new ArrayList<VoidChunk>(splitter.split(message, 16384));
 
         val tracker = new FileChunksTracker<GradientsUpdateMessage>(messages.get(0));
 

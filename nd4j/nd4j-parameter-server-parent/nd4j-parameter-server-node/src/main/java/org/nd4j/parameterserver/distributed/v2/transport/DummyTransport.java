@@ -17,21 +17,26 @@
 package org.nd4j.parameterserver.distributed.v2.transport;
 
 import io.reactivex.functions.Consumer;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
 import org.reactivestreams.Publisher;
 
-public interface Transport {
+/**
+ * This class is in-memory implementation of Transport interface, written for tests
+ *
+ * @author raver119@gmail.com
+ */
+@Slf4j
+public class DummyTransport implements Transport {
 
-    /**
-     * This method returns consumer that accepts messages for delivery
-     * @return
-     */
-    Consumer<VoidMessage> outgoingConsumer();
+    @Override
+    public Consumer<VoidMessage> outgoingConsumer() {
+        return null;
+    }
 
-    /**
-     * This method returns flow of messages for parameterserver
-     * @return
-     */
-    Publisher<INDArrayMessage> incomingPublisher();
+    @Override
+    public Publisher<INDArrayMessage> incomingPublisher() {
+        return null;
+    }
 }
