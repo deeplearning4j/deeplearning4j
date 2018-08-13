@@ -65,7 +65,7 @@ namespace nd4j {
 
             std::map<int, Scope<T> *> _mappedScopes;
             std::vector<Scope<T> *> _scopes;
-
+            uint64_t _rootSeed;
 ////////////////////////////////////////
             Nd4jStatus validateNode(nd4j::graph::Node<T> *node);
 

@@ -95,7 +95,7 @@ namespace nd4j {
                         }
 
                         Context<T> ctx(block, _variableSpace);
-
+                        ctx.setRandomSeed(_rootSeed);
                         ShapeList inSha(inputShapes);
                         auto outSha = op->calculateOutputShape(&inSha, ctx);
 
@@ -898,7 +898,7 @@ namespace nd4j {
             this->_nodes = new std::vector<int>();
             this->_variableSpace = variableSpace == nullptr ? new VariableSpace<T>() : variableSpace;
             bool trusted = flatGraph != nullptr;
-
+            _rootSeed = 119;
             // creating RNG for this instance
 #ifndef __CUDABLAS__
             // FIXME: we temporary skip this random init for CUDA
