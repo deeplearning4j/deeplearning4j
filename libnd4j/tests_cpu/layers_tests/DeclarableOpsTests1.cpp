@@ -818,7 +818,7 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractTest_3) {
     NDArray<float> z(exp);
     x.assign(1);
     y.assign(3);
-    exp.assign(-2);
+    exp.assign(2);
     auto tZ = BroadcastHelper<float>::template broadcastApply<simdOps::ReverseSubtract<float>>(&y, &x, &z);
     tZ->printIndexedBuffer("ReverseSubtract Legacy3");
     if (tZ != &z)
@@ -829,6 +829,68 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractTest_3) {
 
     ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
     res->at(0)->printIndexedBuffer("OUtput REVERSED SUB3");
+    ASSERT_TRUE(res->at(0)->equalsTo(&exp));
+
+    delete res;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, ReverseModTest_1) {
+
+//    NDArray<float> x('c', {1, 6});
+    NDArray<float> x('c', {6});
+    NDArray<float> y('c', {3, 4, 5, 1});
+    NDArray<float> exp('c', {3, 4, 5, 6});
+    NDArray<float> z(exp);
+    x.assign(2);
+    y.assign(9);
+    exp.assign(1);
+    auto tZ = BroadcastHelper<float>::template broadcastApply<simdOps::ReverseMod<float>>(&x, &y, &z);
+    tZ->printIndexedBuffer("ReverseMod Legacy");
+    if (tZ != &z)
+        delete tZ;
+    tZ = BroadcastHelper<float>::template broadcastApply<simdOps::Mod<float>>(&x, &y, &z);
+    tZ->printIndexedBuffer("Mod Legacy");
+    if (tZ != &z)
+        delete tZ;
+
+    nd4j::ops::reversemod<float> subOp;
+
+    auto res = subOp.execute({&x, &y}, {}, {});
+
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    res->at(0)->printIndexedBuffer("OUtput REVERSED MOD");
+    ASSERT_TRUE(res->at(0)->equalsTo(&exp));
+
+    delete res;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, ReverseModTest_2) {
+
+//    NDArray<float> x('c', {1, 6});
+    NDArray<float> x('c', {3, 4, 5});
+    NDArray<float> y('c', {3, 4, 5});
+    NDArray<float> exp('c', {3, 4, 5});
+    NDArray<float> z(exp);
+    x.assign(2);
+    y.assign(9);
+    exp.assign(1);
+    auto tZ = BroadcastHelper<float>::template broadcastApply<simdOps::ReverseMod<float>>(&x, &y, &z);
+    tZ->printIndexedBuffer("ReverseMod Legacy2");
+    if (tZ != &z)
+        delete tZ;
+    tZ = BroadcastHelper<float>::template broadcastApply<simdOps::Mod<float>>(&x, &y, &z);
+    tZ->printIndexedBuffer("Mod Legacy2");
+    if (tZ != &z)
+        delete tZ;
+
+    nd4j::ops::reversemod<float> subOp;
+
+    auto res = subOp.execute({&x, &y}, {}, {});
+
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    res->at(0)->printIndexedBuffer("OUtput REVERSED MOD2");
     ASSERT_TRUE(res->at(0)->equalsTo(&exp));
 
     delete res;
