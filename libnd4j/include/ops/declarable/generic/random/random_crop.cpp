@@ -48,13 +48,8 @@ CUSTOM_OP_IMPL(random_crop, 2, 1, false, 0, 0) {
         REQUIRE_TRUE((*shape)(e) <= input->sizeAt(e), 0, "random_crop: Shape tensor should be less than proper input dimension (dim %i, %i > %i).",
              e, (*shape)(e), input->sizeAt(e));
     }
-
-    nd4j::random::RandomBuffer* rng = block.getRNG();
-        
-    if (rng == nullptr)
-        return ND4J_STATUS_BAD_RNG;
-
-    return helpers::randomCropFunctor(rng, input, shape, output, seed);
+    
+    return helpers::randomCropFunctor(block, input, shape, output, seed);
 }
 
 DECLARE_SHAPE_FN(random_crop) {

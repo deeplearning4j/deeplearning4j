@@ -29,7 +29,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* shape, NDArray<T>* output, int seed) {
+    int randomCropFunctor(nd4j::graph::Context<T>& context, NDArray<T>* input, NDArray<T>* shape, NDArray<T>* output, int seed) {
 //        NativeOps native;
 //if (seed)
   //          native.reSeedBuffer(nullptr, (long)seed, rng);
@@ -38,7 +38,8 @@ namespace helpers {
   //          return ND4J_STATUS_BAD_RNG;
    //     }
         int last = shape->lengthOf() - 1;
-        graph::RandomGenerator rngX;
+        graph::RandomGenerator rngX(context.getRng());
+        rngX.setSeed(seed);
         //functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(rng, output->getBuffer(), output->getShapeInfo(), std::vector<T>({T(0.), shape->getScalar(last)}).data());
         for (Nd4jLong e = 0; e < output->lengthOf(); ++e) {
             (*output)(e) = rngX.relativeT(e, (T)0., (*shape)(last));
@@ -62,9 +63,9 @@ namespace helpers {
         }
         return ND4J_STATUS_OK;
     }
-    template int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<float>* input, NDArray<float>* shape, NDArray<float>* output,  int seed);
-    template int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<float16>* input, NDArray<float16>* shape, NDArray<float16>* output, int seed);
-    template int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<double>* input, NDArray<double>* shape, NDArray<double>* output, int seed);
+    template int randomCropFunctor(nd4j::graph::Context<float>& context, NDArray<float>* input, NDArray<float>* shape, NDArray<float>* output,  int seed);
+    template int randomCropFunctor(nd4j::graph::Context<float16>& context, NDArray<float16>* input, NDArray<float16>* shape, NDArray<float16>* output, int seed);
+    template int randomCropFunctor(nd4j::graph::Context<double>& context, NDArray<double>* input, NDArray<double>* shape, NDArray<double>* output, int seed);
 
 }
 }
