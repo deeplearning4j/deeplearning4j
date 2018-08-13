@@ -16,6 +16,7 @@
 
 package org.nd4j.parameterserver.distributed.logic.v2;
 
+import org.nd4j.parameterserver.distributed.messages.v2.VoidChunk;
 import org.nd4j.parameterserver.distributed.messages.v2.VoidMessage_v2;
 
 /**
@@ -34,6 +35,13 @@ public interface ChunksTracker<T extends VoidMessage_v2> {
      * @return true if all chunks were received, false otherwise
      */
     boolean isComplete();
+
+    /**
+     * This message appends chunk to this tracker
+     * @param chunk Chunk to be added
+     * @return true if that was last chunk, false otherwise
+     */
+    boolean append(VoidChunk chunk);
 
     /**
      * This method returns original message

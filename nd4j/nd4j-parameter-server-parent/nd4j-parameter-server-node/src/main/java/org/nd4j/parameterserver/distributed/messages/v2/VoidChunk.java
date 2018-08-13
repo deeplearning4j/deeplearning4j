@@ -42,6 +42,12 @@ public class VoidChunk implements VoidMessage_v2 {
     private String messageId;
 
     /**
+     * This field stores split size for original message
+     */
+    @Getter
+    private int splitSize;
+
+    /**
      * This field holds ID of the original message
      */
     @Getter

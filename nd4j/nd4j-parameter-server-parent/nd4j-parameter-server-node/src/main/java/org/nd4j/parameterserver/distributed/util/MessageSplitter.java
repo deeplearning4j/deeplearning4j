@@ -20,6 +20,8 @@ import lombok.NonNull;
 import lombok.val;
 import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.parameterserver.distributed.logic.v2.ChunksTracker;
+import org.nd4j.parameterserver.distributed.logic.v2.FileChunksTracker;
 import org.nd4j.parameterserver.distributed.messages.v2.VoidChunk;
 import org.nd4j.parameterserver.distributed.messages.v2.VoidMessage_v2;
 import org.nd4j.linalg.primitives.Optional;
@@ -27,6 +29,8 @@ import org.nd4j.linalg.primitives.Optional;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This class provides methods for splitting VoidMessages into chunks, and merging them back again
@@ -35,6 +39,8 @@ import java.util.Collection;
  */
 public class MessageSplitter {
     private static final MessageSplitter INSTANCE = new MessageSplitter();
+
+    private Map<String, ChunksTracker> trackers = new ConcurrentHashMap<>();
 
     protected MessageSplitter() {
         //
@@ -82,6 +88,7 @@ public class MessageSplitter {
                             .originalId(message.getMessageId())
                             .chunkId(id++)
                             .numberOfChunks(numChunks)
+                            .splitSize(maxBytes)
                             .payload(bytes.clone())
                             .totalSize(length)
                             .build();
@@ -103,9 +110,15 @@ public class MessageSplitter {
      * @param <T>
      * @return
      */
-    public <T> Optional<T> merge(@NonNull VoidChunk chunk) {
+    public <T extends VoidMessage_v2> Optional<T> merge(@NonNull VoidChunk chunk) {
         val originalId= chunk.getOriginalId();
 
-        return Optional.empty();
+        trackers.putIfAbsent(originalId, new FileChunksTracker<T>(chunk));
+        val tracker = trackers.get(originalId);
+
+        if (tracker.append(chunk))
+            return Optional.of((T) tracker.getMessage());
+        else
+            return Optional.empty();
     }
 }

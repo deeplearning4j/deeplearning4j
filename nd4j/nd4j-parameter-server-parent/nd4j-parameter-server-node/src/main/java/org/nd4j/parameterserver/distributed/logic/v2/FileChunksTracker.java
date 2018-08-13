@@ -17,10 +17,17 @@
 package org.nd4j.parameterserver.distributed.logic.v2;
 
 import lombok.Getter;
+import lombok.NonNull;
+import lombok.val;
+import org.apache.commons.lang3.SerializationUtils;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.parameterserver.distributed.messages.v2.VoidChunk;
 import org.nd4j.parameterserver.distributed.messages.v2.VoidMessage_v2;
 
-import java.io.File;
+import java.io.*;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * File-based implementation of ChunksTracker
@@ -33,28 +40,81 @@ public class FileChunksTracker<T extends VoidMessage_v2> implements ChunksTracke
 
     private File holder;
 
+    private Map<Integer, AtomicBoolean> map = new ConcurrentHashMap<>();
+
     public FileChunksTracker(VoidChunk chunk) {
         originId = chunk.getOriginalId();
         numChunks = chunk.getNumberOfChunks();
         try {
             holder = File.createTempFile("FileChunksTracker", "Message");
+            holder.deleteOnExit();
+
+            // fill file with 0s for simplicity
+            try (val fos = new FileOutputStream(holder); val bos = new BufferedOutputStream(fos, 32768)) {
+                for (int e = 0; e < chunk.getTotalSize(); e++)
+                    bos.write(0);
+            }
+
+            // we'll pre-initialize states map
+            for (int e = 0; e < numChunks; e++)
+                map.put(e, new AtomicBoolean(false));
+
+            // and write down this chunk
+            append(chunk);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
+    public boolean append(@NonNull VoidChunk chunk) {
+        val b = map.get(chunk.getChunkId());
+
+        if (b.get())
+            return isComplete();
+
+        // writing out this chunk
+        try (val f = new RandomAccessFile(holder, "rw")) {
+            f.seek(chunk.getChunkId() * chunk.getSplitSize());
+
+            f.write(chunk.getPayload());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        // tagging this chunk as received
+        b.set(true);
+
+        return isComplete();
+    }
+
+    @Override
     public boolean isComplete() {
-        return false;
+        for (val b:map.values())
+            if (!b.get())
+                return false;
+
+        return true;
     }
 
     @Override
     public T getMessage() {
-        return null;
+        if (!isComplete())
+            throw new ND4JIllegalStateException("Message isn't ready for concatenation");
+
+        try (val fis = new FileInputStream(holder); val bis = new BufferedInputStream(fis)) {
+            return SerializationUtils.deserialize(bis);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public void release() {
-
+        try {
+            holder.delete();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }
