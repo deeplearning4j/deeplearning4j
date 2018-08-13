@@ -32,12 +32,15 @@ import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
- * Spatial dropout: can only be applied to 4D (convolutional) activations.
- * Dropout mask is generated along the depth dimension, and is applied to each x/y location in an image.<br>
+ * Spatial dropout: can only be applied to 3D (time series), 4D (convolutional 2D) or 5D (convolutional 3D) activations.
+ * Dropout mask is generated along the depth dimension, and is applied to:<br>
+ * For 3D/time series/sequence input: each step in the sequence<br>
+ * For 4D (CNN 2D) input: each x/y location in an image.<br>
+ * For 5D (CNN 3D) input: each x/y/z location in a volume<br>
  * Note that the dropout mask is generated independently for each example: i.e., a dropout mask of shape [minibatch, channels]
  * is generated and applied to activations of shape [minibatch, channels, height, width]
  * <p>
- * Reference: Efficient Object Localization Using Convolutional Networks: https://arxiv.org/abs/1411.4280
+ * Reference: Efficient Object Localization Using Convolutional Networks: <a href="https://arxiv.org/abs/1411.4280">https://arxiv.org/abs/1411.4280</a>
  *
  * @author Alex Black
  */

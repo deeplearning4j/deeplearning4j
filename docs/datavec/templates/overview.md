@@ -62,7 +62,7 @@ A video tutorial of a simple DataVec transform along with code is available belo
 
 ## Example Java Code
 
-Our [examples](https://deeplearning4j.org/quickstart#examples) include a collection of DataVec examples.   
+Our [examples](https://github.com/deeplearning4j/dl4j-examples) include a collection of DataVec examples.   
 
 <!-- Note to Tom, write DataVec setup content
 
@@ -94,7 +94,7 @@ The [ImageRecordReader](https://github.com/deeplearning4j/DataVec/blob/a64389c08
 
 Other parameters shown above include `true`, which instructs the reader to append a label to the record, and `labels`, which is the array of supervised values (e.g. targets) used to validate neural net model results. Here are all the RecordReader extensions that come pre-built with DataVec (you can find them by right-clicking on `RecordReader` in IntelliJ, clicking `Go To` in the drop-down menu, and selection `Implementations`):
 
-![Alt text](../img/recordreader_extensions.png)
+![Alt text](./images/guide/recordreader_extensions.png)
 
 The DataSetIterator is a Deeplearning4J class that traverses the elements of a list. Iterators pass through the data list, accesses each item sequentially, keeps track of how far it has progressed by pointing to its current element, and modifies itself to point to the next element with each new step in the traversal.
 

@@ -27,7 +27,8 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * This wrapper provides DataSetIterator interface to existing java Iterable<DataSet> and Iterator<DataSet>
+ * This wrapper provides DataSetIterator interface to existing java {@code Iterable<DataSet>} and {@code Iterator<DataSet>}.
+ * Note that when using {@code Iterator<DataSet>}, resetting of the DataSetIterator is not supported
  *
  * @author raver119@gmail.com
  */
@@ -42,21 +43,38 @@ public class ExistingDataSetIterator implements DataSetIterator {
     private int numLabels = 0;
     private List<String> labels;
 
-
+    /**
+     * Note that when using this constructor, resetting is not supported
+     * @param iterator Iterator to wrap
+     */
     public ExistingDataSetIterator(@NonNull Iterator<DataSet> iterator) {
         this.iterator = iterator;
     }
 
+    /**
+     * Note that when using this constructor, resetting is not supported
+     * @param iterator Iterator to wrap
+     * @param labels   String labels. May be null.
+     */
     public ExistingDataSetIterator(@NonNull Iterator<DataSet> iterator, @NonNull List<String> labels) {
         this(iterator);
         this.labels = labels;
     }
 
+    /**
+     * Wraps the specified iterable. Supports resetting
+     * @param iterable Iterable to wrap
+     */
     public ExistingDataSetIterator(@NonNull Iterable<DataSet> iterable) {
         this.iterable = iterable;
         this.iterator = iterable.iterator();
     }
 
+    /**
+     * Wraps the specified iterable. Supports resetting
+     * @param iterable Iterable to wrap
+     * @param labels   Labels list. May be null
+     */
     public ExistingDataSetIterator(@NonNull Iterable<DataSet> iterable, @NonNull List<String> labels) {
         this(iterable);
         this.labels = labels;

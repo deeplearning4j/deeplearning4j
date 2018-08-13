@@ -1,0 +1,61 @@
+{
+  "excludes": [
+    "abstract"
+  ],
+  "indices": [
+  ],
+  "pages": [
+    {
+      "page": "overview.md",
+      "class": []
+    },
+    {
+      "page": "visualization.md",
+      "class": []
+    },
+    {
+      "page": "parameter-spaces.md",
+      "class": [
+        "arbiter-core/src/main/java/org/deeplearning4j/arbiter/optimize/parameter/continuous/ContinuousParameterSpace.java",
+        "arbiter-core/src/main/java/org/deeplearning4j/arbiter/optimize/parameter/discrete/DiscreteParameterSpace.java",
+        "arbiter-core/src/main/java/org/deeplearning4j/arbiter/optimize/parameter/integer/IntegerParameterSpace.java",
+        "arbiter-core/src/main/java/org/deeplearning4j/arbiter/optimize/parameter/BooleanSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/dropout/AlphaDropoutSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/dropout/GaussianDropoutSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/dropout/GaussianNoiseSpace.java",
+        "arbiter-core/src/main/java/org/deeplearning4j/arbiter/optimize/parameter/FixedValue.java",
+        "arbiter-core/src/main/java/org/deeplearning4j/arbiter/optimize/parameter/math/MathOp.java",
+        "arbiter-core/src/main/java/org/deeplearning4j/arbiter/optimize/parameter/math/PairMathOp.java"
+      ]
+    },
+    {
+      "page": "layer-spaces.md",
+      "class": [
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/ActivationLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/AutoEncoderLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/BatchNormalizationSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/Bidirectional.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/CenterLossOutputLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/ConvolutionLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/Deconvolution2DLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/DenseLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/DropoutLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/EmbeddingLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/FeedForwardLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/GlobalPoolingLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/GravesBidirectionalLSTMLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/GravesLSTMLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/LSTMLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/LocalResponseNormalizationLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/LossLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/OCNNLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/OutputLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/RnnOutputLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/SeparableConvolution2DLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/SubsamplingLayerSpace.java",
+        "arbiter-deeplearning4j/src/main/java/org/deeplearning4j/arbiter/layers/VariationalAutoencoderLayerSpace.java"
+      ]
+    }
+  ]
+}
+

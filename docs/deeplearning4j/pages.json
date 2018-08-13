@@ -10,7 +10,27 @@
       "class": []
     },
     {
-      "page": "quickstart-java.md",
+      "page": "examples-tour.md",
+      "class": []
+    },
+    {
+      "page": "android.md",
+      "class": []
+    },
+    {
+      "page": "android-prerequisites.md",
+      "class": []
+    },
+    {
+      "page": "android-linear-classifier.md",
+      "class": []
+    },
+    {
+      "page": "android-image-classification.md",
+      "class": []
+    },
+    {
+      "page": "beginners.md",
       "class": []
     },
     {

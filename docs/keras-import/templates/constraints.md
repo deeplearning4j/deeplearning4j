@@ -1,3 +1,11 @@
+---
+title: Keras Constraints
+short_title: Constraints
+description: Supported Keras constraints.
+category: Keras Import
+weight: 4
+---
+
 ## Supported constraints
 
 All [Keras constraints](https://keras.io/constraints) are supported:

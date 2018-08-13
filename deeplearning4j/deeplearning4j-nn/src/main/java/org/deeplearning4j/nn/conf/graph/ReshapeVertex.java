@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -43,12 +44,22 @@ public class ReshapeVertex extends GraphVertex {
     protected int[] newShape;
     protected int[] maskShape;
 
+    /**
+     * Reshape with the default reshape order of 'c'
+     * @param newShape New shape for activations
+     */
     public ReshapeVertex(int... newShape){
         this(DEFAULT_RESHAPE_ORDER, newShape, null);
     }
 
+    /**
+     * @param reshapeOrder Order (must be 'c' or 'f') for the activations
+     * @param newShape     New shape
+     * @param maskShape    Mask shape
+     */
     public ReshapeVertex(@JsonProperty("reshapeOrder") char reshapeOrder, @JsonProperty("newShape") int[] newShape,
                          @JsonProperty("maskShape") int[] maskShape) {
+        Preconditions.checkState(reshapeOrder == 'c' || reshapeOrder == 'f', "Reshape order must be 'c' or 'f'. Got: '%s'", String.valueOf(reshapeOrder));
         this.reshapeOrder = reshapeOrder;
         this.newShape = newShape;
         this.maskShape = maskShape;

@@ -68,6 +68,10 @@ public class Cropping2D extends NoParamLayer {
         this(new Builder(cropTop, cropBottom, cropLeft, cropRight));
     }
 
+    /**
+     * @param cropping Cropping as either a length 2 array, with values {@code [cropTopBottom, cropLeftRight]},
+     *                 or as a length 4 array, with values {@code [cropTop, cropBottom, cropLeft, cropRight]}
+     */
     public Cropping2D(int[] cropping) {
         this(new Builder(cropping));
     }

@@ -20,8 +20,7 @@ import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
- * A binomial distribution.
- * This is based on the interface from apache commons math.
+ * A binomial distribution, with 2 parameters: number of trials, and probability of success
  *
  * @author Adam Gibson
  *

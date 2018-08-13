@@ -48,7 +48,7 @@ Measuring [cosine similarity](./glossary.html#cosine), no similarity is expresse
 
 Here's a list of words associated with "Sweden" using Word2vec, in order of proximity:
 
-![Alt text](./img/sweden_cosine_distance.png) 
+![Alt text](/images/guide/sweden_cosine_distance.png) 
 
 The nations of Scandinavia and several wealthy, northern European, Germanic countries are among the top nine. 
 
@@ -62,7 +62,7 @@ Word2vec is similar to an autoencoder, encoding each word in a vector, but rathe
 
 It does so in one of two ways, either using context to predict a target word (a method known as continuous bag of words, or CBOW), or using a word to predict a target context, which is called skip-gram. We use the latter method because it produces more accurate results on large datasets.
 
-![Alt text](./img/word2vec_diagrams.png) 
+![Alt text](/images/guide/word2vec_diagrams.png) 
 
 When the feature vector assigned to a word cannot be used to accurately predict that word's context, the components of the vector are adjusted. Each word's context in the corpus is the *teacher* sending error signals back to adjust the feature vector. The vectors of words judged similar by their context are nudged closer together by adjusting the numbers in the vector.
 
@@ -74,11 +74,11 @@ A well trained set of word vectors will place similar words close to each other 
 
 Similar things and ideas are shown to be "close". Their relative meanings have been translated to measurable distances. Qualities become quantities, and algorithms can do their work. But similarity is just the basis of many associations that Word2vec can learn. For example, it can gauge relations between words of one language, and map them to another.
 
-![Alt text](./img/word2vec_translation.png) 
+![Alt text](/images/guide/word2vec_translation.png) 
 
 These vectors are the basis of a more comprehensive geometry of words. As shown in the graph, capital cities such as Rome, Paris, Berlin and Beijing cluster near each other, and they will each have similar distances in vectorspace to their countries; i.e. Rome - Italy = Beijing - China. If you only knew that Rome was the capital of Italy, and were wondering about the capital of China, then the equation Rome -Italy + China would return Beijing. No kidding. 
 
-![Alt text](./img/countries_capitals.png) 
+![Alt text](/images/guide/countries_capitals.png) 
 
 ## <a name="crazy">Amusing Word2Vec Results</a>
 
@@ -494,41 +494,7 @@ Deeplearning4j has a class called [SequenceVectors](https://github.com/deeplearn
 * [Word2Vec: an introduction](http://www.folgertkarsdorp.nl/word2vec-an-introduction/); Folgert Karsdorp
 * [Mikolov's Original Word2vec Code @Google](https://code.google.com/p/word2vec/)
 * [word2vec Explained: Deriving Mikolov et al.’s Negative-Sampling Word-Embedding Method](http://arxiv.org/pdf/1402.3722v1.pdf); Yoav Goldberg and Omer Levy
-* [Bag of Words & Term Frequency-Inverse Document Frequency (TF-IDF)](./bagofwords-tf-idf.html)
 * [Advances in Pre-Training Distributed Word Representations - by Mikolov et al](https://arxiv.org/abs/1712.09405)
-
-### <a name="beginner">Other Machine Learning Tutorials</a>
-
-* [Multilayer Perceptron (MLPs) for Classification](./multilayerperceptron.html)
-* [Eigenvectors, Eigenvalues, Covariance, PCA and Entropy](./eigenvector.html)
-* [LSTMs and Recurrent Networks](./lstm.html)
-* [Introduction to Deep Neural Networks](./neuralnet-overview.html)
-* [Deep Convolutional Networks](./convolutionalnetwork.html)
-* [Generative Adversarial Networks (GANs)](./generative-adversarial-network.html)
-* [Deep Reinforcement Learning](./deepreinforcementlearning.html)
-* [Attention Mechanisms and Memory Networks](./attention-memory-network)
-* [Quickstart Examples for Deeplearning4j](./quickstart.html)
-* [ND4J: A Tensor Library for the JVM](http://nd4j.org)
-* [MNIST for Beginners](./mnist-for-beginners.html)
-* [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
-* [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
-* [Inference: Machine Learning Model Server](./machine-learning-server.html)
-* [AI vs. Machine Learning vs. Deep Learning](./ai-machinelearning-deeplearning.html)
-* [Convolutional Networks (CNNs)](./convolutionalnetwork.html)
-* [Graph Data and Deep Learning](./graphanalytics.html)
-* [Deep Learning on Apache Spark](./spark.html)
-* [Symbolic Reasoning (Symbolic AI) & Deep Learning](./symbolicreasoning.html)
-* [Markov Chain Monte Carlo & Machine Learning](/markovchainmontecarlo.html)
-* [Distributed Deep Learning on Apache Spark](https://deeplearning4j.org/spark)
-* [Neural Networks & Regression](./logistic-regression.html)
-* [Introduction to Decision Trees](./decision-tree.html)
-* [Introduction to Random Forests](./random-forest.html)
-* [Open Datasets for Machine Learning](./opendata.html)
-* [Definition of Artificial Intelligence (AI)](./ai-artificial-intelligence-definition.html)
-* [How CIOs Should Think about Machine Learning and AI](./cio-chief-information-officer-machine-learning-ai.html)
-* [AI Infrastructure: Machine Learning Operations (MlOps)](./ai-infrastructure-machine-learning-operations-mlops.html)
-* [AI Winter: Deep Learning and its Discontents](./ai-winter.html)
-* [FastText: Fast text representation and classification](./fasttext.html)
 
 
 ### <a name="doctorow">Word2Vec in Literature</a>
