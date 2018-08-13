@@ -28,7 +28,6 @@
     <name>DeepLearning4j-scaleout-parent</name>
 
     <modules>
-        <module>dl4j-streaming</module>
         <module>deeplearning4j-aws</module>
         <module>spark</module>
         <module>deeplearning4j-scaleout-parallelwrapper</module>

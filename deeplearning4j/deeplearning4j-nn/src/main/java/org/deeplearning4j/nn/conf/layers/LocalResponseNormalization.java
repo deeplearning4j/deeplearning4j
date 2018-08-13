@@ -32,7 +32,8 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Created by nyghtowl on 10/29/15.
+ * Local response normalization layer<br>
+ * See section 3.3 of <a href="http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf">http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf</a>
  */
 @Data
 @NoArgsConstructor
@@ -170,7 +171,7 @@ public class LocalResponseNormalization extends Layer {
         /**
          * LRN scaling constant k. Default: 2
          *
-         * @param k
+         * @param k Scaling constant
          */
         public Builder k(double k) {
             this.k = k;

@@ -16,6 +16,7 @@
 
 
 from .op import op
+from ..java_classes import Nd4j
 
 # Array manipulation routines
 # https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.array-manipulation.html

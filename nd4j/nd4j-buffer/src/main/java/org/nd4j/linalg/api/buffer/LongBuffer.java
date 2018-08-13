@@ -19,8 +19,6 @@ package org.nd4j.linalg.api.buffer;
 
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
-import org.nd4j.linalg.api.complex.IComplexDouble;
-import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
 import java.nio.ByteBuffer;
@@ -145,17 +143,6 @@ public class LongBuffer extends BaseDataBuffer {
     @Override
     public DataBuffer create(int[] data) {
         return new LongBuffer(data);
-    }
-
-    @Override
-    public IComplexFloat getComplexFloat(long i) {
-        return null;
-    }
-
-    @Override
-    public IComplexDouble getComplexDouble(long i) {
-        throw new UnsupportedOperationException();
-
     }
 
     public LongBuffer(int[] data, boolean copy) {

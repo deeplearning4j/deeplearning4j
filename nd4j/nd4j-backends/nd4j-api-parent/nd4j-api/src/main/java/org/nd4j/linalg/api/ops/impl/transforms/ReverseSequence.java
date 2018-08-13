@@ -108,8 +108,8 @@ public class ReverseSequence extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        SDVariable ret = f().reverseSequence(f1.get(0), f1.get(1), seqDim, batchDim);
-        return Arrays.asList(ret);
+        SDVariable ret = f().reverseSequence(f1.get(0), arg(1), seqDim, batchDim);
+        return Arrays.asList(ret, f().zerosLike(arg(1)));
     }
 
 }

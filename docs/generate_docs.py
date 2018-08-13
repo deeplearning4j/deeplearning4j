@@ -21,11 +21,14 @@ import os
 import shutil
 import json
 import argparse
-
+import sys
 
 class DocumentationGenerator:
 
     def __init__(self, args):
+        reload(sys)  
+        sys.setdefaultencoding('utf8')
+        
         self.out_language = args.out_language
         self.template_dir = args.templates if self.out_language == 'en' else args.templates + '_' + self.out_language
         self.project_name = args.project + '/'
@@ -101,7 +104,7 @@ class DocumentationGenerator:
             name = re.findall(method_regex, signature)[0]
         else:  # Constructor takes class name
             name = class_name
-        sub_blocks = ['<b>{}</b> \n{}'.format(name, self.to_code_snippet(signature))]
+        sub_blocks = ['##### {} \n{}'.format(name, self.to_code_snippet(signature))]
         if doc_string:
             sub_blocks.append(doc_string + '\n')
         return '\n\n'.join(sub_blocks)
@@ -110,6 +113,7 @@ class DocumentationGenerator:
     '''Returns main doc string of class/object in question.
     '''
     def get_main_doc_string(self, class_string, class_name):
+        print(class_name)
         doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n'  # match "/** ... */" at the top
         doc_string = re.search(doc_regex, class_string)
         try:
@@ -128,14 +132,16 @@ class DocumentationGenerator:
     def get_constructor_data(self, class_string, class_name, use_contructor):
         constructors = []
         if 'public ' + class_name in class_string and use_contructor:
-            while 'public ' + class_name in class_string:
-                doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n[\S\s]*?(public ' \
-                            + class_name + '.[\S\s]*?){'
-                result = re.search(doc_regex, class_string)
+            doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n[\S\s]*?(public ' \
+                        + class_name + '.[\S\s]*?){'
+            result = re.search(doc_regex, class_string)
+            if result:
                 doc_string, signature = result.groups()
                 doc = self.process_docstring(doc_string)
                 class_string = class_string[result.end():]
                 constructors.append((signature, doc))
+            else:
+                print("Warning, no doc string found for constructor {}".format(class_name))
         return constructors, class_string
 
 
@@ -188,6 +194,20 @@ class DocumentationGenerator:
         print(index_string)
         return ['', index_string]
 
+
+    '''Grabs page data for each class and allows for iteration in modules and specific classes.
+    '''
+    def organize_page_data(self, module, cls, tag, use_constructors, includes, excludes):
+        class_string = self.inspect_class_string(module, cls)
+        class_string = self.get_tag_data(class_string, tag)
+        class_string = class_string.replace('<p>', '').replace('</p>', '')
+        class_name = cls.replace('.' + self.language, '')
+        doc_string, class_string = self.get_main_doc_string(class_string, class_name)
+        constructors, class_string = self.get_constructor_data(class_string, class_name, use_constructors)
+        methods = self.get_public_method_data(class_string, includes, excludes)
+        return module, class_name, doc_string, constructors, methods
+
+    
     '''Main workhorse of this script. Inspects source files per class or module and reads
             - class names
             - doc strings of classes / objects
@@ -201,29 +221,31 @@ class DocumentationGenerator:
         page_data = []
         classes = []
 
-        module = data.get('module', "")
-        if module:
-            classes = os.listdir(self.source_code_path + module)
-
-        cls = data.get('class', "")
-        if cls:
-            classes = cls
-
         includes = data.get('include', [])
         excludes = data.get('exclude', [])
 
         use_constructors = data.get('constructors', True)
         tag = data.get('autogen_tag', '')
 
-        for cls in sorted(classes):
-            class_string = self.inspect_class_string(module, cls)
-            class_string = self.get_tag_data(class_string, tag)
-            class_string = class_string.replace('<p>', '').replace('</p>', '')
-            class_name = cls.replace('.' + self.language, '')
-            doc_string, class_string = self.get_main_doc_string(class_string, class_name)
-            constructors, class_string = self.get_constructor_data(class_string, class_name, use_constructors)
-            methods = self.get_public_method_data(class_string, includes, excludes)
+        modules = data.get('module', "")
+        if modules:
+            for module in modules:
+                module_files = os.listdir(self.source_code_path + module)
+                print(module_files)
+                for cls in module_files:
+                    if '.' in cls:
+                        module, class_name, doc_string, constructors, methods = self.organize_page_data(module, cls, tag, use_constructors, includes, excludes)
+                        page_data.append([module, class_name, doc_string, constructors, methods])
 
+        
+        class_files = data.get('class', "")
+        if class_files:
+            for cls in class_files:
+                classes.append(cls)
+
+        for cls in sorted(classes):
+            module = ""
+            module, class_name, doc_string, constructors, methods = self.organize_page_data(module, cls, tag, use_constructors, includes, excludes)
             page_data.append([module, class_name, doc_string, constructors, methods])
 
         return page_data
@@ -258,9 +280,8 @@ class DocumentationGenerator:
                     os.makedirs(new_subdir)
                 if file_name[-3:] == '.md':
                     file_path = os.path.join(subdir, file_name)
-                    new_file_path = file_path.replace(
-                        self.project_name + self.template_dir, self.project_name + self.target_dir
-                    )
+                    new_file_path = self.project_name + self.target_dir + '/' + self.project_name.replace('/','') + '-' + file_name
+                    # print(new_file_path)
                     shutil.copy(file_path, new_file_path)
 
 
@@ -287,15 +308,15 @@ class DocumentationGenerator:
     the file name provided in page_data.
     '''
     def write_content(self, blocks, page_data):
-        assert blocks, 'No content for page ' + page_data['page']
+        #assert blocks, 'No content for page ' + page_data['page'] # unsure if necessary
 
-        markdown = '\n----\n\n'.join(blocks)
-        path = os.path.join(self.project_name + self.target_dir, page_data['page'])
+        markdown = '\n\n\n'.join(blocks)
+        exp_name = self.project_name.replace('/','') + '-' + page_data['page']
+        path = os.path.join(self.project_name + self.target_dir, exp_name)
 
         if os.path.exists(path):
             template = self.read_file(path)
-            assert '{{autogenerated}}' in template, \
-                'Template found for {} but missing {{autogenerated}} tag.'.format(path)
+            #assert '{{autogenerated}}' in template, 'Template found for {} but missing {{autogenerated}} tag.'.format(path) # unsure if needed
             markdown = template.replace('{{autogenerated}}', markdown)
         print('Auto-generating docs for {}'.format(path))
         markdown = markdown
@@ -314,11 +335,12 @@ class DocumentationGenerator:
             for file_name in file_names:
                 if file_name[-3:] == '.md':
                     file_path = os.path.join(subdir, file_name)
-                    header = '---\ntitle: {}\nlayout: default\n---\n'.format(file_name.replace('.md', ''))
+                    header = '---\ntitle: {}\n---\n'.format(file_name.replace('.md', ''))
                     with open(file_path, 'r+') as f:
                         content = f.read()
                         f.seek(0, 0)
-                        f.write(header.rstrip('\r\n') + '\n' + content)
+                        if not content.startswith('---'):
+                            f.write(header.rstrip('\r\n') + '\n' + content)
 
 
 if __name__ == '__main__':
@@ -337,7 +359,7 @@ if __name__ == '__main__':
     doc_generator = DocumentationGenerator(args)
 
     doc_generator.clean_target()
-    doc_generator.create_index_page()
+    #doc_generator.create_index_page() # not necessary for now
 
     for page_data in doc_generator.pages:
         data = doc_generator.read_page_data(page_data)
@@ -348,22 +370,28 @@ if __name__ == '__main__':
             if not any(ex in class_string for ex in doc_generator.excludes):
                 sub_blocks = []
                 link = doc_generator.class_to_source_link(module_name, class_name)
-                sub_blocks.append('<span style="float:right;"> {} </span>'.format(link))
-                if module_name:
-                    sub_blocks.append('## {}\n'.format(class_name))
+                try:
+                    class_name = class_name.rsplit('/',1)[1]
+                except:
+                    print('Skipping split on '+class_name)
+                # if module_name:
+                #     sub_blocks.append('### {}'.format(module_name))
+                #     sub_blocks.append('<span style="float:right;"> {} </span>\n'.format(link))
 
                 if doc_string:
+                    sub_blocks.append('\n---\n')
+                    sub_blocks.append('### {}'.format(class_name))
+                    sub_blocks.append('<span style="float:right;"> {} </span>\n'.format(link))
                     sub_blocks.append(doc_string)
 
                 if constructors:
-                    sub_blocks.append('\n---\n<b>Constructors</b>\n\n---\n'.join(
-                        [doc_generator.render(cs, cd, class_name, False) for (cs, cd) in constructors])
-                    )
+                    sub_blocks.append("".join([doc_generator.render(cs, cd, class_name, False) for (cs, cd) in constructors]))
 
                 if methods:
-                    sub_blocks.append('\n---\n<b>Methods</b>\n\n---\n'.join(
-                        [doc_generator.render(ms, md, class_name, True) for (ms, md) in methods])
-                    )
+                    # sub_blocks.append('<button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#'+class_name+'" aria-expanded="false" aria-controls="'+class_name+'">Show methods</button>')
+                    # sub_blocks.append('<div class="collapse" id="'+class_name+'"><div class="card card-body">\n')
+                    sub_blocks.append("".join([doc_generator.render(ms, md, class_name, True) for (ms, md) in methods]))
+                    # sub_blocks.append('</div></div>')                   
                 blocks.append('\n'.join(sub_blocks))
 
         doc_generator.write_content(blocks, page_data)

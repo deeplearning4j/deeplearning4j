@@ -156,11 +156,7 @@ public class ModelGuesser {
                             }
                         }
                     }
-
                 }
-
-
-
             }
         }
     }
@@ -180,12 +176,11 @@ public class ModelGuesser {
     /**
      * Load the model from the given input stream
      * @param stream the path of the file to "guess"
-     * @param directory the directory in which to create any temporary files
+     * @param tempFileDirectory May be null. The directory in which to create any temporary files
      *
      * @return the loaded model
      * @throws Exception
      */
-    @Deprecated
     public static Model loadModelGuess(InputStream stream, File tempFileDirectory) throws Exception {
         //Currently (Nov 2017): KerasModelImport doesn't support loading from input streams
         //Simplest solution here: write to a temporary file

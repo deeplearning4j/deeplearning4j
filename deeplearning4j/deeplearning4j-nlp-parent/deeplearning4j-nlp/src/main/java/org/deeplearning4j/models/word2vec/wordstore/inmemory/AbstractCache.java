@@ -226,6 +226,10 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
         return totalWordCount.get();
     }
 
+    public void setTotalWordOccurences(long value) {
+        totalWordCount.set(value);
+    }
+
     /**
      * Returns SequenceElement for specified label
      *
@@ -355,6 +359,15 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     public void incrementTotalDocCount(long by) {
         documentsCounter.addAndGet(by);
     }
+
+    /**
+     * This method allows to set total number of documents
+     * @param by
+     */
+    public void setTotalDocCount(long by) {
+        documentsCounter.set(by);
+    }
+
 
     /**
      * Returns collection of SequenceElements from this vocabulary. The same as vocabWords() method

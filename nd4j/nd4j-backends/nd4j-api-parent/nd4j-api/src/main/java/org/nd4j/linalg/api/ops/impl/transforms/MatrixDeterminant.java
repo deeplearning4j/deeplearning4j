@@ -54,7 +54,12 @@ public class MatrixDeterminant extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        //return Collections.singletonList(sameDiff.setDiag(sameDiff.zerosLike(arg()), i_v.get(0)));    //Incorrect - needs to be broadcast
-        return null;
+        //Derivative of matrix determinant
+        //From: Matrix Cookbook - Petersen & Pedersen
+        // z=det(X) then dz/dx = z * tr(X^-1)
+        SDVariable transpose = f().matrixInverse(arg());
+        SDVariable trace = f().diagPart(transpose).sum(-1);
+        SDVariable dOutdIn = outputVariable().mul(trace);
+        return Collections.singletonList(i_v.get(0).mul(dOutdIn));
     }
 }

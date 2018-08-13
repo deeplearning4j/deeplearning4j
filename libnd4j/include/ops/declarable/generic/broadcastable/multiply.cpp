@@ -16,68 +16,122 @@
 
 //
 //  @author raver119@gmail.com
+//  @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <op_boilerplate.h>
 #if NOT_EXCLUDED(OP_multiply)
 
-#include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
-    namespace ops {
-        CUSTOM_OP_IMPL(multiply, 2, 1, true, 0, 0) {
-            NDArray<T> *x = INPUT_VARIABLE(0);
-            NDArray<T> *y = INPUT_VARIABLE(1);
-            NDArray<T> *z = this->getZ(block);
+namespace ops {
 
-            auto tZ = BroadcastHelper<T>::template broadcast_apply<simdOps::Multiply<T>>(x, y, z);
-            if (tZ == nullptr)
-                return ND4J_STATUS_KERNEL_FAILURE;
-            else if (tZ != z) {
-                OVERWRITE_RESULT(tZ);
-            }
+    BROADCASTABLE_OP_IMPL(multiply, 0, 0) {
+        auto x = INPUT_VARIABLE(0);
+        auto y = INPUT_VARIABLE(1);
+        auto z = OUTPUT_VARIABLE(0);
 
-			return ND4J_STATUS_OK;
-        }
-        DECLARE_SYN(Mul, multiply);
+        Nd4jLong* zShapeInfo = nullptr;
+        const bool areShapesBroadcastable = ShapeUtils<T>::evalBroadcastShapeInfo(x->getShapeInfo(), y->getShapeInfo(), true, zShapeInfo, block.getWorkspace());
+        REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY OP: the shapes of x %s and y %s are not suitable for broadcast !", ShapeUtils<T>::shapeAsString(x).c_str(), ShapeUtils<T>::shapeAsString(y).c_str());
+        RELEASE(zShapeInfo, block.getWorkspace());
 
-        DECLARE_SHAPE_FN(multiply) {
-            auto shapeList = SHAPELIST();
-            auto x = inputShape->at(0);
-            auto y = inputShape->at(1);
+        // z->assign(*x * *y);
+        // auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Multiply<T>>(x, y, z);
+        x->template applyTrueBroadcast<simdOps::Multiply<T>>(y, z, false);
+    
+        return Status::OK();
+    }
+    DECLARE_SYN(Mul, multiply);
 
-            if (shape::equalsSoft(x, y)) {
-                Nd4jLong *newshape;
-                COPY_SHAPE(x, newshape);
 
-                shapeList->push_back(newshape);
-            } else if (shape::isScalar(x) && !shape::isScalar(y)) {
-                Nd4jLong *newshape;
-                COPY_SHAPE(y, newshape);
+///////////////////////////////////////////////////////////////////
+CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
 
-                shapeList->push_back(newshape);
-            } else if (!shape::isScalar(x) && shape::isScalar(y)) {
-                Nd4jLong *newshape;
-                COPY_SHAPE(x, newshape);
+    NDArray<T>* x    = INPUT_VARIABLE(0);
+    NDArray<T>* y    = INPUT_VARIABLE(1);
+    NDArray<T>* dLdz = INPUT_VARIABLE(2);
 
-                shapeList->push_back(newshape);
-            } else if (ShapeUtils<T>::areShapesBroadcastable(x, y)) {
-                Nd4jLong *newshape = nullptr;
-                ShapeUtils<T>::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
+    NDArray<T>* dLdx = OUTPUT_VARIABLE(0);
+    NDArray<T>* dLdy = OUTPUT_VARIABLE(1);
 
-                shapeList->push_back(newshape);
-            } else {
-                // in this case we'll throw exception later
-                Nd4jLong *newshape;
-                COPY_SHAPE(x, newshape);
+    Nd4jLong* dLdzShapeInfo = nullptr;
+    const bool areShapesBroadcastable = ShapeUtils<T>::evalBroadcastShapeInfo(x->getShapeInfo(), y->getShapeInfo(), true, dLdzShapeInfo, block.getWorkspace());
+    REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY_BP OP: the shapes of x %s and y %s are not suitable for broadcast !", ShapeUtils<T>::shapeAsString(x).c_str(), ShapeUtils<T>::shapeAsString(y).c_str());
+    REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(dLdz) == ShapeUtils<T>::shapeAsString(dLdzShapeInfo), 0, "MULTIPLY_BP OP: wrong shape of next epsilon array (dLdOut), expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString(dLdzShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(dLdz).c_str());
+    RELEASE(dLdzShapeInfo, block.getWorkspace());
 
-                shapeList->push_back(newshape);
-            }
+    const Nd4jLong xLen = x->lengthOf();
+    const Nd4jLong yLen = y->lengthOf();
+    
+    if(xLen == 1 && yLen == 1) {    // both are scalars
+        (*dLdx)(0.) = (*y)(0.) * (*dLdz)(0.);
+        (*dLdy)(0.) = (*x)(0.) * (*dLdz)(0.);
+    }
+    else if(xLen == 1) {            // x is scalar and y is not 
 
-            return shapeList;
-        }
+        (*dLdx)(0.) = (*y * *dLdz).template reduceNumber<simdOps::Sum<T>>();     
+        dLdz->template applyScalar<simdOps::Multiply<T>>((*x)(0.), dLdy);     
+    }
+    else if(yLen == 1) {            // y is scalar and x is not 
 
+        (*dLdy)(0.) = (*x * *dLdz).template reduceNumber<simdOps::Sum<T>>();        
+        dLdz->template applyScalar<simdOps::Multiply<T>>((*y)(0.), dLdx);
+    }    
+    else if(x->isSameShape(y)) {
+
+        x->template applyPairwiseTransform<simdOps::Multiply<T>>(dLdz, dLdy, nullptr);
+        y->template applyPairwiseTransform<simdOps::Multiply<T>>(dLdz, dLdx, nullptr);
+    }
+    else if (x->isSameShape(dLdz)) {
+        
+        NDArray<T> yTiled(dLdz, false, block.getWorkspace());
+        y->tile(yTiled);
+        std::vector<int> axesForY = ShapeUtils<T>::evalBroadcastBackwardAxis(y->getShapeInfo(), dLdz->getShapeInfo());
+        
+        dLdy->assign( (*x * *dLdz).template reduceAlongDims<simdOps::Sum<T>>(axesForY) );        
+        yTiled.template applyPairwiseTransform<simdOps::Multiply<T>>(dLdz, dLdx, nullptr);
+    } 
+    else if (y->isSameShape(dLdz)) {
+
+        NDArray<T> xTiled(dLdz, false, block.getWorkspace());
+        x->tile(xTiled);
+        std::vector<int> axesForX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->getShapeInfo(), dLdz->getShapeInfo());
+        
+        dLdx->assign( (*y * *dLdz).template reduceAlongDims<simdOps::Sum<T>>(axesForX) );
+        xTiled.template applyPairwiseTransform<simdOps::Multiply<T>>(dLdz, dLdy, nullptr);
+    }
+    else {
+
+        NDArray<T> xTiled(dLdz, false, block.getWorkspace());
+        NDArray<T> yTiled(dLdz, false, block.getWorkspace());
+        x->tile(xTiled);
+        y->tile(yTiled);
+        std::vector<int> axesForX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->getShapeInfo(), dLdz->getShapeInfo());
+        std::vector<int> axesForY = ShapeUtils<T>::evalBroadcastBackwardAxis(y->getShapeInfo(), dLdz->getShapeInfo());
+        
+        dLdx->assign( (*y * *dLdz).template reduceAlongDims<simdOps::Sum<T>>(axesForX) );
+        dLdy->assign( (*x * *dLdz).template reduceAlongDims<simdOps::Sum<T>>(axesForY) );      
+    }
+
+    return Status::OK();
+}
+
+DECLARE_SHAPE_FN(multiply_bp) {
+    
+    auto xShapeInfo    = inputShape->at(0);
+    auto yShapeInfo    = inputShape->at(1);
+
+    Nd4jLong *dLdxShapeInfo = nullptr;
+    Nd4jLong *dLdyShapeInfo = nullptr;
+
+    COPY_SHAPE(xShapeInfo, dLdxShapeInfo);
+    COPY_SHAPE(yShapeInfo, dLdyShapeInfo);
+
+    return SHAPELIST(dLdxShapeInfo, dLdyShapeInfo);     
+}
+/*
         CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
@@ -150,26 +204,9 @@ namespace nd4j {
 
             return Status::OK();
         }
+*/
 
-        DECLARE_SHAPE_FN(multiply_bp) {
-            auto x = inputShape->at(0);
-            auto y = inputShape->at(1);
-            auto e = inputShape->at(2);
-
-            // eps always has shape of x
-            // grad always has shape of y
-
-            Nd4jLong *shapeE;
-            Nd4jLong *shapeG;
-
-            COPY_SHAPE(x, shapeE);
-            COPY_SHAPE(y, shapeG);
-
-            auto shapeList = SHAPELIST(shapeE, shapeG);
-
-            return shapeList;
-        }
-    }
+}
 }
 
 #endif

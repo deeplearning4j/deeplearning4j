@@ -153,7 +153,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
         }
 
         if (kind == MemoryKind.DEVICE) {
-            if (deviceOffset.get() + requiredMemory <= currentSize.get() && !trimmer) {
+            if (deviceOffset.get() + requiredMemory <= currentSize.get() && !trimmer && Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.SPILL_EVERYTHING) {
                 cycleAllocations.addAndGet(requiredMemory);
                 long prevOffset = deviceOffset.getAndAdd(requiredMemory);
 
@@ -179,7 +179,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
             } else {
 
                 // spill
-                if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0 && !trimmer) {
+                if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0 && !trimmer && Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.SPILL_EVERYTHING) {
                     //log.info("End of space reached. Current offset: {}; requiredMemory: {}", deviceOffset.get(), requiredMemory);
                     reset();
                     resetPlanned.set(true);
@@ -235,7 +235,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 }
             }
         } else if (kind == MemoryKind.HOST) {
-            if (hostOffset.get() + requiredMemory <= currentSize.get() && !trimmer) {
+            if (hostOffset.get() + requiredMemory <= currentSize.get() && !trimmer && Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.SPILL_EVERYTHING) {
 
                 long prevOffset = hostOffset.getAndAdd(requiredMemory);
 

@@ -52,8 +52,10 @@ public abstract class TestCase {
     protected String[] unsupervisedTrainLayersCG = null;
 
     //Relative errors for this test case:
-    protected double maxRelativeErrorGradients = 1e-6;
-    protected double minAbsErrorGradients = 1e-5;
+    protected double maxRelativeErrorOutput = 1e-4;
+    protected double minAbsErrorOutput = 1e-4;
+    protected double maxRelativeErrorGradients = 1e-4;
+    protected double minAbsErrorGradients = 1e-4;
     protected double maxRelativeErrorPretrainParams = 1e-5;
     protected double minAbsErrorPretrainParams = 1e-5;
     protected double maxRelativeErrorScores = 1e-6;

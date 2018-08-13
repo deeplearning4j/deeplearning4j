@@ -608,7 +608,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        nd4j::ResultSet<T>* nd4j::ops::DeclarableOp<T>::execute(std::vector<NDArray<T>*>& inputs, std::vector<T>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace) {
+        nd4j::ResultSet<T>* nd4j::ops::DeclarableOp<T>::execute(const std::vector<NDArray<T>*>& inputs, const std::vector<T>& tArgs, const std::vector<Nd4jLong>& iArgs, bool isInplace) {
             VariableSpace<T> variableSpace;
             auto arrayList = new ResultSet<T>();
             //ResultSet<T> arrayList;
@@ -665,6 +665,13 @@ namespace nd4j {
 
             return arrayList;
         }
+
+        template <typename T>
+        nd4j::ResultSet<T>* nd4j::ops::DeclarableOp<T>::execute(const nd4j::OpArgsHolder<T>& holder, bool isInplace) {
+            
+            return execute(holder.getInArrs(), holder.getTArgs(), holder.getIArgs(), isInplace);    
+        }
+
 
         template <typename T>
         Nd4jStatus nd4j::ops::DeclarableOp<T>::validateInputDimensionsMatch(Context<T>& block) {

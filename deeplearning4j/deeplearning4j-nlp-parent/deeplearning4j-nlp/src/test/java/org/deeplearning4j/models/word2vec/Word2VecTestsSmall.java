@@ -18,9 +18,12 @@ package org.deeplearning4j.models.word2vec;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.text.documentiterator.FileLabelAwareIterator;
+import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
@@ -99,6 +102,23 @@ public class Word2VecTestsSmall {
         tmpFile.deleteOnExit();
 
         WordVectorSerializer.writeWord2VecModel(vec, tmpFile); // NullPointerException was thrown here
+    }
+
+    @Test
+    public void testLabelAwareIterator_1() throws Exception {
+        val resource = new ClassPathResource("/labeled");
+        val file = resource.getFile();
+
+        val iter = (LabelAwareIterator) new FileLabelAwareIterator.Builder().addSourceFolder(file).build();
+
+        val t = new DefaultTokenizerFactory();
+
+        val w2v = new Word2Vec.Builder()
+                .iterate(iter)
+                .tokenizerFactory(t)
+                .build();
+
+        // we hope nothing is going to happen here
     }
 
     @Test

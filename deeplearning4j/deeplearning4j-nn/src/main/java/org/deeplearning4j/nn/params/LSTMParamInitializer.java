@@ -183,8 +183,7 @@ public class LSTMParamInitializer implements ParamInitializer {
                             "Expected gradient view of length " + length + ", got length " + gradientView.length());
 
         val nParamsIn = nLast * (4 * nL);
-        val
-                nParamsRecurrent = nL * (4 * nL);
+        val nParamsRecurrent = nL * (4 * nL);
         val nBias = 4 * nL;
         INDArray inputWeightGradView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nParamsIn))
                         .reshape('f', nLast, 4 * nL);

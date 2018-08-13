@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -143,6 +144,8 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
     public BaseBroadcastOp(INDArray x, INDArray y, INDArray z, int... dimension) {
         super(x, y, z, x.lengthLong());
+        Broadcast.validateBroadcastDims(x,y,z, dimension);
+
         this.dimension = dimension;
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] < 0)

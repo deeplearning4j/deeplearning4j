@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.convolution;
 
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -42,13 +41,6 @@ public abstract class BaseConvolution implements ConvolutionInstance {
         return convn(input, kernel, type, axes);
     }
 
-    @Override
-    public INDArray conv2d(IComplexNDArray input, IComplexNDArray kernel, Convolution.Type type) {
-        int[] axes = input.shape().length < 2 ? ArrayUtil.range(0, 1)
-                        : ArrayUtil.range(input.shape().length - 2, input.shape().length);
-        return convn(input, kernel, type, axes);
-    }
-
 
     /**
      * ND Convolution
@@ -62,20 +54,4 @@ public abstract class BaseConvolution implements ConvolutionInstance {
     public INDArray convn(INDArray input, INDArray kernel, Convolution.Type type) {
         return convn(input, kernel, type, ArrayUtil.range(0, input.shape().length));
     }
-
-    /**
-     * ND Convolution
-     *
-     * @param input  the input to transform
-     * @param kernel the kernel to transform with
-     * @param type   the opType of convolution
-     * @return the convolution of the given input and kernel
-     */
-    @Override
-    public IComplexNDArray convn(IComplexNDArray input, IComplexNDArray kernel, Convolution.Type type) {
-        return convn(input, kernel, type, ArrayUtil.range(0, input.shape().length));
-    }
-
-
-
 }

@@ -17,7 +17,6 @@
 package org.nd4j.linalg.api.blas.params;
 
 import lombok.Data;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 
@@ -74,11 +73,6 @@ public @Data class GemvParameters {
         }
 
         this.incy = y.elementWiseStride();
-
-        if (x instanceof IComplexNDArray)
-            this.incx /= 2;
-        if (y instanceof IComplexNDArray)
-            this.incy /= 2;
 
     }
 

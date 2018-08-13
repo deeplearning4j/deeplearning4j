@@ -57,6 +57,10 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(reshape, 1, 1, true, 0, -2);
         #endif
 
+        #if NOT_EXCLUDED(OP_size_at)
+        DECLARE_CUSTOM_OP(size_at, 1, 1, true, 0, 1);
+        #endif
+
         /**
          * This op changes order of given array to specified order.
          * In other words: C/F order switch

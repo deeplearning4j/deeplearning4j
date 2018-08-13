@@ -19,6 +19,7 @@ package org.nd4j.parameterserver.distributed;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -360,7 +361,7 @@ public class VoidParameterServer {
 
         // last resort here...
         if (sparkIp == null)
-            sparkIp = System.getenv("DL4J_VOID_IP");
+            sparkIp = System.getenv(ND4JEnvironmentVars.DL4J_VOID_IP);
 
 
         log.info("Got [{}] as sparkIp", sparkIp);
@@ -389,7 +390,9 @@ public class VoidParameterServer {
             transport.shutdown();
 
             executor.shutdown();
-
+            initFinished.set(false);
+            initLocker.set(false);
+            shutdownLocker.set(false);
         }
     }
 

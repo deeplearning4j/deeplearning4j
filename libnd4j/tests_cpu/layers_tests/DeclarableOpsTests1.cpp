@@ -3017,7 +3017,7 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_bp2) {
 TEST_F(DeclarableOpsTests1, ArgMax1) {
     NDArray<float> x('c', {3, 5});
     x.linspace(1);
-    NDArray<float> exp('c', {3, 1});
+    NDArray<float> exp('c', {3});
     exp.assign(4.0f);
 
     nd4j::ops::argmax<float> op;
@@ -3038,7 +3038,7 @@ TEST_F(DeclarableOpsTests1, ArgMax1) {
 TEST_F(DeclarableOpsTests1, ArgMax2) {
     NDArray<float> x('c', {3, 5});
     x.linspace(1);
-    NDArray<float> exp('c', {1, 5});
+    NDArray<float> exp('c', {5});
     exp.assign(2.0f);
 
     nd4j::ops::argmax<float> op;
@@ -3060,7 +3060,7 @@ TEST_F(DeclarableOpsTests1, ArgMax3) {
     NDArray<float> x('c', {3, 5});
     NDArray<float> dim('c', {1, 1}, {0});
     x.linspace(1);
-    NDArray<float> exp('c', {1, 5});
+    NDArray<float> exp('c', {5});
     exp.assign(2.0f);
 
     nd4j::ops::argmax<float> op;
@@ -3081,7 +3081,7 @@ TEST_F(DeclarableOpsTests1, ArgMax4) {
     NDArray<float> x('c', {3, 5});
     NDArray<float> dim('c', {1, 1}, {1});
     x.linspace(1);
-    NDArray<float> exp('c', {3, 1});
+    NDArray<float> exp('c', {3});
     exp.assign(4.0f);
 
     nd4j::ops::argmax<float> op;
@@ -3103,7 +3103,7 @@ TEST_F(DeclarableOpsTests1, ArgMax5) {
     NDArray<float> x('c', {3, 5});
     NDArray<float> dim('c', {1, 2}, {0, 1});
     x.linspace(1);
-    NDArray<float> exp('c', {1, 1}, {14});
+    NDArray<float> exp(14.0f);
 
 
     nd4j::ops::argmax<float> op;

@@ -122,7 +122,8 @@ public class TFGraphTestList {
     public void testOutputOnly() throws IOException {
         Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, modelDir);
         Map<String, INDArray> predictions = TFGraphTestAllHelper.outputVars(modelName, modelDir);
-        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, modelDir, executeWith);
+        Double precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
+        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, modelDir, executeWith, precisionOverride);
     }
 
     @Test

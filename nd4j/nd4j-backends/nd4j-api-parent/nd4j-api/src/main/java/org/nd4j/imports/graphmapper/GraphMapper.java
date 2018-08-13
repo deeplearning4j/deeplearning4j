@@ -384,4 +384,11 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      */
     SameDiff importGraph(GRAPH_TYPE tfGraph);
 
+    /**
+     * This method converts given TF graph file
+     * @param file
+     * @return
+     */
+    SameDiff importGraph(String graphFile);
+
 }

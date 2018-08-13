@@ -26,7 +26,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Wraps a data applyTransformToDestination collection
+ * A simple iterator that wraps a {@code Collection<DataSet>}. Assumes that each DataSet contains a single example
  *
  * @author Adam Gibson
  */
@@ -39,6 +39,10 @@ public class ListDataSetIterator<T extends DataSet> implements DataSetIterator {
     @Getter
     private DataSetPreProcessor preProcessor;
 
+    /**
+     * @param coll  Collection of datasets with 1 example each
+     * @param batch Batch size
+     */
     public ListDataSetIterator(Collection<T> coll, int batch) {
         list = new ArrayList<>(coll);
         this.batch = batch;
@@ -72,7 +76,7 @@ public class ListDataSetIterator<T extends DataSet> implements DataSetIterator {
 
     @Override
     public int inputColumns() {
-        return list.get(0).getFeatureMatrix().columns();
+        return list.get(0).getFeatures().columns();
     }
 
     @Override

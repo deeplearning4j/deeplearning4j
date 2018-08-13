@@ -22,7 +22,6 @@ import org.bytedeco.javacpp.cuda;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.io.Resource;
-import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
 
 /**
  *
@@ -76,11 +75,6 @@ public class JCublasBackend extends Nd4jBackend {
     @Override
     public Class getNDArrayClass() {
         return JCublasNDArray.class;
-    }
-
-    @Override
-    public Class getComplexNDArrayClass() {
-        return JCublasComplexNDArray.class;
     }
 
 }

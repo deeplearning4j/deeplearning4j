@@ -55,6 +55,7 @@ public abstract class BaseNd4jTest {
 
         //Suppress ND4J initialization - don't need this logged for every test...
         System.setProperty(Nd4j.LOG_INIT_ENV_PROPERTY, "false");
+        System.gc();
     }
 
     public BaseNd4jTest(Nd4jBackend backend) {

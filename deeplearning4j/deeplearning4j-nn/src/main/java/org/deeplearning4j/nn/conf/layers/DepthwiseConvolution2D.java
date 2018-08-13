@@ -134,23 +134,30 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
         }
 
         /**
-         * Size of the convolution
-         * rows/columns
+         * Size of the convolution rows/columns
          *
-         * @param kernelSize the height and width of the
-         *                   kernel
-         * @return
+         * @param kernelSize the height and width of the kernel
          */
         public Builder kernelSize(int... kernelSize) {
             this.kernelSize = kernelSize;
             return this;
         }
 
+        /**
+         * Stride of the convolution in rows/columns (height/width) dimensions
+         *
+         * @param stride Stride of the layer
+         */
         public Builder stride(int... stride) {
             this.stride = stride;
             return this;
         }
 
+        /**
+         * Padding of the convolution in rows/columns (height/width) dimensions
+         *
+         * @param padding Padding of the layer
+         */
         public Builder padding(int... padding) {
             this.padding = padding;
             return this;

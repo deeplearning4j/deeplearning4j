@@ -746,7 +746,7 @@ public class Transforms {
      * @return
      */
     public static INDArray lessThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
-        return exec(dup ? new OldLessThanOrEqual(first.dup(), ndArray) : new OldLessThanOrEqual(first, ndArray));
+        return exec(dup ? new OldLessThanOrEqual(first, ndArray, Nd4j.createUninitialized(first.shape()), first.length()) : new OldLessThanOrEqual(first, ndArray, first, first.length()));
 
     }
 
@@ -758,7 +758,7 @@ public class Transforms {
      * @return
      */
     public static INDArray greaterThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
-        return exec(dup ? new OldGreaterThanOrEqual(first.dup(), ndArray) : new OldGreaterThanOrEqual(first, ndArray));
+        return exec(dup ? new OldGreaterThanOrEqual(first, ndArray, Nd4j.createUninitialized(first.shape()), first.length()) : new OldGreaterThanOrEqual(first, ndArray, first, first.length()));
 
     }
 

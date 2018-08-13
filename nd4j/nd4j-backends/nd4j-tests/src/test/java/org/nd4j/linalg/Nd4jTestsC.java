@@ -23,28 +23,16 @@ import lombok.var;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.imports.TFGraphs.NodeReader;
-import org.nd4j.linalg.api.blas.params.GemmParams;
-import org.nd4j.linalg.api.blas.params.MMulTranspose;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
-import org.nd4j.linalg.api.ops.impl.accum.LogSumExp;
-import org.nd4j.linalg.api.ops.impl.accum.Mmul;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
-import org.nd4j.linalg.indexing.BooleanIndexing;
-import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.imports.TFGraphs.NodeReader;
+import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -78,6 +66,7 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -387,7 +376,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(order, Nd4j.order().charValue());
     }
 
-
     @Test
     public void testMatrix() {
         INDArray arr = Nd4j.create(new float[] {1, 2, 3, 4}, new long[] {2, 2});
@@ -397,17 +385,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(Nd4j.create(new double[] {-4, -4}), arr.getRow(0));
 
     }
-
-    @Test
-    @Ignore
-    public void testParseComplexNumber() {
-        IComplexNumber assertion = Nd4j.createComplexNumber(1, 1);
-        String parse = "1 + 1i";
-        IComplexNumber parsed = Nd4j.parseComplexNumber(parse);
-        assertEquals(assertion, parsed);
-    }
-
-
 
     @Test
     public void testMMul() {
@@ -6696,8 +6673,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testMatmul_vs_tf() throws Exception {
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
 
         // uncomment this line to initialize & propagate sgemm/dgemm pointer
         //Nd4j.getBlasWrapper().level3();
@@ -6711,12 +6686,73 @@ public class Nd4jTestsC extends BaseNd4jTest {
         val op = new Mmul(arrayA, arrayB, arrayC, null);
         Nd4j.getExecutioner().exec(op);
 
-
-        Nd4j.getExecutioner().enableDebugMode(false);
-        Nd4j.getExecutioner().enableVerboseMode(false);
-
         assertEquals(exp, arrayC);
         assertNotEquals(badExp, arrayC);
+    }
+
+    @Test
+    public void testPairwiseScalar_1() throws Exception {
+        val exp_1 = Nd4j.create(new double[]{2.0, 3.0, 4.0}, new long[]{3});
+        val exp_2 = Nd4j.create(new double[]{0.0, 1.0, 2.0}, new long[]{3});
+        val exp_3 = Nd4j.create(new double[]{1.0, 2.0, 3.0}, new long[]{3});
+        val arrayX = Nd4j.create(new double[]{1.0, 2.0, 3.0}, new long[]{3});
+        val arrayY = Nd4j.trueScalar(1.0);
+
+        val arrayZ_1 = arrayX.add(arrayY);
+        assertEquals(exp_1, arrayZ_1);
+
+        val arrayZ_2 = arrayX.sub(arrayY);
+        assertEquals(exp_2, arrayZ_2);
+
+        val arrayZ_3 = arrayX.div(arrayY);
+        assertEquals(exp_3, arrayZ_3);
+
+        val arrayZ_4 = arrayX.mul(arrayY);
+        assertEquals(exp_3, arrayZ_4);
+    }
+
+    @Test
+    public void testLTOE_1() throws Exception {
+        val x = Nd4j.create(new double[]{1.0, 2.0, 3.0, -1.0});
+        val y = Nd4j.create(new double[]{2.0, 2.0, 3.0, -2.0});
+
+        val ex = Nd4j.create(new double[]{1.0, 2.0, 3.0, -1.0});
+        val ey = Nd4j.create(new double[]{2.0, 2.0, 3.0, -2.0});
+
+        val ez = Nd4j.create(new double[]{1.0, 1.0, 1.0, 0.0});
+        val z = Transforms.lessThanOrEqual(x, y, true);
+
+        assertEquals(ex, x);
+        assertEquals(ey, y);
+
+        assertEquals(ez, z);
+    }
+
+    @Test
+    public void testGTOE_1() throws Exception {
+        val x = Nd4j.create(new double[]{1.0, 2.0, 3.0, -1.0});
+        val y = Nd4j.create(new double[]{2.0, 2.0, 3.0, -2.0});
+
+        val ex = Nd4j.create(new double[]{1.0, 2.0, 3.0, -1.0});
+        val ey = Nd4j.create(new double[]{2.0, 2.0, 3.0, -2.0});
+
+        val ez = Nd4j.create(new double[]{0.0, 1.0, 1.0, 1.0});
+        val z = Transforms.greaterThanOrEqual(x, y, true);
+
+        assertEquals(ex, x);
+        assertEquals(ey, y);
+
+        assertEquals(ez, z);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testBroadcastInvalid(){
+        INDArray arr1 = Nd4j.ones(3,4,1);
+
+        //Invalid op: y must match x/z dimensions 0 and 2
+        INDArray arrInvalid = Nd4j.create(3,12);
+        Nd4j.getExecutioner().exec(new BroadcastMulOp(arr1, arrInvalid, arr1, 0, 2));
+        fail("Excepted exception on invalid input");
     }
 
     ///////////////////////////////////////////////////////

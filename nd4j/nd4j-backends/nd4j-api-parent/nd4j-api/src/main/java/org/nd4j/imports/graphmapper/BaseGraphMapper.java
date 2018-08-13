@@ -111,6 +111,17 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         return def;
     }
 
+
+    /**
+     *
+     * @param graphFile
+     * @return
+     */
+    @Override
+    public  SameDiff importGraph(String graphFile) {
+        return importGraph(new File(graphFile));
+    }
+
     /**
      *
      * @param graphFile

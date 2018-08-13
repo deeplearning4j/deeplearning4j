@@ -22,6 +22,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -52,10 +53,12 @@ public class RPUtils {
             functionInstances.set(ops);
         }
 
+        boolean allDistances = x.length() != y.length();
+
         switch(name) {
             case "cosinedistance":
-                if(!ops.containsKey(name)) {
-                    CosineDistance cosineDistance = new CosineDistance(x,y,result,x.length());
+                if(!ops.containsKey(name) || ((BaseAccumulation)ops.get(name)).isComplexAccumulation() != allDistances) {
+                    CosineDistance cosineDistance = new CosineDistance(x,y,result,allDistances);
                     ops.put(name,cosineDistance);
                     return cosineDistance;
                 }
@@ -64,8 +67,8 @@ public class RPUtils {
                     return cosineDistance;
                 }
             case "cosinesimilarity":
-                if(!ops.containsKey(name)) {
-                    CosineSimilarity cosineSimilarity = new CosineSimilarity(x,y,result,x.length());
+                if(!ops.containsKey(name) || ((BaseAccumulation)ops.get(name)).isComplexAccumulation() != allDistances) {
+                    CosineSimilarity cosineSimilarity = new CosineSimilarity(x,y,result,allDistances);
                     ops.put(name,cosineSimilarity);
                     return cosineSimilarity;
                 }
@@ -79,8 +82,8 @@ public class RPUtils {
 
                 }
             case "manhattan":
-                if(!ops.containsKey(name)) {
-                    ManhattanDistance manhattanDistance = new ManhattanDistance(x,y,result,x.length());
+                if(!ops.containsKey(name) || ((BaseAccumulation)ops.get(name)).isComplexAccumulation() != allDistances) {
+                    ManhattanDistance manhattanDistance = new ManhattanDistance(x,y,result,allDistances);
                     ops.put(name,manhattanDistance);
                     return manhattanDistance;
                 }
@@ -93,8 +96,8 @@ public class RPUtils {
                     return  manhattanDistance;
                 }
             case "jaccard":
-                if(!ops.containsKey(name)) {
-                    JaccardDistance jaccardDistance = new JaccardDistance(x,y,result,x.length());
+                if(!ops.containsKey(name) || ((BaseAccumulation)ops.get(name)).isComplexAccumulation() != allDistances) {
+                    JaccardDistance jaccardDistance = new JaccardDistance(x,y,result,allDistances);
                     ops.put(name,jaccardDistance);
                     return jaccardDistance;
                 }
@@ -107,8 +110,8 @@ public class RPUtils {
                     return jaccardDistance;
                 }
             case "hamming":
-                if(!ops.containsKey(name)) {
-                    HammingDistance hammingDistance = new HammingDistance(x,y,result,x.length());
+                if(!ops.containsKey(name) || ((BaseAccumulation)ops.get(name)).isComplexAccumulation() != allDistances) {
+                    HammingDistance hammingDistance = new HammingDistance(x,y,result,allDistances);
                     ops.put(name,hammingDistance);
                     return hammingDistance;
                 }
@@ -122,8 +125,8 @@ public class RPUtils {
                 }
                 //euclidean
             default:
-                if(!ops.containsKey(name)) {
-                    EuclideanDistance euclideanDistance = new EuclideanDistance(x,y,result,x.length());
+                if(!ops.containsKey(name) || ((BaseAccumulation)ops.get(name)).isComplexAccumulation() != allDistances) {
+                    EuclideanDistance euclideanDistance = new EuclideanDistance(x,y,result,allDistances);
                     ops.put(name,euclideanDistance);
                     return euclideanDistance;
                 }

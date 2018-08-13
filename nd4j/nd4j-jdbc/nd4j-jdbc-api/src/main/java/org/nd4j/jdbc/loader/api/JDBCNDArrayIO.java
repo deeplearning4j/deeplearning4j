@@ -16,7 +16,6 @@
 
 package org.nd4j.jdbc.loader.api;
 
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.IOException;
@@ -41,14 +40,6 @@ public interface JDBCNDArrayIO {
     /**
      * Convert an ndarray to a blob
      *
-     * @param toConvert the complex ndarray to convert
-     * @return the converted complex ndarray
-     */
-    Blob convert(IComplexNDArray toConvert) throws IOException, SQLException;
-
-    /**
-     * Convert an ndarray to a blob
-     *
      * @param toConvert the ndarray to convert
      * @return the converted ndarray
      */
@@ -61,14 +52,6 @@ public interface JDBCNDArrayIO {
      * @return the loaded ndarray
      */
     INDArray load(Blob blob) throws IOException, SQLException;
-
-    /**
-     * Load a complex ndarray from a blob
-     *
-     * @param blob the blob to load from
-     * @return the complex ndarray
-     */
-    IComplexNDArray loadComplex(Blob blob) throws IOException, SQLException;
 
 
     /**
@@ -99,13 +82,6 @@ public interface JDBCNDArrayIO {
      * @param save the ndarray to save
      */
     void save(INDArray save, String id) throws SQLException, IOException;
-
-    /**
-     * Save the ndarray
-     *
-     * @param save the ndarray to save
-     */
-    void save(IComplexNDArray save, String id) throws IOException, SQLException;
 
     /**
      * Load an ndarray blob given an id

@@ -36,7 +36,6 @@ public class Nd4jRegistrator implements KryoRegistrator {
     @Override
     public void registerClasses(Kryo kryo) {
         kryo.register(Nd4j.getBackend().getNDArrayClass(), new Nd4jSerializer());
-        kryo.register(Nd4j.getBackend().getComplexNDArrayClass(), new Nd4jSerializer());
         kryo.register(AtomicDouble.class, new AtomicDoubleSerializer());
 
         //Also register Java types (synchronized/unmodifiable collections), which will fail by default

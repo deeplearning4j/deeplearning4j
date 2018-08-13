@@ -1,0 +1,74 @@
+{
+  "excludes": [
+    "abstract"
+  ],
+  "indices": [
+  ],
+  "pages": [
+    {
+      "page": "quickstart.md",
+      "class": []
+    },
+    {
+      "page": "examples-tour.md",
+      "class": []
+    },
+    {
+      "page": "android.md",
+      "class": []
+    },
+    {
+      "page": "android-prerequisites.md",
+      "class": []
+    },
+    {
+      "page": "android-linear-classifier.md",
+      "class": []
+    },
+    {
+      "page": "android-image-classification.md",
+      "class": []
+    },
+    {
+      "page": "beginners.md",
+      "class": []
+    },
+    {
+      "page": "benchmark.md",
+      "class": []
+    },
+    {
+      "page": "build-from-source.md",
+      "class": []
+    },
+    {
+      "page": "concepts.md",
+      "class": []
+    },
+    {
+      "page": "contribute.md",
+      "class": []
+    },
+    {
+      "page": "config-buildtools.md",
+      "class": []
+    },
+    {
+      "page": "config-maven.md",
+      "class": []
+    },
+    {
+      "page": "config-memory.md",
+      "class": []
+    },
+    {
+      "page": "config-workspaces.md",
+      "class": []
+    },
+    {
+      "page": "troubleshooting-training.md",
+      "class": []
+    }
+  ]
+}
+

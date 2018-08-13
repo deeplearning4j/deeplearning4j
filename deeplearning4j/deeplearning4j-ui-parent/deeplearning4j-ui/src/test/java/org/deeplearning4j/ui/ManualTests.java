@@ -192,7 +192,7 @@ public class ManualTests {
             lfwNext.scale();
             trainTest = lfwNext.splitTestAndTrain(splitTrainNum, new Random(seed)); // train set that is the result
             trainInput = trainTest.getTrain(); // get feature matrix and labels for training
-            testInput.add(trainTest.getTest().getFeatureMatrix());
+            testInput.add(trainTest.getTest().getFeatures());
             testLabels.add(trainTest.getTest().getLabels());
             model.fit(trainInput);
         }
@@ -331,7 +331,7 @@ public class ManualTests {
         Evaluation eval = new Evaluation(outputNum);
         while (mnistTest.hasNext()) {
             DataSet ds = mnistTest.next();
-            INDArray output = model.output(ds.getFeatureMatrix(), false);
+            INDArray output = model.output(ds.getFeatures(), false);
             eval.eval(ds.getLabels(), output);
         }
         log.info(eval.stats());

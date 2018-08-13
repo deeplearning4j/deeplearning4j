@@ -44,8 +44,8 @@ public class StandardScaler {
     private long batchCount = 0;
 
     public void fit(DataSet dataSet) {
-        mean = dataSet.getFeatureMatrix().mean(0);
-        std = dataSet.getFeatureMatrix().std(0);
+        mean = dataSet.getFeatures().mean(0);
+        std = dataSet.getFeatures().std(0);
         std.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
         if (std.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
             logger.info("API_INFO: Std deviation found to be zero. Transform will round upto epsilon to avoid nans.");
@@ -63,13 +63,13 @@ public class StandardScaler {
             if (mean == null) {
                 //start with the mean and std of zero
                 //column wise
-                mean = next.getFeatureMatrix().mean(0);
-                std = (batchCount == 1) ? Nd4j.zeros(mean.shape()) : Transforms.pow(next.getFeatureMatrix().std(0), 2);
+                mean = next.getFeatures().mean(0);
+                std = (batchCount == 1) ? Nd4j.zeros(mean.shape()) : Transforms.pow(next.getFeatures().std(0), 2);
                 std.muli(batchCount);
             } else {
                 // m_newM = m_oldM + (x - m_oldM)/m_n;
                 // This only works if batch size is 1, m_newS = m_oldS + (x - m_oldM)*(x - m_newM);
-                INDArray xMinusMean = next.getFeatureMatrix().subRowVector(mean);
+                INDArray xMinusMean = next.getFeatures().subRowVector(mean);
                 INDArray newMean = mean.add(xMinusMean.sum(0).divi(runningTotal));
                 // Using http://i.stanford.edu/pub/cstr/reports/cs/tr/79/773/CS-TR-79-773.pdf
                 // for a version of calc variance when dataset is partitioned into two sample sets
@@ -77,11 +77,11 @@ public class StandardScaler {
                 // delta = mean_B - mean_A; A is data seen so far, B is the current batch
                 // M2 is the var*n
                 // M2 = M2_A + M2_B + delta^2 * nA * nB/(nA+nB)
-                INDArray meanB = next.getFeatureMatrix().mean(0);
+                INDArray meanB = next.getFeatures().mean(0);
                 INDArray deltaSq = Transforms.pow(meanB.subRowVector(mean), 2);
                 INDArray deltaSqScaled =
                                 deltaSq.mul(((float) runningTotal - batchCount) * batchCount / (float) runningTotal);
-                INDArray mtwoB = Transforms.pow(next.getFeatureMatrix().std(0), 2);
+                INDArray mtwoB = Transforms.pow(next.getFeatures().std(0), 2);
                 mtwoB.muli(batchCount);
                 std = std.add(mtwoB);
                 std = std.add(deltaSqScaled);

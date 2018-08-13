@@ -26,6 +26,69 @@
 namespace nd4j {
 
     template <typename T>
+    _CUDA_H void TypeCast::convertFromQuantized(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz) {
+        //
+        auto z = reinterpret_cast<T *>(dz);
+
+        auto fx = reinterpret_cast<float *>(dx);
+        auto amin = nd4j::math::nd4j_abs<float>(fx[0]);
+        auto amax = nd4j::math::nd4j_abs<float>(fx[1]);
+
+
+        auto x = reinterpret_cast<char *>(dx) + 8;
+
+
+        for (Nd4jLong e = 0; e < N; e++) {
+            z[e] = static_cast<T>(static_cast<float>(x[e]) / static_cast<float>(DataTypeUtils::max<char>()) * nd4j::math::nd4j_max<float>(amin, amax));
+        }
+    }
+
+    template <typename T>
+    _CUDA_H void TypeCast::convertToQuantized(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz) {
+        // find min/max first
+
+        auto x = reinterpret_cast<T *>(dx);
+        auto z = reinterpret_cast<char *>(dz);
+
+        T mn = DataTypeUtils::max<T>();
+        T mx = -DataTypeUtils::max<T>();
+
+#pragma omp parallel for reduction(minT:mn), reduction(maxT:mx)
+        for (Nd4jLong e = 0; e < N; e++) {
+            T v = x[e];
+            if (v < mn)
+                mn = v;
+
+            if (v > mx)
+                mx = v;
+        }
+
+        nd4j_printf("min: [%f]; max: [%f]\n", (float) mn, (float) mx);
+
+        // we shift by 2 fp32 elements
+        auto rz = z + 8;
+
+        //
+        auto fz = reinterpret_cast<float *>(z);
+
+        float max = static_cast<float>(mx);
+        float min = static_cast<float>(mn);
+
+        int max_byte = static_cast<int>(DataTypeUtils::max<char>());
+        fz[0] = min;
+        fz[1] = max;
+
+        auto amax = nd4j::math::nd4j_abs<float>(max);
+        auto amin = nd4j::math::nd4j_abs<float>(min);
+
+        // now we actually apply quantization
+#pragma omp parallel for simd
+        for (Nd4jLong e = 0; e < N; e++) {
+            rz[e] = static_cast<char>(nd4j::math::nd4j_round<float>(1.0f * x[e] / nd4j::math::nd4j_max<float>(amax, amin) * max_byte));
+        }
+    }
+
+    template <typename T>
     void TypeCast::convertToThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz) {
         // we suppose that first 4 bytes are integer, second 4 bytes are float
         // integer: enc length
@@ -149,6 +212,14 @@ namespace nd4j {
         }
     };
 
+    _CUDA_H Nd4jLong TypeCast::estimateQuantizedSize(Nd4jLong rawSize) {
+        if (rawSize <= 0)
+            throw std::runtime_error("Input size for quantization can't be <= 0");
+
+        // 2 fp32 values for max/min, and rawSize number of BYTES
+        return 8 + rawSize;
+    }
+
 
     template void TypeCast::convertFromThreshold<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
     template void TypeCast::convertFromThreshold<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
@@ -157,6 +228,14 @@ namespace nd4j {
     template void TypeCast::convertToThreshold<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
     template void TypeCast::convertToThreshold<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
     template void TypeCast::convertToThreshold<double>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+
+    template void TypeCast::convertFromQuantized<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template void TypeCast::convertFromQuantized<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template void TypeCast::convertFromQuantized<double>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+
+    template void TypeCast::convertToQuantized<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template void TypeCast::convertToQuantized<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template void TypeCast::convertToQuantized<double>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
 
 #ifndef __CLION_IDE__
     BUILD_DOUBLE_TEMPLATE(template void TypeCast::convertGeneric, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES, LIBND4J_TYPES)

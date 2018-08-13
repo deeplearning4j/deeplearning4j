@@ -423,9 +423,17 @@ bool ShapeUtils<T>::evalBroadcastShapeInfo(const NDArray<T> &max, const NDArray<
 }
 
 template <typename T>
-bool ShapeUtils<T>::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong*min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, nd4j::memory::Workspace* workspace) {
+bool ShapeUtils<T>::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, nd4j::memory::Workspace* workspace) {
 
-    if ((shape::rank(max) == 0 && shape::isScalar(min))) {
+    if (shape::isScalar(max) && shape::isScalar(min)) {
+        resultShapeInfo = nullptr;
+        if (shape::rank(max) >= shape::rank(min)) {
+            COPY_SHAPE_EX(max, resultShapeInfo, workspace);
+        } else {
+            COPY_SHAPE_EX(min, resultShapeInfo, workspace);
+        }
+        return true;
+    } else if ((shape::rank(max) == 0 && shape::isScalar(min))) {
         // X is the driver here
         resultShapeInfo = ShapeUtils<T>::createScalarShapeInfo(workspace);
         return true;
@@ -435,7 +443,7 @@ bool ShapeUtils<T>::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong*min, const bo
     if(!areShapesBroadcastable(max, min))
         return false;
 
-    auto maxShapeInfo = max; //max.getShapeInfo(); 
+    auto maxShapeInfo = max; //max.getShapeInfo();
     auto minShapeInfo = min; //min.getShapeInfo();
 
     if(evalMinMax && (shape::rank(max) < shape::rank(min))) {
@@ -699,44 +707,17 @@ Nd4jLong* ShapeUtils<T>::evalDiagShapeInfo(const Nd4jLong* shapeInfoConst, nd4j:
 }
 
 template<typename T>
-std::vector<int> ShapeUtils<T>::evalBroadcastBackwardAxis(Nd4jLong *operand, Nd4jLong *result) {
-    const int xRank = shape::rank(operand);
-    const int zRank = shape::rank(result);
+std::vector<int> ShapeUtils<T>::evalBroadcastBackwardAxis(const Nd4jLong *operandShapeInfo, const Nd4jLong *resultShapeInfo) {
+    
+    // rRank >= oRank always  !!
+    const int oRank = shape::rank(operandShapeInfo);
+    const int rRank = shape::rank(resultShapeInfo);
+    const int diff  = rRank - oRank;
     std::vector<int> axis;
 
-    auto xShape = shape::shapeOf(operand);
-    auto zShape = shape::shapeOf(result);
-
-    int minRank = nd4j::math::nd4j_min<int>(xRank, zRank);
-    int maxRank = nd4j::math::nd4j_max<int>(xRank, zRank);
-
-    if (xRank == zRank) {
-        for (int e = -1; e >= -minRank; e--) {
-            int o = shape::sizeAt(operand, e);
-            int r = shape::sizeAt(result, e);
-
-            if (o != r)
-                axis.emplace_back(e + maxRank);
-        } 
-    } else if (xRank < zRank) {
-        for (int e = -1; e > -minRank; e--) {
-            int o = shape::sizeAt(operand, e);
-            int r = shape::sizeAt(result, e);
-
-            if (o != r)
-                axis.emplace_back(e + maxRank);
-        } 
-
-        // adding inner dimensions
-        for (int e = 0; e < zRank - xRank; e++) 
-            axis.emplace_back(e);
-    } else {
-        // this isn't possible
-    }
-
-    // FIXME: eventually we'd like to get rid of sort 
-    if (axis.size() > 1)
-        std::sort(axis.begin(), axis.end());
+    for(int i = 0; i < rRank; ++i)
+        if(i < diff || shape::sizeAt(operandShapeInfo, i - diff) != shape::sizeAt(resultShapeInfo, i))
+            axis.push_back(i);        
 
     return axis;
 }
@@ -1006,7 +987,7 @@ void ShapeUtils<T>::evalIdxRangesForSubArr(const Nd4jLong subArrIdx,  const Nd4j
     for(int i = 0; i < subArrRank; ++i)
         shapeOfSubArr[i] = shapeInfo[dimsToExclude[i] + 1];
 
-    shape::ind2sub(subArrRank, shapeOfSubArr.data(), subArrIdx, indexes.data());
+    shape::ind2subC(subArrRank, shapeOfSubArr.data(), subArrIdx, indexes.data());
 
     memset(idxRanges, 0, 2 * rank * sizeof(Nd4jLong));
     

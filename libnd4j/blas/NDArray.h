@@ -205,6 +205,22 @@ namespace nd4j {
         NDArray<T>* repeat(int dimension, const std::vector<Nd4jLong>& repeats) const;
 
         /**
+         * This method returns quantized copy of given array
+         *
+         * @param array
+         * @return
+         */
+        static NDArray<T> quantize(NDArray<T> &array);
+
+        /**
+         * This method returns quantized copy of given array
+         *
+         * @param array
+         * @return
+         */
+        static NDArray<T>* quantize(NDArray<T> *array);
+
+        /**
         *  fill target array by repeating current array 
         *  dimension - dimension along which to repeat elements        
         */
@@ -540,7 +556,7 @@ namespace nd4j {
         *  func - what pairwise operation to apply
         *  target - where to store result
         */ 
-        void applyPairwiseLambda(NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target = nullptr);
+        void applyPairwiseLambda(const NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target = nullptr);
 
         void applyIndexedPairwiseLambda(NDArray<T>* other, const std::function<T(Nd4jLong, T, T)>& func, NDArray<T>* target = nullptr);
 
@@ -560,7 +576,8 @@ namespace nd4j {
         /**
         *   apply transpose operation to the copy of this array, that is this array remains unaffected 
         */
-        NDArray<T> *transpose() const;
+        NDArray<T>* transpose() const;
+        NDArray<T>  transp() const;
 
         /**
         *  perform transpose operation and store result in target, this array remains unaffected 
@@ -697,7 +714,7 @@ namespace nd4j {
 		void tilei(const std::vector<Nd4jLong>& repeats);
 
         /**
-        *  returns new array which is created by by repeating of this array the number of times given by reps 
+        *  returns new array which is created by repeating of this array the number of times given by reps 
         *  repeats - contains numbers of repetitions
         */
 		NDArray<T> tile(const std::vector<Nd4jLong>& repeats) const;
@@ -973,7 +990,7 @@ namespace nd4j {
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
         *
         *  shape  - contains new shape to broadcast array to 
-        *  target - optional argument, if target != nullptr the resulting array will be placed it target, in opposite case tile operation is done in place
+        *  target - optional argument, if target != nullptr the resulting array will be placed in target, in opposite case tile operation is done in place
         */
         void tileToShape(const std::vector<Nd4jLong>& shape, NDArray<T>* target = nullptr);
         void tileToShape(const std::initializer_list<Nd4jLong>& shape, NDArray<T>* target = nullptr);
@@ -1001,6 +1018,9 @@ namespace nd4j {
 
         ResultSet<T>* allExamples()const ;        
         
+        template <typename OpName>
+        void saveResultOfBroadcast(const NDArray<T>& x, const NDArray<T>& y, const bool checkThisShape = false);
+        
         /**
         *  default destructor
         */        
@@ -1024,7 +1044,7 @@ namespace nd4j {
         /**
         *  returns the value of "dim" dimension 
         */
-        Nd4jLong sizeAt(int dim) const;
+        Nd4jLong sizeAt(const int dim) const;
 
         /**        
         *  returns order of array

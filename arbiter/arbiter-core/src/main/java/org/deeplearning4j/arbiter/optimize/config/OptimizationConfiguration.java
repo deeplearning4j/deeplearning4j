@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.optimize.config;
 import lombok.*;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSource;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultSaver;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.TerminationCondition;
@@ -28,8 +29,10 @@ import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * OptimizationConfiguration ties together all of the various
@@ -45,6 +48,10 @@ import java.util.List;
 public class OptimizationConfiguration {
     @JsonSerialize
     private DataProvider dataProvider;
+    @JsonSerialize
+    private Class<? extends DataSource> dataSource;
+    @JsonSerialize
+    private Properties dataSourceProperties;
     @JsonSerialize
     private CandidateGenerator candidateGenerator;
     @JsonSerialize
@@ -63,6 +70,8 @@ public class OptimizationConfiguration {
 
     private OptimizationConfiguration(Builder builder) {
         this.dataProvider = builder.dataProvider;
+        this.dataSource = builder.dataSource;
+        this.dataSourceProperties = builder.dataSourceProperties;
         this.candidateGenerator = builder.candidateGenerator;
         this.resultSaver = builder.resultSaver;
         this.scoreFunction = builder.scoreFunction;
@@ -74,19 +83,46 @@ public class OptimizationConfiguration {
 
         //Validate the configuration: data types, score types, etc
         //TODO
+
+        //Validate that the dataSource has a no-arg constructor
+        if(dataSource != null){
+            try{
+                dataSource.getConstructor();
+            } catch (NoSuchMethodException e){
+                throw new IllegalStateException("Data source class " + dataSource.getName() + " does not have a public no-argument constructor");
+            }
+        }
     }
 
     public static class Builder {
 
         private DataProvider dataProvider;
+        private Class<? extends DataSource> dataSource;
+        private Properties dataSourceProperties;
         private CandidateGenerator candidateGenerator;
         private ResultSaver resultSaver;
         private ScoreFunction scoreFunction;
         private List<TerminationCondition> terminationConditions;
         private Long rngSeed;
 
+        /**
+         * @deprecated Use {@link #dataSource(Class, Properties)}
+         */
+        @Deprecated
         public Builder dataProvider(DataProvider dataProvider) {
             this.dataProvider = dataProvider;
+            return this;
+        }
+
+        /**
+         * DataSource: defines where the data should come from for training and testing.
+         * Note that implementations must have a no-argument contsructor
+         * @param dataSource           Class for the data source
+         * @param dataSourceProperties May be null. Properties for configuring the data source
+         */
+        public Builder dataSource(Class<? extends DataSource> dataSource, Properties dataSourceProperties){
+            this.dataSource = dataSource;
+            this.dataSourceProperties = dataSourceProperties;
             return this;
         }
 

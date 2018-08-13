@@ -28,7 +28,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Time Iteration Listener.
- * This listener displays into INFO logs the remaining time in minutes and the date of the end of the process. 
+ * This listener displays into INFO logs the remaining time in minutes and the date of the end of the process.
+ * Remaining time is estimated from the amount of time for training so far, and the total number of iterations
+ * specified by the user
  */
 @Slf4j
 public class TimeIterationListener extends BaseTrainingListener implements Serializable {
@@ -38,7 +40,7 @@ public class TimeIterationListener extends BaseTrainingListener implements Seria
 
     /**
      * Constructor
-     * @param iterationCount The global number of iteration of the process 
+     * @param iterationCount The global number of iteration for training (all epochs)
      */
     public TimeIterationListener(int iterationCount) {
         this.iterationCount = iterationCount;

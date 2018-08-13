@@ -170,16 +170,6 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
-    public Layer clone() {
-        return new SpaceToDepth(conf.clone());
-    }
-
-    @Override
     public boolean isPretrainLayer() {
         return false;
     }
@@ -203,12 +193,6 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     public double score() {
         return 0;
     }
-
-    @Override
-    public void accumulateScore(double accum) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
 
     @Override
     public void update(INDArray gradient, String paramType) {

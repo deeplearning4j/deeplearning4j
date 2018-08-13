@@ -20,7 +20,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Map;
 
-public class LogisticPredictions implements SameDiff.SameDiffFunctionDefinition {
+public class LogisticPredictions implements SameDiffFunctionDefinition {
     /**
      * @param sameDiff
      * @param inputs

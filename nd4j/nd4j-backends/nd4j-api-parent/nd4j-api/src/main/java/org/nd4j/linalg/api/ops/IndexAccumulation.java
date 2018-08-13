@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.api.ops;
 
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.primitives.Pair;
 
 /**An index accumulation is an operation that returns an index within
@@ -70,8 +69,4 @@ public interface IndexAccumulation extends Op {
      */
     Pair<Double, Integer> zeroPair();
 
-    /**Complex initial value
-     * @return the complex initial value
-     */
-    IComplexNumber zeroComplex();
 }

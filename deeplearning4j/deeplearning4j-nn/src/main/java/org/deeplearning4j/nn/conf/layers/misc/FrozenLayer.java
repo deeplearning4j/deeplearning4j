@@ -36,9 +36,15 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Created by Alex on 10/07/2017.
+ * FrozenLayer is used for the purposes of transfer learning.<br>
+ * A frozen layer wraps another DL4J Layer within it.
+ * During backprop, the FrozenLayer is skipped, and any parameters are not be updated.
+ * Usually users will typically not create FrozenLayer instances directly - they are usually used in the process of performing
+ * transfer learning
+ *
+ * @author Alex Black
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 public class FrozenLayer extends Layer {
 
     @Getter
@@ -82,12 +88,7 @@ public class FrozenLayer extends Layer {
             conf.clearVariables();
             for (String s : vars) {
                 conf.variables(false).add(s);
-                conf.getL1ByParam().put(s, 0.0);
-                conf.getL2ByParam().put(s, 0.0);
-
                 nncUnderlying.variables(false).add(s);
-                nncUnderlying.getL1ByParam().put(s, 0.0);
-                nncUnderlying.getL2ByParam().put(s, 0.0);
             }
         }
 

@@ -25,13 +25,17 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.List;
 
 /**
- * This iterator detaches/migrates DataSets coming out from backed DataSetIterator, thus providing "safe" DataSets.
+ * This iterator detaches/migrates DataSets coming out from backed DataSetIterator, thus providing "safe" DataSets.<br>
+ * This is typically used for debugging and testing purposes, and should not be used in general by users
  *
  * @author raver119@gmail.com
  */
 public class WorkspacesShieldDataSetIterator implements DataSetIterator {
     protected DataSetIterator iterator;
 
+    /**
+     * @param iterator The underlying iterator to detach values from
+     */
     public WorkspacesShieldDataSetIterator(@NonNull DataSetIterator iterator) {
         this.iterator = iterator;
     }

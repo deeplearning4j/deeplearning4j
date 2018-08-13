@@ -68,7 +68,7 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
         }
 
         int inputLength = layerConf().getInputLength();
-        int numSamples = input.rows();
+        long numSamples = input.size(0);
         val nOut = layerConf().getNOut();
 
         if (delta.ordering() != 'c' || delta.isView() || !hasDefaultStridesForShape(delta)){
@@ -103,28 +103,39 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
     protected INDArray preOutput(boolean training, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
 
+        if((input.rank() == 3 && input.size(1) != 1) || (input.rank() != 2 && input.rank() != 3)){
+            throw new IllegalStateException("Invalid input: EmbeddingSequenceLayer expects either rank 2 input of shape " +
+                    "[minibatch,seqLength] or rank 3 input of shape [minibatch,1,seqLength]. Got rank " + input.rank() +
+                    " input of shape " + Arrays.toString(input.shape()));
+        }
+
+        INDArray in = input;
+        if(input.rank() == 3){
+            //From: [mb,1,tsLength] to [mb,tsLength]
+            in = input.reshape(input.ordering(), input.size(0), input.size(2));
+        }
+
         // if inference is true, override input length config with input data columns
         boolean inferInputLength = layerConf().isInferInputLength();
         if (inferInputLength) {
-            layerConf().setInputLength(input.columns());
+            layerConf().setInputLength(in.columns());
         }
 
-        if (input.columns() != layerConf().getInputLength()) {
+        if (in.columns() != layerConf().getInputLength()) {
             //Assume shape is [numExamples, inputLength], and each entry is an integer index
             throw new DL4JInvalidInputException("Sequence length of embedding input has to be equal to the specified "
                     + "input length: " + layerConf().getInputLength()
-                    + " i.e. we expect input shape [numExamples, inputDim] with each entry being an integer index, "
-                    + " got [" + input.rows() + ", " + input.columns() + "] instead, "
-                    + "for layer with id: " + layerId());
+                    + " i.e. we expect input shape [numExamples, inputLength] (or [numExamples, 1, inputLength] with each entry being an integer index, "
+                    + " got " + Arrays.toString(input.shape()) + " instead, for layer with id: " + layerId());
         }
 
         val nIn = layerConf().getNIn();
-        val minibatch = input.rows();
+        val minibatch = in.rows();
         val inputLength = layerConf().getInputLength();
-        if (input.ordering() != 'c' || input.isView() || !hasDefaultStridesForShape(input))
-            input = workspaceMgr.dup(ArrayType.INPUT, input, 'c');
+        if (in.ordering() != 'c' || in.isView() || !hasDefaultStridesForShape(in))
+            in = workspaceMgr.dup(ArrayType.INPUT, in, 'c');
 
-        indexes = input.data().asInt();   //C order: minibatch dimension changes least rapidly when iterating over buffer
+        indexes = in.data().asInt();   //C order: minibatch dimension changes least rapidly when iterating over buffer
 
         for (int i = 0; i < indexes.length; i++) {
             if (indexes[i] < 0 || indexes[i] >= nIn) {
@@ -157,9 +168,12 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
 
         INDArray ret = layerConf().getActivationFn().getActivation(rows, training);
         if (maskArray != null) {
-            if(maskArray.rank() != 2 || !maskArray.equalShapes(input)){
+            if(maskArray.rank() != 2 ||
+                    (input.rank() == 2 && !maskArray.equalShapes(input)) ||
+                    (input.rank() == 3 && (input.size(0) != maskArray.size(0) || input.size(2) != maskArray.size(1)))){
                 throw new IllegalStateException("Mask array for EmbeddingSequenceLayer (when defined) must be rank 2 and" +
-                        "have shape equal to input shape. Input shape: " + Arrays.toString(input.shape()) +
+                        "have shape equal to input shape (when input is rank 2, shape [mb,tsLength]) or equal to input dimensions 0 and" +
+                        " 2 (when input is rank 3, shape [mb,1,tsLength]). Input shape: " + Arrays.toString(input.shape()) +
                         ", mask shape: " + Arrays.toString(maskArray.shape()));
             }
             //Returned array: rank 3, shape [mb, vector, seqLength]. mask shape: [mb, seqLength]

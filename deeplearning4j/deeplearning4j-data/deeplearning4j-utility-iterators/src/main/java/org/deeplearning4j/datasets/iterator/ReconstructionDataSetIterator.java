@@ -25,8 +25,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import java.util.List;
 
 /**
- * Wraps a data applyTransformToDestination iterator setting the first (feature matrix) as
- * the labels.
+ * Wraps a data set iterator setting the first (feature matrix) as the labels.
  *
  * @author Adam Gibson
  */
@@ -50,7 +49,7 @@ public class ReconstructionDataSetIterator implements DataSetIterator {
     @Override
     public DataSet next(int num) {
         DataSet ret = iter.next(num);
-        ret.setLabels(ret.getFeatureMatrix());
+        ret.setLabels(ret.getFeatures());
         return ret;
     }
 
@@ -133,7 +132,7 @@ public class ReconstructionDataSetIterator implements DataSetIterator {
     @Override
     public DataSet next() {
         DataSet next = iter.next();
-        next.setLabels(next.getFeatureMatrix());
+        next.setLabels(next.getFeatures());
         return next;
     }
 

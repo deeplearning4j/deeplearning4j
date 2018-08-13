@@ -34,7 +34,7 @@
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <scala.binary.version>2.11</scala.binary.version>
+        <scala.binary.version>2.10</scala.binary.version>
         <maven.compiler.testTarget>1.8</maven.compiler.testTarget>
         <maven.compiler.testSource>1.8</maven.compiler.testSource>
     </properties>
@@ -187,6 +187,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
+                        <version>2.19.1</version>
                         <dependencies>
                             <dependency>
                                 <groupId>org.apache.maven.surefire</groupId>
@@ -233,7 +234,7 @@
                         <artifactId>maven-compiler-plugin</artifactId>
                         <version>${maven-compiler-plugin.version}</version>
                         <configuration>
-                            <testSource>${project.basedir}/src/test/cpujava</testSource>
+                            <testSource>1.8</testSource>
                             <source>1.8</source>
                             <target>1.8</target>
                         </configuration>
@@ -241,6 +242,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
+                        <version>2.19.1</version>
                         <dependencies>
                             <dependency>
                                 <groupId>org.apache.maven.surefire</groupId>
@@ -258,13 +260,12 @@
                                 <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.tests.backendstorun>
                             </systemPropertyVariables>
                             <!--
-                                        Maximum heap size was set to 6g, as a minimum required value for tests run.
-                                        Depending on a build machine, default value is not always enough.
-                                    -->
+                                Maximum heap size was set to 6g, as a minimum required value for tests run.
+                                Depending on a build machine, default value is not always enough.
+                            -->
                             <argLine>-Xmx6g</argLine>
                             <skipTests>false</skipTests>
                             <skip>false</skip>
-
                         </configuration>
                     </plugin>
                 </plugins>

@@ -38,10 +38,9 @@ import java.util.Map;
  * i.e., is intended to aid network tuning and debugging<br>
  * This iteration listener is set up to calculate mean, min, max, and mean absolute value
  * of each type of parameter and gradient in the network at each iteration.<br>
- * These
- *
  *
  * @author Alex Black
+ * @deprecated StatsListener can be used instead, storing data using FileStatsStorage  - UI is not required
  */
 public class ParamAndGradientIterationListener extends BaseTrainingListener {
     private static final int MAX_WRITE_FAILURE_MESSAGES = 10;

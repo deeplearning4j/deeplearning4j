@@ -594,36 +594,6 @@ public class MathUtils {
     }//end coordSplit
 
 
-
-    /**
-     * This will partition the given whole variable data applyTransformToDestination in to the specified chunk number.
-     * @param arr the data applyTransformToDestination to pass in
-     * @param chunk the number to separate by
-     * @return a partition data applyTransformToDestination relative to the passed in chunk number
-     * @deprecated not thread-safe, unused, see https://github.com/deeplearning4j/deeplearning4j/issues/3797
-     */
-    @Deprecated
-    public static List<List<Double>> partitionVariable(List<Double> arr, int chunk) {
-        int count = 0;
-        List<List<Double>> ret = new ArrayList<>();
-
-
-        while (count < arr.size()) {
-
-            List<Double> sublist = arr.subList(count, count + chunk);
-            count += chunk;
-            ret.add(sublist);
-
-        }
-        //All data sets must be same size
-        for (List<Double> lists : ret) {
-            if (lists.size() < chunk)
-                ret.remove(lists);
-        }
-        return ret;
-    }//end partitionVariable
-
-
     /**
      * This returns the coordinate split in a list of coordinates
      * such that the values for ret[0] are the x values

@@ -21,6 +21,7 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -49,22 +50,6 @@ public class BiasAdd extends DynamicCustomOp {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
 
     }
-
-    @Override
-    public List<long[]> calculateOutputShape() {
-        val args = args();
-        for(int i = 0; i < args.length; i++)
-            if(args[i].getShape() == null)
-                return Collections.emptyList();
-        val firstShape = ArrayUtil.prod(args[0].getShape());
-        val secondShape = ArrayUtil.prod(args[1].getShape());
-
-        if(firstShape > secondShape)
-            return Arrays.asList(args[0].getShape());
-        else
-            return Arrays.asList(args[1].getShape());
-    }
-
 
     @Override
     public String onnxName() {

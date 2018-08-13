@@ -26,9 +26,9 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -373,8 +373,9 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 }
             }
 
-
-            z = arr;
+            if(arr != null) {
+                setZ(arr);
+            }
             if(sameDiff.getOutputsForFunction(this) == null)
                 sameDiff.addOutgoingFor(newVars,this);
             return newVars;
@@ -389,7 +390,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     public long n() {
         if(n == 0) {
             if(arg() != null)
-                this.n = ArrayUtil.prod(arg().getShape());
+                this.n = Shape.lengthOf(arg().getShape());
 
         }
         return n;

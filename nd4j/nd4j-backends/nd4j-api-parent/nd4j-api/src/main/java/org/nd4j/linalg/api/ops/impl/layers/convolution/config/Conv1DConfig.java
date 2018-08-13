@@ -35,9 +35,9 @@ public class Conv1DConfig extends BaseConvolutionConfig {
     @Builder.Default
     private long p = 0;
     @Builder.Default
-    private String dataFormat = "NWHC";
+    private String dataFormat = "NHC";
     @Builder.Default
-    private boolean isNHWC = false;
+    private boolean isNHC = false;
     private boolean isSameMode;
 
     public Map<String, Object> toProperties() {
@@ -47,7 +47,7 @@ public class Conv1DConfig extends BaseConvolutionConfig {
         ret.put("p", p);
         ret.put("isSameMode", isSameMode);
         ret.put("dataFormat", dataFormat);
-        ret.put("isNWHC", isNHWC);
+        ret.put("isNHC", isNHC);
         return ret;
     }
 

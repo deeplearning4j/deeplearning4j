@@ -18,9 +18,6 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
@@ -36,13 +33,15 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
 
@@ -74,6 +73,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
 
     @Test
     public void testDenseToOutputLayer() {
+        Nd4j.getRandom().setSeed(12345);
         final int numRows = 76;
         final int numColumns = 76;
         int nChannels = 3;
@@ -99,7 +99,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
                         .backprop(true).pretrain(false)
                         .setInputType(InputType.convolutional(numRows, numColumns, nChannels));
 
-        DataSet d = new DataSet(Nd4j.rand(12345, 10, nChannels, numRows, numColumns),
+        DataSet d = new DataSet(Nd4j.rand(new int[]{10, nChannels, numRows, numColumns}),
                         FeatureUtil.toOutcomeMatrix(new int[] {1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 6));
         MultiLayerNetwork network = new MultiLayerNetwork(builder.build());
         network.init();
@@ -424,8 +424,8 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
 
-        network.setInput(next.getFeatureMatrix());
-        INDArray activationsActual = network.activate(next.getFeatureMatrix());
+        network.setInput(next.getFeatures());
+        INDArray activationsActual = network.activate(next.getFeatures());
         assertEquals(10, activationsActual.shape()[1], 1e-2);
 
         network.fit(next);

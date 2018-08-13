@@ -1,3 +1,11 @@
+---
+title: Keras Import Regularizers
+short_title: Regularizers
+description: Supported Keras regularizers.
+category: Keras Import
+weight: 4
+---
+
 ## Supported regularizers
 
 All [Keras regularizers] are supported by DL4J model import:

@@ -294,9 +294,10 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
 
                     INDArray inputMask;
                     if (miniBatchSize == 1) {
-                        inputMask = Nd4j.create(new double[] {1, 1, 1, 1, 0});
+                        inputMask = Nd4j.create(new double[] {1, 1, 1, 1, 0}).reshape(1,1,(maskDim == 2 ? inputH : 1), (maskDim == 3 ? inputW : 1));
                     } else if (miniBatchSize == 3) {
-                        inputMask = Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {1, 1, 1, 1, 0}, {1, 1, 1, 0, 0}});
+                        inputMask = Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {1, 1, 1, 1, 0}, {1, 1, 1, 0, 0}})
+                                .reshape(miniBatchSize,1,(maskDim == 2 ? inputH : 1), (maskDim == 3 ? inputW : 1));
                     } else {
                         throw new RuntimeException();
                     }

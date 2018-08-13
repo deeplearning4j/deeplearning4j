@@ -53,16 +53,15 @@ import java.util.Map;
  *
  * <p>
  * Alternatively, by setting collapseDimensions = false in the configuration, it is possible to retain the reduced dimensions
- * as 1s: this gives
- * - [miniBatchSize, vectorSize, 1] for RNN output,
- * - [miniBatchSize, channels, 1, 1] for CNN output, and
- * - [miniBatchSize, channels, 1, 1, 1] for CNN3D output.
+ * as 1s: this gives<br>
+ * - [miniBatchSize, vectorSize, 1] for RNN output,<br>
+ * - [miniBatchSize, channels, 1, 1] for CNN output, and<br>
+ * - [miniBatchSize, channels, 1, 1, 1] for CNN3D output.<br>
  * <br>
  *
  * @author Alex Black
  */
 @Data
-@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class GlobalPoolingLayer extends NoParamLayer {
 
@@ -78,6 +77,10 @@ public class GlobalPoolingLayer extends NoParamLayer {
         this.collapseDimensions = builder.collapseDimensions;
         this.pnorm = builder.pnorm;
         this.layerName = builder.layerName;
+    }
+
+    public GlobalPoolingLayer(){
+        this(PoolingType.MAX);
     }
 
     public GlobalPoolingLayer(PoolingType poolingType){

@@ -18,9 +18,12 @@ package org.nd4j.imports.TFGraphs;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -51,6 +54,16 @@ public class TFGraphTestAllLibnd4j {
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+    }
+
+    @Before
+    public void setup(){
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+    }
+
     @After
     public void tearDown() throws Exception {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
@@ -75,7 +88,9 @@ public class TFGraphTestAllLibnd4j {
             log.info("\n\tSKIPPED MODEL: " + modelName);
             return;
         }
-        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, EXECUTE_WITH);
+        Double precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
+
+        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, EXECUTE_WITH, precisionOverride);
         //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
     }
 

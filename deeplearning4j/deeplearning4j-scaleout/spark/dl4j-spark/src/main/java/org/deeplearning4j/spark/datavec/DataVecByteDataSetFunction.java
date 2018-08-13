@@ -111,7 +111,7 @@ public class DataVecByteDataSetFunction implements PairFunction<Tuple2<Text, Byt
         List<INDArray> labels = new ArrayList<>();
 
         for (DataSet data : dataSets) {
-            inputs.add(data.getFeatureMatrix());
+            inputs.add(data.getFeatures());
             labels.add(data.getLabels());
         }
 

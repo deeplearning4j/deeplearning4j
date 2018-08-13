@@ -580,13 +580,6 @@ public class FineTuneConfiguration {
             LayerValidation.generalValidation(l.getLayerName(), l, get(dropout), l2, l2Bias, l1, l1Bias,
                     dist, get(constraints), null, null);
         }
-
-        //Also: update the LR, L1 and L2 maps, based on current config (which might be different to original config)
-        if (nnc.variables(false) != null) {
-            for (String s : nnc.variables(false)) {
-                nnc.setLayerParamLR(s);
-            }
-        }
     }
 
     private static <T> T get(Optional<T> optional){

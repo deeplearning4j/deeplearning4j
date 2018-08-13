@@ -17,12 +17,11 @@
 package org.deeplearning4j.spark.iterator;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.deeplearning4j.api.loader.DataSetLoader;
+import org.deeplearning4j.spark.data.loader.RemoteFileSource;
 import org.nd4j.linalg.dataset.DataSet;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.Collection;
@@ -38,15 +37,18 @@ public class PathSparkDataSetIterator extends BaseDataSetIterator<String> {
 
     public static final int BUFFER_SIZE = 4194304; //4 MB
     private FileSystem fileSystem;
+    private DataSetLoader dataSetLoader;
 
-    public PathSparkDataSetIterator(Iterator<String> iter) {
+    public PathSparkDataSetIterator(Iterator<String> iter, DataSetLoader dataSetLoader) {
         this.dataSetStreams = null;
         this.iter = iter;
+        this.dataSetLoader = dataSetLoader;
     }
 
-    public PathSparkDataSetIterator(Collection<String> dataSetStreams) {
+    public PathSparkDataSetIterator(Collection<String> dataSetStreams, DataSetLoader dataSetLoader) {
         this.dataSetStreams = dataSetStreams;
         iter = dataSetStreams.iterator();
+        this.dataSetLoader = dataSetLoader;
     }
 
     @Override
@@ -61,7 +63,7 @@ public class PathSparkDataSetIterator extends BaseDataSetIterator<String> {
 
         // FIXME: int cast
         totalOutcomes = ds.getLabels() == null ? 0 : (int) ds.getLabels().size(1); //May be null for layerwise pretraining
-        inputColumns = (int) ds.getFeatureMatrix().size(1);
+        inputColumns = (int) ds.getFeatures().size(1);
         batch = ds.numExamples();
 
         if (preprocessor != null)
@@ -77,16 +79,12 @@ public class PathSparkDataSetIterator extends BaseDataSetIterator<String> {
                 throw new RuntimeException(e);
             }
         }
-
-        DataSet ds = new DataSet();
-        try (FSDataInputStream inputStream = fileSystem.open(new Path(path), BUFFER_SIZE)) {
-            ds.load(inputStream);
-        } catch (IOException e) {
+        cursor++;
+        try{
+            return dataSetLoader.load(new RemoteFileSource(path, fileSystem, BUFFER_SIZE));
+        } catch (Exception e){
             throw new RuntimeException("Error loading DataSet at path " + path + " - DataSet may be corrupt or invalid." +
                     " Spark DataSets can be validated using org.deeplearning4j.spark.util.data.SparkDataValidation", e);
         }
-
-        cursor++;
-        return ds;
     }
 }

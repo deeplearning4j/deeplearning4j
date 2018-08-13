@@ -68,7 +68,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
         scaler.fit(iter);
         iter.setPreProcessor(scaler);
         DataSet ds = iter.next();
-        INDArray input = ds.getFeatureMatrix();
+        INDArray input = ds.getFeatures();
         INDArray labels = ds.getLabels();
 
         MultiLayerConfiguration.Builder builder =
@@ -343,7 +343,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
         scaler.fit(iter);
         iter.setPreProcessor(scaler);
         DataSet ds = iter.next();
-        INDArray input = ds.getFeatureMatrix();
+        INDArray input = ds.getFeatures();
         INDArray labels = ds.getLabels();
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())

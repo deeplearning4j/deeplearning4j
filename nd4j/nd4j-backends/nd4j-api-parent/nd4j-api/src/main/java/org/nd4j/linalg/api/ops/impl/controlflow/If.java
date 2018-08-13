@@ -22,6 +22,8 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.SameDiffConditional;
+import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -53,9 +55,9 @@ public class If extends DifferentialFunction implements CustomOp {
 
 
     @Getter
-    protected SameDiff.SameDiffConditional predicate;
+    protected SameDiffConditional predicate;
     @Getter
-    protected SameDiff.SameDiffFunctionDefinition trueBody,falseBody;
+    protected SameDiffFunctionDefinition trueBody,falseBody;
 
     @Getter
     protected String blockName,trueBodyName,falseBodyName;
@@ -97,10 +99,10 @@ public class If extends DifferentialFunction implements CustomOp {
     public If(String blockName,
               SameDiff parent,
               SDVariable[] inputVars,
-              SameDiff.SameDiffFunctionDefinition conditionBody,
-              SameDiff.SameDiffConditional predicate,
-              SameDiff.SameDiffFunctionDefinition trueBody,
-              SameDiff.SameDiffFunctionDefinition falseBody) {
+              SameDiffFunctionDefinition conditionBody,
+              SameDiffConditional predicate,
+              SameDiffFunctionDefinition trueBody,
+              SameDiffFunctionDefinition falseBody) {
 
         this.sameDiff = parent;
         parent.putFunctionForId(getOwnName(),this);

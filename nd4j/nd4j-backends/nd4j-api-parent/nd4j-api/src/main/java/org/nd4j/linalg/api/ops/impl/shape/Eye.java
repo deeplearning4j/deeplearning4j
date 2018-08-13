@@ -90,23 +90,6 @@ public class Eye extends DynamicCustomOp {
         addArgs();
     }
 
-    @Override
-    public List<long[]> calculateOutputShape(){
-        if(isVariableInput){
-            return super.calculateOutputShape();
-        }
-        long[] outputShape = new long[2 + batchDimension.length];
-        int i;
-        for(i = 0; i < batchDimension.length; i++){
-            outputShape[i] = batchDimension[i];
-        }
-        outputShape[i++] = numRows;
-        outputShape[i] = numCols;
-        List<long[]> ret = new ArrayList<>();
-        ret.add(outputShape);
-        return ret;
-    }
-
     protected void addArgs() {
         addIArgument(numRows);
         addIArgument(numCols);
@@ -135,7 +118,11 @@ public class Eye extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> outGrad){
-        return Collections.singletonList(sameDiff.onesLike(arg()));
+        if(arg() != null){
+            return Collections.singletonList(sameDiff.onesLike(arg()));
+        } else {
+            return Collections.emptyList();
+        }
     }
 
 }

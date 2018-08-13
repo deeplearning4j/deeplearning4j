@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.util.Convolution1DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -31,16 +32,10 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * 1D (temporal) subsampling layer. Currently, we just subclass off the
- * SubsamplingLayer and hard code the "width" dimension to 1. Also, this
- * layer accepts RNN InputTypes instead of CNN InputTypes.
- * <p>
- * This approach treats a multivariate time series with L timesteps and
- * P variables as an L x 1 x P image (L rows high, 1 column wide, P
- * channels deep). The kernel should be H<L pixels high and W=1 pixels
- * wide.
- * <p>
- * TODO: We will eventually want to NOT subclass off of SubsamplingLayer.
+ * 1D (temporal) subsampling layer - also known as pooling layer.<br>
+ * Expects input of shape {@code [minibatch, nIn, sequenceLength]}. This layer accepts RNN InputTypes instead of CNN InputTypes.<br>
+ *
+ * Supports the following pooling types: MAX, AVG, SUM, PNORM
  *
  * @author dave@skymind.io
  */
@@ -49,6 +44,14 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class Subsampling1DLayer extends SubsamplingLayer {
+    /*
+     * Currently, we just subclass off the SubsamplingLayer and hard code the "width" dimension to 1.
+     * TODO: We will eventually want to NOT subclass off of SubsamplingLayer.
+     * This approach treats a multivariate time series with L timesteps and
+     * P variables as an L x 1 x P image (L rows high, 1 column wide, P
+     * channels deep). The kernel should be H<L pixels high and W=1 pixels
+     * wide.
+     */
 
     private Subsampling1DLayer(Builder builder) {
         super(builder);
@@ -75,7 +78,16 @@ public class Subsampling1DLayer extends SubsamplingLayer {
             throw new IllegalStateException("Invalid input for Subsampling1D layer (layer name=\"" + getLayerName()
                     + "\"): Expected RNN input, got " + inputType);
         }
-        return inputType;
+        InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent)inputType;
+        long inputTsLength = r.getTimeSeriesLength();
+        int outLength;
+        if(inputTsLength < 0){
+            //Probably: user did InputType.recurrent(x) without specifying sequence length
+            outLength = -1;
+        } else {
+            outLength = Convolution1DUtils.getOutputSize((int)inputTsLength, kernelSize[0], stride[0], padding[0], convolutionMode, dilation[0]);
+        }
+        return InputType.recurrent(r.getSize(), outLength);
     }
 
     @Override
@@ -174,7 +186,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         /**
          * Kernel size
          *
-         * @param kernelSize kernel size in height and width dimensions
+         * @param kernelSize kernel size
          */
         public Subsampling1DLayer.Builder kernelSize(int kernelSize) {
             this.kernelSize[0] = kernelSize;

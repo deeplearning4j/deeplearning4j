@@ -1,0 +1,181 @@
+{
+  "excludes": [
+    "abstract"
+  ],
+  "indices": [
+  ],
+  "pages": [
+    {
+      "page": "evaluation.md",
+      "class": []
+    },
+    {
+      "page": "visualization.md",
+      "class": []
+    },
+    {
+      "page": "tsne-visualization.md",
+      "class": []
+    },
+    {
+      "page": "transfer-learning.md",
+      "module": [
+        "/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/transferlearning/"
+      ]
+    },
+    {
+      "page": "listeners.md",
+      "module": [
+        "/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/listeners/"
+      ]
+    },
+    {
+      "page": "iterators.md",
+      "module": [
+        "/deeplearning4j-data/deeplearning4j-datasets/src/main/java/org/deeplearning4j/datasets/iterator/impl/",
+        "/deeplearning4j-data/deeplearning4j-datavec-iterators/src/main/java/org/deeplearning4j/datasets/datavec/",
+        "/deeplearning4j-data/deeplearning4j-utility-iterators/src/main/java/org/deeplearning4j/datasets/iterator/"
+      ],
+      "class": [
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/datasets/iterator/impl/MultiDataSetIteratorAdapter.java"
+      ]
+    },
+    {
+      "page": "computationgraph.md",
+      "class": [
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/ComputationGraph.java"
+      ]
+    },
+    {
+      "page": "multilayernetwork.md",
+      "class": [
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/multilayer/MultiLayerNetwork.java"
+      ]
+    },
+    {
+      "page": "layers.md",
+      "class": [
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/OutputLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/DropoutLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/ActivationLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/LossLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/DenseLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/EmbeddingLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/EmbeddingSequenceLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/GlobalPoolingLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/LocalResponseNormalization.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/LocallyConnected1D.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/LocallyConnected2D.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/NoParamLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/Pooling1D.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/Pooling2D.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/Subsampling1DLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/SubsamplingLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/Subsampling3DLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/Upsampling1D.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/Upsampling2D.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/Upsampling3D.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/ZeroPadding1DLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/ZeroPaddingLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/ZeroPadding3DLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/misc/ElementWiseMultiplicationLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/misc/RepeatVector.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/objdetect/Yolo2OutputLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/util/MaskLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/util/MaskZeroLayer.java"
+      ]
+    },
+    {
+      "page": "autoencoders.md",
+      "class": [
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/variational/BernoulliReconstructionDistribution.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/variational/CompositeReconstructionDistribution.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/variational/ExponentialReconstructionDistribution.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/variational/GaussianReconstructionDistribution.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/variational/LossFunctionWrapper.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/variational/ReconstructionDistribution.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/variational/VariationalAutoencoder.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/AutoEncoder.java"
+      ]
+    },
+    {
+      "page": "convolutional.md",
+      "class": [
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/Convolution1D.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/Convolution2D.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/Convolution3D.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/Deconvolution2D.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/convolutional/Cropping1D.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/convolutional/Cropping2D.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/convolutional/Cropping3D.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/DepthwiseConvolution2D.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/SeparableConvolution2D.java"
+      ]
+    },
+    {
+      "page": "recurrent.md",
+      "class": [
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/GravesBidirectionalLSTM.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/GravesLSTM.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/LSTM.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/RnnOutputLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/RnnLossLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/recurrent/Bidirectional.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/recurrent/LastTimeStep.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/recurrent/SimpleRnn.java"
+      ]
+    },
+    {
+      "page": "custom-layer.md",
+      "class": [
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/layers/BaseLayer.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/FeedForwardLayer.java"
+      ]
+    },
+    {
+      "page": "vertices.md",
+      "class": [
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/impl/ElementWiseVertex.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/impl/InputVertex.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/impl/L2NormalizeVertex.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/impl/L2Vertex.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/impl/MergeVertex.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/impl/PoolHelperVertex.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/impl/ReshapeVertex.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/impl/ScaleVertex.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/impl/ShiftVertex.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/impl/StackVertex.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/impl/SubsetVertex.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/impl/UnstackVertex.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/impl/rnn/DuplicateToTimeSeriesVertex.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/impl/rnn/LastTimeStepVertex.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/impl/rnn/ReverseTimeSeriesVertex.java"
+      ]
+    },
+    {
+      "page": "early-stopping.md",
+      "class": [
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/EarlyStoppingConfiguration.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/EarlyStoppingModelSaver.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/EarlyStoppingResult.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/scorecalc/AutoencoderScoreCalculator.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/scorecalc/ClassificationScoreCalculator.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/scorecalc/DataSetLossCalculator.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/scorecalc/DataSetLossCalculatorCG.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/scorecalc/ROCScoreCalculator.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/scorecalc/RegressionScoreCalculator.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/scorecalc/VAEReconErrorScoreCalculator.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/scorecalc/VAEReconProbScoreCalculator.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/termination/ScoreImprovementEpochTerminationCondition.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/termination/BestScoreEpochTerminationCondition.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/termination/EpochTerminationCondition.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/termination/InvalidScoreIterationTerminationCondition.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/termination/IterationTerminationCondition.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/termination/MaxEpochsTerminationCondition.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/termination/MaxScoreIterationTerminationCondition.java",
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/termination/MaxTimeIterationTerminationCondition.java"
+      ]
+    }
+  ]
+}
+
