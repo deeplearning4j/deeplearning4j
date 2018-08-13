@@ -22,11 +22,11 @@ import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.messages.v2.VoidChunk;
 import org.nd4j.parameterserver.distributed.messages.v2.VoidMessage_v2;
+import org.nd4j.linalg.primitives.Optional;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Optional;
 
 /**
  * This class provides methods for splitting VoidMessages into chunks, and merging them back again
@@ -34,10 +34,19 @@ import java.util.Optional;
  * @author raver119@gmail.com
  */
 public class MessageSplitter {
-    private final MessageSplitter INSTANCE = new MessageSplitter();
+    private static final MessageSplitter INSTANCE = new MessageSplitter();
 
     protected MessageSplitter() {
         //
+    }
+
+    /**
+     * This method returns shared instance of MessageSplitter
+     *
+     * @return
+     */
+    public static MessageSplitter getInstance() {
+        return INSTANCE;
     }
 
     /**
@@ -57,6 +66,7 @@ public class MessageSplitter {
             SerializationUtils.serialize(message, fos);
 
             val length = tempFile.length();
+            int numChunks = (int) (length /  maxBytes + (length % maxBytes > 0 ? 1 : 0));
             try (val fis = new FileInputStream(tempFile); val bis = new BufferedInputStream(fis)) {
                 // now we'll be reading serialized message into
                 val bytes = new byte[maxBytes];
@@ -71,6 +81,7 @@ public class MessageSplitter {
                             .messageId(java.util.UUID.randomUUID().toString())
                             .originalId(message.getMessageId())
                             .chunkId(id++)
+                            .numberOfChunks(numChunks)
                             .payload(bytes.clone())
                             .totalSize(length)
                             .build();

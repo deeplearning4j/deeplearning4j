@@ -16,51 +16,26 @@
 
 package org.nd4j.parameterserver.distributed.messages.v2;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
-import lombok.*;
-
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
-public class VoidChunk implements VoidMessage_v2 {
-    /**
-     * This field contains position of this chunk in merger
-     */
-    @Getter
-    private int chunkId;
+public final class GradientsUpdateMessage implements INDArrayMessage {
+    private static final long serialVersionUID = 1L;
 
-    /**
-     * This field contains number of bytes of original message
-     */
-    @Getter
-    private long totalSize;
-
-    /**
-     * Unique messageId used to distringuish chunks from each other
-     */
     @Getter
     private String messageId;
 
-    /**
-     * This field holds ID of the original message
-     */
     @Getter
-    private String originalId;
+    private INDArray payload;
 
-    /**
-     * This field holds number of chunks for original message
-     */
-    @Getter
-    private int numberOfChunks;
-
-    /**
-     * Actual chunk
-     */
-    @Getter
-    private byte[] payload;
-
-
-    public void exec() {
-        // basically all we want to do here, is merge
+    @Override
+    public INDArray exec(Object context) {
+        return null;
     }
 }
