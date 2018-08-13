@@ -47,12 +47,12 @@ CONFIGURABLE_OP_IMPL(dropout, 1, 1, true, 1, 1) {
         *output = *input;
         return ND4J_STATUS_OK;
     }
-    nd4j::random::RandomBuffer* rng = block.getRNG();
+    //nd4j::random::RandomBuffer* rng = block.getRNG();
     
-    if (rng == nullptr)
-        return ND4J_STATUS_BAD_RNG;
+    //if (rng == nullptr)
+    //    return ND4J_STATUS_BAD_RNG;
 
-    return helpers::dropOutFunctor(rng, input, output, reduceShape, seed, probValue);
+    return helpers::dropOutFunctor(block, input, output, reduceShape, seed, probValue);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -75,11 +75,11 @@ CONFIGURABLE_OP_IMPL(dropout_bp, 2, 1, false, 1, 1) {
         return ND4J_STATUS_OK;
     }
 
-    nd4j::random::RandomBuffer* rng = block.getRNG();
-    if (rng == nullptr)
-        return ND4J_STATUS_BAD_RNG;
+    //nd4j::random::RandomBuffer* rng = block.getRNG();
+    //if (rng == nullptr)
+    //    return ND4J_STATUS_BAD_RNG;
 
-    REQUIRE_TRUE(helpers::dropOutFunctorBP(rng, input, gradOut, output, reduceShape, seed, probValue) == ND4J_STATUS_OK, 0, "dropout_bp: Cannot backprop dropout." );
+    REQUIRE_TRUE(helpers::dropOutFunctorBP(block, input, gradOut, output, reduceShape, seed, probValue) == ND4J_STATUS_OK, 0, "dropout_bp: Cannot backprop dropout." );
 
     return ND4J_STATUS_OK;
 }
@@ -108,11 +108,7 @@ CONFIGURABLE_OP_IMPL(alpha_dropout_bp, 2, 1, false, 4, 1) {
         return ND4J_STATUS_OK;
     }
 
-    nd4j::random::RandomBuffer* rng = block.getRNG();
-    if (rng == nullptr)
-        return ND4J_STATUS_BAD_RNG;
-
-    return helpers::alphaDropOutFunctorBP(rng, input, gradOut, output, reduceShape, seed, probValue, alphaValue, alpha1Value, betaValue);
+    return helpers::alphaDropOutFunctorBP(block, input, gradOut, output, reduceShape, seed, probValue, alphaValue, alpha1Value, betaValue);
 }
 
 }

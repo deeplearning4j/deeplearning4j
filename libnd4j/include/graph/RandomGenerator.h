@@ -14,6 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+
 //
 //  @author raver119@protonmail.com
 //
@@ -75,7 +76,7 @@ namespace nd4j {
 
 
             void rewindH(Nd4jLong steps);
-            void setSeed(u64 seed) { _nodeState = seed; }
+            void setSeed(uint64_t seed) { _nodeState._ulong = seed; }
         };
     }
 }

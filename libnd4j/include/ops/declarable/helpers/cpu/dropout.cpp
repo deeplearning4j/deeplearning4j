@@ -29,14 +29,16 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    int dropOutFunctor(graph::Context<T>& context, NDArray<T>* input, NDArray<T>* output, NDArray<T>* reduceShape, int seed, T probValue) {
-        NativeOps native;
-        nd4j::graph::RandomGenerator nodeRng(seed);
+    int dropOutFunctor(graph::Context<T>& context,NDArray<T>* input, NDArray<T>* output, NDArray<T>* reduceShape, int seed, T probValue) {
+        //NativeOps native;
+//        nd4j::graph::RandomGenerator nodeRng(0, seed); // this variant generates time-related random sequence
+        nd4j::graph::RandomGenerator& nodeRng = const_cast<nd4j::graph::RandomGenerator&>(context.getRng());
 
-        native.reSeedBuffer(nullptr, (long)seed, rng);
+        nodeRng.setSeed(seed);
+        //native.reSeedBuffer(nullptr, (long)seed, rng);
         //if (newRng )
-        if (rng == nullptr)
-            return ND4J_STATUS_BAD_RNG;
+//        if (rng == nullptr)
+//            return ND4J_STATUS_BAD_RNG;
 
         if (reduceShape == nullptr){
 //            input->template applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, output, &probValue);
@@ -73,8 +75,18 @@ namespace helpers {
             REQUIRE_TRUE(fit, 0, "dropout: Noise shape should fit to input rank.");
             std::unique_ptr<NDArray<T>> chunk(new NDArray<T>('c', dims));
             chunk->assign(T(1.0));
-            chunk->template applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, chunk.get(), &probValue);
-        
+            //chunk->template applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, chunk.get(), &probValue);
+#pragma omp parallel for if (chunk->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+            for (Nd4jLong e = 0; e < chunk->lengthOf(); ++e) {
+                T val = nodeRng.relativeT(e, T(0.f), T(1.f));
+//                nd4j_printf("Random value is %f.\n", val);
+
+                if (val < probValue)
+                    (*chunk)(e) /= probValue;
+                else
+                    (*chunk)(e) = T(0.f);
+            }
+
             // broadcast chunk to full matrix
             std::unique_ptr<NDArray<T>> dropOutMultiplier(new NDArray<T>(*input));
             dropOutMultiplier->assign(T(0.0));
@@ -94,12 +106,12 @@ namespace helpers {
     int dropOutFunctorBP(graph::Context<T>& context, NDArray<T>* input, NDArray<T>* gradOut, NDArray<T>* output, NDArray<T>* reduceShape, int seed, T probValue) {
         NativeOps native;
 
-        int res = dropOutFunctor(rng, input, output, reduceShape, seed, probValue);
+        int res = dropOutFunctor(context, input, output, reduceShape, seed, probValue);
 
         if (ND4J_STATUS_OK == res)
         for (Nd4jLong e = 0; e < output->lengthOf(); e++) {
-            if ((*output)(e) == T(0.f)) (*output)(e) = (*gradOut)(e) / probValue;
-            else (*output)(e) = T(0.f);
+            if ((*output)(e) != T(0.f)) (*output)(e) = (*gradOut)(e) / probValue;
+//            else (*output)(e) = T(0.f);
         }
 
         return res;
@@ -113,7 +125,7 @@ namespace helpers {
                             NDArray<T>* reduceShape, int seed, T probValue, T alpha, T alpha1, T beta) {
 
         NativeOps native;
-
+        auto rng = context.getRNG();
         native.reSeedBuffer(nullptr, (long)seed, rng);
         if (rng == nullptr)
             return ND4J_STATUS_BAD_RNG;
@@ -124,7 +136,7 @@ namespace helpers {
     template <typename T>
     int alphaDropOutFunctorBP(graph::Context<T>& context, NDArray<T>* input, NDArray<T>* gradOut, NDArray<T>* output,
                               NDArray<T>* reduceShape, int seed, T probValue, T alpha, T alpha1, T beta) {
-        int res = alphaDropOutFunctor(rng, input, output, reduceShape, seed, probValue, alpha, alpha1, beta);
+        int res = alphaDropOutFunctor(context, input, output, reduceShape, seed, probValue, alpha, alpha1, beta);
         if (res == ND4J_STATUS_OK) {
             output->template applyScalar<simdOps::Multiply<T>>(alpha);
             output->template applyPairwiseTransform<simdOps::Multiply<T>>(gradOut, output, nullptr);
