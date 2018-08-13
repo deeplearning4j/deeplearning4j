@@ -20,9 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.parameterserver.distributed.v2.messages.FileChunksTracker;
-import org.nd4j.parameterserver.distributed.v2.messages.GradientsUpdateMessage;
-import org.nd4j.parameterserver.distributed.v2.messages.VoidChunk;
+import org.nd4j.parameterserver.distributed.v2.chunks.impl.FileChunksTracker;
+import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
 import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
 
 import java.util.ArrayList;

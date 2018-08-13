@@ -20,8 +20,8 @@ import lombok.NonNull;
 import lombok.val;
 import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.parameterserver.distributed.v2.messages.ChunksTracker;
-import org.nd4j.parameterserver.distributed.v2.messages.FileChunksTracker;
+import org.nd4j.parameterserver.distributed.v2.chunks.ChunksTracker;
+import org.nd4j.parameterserver.distributed.v2.chunks.impl.FileChunksTracker;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidChunk;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.linalg.primitives.Optional;
@@ -102,6 +102,26 @@ public class MessageSplitter {
         tempFile.delete();
         return result;
     }
+
+
+    /**
+     * This method checks, if specified message Id is being tracked
+     * @param messageId
+     * @return true if tracked, and false otherwise
+     */
+    boolean isTrackedMessage(@NonNull String messageId) {
+        return trackers.containsKey(messageId);
+    }
+
+    /**
+     * This method checks, if specified message is being tracked
+     * @param chunk
+     * @return true if tracked, and false otherwise
+     */
+    boolean isTrackedMessage(@NonNull VoidChunk chunk) {
+        return isTrackedMessage(chunk.getOriginalId());
+    }
+
 
     /**
      * This method tries to merge

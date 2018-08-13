@@ -20,8 +20,7 @@ import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Optional;
-import org.nd4j.parameterserver.distributed.v2.messages.GradientsUpdateMessage;
-import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
+import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
 
 import static org.junit.Assert.*;
 
@@ -46,6 +45,7 @@ public class MessageSplitterTest {
         for (val m:messages)
             dec = splitter.merge(m);
 
+        assertNotNull(dec);
         assertTrue(dec.isPresent());
     }
 }

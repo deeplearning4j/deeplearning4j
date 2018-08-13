@@ -14,13 +14,21 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.v2.messages;
+package org.nd4j.parameterserver.distributed.v2.messages.impl;
 
-public abstract class BaseINDArrayMessage implements INDArrayMessage {
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import org.nd4j.linalg.api.ndarray.INDArray;
+
+/**
+ * This message holds INDArray with model parameters
+ * @author raver119@gmail.com
+ */
+@NoArgsConstructor
+public final class UpdaterParametersMessage extends BaseINDArrayMessage {
     private static final long serialVersionUID = 1L;
 
-    @Override
-    public String getMessageId() {
-        return null;
+    public UpdaterParametersMessage(@NonNull String messageId, INDArray payload) {
+        super(messageId, payload);
     }
 }

@@ -14,13 +14,24 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.v2.messages;
+package org.nd4j.parameterserver.distributed.v2.transport;
 
-import org.nd4j.linalg.api.ndarray.INDArray;
+import io.reactivex.functions.Consumer;
+import org.nd4j.parameterserver.distributed.messages.VoidMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
+import org.reactivestreams.Publisher;
 
-/**
- *
- */
-public interface INDArrayMessage extends VoidMessage {
-    INDArray getPayload();
+public interface Transport {
+
+    /**
+     * This method returns consumer that accepts messages for delivery
+     * @return
+     */
+    Consumer<VoidMessage> outgoingConsumer();
+
+    /**
+     * This method returns flow of messages
+     * @return
+     */
+    Publisher<INDArrayMessage> incomingPublisher();
 }

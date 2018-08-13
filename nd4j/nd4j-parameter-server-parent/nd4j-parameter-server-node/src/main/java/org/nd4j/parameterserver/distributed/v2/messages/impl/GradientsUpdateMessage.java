@@ -14,23 +14,21 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.transport;
+package org.nd4j.parameterserver.distributed.v2.messages.impl;
 
-import io.reactivex.functions.Consumer;
-import org.nd4j.parameterserver.distributed.messages.VoidMessage;
-import org.reactivestreams.Publisher;
+import lombok.*;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
 
-public interface Transport_v2 {
+/**
+ * This message holds INDArray with gradients update
+ * @author raver119@gmail.com
+ */
+@NoArgsConstructor
+public final class GradientsUpdateMessage extends BaseINDArrayMessage {
+    private static final long serialVersionUID = 1L;
 
-    /**
-     * This method returns consumer that accepts messages for delivery
-     * @return
-     */
-    Consumer<VoidMessage> outgoingConsumer();
-
-    /**
-     * This method returns flow of messages
-     * @return
-     */
-    Publisher<VoidMessage> incomingPublisher();
+    public GradientsUpdateMessage(@NonNull String messageId, INDArray payload) {
+        super(messageId, payload);
+    }
 }

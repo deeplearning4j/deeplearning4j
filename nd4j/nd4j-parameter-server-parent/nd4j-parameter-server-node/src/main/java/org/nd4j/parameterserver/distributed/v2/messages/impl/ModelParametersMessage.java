@@ -14,28 +14,22 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.v2.messages;
+package org.nd4j.parameterserver.distributed.v2.messages.impl;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+/**
+ * This message holds INDArray with model parameters
+ * @author raver119@gmail.com
+ */
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public final class GradientsUpdateMessage implements INDArrayMessage {
+public final class ModelParametersMessage extends BaseINDArrayMessage {
     private static final long serialVersionUID = 1L;
 
-    @Getter
-    private String messageId;
-
-    @Getter
-    private INDArray payload;
-
-    @Override
-    public INDArray exec(Object context) {
-        return null;
+    public ModelParametersMessage(@NonNull String messageId, INDArray payload) {
+        super(messageId, payload);
     }
 }
