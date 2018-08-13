@@ -775,7 +775,16 @@ public class OpValidation {
     private static Set<String> excludeFromTfImportCoverage(){
         List<String> list = Arrays.asList(
                 "Reverse",      //Can be excluded because "Reverse_v2" is synonym that TF uses with tf.reverse(...); ReverseV2 is also Java op that is synonym for same op
-                "LogSigmoid"    //Have tests for tf.log_sigmoid, but can't test LogSigmoid op directly: tf.log_sigmoid actually just uses "y = -tf.nn.softplus(-x)" - i.e., 3 separate ops :/
+                "LogSigmoid",    //Not in ops.proto. Have tests for tf.log_sigmoid, but can't test LogSigmoid op directly: tf.log_sigmoid actually just uses "y = -tf.nn.softplus(-x)" - i.e., 3 separate ops :/
+                "HardSigmoid",   //Also implemented as python, NOT a single native op
+
+                //All of the following ops - not available in TF (can't find them) - op mapping is wrong?
+                "HardTanh",
+                "Swish",
+                "RDiv",
+                "DivScalar",
+                "LogX",
+                "RationalTanh"
 
 
         );
