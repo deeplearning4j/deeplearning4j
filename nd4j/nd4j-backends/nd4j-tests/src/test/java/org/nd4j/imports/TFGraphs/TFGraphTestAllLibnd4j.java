@@ -70,7 +70,7 @@ public class TFGraphTestAllLibnd4j {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
 
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name="{2}")
     public static Collection<Object[]> data() throws IOException {
         return TFGraphTestAllHelper.fetchTestParams(EXECUTE_WITH);
     }

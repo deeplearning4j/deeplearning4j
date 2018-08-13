@@ -67,9 +67,10 @@ public class TFGraphTestAllSameDiff {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
 
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name="{2}")
     public static Collection<Object[]> data() throws IOException {
-        return TFGraphTestAllHelper.fetchTestParams(EXECUTE_WITH);
+        List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(EXECUTE_WITH);
+        return params;
     }
 
     public TFGraphTestAllSameDiff(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName) throws IOException {
