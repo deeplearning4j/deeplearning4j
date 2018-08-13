@@ -27,7 +27,10 @@ namespace nd4j {
     namespace graph {
 
         template <typename T>
-        ContextPrototype<T>::ContextPrototype(int nodeId, bool inPlace) {
+        ContextPrototype<T>::ContextPrototype(int nodeId, bool inPlace):
+            _rootSeed(1234567891),
+            _randomGenerator(_rootSeed, 0)
+        {
             _nodeId = nodeId;
             _isInplace = inPlace;
         }
