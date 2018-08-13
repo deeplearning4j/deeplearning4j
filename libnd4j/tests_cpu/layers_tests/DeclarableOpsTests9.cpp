@@ -536,7 +536,7 @@ TEST_F(DeclarableOpsTests9, TestDropout_1) {
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
     NDArray<float>* res = ress->at(0); //->printIndexedBuffer("Result is ");
     //x.printIndexedBuffer("Input is");
-    res->printIndexedBuffer("Result for Dropout_1");
+    //res->printIndexedBuffer("Result for Dropout_1");
     float countZero = res->template reduceNumber<simdOps::CountZero<float>>();
     ASSERT_NEAR(countZero, 80.f, 5.f);
     auto ress2 = op.execute({&x}, {0.2f}, {113});
@@ -546,10 +546,10 @@ TEST_F(DeclarableOpsTests9, TestDropout_1) {
     
     countZero = res->template reduceNumber<simdOps::CountZero<float>>();
     ASSERT_NEAR(countZero, 80.f, 5.f);
-    res2->printIndexedBuffer("Result for Dropout_2");
+    //res2->printIndexedBuffer("Result for Dropout_2");
     ASSERT_TRUE(res->equalsTo(res2));
-    res->printIndexedBuffer("FF dropout");
-    res2->printIndexedBuffer("BP dropout");
+    //res->printIndexedBuffer("FF dropout");
+    //res2->printIndexedBuffer("BP dropout");
 
     delete ress;
     delete ress2;
@@ -629,13 +629,13 @@ TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
     //02Dropout result is  [4.000000, 0.000000, 12.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 36.000000, 0.000000, 0.000000, 0.000000, 0.000000, 56.000000, 60.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 88.000000, 0.000000, 96.000000, 0.000000, 0.000000, 108.000000, 0.000000, 0.000000, 120.000000, 0.000000, 128.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 156.000000, 0.000000, 164.000000, 0.000000, 0.000000, 0.000000, 0.000000, 184.000000, 0.000000, 0.000000, 0.000000, 200.000000, 0.000000, 0.000000, 0.000000, 216.000000, 0.000000, 0.000000, 0.000000, 232.000000, 0.000000, 240.000000, 0.000000, 248.000000, 0.000000, 0.000000, 260.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 308.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 348.000000, 0.000000, 356.000000, 0.000000, 0.000000, 0.000000, 0.000000, 376.000000, 0.000000, 384.000000, 0.000000, 0.000000, 0.000000, 400.000000]
 
     auto ressX = op2.execute({&x1, &x1}, {0.5f}, {119});
-    x0.printIndexedBuffer("X0");
-    x1.printIndexedBuffer("X1");
+    //x0.printIndexedBuffer("X0");
+    //x1.printIndexedBuffer("X1");
     ASSERT_EQ(ND4J_STATUS_OK, ressX->status());
     auto ressY = op2.execute({&x1, &x0}, {0.5f}, {119});
     ASSERT_EQ(ND4J_STATUS_OK, ressY->status());
-    ressY->at(0)->printIndexedBuffer("BP");
-    ress->at(0)->printIndexedBuffer("FF");
+    //ressY->at(0)->printIndexedBuffer("BP");
+    //ress->at(0)->printIndexedBuffer("FF");
     bool ret = true;
     for (int e = 0; e < ress->at(0)->lengthOf(); e++) {
         if (ress->at(0)->getScalar(e) == 0.f)
@@ -680,8 +680,8 @@ TEST_F(DeclarableOpsTests9, Test_Dropout_BP_2) {
     auto ressY = op2.execute({&x, &x}, {0.5f}, {119});
     ASSERT_EQ(ND4J_STATUS_OK, ressY->status());
 
-    ress->at(0)->printIndexedBuffer("FF Dropout result is ");
-    ressY->at(0)->printIndexedBuffer("BP Dropout result is ");
+    //ress->at(0)->printIndexedBuffer("FF Dropout result is ");
+    //ressY->at(0)->printIndexedBuffer("BP Dropout result is ");
 
 
     float countZero = ress->at(0)->template reduceNumber<simdOps::CountZero<float>>();
