@@ -75,6 +75,7 @@ namespace nd4j {
 
 
             void rewindH(Nd4jLong steps);
+            void setSeed(u64 seed) { _nodeState = seed; }
         };
     }
 }

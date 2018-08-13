@@ -22,7 +22,7 @@
 #define ND4J_CONTEXT_PROTOTYPE_H
 
 #include <vector>
-
+#include "RandomGenerator.h"
 
 namespace nd4j {
     namespace graph {
@@ -39,6 +39,8 @@ namespace nd4j {
 
             // opNum for legacy XYZ ops
             int _opNum = -1;
+            uint64_t _rootSeed;
+            RandomGenerator _randomGenerator;
 
         public:
             explicit ContextPrototype(int nodeId = 1, bool inPlace = false);
@@ -82,6 +84,11 @@ namespace nd4j {
 
             template <typename N>
             ContextPrototype<N>* asT();
+
+            RandomGenerator& randomGenerator() {return _randomGenerator;}
+            RandomGenerator const& getRng() const { return _randomGenerator; }
+            uint64_t randomSeed() const { return _rootSeed; }
+            void setRandomSeed(uint64_t seed) { _rootSeed = seed; }
         };
     }
 }

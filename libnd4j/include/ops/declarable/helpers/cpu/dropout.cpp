@@ -29,7 +29,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    int dropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* output, NDArray<T>* reduceShape, int seed, T probValue) {
+    int dropOutFunctor(graph::Context<T>& context, NDArray<T>* input, NDArray<T>* output, NDArray<T>* reduceShape, int seed, T probValue) {
         NativeOps native;
         nd4j::graph::RandomGenerator nodeRng(seed);
 
@@ -86,12 +86,12 @@ namespace helpers {
 
         return ND4J_STATUS_OK;
     }
-    template int dropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<float>* input, NDArray<float>* output, NDArray<float>* reduceShape, int seed, float probValue);
-    template int dropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<float16>* input, NDArray<float16>* output, NDArray<float16>* reduceShape, int seed, float16 probValue);
-    template int dropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<double>* input, NDArray<double>* output, NDArray<double>* reduceShape, int seed, double probValue);
+    template int dropOutFunctor(graph::Context<float>& context, NDArray<float>* input, NDArray<float>* output, NDArray<float>* reduceShape, int seed, float probValue);
+    template int dropOutFunctor(graph::Context<float16>& context, NDArray<float16>* input, NDArray<float16>* output, NDArray<float16>* reduceShape, int seed, float16 probValue);
+    template int dropOutFunctor(graph::Context<double>& context, NDArray<double>* input, NDArray<double>* output, NDArray<double>* reduceShape, int seed, double probValue);
 
     template <typename T>
-    int dropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* gradOut, NDArray<T>* output, NDArray<T>* reduceShape, int seed, T probValue) {
+    int dropOutFunctorBP(graph::Context<T>& context, NDArray<T>* input, NDArray<T>* gradOut, NDArray<T>* output, NDArray<T>* reduceShape, int seed, T probValue) {
         NativeOps native;
 
         int res = dropOutFunctor(rng, input, output, reduceShape, seed, probValue);
@@ -104,12 +104,12 @@ namespace helpers {
 
         return res;
     }
-    template int dropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<float>* input, NDArray<float>* gradOut, NDArray<float>* output, NDArray<float>* reduceShape, int seed, float probValue);
-    template int dropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<float16>* input, NDArray<float16>* gradOut, NDArray<float16>* output, NDArray<float16>* reduceShape, int seed, float16 probValue);
-    template int dropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<double>* input, NDArray<double>* gradOut, NDArray<double>* output, NDArray<double>* reduceShape, int seed, double probValue);
+    template int dropOutFunctorBP(graph::Context<float>& context, NDArray<float>* input, NDArray<float>* gradOut, NDArray<float>* output, NDArray<float>* reduceShape, int seed, float probValue);
+    template int dropOutFunctorBP(graph::Context<float16>& context, NDArray<float16>* input, NDArray<float16>* gradOut, NDArray<float16>* output, NDArray<float16>* reduceShape, int seed, float16 probValue);
+    template int dropOutFunctorBP(graph::Context<double>& context, NDArray<double>* input, NDArray<double>* gradOut, NDArray<double>* output, NDArray<double>* reduceShape, int seed, double probValue);
 
     template <typename T>
-    int alphaDropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* output,
+    int alphaDropOutFunctor(graph::Context<T>& context, NDArray<T>* input, NDArray<T>* output,
                             NDArray<T>* reduceShape, int seed, T probValue, T alpha, T alpha1, T beta) {
 
         NativeOps native;
@@ -122,7 +122,7 @@ namespace helpers {
         return ND4J_STATUS_OK;
     }
     template <typename T>
-    int alphaDropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* gradOut, NDArray<T>* output,
+    int alphaDropOutFunctorBP(graph::Context<T>& context, NDArray<T>* input, NDArray<T>* gradOut, NDArray<T>* output,
                               NDArray<T>* reduceShape, int seed, T probValue, T alpha, T alpha1, T beta) {
         int res = alphaDropOutFunctor(rng, input, output, reduceShape, seed, probValue, alpha, alpha1, beta);
         if (res == ND4J_STATUS_OK) {
@@ -132,13 +132,13 @@ namespace helpers {
         return res;
     }
 
-    template int alphaDropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<float>* input,   NDArray<float>* output, NDArray<float>* reduceShape, int seed, float probValue, float alpha, float alpha1, float beta);
-    template int alphaDropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<float16>* input, NDArray<float16>* output, NDArray<float16>* reduceShape, int seed, float16 probValue, float16 alpha, float16 alpha1, float16 beta);
-    template int alphaDropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<double>* input,  NDArray<double>* output, NDArray<double>* reduceShape, int seed, double probValue, double alpha, double alpha1, double beta);
+    template int alphaDropOutFunctor(graph::Context<float>& context, NDArray<float>* input,   NDArray<float>* output, NDArray<float>* reduceShape, int seed, float probValue, float alpha, float alpha1, float beta);
+    template int alphaDropOutFunctor(graph::Context<float16>& context, NDArray<float16>* input, NDArray<float16>* output, NDArray<float16>* reduceShape, int seed, float16 probValue, float16 alpha, float16 alpha1, float16 beta);
+    template int alphaDropOutFunctor(graph::Context<double>& context, NDArray<double>* input,  NDArray<double>* output, NDArray<double>* reduceShape, int seed, double probValue, double alpha, double alpha1, double beta);
 
-    template int alphaDropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<float>* input, NDArray<float>* gradOut, NDArray<float>* output, NDArray<float>* reduceShape, int seed, float probValue, float alpha, float alpha1, float beta);
-    template int alphaDropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<float16>* input, NDArray<float16>* gradOut, NDArray<float16>* output, NDArray<float16>* reduceShape, int seed, float16 probValue, float16 alpha, float16 alpha1, float16 beta);
-    template int alphaDropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<double>* input, NDArray<double>* gradOut, NDArray<double>* output, NDArray<double>* reduceShape, int seed, double probValue, double alpha, double alpha1, double beta);
+    template int alphaDropOutFunctorBP(graph::Context<float>& context, NDArray<float>* input, NDArray<float>* gradOut, NDArray<float>* output, NDArray<float>* reduceShape, int seed, float probValue, float alpha, float alpha1, float beta);
+    template int alphaDropOutFunctorBP(graph::Context<float16>& context, NDArray<float16>* input, NDArray<float16>* gradOut, NDArray<float16>* output, NDArray<float16>* reduceShape, int seed, float16 probValue, float16 alpha, float16 alpha1, float16 beta);
+    template int alphaDropOutFunctorBP(graph::Context<double>& context, NDArray<double>* input, NDArray<double>* gradOut, NDArray<double>* output, NDArray<double>* reduceShape, int seed, double probValue, double alpha, double alpha1, double beta);
 
 }
 }
