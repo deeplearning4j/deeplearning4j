@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.util;
+package org.nd4j.parameterserver.distributed.v2.util;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +27,6 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * This class provides methods for ephemeral mesh network management

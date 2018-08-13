@@ -14,15 +14,16 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.logic.v2;
+package org.nd4j.parameterserver.distributed.v2.messages;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.parameterserver.distributed.messages.v2.GradientsUpdateMessage;
-import org.nd4j.parameterserver.distributed.messages.v2.VoidChunk;
-import org.nd4j.parameterserver.distributed.util.MessageSplitter;
+import org.nd4j.parameterserver.distributed.v2.messages.FileChunksTracker;
+import org.nd4j.parameterserver.distributed.v2.messages.GradientsUpdateMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.VoidChunk;
+import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
 
 import java.util.ArrayList;
 

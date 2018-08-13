@@ -18,7 +18,6 @@ package org.nd4j.parameterserver.distributed.transport;
 
 import io.reactivex.functions.Consumer;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
-import org.nd4j.parameterserver.distributed.util.MeshOrganizer;
 import org.reactivestreams.Publisher;
 
 public interface Transport_v2 {

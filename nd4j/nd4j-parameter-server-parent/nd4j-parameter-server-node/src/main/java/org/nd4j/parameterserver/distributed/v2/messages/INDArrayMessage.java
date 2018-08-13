@@ -14,13 +14,13 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.messages.v2;
+package org.nd4j.parameterserver.distributed.v2.messages;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  *
  */
-public interface INDArrayMessage extends VoidMessage_v2 {
+public interface INDArrayMessage extends VoidMessage {
     INDArray exec(Object context);
 }

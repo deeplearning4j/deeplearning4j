@@ -14,16 +14,16 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.util;
+package org.nd4j.parameterserver.distributed.v2.util;
 
 import lombok.NonNull;
 import lombok.val;
 import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.parameterserver.distributed.logic.v2.ChunksTracker;
-import org.nd4j.parameterserver.distributed.logic.v2.FileChunksTracker;
-import org.nd4j.parameterserver.distributed.messages.v2.VoidChunk;
-import org.nd4j.parameterserver.distributed.messages.v2.VoidMessage_v2;
+import org.nd4j.parameterserver.distributed.v2.messages.ChunksTracker;
+import org.nd4j.parameterserver.distributed.v2.messages.FileChunksTracker;
+import org.nd4j.parameterserver.distributed.v2.messages.VoidChunk;
+import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.linalg.primitives.Optional;
 
 import java.io.*;
@@ -60,7 +60,7 @@ public class MessageSplitter {
      * @param message
      * @return
      */
-    public Collection<VoidChunk> split(@NonNull VoidMessage_v2 message, int maxBytes) throws IOException {
+    public Collection<VoidChunk> split(@NonNull VoidMessage message, int maxBytes) throws IOException {
         if (maxBytes <= 0)
             throw new ND4JIllegalStateException("MaxBytes must be > 0");
 
@@ -110,7 +110,7 @@ public class MessageSplitter {
      * @param <T>
      * @return
      */
-    public <T extends VoidMessage_v2> Optional<T> merge(@NonNull VoidChunk chunk) {
+    public <T extends VoidMessage> Optional<T> merge(@NonNull VoidChunk chunk) {
         val originalId= chunk.getOriginalId();
 
         trackers.putIfAbsent(originalId, new FileChunksTracker<T>(chunk));

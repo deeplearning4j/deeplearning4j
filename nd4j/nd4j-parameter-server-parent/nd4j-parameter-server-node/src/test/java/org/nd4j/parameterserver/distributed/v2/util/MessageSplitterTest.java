@@ -14,14 +14,14 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.util;
+package org.nd4j.parameterserver.distributed.v2.util;
 
 import lombok.val;
 import org.junit.Test;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Optional;
-import org.nd4j.parameterserver.distributed.messages.v2.GradientsUpdateMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.GradientsUpdateMessage;
+import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
 
 import static org.junit.Assert.*;
 

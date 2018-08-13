@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.messages.v2;
+package org.nd4j.parameterserver.distributed.v2.messages;
 
 
 import lombok.*;
@@ -22,7 +22,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class VoidChunk implements VoidMessage_v2 {
+public class VoidChunk implements VoidMessage {
     /**
      * This field contains position of this chunk in merger
      */

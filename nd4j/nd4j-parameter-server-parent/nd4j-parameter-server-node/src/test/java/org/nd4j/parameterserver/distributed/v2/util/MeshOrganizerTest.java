@@ -14,13 +14,14 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.util;
+package org.nd4j.parameterserver.distributed.v2.util;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.SerializationUtils;
 import org.junit.Test;
 import org.nd4j.parameterserver.distributed.enums.MeshBuildMode;
+import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

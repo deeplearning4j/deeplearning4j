@@ -14,15 +14,15 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.logic.v2;
+package org.nd4j.parameterserver.distributed.v2.messages;
 
-import org.nd4j.parameterserver.distributed.messages.v2.VoidChunk;
-import org.nd4j.parameterserver.distributed.messages.v2.VoidMessage_v2;
+import org.nd4j.parameterserver.distributed.v2.messages.VoidChunk;
+import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 
 /**
  * This interface describes logic for tracking chunks of bigger message
  */
-public interface ChunksTracker<T extends VoidMessage_v2> {
+public interface ChunksTracker<T extends VoidMessage> {
 
     /**
      * This message returns ID of the original message we're tracking here

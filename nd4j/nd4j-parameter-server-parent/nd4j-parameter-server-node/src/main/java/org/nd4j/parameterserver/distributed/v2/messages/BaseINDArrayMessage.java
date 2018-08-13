@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.messages.v2;
+package org.nd4j.parameterserver.distributed.v2.messages;
 
 public abstract class BaseINDArrayMessage implements INDArrayMessage {
     private static final long serialVersionUID = 1L;

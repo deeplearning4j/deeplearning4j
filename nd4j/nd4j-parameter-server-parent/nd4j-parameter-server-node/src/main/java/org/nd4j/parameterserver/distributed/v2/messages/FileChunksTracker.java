@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.logic.v2;
+package org.nd4j.parameterserver.distributed.v2.messages;
 
 import lombok.Getter;
 import lombok.NonNull;
@@ -22,8 +22,9 @@ import lombok.val;
 import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.primitives.AtomicBoolean;
-import org.nd4j.parameterserver.distributed.messages.v2.VoidChunk;
-import org.nd4j.parameterserver.distributed.messages.v2.VoidMessage_v2;
+import org.nd4j.parameterserver.distributed.v2.messages.ChunksTracker;
+import org.nd4j.parameterserver.distributed.v2.messages.VoidChunk;
+import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 
 import java.io.*;
 import java.util.Map;
@@ -32,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * File-based implementation of ChunksTracker
  */
-public class FileChunksTracker<T extends VoidMessage_v2> implements ChunksTracker<T> {
+public class FileChunksTracker<T extends VoidMessage> implements ChunksTracker<T> {
     @Getter
     private final String originId;
 

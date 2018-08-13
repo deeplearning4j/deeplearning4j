@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed;
+package org.nd4j.parameterserver.distributed.v2;
 
 import io.reactivex.Flowable;
 import io.reactivex.functions.Consumer;
@@ -22,9 +22,8 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
-import org.nd4j.parameterserver.distributed.messages.v2.INDArrayMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
 import org.nd4j.parameterserver.distributed.transport.Transport_v2;
-import org.reactivestreams.Subscriber;
 
 import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
@@ -34,13 +33,13 @@ import java.util.concurrent.LinkedBlockingQueue;
  *
  */
 @Slf4j
-public final class VoidParameterServer_v2 {
+public final class ModelParameterServer {
     private final Transport_v2 transport;
 
     // TODO: we need better capacity here, it should scale properly
     private final BlockingQueue<INDArray> updatesQueue = new LinkedBlockingQueue<>(4096);
 
-    public VoidParameterServer_v2(@NonNull Transport_v2 transport) {
+    public ModelParameterServer(@NonNull Transport_v2 transport) {
         this.transport = transport;
     }
 

@@ -14,14 +14,28 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.messages.v2;
+package org.nd4j.parameterserver.distributed.v2.messages;
 
-import java.io.Serializable;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
-public interface VoidMessage_v2 extends Serializable {
-    /**
-     * This method returns unique messageId
-     * @return
-     */
-    String getMessageId();
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public final class GradientsUpdateMessage implements INDArrayMessage {
+    private static final long serialVersionUID = 1L;
+
+    @Getter
+    private String messageId;
+
+    @Getter
+    private INDArray payload;
+
+    @Override
+    public INDArray exec(Object context) {
+        return null;
+    }
 }
