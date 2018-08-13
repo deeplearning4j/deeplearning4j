@@ -37,7 +37,7 @@ import org.deeplearning4j.optimize.listeners.ComposableIterationListener;
 import org.deeplearning4j.optimize.listeners.PerformanceListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.optimize.listeners.TimeIterationListener;
-import org.deeplearning4j.optimize.listeners.checkpoint.CheckpointListener;
+import org.deeplearning4j.optimize.listeners.CheckpointListener;
 import org.deeplearning4j.optimize.solvers.BaseOptimizer;
 import org.junit.Rule;
 import org.junit.Test;

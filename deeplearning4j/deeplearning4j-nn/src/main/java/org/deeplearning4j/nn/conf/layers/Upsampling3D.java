@@ -31,11 +31,13 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Upsampling 3D layer
+ * Upsampling 3D layer<br>
+ * Repeats each value (all channel values for each x/y/z location) by size[0], size[1] and size[2]<br>
+ * If input has shape {@code [minibatch, channels, depth, height, width]} then output has shape
+ * {@code [minibatch, channels, size[0] * depth, size[1] * height, size[2] * width]}
  *
  * @author Max Pumperla
  */
-
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

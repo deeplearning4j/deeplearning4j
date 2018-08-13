@@ -33,8 +33,11 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Output layer with different objective co-occurrences for different objectives.
- * This includes classification as well as regression
+ * Output layer used for training via backpropagation based on labels and a specified loss function.
+ * Can be configured for both classification and regression.
+ * Note that OutputLayer has parameters - it contains a fully-connected layer (effectively contains a DenseLayer)
+ * internally. This allows the output size to be different to the layer input size.
+ * OutputLayer is equivalent to ({@link DenseLayer} + {@link LossLayer})
  *
  */
 @Data
@@ -71,10 +74,16 @@ public class OutputLayer extends BaseOutputLayer {
     @NoArgsConstructor
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
+        /**
+         * @param lossFunction Loss function for the output layer
+         */
         public Builder(LossFunction lossFunction) {
             super.lossFunction(lossFunction);
         }
 
+        /**
+         * @param lossFunction Loss function for the output layer
+         */
         public Builder(ILossFunction lossFunction) {
             this.lossFn = lossFunction;
         }

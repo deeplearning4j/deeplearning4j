@@ -35,7 +35,7 @@ import java.util.Map;
 /**
  * Subsampling layer also referred to as pooling in convolution neural nets
  *
- *  Supports the following pooling types: MAX, AVG, SUM, PNORM, NONE
+ * Supports the following pooling types: MAX, AVG, SUM, PNORM
  * @author Adam Gibson
  */
 

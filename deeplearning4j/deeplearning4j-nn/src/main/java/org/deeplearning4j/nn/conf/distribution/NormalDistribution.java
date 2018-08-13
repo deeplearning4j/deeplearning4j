@@ -16,13 +16,17 @@
 
 package org.deeplearning4j.nn.conf.distribution;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
- * A normal distribution.
+ * A normal (Gaussian) distribution, with two parameters: mean and standard deviation
  *
  */
+@EqualsAndHashCode(callSuper = false)
+@Data
 public class NormalDistribution extends Distribution {
 
     private double mean, std;

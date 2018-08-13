@@ -25,8 +25,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import java.util.List;
 
 /**
- * Wraps a data applyTransformToDestination iterator setting the first (feature matrix) as
- * the labels.
+ * Wraps a data set iterator setting the first (feature matrix) as the labels.
  *
  * @author Adam Gibson
  */

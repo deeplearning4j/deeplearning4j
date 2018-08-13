@@ -16,13 +16,19 @@
 
 package org.deeplearning4j.nn.conf.distribution;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
- * A log-normal distribution.
+ * A log-normal distribution, with two parameters: mean and standard deviation.
+ * Note: the mean and standard deviation are for the logarithm of the values.
+ * Put another way: if X~LogN(M,S), then mean(log(X))=M, and stdev(log(X))=S
  *
  */
+@EqualsAndHashCode(callSuper = false)
+@Data
 public class LogNormalDistribution extends Distribution {
 
     private double mean, std;
@@ -38,50 +44,6 @@ public class LogNormalDistribution extends Distribution {
     public LogNormalDistribution(@JsonProperty("mean") double mean, @JsonProperty("std") double std) {
         this.mean = mean;
         this.std = std;
-    }
-
-    public double getMean() {
-        return mean;
-    }
-
-    public void setMean(double mean) {
-        this.mean = mean;
-    }
-
-    public double getStd() {
-        return std;
-    }
-
-    public void setStd(double std) {
-        this.std = std;
-    }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        long temp;
-        temp = Double.doubleToLongBits(mean);
-        result = prime * result + (int) (temp ^ (temp >>> 32));
-        temp = Double.doubleToLongBits(std);
-        result = prime * result + (int) (temp ^ (temp >>> 32));
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        LogNormalDistribution other = (LogNormalDistribution) obj;
-        if (Double.doubleToLongBits(mean) != Double.doubleToLongBits(other.mean))
-            return false;
-        if (Double.doubleToLongBits(std) != Double.doubleToLongBits(other.std))
-            return false;
-        return true;
     }
 
     public String toString() {
