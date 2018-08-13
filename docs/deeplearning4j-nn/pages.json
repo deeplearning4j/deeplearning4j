@@ -7,7 +7,9 @@
   "pages": [
     {
       "page": "evaluation.md",
-      "class": []
+      "module": [
+        "/deeplearning4j-nn/src/main/java/org/deeplearning4j/eval/"
+      ]
     },
     {
       "page": "visualization.md",

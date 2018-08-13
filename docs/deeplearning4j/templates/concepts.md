@@ -20,9 +20,9 @@ Before the algorithm can start learning, you have to prepare the data, even if y
 
 Deeplearning4j works with a lot of different data types, such as images, CSV, ARFF, plain text and, with [Apache Camel](https://camel.apache.org/) [integration](https://github.com/deeplearning4j/DataVec/tree/master/datavec-camel), pretty much any other data type you can think of.
 
-To use DataVec, you will need one of the implementations of the [RecordReader](http://deeplearning4j.org/datavecdoc/org/datavec/api/records/reader/RecordReader.html) interface along with the [RecordReaderDataSetIterator](http://deeplearning4j.org/doc/org/deeplearning4j/datasets/datavec/RecordReaderDataSetIterator.html).
+To use DataVec, you will need one of the implementations of the [RecordReader](/api/{{page.version}}/org/datavec/api/records/reader/RecordReader.html) interface along with the [RecordReaderDataSetIterator](/api/{{page.version}}/org/deeplearning4j/datasets/datavec/RecordReaderDataSetIterator.html).
 
-Once you have a [DataSetIterator](http://deeplearning4j.org/doc/org/deeplearning4j/datasets/iterator/DataSetIterator.html), which is just a pattern that describes sequential access to data, you can use it to retrieve the data in a format suited for training a neural net model.
+Once you have a [DataSetIterator](http://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/datasets/iterator/DataSetIterator.html), which is just a pattern that describes sequential access to data, you can use it to retrieve the data in a format suited for training a neural net model.
 
 ### Normalizing Data
 
@@ -38,9 +38,9 @@ If you use `NormalizerStandardize`, note that this is a normalizer that depends 
 
 ## DataSets, INDArrays and Mini-Batches
 
-As the name suggests, a DataSetIterator returns [DataSet](http://deeplearning4j.org/api/{{page.version}}/org/nd4j/linalg/dataset/DataSet.html) objects. DataSet objects are containers for the features and labels of your data. But they aren't constrained to holding just a single example at once. A DataSet can contain as many examples as needed.
+As the name suggests, a DataSetIterator returns [DataSet](/api/{{page.version}}/org/nd4j/linalg/dataset/DataSet.html) objects. DataSet objects are containers for the features and labels of your data. But they aren't constrained to holding just a single example at once. A DataSet can contain as many examples as needed.
 
-It does that by keeping the values in several instances of [INDArray](http://nd4j.org/api/{{page.version}}/org/nd4j/linalg/api/ndarray/INDArray.html): one for the features of your examples, one for the labels and two additional ones for masking, if you are using timeseries data (see [Using RNNs / Masking](./deeplearning4j-nn-recurrent) for more information).
+It does that by keeping the values in several instances of [INDArray](/api/{{page.version}}/org/nd4j/linalg/api/ndarray/INDArray.html): one for the features of your examples, one for the labels and two additional ones for masking, if you are using timeseries data (see [Using RNNs / Masking](./deeplearning4j-nn-recurrent) for more information).
 
 An INDArray is one of the n-dimensional arrays, or tensors, used in ND4J. In the case of the features, it is a matrix of the size `Number of Examples x Number of Features`. Even with only a single example, it will have this shape.
 
@@ -71,9 +71,9 @@ If you are familiar with other deep learning frameworks, you will notice that th
 
 Unlike other frameworks, DL4J splits the optimization algorithm from the updater algorithm. This allows for flexibility as you seek a combination of optimizer and updater that works best for your data and problem.
 
-Besides the [DenseLayer](http://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/nn/conf/layers/DenseLayer.html)
-and [OutputLayer](http://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/nn/conf/layers/OutputLayer.html)
-that you have seen in the example above, there are several [other layer types](http://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/nn/conf/layers/package-summary.html), like `GravesLSTM`, `ConvolutionLayer`, `RBM`, `EmbeddingLayer`, etc. Using those layers you can define not only simple neural networks, but also [recurrent](http://deeplearning4j.org/usingrnns) and [convolutional](./deeplearning4j-nn-convolutional) networks. 
+Besides the [DenseLayer](/api/{{page.version}}/org/deeplearning4j/nn/conf/layers/DenseLayer.html)
+and [OutputLayer](/api/{{page.version}}/org/deeplearning4j/nn/conf/layers/OutputLayer.html)
+that you have seen in the example above, there are several [other layer types](/api/{{page.version}}/org/deeplearning4j/nn/conf/layers/package-summary.html), like `GravesLSTM`, `ConvolutionLayer`, `RBM`, `EmbeddingLayer`, etc. Using those layers you can define not only simple neural networks, but also [recurrent](./deeplearning4j-nn-recurrent) and [convolutional](./deeplearning4j-nn-convolutional) networks. 
 
 ## Training a Model
 
@@ -82,7 +82,7 @@ once. A single pass over the entire dataset is called an *epoch*. DL4J has sever
 
 The simplest way, is to reset your `DataSetIterator` and loop over the fit call as many times as you want. This way you can train your model for as many epochs as you think is a good fit.
 
-Yet another way would be to use an [EarlyStoppingTrainer](http://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/earlystopping/trainer/EarlyStoppingTrainer.html). 
+Yet another way would be to use an [EarlyStoppingTrainer](/api/{{page.version}}/org/deeplearning4j/earlystopping/trainer/EarlyStoppingTrainer.html). 
 You can configure this trainer to run for as many epochs as you like and
 additionally for as long as you like. It will evaluate the performance of your
 network after each epoch (or what ever you have configured) and save the best
@@ -94,15 +94,15 @@ Also note that DL4J does not only support training just `MultiLayerNetworks`, bu
 
 As you train your model, you will want to test how well it performs. For that test, you will need a dedicated data set that will not be used for training but instead will only be used for evaluating your model. This data should have the same distribution as the real-world data you want to make predictions about with your model. The reason you can't simply use your training data for evaluation is because machine learning methods are prone to overfitting (getting good at making predictions about the training set, but not performing well on larger datasets).
 
-The [Evaluation](http://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/eval/Evaluation.html)
+The [Evaluation](/api/{{page.version}}/org/deeplearning4j/eval/Evaluation.html)
 class is used for evaluation. Slightly different methods apply to evaluating a normal feed forward networks or recurrent networks. For more details on using it, take a look at the corresponding [examples](https://github.com/deeplearning4j/dl4j-examples).
 
 ## Troubleshooting a Neural Net Model
 
 Building neural networks to solve problems is an empirical process. That is, it requires trial and error. So you will have to try different settings and architectures in order to find a neural net configuration that performs well.
 
-DL4J provides a listener facility help you monitor your network's performance visually. You can set up listeners for your model that will be called after each mini-batch is processed. The two most often used listeners that DL4J ships out of the box are [ScoreIterationListener](http://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/optimize/listeners/ScoreIterationListener.html)
-and [HistogramIterationListener](http://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/ui/weights/HistogramIterationListener.html). 
+DL4J provides a listener facility help you monitor your network's performance visually. You can set up listeners for your model that will be called after each mini-batch is processed. The two most often used listeners that DL4J ships out of the box are [ScoreIterationListener](/api/{{page.version}}/org/deeplearning4j/optimize/listeners/ScoreIterationListener.html)
+and [HistogramIterationListener](/api/{{page.version}}/org/deeplearning4j/ui/weights/HistogramIterationListener.html). 
 
 While `ScoreIterationListener` will simply print the current error score for your network, `HistogramIterationListener` will start up a web UI that to provide you with a host of different information that you can use to fine tune your network configuration. See [Visualize, Monitor and Debug Network Learning](./deeplearning4j-nn-visualization) on how to interpret that data.
 
