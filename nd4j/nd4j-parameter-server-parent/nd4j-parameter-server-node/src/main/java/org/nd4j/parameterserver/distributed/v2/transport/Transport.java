@@ -21,6 +21,8 @@ import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
 import org.reactivestreams.Publisher;
 
+import java.io.IOException;
+
 public interface Transport {
 
     /**
@@ -44,7 +46,7 @@ public interface Transport {
      * This method will send message to the network, using tree structure
      * @param message
      */
-    void propagateMessage(VoidMessage message);
+    void propagateMessage(VoidMessage message) throws IOException;
 
     /**
      * This method will send message to the node specified by Id

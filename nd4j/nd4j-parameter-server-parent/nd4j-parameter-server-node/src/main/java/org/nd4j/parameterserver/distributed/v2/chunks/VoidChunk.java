@@ -54,6 +54,10 @@ public class VoidChunk implements VoidMessage {
     @Getter
     private String originalId;
 
+    @Getter
+    @Setter
+    private String originatorId;
+
     /**
      * This field holds number of chunks for original message
      */

@@ -18,6 +18,7 @@ package org.nd4j.parameterserver.distributed.v2.transport.impl;
 
 import io.reactivex.Flowable;
 import io.reactivex.functions.Consumer;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.primitives.Atomic;
@@ -31,6 +32,7 @@ import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -73,13 +75,41 @@ public abstract  class BaseTransport  implements Transport {
                 return;
             }
 
-            val node = mesh.get().getNodeByIp(id);
-            val root = mesh.get().getRootNode();
-            val upstream = node.getUpstreamNode();
-            val downstreams = node.getDownstreamNodes();
+            // we're tagging this message as originated locally
+            voidMessage.setOriginatorId(id);
 
-
+            // and propagating message across mesh network
+            propagateMessage(voidMessage);
         });
+    }
+
+    @Override
+    public void propagateMessage(@NonNull VoidMessage voidMessage) throws IOException {
+        val node = mesh.get().getNodeByIp(id);
+        val root = mesh.get().getRootNode();
+        val upstream = node.getUpstreamNode();
+        val downstreams = node.getDownstreamNodes();
+
+        // if this is INDArrayMessage we'll split it into chunks
+        if (voidMessage instanceof INDArrayMessage) {
+            // TODO: make chunk size configurable
+            val chunks = MessageSplitter.getInstance().split(voidMessage, 65536);
+            // send chunks to the upstream
+            if (!node.isRootNode())
+                chunks.forEach(c -> sendMessage(c, upstream.getIp()));
+
+            // and send chunks to all downstreams
+            downstreams.parallelStream().forEach(n -> {
+                chunks.forEach(c -> sendMessage(c, n.getIp()));
+            });
+        } else {
+            // send message to the upstream
+            if (!node.isRootNode())
+                sendMessage(voidMessage, upstream.getIp());
+
+            // and send message for all downstreams
+            downstreams.forEach(n -> sendMessage(voidMessage, n.getIp()));
+        }
     }
 
     /**
@@ -88,7 +118,7 @@ public abstract  class BaseTransport  implements Transport {
      */
     private void forwardToParameterServer(INDArrayMessage message) {
         try {
-            incomingFlow.accept((INDArrayMessage) message);
+            incomingFlow.accept(message);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -102,7 +132,7 @@ public abstract  class BaseTransport  implements Transport {
 
             // if this chunk was the last message, we'll forward it to parameter server for actual use
             if (opt.isPresent())
-                forwardToParameterServer((INDArrayMessage) opt.get());
+                forwardToParameterServer(opt.get());
         } else if (message instanceof INDArrayMessage) {
             // just forward message
             forwardToParameterServer((INDArrayMessage) message);
@@ -124,6 +154,7 @@ public abstract  class BaseTransport  implements Transport {
 
         @Override
         public void subscribe(Subscriber<? super T> subscriber) {
+            // we're just maintaining list of
             subscribers.add(subscriber);
         }
     }

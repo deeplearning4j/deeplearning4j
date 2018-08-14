@@ -24,4 +24,16 @@ public interface VoidMessage extends Serializable {
      * @return
      */
     String getMessageId();
+
+    /**
+     * This method returns Id of originator
+     * @return
+     */
+    String getOriginatorId();
+
+    /**
+     * This method allows to set originator id
+     * PLEASE NOTE: This method must be used only from Transport context
+     */
+    void setOriginatorId(String id);
 }
