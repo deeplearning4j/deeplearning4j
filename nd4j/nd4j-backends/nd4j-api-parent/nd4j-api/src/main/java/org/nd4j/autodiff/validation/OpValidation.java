@@ -779,12 +779,18 @@ public class OpValidation {
                 "HardSigmoid",   //Also implemented as python, NOT a single native op
 
                 //All of the following ops - not available in TF (can't find them) - op mapping is wrong?
+                //TODO: Check these and remove the import mapping from the Java classes if they are indeed bad
                 "HardTanh",
                 "Swish",
                 "RDiv",
                 "DivScalar",
                 "LogX",
-                "RationalTanh"
+                "RationalTanh",
+                "absargmax",
+                "absargmin",
+                "entropy_shannon",   //This is a thing, but quite different from our op: https://www.tensorflow.org/versions/r1.2/api_docs/python/tf/contrib/bayesflow/entropy/entropy_shannon
+                "count_zero"
+
 
 
         );
