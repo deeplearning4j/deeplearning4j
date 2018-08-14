@@ -572,7 +572,7 @@ public class OpValidation {
         int countLibnd4jMapped = countTotalLibnd4jOps - nonMappedLibnd4jOps.size();
         String fracLibnd4j = String.format("%.2f", 100.0 * (countLibnd4jMapped / (double)countTotalLibnd4jOps));
 
-        String fracTFMappedTested = String.format("%.2f", 100.0 * tfOpsWithImportTests / (double)totalTFMappedOps);
+        String fracTFMappedTested = String.format("%.2f", 100.0 * tfOpsWithImportTests / (double)(totalTFMappedOps-tfImportIgnored));
 
         log.info("*****************************************************");
         log.info("Op Validation:                        {} of {} classes with adequate tests ({}% coverage)", countAdequate, totalFwd, pc);
@@ -581,7 +581,7 @@ public class OpValidation {
         log.info("({} ops excluded from gradient check coverage)", excludedFromBackpropCoverage.size());
         log.info("({} ops excluded from fwd+gradient tests)", excludedFromAllTestCoverage.size());
         log.info("TF mapped ops:                        {} of {} ({}%)", countTfMapped, countTf, fracTfStr);
-        log.info("SD ops with TF import mapping + test  {} of {} ({}%) - {} ignored", tfOpsWithImportTests, totalTFMappedOps, fracTFMappedTested, tfImportIgnored);
+        log.info("SD ops with TF import mapping + test  {} of {} ({}%) - {} ignored for coverage", tfOpsWithImportTests, (totalTFMappedOps-tfImportIgnored), fracTFMappedTested, tfImportIgnored);
         log.info("Libnd4j mapped ops:                   {} of {} ({}%)", countLibnd4jMapped, countTotalLibnd4jOps, fracLibnd4j);
         log.info("*****************************************************");
     }
