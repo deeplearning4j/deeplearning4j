@@ -10,6 +10,12 @@
       "class": []
     },
     {
+      "page": "normalization.md",
+      "module": [
+        "/../nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/preprocessor/"
+      ]
+    },
+    {
       "page": "records.md",
       "class": [
         "datavec-api/src/main/java/org/datavec/api/records/impl/Record.java",

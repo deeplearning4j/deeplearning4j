@@ -32,16 +32,10 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * 1D (temporal) subsampling layer. Currently, we just subclass off the
- * SubsamplingLayer and hard code the "width" dimension to 1. Also, this
- * layer accepts RNN InputTypes instead of CNN InputTypes.
- * <p>
- * This approach treats a multivariate time series with L timesteps and
- * P variables as an L x 1 x P image (L rows high, 1 column wide, P
- * channels deep). The kernel should be H<L pixels high and W=1 pixels
- * wide.
- * <p>
- * TODO: We will eventually want to NOT subclass off of SubsamplingLayer.
+ * 1D (temporal) subsampling layer - also known as pooling layer.<br>
+ * Expects input of shape {@code [minibatch, nIn, sequenceLength]}. This layer accepts RNN InputTypes instead of CNN InputTypes.<br>
+ *
+ * Supports the following pooling types: MAX, AVG, SUM, PNORM
  *
  * @author dave@skymind.io
  */
@@ -50,6 +44,14 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class Subsampling1DLayer extends SubsamplingLayer {
+    /*
+     * Currently, we just subclass off the SubsamplingLayer and hard code the "width" dimension to 1.
+     * TODO: We will eventually want to NOT subclass off of SubsamplingLayer.
+     * This approach treats a multivariate time series with L timesteps and
+     * P variables as an L x 1 x P image (L rows high, 1 column wide, P
+     * channels deep). The kernel should be H<L pixels high and W=1 pixels
+     * wide.
+     */
 
     private Subsampling1DLayer(Builder builder) {
         super(builder);
@@ -184,7 +186,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         /**
          * Kernel size
          *
-         * @param kernelSize kernel size in height and width dimensions
+         * @param kernelSize kernel size
          */
         public Subsampling1DLayer.Builder kernelSize(int kernelSize) {
             this.kernelSize[0] = kernelSize;

@@ -22,12 +22,11 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 /**
- * 2D Pooling layer.
+ * 2D Pooling (subsampling) layer. Equivalent to {@link SubsamplingLayer}
  *
  *  Supports the following pooling types: MAX, AVG, SUM, PNORM, NONE
  * @author Max Pumperla
  */
-
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

@@ -22,6 +22,11 @@ import org.nd4j.linalg.activations.IActivation;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Utility methods for DL4J SameDiff layers
+ *
+ * @author Alex Black
+ */
 public class SameDiffLayerUtils {
 
     private static Map<Class<?>, Activation> activationMap;

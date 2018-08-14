@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.optimize.listeners.checkpoint;
+package org.deeplearning4j.optimize.listeners;
 
 import com.google.common.io.Files;
 import lombok.NonNull;

@@ -32,10 +32,14 @@ import java.util.HashSet;
 import java.util.List;
 
 /**
- * Created by Alex on 22/02/2017.
+ * Utility methods for validating layer configurations
+ *
+ * @author Alex Black
  */
 @Slf4j
 public class LayerValidation {
+
+    private LayerValidation(){ }
 
     /**
      * Asserts that the layer nIn and nOut values are set for the layer

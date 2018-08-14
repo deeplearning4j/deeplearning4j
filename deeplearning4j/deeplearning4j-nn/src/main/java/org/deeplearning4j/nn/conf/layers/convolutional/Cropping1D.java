@@ -61,6 +61,9 @@ public class Cropping1D extends NoParamLayer {
         this(new Builder(cropTop, cropBottom));
     }
 
+    /**
+     * @param cropping Cropping as a length 2 array, with values {@code [cropTop, cropBottom]}
+     */
     public Cropping1D(int[] cropping) {
         this(new Builder(cropping));
     }
@@ -117,7 +120,7 @@ public class Cropping1D extends NoParamLayer {
         }
 
         /**
-         * @param cropping Cropping amount for top/bottom(in that order). Must be length 1 or 2 array.
+         * @param cropping Cropping amount for top/bottom (in that order). Must be length 1 or 2 array.
          */
         public Builder(@NonNull int[] cropping) {
             Preconditions.checkArgument(cropping.length == 2 || cropping.length == 1,
