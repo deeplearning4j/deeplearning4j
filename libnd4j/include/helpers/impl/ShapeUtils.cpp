@@ -1024,6 +1024,21 @@ Nd4jLong* ShapeUtils<T>::createShapeInfo(const char order, const std::vector<Nd4
     return shapeInfo;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+template<typename T>
+std::vector<Nd4jLong> ShapeUtils<T>::evalDimsWithoutUnities(const Nd4jLong* shapeInfo) {
+
+    std::vector<Nd4jLong> result;
+    for(int i = 1; i <= shapeInfo[0]; ++i)
+        if(shapeInfo[i] != 1)
+            result.push_back(shapeInfo[i]);
+
+    if(result.size() == 0)  // shape consists of unities only 
+        return std::vector<Nd4jLong>(1,1);  // return [1]
+
+    return result;
+}
+
 template class ND4J_EXPORT ShapeUtils<float>;
 template class ND4J_EXPORT ShapeUtils<float16>;
 template class ND4J_EXPORT ShapeUtils<double>;

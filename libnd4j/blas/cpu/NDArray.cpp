@@ -2391,7 +2391,7 @@ void NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target,
             delete[] newShapeInfo;
     }
 
-    // check whether min array has to be tiled
+    // check whether max array has to be tiled
     if(!max->isSameShape(target)) {
         // evaluate repeating dimensions for tile operation
         std::vector<Nd4jLong> repeatMax(max->rankOf());
@@ -2402,22 +2402,23 @@ void NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target,
     else
         target->assign(max);
 
-    // check whether min array has to be tiled
-    std::vector<Nd4jLong> repeatMin(min->rankOf());
-    int product = 1;
-    for(int i = min->rankOf(); i >=1 ; --i) {
-        repeatMin[i-1] = (target->_shapeInfo[target->rankOf() - min->rankOf() + i] / min->_shapeInfo[i]);
-        product *= repeatMin[i-1];
-    }
+    std::vector<int> sameDims = ShapeUtils<T>::getDimsWithSameShape(target, min);    
 
-    if(product != 1 ) {
-        NDArray<T> tiledMin = min->tile(repeatMin);
-        std::vector<int> sameDims = ShapeUtils<T>::getDimsWithSameShape(target, &tiledMin);
-        target->template applyBroadcast<OpName>(sameDims, &tiledMin, nullptr, extraArgs);
+    if(max == this) {        
+        target->template applyBroadcast<OpName>(sameDims, min, nullptr, extraArgs);
     }
     else {
-        std::vector<int> sameDims = ShapeUtils<T>::getDimsWithSameShape(target, min);
-        target->template applyBroadcast<OpName>(sameDims, min, nullptr, extraArgs);
+    
+        std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(target->rankOf(), sameDims);
+        const Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(target->_shapeInfo, dimsToExclude);
+        std::vector<Nd4jLong> idxRanges(target->rankOf() * 2);
+#pragma omp parallel for schedule(guided) firstprivate(idxRanges) 
+        for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
+
+            ShapeUtils<T>::evalIdxRangesForSubArr(i, target->_shapeInfo, dimsToExclude, idxRanges.data());
+            NDArray<T> targetSubArr = (*target)(idxRanges.data());
+            const_cast<NDArray<T>*>(min)->template applyPairwiseTransform<OpName>(&targetSubArr, &targetSubArr, extraArgs);
+        }
     }
 }
 
@@ -2995,11 +2996,16 @@ bool NDArray<T>::isUnitary() {
         if(!keepUnitiesInShape) {
             // check whether units are present in newShape, if yes then remove them by applying corresponding reshape
             // for example if result has shape {1,a,1,b} then after reshaping it acquire new shape {a,b}
-            std::vector<Nd4jLong > nonUnitDims;
-            for(int i = 0; i < result.rankOf(); ++i)
-                if(newShape[i+1] != 1)
-                    nonUnitDims.push_back(newShape[i+1]);
+            
+            // std::vector<Nd4jLong > nonUnitDims;
+            // for(int i = 0; i < result.rankOf(); ++i)
+            //     if(newShape[i+1] != 1)
+            //         nonUnitDims.push_back(newShape[i+1]);
 
+            // if(nonUnitDims.size() != result.rankOf())
+            //     result.reshapei(nonUnitDims);
+
+            std::vector<Nd4jLong> nonUnitDims = ShapeUtils<T>::evalDimsWithoutUnities(newShape);
             if(nonUnitDims.size() != result.rankOf())
                 result.reshapei(nonUnitDims);
         }

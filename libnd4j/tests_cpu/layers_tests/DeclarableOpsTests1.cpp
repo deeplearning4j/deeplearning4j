@@ -1191,21 +1191,20 @@ TEST_F(DeclarableOpsTests1, BroadcastDivideTest_1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, BroadcastReverseDivideTest_1) {
-
+ 
     NDArray<float>  x('c', {3, 4, 5, 1});
     NDArray<float>  y('c', {1, 6});
     NDArray<float>  exp('c', {3, 4, 5, 6});
-    x.assign(2);
-    y.assign(6);
-    exp.assign(3);
+    x.assign(3.f);
+    y.assign(6.f);
+    exp.assign(0.5f);
 
     nd4j::ops::reversedivide<float> div;
 
     auto res = div.execute({&y, &x}, {}, {});
 
     ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    res->at(0)->printIndexedBuffer("OUtput REVERSED DIV");
-
+ 
     ASSERT_TRUE(res->at(0)->equalsTo(exp));
 
     delete res;
