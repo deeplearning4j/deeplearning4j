@@ -24,7 +24,10 @@ import lombok.extern.slf4j.Slf4j;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class DummyTransport extends BaseTransport {
+public abstract class DummyTransport extends BaseTransport {
 
-
+    @Override
+    public void launch() {
+        super.launch();
+    }
 }

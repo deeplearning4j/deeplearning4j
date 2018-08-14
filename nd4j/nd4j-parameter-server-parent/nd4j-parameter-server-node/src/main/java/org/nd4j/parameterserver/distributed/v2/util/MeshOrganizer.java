@@ -47,7 +47,7 @@ public class MeshOrganizer implements Serializable {
     public static final int MAX_DEPTH = 5;
 
     // just shortcut to the root node of the tree
-    @Getter(AccessLevel.PROTECTED) private Node rootNode = new Node(true);
+    @Getter(AccessLevel.PUBLIC) private Node rootNode = new Node(true);
 
     // SortedSet, with sort by number of downstreams
     private List<Node> sortedNodes = new ArrayList<>();
@@ -319,7 +319,7 @@ public class MeshOrganizer implements Serializable {
      * This method returns Node representing given IP
      * @return
      */
-    protected Node getNodeByIp(@NonNull String ip) throws NoSuchElementException {
+    public Node getNodeByIp(@NonNull String ip) throws NoSuchElementException {
         val node = nodeMap.get(ip);
         if (node == null)
             throw new NoSuchElementException(ip);
@@ -469,7 +469,7 @@ public class MeshOrganizer implements Serializable {
          * This method returns the node this one it connected to
          * @return
          */
-        protected Node getUpstreamNode() {
+        public Node getUpstreamNode() {
             return upstream;
         }
 

@@ -30,8 +30,35 @@ public interface Transport {
     Consumer<VoidMessage> outgoingConsumer();
 
     /**
-     * This method returns flow of messages for parameterserver
+     * This method returns flow of messages for parameter server
      * @return
      */
     Publisher<INDArrayMessage> incomingPublisher();
+
+    /**
+     * This method starts  this Transport instance
+     */
+    void launch();
+
+    /**
+     * This method will send message to the network, using tree structure
+     * @param message
+     */
+    void propagateMessage(VoidMessage message);
+
+    /**
+     * This method will send message to the node specified by Id
+     *
+     * @param message
+     * @param id
+     */
+    void sendMessage(VoidMessage message, String id);
+
+    /**
+     * This method will be invoked for all incoming messages
+     * PLEASE NOTE: this method is mostly suited for tests
+     *
+     * @param message
+     */
+    void processMessage(VoidMessage message);
 }
