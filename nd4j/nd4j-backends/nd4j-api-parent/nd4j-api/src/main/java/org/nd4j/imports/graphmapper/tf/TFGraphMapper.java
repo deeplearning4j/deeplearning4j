@@ -770,11 +770,16 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
     @Override
     public boolean unknownTypeNodeImportable(NodeDef tensorProto) {
-        val type = tensorProto.containsAttr("dtype") ? tensorProto.getAttrOrThrow("dtype").getType()
-                : tensorProto.containsAttr("T") ? tensorProto.getAttrOrThrow("T").getType() : tensorProto
-                .getAttrOrThrow("Tidx").getType();
+        DataType dt = null;
+        if(tensorProto.containsAttr("dtype")){
+            dt = tensorProto.getAttrOrThrow("dtype").getType();
+        } else if(tensorProto.containsAttr("T")){
+            dt = tensorProto.getAttrOrThrow("T").getType();
+        } else if(tensorProto.containsAttr("Tidx")){
+            dt = tensorProto.getAttrOrThrow("Tidx").getType();
+        }
 
-        return type == DataType.DT_BOOL;
+        return dt == DataType.DT_BOOL;
     }
 
 
