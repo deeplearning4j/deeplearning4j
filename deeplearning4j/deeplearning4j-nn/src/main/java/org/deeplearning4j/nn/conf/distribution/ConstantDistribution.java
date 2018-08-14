@@ -42,6 +42,6 @@ public class ConstantDistribution extends Distribution {
     }
 
     public String toString() {
-        return "ConstantDistribution{value=" + value + "}";
+        return "ConstantDistribution(value=" + value + ")";
     }
 }

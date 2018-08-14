@@ -46,6 +46,6 @@ public class TruncatedNormalDistribution extends Distribution {
     }
 
     public String toString() {
-        return "TruncatedNormalDistribution{" + "mean=" + mean + ", std=" + std + '}';
+        return "TruncatedNormalDistribution(" + "mean=" + mean + ", std=" + std + ')';
     }
 }
