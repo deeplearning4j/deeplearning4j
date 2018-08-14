@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -1420,5 +1421,20 @@ public class TransformOpValidation extends BaseOpValidation {
         assertEquals(1, outShapes.size());
 
         assertArrayEquals(Arrays.toString(outShapes.get(0)), new long[]{3,2,4}, outShapes.get(0));
+    }
+
+    @Test
+    @Ignore
+    public void testBooleanAnd(){
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        INDArray arr1 = Nd4j.create(new long[]{3,4});
+        INDArray arr2 = Nd4j.create(new long[]{3,4});
+        INDArray out = Nd4j.create(new long[]{3,4});
+
+        DynamicCustomOp op = DynamicCustomOp.builder("boolean_and")
+                .addInputs(arr1, arr2)
+                .addOutputs(out)
+                .build();
+        Nd4j.getExecutioner().exec(op);
     }
 }

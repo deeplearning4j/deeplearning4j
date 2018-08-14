@@ -113,7 +113,7 @@ public class And extends BaseTransformOp {
 
     @Override
     public String opName() {
-        return "boolean_and";
+        return "and";
     }
 
     @Override
@@ -123,7 +123,7 @@ public class And extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "LogicalAnd";
+        throw new NoOpNameFoundException("No Tensorflow op opName found for " +  opName());
     }
 
 
