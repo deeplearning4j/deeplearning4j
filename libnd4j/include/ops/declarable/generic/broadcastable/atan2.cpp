@@ -21,17 +21,21 @@
 #include <op_boilerplate.h>
 #if NOT_EXCLUDED(OP_tf_atan2)
 
-#include <ops/declarable/headers/parity_ops.h>
+#include <ops/declarable/headers/broadcastable.h>
 
 namespace nd4j {
     namespace ops {
-
-        OP_IMPL(tf_atan2, 2, 1, true) {
+        BROADCASTABLE_OP_IMPL(tf_atan2, 0, 0) {
             auto y = INPUT_VARIABLE(0);
             auto x = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
-            x->template applyPairwiseTransform<simdOps::Atan2<T>>(y, z, nullptr);
+            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Atan2<T>>(y, x, z);
+            if (tZ == nullptr)
+                return ND4J_STATUS_KERNEL_FAILURE;
+            else if (tZ != z) {
+                OVERWRITE_RESULT(tZ);
+            }
 
             return Status::OK();
         }
