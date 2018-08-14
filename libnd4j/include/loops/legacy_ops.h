@@ -59,7 +59,8 @@
        (22, simdOps::Mod) ,\
        (23, simdOps::TruncateDiv), \
        (24, simdOps::And), \
-       (25, simdOps::Or)
+       (25, simdOps::Or) ,\
+       (26, simdOps::Atan2)
 
 
 
@@ -196,7 +197,8 @@
         (24, simdOps::AMax), \
         (25, simdOps::AMin), \
         (26, simdOps::And), \
-        (27, simdOps::Or)
+        (27, simdOps::Or), \
+        (28, simdOps::Atan2)
 
 
 
