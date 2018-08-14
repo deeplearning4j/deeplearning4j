@@ -22,7 +22,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.optimize.listeners.checkpoint.CheckpointListener;
+import org.deeplearning4j.optimize.listeners.CheckpointListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Rule;
 import org.junit.Test;

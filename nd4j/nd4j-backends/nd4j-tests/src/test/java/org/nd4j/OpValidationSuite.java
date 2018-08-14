@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.autodiff;
+package org.nd4j;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -22,6 +22,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.nd4j.autodiff.opvalidation.*;
 import org.nd4j.autodiff.validation.OpValidation;
+import org.nd4j.imports.TFGraphs.TFGraphTestAllLibnd4j;
+import org.nd4j.imports.TFGraphs.TFGraphTestAllSameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.Function;
@@ -57,7 +59,11 @@ import static org.junit.Assume.assumeFalse;
         ReductionBpOpValidation.class,
         ReductionOpValidation.class,
         ShapeOpValidation.class,
-        TransformOpValidation.class
+        TransformOpValidation.class,
+
+        //TF import tests
+        TFGraphTestAllSameDiff.class,
+        TFGraphTestAllLibnd4j.class
 })
 public class OpValidationSuite {
 
@@ -91,7 +97,7 @@ public class OpValidationSuite {
         Nd4j.setDataType(initialType);
 
         // Log coverage information
-        OpValidation.logCoverageInformation(true, true, true);
+        OpValidation.logCoverageInformation(true, true, true, true, true);
     }
 
 

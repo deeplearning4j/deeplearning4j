@@ -122,7 +122,7 @@ col_0     7.98925e+00    2.00648e+00    2.82653e+00    5.01481e-01    7.25783e-0
 
 Columns are Mean Squared Error, Mean Absolute Error, Root Mean Squared Error, Relative Squared Error, and R^2 Coefficient of Determination
 
-See [RegressionEvaluation JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/eval/RegressionEvaluation.html)
+See [RegressionEvaluation JavaDoc](https://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/eval/RegressionEvaluation.html)
 
 ## <a name="multiple">Performing Multiple Evaluations Simultaneously</a>
 
@@ -138,7 +138,7 @@ model.doEvaluation(testdata, eval, roc);
 ## <a name="timeseries">Evaluation of Time Series</a>
 
 Time series evaluation is very similar to the above evaluation approaches. Evaluation in DL4J is performed on all (non-masked) time steps separately - for example, a time series of length 10 will contribute 10 predictions/labels to an Evaluation object.
-One difference with time seires is the (optional) presence of mask arrays, which are used to mark some time steps as missing or not present. See [Using RNNs - Masking](https://deeplearning4j.org/usingrnns#masking) for more details on masking.
+One difference with time seires is the (optional) presence of mask arrays, which are used to mark some time steps as missing or not present. See [Using RNNs - Masking](./deeplearning4j-nn-recurrent) for more details on masking.
 
 For most users, it is simply sufficient to use the ```MultiLayerNetwork.evaluate(DataSetIterator)``` or ```MultiLayerNetwork.evaluateRegression(DataSetIterator)``` and similar methods. These methods will properly handle masking, if mask arrays are present.
 
@@ -151,7 +151,7 @@ The EvaluationBinary is used for evaluating networks with binary classification 
 EvaluationBinary eval = new EvaluationBinary(int size)
 ```
 
-See [EvaluationBinary JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/eval/EvaluationBinary.html)
+See [EvaluationBinary JavaDoc](https://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/eval/EvaluationBinary.html)
 
 
 ## <a name="roc">ROC</a>
@@ -173,7 +173,7 @@ Note that all three support two modes of operation/calculation
 
 The number of bins can be set using the constructors. Exact can be set using the default constructor ```new ROC()``` or explicitly using ```new ROC(0)```
 
-See [ROCBinary JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/eval/ROC.html) is used to evaluate Binary Classifiers.
+See [ROCBinary JavaDoc](https://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/eval/ROC.html) is used to evaluate Binary Classifiers.
 
 ## <a name="calibration">Evaluating Classifier Calibration</a>
 
@@ -200,10 +200,10 @@ SparkDl4jMultiLayer.doEvaluation(JavaRDD<DataSet>, IEvaluation...);
 
 ## <a name="multitask">Evaluation for Multi-task Networks</a>
 
-A multi-task network is a network that is trained to produce multiple outputs. For example a network given audio samples can be trained to both predict the language spoken and the gender of the speaker. Multi-task configuration is briefly described [here](https://deeplearning4j.org/compgraph#multitask). 
+A multi-task network is a network that is trained to produce multiple outputs. For example a network given audio samples can be trained to both predict the language spoken and the gender of the speaker. Multi-task configuration is briefly described [here](./deeplearning4j-nn-computationgraph). 
 
 Evaluation Classes useful for Multi-Task Network
 
-See [ROCMultiClass JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/eval/ROCMultiClass.html)
+See [ROCMultiClass JavaDoc](https://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/eval/ROCMultiClass.html)
 
-See [ROCBinary JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/eval/ROCBinary.html)
+See [ROCBinary JavaDoc](https://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/eval/ROCBinary.html)

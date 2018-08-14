@@ -36,9 +36,11 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * LSTM recurrent net without peephole connections.
+ * LSTM recurrent neural network layer without peephole connections.
+ * Supports CuDNN acceleration - see <a href="https://deeplearning4j.org/cudnn>https://deeplearning4j.org/cudnn</a> for details
  *
  * @see GravesLSTM GravesLSTM class for an alternative LSTM (with peephole connections)
+ * @author Alex Black
  */
 @Data
 @NoArgsConstructor

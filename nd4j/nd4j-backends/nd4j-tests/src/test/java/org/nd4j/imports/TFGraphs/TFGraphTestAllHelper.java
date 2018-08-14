@@ -21,14 +21,18 @@ import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.execution.NativeGraphExecutioner;
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -68,6 +72,11 @@ public class TFGraphTestAllHelper {
         public String getDefaultBaseDir() {
             return BASE_DIR;
         }
+    }
+
+    @Before
+    public void setup(){
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
     }
 
     @After
@@ -113,7 +122,10 @@ public class TFGraphTestAllHelper {
     protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, String baseDir, ExecuteWith execType, Double precisionOverride) throws IOException {
         Nd4j.EPS_THRESHOLD = 1e-3;
 
-        val graph = getGraphAfterExec(baseDir, modelName, inputs, execType);
+        SameDiff graph = getGraphAfterExec(baseDir, modelName, inputs, execType);
+
+        //Collect coverage info about ops
+        OpValidation.collectTensorflowImportCoverage(graph);
 
         if (!execType.equals(ExecuteWith.JUST_PRINT)) {
             for (String outputNode : predictions.keySet()) {
@@ -162,6 +174,10 @@ public class TFGraphTestAllHelper {
     public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, String baseDir, ExecuteWith execType) throws IOException {
         Nd4j.EPS_THRESHOLD = 1e-3;
         val graph = getGraphAfterExec(baseDir, modelName, inputs, execType);
+
+        //Collect coverage info about ops
+        OpValidation.collectTensorflowImportCoverage(graph);
+
         if (!execType.equals(ExecuteWith.JUST_PRINT)) {
             for (String varName : graph.variableMap().keySet()) {
                 if (!inputs.containsKey(varName)) { //avoiding placeholders

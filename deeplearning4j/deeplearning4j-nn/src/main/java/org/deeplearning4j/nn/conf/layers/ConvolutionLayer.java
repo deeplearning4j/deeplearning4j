@@ -36,6 +36,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 2D Convolution layer (for example, spatial convolution over images).
+ * Input activations should be format {@code [minibatch, channels, height, width]}
+ *
  * @author Adam Gibson
  */
 @Data
