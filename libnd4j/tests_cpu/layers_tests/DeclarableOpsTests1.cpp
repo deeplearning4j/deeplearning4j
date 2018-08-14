@@ -786,23 +786,23 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractTest_1) {
 TEST_F(DeclarableOpsTests1, ReverseSubtractTest_2) {
 
 //    NDArray<float> x('c', {1, 6});
-    NDArray<float> x('c', {6});
+    NDArray<float> x('c', {1, 6});
     NDArray<float> y('c', {3, 4, 5, 1});
     NDArray<float> exp('c', {3, 4, 5, 6});
     NDArray<float> z(exp);
     x.assign(3);
     y.assign(1);
-    exp.assign(2);
-    auto tZ = BroadcastHelper<float>::template broadcastApply<simdOps::ReverseSubtract<float>>(&x, &y, &z);
-    tZ->printIndexedBuffer("ReverseSubtract Legacy");
-    if (tZ != &z)
-        delete tZ;
+    exp.assign(-2);
+    x.template applyTrueBroadcast<simdOps::ReverseSubtract<float>>(&y, &z, true);
+//    x.printIndexedBuffer("ReverseSubtract Legacy");
+    ASSERT_TRUE(exp.equalsTo(&z));
+
     nd4j::ops::reversesubtract<float> subOp;
 
     auto res = subOp.execute({&x, &y}, {}, {});
 
     ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
-    res->at(0)->printIndexedBuffer("OUtput REVERSED SUB");
+    //res->at(0)->printIndexedBuffer("OUtput REVERSED SUB");
     ASSERT_TRUE(res->at(0)->equalsTo(&exp));
 
     delete res;
@@ -819,16 +819,12 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractTest_3) {
     x.assign(1);
     y.assign(3);
     exp.assign(2);
-    auto tZ = BroadcastHelper<float>::template broadcastApply<simdOps::ReverseSubtract<float>>(&y, &x, &z);
-    tZ->printIndexedBuffer("ReverseSubtract Legacy3");
-    if (tZ != &z)
-        delete tZ;
+    x.template applyTrueBroadcast<simdOps::ReverseSubtract<float>>(&y, &z, true);
+    ASSERT_TRUE(z.equalsTo(&exp));
     nd4j::ops::reversesubtract<float> subOp;
 
-    auto res = subOp.execute({&y, &x}, {}, {});
-
+    auto res = subOp.execute({&x, &y}, {}, {});
     ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
-    res->at(0)->printIndexedBuffer("OUtput REVERSED SUB3");
     ASSERT_TRUE(res->at(0)->equalsTo(&exp));
 
     delete res;
@@ -845,22 +841,19 @@ TEST_F(DeclarableOpsTests1, ReverseModTest_1) {
     x.assign(2);
     y.assign(9);
     exp.assign(1);
-    auto tZ = BroadcastHelper<float>::template broadcastApply<simdOps::ReverseMod<float>>(&x, &y, &z);
-    tZ->printIndexedBuffer("ReverseMod Legacy");
-    if (tZ != &z)
-        delete tZ;
-    tZ = BroadcastHelper<float>::template broadcastApply<simdOps::Mod<float>>(&x, &y, &z);
-    tZ->printIndexedBuffer("Mod Legacy");
-    if (tZ != &z)
-        delete tZ;
+    y.template applyTrueBroadcast<simdOps::Mod<float>>(&x, &z, true);
+//    z.printIndexedBuffer("MOD1");
+    ASSERT_TRUE(exp.equalsTo(&z));
+    x.template applyTrueBroadcast<simdOps::ReverseMod<float>>(&y, &exp, true);
+    ASSERT_TRUE(exp.equalsTo(&z));
 
     nd4j::ops::reversemod<float> subOp;
 
     auto res = subOp.execute({&x, &y}, {}, {});
 
     ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
-    res->at(0)->printIndexedBuffer("OUtput REVERSED MOD");
     ASSERT_TRUE(res->at(0)->equalsTo(&exp));
+    ASSERT_TRUE(exp.equalsTo(&z));
 
     delete res;
 }
@@ -876,21 +869,17 @@ TEST_F(DeclarableOpsTests1, ReverseModTest_2) {
     x.assign(2);
     y.assign(9);
     exp.assign(1);
-    auto tZ = BroadcastHelper<float>::template broadcastApply<simdOps::ReverseMod<float>>(&x, &y, &z);
-    tZ->printIndexedBuffer("ReverseMod Legacy2");
-    if (tZ != &z)
-        delete tZ;
-    tZ = BroadcastHelper<float>::template broadcastApply<simdOps::Mod<float>>(&x, &y, &z);
-    tZ->printIndexedBuffer("Mod Legacy2");
-    if (tZ != &z)
-        delete tZ;
+    x.template applyTrueBroadcast<simdOps::ReverseMod<float>>(&y, &z, true);
+    ASSERT_TRUE(z.equalsTo(&exp));
+    x.template applyTrueBroadcast<simdOps::ReverseMod<float>>(&y, &exp, true);
+    ASSERT_TRUE(z.equalsTo(&exp));
 
     nd4j::ops::reversemod<float> subOp;
 
     auto res = subOp.execute({&x, &y}, {}, {});
 
     ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
-    res->at(0)->printIndexedBuffer("OUtput REVERSED MOD2");
+//    res->at(0)->printIndexedBuffer("OUtput REVERSED MOD2");
     ASSERT_TRUE(res->at(0)->equalsTo(&exp));
 
     delete res;
@@ -1197,15 +1186,20 @@ TEST_F(DeclarableOpsTests1, BroadcastReverseDivideTest_1) {
     NDArray<float>  exp('c', {3, 4, 5, 6});
     x.assign(3.f);
     y.assign(6.f);
-    exp.assign(0.5f);
+    exp.assign(2.f);
 
     nd4j::ops::reversedivide<float> div;
 
-    auto res = div.execute({&y, &x}, {}, {});
+    auto res = div.execute({&x, &y}, {}, {});
 
     ASSERT_EQ(res->status(), ND4J_STATUS_OK);
  
     ASSERT_TRUE(res->at(0)->equalsTo(exp));
+    NDArray<float> z(exp);
+    x.template applyTrueBroadcast<simdOps::ReverseDivide<float>>(&y, &z, true);
+    y.template applyTrueBroadcast<simdOps::Divide<float>>(&x, &exp, true);
+
+    ASSERT_TRUE(z.equalsTo(&exp));
 
     delete res;
 }
