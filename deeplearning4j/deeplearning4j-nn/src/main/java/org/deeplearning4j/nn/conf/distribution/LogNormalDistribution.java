@@ -47,6 +47,6 @@ public class LogNormalDistribution extends Distribution {
     }
 
     public String toString() {
-        return "LogNormalDistribution{" + "mean=" + mean + ", std=" + std + '}';
+        return "LogNormalDistribution(" + "mean=" + mean + ", std=" + std + ')';
     }
 }

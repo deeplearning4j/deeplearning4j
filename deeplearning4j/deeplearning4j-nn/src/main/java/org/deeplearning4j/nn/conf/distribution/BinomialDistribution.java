@@ -85,7 +85,7 @@ public class BinomialDistribution extends Distribution {
     }
 
     public String toString() {
-        return "BinomialDistribution{" + "numberOfTrials=" + numberOfTrials + ", probabilityOfSuccess="
-                        + probabilityOfSuccess + '}';
+        return "BinomialDistribution(" + "numberOfTrials=" + numberOfTrials + ", probabilityOfSuccess="
+                        + probabilityOfSuccess + ')';
     }
 }

@@ -89,6 +89,6 @@ public class NormalDistribution extends Distribution {
     }
 
     public String toString() {
-        return "NormalDistribution{" + "mean=" + mean + ", std=" + std + '}';
+        return "NormalDistribution(" + "mean=" + mean + ", std=" + std + ')';
     }
 }
