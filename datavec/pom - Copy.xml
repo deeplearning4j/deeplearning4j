@@ -69,8 +69,11 @@
         <module>datavec-excel</module>
         <module>datavec-arrow</module>
         <module>datavec-perf</module>
-        <module>datavec-uberjar</module>
     </modules>
+
+    <properties>
+        <jackson.version>2.8.7</jackson.version> <!-- To match spark and geoip2 -->
+    </properties>
 
     <dependencies>
         <dependency>
@@ -97,21 +100,6 @@
         </extensions>
         <pluginManagement>
             <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-shade-plugin</artifactId>
-                    <version>3.1.1</version>
-                    <configuration>
-                    </configuration>
-                    <executions>
-                        <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        </execution>
-                    </executions>
-                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-enforcer-plugin</artifactId>
