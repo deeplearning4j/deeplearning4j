@@ -102,7 +102,7 @@ public class Or extends BaseTransformOp {
 
     @Override
     public String opName() {
-        return "boolean_or";
+        return "or";
     }
 
     @Override

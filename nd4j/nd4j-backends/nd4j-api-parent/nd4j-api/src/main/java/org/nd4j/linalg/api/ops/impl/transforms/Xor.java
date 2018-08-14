@@ -97,7 +97,7 @@ public class Xor extends BaseTransformOp {
 
     @Override
     public String opName() {
-        return "boolean_xor";
+        return "xor";
     }
 
     @Override
