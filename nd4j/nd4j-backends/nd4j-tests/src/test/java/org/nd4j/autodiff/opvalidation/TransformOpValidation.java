@@ -54,10 +54,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -1408,5 +1405,20 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable v2 = sd.sum(sd.var(Nd4j.create(new double[]{4, 4}))).div(2.0);
         double d1 = sd.execAndEndResult().getDouble(0);
         assertEquals(4, d1, 0);
+    }
+
+    @Test
+    public void testAtan2BroadcastShape(){
+        INDArray arr1 = Nd4j.create(new long[]{3,1,4});
+        INDArray arr2 = Nd4j.create(new long[]{1,2,4});
+
+        DynamicCustomOp op = DynamicCustomOp.builder("tf_atan2")
+                .addInputs(arr1, arr2)
+                .build();
+
+        List<long[]> outShapes = Nd4j.getExecutioner().calculateOutputShape(op);
+        assertEquals(1, outShapes.size());
+
+        assertArrayEquals(Arrays.toString(outShapes.get(0)), new long[]{3,2,4}, outShapes.get(0));
     }
 }

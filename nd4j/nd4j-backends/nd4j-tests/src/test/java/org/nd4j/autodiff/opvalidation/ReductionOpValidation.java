@@ -29,6 +29,7 @@ import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
@@ -1039,5 +1040,21 @@ public class ReductionOpValidation extends BaseOpValidation {
 
             Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> p = sd.execBackwards();
         }
+    }
+
+    @Test
+    public void testArgMin(){
+
+        INDArray arr = Nd4j.rand(3,4);
+        DynamicCustomOp op = DynamicCustomOp.builder("argmax")
+                .addInputs(arr)
+//                .addIntegerArguments(0)
+                .addIntegerArguments(0,1)     //Gives [1,1] output for argmin
+                .build();
+
+        List<long[]> shapes = Nd4j.getExecutioner().calculateOutputShape(op);
+        assertEquals(1, shapes.size());
+        long[] actual = shapes.get(0);
+        assertArrayEquals(Arrays.toString(actual), new long[]{4}, actual);
     }
 }
