@@ -14,22 +14,21 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.v2.transport.impl;
+package org.nd4j.parameterserver.distributed.v2.messages;
 
-import lombok.extern.slf4j.Slf4j;
+public interface ReplyMessage extends VoidMessage {
 
-/**
- * This class is an in-memory implementation of Transport interface, written for tests
- *
- * @author raver119@gmail.com
- */
-@Slf4j
-public abstract class DummyTransport extends BaseTransport {
+    /**
+     * This message returns request id, used to join request and response
+     * @return
+     */
+    String getRequestId();
 
-    @Override
-    public void launch() {
-        super.launch();
-    }
-
-
+    /**
+     * This method allows to set request id
+     * PLEASE NOTE: This method must be used only from Transport context
+     *
+     * @param requestId
+     */
+    void setRequestId(String requestId);
 }

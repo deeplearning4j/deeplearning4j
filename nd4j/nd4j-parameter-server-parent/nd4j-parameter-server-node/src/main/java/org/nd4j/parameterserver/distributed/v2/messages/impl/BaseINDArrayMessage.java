@@ -16,10 +16,7 @@
 
 package org.nd4j.parameterserver.distributed.v2.messages.impl;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
 
@@ -40,5 +37,14 @@ public abstract class BaseINDArrayMessage implements INDArrayMessage {
     protected String originatorId;
 
     @Getter
+    @Setter
+    protected String requestId;
+
+    @Getter
     protected INDArray payload;
+
+    protected BaseINDArrayMessage(@NonNull String messageId, @NonNull INDArray payload) {
+        this.messageId = messageId;
+        this.payload = payload;
+    }
 }

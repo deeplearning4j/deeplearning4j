@@ -24,6 +24,8 @@ import lombok.val;
 import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;
+import org.nd4j.parameterserver.distributed.v2.messages.ReplyMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
@@ -34,6 +36,8 @@ import org.reactivestreams.Subscriber;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -53,6 +57,9 @@ public abstract  class BaseTransport  implements Transport {
 
     // this is Id of this Transport instance
     private String id;
+
+    // this is simple storage for replies
+    private final Map<String, ReplyMessage> replies = new ConcurrentHashMap<>();
 
     @Override
     public Consumer<VoidMessage> outgoingConsumer() {
@@ -126,7 +133,11 @@ public abstract  class BaseTransport  implements Transport {
 
     @Override
     public void processMessage(VoidMessage message) {
-        if (message instanceof VoidChunk) {
+        if (message instanceof ReplyMessage) {
+            // in this case we store message to the map, to be fetched later
+            val reply = (ReplyMessage) message;
+            replies.putIfAbsent(reply.getRequestId(),  reply);
+        } else if (message instanceof VoidChunk) {
             // we merge chunks to get full INDArrayMessage
             Optional<INDArrayMessage> opt = MessageSplitter.getInstance().merge((VoidChunk) message);
 
@@ -137,6 +148,25 @@ public abstract  class BaseTransport  implements Transport {
             // just forward message
             forwardToParameterServer((INDArrayMessage) message);
         }
+    }
+
+    @Override
+    public <T extends ReplyMessage> T sendMessageBlocking(RequestMessage message, String id) throws InterruptedException {
+        // we send message to the node first
+        sendMessage(message, id);
+
+        // and then we just block until we get response
+        ReplyMessage r = null;
+        while ((r = replies.get(message.getRequestId())) == null) {
+            Thread.sleep(10);
+        }
+
+        //and return reply back
+        return (T) r;
+    }
+
+    protected void handshake() {
+
     }
 
     /**

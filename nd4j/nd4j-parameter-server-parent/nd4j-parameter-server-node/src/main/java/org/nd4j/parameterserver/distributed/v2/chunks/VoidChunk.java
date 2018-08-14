@@ -69,9 +69,4 @@ public class VoidChunk implements VoidMessage {
      */
     @Getter
     private byte[] payload;
-
-
-    public void exec() {
-        // basically all we want to do here, is merge
-    }
 }

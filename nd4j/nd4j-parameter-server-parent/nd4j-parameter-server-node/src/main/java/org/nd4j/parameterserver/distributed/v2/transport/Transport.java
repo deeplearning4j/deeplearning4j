@@ -17,6 +17,8 @@
 package org.nd4j.parameterserver.distributed.v2.transport;
 
 import io.reactivex.functions.Consumer;
+import org.nd4j.parameterserver.distributed.v2.messages.ReplyMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
 import org.reactivestreams.Publisher;
@@ -55,6 +57,16 @@ public interface Transport {
      * @param id
      */
     void sendMessage(VoidMessage message, String id);
+
+    /**
+     * This method will send message to specified node, and will return its response
+     *
+     * @param message
+     * @param id
+     * @param <T>
+     * @return
+     */
+    <T extends ReplyMessage> T sendMessageBlocking(RequestMessage message, String id) throws InterruptedException;
 
     /**
      * This method will be invoked for all incoming messages
