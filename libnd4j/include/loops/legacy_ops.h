@@ -313,6 +313,10 @@
         (26, simdOps::RelativeError) ,\
         (27, simdOps::BinaryRelativeError) ,\
         (28, simdOps::BinaryMinimumAbsoluteRelativeError) ,\
+        (29, simdOps::LogicalOr) ,\
+        (30, simdOps::LogicalXor) ,\
+        (31, simdOps::LogicalNot) ,\
+        (32, simdOps::LogicalAnd) ,\
         (92, simdOps::PowDerivative), \
         (93, simdOps::LogPoisonLoss), \
         (94, simdOps::LogPoisonLossFull)
