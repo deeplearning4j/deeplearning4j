@@ -19,18 +19,18 @@
 //
 
 #include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_boolean_or)
+#if NOT_EXCLUDED(OP_boolean_not)
 
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
     namespace ops {
-        BROADCASTABLE_OP_IMPL(boolean_and, 0, 0) {
+        BROADCASTABLE_OP_IMPL(boolean_not, 0, 0) {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::LogicalAnd<T>>(x, y, z);
+            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::LogicalNot<T>>(x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z)
