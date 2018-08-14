@@ -84,7 +84,7 @@ public class IMin extends BaseIndexAccumulation {
 
     @Override
     public String tensorflowName() {
-        return "argmin";
+        return "ArgMin";
     }
 
 

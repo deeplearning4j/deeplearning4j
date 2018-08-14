@@ -123,8 +123,7 @@ public class And extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        // FIXME: what op is this, actually?
-        return "boolean_and";
+        return "LogicalAnd";
     }
 
 
