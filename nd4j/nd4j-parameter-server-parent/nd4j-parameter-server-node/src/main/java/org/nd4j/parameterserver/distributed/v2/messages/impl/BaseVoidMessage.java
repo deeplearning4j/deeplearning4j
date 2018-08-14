@@ -14,21 +14,22 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.v2.messages;
+package org.nd4j.parameterserver.distributed.v2.messages.impl;
 
-public interface ReplyMessage extends VoidMessage {
+import lombok.Getter;
+import lombok.Setter;
+import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 
+public abstract class BaseVoidMessage implements VoidMessage {
     /**
-     * This message returns request id, used to join request and response
-     * @return
+     * Unique messageId used to distringuish chunks from each other
      */
-    String getRequestId();
+    @Getter
+    @Setter
+    protected String messageId;
 
-    /**
-     * This method allows to set request id
-     * PLEASE NOTE: This method must be used only from Transport context
-     *
-     * @param requestId
-     */
-    void setRequestId(String requestId);
+    @Getter
+    @Setter
+    protected String originatorId;
+
 }

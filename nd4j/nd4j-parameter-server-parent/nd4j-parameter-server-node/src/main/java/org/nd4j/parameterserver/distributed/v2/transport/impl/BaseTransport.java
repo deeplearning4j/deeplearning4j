@@ -24,7 +24,7 @@ import lombok.val;
 import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;
-import org.nd4j.parameterserver.distributed.v2.messages.ReplyMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.ResponseMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
@@ -59,7 +59,7 @@ public abstract  class BaseTransport  implements Transport {
     private String id;
 
     // this is simple storage for replies
-    private final Map<String, ReplyMessage> replies = new ConcurrentHashMap<>();
+    private final Map<String, ResponseMessage> replies = new ConcurrentHashMap<>();
 
     @Override
     public Consumer<VoidMessage> outgoingConsumer() {
@@ -133,9 +133,9 @@ public abstract  class BaseTransport  implements Transport {
 
     @Override
     public void processMessage(VoidMessage message) {
-        if (message instanceof ReplyMessage) {
+        if (message instanceof ResponseMessage) {
             // in this case we store message to the map, to be fetched later
-            val reply = (ReplyMessage) message;
+            val reply = (ResponseMessage) message;
             replies.putIfAbsent(reply.getRequestId(),  reply);
         } else if (message instanceof VoidChunk) {
             // we merge chunks to get full INDArrayMessage
@@ -151,12 +151,12 @@ public abstract  class BaseTransport  implements Transport {
     }
 
     @Override
-    public <T extends ReplyMessage> T sendMessageBlocking(RequestMessage message, String id) throws InterruptedException {
+    public <T extends ResponseMessage> T sendMessageBlocking(RequestMessage message, String id) throws InterruptedException {
         // we send message to the node first
         sendMessage(message, id);
 
         // and then we just block until we get response
-        ReplyMessage r = null;
+        ResponseMessage r = null;
         while ((r = replies.get(message.getRequestId())) == null) {
             Thread.sleep(10);
         }
