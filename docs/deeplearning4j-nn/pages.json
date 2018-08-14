@@ -12,6 +12,12 @@
       ]
     },
     {
+      "page": "model-persistence.md",
+      "class": [
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/util/ModelSerializer.java"
+      ]
+    },
+    {
       "page": "visualization.md",
       "class": []
     },
