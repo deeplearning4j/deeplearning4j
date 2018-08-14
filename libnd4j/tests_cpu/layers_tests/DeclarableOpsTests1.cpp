@@ -4064,6 +4064,27 @@ TEST_F(DeclarableOpsTests1, Reverse_11 ) {
     delete results;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, Reverse_12 ) {
+
+
+    NDArray<float> input({0.f, 1.f, 2.f, 3.f, 4.f});
+    NDArray<float> expected({4.f, 3.f, 2.f, 1.f, 0.f});
+
+    input.linspace(1);
+    nd4j::ops::reverse<float> op;
+    auto results = op.execute({&input}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
 ////////////////////////////////////////////////////////////////////
 // CONSTANT mode 2D
 TEST_F(DeclarableOpsTests1, Pad_1) {
