@@ -44,6 +44,6 @@ public class OrthogonalDistribution extends Distribution {
     }
 
     public String toString() {
-        return "OrthogonalDistribution{gain=" + gain + "}";
+        return "OrthogonalDistribution(gain=" + gain + ")";
     }
 }
