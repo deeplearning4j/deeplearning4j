@@ -4071,14 +4071,15 @@ TEST_F(DeclarableOpsTests1, Reverse_12 ) {
     NDArray<float> input({0.f, 1.f, 2.f, 3.f, 4.f});
     NDArray<float> expected({4.f, 3.f, 2.f, 1.f, 0.f});
 
-    input.linspace(1);
+    //input.linspace(1);
     nd4j::ops::reverse<float> op;
     auto results = op.execute({&input}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto result = results->at(0);
-
+    //result->printIndexedBuffer("Result reverse");
+    //expected.printIndexedBuffer("Expected reverse");
     ASSERT_TRUE(expected.isSameShapeStrict(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
@@ -4092,7 +4093,7 @@ TEST_F(DeclarableOpsTests1, Reverse_13 ) {
     NDArray<float> input({0.f, 1.f, 2.f, 3.f, 4.f});
     NDArray<float> expected({4.f, 3.f, 2.f, 1.f, 0.f});
 
-    input.linspace(1);
+    //input.linspace(1);
     nd4j::ops::reverse<float> op;
     auto results = op.execute({&input}, {}, {-1});
 
@@ -4100,7 +4101,7 @@ TEST_F(DeclarableOpsTests1, Reverse_13 ) {
 
     auto result = results->at(0);
 
-    //ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -4113,7 +4114,7 @@ TEST_F(DeclarableOpsTests1, Reverse_14 ) {
     NDArray<float> input({0.f, 1.f, 2.f, 3.f, 4.f});
     NDArray<float> expected({4.f, 3.f, 2.f, 1.f, 0.f});
 
-    input.linspace(1);
+    //input.linspace(1);
     nd4j::ops::reverse<float> op;
     auto results = op.execute({&input}, {}, {1});
 
@@ -4121,7 +4122,7 @@ TEST_F(DeclarableOpsTests1, Reverse_14 ) {
 
     auto result = results->at(0);
 
-    //ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
