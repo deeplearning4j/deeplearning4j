@@ -14,29 +14,17 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.v2.transport;
+package org.nd4j.parameterserver.distributed.v2.transport.impl;
 
-import io.reactivex.functions.Consumer;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.parameterserver.distributed.messages.VoidMessage;
-import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
-import org.reactivestreams.Publisher;
 
 /**
- * This class is in-memory implementation of Transport interface, written for tests
+ * This class is a UDP implementation of Transport interface, based on Aeron
  *
  * @author raver119@gmail.com
  */
 @Slf4j
-public class DummyTransport implements Transport {
+public class UdpTransport extends BaseTransport {
 
-    @Override
-    public Consumer<VoidMessage> outgoingConsumer() {
-        return null;
-    }
 
-    @Override
-    public Publisher<INDArrayMessage> incomingPublisher() {
-        return null;
-    }
 }
