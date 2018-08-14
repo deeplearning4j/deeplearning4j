@@ -96,9 +96,9 @@ public class LayerConfigTest extends BaseDL4JTest {
 
         assertEquals(WeightInit.DISTRIBUTION, ((BaseLayer) conf.getConf(0).getLayer()).getWeightInit());
         assertEquals(WeightInit.DISTRIBUTION, ((BaseLayer) conf.getConf(1).getLayer()).getWeightInit());
-        assertEquals("NormalDistribution{mean=0.0, std=1.0}",
+        assertEquals("NormalDistribution(mean=0.0, std=1.0)",
                         ((BaseLayer) conf.getConf(0).getLayer()).getDist().toString());
-        assertEquals("NormalDistribution{mean=0.0, std=1.0}",
+        assertEquals("NormalDistribution(mean=0.0, std=1.0)",
                         ((BaseLayer) conf.getConf(1).getLayer()).getDist().toString());
         assertEquals(1, ((BaseLayer) conf.getConf(0).getLayer()).getBiasInit(), 0.0);
         assertEquals(1, ((BaseLayer) conf.getConf(1).getLayer()).getBiasInit(), 0.0);
@@ -116,9 +116,9 @@ public class LayerConfigTest extends BaseDL4JTest {
 
         assertEquals(WeightInit.DISTRIBUTION, ((BaseLayer) conf.getConf(0).getLayer()).getWeightInit());
         assertEquals(WeightInit.DISTRIBUTION, ((BaseLayer) conf.getConf(1).getLayer()).getWeightInit());
-        assertEquals("NormalDistribution{mean=0.0, std=1.0}",
+        assertEquals("NormalDistribution(mean=0.0, std=1.0)",
                         ((BaseLayer) conf.getConf(0).getLayer()).getDist().toString());
-        assertEquals("UniformDistribution{lower=0.0, upper=1.0}",
+        assertEquals("UniformDistribution(lower=0.0, upper=1.0)",
                         ((BaseLayer) conf.getConf(1).getLayer()).getDist().toString());
         assertEquals(1, ((BaseLayer) conf.getConf(0).getLayer()).getBiasInit(), 0.0);
         assertEquals(0, ((BaseLayer) conf.getConf(1).getLayer()).getBiasInit(), 0.0);
