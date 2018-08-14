@@ -17,23 +17,10 @@
 package org.nd4j.parameterserver.distributed.v2.transport.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 
-/**
- * This class is an in-memory implementation of Transport interface, written for tests
- *
- * @author raver119@gmail.com
- */
+import static org.junit.Assert.*;
+
 @Slf4j
-public class DummyTransport extends BaseTransport {
+public class DummyTransportTest {
 
-    @Override
-    public void launch() {
-        super.launch();
-    }
-
-    @Override
-    public void sendMessage(VoidMessage message, String id) {
-
-    }
 }
