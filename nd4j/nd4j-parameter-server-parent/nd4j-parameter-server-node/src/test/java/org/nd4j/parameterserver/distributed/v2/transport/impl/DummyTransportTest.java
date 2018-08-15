@@ -102,5 +102,13 @@ public class DummyTransportTest {
         assertEquals(meshA, meshB);
         assertEquals(meshA, meshG);
         assertEquals(meshA, meshD);
+
+        assertTrue(meshA.isKnownNode("alpha"));
+        assertTrue(meshA.isKnownNode("beta"));
+        assertTrue(meshA.isKnownNode("gamma"));
+        assertTrue(meshA.isKnownNode("delta"));
+
+        val node = meshB.getNodeById("alpha");
+        assertTrue(node.isRootNode());
     }
 }

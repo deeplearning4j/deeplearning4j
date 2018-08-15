@@ -204,7 +204,7 @@ public class MeshOrganizerTest {
         // and now we'll make sure there's no nodes with number of downstreams > MAX_DOWNSTREAMS
         for (val v: mesh.flatNodes()) {
             assertTrue(v.numberOfDownstreams() <= MeshOrganizer.MAX_DOWNSTREAMS);
-            assertTrue(v.distanceFromRoot() <= MeshOrganizer.MAX_DEPTH);
+            assertTrue(v.distanceFromRoot() <= MeshOrganizer.MAX_DEPTH + 1);
         }
 
         // each of the root nodes should have limited number of descendants

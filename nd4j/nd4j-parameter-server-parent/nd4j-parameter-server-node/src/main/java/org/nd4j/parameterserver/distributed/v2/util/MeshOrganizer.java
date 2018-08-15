@@ -105,6 +105,7 @@ public class MeshOrganizer implements Serializable {
                 switch (buildMode) {
                     case DEPTH_FIRST: {
                             sortedNodes.add(node);
+                            nodeMap.put(node.getId(), node);
                             return rootNode.pushDownstreamNode(node);
                         }
                     case WIDTH_FIRST: {
@@ -114,6 +115,7 @@ public class MeshOrganizer implements Serializable {
 
                                 rootNode.addDownstreamNode(node);
                                 sortedNodes.add(node);
+                                nodeMap.put(node.getId(), node);
                                 return node;
                             }
 
@@ -147,6 +149,7 @@ public class MeshOrganizer implements Serializable {
 
                                 rootNode.addDownstreamNode(node);
                                 sortedNodes.add(node);
+                                nodeMap.put(node.getId(), node);
                                 return node;
                             }
 
