@@ -2402,10 +2402,23 @@ void NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target,
     else
         target->assign(max);
 
-    std::vector<int> sameDims = ShapeUtils<T>::getDimsWithSameShape(target, min);    
+
+    // check whether min array has to be tiled
+    std::vector<Nd4jLong> repeatMin(min->rankOf());
+    int product = 1;
+    for(int i = min->rankOf(); i >=1 ; --i) {
+        repeatMin[i-1] = (target->_shapeInfo[target->rankOf() - min->rankOf() + i] / min->_shapeInfo[i]);
+        product *= repeatMin[i-1];
+    }
+
+    NDArray<T>* pMin = const_cast<NDArray<T>*>(min);
+    if(product != 1 )
+        pMin = new NDArray<T>(min->tile(repeatMin));
+
+    std::vector<int> sameDims = ShapeUtils<T>::getDimsWithSameShape(target, pMin);
 
     if(max == this) {        
-        target->template applyBroadcast<OpName>(sameDims, min, nullptr, extraArgs);
+        target->template applyBroadcast<OpName>(sameDims, pMin, nullptr, extraArgs);
     }
     else {
     
@@ -2417,9 +2430,12 @@ void NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target,
 
             ShapeUtils<T>::evalIdxRangesForSubArr(i, target->_shapeInfo, dimsToExclude, idxRanges.data());
             NDArray<T> targetSubArr = (*target)(idxRanges.data());
-            const_cast<NDArray<T>*>(min)->template applyPairwiseTransform<OpName>(&targetSubArr, &targetSubArr, extraArgs);
+            pMin->template applyPairwiseTransform<OpName>(&targetSubArr, &targetSubArr, extraArgs);
         }
     }
+
+    if(pMin != min)
+        delete pMin;
 }
 
 //////////////////////////////////////////////////////////////////////////
