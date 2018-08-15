@@ -23,11 +23,15 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.linalg.primitives.Optional;
+import org.nd4j.parameterserver.distributed.enums.MeshBuildMode;
 import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;
 import org.nd4j.parameterserver.distributed.v2.messages.ResponseMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.impl.MeshUpdateMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
+import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeResponse;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
@@ -56,10 +60,14 @@ public abstract  class BaseTransport  implements Transport {
     private final Atomic<MeshOrganizer> mesh = new Atomic<>();
 
     // this is Id of this Transport instance
-    private String id;
+    protected String id;
 
     // this is simple storage for replies
     private final Map<String, ResponseMessage> replies = new ConcurrentHashMap<>();
+
+    protected BaseTransport() {
+        mesh.set(new MeshOrganizer(MeshBuildMode.SYMMETRIC_MODE));
+    }
 
     @Override
     public Consumer<VoidMessage> outgoingConsumer() {
@@ -92,7 +100,7 @@ public abstract  class BaseTransport  implements Transport {
 
     @Override
     public void propagateMessage(@NonNull VoidMessage voidMessage) throws IOException {
-        val node = mesh.get().getNodeByIp(id);
+        val node = mesh.get().getNodeById(id);
         val root = mesh.get().getRootNode();
         val upstream = node.getUpstreamNode();
         val downstreams = node.getDownstreamNodes();
@@ -103,19 +111,19 @@ public abstract  class BaseTransport  implements Transport {
             val chunks = MessageSplitter.getInstance().split(voidMessage, 65536);
             // send chunks to the upstream
             if (!node.isRootNode())
-                chunks.forEach(c -> sendMessage(c, upstream.getIp()));
+                chunks.forEach(c -> sendMessage(c, upstream.getId()));
 
             // and send chunks to all downstreams
             downstreams.parallelStream().forEach(n -> {
-                chunks.forEach(c -> sendMessage(c, n.getIp()));
+                chunks.forEach(c -> sendMessage(c, n.getId()));
             });
         } else {
             // send message to the upstream
             if (!node.isRootNode())
-                sendMessage(voidMessage, upstream.getIp());
+                sendMessage(voidMessage, upstream.getId());
 
             // and send message for all downstreams
-            downstreams.forEach(n -> sendMessage(voidMessage, n.getIp()));
+            downstreams.forEach(n -> sendMessage(voidMessage, n.getId()));
         }
     }
 
@@ -133,6 +141,9 @@ public abstract  class BaseTransport  implements Transport {
 
     @Override
     public void processMessage(VoidMessage message) {
+        /**
+         * TODO: we need better isolation here
+         */
         if (message instanceof ResponseMessage) {
             // in this case we store message to the map, to be fetched later
             val reply = (ResponseMessage) message;
@@ -147,6 +158,20 @@ public abstract  class BaseTransport  implements Transport {
         } else if (message instanceof INDArrayMessage) {
             // just forward message
             forwardToParameterServer((INDArrayMessage) message);
+        } else if (message instanceof HandshakeRequest) {
+            // first we add new node to the mesh
+            mesh.get().addNode(message.getOriginatorId());
+
+            // send response
+            val response = new HandshakeResponse(0L, mesh.get());
+            sendMessage(response, message.getOriginatorId());
+
+            // update all other nodes with new mesh
+            try {
+                propagateMessage(new MeshUpdateMessage(mesh.get()));
+            } catch (Exception e) {
+                log.error("Wasn't able to propagate message");
+            }
         }
     }
 

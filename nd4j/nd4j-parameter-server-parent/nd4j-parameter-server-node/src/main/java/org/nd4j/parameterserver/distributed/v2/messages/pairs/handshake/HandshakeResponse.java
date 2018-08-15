@@ -21,7 +21,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.parameterserver.distributed.v2.messages.impl.BaseResponseMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseResponseMessage;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 
 @Slf4j

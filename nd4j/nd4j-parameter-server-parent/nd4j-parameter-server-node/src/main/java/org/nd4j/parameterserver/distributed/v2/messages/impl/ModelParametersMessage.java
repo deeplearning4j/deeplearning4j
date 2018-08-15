@@ -16,10 +16,10 @@
 
 package org.nd4j.parameterserver.distributed.v2.messages.impl;
 
-import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseINDArrayMessage;
 
 /**
  * This message holds INDArray with model parameters

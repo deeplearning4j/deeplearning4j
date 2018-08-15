@@ -241,22 +241,22 @@ public class MeshOrganizerTest {
     @Test
     public void testEquality_1() throws Exception {
         val node1 = MeshOrganizer.Node.builder()
-                .ip("192.168.0.1")
+                .id("192.168.0.1")
                 .port(38912)
                 .build();
 
         val node2 = MeshOrganizer.Node.builder()
-                .ip("192.168.0.1")
+                .id("192.168.0.1")
                 .port(38912)
                 .build();
 
         val node3 = MeshOrganizer.Node.builder()
-                .ip("192.168.0.1")
+                .id("192.168.0.1")
                 .port(38913)
                 .build();
 
         val node4 = MeshOrganizer.Node.builder()
-                .ip("192.168.0.2")
+                .id("192.168.0.2")
                 .port(38912)
                 .build();
 
@@ -271,23 +271,23 @@ public class MeshOrganizerTest {
     @Test
     public void testEquality_2() throws Exception {
         val node1 = MeshOrganizer.Node.builder()
-                .ip("192.168.0.1")
+                .id("192.168.0.1")
                 .port(38912)
                 .build();
 
         val node2 = MeshOrganizer.Node.builder()
-                .ip("192.168.0.1")
+                .id("192.168.0.1")
                 .port(38912)
                 .build();
 
         val node3 = MeshOrganizer.Node.builder()
-                .ip("192.168.0.1")
+                .id("192.168.0.1")
                 .port(38912)
                 .build();
 
-        node1.addDownstreamNode(MeshOrganizer.Node.builder().ip("192.168.1.3").build()).addDownstreamNode(MeshOrganizer.Node.builder().ip("192.168.1.4").build()).addDownstreamNode(MeshOrganizer.Node.builder().ip("192.168.1.5").build());
-        node2.addDownstreamNode(MeshOrganizer.Node.builder().ip("192.168.1.3").build()).addDownstreamNode(MeshOrganizer.Node.builder().ip("192.168.1.4").build()).addDownstreamNode(MeshOrganizer.Node.builder().ip("192.168.1.5").build());
-        node3.addDownstreamNode(MeshOrganizer.Node.builder().ip("192.168.1.3").build()).addDownstreamNode(MeshOrganizer.Node.builder().ip("192.168.1.4").build());
+        node1.addDownstreamNode(MeshOrganizer.Node.builder().id("192.168.1.3").build()).addDownstreamNode(MeshOrganizer.Node.builder().id("192.168.1.4").build()).addDownstreamNode(MeshOrganizer.Node.builder().id("192.168.1.5").build());
+        node2.addDownstreamNode(MeshOrganizer.Node.builder().id("192.168.1.3").build()).addDownstreamNode(MeshOrganizer.Node.builder().id("192.168.1.4").build()).addDownstreamNode(MeshOrganizer.Node.builder().id("192.168.1.5").build());
+        node3.addDownstreamNode(MeshOrganizer.Node.builder().id("192.168.1.3").build()).addDownstreamNode(MeshOrganizer.Node.builder().id("192.168.1.4").build());
 
         assertEquals(node1, node2);
         assertNotEquals(node1, node3);

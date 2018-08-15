@@ -34,9 +34,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 public class DummyTransport extends BaseTransport {
-    // id of this Transport instance
-    private String id;
-
     // this is for tests only
     private Map<String, MessageCallable> interceptors = new HashMap<>();
 
@@ -44,6 +41,7 @@ public class DummyTransport extends BaseTransport {
 
 
     public DummyTransport(String id, Connector connector) {
+        super();
         this.id = id;
         this.connector = connector;
     }
@@ -55,6 +53,8 @@ public class DummyTransport extends BaseTransport {
 
     @Override
     public void sendMessage(@NonNull VoidMessage message, @NonNull String id) {
+        if (message.getOriginatorId() == null)
+            message.setOriginatorId(this.id);
         connector.transferMessage(message, id);
     }
 
@@ -68,7 +68,7 @@ public class DummyTransport extends BaseTransport {
      * @param cls
      * @param callable
      */
-    public void addInterceptor(@NonNull Class cls, @NonNull MessageCallable callable) {
+    public <T extends VoidMessage> void addInterceptor(@NonNull Class<T> cls, @NonNull MessageCallable<T> callable) {
         interceptors.putIfAbsent(cls.getCanonicalName(), callable);
     }
 
@@ -106,7 +106,7 @@ public class DummyTransport extends BaseTransport {
     /**
      * Simple runnable interface for interceptors
      */
-    public interface MessageCallable {
-        void apply(VoidMessage message);
+    public interface MessageCallable<T extends VoidMessage> {
+        void apply(T message);
     }
 }

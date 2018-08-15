@@ -18,7 +18,7 @@ package org.nd4j.parameterserver.distributed.v2.messages.impl;
 
 import lombok.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseINDArrayMessage;
 
 /**
  * This message holds INDArray with gradients update

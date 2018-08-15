@@ -14,10 +14,26 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake;
+package org.nd4j.parameterserver.distributed.v2.messages.impl;
 
-import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseRequestMessage;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseVoidMessage;
+import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 
-public class HandshakeRequest extends BaseRequestMessage {
+/**
+ * This message is used to send Mesh state to all nodes within network
+ * @author raver119@gmail.com
+ */
+@NoArgsConstructor
+public class MeshUpdateMessage extends BaseVoidMessage {
+    private static final long serialVersionUID = 1L;
 
+    @Getter
+    private MeshOrganizer mesh;
+
+    public MeshUpdateMessage(@NonNull MeshOrganizer mesh) {
+        this.mesh = mesh;
+    }
 }

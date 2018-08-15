@@ -58,8 +58,15 @@ public class MeshOrganizer implements Serializable {
     // used in DEPTH_MODE
     private Node lastRoot = null;
 
+    // this field is used
+    private long version = 0L;
+
     public MeshOrganizer(@NonNull MeshBuildMode mode) {
         this.buildMode = mode;
+    }
+
+    public long getVersion() {
+        return version;
     }
 
     /**
@@ -68,7 +75,7 @@ public class MeshOrganizer implements Serializable {
      * PLEASE NOTE: Default port 40123 is used
      * @param ip
      */
-    protected Node  addNode(@NonNull String ip) {
+    public Node  addNode(@NonNull String ip) {
         return addNode(ip, 40123);
     }
 
@@ -77,7 +84,7 @@ public class MeshOrganizer implements Serializable {
      */
     public Node addNode(@NonNull String ip, @NonNull int port) {
         val node = Node.builder()
-                .ip(ip)
+                .id(ip)
                 .port(port)
                 .upstream(null)
                 .build();
@@ -92,6 +99,7 @@ public class MeshOrganizer implements Serializable {
      * @return
      */
     public synchronized Node addNode(@NonNull Node node) {
+        version++;
 
         // if node isn't mapped yet - in this case we're mapping node automatically here
                 switch (buildMode) {
@@ -167,7 +175,7 @@ public class MeshOrganizer implements Serializable {
      * @throws NoSuchElementException
      */
     public void markNodeOffline(@NonNull String ip) throws NoSuchElementException {
-        markNodeOffline(getNodeByIp(ip));
+        markNodeOffline(getNodeById(ip));
     }
 
     /**
@@ -204,7 +212,7 @@ public class MeshOrganizer implements Serializable {
      * This method reconnects given node to another node
      */
     public void remapNode(@NonNull String ip) {
-        remapNode(getNodeByIp(ip));
+        remapNode(getNodeById(ip));
     }
 
     /**
@@ -257,7 +265,7 @@ public class MeshOrganizer implements Serializable {
      * This method returns upstream connection for a given node
      */
     public Node getUpstreamForNode(@NonNull String ip) throws NoSuchElementException {
-        val node = getNodeByIp(ip);
+        val node = getNodeById(ip);
 
         return node.getUpstreamNode();
     }
@@ -266,7 +274,7 @@ public class MeshOrganizer implements Serializable {
      * This method returns downstream connections for a given node
      */
     public Collection<Node> getDownstreamsForNode(@NonNull String ip) throws NoSuchElementException {
-        val node = getNodeByIp(ip);
+        val node = getNodeById(ip);
 
         return node.getDownstreamNodes();
     }
@@ -303,26 +311,19 @@ public class MeshOrganizer implements Serializable {
      * This method returns our mesh as collection of nodes
      * @return
      */
-    protected Collection<Node> flatNodes() {
+    public Collection<Node> flatNodes() {
         return nodeMap.values();
     }
 
-    /**
-     * This method returns Node representing given Id
-     * @return
-     */
-    protected Node getNodeById() {
-        return null;
-    }
 
     /**
      * This method returns Node representing given IP
      * @return
      */
-    public Node getNodeByIp(@NonNull String ip) throws NoSuchElementException {
-        val node = nodeMap.get(ip);
+    public Node getNodeById(@NonNull String id) throws NoSuchElementException {
+        val node = nodeMap.get(id);
         if (node == null)
-            throw new NoSuchElementException(ip);
+            throw new NoSuchElementException(id);
 
         return node;
     }
@@ -344,9 +345,6 @@ public class MeshOrganizer implements Serializable {
 
         @Getter
         private String id;
-
-        @Getter
-        private String ip;
 
         @Getter
         private int port;
@@ -519,13 +517,12 @@ public class MeshOrganizer implements Serializable {
             if (o == null || getClass() != o.getClass()) return false;
             Node node = (Node) o;
 
-            val rn = this.upstream == null ? "root" : this.upstream.getIp();
-            val on = node.upstream == null ? "root" : node.upstream.getIp();
+            val rn = this.upstream == null ? "root" : this.upstream.getId();
+            val on = node.upstream == null ? "root" : node.upstream.getId();
 
             return rootNode == node.rootNode &&
                     port == node.port &&
                     Objects.equals(id, node.id) &&
-                    Objects.equals(ip, node.ip) &&
                     Objects.equals(downstream, node.downstream) &&
                     Objects.equals(status, node.status) &&
                     Objects.equals(rn, on);
@@ -534,7 +531,7 @@ public class MeshOrganizer implements Serializable {
 
         @Override
         public int hashCode() {
-            return Objects.hash(upstream == null ? "root" : upstream.getIp(), rootNode, id, ip, port, downstream, status);
+            return Objects.hash(upstream == null ? "root" : upstream.getId(), rootNode, id, port, downstream, status);
         }
 
         /**
@@ -545,7 +542,7 @@ public class MeshOrganizer implements Serializable {
             val r = downstream.remove(node);
 
             if (!r)
-                throw new NoSuchElementException(node.getIp());
+                throw new NoSuchElementException(node.getId());
         }
 
         @Override

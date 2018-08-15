@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.v2.messages.impl;
+package org.nd4j.parameterserver.distributed.v2.messages.impl.base;
 
 import lombok.Getter;
 import lombok.Setter;

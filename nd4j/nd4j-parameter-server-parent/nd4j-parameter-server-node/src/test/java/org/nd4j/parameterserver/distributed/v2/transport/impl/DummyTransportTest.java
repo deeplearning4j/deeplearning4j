@@ -21,6 +21,7 @@ import lombok.val;
 import org.junit.Test;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
+import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeResponse;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -37,17 +38,38 @@ public class DummyTransportTest {
         val transportB = new DummyTransport("beta", connector);
 
         connector.register(transportA, transportB);
-        transportB.addInterceptor(HandshakeRequest.class, new DummyTransport.MessageCallable() {
-            @Override
-            public void apply(VoidMessage message) {
-                // just increment
-                counter.incrementAndGet();
-            }
+        transportB.addInterceptor(HandshakeRequest.class, message -> {
+            // just increment
+            counter.incrementAndGet();
         });
 
         transportA.sendMessage(new HandshakeRequest(), "beta");
 
-        // we expect that message was deliviered, and connector works
+        // we expect that message was delivered, and connector works
+        assertEquals(1, counter.get());
+    }
+
+    @Test
+    public void testHandshake_1() throws Exception {
+        val counter = new AtomicInteger(0);
+        val connector = new DummyTransport.Connector();
+        val transportA = new DummyTransport("alpha", connector);
+        val transportB = new DummyTransport("beta", connector);
+
+        connector.register(transportA, transportB);
+        connector.register(transportA, transportB);
+        transportB.addInterceptor(HandshakeResponse.class, (HandshakeResponse message) -> {
+            // just increment
+            assertNotNull(message);
+
+            assertNotNull(message.getMesh());
+
+            counter.incrementAndGet();
+        });
+
+        transportB.sendMessage(new HandshakeRequest(), "alpha");
+
+        // we expect that message was delivered, and connector works
         assertEquals(1, counter.get());
     }
 }

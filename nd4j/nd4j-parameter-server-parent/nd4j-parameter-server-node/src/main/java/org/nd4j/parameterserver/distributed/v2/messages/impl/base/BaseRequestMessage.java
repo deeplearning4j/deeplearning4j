@@ -14,22 +14,15 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.v2.messages.impl;
+package org.nd4j.parameterserver.distributed.v2.messages.impl.base;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 
-public abstract class BaseVoidMessage implements VoidMessage {
-    /**
-     * Unique messageId used to distringuish chunks from each other
-     */
-    @Getter
-    @Setter
-    protected String messageId;
+public class BaseRequestMessage extends BaseVoidMessage implements RequestMessage {
 
     @Getter
     @Setter
-    protected String originatorId;
-
+    protected String requestId;
 }

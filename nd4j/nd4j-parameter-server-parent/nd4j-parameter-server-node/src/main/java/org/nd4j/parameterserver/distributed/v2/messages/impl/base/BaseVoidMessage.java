@@ -14,37 +14,22 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.v2.messages.impl;
+package org.nd4j.parameterserver.distributed.v2.messages.impl.base;
 
-import lombok.*;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
+import lombok.Getter;
+import lombok.Setter;
+import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 
-/**
- * This message holds some INDArray
- * @author raver119@gmail.com
- */
-@NoArgsConstructor
-@AllArgsConstructor
-public abstract class BaseINDArrayMessage implements INDArrayMessage {
-    private static final long serialVersionUID = 1L;
-
+public abstract class BaseVoidMessage implements VoidMessage {
+    /**
+     * Unique messageId used to distringuish chunks from each other
+     */
     @Getter
+    @Setter
     protected String messageId;
 
     @Getter
     @Setter
     protected String originatorId;
 
-    @Getter
-    @Setter
-    protected String requestId;
-
-    @Getter
-    protected INDArray payload;
-
-    protected BaseINDArrayMessage(@NonNull String messageId, @NonNull INDArray payload) {
-        this.messageId = messageId;
-        this.payload = payload;
-    }
 }
