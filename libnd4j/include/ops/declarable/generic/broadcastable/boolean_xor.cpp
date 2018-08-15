@@ -19,22 +19,22 @@
 //
 
 #include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_boolean_or)
+#if NOT_EXCLUDED(OP_boolean_xor)
 
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
     namespace ops {
-        BROADCASTABLE_OP_IMPL(boolean_and, 0, 0) {
+        BROADCASTABLE_OP_IMPL(boolean_xor, 0, 0) {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::LogicalAnd<T>>(x, y, z);
+            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::LogicalXor<T>>(x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z)
-                throw std::runtime_error("boolean_and: result was overwritten");
+                throw std::runtime_error("boolean_xor: result was overwritten");
 
             return Status::OK();
         }
