@@ -153,7 +153,7 @@ public abstract  class BaseTransport  implements Transport {
 
             // if this chunk was the last message, we'll forward it to parameter server for actual use
             if (opt.isPresent())
-                forwardToParameterServer(opt.get());
+                this.processMessage(opt.get());
         } else if (message instanceof INDArrayMessage) {
             // just forward message
             forwardToParameterServer((INDArrayMessage) message);

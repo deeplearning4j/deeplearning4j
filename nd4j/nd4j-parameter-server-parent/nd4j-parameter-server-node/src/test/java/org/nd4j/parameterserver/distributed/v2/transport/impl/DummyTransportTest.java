@@ -19,7 +19,9 @@ package org.nd4j.parameterserver.distributed.v2.transport.impl;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeResponse;
 
@@ -110,5 +112,41 @@ public class DummyTransportTest {
 
         val node = meshB.getNodeById("alpha");
         assertTrue(node.isRootNode());
+    }
+
+    @Test
+    public void testUpdatesPropagation_1() throws Exception {
+        val counter = new AtomicInteger(0);
+        val connector = new DummyTransport.Connector();
+        val transportA = new DummyTransport("alpha", connector);
+        val transportB = new DummyTransport("beta", connector);
+        val transportG = new DummyTransport("gamma", connector);
+        val transportD = new DummyTransport("delta", connector);
+
+        connector.register(transportA, transportB, transportG, transportD);
+
+        transportB.sendMessage(new HandshakeRequest(), "alpha");
+        transportG.sendMessage(new HandshakeRequest(), "alpha");
+        transportD.sendMessage(new HandshakeRequest(), "alpha");
+
+
+        val f = new DummyTransport.MessageCallable<GradientsUpdateMessage>() {
+            @Override
+            public void apply(GradientsUpdateMessage message) {
+                val update = message.getPayload();
+                counter.addAndGet(update.sumNumber().intValue());
+            }
+        };
+
+        transportA.addInterceptor(GradientsUpdateMessage.class, f);
+        transportB.addInterceptor(GradientsUpdateMessage.class, f);
+        transportG.addInterceptor(GradientsUpdateMessage.class, f);
+        transportD.addInterceptor(GradientsUpdateMessage.class, f);
+
+        val array = Nd4j.ones(10, 10);
+
+        transportB.propagateMessage(new GradientsUpdateMessage("message", array));
+
+        assertEquals(400, counter.get());
     }
 }

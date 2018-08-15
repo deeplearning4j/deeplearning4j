@@ -56,6 +56,7 @@ public class DummyTransport extends BaseTransport {
     public void sendMessage(@NonNull VoidMessage message, @NonNull String id) {
         if (message.getOriginatorId() == null)
             message.setOriginatorId(this.id);
+
         connector.transferMessage(message, id);
     }
 
