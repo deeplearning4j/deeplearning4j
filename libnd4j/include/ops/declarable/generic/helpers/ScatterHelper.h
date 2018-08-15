@@ -140,7 +140,7 @@ class ScatterHelper {
                 std::vector<Nd4jLong> idxRangesUpd(2 * updates.rankOf());
 
 // #pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) firstprivate(idxRangesOut, idxRangesUpd)  // causes known openMP asan bug !
-#pragma omp parallel for schedule(guided) firstprivate(idxRangesOut, idxRangesUpd)
+// #pragma omp parallel for schedule(guided) firstprivate(idxRangesOut, idxRangesUpd)
                 for(Nd4jLong i = 0; i < indLen; ++i) {                    
 
                     ShapeUtils<T>::evalIdxRangesForSubArr(indices(i), output.getShapeInfo(), {0}, idxRangesOut.data());
