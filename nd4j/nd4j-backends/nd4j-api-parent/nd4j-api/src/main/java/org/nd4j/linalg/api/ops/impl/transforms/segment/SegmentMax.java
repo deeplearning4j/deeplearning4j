@@ -38,4 +38,9 @@ public class SegmentMax extends DynamicCustomOp {
         return "segment_max";
     }
 
+    @Override
+    public String tensorflowName() {
+        return "SegmentMax";
+    }
+
 }

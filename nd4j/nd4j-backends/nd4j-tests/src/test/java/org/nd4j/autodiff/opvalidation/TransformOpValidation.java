@@ -1450,6 +1450,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
 
     @Test
+    @Ignore
     public void testScatterOpsScalar(){
         for(String s : new String[]{"add", "sub", "mul", "div"}) {
             INDArray ref = Nd4j.linspace(1, 30, 30).reshape(10, 3);

@@ -23,6 +23,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.OpValidationSuite;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -88,6 +89,13 @@ public class TFGraphTestAllLibnd4j {
             log.info("\n\tSKIPPED MODEL: " + modelName);
             return;
         }
+        for(String s : TFGraphTestAllSameDiff.IGNORE_REGEXES){
+            if(modelName.matches(s)){
+                log.info("\n\tIGNORE MODEL ON REGEX: {} - regex {}", modelName, s);
+                OpValidationSuite.ignoreFailing();
+            }
+        }
+
         Double precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
 
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, EXECUTE_WITH, precisionOverride);

@@ -777,6 +777,8 @@ public class OpValidation {
                 "Reverse",      //Can be excluded because "Reverse_v2" is synonym that TF uses with tf.reverse(...); ReverseV2 is also Java op that is synonym for same op
                 "LogSigmoid",    //Not in ops.proto. Have tests for tf.log_sigmoid, but can't test LogSigmoid op directly: tf.log_sigmoid actually just uses "y = -tf.nn.softplus(-x)" - i.e., 3 separate ops :/
                 "HardSigmoid",   //Also implemented as python, NOT a single native op
+                "SpaceToBatch", //Old name - SpaceToBatchNd is used in practice (inc. for tf.space_to_batch)
+                "BatchToSpace", //Old name - BatchToSpaceNd is used in practice
 
                 //All of the following ops - not available in TF (can't find them) - op mapping is wrong?
                 //TODO: Check these and remove the import mapping from the Java classes if they are indeed bad

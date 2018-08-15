@@ -50,7 +50,8 @@ public class TFGraphTestAllSameDiff {
             "inception_v3_with_softmax",
             "conv_5", // this test runs, but we can't make it pass atm due to different RNG algorithms
     };
-    private static final String[] IGNORE_REGEXES = new String[]{
+
+    public static final String[] IGNORE_REGEXES = new String[]{
             //https://github.com/deeplearning4j/deeplearning4j/issues/6165
             "reductions/scatter_.*_scalar",
     };
