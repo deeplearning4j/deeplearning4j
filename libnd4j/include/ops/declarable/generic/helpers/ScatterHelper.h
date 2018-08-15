@@ -115,7 +115,7 @@ class ScatterHelper {
         static FORCEINLINE void scatter(const NDArray<T>& indices, const NDArray<T>& updates, NDArray<T>& output) {
 
             const int outRank = output.rankOf();
-                  int indRank = indices.rankOf();
+            const int indRank = indices.rankOf();
             const int updRank = updates.rankOf();
             const Nd4jLong indLen = indices.lengthOf();
 
@@ -130,17 +130,18 @@ class ScatterHelper {
             }
             else {      // outRank > 1
 
+                int sizeOfDims = indRank;
                 if(outRank == updRank && indices.isVector())
-                    indRank = 1;
+                    sizeOfDims = 1;
 
-                std::vector<int> dimsToExcludeUpd(indRank ? indRank : 1);
+                std::vector<int> dimsToExcludeUpd(sizeOfDims);
                 std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
 
-                std::vector<Nd4jLong> idxRangesOut(2 * output.rankOf());
-                std::vector<Nd4jLong> idxRangesUpd(2 * updates.rankOf());
+                std::vector<Nd4jLong> idxRangesOut(2 * outRank);
+                std::vector<Nd4jLong> idxRangesUpd(2 * updRank);
 
 // #pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) firstprivate(idxRangesOut, idxRangesUpd)  // causes known openMP asan bug !
-#pragma omp parallel for schedule(guided) firstprivate(idxRangesOut, idxRangesUpd)
+// #pragma omp parallel for schedule(guided) firstprivate(idxRangesOut, idxRangesUpd)
                 for(Nd4jLong i = 0; i < indLen; ++i) {                    
 
                     ShapeUtils<T>::evalIdxRangesForSubArr(indices(i), output.getShapeInfo(), {0}, idxRangesOut.data());

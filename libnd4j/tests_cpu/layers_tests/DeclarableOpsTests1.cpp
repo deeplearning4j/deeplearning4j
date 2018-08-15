@@ -471,6 +471,55 @@ TEST_F(DeclarableOpsTests1, SubtractMatrices1) {
     delete block;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, SubtractTest_1) {
+
+    auto x = new NDArray<float>('c', {1, 6});
+    auto y = new NDArray<float>('c', {1, 6});
+    NDArray<float> exp('c', {1, 6});
+    x->assign(3);
+    y->assign(1);
+    exp.assign(2);
+
+    VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, x);
+    variableSpace->putVariable(-2, y);
+    Context<float>* block = new Context<float>(1, variableSpace, true);
+    block->fillInputs({-1, -2});
+
+    nd4j::ops::subtract<float> subOp;
+
+    subOp.execute(block);
+
+    ASSERT_TRUE(x->equalsTo(&exp));
+
+
+    delete variableSpace;
+    delete block;
+}
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, SubtractTest_2) {
+
+    NDArray<float> x('c', {3, 4, 5, 1});
+    NDArray<float> y('c', {1, 6});
+//    NDArray<float> y({6}, {1,1,1,1,1,1});
+    NDArray<float> exp('c', {3, 4, 5, 6});
+    x.assign(3);
+    y.assign(1);
+    exp.assign(2);
+
+
+    nd4j::ops::subtract<float> subOp;
+
+    auto res = subOp.execute({&x, &y}, {}, {});
+
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+
+    ASSERT_TRUE(res->at(0)->equalsTo(&exp));
+
+    delete res;
+}
+
 TEST_F(DeclarableOpsTests1, TestRng1) {
     Nd4jLong *buffer = new Nd4jLong[100000];
 
@@ -711,6 +760,129 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractMatrices1) {
 
     delete variableSpace;
     delete block;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, ReverseSubtractTest_1) {
+
+    NDArray<float> x('c', {1, 6});
+    NDArray<float> y('c', {1, 6});
+    NDArray<float> exp('c', {1, 6});
+    x.assign(3);
+    y.assign(1);
+    exp.assign(-2);
+
+    nd4j::ops::reversesubtract<float> subOp;
+
+    auto res = subOp.execute({&x, &y}, {}, {});
+
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    ASSERT_TRUE(res->at(0)->equalsTo(&exp));
+
+    delete res;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, ReverseSubtractTest_2) {
+
+//    NDArray<float> x('c', {1, 6});
+    NDArray<float> x('c', {1, 6});
+    NDArray<float> y('c', {3, 4, 5, 1});
+    NDArray<float> exp('c', {3, 4, 5, 6});
+    NDArray<float> z(exp);
+    x.assign(3);
+    y.assign(1);
+    exp.assign(-2);
+    x.template applyTrueBroadcast<simdOps::ReverseSubtract<float>>(&y, &z, true);
+//    x.printIndexedBuffer("ReverseSubtract Legacy");
+    ASSERT_TRUE(exp.equalsTo(&z));
+
+    nd4j::ops::reversesubtract<float> subOp;
+
+    auto res = subOp.execute({&x, &y}, {}, {});
+
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    //res->at(0)->printIndexedBuffer("OUtput REVERSED SUB");
+    ASSERT_TRUE(res->at(0)->equalsTo(&exp));
+
+    delete res;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, ReverseSubtractTest_3) {
+
+//    NDArray<float> x('c', {1, 6});
+    NDArray<float> x('c', {6});
+    NDArray<float> y('c', {3, 4, 5, 1});
+    NDArray<float> exp('c', {3, 4, 5, 6});
+    NDArray<float> z(exp);
+    x.assign(1);
+    y.assign(3);
+    exp.assign(2);
+    x.template applyTrueBroadcast<simdOps::ReverseSubtract<float>>(&y, &z, true);
+    ASSERT_TRUE(z.equalsTo(&exp));
+    nd4j::ops::reversesubtract<float> subOp;
+
+    auto res = subOp.execute({&x, &y}, {}, {});
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    ASSERT_TRUE(res->at(0)->equalsTo(&exp));
+
+    delete res;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, ReverseModTest_1) {
+
+//    NDArray<float> x('c', {1, 6});
+    NDArray<float> x('c', {6});
+    NDArray<float> y('c', {3, 4, 5, 1});
+    NDArray<float> exp('c', {3, 4, 5, 6});
+    NDArray<float> z(exp);
+    x.assign(2);
+    y.assign(9);
+    exp.assign(1);
+    y.template applyTrueBroadcast<simdOps::Mod<float>>(&x, &z, true);
+//    z.printIndexedBuffer("MOD1");
+    ASSERT_TRUE(exp.equalsTo(&z));
+    x.template applyTrueBroadcast<simdOps::ReverseMod<float>>(&y, &exp, true);
+    ASSERT_TRUE(exp.equalsTo(&z));
+
+    nd4j::ops::reversemod<float> subOp;
+
+    auto res = subOp.execute({&x, &y}, {}, {});
+
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    ASSERT_TRUE(res->at(0)->equalsTo(&exp));
+    ASSERT_TRUE(exp.equalsTo(&z));
+
+    delete res;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, ReverseModTest_2) {
+
+//    NDArray<float> x('c', {1, 6});
+    NDArray<float> x('c', {3, 4, 5});
+    NDArray<float> y('c', {3, 4, 5});
+    NDArray<float> exp('c', {3, 4, 5});
+    NDArray<float> z(exp);
+    x.assign(2);
+    y.assign(9);
+    exp.assign(1);
+    x.template applyTrueBroadcast<simdOps::ReverseMod<float>>(&y, &z, true);
+    ASSERT_TRUE(z.equalsTo(&exp));
+    x.template applyTrueBroadcast<simdOps::ReverseMod<float>>(&y, &exp, true);
+    ASSERT_TRUE(z.equalsTo(&exp));
+
+    nd4j::ops::reversemod<float> subOp;
+
+    auto res = subOp.execute({&x, &y}, {}, {});
+
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+//    res->at(0)->printIndexedBuffer("OUtput REVERSED MOD2");
+    ASSERT_TRUE(res->at(0)->equalsTo(&exp));
+
+    delete res;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -984,6 +1156,52 @@ TEST_F(DeclarableOpsTests1, TestSoftMax_bp_1) {
     delete block;
     delete exp;
 
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, BroadcastDivideTest_1) {
+
+    NDArray<float>  x('c', {3, 4, 5, 1});
+    NDArray<float>  y('c', {1, 6});
+    NDArray<float>  exp('c', {3, 4, 5, 6});
+    x.assign(6);
+    y.assign(2);
+    exp.assign(3);
+
+    nd4j::ops::divide<float> div;
+
+    auto res = div.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    ASSERT_TRUE(res->at(0)->equalsTo(exp));
+
+    delete res;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, BroadcastReverseDivideTest_1) {
+ 
+    NDArray<float>  x('c', {3, 4, 5, 1});
+    NDArray<float>  y('c', {1, 6});
+    NDArray<float>  exp('c', {3, 4, 5, 6});
+    x.assign(3.f);
+    y.assign(6.f);
+    exp.assign(2.f);
+
+    nd4j::ops::reversedivide<float> div;
+
+    auto res = div.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+ 
+    ASSERT_TRUE(res->at(0)->equalsTo(exp));
+    NDArray<float> z(exp);
+    x.template applyTrueBroadcast<simdOps::ReverseDivide<float>>(&y, &z, true);
+    y.template applyTrueBroadcast<simdOps::Divide<float>>(&x, &exp, true);
+
+    ASSERT_TRUE(z.equalsTo(&exp));
+
+    delete res;
 }
 
 //////////////////////////////////////////////////////////////////////
