@@ -28,6 +28,12 @@ import java.io.IOException;
 public interface Transport {
 
     /**
+     * This method returns id of the current transport
+     * @return
+     */
+    String id();
+
+    /**
      * This method returns consumer that accepts messages for delivery
      * @return
      */

@@ -16,8 +16,16 @@
 
 package org.nd4j.parameterserver.distributed.v2.transport.impl;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
+import org.nd4j.parameterserver.distributed.v2.transport.Transport;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This class is an in-memory implementation of Transport interface, written for tests
@@ -26,6 +34,19 @@ import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
  */
 @Slf4j
 public class DummyTransport extends BaseTransport {
+    // id of this Transport instance
+    private String id;
+
+    // this is for tests only
+    private Map<String, MessageCallable> interceptors = new HashMap<>();
+
+    private Connector connector;
+
+
+    public DummyTransport(String id, Connector connector) {
+        this.id = id;
+        this.connector = connector;
+    }
 
     @Override
     public void launch() {
@@ -33,7 +54,59 @@ public class DummyTransport extends BaseTransport {
     }
 
     @Override
-    public void sendMessage(VoidMessage message, String id) {
+    public void sendMessage(@NonNull VoidMessage message, @NonNull String id) {
+        connector.transferMessage(message, id);
+    }
 
+    @Override
+    public String id() {
+        return id;
+    }
+
+    /**
+     * This method add interceptor for incoming messages. If interceptor is defined for given message class - runnable will be executed
+     * @param cls
+     * @param callable
+     */
+    public void addInterceptor(@NonNull Class cls, @NonNull MessageCallable callable) {
+        interceptors.putIfAbsent(cls.getCanonicalName(), callable);
+    }
+
+    @Override
+    public void processMessage(@NonNull VoidMessage message) {
+        val name = message.getClass().getCanonicalName();
+        val callable = interceptors.get(name);
+
+        if (callable != null)
+            callable.apply(message);
+        else
+            super.processMessage(message);
+    }
+
+    /**
+     * This class is written to mimic network connectivity locally
+     */
+    public static class Connector {
+        private Map<String, Transport> transports = new ConcurrentHashMap<>();
+
+        public void register(Transport... transports) {
+            for (val transport:transports)
+                this.transports.putIfAbsent(transport.id(), transport);
+        }
+
+        public void transferMessage(@NonNull VoidMessage message, @NonNull String id) {
+            val target = transports.get(id);
+            if (target == null)
+                throw new ND4JIllegalStateException("Unknown target specified");
+
+            target.processMessage(message);
+        }
+    }
+
+    /**
+     * Simple runnable interface for interceptors
+     */
+    public interface MessageCallable {
+        void apply(VoidMessage message);
     }
 }
