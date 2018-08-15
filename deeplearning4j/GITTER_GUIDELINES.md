@@ -2,8 +2,8 @@
 
 Welcome, stranger. You probably just joined a Gitter channel for Deeplearning4j. There are a few things you should know that will help you use our deep-learning framework and engage our community.
 
-1. The best place to start using DL4J is the Quickstart page: [https://deeplearning4j.org/docs/latest/deeplearning4j-quickstart](https://deeplearning4j.org/docs/latest/deeplearning4j-quickstart) Please try to follow those instructions before you ask us install questions.
-2. If you are new to deep learning or programming, you will want to check out this page: [https://deeplearning4j.org/docs/latest/deeplearning4j-beginners](https://deeplearning4j.org/docs/latest/deeplearning4j-beginners)
+1. The best place to start using DL4J is the [Quickstart page](https://deeplearning4j.org/docs/latest/deeplearning4j-quickstart). Please try to follow those instructions before you ask us install questions.
+2. If you are new to deep learning or programming, you will want to check out [Deep Learning for Beginners](https://deeplearning4j.org/docs/latest/deeplearning4j-beginners)
 3. We're doing our best to improve the documentation, but it's not perfect. We welcome ideas about how to improve it! Writing good docs is our responsibility; reading them is yours. Please consult the docs before you post in the channel. A little effort from you will earn a lot of respect from us. (DL4J is backed by a startup, Skymind, and we are serving customers as well as the open-source community, which feels like a lot sometimes.)
  * User guide: [https://deeplearning4j.org/docs/latest/](https://deeplearning4j.org/docs/latest/)
  * API: [https://deeplearning4j.org/api/latest/](https://deeplearning4j.org/api/latest/)
