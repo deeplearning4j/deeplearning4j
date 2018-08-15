@@ -26,10 +26,8 @@ import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.parameterserver.distributed.enums.MeshBuildMode;
 import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;
-import org.nd4j.parameterserver.distributed.v2.messages.ResponseMessage;
-import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
-import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
-import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
+import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
+import org.nd4j.parameterserver.distributed.v2.messages.*;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.MeshUpdateMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeResponse;
@@ -97,36 +95,44 @@ public abstract  class BaseTransport  implements Transport {
             voidMessage.setOriginatorId(id);
 
             // and propagating message across mesh network
-            propagateMessage(voidMessage);
+            propagateMessage(voidMessage, PropagationMode.BOTH_WAYS);
         });
     }
 
     @Override
-    public void propagateMessage(@NonNull VoidMessage voidMessage) throws IOException {
+    public void propagateMessage(@NonNull VoidMessage voidMessage, PropagationMode mode) throws IOException {
         val node = mesh.get().getNodeById(id);
+
+        if (voidMessage.getOriginatorId() != null && id != null && voidMessage.getOriginatorId().equals(id))
+            return;
+
         val root = mesh.get().getRootNode();
         val upstream = node.getUpstreamNode();
         val downstreams = node.getDownstreamNodes();
+
+
 
         // if this is INDArrayMessage we'll split it into chunks
         if (voidMessage instanceof INDArrayMessage) {
             // TODO: make chunk size configurable
             val chunks = MessageSplitter.getInstance().split(voidMessage, 65536);
             // send chunks to the upstream
-            if (!node.isRootNode())
+            if (!node.isRootNode() && (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_UP == mode))
                 chunks.forEach(c -> sendMessage(c, upstream.getId()));
 
             // and send chunks to all downstreams
-            downstreams.parallelStream().forEach(n -> {
-                chunks.forEach(c -> sendMessage(c, n.getId()));
-            });
+            if (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_DOWN == mode)
+                downstreams.parallelStream().forEach(n -> {
+                    chunks.forEach(c -> sendMessage(c, n.getId()));
+                });
         } else {
             // send message to the upstream
-            if (!node.isRootNode())
+            if (!node.isRootNode() && (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_UP == mode))
                 sendMessage(voidMessage, upstream.getId());
 
             // and send message for all downstreams
-            downstreams.forEach(n -> sendMessage(voidMessage, n.getId()));
+            if (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_DOWN == mode)
+                downstreams.forEach(n -> sendMessage(voidMessage, n.getId()));
         }
     }
 
@@ -171,7 +177,7 @@ public abstract  class BaseTransport  implements Transport {
 
             // update all other nodes with new mesh
             try {
-                propagateMessage(new MeshUpdateMessage(mesh.get()));
+                propagateMessage(new MeshUpdateMessage(mesh.get()), PropagationMode.ONLY_DOWN);
             } catch (Exception e) {
                 log.error("Wasn't able to propagate message from [{}]", id());
                 throw new RuntimeException(e);
@@ -204,6 +210,17 @@ public abstract  class BaseTransport  implements Transport {
             }
         } else {
             throw new ND4JIllegalStateException("Unknown message received: [" + message.getClass().getCanonicalName() + "]");
+        }
+
+
+        if (message instanceof BroadcastableMessage) {
+            // here we should propagate message down
+            try {
+                propagateMessage(message, PropagationMode.ONLY_DOWN);
+            } catch (Exception e) {
+                log.error("Wasn't able to propagate message from [{}]", id());
+                throw new RuntimeException(e);
+            }
         }
     }
 

@@ -14,22 +14,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.v2.messages.impl;
+package org.nd4j.parameterserver.distributed.v2.messages;
 
-import lombok.*;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.parameterserver.distributed.v2.messages.BroadcastableMessage;
-import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseINDArrayMessage;
+public interface BroadcastableMessage {
 
-/**
- * This message holds INDArray with gradients update
- * @author raver119@gmail.com
- */
-@NoArgsConstructor
-public final class GradientsUpdateMessage extends BaseINDArrayMessage implements BroadcastableMessage {
-    private static final long serialVersionUID = 1L;
-
-    public GradientsUpdateMessage(@NonNull String messageId, INDArray payload) {
-        super(messageId, payload);
-    }
 }

@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
@@ -145,7 +146,7 @@ public class DummyTransportTest {
 
         val array = Nd4j.ones(10, 10);
 
-        transportB.propagateMessage(new GradientsUpdateMessage("message", array));
+        transportB.propagateMessage(new GradientsUpdateMessage("message", array), PropagationMode.BOTH_WAYS);
 
         assertEquals(400, counter.get());
     }

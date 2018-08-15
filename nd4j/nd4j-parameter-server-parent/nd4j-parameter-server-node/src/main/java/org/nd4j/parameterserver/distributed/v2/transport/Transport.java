@@ -17,6 +17,7 @@
 package org.nd4j.parameterserver.distributed.v2.transport;
 
 import io.reactivex.functions.Consumer;
+import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
 import org.nd4j.parameterserver.distributed.v2.messages.ResponseMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
@@ -54,7 +55,7 @@ public interface Transport {
      * This method will send message to the network, using tree structure
      * @param message
      */
-    void propagateMessage(VoidMessage message) throws IOException;
+    void propagateMessage(VoidMessage message, PropagationMode mode) throws IOException;
 
     /**
      * This method will send message to the node specified by Id

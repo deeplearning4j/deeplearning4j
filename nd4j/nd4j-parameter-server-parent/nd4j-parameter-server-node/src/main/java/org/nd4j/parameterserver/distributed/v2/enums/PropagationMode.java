@@ -14,27 +14,25 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.v2.messages.impl;
-
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import org.nd4j.parameterserver.distributed.v2.messages.BroadcastableMessage;
-import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseVoidMessage;
-import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
+package org.nd4j.parameterserver.distributed.v2.enums;
 
 /**
- * This message is used to send Mesh state to all nodes within network
+ * This enum describes possible message propagation
  * @author raver119@gmail.com
  */
-@NoArgsConstructor
-public class MeshUpdateMessage extends BaseVoidMessage implements BroadcastableMessage {
-    private static final long serialVersionUID = 1L;
+public enum PropagationMode {
+    /**
+     * Propagate in both directions
+     */
+    BOTH_WAYS,
 
-    @Getter
-    private MeshOrganizer mesh;
+    /**
+     * Propagate to upstream only
+     */
+    ONLY_UP,
 
-    public MeshUpdateMessage(@NonNull MeshOrganizer mesh) {
-        this.mesh = mesh;
-    }
+    /**
+     * Propagate to downstreams only
+     */
+    ONLY_DOWN
 }
