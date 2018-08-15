@@ -19,6 +19,7 @@ package org.nd4j.parameterserver.distributed.v2.messages.impl;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.Setter;
 import org.nd4j.parameterserver.distributed.v2.messages.BroadcastableMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
@@ -30,6 +31,10 @@ import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 @NoArgsConstructor
 public class MeshUpdateMessage extends BaseVoidMessage implements BroadcastableMessage {
     private static final long serialVersionUID = 1L;
+
+    @Getter
+    @Setter
+    private String relayId;
 
     @Getter
     private MeshOrganizer mesh;

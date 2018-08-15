@@ -29,6 +29,10 @@ import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseINDArrayMe
 public final class GradientsUpdateMessage extends BaseINDArrayMessage implements BroadcastableMessage {
     private static final long serialVersionUID = 1L;
 
+    @Getter
+    @Setter
+    private String relayId;
+
     public GradientsUpdateMessage(@NonNull String messageId, INDArray payload) {
         super(messageId, payload);
     }

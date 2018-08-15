@@ -16,6 +16,17 @@
 
 package org.nd4j.parameterserver.distributed.v2.messages;
 
-public interface BroadcastableMessage {
+public interface BroadcastableMessage  extends VoidMessage{
 
+    /**
+     * This method returns id of the node we've got this message from
+     * @return
+     */
+    String getRelayId();
+
+    /**
+     * This method allows to set Id of the last node
+     * @param id
+     */
+    void setRelayId(String id);
 }

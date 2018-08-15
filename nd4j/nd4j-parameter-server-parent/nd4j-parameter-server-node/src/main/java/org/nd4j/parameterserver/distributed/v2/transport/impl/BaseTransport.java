@@ -136,6 +136,15 @@ public abstract  class BaseTransport  implements Transport {
         }
     }
 
+    protected void sendBroadcastableMessage(@NonNull BroadcastableMessage message, @NonNull String id) {
+        if (message.getRelayId() != null) {
+            // we don't send message back ever
+            if (!id.equals(message.getRelayId()))
+                sendMessage(message, id);
+        } else
+            sendMessage(message, id);
+    }
+
     /**
      * This method puts INDArray to the flow read by parameter server
      * @param message
@@ -216,7 +225,7 @@ public abstract  class BaseTransport  implements Transport {
         if (message instanceof BroadcastableMessage) {
             // here we should propagate message down
             try {
-                propagateMessage(message, PropagationMode.ONLY_DOWN);
+                propagateMessage(message, PropagationMode.BOTH_WAYS);
             } catch (Exception e) {
                 log.error("Wasn't able to propagate message from [{}]", id());
                 throw new RuntimeException(e);
