@@ -980,9 +980,14 @@ void ShapeUtils<T>::evalIdxRangesForSubArr(const Nd4jLong subArrIdx,  const Nd4j
     const int rank  = shapeInfo[0];    
     const int subArrRank = dimsToExclude.size();
 
-    if(subArrRank == 0 || subArrRank > rank)
+    if(subArrRank > rank)
         throw std::invalid_argument("ShapeUtils::evalIdxRangesForSubArr static method: dimsToExclude is empty or has size > rank of array !");
-    
+
+    if(subArrRank == 0) { // means whole array
+        memset(idxRanges, 0, 2 * rank * sizeof(Nd4jLong));
+        return;
+    }
+
     std::vector<Nd4jLong> shapeOfSubArr(subArrRank), indexes(subArrRank);    
     for(int i = 0; i < subArrRank; ++i)
         shapeOfSubArr[i] = shapeInfo[dimsToExclude[i] + 1];
@@ -990,9 +995,9 @@ void ShapeUtils<T>::evalIdxRangesForSubArr(const Nd4jLong subArrIdx,  const Nd4j
     shape::ind2subC(subArrRank, shapeOfSubArr.data(), subArrIdx, indexes.data());
 
     memset(idxRanges, 0, 2 * rank * sizeof(Nd4jLong));
-    
+
     for(int i = 0; i < subArrRank; ++i) {
-        
+
         int currIdx = 2 * dimsToExclude[i];
         idxRanges[currIdx]    = indexes[i];
         idxRanges[currIdx +1] = indexes[i] + 1;

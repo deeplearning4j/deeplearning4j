@@ -61,7 +61,7 @@ namespace nd4j {
                 std::vector<Nd4jLong> inShape  = input->getShapeAsVector();
                 std::vector<Nd4jLong> expectedUpdShape = indices->getShapeAsVector();        
                 expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin()+1, inShape.end());
-        
+
                 REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ADD OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString(expectedUpdShape).c_str(), ShapeUtils<T>::shapeAsString(updShape).c_str());
             }
 

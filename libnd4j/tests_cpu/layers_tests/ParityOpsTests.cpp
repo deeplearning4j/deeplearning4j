@@ -741,6 +741,23 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_6) {
     delete result;
 }
 
+TEST_F(ParityOpsTests, Test_Scatter_Add_7) {
+    NDArray<float> matrix('c', {10, 3}, {1.f,2.f,3.f,4.f,5.f,6.f,7.f,8.f,9.f,10.f,11.f,12.f,13.f,14.f,15.f,16.f,17.f,18.f,19.f,20.f,21.f,22.f,23.f,24.f,25.f,26.f,27.f,28.f,29.f,30.f});
+    NDArray<float> idc(5.f);
+    NDArray<float> updates('c', {3}, {10.f, 20.f, 30.f});
+    NDArray<float> exp('c', {10, 3}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f,11.f,12.f, 13.f,14.f,15.f, 26.f,37.f,48.f, 19.f,20.f,21.f, 22.f,23.f,24.f, 25.f,26.f,27.f, 28.f,29.f,30.f});
+
+    nd4j::ops::scatter_add<float> op;
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
 TEST_F(ParityOpsTests, scatterMax_test1) {
     NDArray<float> matrix('c', {2, 2}, {1, 2, 3, 4});
     NDArray<float> idc('c', {1}, {0});
