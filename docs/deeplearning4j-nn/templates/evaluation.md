@@ -12,8 +12,7 @@ weight: 3
 When training or deploying a Neural Network it is useful to know the accuracy of your model. In DL4J the Evaluation Class and variants of the Evaluation Class are available to evaluate your model's performance. 
 
 
-## <a name="classification">Evaluation for Classification</a>
-
+### <a name="classification">Evaluation for Classification</a>
 
 The Evaluation class is used to evaluate the performance for binary and multi-class classifiers (including time series classifiers). This section covers basic usage of the Evaluation Class.
 
@@ -91,7 +90,7 @@ eval.getConfusionMatrix().toCSV();
 ```
 
 
-## <a name="regression">Evaluation for Regression</a>
+### <a name="regression">Evaluation for Regression</a>
 
 To Evaluate a network performing regression use the RegressionEvaluation Class. 
 
@@ -124,7 +123,7 @@ Columns are Mean Squared Error, Mean Absolute Error, Root Mean Squared Error, Re
 
 See [RegressionEvaluation JavaDoc](https://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/eval/RegressionEvaluation.html)
 
-## <a name="multiple">Performing Multiple Evaluations Simultaneously</a>
+### <a name="multiple">Performing Multiple Evaluations Simultaneously</a>
 
 When performing multiple types of evaluations (for example, Evaluation and ROC on the same network and dataset) it is more efficient to do this in one pass of the dataset, as follows:
 
@@ -135,7 +134,7 @@ ROC roc = new ROC();
 model.doEvaluation(testdata, eval, roc);
 ```
 
-## <a name="timeseries">Evaluation of Time Series</a>
+### <a name="timeseries">Evaluation of Time Series</a>
 
 Time series evaluation is very similar to the above evaluation approaches. Evaluation in DL4J is performed on all (non-masked) time steps separately - for example, a time series of length 10 will contribute 10 predictions/labels to an Evaluation object.
 One difference with time seires is the (optional) presence of mask arrays, which are used to mark some time steps as missing or not present. See [Using RNNs - Masking](./deeplearning4j-nn-recurrent) for more details on masking.
@@ -143,7 +142,7 @@ One difference with time seires is the (optional) presence of mask arrays, which
 For most users, it is simply sufficient to use the ```MultiLayerNetwork.evaluate(DataSetIterator)``` or ```MultiLayerNetwork.evaluateRegression(DataSetIterator)``` and similar methods. These methods will properly handle masking, if mask arrays are present.
 
 
-## <a name="binary">Evaluation for Binary Classifiers</a>
+### <a name="binary">Evaluation for Binary Classifiers</a>
 
 The EvaluationBinary is used for evaluating networks with binary classification outputs - these networks usually have Sigmoid activation functions and XENT loss functions. The typical classification metrics, such as accuracy, precision, recall, F1 score, etc. are calculated for each output.
 
@@ -154,7 +153,7 @@ EvaluationBinary eval = new EvaluationBinary(int size)
 See [EvaluationBinary JavaDoc](https://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/eval/EvaluationBinary.html)
 
 
-## <a name="roc">ROC</a>
+### <a name="roc">ROC</a>
 
 ROC (Receiver Operating Characteristic) is another commonly used evaluation metric for the evaluation of classifiers. Three ROC variants exist in DL4J:
 
@@ -175,7 +174,7 @@ The number of bins can be set using the constructors. Exact can be set using the
 
 See [ROCBinary JavaDoc](https://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/eval/ROC.html) is used to evaluate Binary Classifiers.
 
-## <a name="calibration">Evaluating Classifier Calibration</a>
+### <a name="calibration">Evaluating Classifier Calibration</a>
 
 Deeplearning4j also has the EvaluationCalibration class, which is designed to analyze the calibration of a classifier. It provides a number of tools for this purpose:
  
@@ -187,7 +186,7 @@ Deeplearning4j also has the EvaluationCalibration class, which is designed to an
  Evaluation of a classifier using EvaluationCalibration is performed in a similar manner to the other evaluation classes.
  The various plots/histograms can be exported to HTML for viewing using ```EvaluationTools.exportevaluationCalibrationToHtmlFile(EvaluationCalibration, File)```.
 
-## <a name="spark">Distributed Evaluation for Spark Networks</a>
+### <a name="spark">Distributed Evaluation for Spark Networks</a>
 
 SparkDl4jMultiLayer and SparkComputationGraph both have similar methods for evaluation:
 ```
@@ -198,7 +197,7 @@ SparkDl4jMultiLayer.doEvaluation(JavaRDD<DataSet>, IEvaluation...);
 ```
 
 
-## <a name="multitask">Evaluation for Multi-task Networks</a>
+### <a name="multitask">Evaluation for Multi-task Networks</a>
 
 A multi-task network is a network that is trained to produce multiple outputs. For example a network given audio samples can be trained to both predict the language spoken and the gender of the speaker. Multi-task configuration is briefly described [here](./deeplearning4j-nn-computationgraph). 
 
@@ -207,3 +206,7 @@ Evaluation Classes useful for Multi-Task Network
 See [ROCMultiClass JavaDoc](https://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/eval/ROCMultiClass.html)
 
 See [ROCBinary JavaDoc](https://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/eval/ROCBinary.html)
+
+## Available evaluations
+
+{{autogenerated}}
