@@ -51,10 +51,7 @@ public class TFGraphTestAllSameDiff {
             "conv_5", // this test runs, but we can't make it pass atm due to different RNG algorithms
     };
     private static final String[] IGNORE_REGEXES = new String[]{
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6158
-            "transforms/logical.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6165
-            "reductions/scatter_.*_scalar",
             "reductions/scatter_.*_scalar",
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
