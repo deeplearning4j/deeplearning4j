@@ -1437,4 +1437,89 @@ public class TransformOpValidation extends BaseOpValidation {
                 .build();
         Nd4j.getExecutioner().exec(op);
     }
+
+    @Test
+    public void testLogicalNot(){
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        INDArray x = Nd4j.create(new long[]{3,4});
+        INDArray z = Nd4j.create(new long[]{3,4});
+
+        Op op = new Not(x, z);
+        Nd4j.getExecutioner().exec(op);
+    }
+
+
+    @Test
+    public void testScatterOpsScalar(){
+        for(String s : new String[]{"add", "sub", "mul", "div"}) {
+            INDArray ref = Nd4j.linspace(1, 30, 30).reshape(10, 3);
+            INDArray indices = Nd4j.trueScalar(5);
+            INDArray upd = Nd4j.trueVector(new double[]{10, 20, 30});
+
+            //The non-scalar case works:
+//            INDArray indices = Nd4j.trueVector(new float[]{5});
+//            INDArray upd = Nd4j.create(new double[]{10, 20, 30}, new int[]{1, 3});
+
+            INDArray exp = ref.dup();
+            switch (s){
+                case "add":
+                    exp.getRow(5).addi(upd);
+                    break;
+                case "sub":
+                    exp.getRow(5).subi(upd);
+                    break;
+                case "mul":
+                    exp.getRow(5).muli(upd);
+                    break;
+                case "div":
+                    exp.getRow(5).divi(upd);
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+
+            INDArray out = Nd4j.create(10, 3);
+
+            DynamicCustomOp op = DynamicCustomOp.builder("scatter_" + s)
+                    .addInputs(ref, indices, upd)
+                    .addOutputs(out)
+                    .build();
+
+            Nd4j.getExecutioner().exec(op);
+
+            assertEquals(s, exp, out);
+        }
+    }
+
+    @Test
+    public void testScatterOpsVector(){
+        for(String s : new String[]{"add", "sub", "mul", "div"}) {
+            INDArray ref = Nd4j.linspace(1, 30, 30).reshape(10, 3);
+            INDArray indices = Nd4j.trueVector(new float[]{5, 2});
+            INDArray upd = Nd4j.create(new double[]{10, 20, 30, 40, 50, 60}, new int[]{2, 3});
+
+            INDArray exp = ref.dup();
+            switch (s){
+                case "add":
+                    exp.getRow(5).addi(upd.getRow(0));
+                    exp.getRow(2).addi(upd.getRow(1));
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+
+            INDArray out = Nd4j.create(10, 3);
+
+            DynamicCustomOp op = DynamicCustomOp.builder("scatter_" + s)
+                    .addInputs(ref, indices, upd)
+                    .addOutputs(out)
+                    .build();
+
+            Nd4j.getExecutioner().exec(op);
+
+            assertEquals(s, exp, out);
+        }
+    }
 }

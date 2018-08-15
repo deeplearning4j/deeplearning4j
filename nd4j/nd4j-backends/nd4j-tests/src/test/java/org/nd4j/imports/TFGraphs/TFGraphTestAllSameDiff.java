@@ -52,7 +52,10 @@ public class TFGraphTestAllSameDiff {
     };
     private static final String[] IGNORE_REGEXES = new String[]{
             //https://github.com/deeplearning4j/deeplearning4j/issues/6158
-            "transforms/logical.*"
+            "transforms/logical.*",
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6165
+            "reductions/scatter_.*_scalar",
+            "reductions/scatter_.*_scalar",
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 
