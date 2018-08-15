@@ -88,4 +88,3 @@ nd2.broadcast(new int[]{6,12});
 [5.0 ,11.0 ,5.0 ,11.0 ,5.0 ,11.0 ,5.0 ,11.0 ,5.0 ,11.0 ,5.0 ,11.0]
 [6.0 ,12.0 ,6.0 ,12.0 ,6.0 ,12.0 ,6.0 ,12.0 ,6.0 ,12.0 ,6.0 ,12.0]
 ```
-For various other matrix transforms, see our page on [Functions](../functions.html).

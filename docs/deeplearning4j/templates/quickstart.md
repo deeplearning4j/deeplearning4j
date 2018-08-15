@@ -74,7 +74,7 @@ If you are working on a Mac, you can simply enter the following into the command
 brew install maven
 ```
 
-Maven is widely used among Java developers and it's pretty much mandatory for working with DL4J. If you come from a different background, and Maven is new to you, check out [Apache's Maven overview](http://maven.apache.org/what-is-maven.html) and our [introduction to Maven for non-Java programmers](http://deeplearning4j.org/maven.html), which includes some additional troubleshooting tips. [Other build tools](../buildtools) such as Ivy and Gradle can also work, but we support Maven best.
+Maven is widely used among Java developers and it's pretty much mandatory for working with DL4J. If you come from a different background, and Maven is new to you, check out [Apache's Maven overview](http://maven.apache.org/what-is-maven.html) and our [introduction to Maven for non-Java programmers](./deeplearning4j-config-maven), which includes some additional troubleshooting tips. [Other build tools](./deeplearning4j-config-buildtools) such as Ivy and Gradle can also work, but we support Maven best.
 
 * [Paul Dubs' guide to maven](http://www.dubs.tech/guides/maven-essentials/)
 

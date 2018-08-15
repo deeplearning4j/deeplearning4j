@@ -350,7 +350,7 @@ If you trained with the [C vectors](https://docs.google.com/file/d/0B7XkCwpI5KDY
 
 Remember to add `import java.io.File;` to your imported packages.
 
-With large models, you may run into trouble with your heap space. The Google model may take as much as 10G of RAM, and the JVM only launches with 256 MB of RAM, so you have to adjust your heap space. You can do that either with a `bash_profile` file (see our [Troubleshooting section](./gettingstarted.html#trouble)), or through IntelliJ itself: 
+With large models, you may run into trouble with your heap space. The Google model may take as much as 10G of RAM, and the JVM only launches with 256 MB of RAM, so you have to adjust your heap space. You can do that either with a `bash_profile` file (see our [Troubleshooting section](./deeplearning4j-troubleshooting-training)), or through IntelliJ itself: 
 
 ``` java
     //Click:
@@ -487,8 +487,8 @@ Deeplearning4j has a class called [SequenceVectors](https://github.com/deeplearn
 
 * [DL4J Example of Text Classification With Word2vec & RNNs](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)
 * [DL4J Example of Text Classification With Paragraph Vectors](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/paragraphvectors/ParagraphVectorsClassifierExample.java)
-* [Doc2vec, or Paragraph Vectors, With Deeplearning4j](./doc2vec.html)
-* [Thought Vectors, Natural Language Processing & the Future of AI](./thoughtvectors.html)
+* [Doc2vec, or Paragraph Vectors, With Deeplearning4j](./deeplearning4j-nlp-doc2vec)
+* [Thought Vectors, Natural Language Processing & the Future of AI](https://skymind.ai/wiki/thought-vectors)
 * [Quora: How Does Word2vec Work?](http://www.quora.com/How-does-word2vec-work)
 * [Quora: What Are Some Interesting Word2Vec Results?](http://www.quora.com/Word2vec/What-are-some-interesting-Word2Vec-results/answer/Omer-Levy)
 * [Word2Vec: an introduction](http://www.folgertkarsdorp.nl/word2vec-an-introduction/); Folgert Karsdorp
