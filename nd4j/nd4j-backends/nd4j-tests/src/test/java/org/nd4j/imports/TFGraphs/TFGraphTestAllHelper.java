@@ -18,6 +18,7 @@ package org.nd4j.imports.TFGraphs;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.junit.After;
@@ -31,19 +32,24 @@ import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpValidation;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.list.IntNDArrayList;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -254,6 +260,7 @@ public class TFGraphTestAllHelper {
 
     /**
      * Possible for a single node to give multiple outputs
+     *
      * How is a node that has a list of outputs like in the case of "node_multiple_out" work
      * Below is hardcoded for a single node
      */
@@ -300,29 +307,51 @@ public class TFGraphTestAllHelper {
             String varPath = modelDir + "/" + fileName;
             String[] varNameArr = fileName.split("\\.");
             String varName = String.join(".", Arrays.copyOfRange(varNameArr, 0, varNameArr.length - 2));
-            int[] varShape = Nd4j.readNumpy(new ClassPathResource(varPath).getInputStream(), ",").data().asInt();
-            try {
+//            int[] varShape = Nd4j.readNumpy(new ClassPathResource(varPath).getInputStream(), ",").data().asInt();
+
+            List<String> lines = FileUtils.readLines(new ClassPathResource(varPath).getFile(), Charset.forName("UTF-8"));
+            List<String> filtered = new ArrayList<>(lines.size());
+            for(String s : lines){
+                String trimmed = s.trim();
+                if(!trimmed.isEmpty()){
+                    filtered.add(trimmed);
+                }
+            }
+
+            INDArray varValue;
+            if(filtered.size() == 0){
+                //Scalar
                 float[] varContents = Nd4j.readNumpy(new ClassPathResource(varPath.replace(".shape", ".csv")).getInputStream(), ",").data().asFloat();
-                INDArray varValue;
-                if (varShape.length == 1) {
-                    if (varShape[0] == 0) {
-                        varValue = Nd4j.trueScalar(varContents[0]);
+                Preconditions.checkState(varContents.length == 1, "Expected length 1 content for scalar shape; got length %s", varContents.length);
+                varValue = Nd4j.trueScalar(varContents[0]);
+            } else {
+                int[] varShape = new int[filtered.size()];
+                for( int j=0; j<filtered.size(); j++ ){
+                    varShape[j] = Integer.parseInt(filtered.get(j));
+                }
+                try {
+                    float[] varContents = Nd4j.readNumpy(new ClassPathResource(varPath.replace(".shape", ".csv")).getInputStream(), ",").data().asFloat();
+                    if (varShape.length == 1) {
+                        if (varShape[0] == 0) {
+                            varValue = Nd4j.trueScalar(varContents[0]);
+                        } else {
+                            varValue = Nd4j.trueVector(varContents);
+                        }
                     } else {
-                        varValue = Nd4j.trueVector(varContents);
+                        varValue = Nd4j.create(varContents, varShape);
                     }
-                } else {
-                    varValue = Nd4j.create(varContents, varShape);
+                } catch (NumberFormatException e) {
+                    // FIXME: we can't parse boolean arrays right now :(
+                    log.warn("Error parsing number", e);
+                    continue;
                 }
-                //varValue = Nd4j.readNumpy(new ClassPathResource(varPath.replace(".shape", ".csv")).getInputStream(), ",").reshape(varShape);
-                if (varName.contains("____")) {
-                    //these are intermediate node outputs
-                    varMap.put(varName.replaceAll("____", "/"), varValue);
-                } else {
-                    varMap.put(varName, varValue);
-                }
-            } catch (NumberFormatException e) {
-                // FIXME: we can't parse boolean arrays right now :(
-                continue;
+            }
+            //varValue = Nd4j.readNumpy(new ClassPathResource(varPath.replace(".shape", ".csv")).getInputStream(), ",").reshape(varShape);
+            if (varName.contains("____")) {
+                //these are intermediate node outputs
+                varMap.put(varName.replaceAll("____", "/"), varValue);
+            } else {
+                varMap.put(varName, varValue);
             }
         }
         return varMap;
