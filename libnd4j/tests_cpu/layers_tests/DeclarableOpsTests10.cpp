@@ -78,6 +78,48 @@ TEST_F(DeclarableOpsTests10, Test_ArgMax_2) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests10, Test_And_1) {
+    NDArray<double> x('c', {4}, {1, 1, 0, 1});
+    NDArray<double> y('c', {4}, {0, 0, 0, 1});
+    NDArray<double> e('c', {4}, {0, 0, 0, 1});
+
+    nd4j::ops::boolean_and<double> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests10, Test_Or_1) {
+    NDArray<double> x('c', {4}, {1, 1, 0, 1});
+    NDArray<double> y('c', {4}, {0, 0, 0, 1});
+    NDArray<double> e('c', {4}, {1, 1, 0, 1});
+
+    nd4j::ops::boolean_or<double> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests10, Test_Not_1) {
+    NDArray<double> x('c', {4}, {1, 1, 0, 1});
+    NDArray<double> y('c', {4}, {0, 0, 0, 1});
+    NDArray<double> e('c', {4}, {1, 1, 1, 0});
+
+    nd4j::ops::boolean_not<double> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests10, Test_Size_at_1) {
     NDArray<double> x('c', {10, 20, 30});
     NDArray<double> e(20.0);
