@@ -57,7 +57,6 @@ public class DummyTransportTest {
         val transportB = new DummyTransport("beta", connector);
 
         connector.register(transportA, transportB);
-        connector.register(transportA, transportB);
         transportB.addInterceptor(HandshakeResponse.class, (HandshakeResponse message) -> {
             // just increment
             assertNotNull(message);
@@ -71,5 +70,37 @@ public class DummyTransportTest {
 
         // we expect that message was delivered, and connector works
         assertEquals(1, counter.get());
+    }
+
+    @Test
+    public void testMeshPropagation_1() throws Exception {
+        val counter = new AtomicInteger(0);
+        val connector = new DummyTransport.Connector();
+        val transportA = new DummyTransport("alpha", connector);
+        val transportB = new DummyTransport("beta", connector);
+        val transportG = new DummyTransport("gamma", connector);
+        val transportD = new DummyTransport("delta", connector);
+
+        connector.register(transportA, transportB, transportG, transportD);
+
+
+        transportB.sendMessage(new HandshakeRequest(), "alpha");
+        transportG.sendMessage(new HandshakeRequest(), "alpha");
+        transportD.sendMessage(new HandshakeRequest(), "alpha");
+
+        val meshA = transportA.getMesh();
+        val meshB = transportB.getMesh();
+        val meshG = transportG.getMesh();
+        val meshD = transportD.getMesh();
+
+        // versions should be equal
+        assertEquals(meshA.getVersion(), meshB.getVersion());
+        assertEquals(meshA.getVersion(), meshG.getVersion());
+        assertEquals(meshA.getVersion(), meshD.getVersion());
+
+        // and meshs in general too
+        assertEquals(meshA, meshB);
+        assertEquals(meshA, meshG);
+        assertEquals(meshA, meshD);
     }
 }

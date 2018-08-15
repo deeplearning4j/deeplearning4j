@@ -21,6 +21,7 @@ import io.reactivex.functions.Consumer;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.parameterserver.distributed.enums.MeshBuildMode;
@@ -57,13 +58,13 @@ public abstract  class BaseTransport  implements Transport {
     protected final MessageFlow<INDArrayMessage> incomingFlow = new MessageFlow<>();
 
     // here we're storing reference to mesh
-    private final Atomic<MeshOrganizer> mesh = new Atomic<>();
+    protected final Atomic<MeshOrganizer> mesh = new Atomic<>();
 
     // this is Id of this Transport instance
     protected String id;
 
     // this is simple storage for replies
-    private final Map<String, ResponseMessage> replies = new ConcurrentHashMap<>();
+    protected final Map<String, ResponseMessage> replies = new ConcurrentHashMap<>();
 
     protected BaseTransport() {
         mesh.set(new MeshOrganizer(MeshBuildMode.SYMMETRIC_MODE));
@@ -81,6 +82,8 @@ public abstract  class BaseTransport  implements Transport {
 
     @Override
     public synchronized void launch() {
+
+
         // first of all we introduce ourselves to master
 
         // this flow gets converted to VoidChunks and sent to upstream and downstreams
@@ -144,11 +147,7 @@ public abstract  class BaseTransport  implements Transport {
         /**
          * TODO: we need better isolation here
          */
-        if (message instanceof ResponseMessage) {
-            // in this case we store message to the map, to be fetched later
-            val reply = (ResponseMessage) message;
-            replies.putIfAbsent(reply.getRequestId(),  reply);
-        } else if (message instanceof VoidChunk) {
+        if (message instanceof VoidChunk) {
             // we merge chunks to get full INDArrayMessage
             Optional<INDArrayMessage> opt = MessageSplitter.getInstance().merge((VoidChunk) message);
 
@@ -159,6 +158,10 @@ public abstract  class BaseTransport  implements Transport {
             // just forward message
             forwardToParameterServer((INDArrayMessage) message);
         } else if (message instanceof HandshakeRequest) {
+            if (!mesh.get().isKnownNode(this.id())) {
+                mesh.get().getRootNode().setId(this.id);
+            }
+
             // first we add new node to the mesh
             mesh.get().addNode(message.getOriginatorId());
 
@@ -170,8 +173,37 @@ public abstract  class BaseTransport  implements Transport {
             try {
                 propagateMessage(new MeshUpdateMessage(mesh.get()));
             } catch (Exception e) {
-                log.error("Wasn't able to propagate message");
+                log.error("Wasn't able to propagate message from [{}]", id());
+                throw new RuntimeException(e);
             }
+        } else if (message instanceof HandshakeResponse) {
+            if (mesh.get() == null)
+                mesh.set(((HandshakeResponse) message).getMesh());
+            else {
+                // we update only if new mesh is older that existing one
+                if (mesh.get().getVersion() < ((HandshakeResponse) message).getMesh().getVersion())
+                    mesh.set(((HandshakeResponse) message).getMesh());
+            }
+
+         // this is default handler for message pairs
+        } else if (message instanceof ResponseMessage) {
+            // in this case we store message to the map, to be fetched later
+            val reply = (ResponseMessage) message;
+            replies.putIfAbsent(reply.getRequestId(), reply);
+
+        } else if (message instanceof MeshUpdateMessage) {
+            val newMesh = ((MeshUpdateMessage) message).getMesh();
+
+            // first check shouldn't ever be the case
+            if (mesh.get() == null)
+                mesh.set(newMesh);
+            else {
+                // we update only if new mesh is older that existing one
+                if (mesh.get().getVersion() < newMesh.getVersion())
+                    mesh.set(newMesh);
+            }
+        } else {
+            throw new ND4JIllegalStateException("Unknown message received: [" + message.getClass().getCanonicalName() + "]");
         }
     }
 

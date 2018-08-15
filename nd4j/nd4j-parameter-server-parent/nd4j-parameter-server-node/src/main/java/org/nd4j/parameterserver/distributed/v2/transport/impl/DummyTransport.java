@@ -22,6 +22,7 @@ import lombok.val;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
+import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -101,6 +102,15 @@ public class DummyTransport extends BaseTransport {
 
             target.processMessage(message);
         }
+    }
+
+    /**
+     * This method returns Mesh stored in this Transport instance
+     * PLEASE NOTE: This method is suited for tests
+     * @return
+     */
+    protected MeshOrganizer getMesh() {
+        return mesh.get();
     }
 
     /**

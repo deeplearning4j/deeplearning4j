@@ -257,8 +257,14 @@ public class MeshOrganizer implements Serializable {
      * This method returns true, if node is known
      * @return
      */
-    public boolean isKnownNode(@NonNull String ip) {
-        return nodeMap.containsKey(ip);
+    public boolean isKnownNode(@NonNull String id) {
+        if (rootNode.getId() == null)
+            return false;
+
+        if (rootNode.getId().equals(id))
+            return true;
+
+        return nodeMap.containsKey(id);
     }
 
     /**
@@ -321,6 +327,9 @@ public class MeshOrganizer implements Serializable {
      * @return
      */
     public Node getNodeById(@NonNull String id) throws NoSuchElementException {
+        if (rootNode.getId().equals(id))
+            return rootNode;
+
         val node = nodeMap.get(id);
         if (node == null)
             throw new NoSuchElementException(id);
