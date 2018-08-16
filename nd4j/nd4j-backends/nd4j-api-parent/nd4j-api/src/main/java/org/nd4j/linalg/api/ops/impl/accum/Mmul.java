@@ -175,6 +175,8 @@ public class Mmul extends DynamicCustomOp {
                 sameDiff.addPropertyToResolve(this,arg.getVarName());
             }
         }
+        iArguments.clear();
+        addIArgument(ArrayUtil.fromBoolean(mt.isTransposeA()), ArrayUtil.fromBoolean(mt.isTransposeB()));
     }
 
     @Override

@@ -14,33 +14,37 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.segment;
+package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-/**
- * Segment mean operation
- *
- * @author Alex Black
- */
-public class SegmentMean extends DynamicCustomOp {
+import java.util.Arrays;
+import java.util.List;
 
-    public SegmentMean(SameDiff sameDiff, SDVariable data, SDVariable segmentIds) {
-        super(null, sameDiff,  new SDVariable[] {data, segmentIds}, false);
+public class LogicalAnd extends DynamicCustomOp {
+
+    public LogicalAnd(){ }
+
+    public LogicalAnd(SameDiff sd, SDVariable in1, SDVariable in2){
+        super(null, sd, new SDVariable[]{in1, in2});
     }
-
-    public SegmentMean(){ }
 
     @Override
     public String opName(){
-        return "segment_mean";
+        return "boolean_and";
     }
 
     @Override
     public String tensorflowName() {
-        return "SegmentMean";
+        return "LogicalAnd";
+    }
+
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        return Arrays.asList( sameDiff.zerosLike(larg()), sameDiff.zerosLike(rarg()));
     }
 
 }

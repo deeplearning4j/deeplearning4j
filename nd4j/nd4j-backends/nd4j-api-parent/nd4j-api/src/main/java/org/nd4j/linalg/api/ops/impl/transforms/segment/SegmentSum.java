@@ -38,4 +38,9 @@ public class SegmentSum extends DynamicCustomOp {
         return "segment_sum";
     }
 
+    @Override
+    public String tensorflowName() {
+        return "SegmentSum";
+    }
+
 }

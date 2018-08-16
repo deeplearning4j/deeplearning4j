@@ -419,6 +419,11 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
        return nd4jTypeFromOnnxType(tensorProto.getElemType());
     }
 
+    @Override
+    public boolean unknownTypeNodeImportable(OnnxProto3.TypeProto.Tensor tensor) {
+        return false;
+    }
+
 
     /**
      * Convert an onnx type to the proper nd4j type

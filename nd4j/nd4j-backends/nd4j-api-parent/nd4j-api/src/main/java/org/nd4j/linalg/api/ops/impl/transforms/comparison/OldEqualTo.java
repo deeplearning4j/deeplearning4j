@@ -98,14 +98,13 @@ public class OldEqualTo extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "Equal";
+        throw new NoOpNameFoundException("No Tensorflow op opName found for " +  opName());
     }
-
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Arrays.asList(outputVariables()[0]);
+        //Equals op: 2 inputs, not continuously differentiable but 0s almost everywhere
+        return Arrays.asList(sameDiff.zerosLike(args()[0]), sameDiff.zerosLike(args()[1]));
     }
 
 }
