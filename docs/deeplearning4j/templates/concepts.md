@@ -22,7 +22,7 @@ Deeplearning4j works with a lot of different data types, such as images, CSV, AR
 
 To use DataVec, you will need one of the implementations of the [RecordReader](/api/{{page.version}}/org/datavec/api/records/reader/RecordReader.html) interface along with the [RecordReaderDataSetIterator](/api/{{page.version}}/org/deeplearning4j/datasets/datavec/RecordReaderDataSetIterator.html).
 
-Once you have a [DataSetIterator](http://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/datasets/iterator/DataSetIterator.html), which is just a pattern that describes sequential access to data, you can use it to retrieve the data in a format suited for training a neural net model.
+Once you have a [DataSetIterator](/api/{{page.version}}/org/nd4j/linalg/dataset/api/iterator/DataSetIterator.html), which is just a pattern that describes sequential access to data, you can use it to retrieve the data in a format suited for training a neural net model.
 
 ### Normalizing Data
 
@@ -101,8 +101,7 @@ class is used for evaluation. Slightly different methods apply to evaluating a n
 
 Building neural networks to solve problems is an empirical process. That is, it requires trial and error. So you will have to try different settings and architectures in order to find a neural net configuration that performs well.
 
-DL4J provides a listener facility help you monitor your network's performance visually. You can set up listeners for your model that will be called after each mini-batch is processed. The two most often used listeners that DL4J ships out of the box are [ScoreIterationListener](/api/{{page.version}}/org/deeplearning4j/optimize/listeners/ScoreIterationListener.html)
-and [HistogramIterationListener](/api/{{page.version}}/org/deeplearning4j/ui/weights/HistogramIterationListener.html). 
+DL4J provides a listener facility help you monitor your network's performance visually. You can set up listeners for your model that will be called after each mini-batch is processed. One of most often used listeners that DL4J ships out of the box is [ScoreIterationListener](/api/{{page.version}}/org/deeplearning4j/optimize/listeners/ScoreIterationListener.html). Check out all [Listeners](./deeplearning4j-nn-listeners) for more.
 
 While `ScoreIterationListener` will simply print the current error score for your network, `HistogramIterationListener` will start up a web UI that to provide you with a host of different information that you can use to fine tune your network configuration. See [Visualize, Monitor and Debug Network Learning](./deeplearning4j-nn-visualization) on how to interpret that data.
 
