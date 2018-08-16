@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
@@ -107,7 +108,7 @@ public class Xor extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "LogicalXor";
+        throw new NoOpNameFoundException("No Tensorflow op opName found for " +  opName());
     }
 
 

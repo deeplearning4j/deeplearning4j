@@ -214,7 +214,7 @@ public class TFGraphTestAllHelper {
             if (!inputs.isEmpty()) {
                 graph.execWithPlaceHolder(inputs); //This is expected to be just one result
             } else {
-                graph.execAndEndResult(); //there are graphs with no placeholders like g_00
+                graph.execAndEndResults(); //there are graphs with no placeholders like g_00
             }
         } else if (executeWith.equals(ExecuteWith.LIBND4J)) {
             for (String input : inputs.keySet()) {
