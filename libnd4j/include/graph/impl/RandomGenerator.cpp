@@ -56,42 +56,16 @@ namespace nd4j {
             return v;
         }
 
-        template <>
-        uint64_t RandomGenerator::relativeT<uint64_t>(Nd4jLong index) {
+
+        uint64_t RandomGenerator::relativeUint64(Nd4jLong index) {
             return this->xoroshiro64(index);
         }
 
-        template <>
-        uint32_t RandomGenerator::relativeT<uint32_t>(Nd4jLong index) {
+        uint32_t RandomGenerator::relativeUint32(Nd4jLong index) {
             return this->xoroshiro32(index);
         }
 
-        template <>
-        int RandomGenerator::relativeT<int>(Nd4jLong index) {
-            auto x = this->relativeT<uint32_t>(index);
-            auto r = static_cast<int>(x % DataTypeUtils::max<int>());
-            return r;
-        }
 
-        template <>
-        Nd4jLong RandomGenerator::relativeT<Nd4jLong>(Nd4jLong index) {
-            auto x = this->relativeT<uint64_t>(index);
-            auto r = static_cast<Nd4jLong>(x % DataTypeUtils::max<Nd4jLong>());
-            return r;
-        }
-
-        template <typename T>
-        T RandomGenerator::relativeT(Nd4jLong index, T from, T to) {
-            return from + (this->relativeT<T>(index) * (to - from));
-        }
-
-        template <typename T>
-        T RandomGenerator::relativeT(Nd4jLong index) {
-            // This is default implementation for floating point types
-            auto i = static_cast<float>(this->relativeT<int>(index));
-            auto r = i / static_cast<float>(DataTypeUtils::max<int>());
-            return static_cast<T>(r);
-        }
 
         //////
         static FORCEINLINE uint32_t rotl(const uint32_t x, int k) {
@@ -136,12 +110,5 @@ namespace nd4j {
             // TODO: improve this
             _nodeState._long ^= steps;
         }
-
-
-        template int RandomGenerator::relativeT(Nd4jLong, int, int);
-        template float16 RandomGenerator::relativeT(Nd4jLong, float16, float16);
-        template float RandomGenerator::relativeT(Nd4jLong, float, float);
-        template double RandomGenerator::relativeT(Nd4jLong, double, double);
-        template Nd4jLong RandomGenerator::relativeT(Nd4jLong, Nd4jLong, Nd4jLong);
     }
 }

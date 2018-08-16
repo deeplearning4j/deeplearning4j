@@ -25,10 +25,11 @@
 #include <types/u64.h>
 #include <pointercast.h>
 #include <op_boilerplate.h>
+#include <helpers/IRandomGenerator.h>
 
 namespace nd4j {
     namespace graph {
-        class RandomGenerator {
+        class RandomGenerator : public nd4j::IRandomGenerator {
         private:
             // GRAPH-LEVEL STATE
             u64 _rootState;
@@ -45,14 +46,15 @@ namespace nd4j {
             uint32_t xoroshiro32(Nd4jLong index);
             uint64_t xoroshiro64(Nd4jLong index);
 
-            /**
-             * This method returns integer value between 0 and MAX_UINT
-             */
-            uint32_t relativeInt(Nd4jLong index);
-
         public:
             RandomGenerator(Nd4jLong rootSeed = 0, Nd4jLong nodeSeed = 0);
             ~RandomGenerator();
+
+            uint32_t relativeUint32(Nd4jLong index) override;
+
+            uint64_t relativeUint64(Nd4jLong index) override;
+
+            void rewindH(Nd4jLong steps) override;
 
             /**
              * This method allows to change graph-level state in runtime.
@@ -60,22 +62,7 @@ namespace nd4j {
              */
             void setStates(Nd4jLong rootSeed, Nd4jLong nodeState = 0);
 
-            
-
-            /**
-             * This method returns T value between from and to
-             */
-            template <typename T>
-            T relativeT(Nd4jLong index, T from, T to);
-
-            /**
-             * This method returns T value between 0 and MAX_T
-             */
-            template <typename T>
-            T relativeT(Nd4jLong index);
-
-
-            void rewindH(Nd4jLong steps);
+            void setSeed(int seed) { _nodeState._ulong = static_cast<uint64_t>(seed); }
             void setSeed(uint64_t seed) { _nodeState._ulong = seed; }
         };
     }

@@ -32,7 +32,7 @@ namespace helpers {
     int dropOutFunctor(graph::Context<T>& context,NDArray<T>* input, NDArray<T>* output, NDArray<T>* reduceShape, int seed, T probValue) {
         //NativeOps native;
 //        nd4j::graph::RandomGenerator nodeRng(0, seed); // this variant generates time-related random sequence
-        nd4j::graph::RandomGenerator& nodeRng = const_cast<nd4j::graph::RandomGenerator&>(context.getRng());
+        auto nodeRng = const_cast<nd4j::graph::RandomGenerator&>(context.getRng());
 
         nodeRng.setSeed(seed);
         //native.reSeedBuffer(nullptr, (long)seed, rng);
