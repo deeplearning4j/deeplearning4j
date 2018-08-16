@@ -29,11 +29,9 @@ namespace nd4j {
     class ND4J_EXPORT IRandomGenerator {
 
     public:
-        virtual uint32_t relativeUint32(Nd4jLong index) = 0;
-
-        virtual uint64_t relativeUint64(Nd4jLong index) = 0;
-
-        virtual void rewindH(Nd4jLong steps) = 0;
+        virtual _CUDA_D uint32_t relativeUint32(Nd4jLong index) = 0;
+        virtual _CUDA_D uint64_t relativeUint64(Nd4jLong index) = 0;
+        virtual _CUDA_H void rewindH(Nd4jLong steps) = 0;
 
         /**
          * This method returns T value between 0 and MAX_T

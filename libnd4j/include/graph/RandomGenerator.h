@@ -50,9 +50,9 @@ namespace nd4j {
             RandomGenerator(Nd4jLong rootSeed = 0, Nd4jLong nodeSeed = 0);
             ~RandomGenerator();
 
-            uint32_t relativeUint32(Nd4jLong index) override;
+            uint32_t _CUDA_D relativeUint32(Nd4jLong index) override;
 
-            uint64_t relativeUint64(Nd4jLong index) override;
+            uint64_t _CUDA_D relativeUint64(Nd4jLong index) override;
 
             void rewindH(Nd4jLong steps) override;
 

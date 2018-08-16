@@ -45,6 +45,8 @@
 
 #ifdef __GNUC__
 #include <inttypes.h>
+#include <helpers/IRandomGenerator.h>
+
 #endif
 
 
@@ -55,13 +57,17 @@ namespace nd4j {
     namespace random {
 
 #ifdef __CUDACC__
-        class ND4J_EXPORT CudaManaged {
+        class ND4J_EXPORT CudaManaged : public nd4j::IRandomGenerator {
         private:
 
         protected:
             void *devHolder;
 
         public:
+            virtual _CUDA_D uint32_t relativeUint32(Nd4jLong index) = 0;
+            virtual _CUDA_D uint64_t relativeUint64(Nd4jLong index) = 0;
+            virtual _CUDA_H void rewindH(Nd4jLong steps) = 0;
+
             void *operator new(size_t len) {
                 void *ptr;
                 cudaHostAlloc(&ptr, len, cudaHostAllocDefault);
@@ -75,7 +81,7 @@ namespace nd4j {
 
         class ND4J_EXPORT RandomBuffer : public CudaManaged {
 #else
-        class ND4J_EXPORT RandomBuffer {
+        class ND4J_EXPORT RandomBuffer : public nd4j::IRandomGenerator {
 #endif
         private:
             void *devHolder;
@@ -198,6 +204,16 @@ namespace nd4j {
             void _CUDA_HD reSeed(Nd4jLong amplifier) {
                 this->amplifier = amplifier;
             }
+
+            inline _CUDA_D uint32_t relativeUint32(Nd4jLong index) override {
+                auto x = relativeUint64(index);
+                return static_cast<uint32_t>(x < DataTypeUtils::max<uint32_t>() ? x : x % DataTypeUtils::max<uint32_t>());
+            }
+
+            inline _CUDA_D uint64_t relativeUint64(Nd4jLong index) override {
+                return getElement(index);
+            }
+
 
             inline _CUDA_D uint64_t getElement(Nd4jLong position) {
                 Nd4jLong actualPosition = this->getOffset() + position;
@@ -426,15 +442,12 @@ namespace nd4j {
                 return from + (nextT<T>() * (to - from));
             }
 
-            inline _CUDA_D uint64_t relativeUInt64(Nd4jLong index) {
-                return getElement(index);
-            }
 
             /**
              *  relative methods are made as workaround for lock-free concurrent execution
              */
             inline int _CUDA_D relativeInt(Nd4jLong index) {
-                auto u = relativeUInt64(index);
+                auto u = relativeUint64(index);
                 return u <= nd4j::DataTypeUtils::max<int>() ? static_cast<int>(u) : static_cast<int>(u % nd4j::DataTypeUtils::max<int>());
             }
 
@@ -478,7 +491,7 @@ namespace nd4j {
                  *
                  * FIXME: once we add support for additional datatypes this code must be tweaked
                  */
-                auto u = static_cast<float>(relativeUInt64(index));
+                auto u = static_cast<float>(relativeUint64(index));
                 auto m = static_cast<float> (nd4j::DataTypeUtils::max<uint64_t>());
                 return static_cast<T>(u / m);
             }
