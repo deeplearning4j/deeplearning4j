@@ -78,6 +78,48 @@ TEST_F(DeclarableOpsTests10, Test_ArgMax_2) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests10, Test_And_1) {
+    NDArray<double> x('c', {4}, {1, 1, 0, 1});
+    NDArray<double> y('c', {4}, {0, 0, 0, 1});
+    NDArray<double> e('c', {4}, {0, 0, 0, 1});
+
+    nd4j::ops::boolean_and<double> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests10, Test_Or_1) {
+    NDArray<double> x('c', {4}, {1, 1, 0, 1});
+    NDArray<double> y('c', {4}, {0, 0, 0, 1});
+    NDArray<double> e('c', {4}, {1, 1, 0, 1});
+
+    nd4j::ops::boolean_or<double> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests10, Test_Not_1) {
+    NDArray<double> x('c', {4}, {1, 1, 0, 1});
+    NDArray<double> y('c', {4}, {0, 0, 0, 1});
+    NDArray<double> e('c', {4}, {1, 1, 1, 0});
+
+    nd4j::ops::boolean_not<double> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests10, Test_Size_at_1) {
     NDArray<double> x('c', {10, 20, 30});
     NDArray<double> e(20.0);
@@ -90,3 +132,31 @@ TEST_F(DeclarableOpsTests10, Test_Size_at_1) {
 
     delete result;
 }
+/*
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, ReverseMod_BP_Test_1) {
+
+    NDArray<double> inputX('c', {1, 6});
+    NDArray<double> inputY('c', {3, 4, 5, 1});
+
+    NDArray<double> axis(1.);
+
+    NDArray<double> gradO('c', {3, 4, 5, 6});
+
+    int exclusive, reverse;
+    inputX.assign(2.0);
+    inputY.assign(9.0);
+    ////////////////////////////////////////
+
+
+    const OpArgsHolder<double> argsHolderFF({&inputX, &inputY}, {}, {});
+    const OpArgsHolder<double> argsHolderBP({&inputX, &inputY, &gradO}, {}, {});
+
+    nd4j::ops::reversemod<double> opFF;
+    nd4j::ops::reversemod_bp<double> opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+*/

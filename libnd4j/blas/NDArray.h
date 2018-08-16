@@ -517,7 +517,7 @@ namespace nd4j {
         *  target - where to store result
         *  checkTargetShape - if true check whether target shape is suitable for broadcasting
         *  extraParams - extra parameters for operation
-        */                       
+        */
         template <typename OpName>
         void applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target, const bool checkTargetShape = true, T *extraArgs = nullptr) const;
 
@@ -815,15 +815,15 @@ namespace nd4j {
         void varianceAlongDimension(const NDArray<T>* target, const bool biasCorrected, const std::initializer_list<int>& dimensions);
 
         /**
-        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays to point on
+        *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the subarrays to point on
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
         NDArray<T> operator()(const Intervals& idx, bool keepUnitiesInShape = false)  const;
 
         /**
-        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
+        *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the subarrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
@@ -945,9 +945,9 @@ namespace nd4j {
         friend NDArray<T> mmul<>(const NDArray<T>& left, const NDArray<T>& right);
 
         /**
-        *  this method assigns elements of other array to the sub-array of this array defined by given intervals
+        *  this method assigns elements of other array to the subarray of this array defined by given intervals
         *  other - input array to assign elements from
-        *  idx - intervals of indexes which define the sub-array
+        *  idx - intervals of indexes which define the subarray
         */ 
         void assign(const NDArray<T>& other, const Intervals& idx);
 
@@ -1017,13 +1017,13 @@ namespace nd4j {
         ResultSet<T>* allTensorsAlongDimension(const std::initializer_list<int>& dimensions) const;
 
         ResultSet<T>* allExamples()const ;        
-        
+
         template <typename OpName>
         void saveResultOfBroadcast(const NDArray<T>& x, const NDArray<T>& y, const bool checkThisShape = false);
-        
+
         /**
         *  default destructor
-        */        
+        */
         ~NDArray() noexcept; 
 
         /**

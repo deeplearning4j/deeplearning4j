@@ -574,6 +574,96 @@ namespace simdOps {
 		}
 	};
 
+	template<typename T>
+	class LogicalNot {
+	public:
+		op_def static T op(T d1, T d2) {
+			return !((int) d1  && (int) d2);
+		}
+
+		op_def static T op(T d1, T d2, T *params) {
+			return (T) !((int) d1  && (int) d2);
+		}
+
+		op_def static T op(T d1) {
+			return d1;
+		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return static_cast<T>(119.0f);
+		}
+	};
+
+	template<typename T>
+	class LogicalXor {
+	public:
+		op_def static T op(T d1, T d2) {
+		    int i1 = (int) d1;
+		    int i2 = (int) d2;
+
+			return  (i1 | i2) &~ (i1 & i2);
+		}
+
+		op_def static T op(T d1, T d2, T *params) {
+			int i1 = (int) d1;
+			int i2 = (int) d2;
+
+			return  (i1 | i2) &~ (i1 & i2);
+		}
+
+		op_def static T op(T d1) {
+			return d1;
+		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return static_cast<T>(119.0f);
+		}
+	};
+
+	template<typename T>
+	class LogicalAnd {
+	public:
+		op_def static T op(T d1, T d2) {
+			return (int) d1  & (int) d2;
+		}
+
+		op_def static T op(T d1, T d2, T *params) {
+			return (int) d1  & (int) d2;
+		}
+
+		op_def static T op(T d1) {
+			return d1;
+		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return static_cast<T>(119.0f);
+		}
+	};
+
+	template<typename T>
+	class LogicalOr {
+	public:
+		op_def static T op(T d1, T d2) {
+			return (int) d1  | (int) d2;
+		}
+
+		op_def static T op(T d1, T d2, T *params) {
+            return (int) d1  | (int) d2;
+		}
+
+		op_def static T op(T d1) {
+			return d1;
+		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return static_cast<T>(119.0f);
+		}
+	};
+
 
 	template<typename T>
 	class SetValOrLess {
