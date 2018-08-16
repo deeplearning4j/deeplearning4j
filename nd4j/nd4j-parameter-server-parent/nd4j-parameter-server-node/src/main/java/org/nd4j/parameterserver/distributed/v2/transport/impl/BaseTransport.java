@@ -110,7 +110,9 @@ public abstract  class BaseTransport  implements Transport {
         val upstream = node.getUpstreamNode();
         val downstreams = node.getDownstreamNodes();
 
-
+        if (voidMessage instanceof BroadcastableMessage) {
+            ((BroadcastableMessage) voidMessage).setRelayId(id);
+        }
 
         // if this is INDArrayMessage we'll split it into chunks
         if (voidMessage instanceof INDArrayMessage) {
@@ -136,13 +138,36 @@ public abstract  class BaseTransport  implements Transport {
         }
     }
 
-    protected void sendBroadcastableMessage(@NonNull BroadcastableMessage message, @NonNull String id) {
-        if (message.getRelayId() != null) {
-            // we don't send message back ever
-            if (!id.equals(message.getRelayId()))
-                sendMessage(message, id);
-        } else
-            sendMessage(message, id);
+    protected void propagateBroadcastableMessage(@NonNull BroadcastableMessage voidMessage, PropagationMode mode) {
+        val node = mesh.get().getNodeById(id);
+
+        if (voidMessage.getOriginatorId() != null && id != null && voidMessage.getOriginatorId().equals(id))
+            return;
+
+        val root = mesh.get().getRootNode();
+        val upstream = node.getUpstreamNode();
+        val downstreams = node.getDownstreamNodes();
+
+        // we never propagate upstream if we're on root node
+        // we never send to the latest node
+        // we never send to the original node
+        if (!node.isRootNode() && (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_UP == mode) && !isLoopedNode(upstream, voidMessage)) {
+            voidMessage.setRelayId(id);
+            sendMessage(voidMessage, upstream.getId());
+        }
+
+        // now we're sending message down
+        if (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_DOWN == mode) {
+            voidMessage.setRelayId(id);
+            downstreams.forEach(n -> {
+                if (!isLoopedNode(n, voidMessage))
+                    sendMessage(voidMessage, n.getId());
+            });
+        }
+    }
+
+    protected boolean isLoopedNode(MeshOrganizer.Node node, BroadcastableMessage message) {
+        return message.getOriginatorId().equals(node.getId()) || message.getRelayId().equals(node.getId());
     }
 
     /**
@@ -225,7 +250,7 @@ public abstract  class BaseTransport  implements Transport {
         if (message instanceof BroadcastableMessage) {
             // here we should propagate message down
             try {
-                propagateMessage(message, PropagationMode.BOTH_WAYS);
+                propagateBroadcastableMessage((BroadcastableMessage) message, PropagationMode.BOTH_WAYS);
             } catch (Exception e) {
                 log.error("Wasn't able to propagate message from [{}]", id());
                 throw new RuntimeException(e);
