@@ -1493,4 +1493,27 @@ public class TransformOpValidation extends BaseOpValidation {
             assertEquals(s, exp, out);
         }
     }
+
+
+    @Test
+    public void testPad(){
+
+        INDArray in = Nd4j.valueArrayOf(new long[]{5}, 1.0);
+        INDArray pad = Nd4j.create(new double[]{1,1}, new long[]{1,2});
+        INDArray value = Nd4j.trueScalar(10.0);
+
+        INDArray out = Nd4j.create(new long[]{7});
+
+        DynamicCustomOp op = DynamicCustomOp.builder("pad")
+                .addInputs(in, pad, value)
+                //.addInputs(in, pad) //Also doesn't work
+                .addOutputs(out)
+                .addIntegerArguments(0) //0 = CONSTANT
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        INDArray exp = Nd4j.trueVector(new double[]{10, 1, 1, 1, 1, 1, 10});
+        assertEquals(exp, out);
+    }
 }
