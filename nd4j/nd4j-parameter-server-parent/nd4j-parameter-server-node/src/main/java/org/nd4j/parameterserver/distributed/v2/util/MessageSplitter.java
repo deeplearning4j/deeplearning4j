@@ -28,6 +28,7 @@ import org.nd4j.linalg.primitives.Optional;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -82,6 +83,8 @@ public class MessageSplitter {
                 while (cnt < length) {
                     val c = bis.read(bytes);
 
+                    val tmp = Arrays.copyOf(bytes, c);
+
                     // FIXME: we don't really want UUID used here, it's just a placeholder for now
                     val msg = VoidChunk.builder()
                             .messageId(java.util.UUID.randomUUID().toString())
@@ -89,7 +92,7 @@ public class MessageSplitter {
                             .chunkId(id++)
                             .numberOfChunks(numChunks)
                             .splitSize(maxBytes)
-                            .payload(bytes.clone())
+                            .payload(tmp)
                             .totalSize(length)
                             .build();
 

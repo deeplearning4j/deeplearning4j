@@ -18,6 +18,7 @@ package org.nd4j.parameterserver.distributed.v2.chunks.impl;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -31,9 +32,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * File-based implementation of ChunksTracker
+ * Memory-based implementation of ChunksTracker
  */
-public class FileChunksTracker<T extends VoidMessage> implements ChunksTracker<T> {
+@Slf4j
+public class InmemoryChunksTracker<T extends VoidMessage> implements ChunksTracker<T> {
     @Getter
     private final String originId;
 
@@ -41,22 +43,18 @@ public class FileChunksTracker<T extends VoidMessage> implements ChunksTracker<T
 
     private Map<Integer, AtomicBoolean> map = new ConcurrentHashMap<>();
 
-    private File holder;
+    private final byte[] buffer;
 
 
-
-    public FileChunksTracker(VoidChunk chunk) {
+    public InmemoryChunksTracker(VoidChunk chunk) {
         originId = chunk.getOriginalId();
         numChunks = chunk.getNumberOfChunks();
-        try {
-            holder = File.createTempFile("FileChunksTracker", "Message");
-            holder.deleteOnExit();
 
-            // fill file with 0s for simplicity
-            try (val fos = new FileOutputStream(holder); val bos = new BufferedOutputStream(fos, 32768)) {
-                for (int e = 0; e < chunk.getTotalSize(); e++)
-                    bos.write(0);
-            }
+        if (chunk.getTotalSize() > Integer.MAX_VALUE)
+            throw new ND4JIllegalStateException("Total message size > Integer.MAX_VALUE");
+
+        try {
+            buffer = new byte[(int) chunk.getTotalSize()];
 
             // we'll pre-initialize states map
             for (int e = 0; e < numChunks; e++)
@@ -69,27 +67,6 @@ public class FileChunksTracker<T extends VoidMessage> implements ChunksTracker<T
         }
     }
 
-    @Override
-    public boolean append(@NonNull VoidChunk chunk) {
-        val b = map.get(chunk.getChunkId());
-
-        if (b.get())
-            return isComplete();
-
-        // writing out this chunk
-        try (val f = new RandomAccessFile(holder, "rw")) {
-            f.seek(chunk.getChunkId() * chunk.getSplitSize());
-
-            f.write(chunk.getPayload());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        // tagging this chunk as received
-        b.set(true);
-
-        return isComplete();
-    }
 
     @Override
     public boolean isComplete() {
@@ -101,12 +78,31 @@ public class FileChunksTracker<T extends VoidMessage> implements ChunksTracker<T
     }
 
     @Override
+    public synchronized boolean append(@NonNull VoidChunk chunk) {
+        val b = map.get(chunk.getChunkId());
+
+        if (b.get())
+            return isComplete();
+
+        val offset = chunk.getChunkId() * chunk.getSplitSize();
+
+        int cnt = 0;
+        for (int e = offset; e < offset + chunk.getPayload().length; e++)
+            buffer[e] = chunk.getPayload()[cnt++];
+
+        // tagging this chunk as received
+        b.set(true);
+
+        return isComplete();
+    }
+
+    @Override
     public T getMessage() {
         if (!isComplete())
             throw new ND4JIllegalStateException("Message isn't ready for concatenation");
 
-        try (val fis = new FileInputStream(holder); val bis = new BufferedInputStream(fis)) {
-            return SerializationUtils.deserialize(bis);
+        try (val bais = new ByteArrayInputStream(buffer)) {
+            return SerializationUtils.deserialize(bais);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -114,10 +110,6 @@ public class FileChunksTracker<T extends VoidMessage> implements ChunksTracker<T
 
     @Override
     public void release() {
-        try {
-            holder.delete();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        //
     }
 }
