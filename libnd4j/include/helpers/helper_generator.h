@@ -45,9 +45,10 @@
 
 #ifdef __GNUC__
 #include <inttypes.h>
+#endif
+
 #include <helpers/IRandomGenerator.h>
 
-#endif
 
 
 #define MAX_UINT 18446744073709551615LLU
