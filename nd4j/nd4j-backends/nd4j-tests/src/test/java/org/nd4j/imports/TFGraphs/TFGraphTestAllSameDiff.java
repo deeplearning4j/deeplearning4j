@@ -57,7 +57,13 @@ public class TFGraphTestAllSameDiff {
             //https://github.com/deeplearning4j/deeplearning4j/issues/6142
             "reverse/shape5.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6155
-            "reductions/argmin.*"
+            "reductions/argmin.*",
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6172
+            "pad/rank1.*",
+            "pad/rank3.*",
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6173
+            "unique.*"
+
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 

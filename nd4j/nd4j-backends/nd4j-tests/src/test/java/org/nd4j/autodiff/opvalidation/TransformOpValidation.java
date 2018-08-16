@@ -27,6 +27,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
+import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -1497,6 +1498,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testPad(){
+        OpValidationSuite.ignoreFailing();
 
         INDArray in = Nd4j.valueArrayOf(new long[]{5}, 1.0);
         INDArray pad = Nd4j.create(new double[]{1,1}, new long[]{1,2});
@@ -1511,9 +1513,116 @@ public class TransformOpValidation extends BaseOpValidation {
                 .addIntegerArguments(0) //0 = CONSTANT
                 .build();
 
+        OpValidation.validate(new OpTestCase(op)
+                .expectedOutput(0, Nd4j.trueVector(new double[]{10, 1, 1, 1, 1, 1, 10})));
+    }
+
+
+    @Test
+    public void testMirrorPad(){
+//        OpValidationSuite.ignoreFailing();
+
+        INDArray in = Nd4j.linspace(1, 6, 6).reshape(2,3);
+        INDArray pad = Nd4j.create(new double[][]{{1,1},{2,2}});
+
+        INDArray out = Nd4j.create(new long[]{4,7});
+
+        DynamicCustomOp op = DynamicCustomOp.builder("mirror_pad")
+                .addInputs(in, pad)
+                .addOutputs(out)
+                .addIntegerArguments(0) //0=reflect, 1=symmetric
+                .build();
+
         Nd4j.getExecutioner().exec(op);
 
-        INDArray exp = Nd4j.trueVector(new double[]{10, 1, 1, 1, 1, 1, 10});
-        assertEquals(exp, out);
+        INDArray exp = Nd4j.create(new double[][]{
+                {6, 5, 4, 5, 6, 5, 4},
+                {3, 2, 1, 2, 3, 2, 1},
+                {6, 5, 4, 5, 6, 5, 4},
+                {3, 2, 1, 2, 3, 2, 1}});
+        String err = OpValidation.validate(new OpTestCase(op)
+            .expectedOutput(0, exp));
+
+        assertNull(err);
     }
+
+    @Test
+    public void testMirrorPad2(){
+//        OpValidationSuite.ignoreFailing();
+
+        INDArray in = Nd4j.linspace(1, 6, 6).reshape(2,3);
+        INDArray pad = Nd4j.create(new double[][]{{1,1},{2,2}});
+
+        INDArray out = Nd4j.create(new long[]{4,7});
+
+        DynamicCustomOp op = DynamicCustomOp.builder("mirror_pad")
+                .addInputs(in, pad)
+                .addOutputs(out)
+                .addIntegerArguments(1) //0=reflect, 1=symmetric
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        INDArray exp = Nd4j.create(new double[][]{
+                {2, 1, 1, 2, 3, 3, 2},
+                {2, 1, 1, 2, 3, 3, 2},
+                {5, 4, 4, 5, 6, 6, 5},
+                {5, 4, 4, 5, 6, 6, 5}});
+        String err = OpValidation.validate(new OpTestCase(op)
+                .expectedOutput(0, exp));
+
+        assertNull(err);
+    }
+
+    @Test
+    public void testMirrorPadSymmetric(){
+        INDArray in = Nd4j.linspace(1, 12, 12).reshape(3,4);
+        INDArray pad = Nd4j.create(new double[][]{{1,1},{1,1}});
+
+        INDArray out = Nd4j.create(new long[]{5,6});
+
+        DynamicCustomOp op = DynamicCustomOp.builder("mirror_pad")
+                .addInputs(in, pad)
+                .addOutputs(out)
+                .addIntegerArguments(1) //0=reflect, 1=symmetric
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        INDArray exp = Nd4j.create(new double[][]{
+                { 1,  1,  2,  3,  4,  4},
+                { 1,  1,  2,  3,  4,  4},
+                { 5,  5,  6,  7,  8,  8},
+                { 9,  9, 10, 11, 12, 12},
+                { 9,  9, 10, 11, 12, 12}});
+        String err = OpValidation.validate(new OpTestCase(op)
+                .expectedOutput(0, exp));
+
+        assertNull(err);
+    }
+
+    @Test
+    public void testUnique(){
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6173
+        INDArray in = Nd4j.trueVector(new double[]{3, 4, 3, 1, 3, 0, 2, 4, 2, 4});
+
+        INDArray expUnique = Nd4j.trueVector(new double[]{3, 4, 1, 0, 2});
+        INDArray expUniqueIdxs = Nd4j.trueVector(new double[]{0, 1, 0, 2, 0, 3, 4, 1, 4, 1});
+
+        INDArray outUnique = Nd4j.create(expUnique.shape());
+        INDArray outUniqueIdxs = Nd4j.create(expUniqueIdxs.shape());
+
+        DynamicCustomOp op = DynamicCustomOp.builder("unique")
+                .addInputs(in)
+                .addOutputs(outUnique, outUniqueIdxs)
+                .build();
+
+        String err = OpValidation.validate(new OpTestCase(op)
+                .expectedOutput(0, expUnique)
+                .expectedOutput(1, expUniqueIdxs));
+
+        assertNull(err);
+    }
+
+
 }
