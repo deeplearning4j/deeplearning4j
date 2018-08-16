@@ -1697,5 +1697,22 @@ public class TransformOpValidation extends BaseOpValidation {
         }
     }
 
+    @Test
+    public void testZeta(){
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6182
+        INDArray x = Nd4j.rand(3,4).addi(1.0);
+        INDArray q = Nd4j.rand(3,4);
+
+        INDArray out = Nd4j.create(3,4);
+        DynamicCustomOp op = DynamicCustomOp.builder("zeta")
+                .addInputs(x,q)
+                .addOutputs(out)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        System.out.println(out);
+    }
+
 
 }
