@@ -51,6 +51,38 @@ namespace nd4j {
         return static_cast<T>(r);
     }
 
+    template <>
+    int IRandomGenerator::relativeT(Nd4jLong index, int from, int to) {
+        auto l = to - from;
+        auto x = this->relativeInt(index);
+        auto b = x < l ? x : (x % l);
+        return from + b;
+    }
+
+    template <>
+    uint32_t IRandomGenerator::relativeT(Nd4jLong index, uint32_t from, uint32_t to) {
+        auto l = to - from;
+        auto x = this->relativeUint32(index);
+        auto b = x < l ? x : (x % l);
+        return from + b;
+    }
+
+    template <>
+    Nd4jLong IRandomGenerator::relativeT(Nd4jLong index, Nd4jLong from, Nd4jLong to) {
+        auto l = to - from;
+        auto x = this->relativeLong(index);
+        auto b = x < l ? x : (x % l);
+        return from + b;
+    }
+
+    template <>
+    uint64_t IRandomGenerator::relativeT(Nd4jLong index, uint64_t from, uint64_t to) {
+        auto l = to - from;
+        auto x = this->relativeUint64(index);
+        auto b = x < l ? x : (x % l);
+        return from + b;
+    }
+
     template <typename T>
     T IRandomGenerator::relativeT(Nd4jLong index, T from, T to) {
         return from + (this->relativeT<T>(index) * (to - from));
@@ -77,7 +109,6 @@ namespace nd4j {
     template float IRandomGenerator::relativeT<float>(Nd4jLong index, float from, float to);
     template float16 IRandomGenerator::relativeT<float16>(Nd4jLong index, float16 from, float16 to);
     template double IRandomGenerator::relativeT<double>(Nd4jLong index, double from, double to);
-    template int IRandomGenerator::relativeT<int>(Nd4jLong index, int from, int to);
-    template Nd4jLong IRandomGenerator::relativeT<Nd4jLong>(Nd4jLong index, Nd4jLong from, Nd4jLong to);
+
 
 }
