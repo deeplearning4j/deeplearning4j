@@ -3342,7 +3342,8 @@ TEST_F(DeclarableOpsTests1, ArgMax5) {
 TEST_F(DeclarableOpsTests1, ArgMin1) {
     NDArray<float> x('c', {3, 5});
     x.linspace(1);
-    NDArray<float> exp('c', {3, 1});
+//    NDArray<float> exp('c', {3, 1});
+    NDArray<float> exp('c', {3});
     exp.assign(0.0f);
 
     nd4j::ops::argmin<float> op;

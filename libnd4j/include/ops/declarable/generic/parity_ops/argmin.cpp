@@ -26,7 +26,7 @@
 
 namespace nd4j {
     namespace ops {
-        REDUCTION_OP_IMPL(argmin, 1, 1, false, 0, -2) {
+        CUSTOM_OP_IMPL(argmin, 1, 1, false, 0, -2) {
             auto input = INPUT_VARIABLE(0);
             auto axis = *block.getIArguments();
 
@@ -52,6 +52,36 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+
+        DECLARE_SHAPE_FN(argmin) {
+            std::vector<int> dims;
+
+            if (block.width() == 1) {
+                dims = *block.getIArguments();
+            } else {
+                auto y = INPUT_VARIABLE(1);
+                dims = y->template asVectorT<int>();
+            }
+
+            if (dims.size() > 1)
+                std::sort(dims.begin(), dims.end());
+
+            // special case - output is scalar
+            if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == MAX_INT)) {
+                return SHAPELIST(ShapeUtils<T>::createScalarShapeInfo(block.workspace()));
+            }
+
+            shape::TAD tad(inputShape->at(0), dims.data(), dims.size());
+            tad.createTadOnlyShapeInfo();
+
+            Nd4jLong tadLength = shape::tadLength(inputShape->at(0), dims.data(), dims.size());
+            Nd4jLong numTads = shape::length(inputShape->at(0)) /  tadLength;
+
+            auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', dims, inputShape->at(0), false, false, block.getWorkspace());
+
+            return SHAPELIST(newShape);
+        }
+
     }
 }
 
