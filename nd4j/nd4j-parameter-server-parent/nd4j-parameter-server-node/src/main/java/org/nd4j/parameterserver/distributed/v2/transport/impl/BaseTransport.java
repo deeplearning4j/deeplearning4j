@@ -166,8 +166,9 @@ public abstract  class BaseTransport  implements Transport {
         }
     }
 
-    protected boolean isLoopedNode(MeshOrganizer.Node node, BroadcastableMessage message) {
-        return message.getOriginatorId().equals(node.getId()) || message.getRelayId().equals(node.getId());
+    protected boolean isLoopedNode(@NonNull MeshOrganizer.Node node, @NonNull BroadcastableMessage message) {
+        return node.getId().equals(message.getOriginatorId())
+                || node.getId().equals(message.getRelayId());
     }
 
     /**

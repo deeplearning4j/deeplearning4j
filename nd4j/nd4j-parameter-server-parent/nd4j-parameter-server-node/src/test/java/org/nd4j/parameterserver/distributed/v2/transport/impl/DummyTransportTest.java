@@ -139,15 +139,16 @@ public class DummyTransportTest {
             }
         };
 
-        transportA.addInterceptor(GradientsUpdateMessage.class, f);
-        transportB.addInterceptor(GradientsUpdateMessage.class, f);
-        transportG.addInterceptor(GradientsUpdateMessage.class, f);
-        transportD.addInterceptor(GradientsUpdateMessage.class, f);
+        transportA.addPrecursor(GradientsUpdateMessage.class, f);
+        transportB.addPrecursor(GradientsUpdateMessage.class, f);
+        transportG.addPrecursor(GradientsUpdateMessage.class, f);
+        transportD.addPrecursor(GradientsUpdateMessage.class, f);
 
         val array = Nd4j.ones(10, 10);
 
         transportB.propagateMessage(new GradientsUpdateMessage("message", array), PropagationMode.BOTH_WAYS);
 
+        // we expect that each of the nodes gets this message
         assertEquals(400, counter.get());
     }
 }

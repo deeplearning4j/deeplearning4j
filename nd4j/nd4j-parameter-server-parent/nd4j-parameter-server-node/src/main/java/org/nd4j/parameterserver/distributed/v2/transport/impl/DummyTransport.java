@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DummyTransport extends BaseTransport {
     // this is for tests only
     private Map<String, MessageCallable> interceptors = new HashMap<>();
+    private Map<String, MessageCallable> precursors = new HashMap<>();
 
     private Connector connector;
 
@@ -66,12 +67,21 @@ public class DummyTransport extends BaseTransport {
     }
 
     /**
-     * This method add interceptor for incoming messages. If interceptor is defined for given message class - runnable will be executed
+     * This method add interceptor for incoming messages. If interceptor is defined for given message class - runnable will be executed instead of processMessage()
      * @param cls
      * @param callable
      */
     public <T extends VoidMessage> void addInterceptor(@NonNull Class<T> cls, @NonNull MessageCallable<T> callable) {
-        interceptors.putIfAbsent(cls.getCanonicalName(), callable);
+        interceptors.put(cls.getCanonicalName(), callable);
+    }
+
+    /**
+     * This method add precursor for incoming messages. If precursor is defined for given message class - runnable will be executed before processMessage()
+     * @param cls
+     * @param callable
+     */
+    public <T extends VoidMessage> void addPrecursor(@NonNull Class<T> cls, @NonNull MessageCallable<T> callable) {
+        precursors.put(cls.getCanonicalName(), callable);
     }
 
     @Override
@@ -81,8 +91,13 @@ public class DummyTransport extends BaseTransport {
 
         if (callable != null)
             callable.apply(message);
-        else
+        else {
+            val precursor = precursors.get(name);
+            if (precursor != null)
+                precursor.apply(message);
+
             super.processMessage(message);
+        }
     }
 
     /**
