@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -54,10 +55,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -1408,5 +1406,91 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable v2 = sd.sum(sd.var(Nd4j.create(new double[]{4, 4}))).div(2.0);
         double d1 = sd.execAndEndResult().getDouble(0);
         assertEquals(4, d1, 0);
+    }
+
+    @Test
+    public void testAtan2BroadcastShape(){
+        OpValidationSuite.ignoreFailing();
+        INDArray arr1 = Nd4j.create(new long[]{3,1,4});
+        INDArray arr2 = Nd4j.create(new long[]{1,2,4});
+
+        DynamicCustomOp op = DynamicCustomOp.builder("tf_atan2")
+                .addInputs(arr1, arr2)
+                .build();
+
+        List<long[]> outShapes = Nd4j.getExecutioner().calculateOutputShape(op);
+        assertEquals(1, outShapes.size());
+
+        assertArrayEquals(Arrays.toString(outShapes.get(0)), new long[]{3,2,4}, outShapes.get(0));
+    }
+
+    @Test
+    @Ignore
+    public void testBooleanAnd(){
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        INDArray arr1 = Nd4j.create(new long[]{3,4});
+        INDArray arr2 = Nd4j.create(new long[]{3,4});
+        INDArray out = Nd4j.create(new long[]{3,4});
+
+        DynamicCustomOp op = DynamicCustomOp.builder("boolean_and")
+                .addInputs(arr1, arr2)
+                .addOutputs(out)
+                .build();
+        Nd4j.getExecutioner().exec(op);
+    }
+
+    @Test
+    public void testLogicalNot(){
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        INDArray x = Nd4j.create(new long[]{3,4});
+        INDArray z = Nd4j.create(new long[]{3,4});
+
+        Op op = new Not(x, z);
+        Nd4j.getExecutioner().exec(op);
+    }
+
+
+    @Test
+    @Ignore
+    public void testScatterOpsScalar(){
+        for(String s : new String[]{"add", "sub", "mul", "div"}) {
+            INDArray ref = Nd4j.linspace(1, 30, 30).reshape(10, 3);
+            INDArray indices = Nd4j.trueScalar(5);
+            INDArray upd = Nd4j.trueVector(new double[]{10, 20, 30});
+
+            //The non-scalar case works:
+//            INDArray indices = Nd4j.trueVector(new float[]{5});
+//            INDArray upd = Nd4j.create(new double[]{10, 20, 30}, new int[]{1, 3});
+
+            INDArray exp = ref.dup();
+            switch (s){
+                case "add":
+                    exp.getRow(5).addi(upd);
+                    break;
+                case "sub":
+                    exp.getRow(5).subi(upd);
+                    break;
+                case "mul":
+                    exp.getRow(5).muli(upd);
+                    break;
+                case "div":
+                    exp.getRow(5).divi(upd);
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+
+            INDArray out = Nd4j.create(10, 3);
+
+            DynamicCustomOp op = DynamicCustomOp.builder("scatter_" + s)
+                    .addInputs(ref, indices, upd)
+                    .addOutputs(out)
+                    .build();
+
+            Nd4j.getExecutioner().exec(op);
+
+            assertEquals(s, exp, out);
+        }
     }
 }

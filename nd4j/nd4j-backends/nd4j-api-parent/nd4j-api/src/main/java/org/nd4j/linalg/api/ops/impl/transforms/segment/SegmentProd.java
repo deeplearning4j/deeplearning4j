@@ -38,4 +38,9 @@ public class SegmentProd extends DynamicCustomOp {
         return "segment_prod";
     }
 
+    @Override
+    public String tensorflowName() {
+        return "SegmentProd";
+    }
+
 }

@@ -23,6 +23,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.OpValidationSuite;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -47,7 +48,16 @@ public class TFGraphTestAllSameDiff {
             "ssd_mobilenet_v1_coco",
             "yolov2_608x608",
             "inception_v3_with_softmax",
-            "conv_5" // this test runs, but we can't make it pass atm due to different RNG algorithms
+            "conv_5", // this test runs, but we can't make it pass atm due to different RNG algorithms
+    };
+
+    public static final String[] IGNORE_REGEXES = new String[]{
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6154
+            "transforms/atan2_3,1,4_1,2,4",
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6142
+            "reverse/shape5.*",
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6155
+            "reductions/argmin.*"
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 
@@ -67,9 +77,10 @@ public class TFGraphTestAllSameDiff {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
 
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name="{2}")
     public static Collection<Object[]> data() throws IOException {
-        return TFGraphTestAllHelper.fetchTestParams(EXECUTE_WITH);
+        List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(EXECUTE_WITH);
+        return params;
     }
 
     public TFGraphTestAllSameDiff(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName) throws IOException {
@@ -84,6 +95,13 @@ public class TFGraphTestAllSameDiff {
         if (SKIP_SET.contains(modelName)) {
             log.info("\n\tSKIPPED MODEL: " + modelName);
             return;
+        }
+
+        for(String s : IGNORE_REGEXES){
+            if(modelName.matches(s)){
+                log.info("\n\tIGNORE MODEL ON REGEX: {} - regex {}", modelName, s);
+                OpValidationSuite.ignoreFailing();
+            }
         }
         Double precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
 

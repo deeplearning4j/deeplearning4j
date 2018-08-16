@@ -506,11 +506,16 @@ public class OpValidation {
         int tfOpsWithImportTests = 0;
         if(logUntestedTFImport)
             log.info(" --- Ops with TF Mapping but No TF Import Tests ---");
-        for(Map.Entry<String, DifferentialFunction> e : tfOpsMap.entrySet()){
-            String s = e.getKey();
+        List<String> tfOpsKeys = new ArrayList<>(tfOpsMap.keySet());
+        Collections.sort(tfOpsKeys);
+        Set<String> tfIgnored = excludeFromTfImportCoverage();
+        int tfImportIgnored = 0;
+        for(String s : tfOpsKeys){
             Integer count = tfMappedOpsImportTestCounts.get(s);
             if(count == null || count == 0){
-                if(logUntestedTFImport)
+                if(tfIgnored.contains(s)){
+                    tfImportIgnored++;
+                } else if(logUntestedTFImport)
                     log.info("TF mapped op with no import tests: {}", s);
             } else {
                 tfOpsWithImportTests++;
@@ -567,7 +572,7 @@ public class OpValidation {
         int countLibnd4jMapped = countTotalLibnd4jOps - nonMappedLibnd4jOps.size();
         String fracLibnd4j = String.format("%.2f", 100.0 * (countLibnd4jMapped / (double)countTotalLibnd4jOps));
 
-        String fracTFMappedTested = String.format("%.2f", 100.0 * tfOpsWithImportTests / (double)totalTFMappedOps);
+        String fracTFMappedTested = String.format("%.2f", 100.0 * tfOpsWithImportTests / (double)(totalTFMappedOps-tfImportIgnored));
 
         log.info("*****************************************************");
         log.info("Op Validation:                        {} of {} classes with adequate tests ({}% coverage)", countAdequate, totalFwd, pc);
@@ -576,7 +581,7 @@ public class OpValidation {
         log.info("({} ops excluded from gradient check coverage)", excludedFromBackpropCoverage.size());
         log.info("({} ops excluded from fwd+gradient tests)", excludedFromAllTestCoverage.size());
         log.info("TF mapped ops:                        {} of {} ({}%)", countTfMapped, countTf, fracTfStr);
-        log.info("SD ops with TF import mapping + test  {} of {} ({}%)", tfOpsWithImportTests, totalTFMappedOps, fracTFMappedTested);
+        log.info("SD ops with TF import mapping + test  {} of {} ({}%) - {} ignored for coverage", tfOpsWithImportTests, (totalTFMappedOps-tfImportIgnored), fracTFMappedTested, tfImportIgnored);
         log.info("Libnd4j mapped ops:                   {} of {} ({}%)", countLibnd4jMapped, countTotalLibnd4jOps, fracLibnd4j);
         log.info("*****************************************************");
     }
@@ -759,6 +764,37 @@ public class OpValidation {
                 StandardDeviationBp.class,
                 SumBp.class,
                 VarianceBp.class
+        );
+
+        return new HashSet<>(list);
+    }
+
+    /**
+     * These ops are excluded from TF import test coverage, for various reasons
+     */
+    private static Set<String> excludeFromTfImportCoverage(){
+        List<String> list = Arrays.asList(
+                "Reverse",      //Can be excluded because "Reverse_v2" is synonym that TF uses with tf.reverse(...); ReverseV2 is also Java op that is synonym for same op
+                "LogSigmoid",    //Not in ops.proto. Have tests for tf.log_sigmoid, but can't test LogSigmoid op directly: tf.log_sigmoid actually just uses "y = -tf.nn.softplus(-x)" - i.e., 3 separate ops :/
+                "HardSigmoid",   //Also implemented as python, NOT a single native op
+                "SpaceToBatch", //Old name - SpaceToBatchNd is used in practice (inc. for tf.space_to_batch)
+                "BatchToSpace", //Old name - BatchToSpaceNd is used in practice
+
+                //All of the following ops - not available in TF (can't find them) - op mapping is wrong?
+                //TODO: Check these and remove the import mapping from the Java classes if they are indeed bad
+                "HardTanh",
+                "Swish",
+                "RDiv",
+                "DivScalar",
+                "LogX",
+                "RationalTanh",
+                "absargmax",
+                "absargmin",
+                "entropy_shannon",   //This is a thing, but quite different from our op: https://www.tensorflow.org/versions/r1.2/api_docs/python/tf/contrib/bayesflow/entropy/entropy_shannon
+                "count_zero"
+
+
+
         );
 
         return new HashSet<>(list);

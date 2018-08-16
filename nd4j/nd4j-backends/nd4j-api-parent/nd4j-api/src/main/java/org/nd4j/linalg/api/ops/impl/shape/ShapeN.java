@@ -14,50 +14,64 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.shape;
 
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.Op;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Matrix Inverse Function
+ * Returns the shape of N input array as as N output arrays
  *
  * @author Alex Black
  */
-public class MatrixInverse extends DynamicCustomOp {
+public class ShapeN extends DynamicCustomOp {
 
-    public MatrixInverse() {
-        //
+    public ShapeN() {}
+
+    public ShapeN(SameDiff sameDiff, SDVariable[] inputs, boolean inPlace) {
+        super(null, sameDiff, inputs, inPlace);
     }
 
-    public MatrixInverse(SameDiff sameDiff, SDVariable in, boolean inPlace) {
-        super(null, sameDiff, new SDVariable[]{in}, inPlace);
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx name found for shape " + opName());
     }
 
 
     @Override
     public String opName() {
-        return "matrix_inverse";
+        return "shapes_of";
     }
 
     @Override
     public String tensorflowName() {
-        return "MatrixInverse";
+        return "ShapeN";
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        //Derivative of matrix determinant
-        //From: Matrix Cookbook - Petersen & Pedersen
-        //if z = inverse(X)
-        //dz/dx = - z * dX/dx * z
-        //note that dX/dx is just identity matrix
-        //TODO non-matrix case
-        SDVariable dOutdIn = outputVariable().mmul(outputVariable()).neg();
-        return Collections.singletonList(i_v.get(0).mul(dOutdIn));
+        List<SDVariable> out = new ArrayList<>();
+        for(SDVariable in : args()){
+            out.add(f().zerosLike(in));
+        }
+        return out;
+    }
+
+    @Override
+    public int getNumOutputs(){
+        return args().length;
     }
 }
