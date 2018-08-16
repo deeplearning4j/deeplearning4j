@@ -18,7 +18,11 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -27,38 +31,50 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Pad op
+ * In Top K op
+ *
  * @author Alex Black
  */
-public class Pad extends DynamicCustomOp {
+public class InTopK extends DynamicCustomOp {
 
-    public enum Mode {CONSTANT, REFLECT, SYMMETRIC}
+    private boolean sorted;
+    private int k;
 
-    private Mode mode;
+    public InTopK(){ }
 
-    public Pad(){ }
-
-    public Pad(SameDiff sd, SDVariable in, SDVariable padding, Mode mode){
-        super(sd, new SDVariable[]{in, padding}, false);
-        this.mode = mode;
-        addIArgument(mode.ordinal());
+    public InTopK(SameDiff sd, SDVariable predictions, SDVariable targets, int k){
+        super(sd, new SDVariable[]{predictions, targets}, false);
+        this.k = k;
+        addIArgument(k);
     }
 
     @Override
     public String opName(){
-        return "pad";
+        return "in_top_k";
     }
 
     @Override
     public String tensorflowName() {
-        return "PadV2";
+        return "InTopKV2";
     }
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        //Based on TF codebase: gen_array_ops.mirror_pad is osed for BOTH REFLECT and SYMMETRIC mode. Hence only constant being imported here
-        this.mode = Mode.CONSTANT;
-        addIArgument(mode.ordinal());
+
+        String thisName = nodeDef.getName();
+        String inputName = thisName + "/k";
+        NodeDef kNode = null;
+        for(int i = 0; i < graph.getNodeCount(); i++) {
+            if(graph.getNode(i).getName().equals(inputName)){
+                kNode = graph.getNode(i);
+                break;
+            }
+        }
+        Preconditions.checkState(kNode != null, "Could not find 'k' parameter node for op: %s", thisName);
+
+        INDArray arr = TFGraphMapper.getInstance().getNDArrayFromTensor(inputName, kNode, graph);
+        this.k = arr.getInt(0);
+        addIArgument(k);
     }
 
     @Override

@@ -1624,5 +1624,78 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
+    @Test
+    public void testTopK(){
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6177
+        INDArray in = Nd4j.trueVector(new double[]{7, 3, 1, 2, 5, 0, 4, 6, 9, 8});
+
+        INDArray expTopK = Nd4j.trueVector(new double[]{7, 5, 6, 9, 8});
+        INDArray expIndices = Nd4j.trueVector(new double[]{0, 4, 7, 8, 9});
+
+        INDArray expTopK_sorted = Nd4j.trueVector(new double[]{9, 8, 7, 6, 5});
+        INDArray expIndices_sorted = Nd4j.trueVector(new double[]{8, 9, 0, 7, 4});
+
+        for(boolean sort : new boolean[]{false, true}) {
+            INDArray outUnique = Nd4j.create(expTopK.shape());
+            INDArray outUniqueIdxs = Nd4j.create(expIndices.shape());
+
+            DynamicCustomOp op = DynamicCustomOp.builder("top_k")
+                    .addInputs(in)
+                    .addOutputs(outUnique, outUniqueIdxs)
+                    .addIntegerArguments(5, sort ? 1 : 0)  //k=5, sort
+                    .build();
+
+            String err = OpValidation.validate(new OpTestCase(op)
+                    .expectedOutput(0, sort ? expTopK_sorted : expTopK)
+                    .expectedOutput(1, sort ? expIndices_sorted : expIndices));
+
+            assertNull(err);
+        }
+    }
+
+    @Test
+    public void testInTopK() {
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6179
+
+        for( int k=4; k>= 1; k--){
+            log.info("Testing: k=" + k);
+            INDArray in = Nd4j.linspace(1, 20, 20).reshape(4, 5);
+            INDArray idxs = Nd4j.trueVector(new double[]{1, 2, 3, 4});
+
+            INDArray expOut;
+            switch (k){
+                case 4:
+                    expOut = Nd4j.trueVector(new double[]{1, 1, 1, 1});
+                    break;
+                case 3:
+                    expOut = Nd4j.trueVector(new double[]{0, 1, 1, 1});
+                    break;
+                case 2:
+                    expOut = Nd4j.trueVector(new double[]{0, 0, 1, 1});
+                    break;
+                case 1:
+                    expOut = Nd4j.trueVector(new double[]{0, 0, 0, 1});
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+
+
+            INDArray out = Nd4j.create(expOut.shape());
+
+            DynamicCustomOp op = DynamicCustomOp.builder("in_top_k")
+                    .addInputs(in, idxs)
+                    .addOutputs(out)
+                    .addIntegerArguments(k)  //k=1
+                    .build();
+
+            String err = OpValidation.validate(new OpTestCase(op)
+                    .expectedOutput(0, expOut));
+
+            assertNull(err);
+        }
+    }
+
 
 }
