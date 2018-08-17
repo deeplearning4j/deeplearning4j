@@ -48,8 +48,15 @@ public final class ModelParameterServer {
     // TODO: we need better capacity here, it should scale properly
     private final BlockingQueue<INDArray> updatesQueue = new LinkedBlockingQueue<>(4096);
 
+    private final boolean masterMode;
+
     public ModelParameterServer(@NonNull Transport transport) {
+        this(transport, false);
+    }
+
+    public ModelParameterServer(@NonNull Transport transport, boolean isMasterNode) {
         this.transport = transport;
+        this.masterMode = isMasterNode;
     }
 
     // this flag is true once mps is launched
@@ -106,7 +113,10 @@ public final class ModelParameterServer {
         });
 
         // we start transport only once we're ready
-        transport.launch();
+        if (this.masterMode)
+            transport.launchAsMaster();
+        else
+            transport.launch();
 
         launchLock.set(true);
     }
@@ -117,6 +127,9 @@ public final class ModelParameterServer {
     public synchronized void shutdown() {
         if (stopLock.get())
             return;
+
+        // shutting down underlying transport
+        transport.shutdown();
 
         // disposing INDArray flow
         disposable.dispose();
@@ -144,14 +157,5 @@ public final class ModelParameterServer {
         val list = new ArrayList<INDArray>();
         updatesQueue.drainTo(list);
         return list;
-    }
-
-
-    private class MPSRestartCallback implements RestartCallback {
-
-        @Override
-        public void call(HandshakeResponse response) {
-
-        }
     }
 }

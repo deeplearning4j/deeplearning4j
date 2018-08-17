@@ -96,8 +96,6 @@ public abstract  class BaseTransport  implements Transport {
 
     @Override
     public synchronized void launch() {
-
-
         // first of all we introduce ourselves to master
 
         // this flow gets converted to VoidChunks and sent to upstream and downstreams
@@ -113,6 +111,20 @@ public abstract  class BaseTransport  implements Transport {
             // and propagating message across mesh network
             propagateMessage(voidMessage, PropagationMode.BOTH_WAYS);
         });
+    }
+
+    @Override
+    public synchronized void launchAsMaster() {
+        if (mesh.get() == null)
+            mesh.set(new MeshOrganizer(MeshBuildMode.SYMMETRIC_MODE));
+
+        mesh.get().getRootNode().setId(this.id());
+        this.launch();
+    }
+
+    @Override
+    public synchronized void shutdown() {
+        // probably will be nothing useful in this implementation
     }
 
     @Override

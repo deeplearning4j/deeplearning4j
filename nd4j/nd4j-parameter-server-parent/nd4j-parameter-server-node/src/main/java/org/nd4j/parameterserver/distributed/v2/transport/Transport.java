@@ -58,6 +58,16 @@ public interface Transport {
     void launch();
 
     /**
+     * This method will start this Transport instance
+     */
+    void launchAsMaster();
+
+    /**
+     * This method shuts down this Transport instance
+     */
+    void shutdown();
+
+    /**
      * This method will send message to the network, using tree structure
      * @param message
      */
