@@ -20,6 +20,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
@@ -40,7 +41,7 @@ public class DummyTransport extends BaseTransport {
     private Map<String, MessageCallable> interceptors = new HashMap<>();
     private Map<String, MessageCallable> precursors = new HashMap<>();
 
-    private Connector connector;
+    private final Connector connector;
 
 
     public DummyTransport(String id, Connector connector) {
@@ -51,6 +52,12 @@ public class DummyTransport extends BaseTransport {
 
     public DummyTransport(String id, Connector connector, @NonNull String rootId) {
         super(rootId);
+        this.id = id;
+        this.connector = connector;
+    }
+
+    public DummyTransport(String id, Connector connector, @NonNull String rootId, @NonNull VoidConfiguration configuration) {
+        super(rootId, configuration);
         this.id = id;
         this.connector = connector;
     }

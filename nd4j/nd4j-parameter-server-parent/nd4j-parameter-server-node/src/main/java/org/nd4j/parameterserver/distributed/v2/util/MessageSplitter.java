@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This class provides methods for splitting VoidMessages into chunks, and merging them back again
@@ -42,6 +43,9 @@ public class MessageSplitter {
     private static final MessageSplitter INSTANCE = new MessageSplitter();
 
     private Map<String, ChunksTracker> trackers = new ConcurrentHashMap<>();
+
+    // simple counter for memory used by all in-memory trackers
+    protected final AtomicLong memoryUse = new AtomicLong(0);
 
     protected MessageSplitter() {
         //
@@ -127,13 +131,33 @@ public class MessageSplitter {
 
 
     /**
-     * This method tries to merge
+     * This method tries to merge using files tracker
      *
      * @param chunk
      * @param <T>
      * @return
      */
     public <T extends VoidMessage> Optional<T> merge(@NonNull VoidChunk chunk) {
+        return merge(chunk, -1L);
+    }
+
+    /**
+     * This method removes specified messageId from tracking
+     *
+     * @param messageId
+     */
+    public void release(String messageId) {
+        //
+    }
+
+    /**
+     *
+     * @param chunk
+     * @param memoryLimit
+     * @param <T>
+     * @return
+     */
+    public <T extends VoidMessage> Optional<T> merge(@NonNull VoidChunk chunk, long memoryLimit) {
         val originalId= chunk.getOriginalId();
 
         trackers.putIfAbsent(originalId, new FileChunksTracker<T>(chunk));

@@ -24,6 +24,7 @@ import lombok.val;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.linalg.primitives.Optional;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.MeshBuildMode;
 import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;
 import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
@@ -77,13 +78,21 @@ public abstract  class BaseTransport  implements Transport {
     // collection of callbacks for connection with ParameterServer implementation
     protected Map<String, Consumer> consumers = new HashMap<>();
 
+    // just configuration bean
+    protected final VoidConfiguration configuration;
+
     protected BaseTransport() {
-        mesh.set(new MeshOrganizer(MeshBuildMode.SYMMETRIC_MODE));
+        this(java.util.UUID.randomUUID().toString());
     }
 
     protected BaseTransport(@NonNull String rootId) {
-        this();
+        this(rootId, VoidConfiguration.builder().build());
+    }
+
+    protected BaseTransport(@NonNull String rootId, @NonNull VoidConfiguration configuration) {
+        this.mesh.set(new MeshOrganizer(MeshBuildMode.SYMMETRIC_MODE));
         this.rootId = rootId;
+        this.configuration = configuration;
     }
 
     @Override

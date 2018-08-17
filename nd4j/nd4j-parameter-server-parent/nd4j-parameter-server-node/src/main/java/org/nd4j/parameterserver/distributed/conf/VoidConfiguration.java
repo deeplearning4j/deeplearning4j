@@ -154,6 +154,13 @@ public class VoidConfiguration implements Serializable {
     private long responseTimeout = 30000;
 
     /**
+     * This variable defines amount of memory used of
+     * Default value: 1GB
+     */
+    @Builder.Default
+    private long chunksBufferSize = 1073741824;
+
+    /**
      * This optional variable defines IP address of the box which acts as master for gradients training.
      * Leave it null, and Spark Master node will be used as Master for parameter server as well.
      */

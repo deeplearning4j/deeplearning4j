@@ -52,4 +52,11 @@ public interface ChunksTracker<T extends VoidMessage> {
      * This method releases all resources used (if used) for this message
      */
     void release();
+
+    /**
+     * This method returns amount of bytes reserved for final message
+     *
+     * @return
+     */
+    long size();
 }

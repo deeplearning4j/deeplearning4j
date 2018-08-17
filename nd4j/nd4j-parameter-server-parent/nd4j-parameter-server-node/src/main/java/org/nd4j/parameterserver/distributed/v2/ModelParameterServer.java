@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.AtomicBoolean;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeResponse;
@@ -51,13 +52,38 @@ public final class ModelParameterServer {
 
     private final boolean masterMode;
 
-    public ModelParameterServer(@NonNull Transport transport) {
+    protected final VoidConfiguration configuration;
+
+    /**
+     * This constructor is for tests only
+     *
+     * @param transport
+     */
+    protected ModelParameterServer(@NonNull Transport transport) {
         this(transport, false);
     }
 
-    public ModelParameterServer(@NonNull Transport transport, boolean isMasterNode) {
+    /**
+     * This constructor is for tests only
+     *
+     * @param transport
+     * @param isMasterNode
+     */
+    protected ModelParameterServer(@NonNull Transport transport, boolean isMasterNode) {
+        this(VoidConfiguration.builder().unicastPort(40123).streamId(119).build(), transport, isMasterNode);
+    }
+
+    /**
+     * This constructor creates new ModelParameterServer instance
+     *
+     * @param configuration VoidConfiguration bean
+     * @param transport Transport instance to be used for communications
+     * @param isMasterNode set to true if this parameter server instance will be a master node, false otherwise
+     */
+    public ModelParameterServer(VoidConfiguration configuration, Transport transport, boolean isMasterNode) {
         this.transport = transport;
         this.masterMode = isMasterNode;
+        this.configuration = configuration;
     }
 
     // this flag is true once mps is launched

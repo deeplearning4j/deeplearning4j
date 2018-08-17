@@ -45,6 +45,8 @@ public class InmemoryChunksTracker<T extends VoidMessage> implements ChunksTrack
 
     private final byte[] buffer;
 
+    private final long size;
+
 
     public InmemoryChunksTracker(VoidChunk chunk) {
         originId = chunk.getOriginalId();
@@ -53,8 +55,10 @@ public class InmemoryChunksTracker<T extends VoidMessage> implements ChunksTrack
         if (chunk.getTotalSize() > Integer.MAX_VALUE)
             throw new ND4JIllegalStateException("Total message size > Integer.MAX_VALUE");
 
+        size = chunk.getTotalSize();
+
         try {
-            buffer = new byte[(int) chunk.getTotalSize()];
+            buffer = new byte[(int) size];
 
             // we'll pre-initialize states map
             for (int e = 0; e < numChunks; e++)
@@ -67,6 +71,10 @@ public class InmemoryChunksTracker<T extends VoidMessage> implements ChunksTrack
         }
     }
 
+    @Override
+    public long size() {
+        return size;
+    }
 
     @Override
     public boolean isComplete() {

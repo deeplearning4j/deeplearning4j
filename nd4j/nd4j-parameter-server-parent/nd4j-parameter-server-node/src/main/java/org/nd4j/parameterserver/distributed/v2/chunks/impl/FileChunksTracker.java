@@ -43,18 +43,21 @@ public class FileChunksTracker<T extends VoidMessage> implements ChunksTracker<T
 
     private File holder;
 
-
+    private final long size;
 
     public FileChunksTracker(VoidChunk chunk) {
         originId = chunk.getOriginalId();
         numChunks = chunk.getNumberOfChunks();
+        size = chunk.getTotalSize();
+
         try {
             holder = File.createTempFile("FileChunksTracker", "Message");
             holder.deleteOnExit();
 
+
             // fill file with 0s for simplicity
             try (val fos = new FileOutputStream(holder); val bos = new BufferedOutputStream(fos, 32768)) {
-                for (int e = 0; e < chunk.getTotalSize(); e++)
+                for (int e = 0; e < size; e++)
                     bos.write(0);
             }
 
@@ -67,6 +70,11 @@ public class FileChunksTracker<T extends VoidMessage> implements ChunksTracker<T
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public long size() {
+        return size;
     }
 
     @Override
