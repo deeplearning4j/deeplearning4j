@@ -22,29 +22,31 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.List;
 
-public class MatrixDiag extends DynamicCustomOp {
+public class UniqueWithCounts extends DynamicCustomOp {
 
-    public MatrixDiag() {
-        //
-    }
+    public UniqueWithCounts(){ }
 
-    public MatrixDiag(SameDiff sameDiff, SDVariable in, boolean inPlace) {
-        super(null, sameDiff, new SDVariable[]{in}, inPlace);
-    }
-
-
-    @Override
-    public String opName() {
-        return "matrix_diag";
+    public UniqueWithCounts(SameDiff sd, SDVariable in){
+        super(sd, new SDVariable[]{in}, false);
     }
 
     @Override
-    public String[] tensorflowNames() {
-        return new String[]{"MatrixDiag","BatchMatrixDiag"};
+    public String opName(){
+        return "unique_with_counts";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "UniqueWithCounts";
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public int numOutputArguments(){
+        return 3;
     }
 }
