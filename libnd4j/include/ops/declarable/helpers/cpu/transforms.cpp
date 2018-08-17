@@ -206,8 +206,10 @@ void recursiveLoopForPad(const int mode, NDArray<T>& input, const NDArray<T>& pa
     tadIn.createOffsets();
     NDArray<T> subArrIn(input.getBuffer(), tadIn.tadOnlyShapeInfo, output.getWorkspace());
     // these indices take into account recursion and always point to actual tads numbers
-    outIdx = outIdx*output.sizeAt(dim+1);
-    inIdx  = inIdx*input.sizeAt(dim+1);
+    if (input.rankOf() > 1 && output.rankOf() > 1) {// only for non-vector cases
+        outIdx = outIdx * output.sizeAt(dim + 1);
+        inIdx = inIdx * input.sizeAt(dim + 1);
+    }
     // current input tad number, we add to it unity in a loop
     int k = -1;
     // loop through current dimension
@@ -218,13 +220,15 @@ void recursiveLoopForPad(const int mode, NDArray<T>& input, const NDArray<T>& pa
         // increase input tads number
         ++k;
         // recursion condition allows for the fact that tad can't reduce to scalar
-        if(dim < input.rankOf()-2)
-            recursiveLoopForPad(mode, input, paddings, output, dimensions, dim+1, inIdx + k, outIdx + i);
-        else {
+        if(dim < input.rankOf() - 2)
+            recursiveLoopForPad(mode, input, paddings, output, dimensions, dim+1, inIdx + k, outIdx + i, padValue);
+        else if (paddings.sizeAt(0) > dim + 1){
             // shift buffers pointers to actual element position
-            subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + i]);
-            subArrIn.setBuffer (input.getBuffer()  + tadIn.tadOffsets[inIdx + i - (int)paddings(dim,0)]);                                   
-            leftOffset = (int)paddings(dim+1,0);
+            if (output.rankOf() > 1) {
+                subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + i]);
+                subArrIn.setBuffer(input.getBuffer() + tadIn.tadOffsets[inIdx + i - (int) paddings(dim, 0)]);
+            }
+            leftOffset = (int)paddings(dim + 1, 0);
             // most inner loop, corresponds to last dim = rank-1
             switch (mode) {
                 case 0:             // CONSTANT mode                    
@@ -260,14 +264,26 @@ void recursiveLoopForPad(const int mode, NDArray<T>& input, const NDArray<T>& pa
     leftOffset = (int)paddings(dim,0);       
     switch (mode) {
         case 0:         // CONSTANT mode
-            for(int j = 1;  j <= leftOffset; ++j) {                                                     // fill left side with zeros
-                subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + leftOffset - j]);
-                subArrOut.assign((T)0.);
+            for(int j = 1;  j <= leftOffset; ++j) {
+                // fill left side with padValue
+                if (output.rankOf() > 1) {
+                    subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + leftOffset - j]);
+                    subArrOut.assign(padValue);
+                }
+                else {
+                    subArrOut(j - 1) = padValue;
+                }
             }
+//            output.printIndexedBuffer("Output at");
             for(int j = (output.sizeAt(dim) - leftOffset); j < output.sizeAt(dim); ++j) {       // fill left side with zeros
-                subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + j]);
-                subArrOut.assign((T)0.);
-            }   
+                if (output.rankOf() > 1) {
+                    subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + j]);
+                    subArrOut.assign(padValue);
+                }
+                else {
+                    subArrOut(j) = padValue;
+                }
+            }
             break;
 
         case 1:         // REFLECT mode 
