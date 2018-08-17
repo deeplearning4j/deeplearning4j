@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.spark.parameterserver.elephas;
+package org.deeplearning4j.spark.parameterserver.modelimport.elephas;
 
 import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -30,7 +30,6 @@ import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingMaster;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.Map;
