@@ -722,6 +722,77 @@ public class ParallelInferenceTest {
         }
     }
 
+    @Test(timeout = 20000L)
+    public void testModelUpdate_1() throws Exception {
+        int nIn = 5;
+
+        val conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).build(), "in")
+                .layer("out1", new OutputLayer.Builder().nIn(nIn).nOut(6).build(), "in")
+                .setOutputs("out0", "out1")
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        val inf = new ParallelInference.Builder(net)
+                        .inferenceMode(InferenceMode.SEQUENTIAL)
+                        .batchLimit(5)
+                        .queueLimit(64)
+                        .workers(4)
+                        .build();
+
+        // imitating use of the original model
+        for (int e = 0; e < 10; e++) {
+            val output = inf.output(new INDArray[]{Nd4j.createUninitialized(1, 5)});
+            assertNotNull(output);
+            assertNotEquals(0, output.length);
+        }
+
+        val modelsBefore = inf.getCurrentModelsFromWorkers();
+        assertEquals(4, modelsBefore.length);
+
+        boolean passed = false;
+        int cnt0 = 0;
+        for (val m:modelsBefore) {
+            // model can be null for some of the workers yet, due to race condition
+            if (m != null) {
+                assertEquals("Failed at model [" + cnt0 + "]", net.params(), m.params());
+                passed = true;
+            }
+            cnt0++;
+        }
+        assertTrue(passed);
+
+
+        val conf2 = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).build(), "in")
+                .layer("out1", new OutputLayer.Builder().nIn(nIn).nOut(6).build(), "in")
+                .layer("out2", new OutputLayer.Builder().nIn(nIn).nOut(8).build(), "in")
+                .setOutputs("out0", "out1", "out2")
+                .build();
+
+        val net2 = new ComputationGraph(conf2);
+        net2.init();
+
+        inf.updateModel(net2);
+
+        val modelsAfter = inf.getCurrentModelsFromWorkers();
+        assertEquals(4, modelsAfter.length);
+
+        cnt0 = 0;
+        for (val m:modelsAfter) {
+            assertNotNull("Failed at model [" + cnt0 + "]", m);
+            assertEquals("Failed at model [" + cnt0++ + "]", net2.params(), m.params());
+        }
+
+        inf.shutdown();
+    }
+
     @Test(timeout = 60000L)
     public void testMultiOutputNet() throws Exception {
 
