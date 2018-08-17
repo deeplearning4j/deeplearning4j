@@ -18,9 +18,11 @@ package org.deeplearning4j.spark.parameterserver.elephas;
 
 import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.modelimport.keras.Hdf5Archive;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.api.RDDTrainingApproach;
 import org.deeplearning4j.spark.api.TrainingMaster;
@@ -28,8 +30,10 @@ import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingMaster;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Reads HDF5-persisted Elephas models stored with `model.save()` for both underlying
@@ -40,6 +44,7 @@ import java.io.IOException;
  */
 public class ElephasModelImport {
 
+    private static final String DISTRIBUTED_CONFIG = "distributed_config";
     private static final RDDTrainingApproach APPROACH = RDDTrainingApproach.Export;
 
     /**
@@ -59,6 +64,8 @@ public class ElephasModelImport {
                                                            String modelHdf5Filename)
             throws IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
         ComputationGraph model = KerasModelImport.importKerasModelAndWeights(modelHdf5Filename, true);
+
+        Map distributedProperties = distributedTrainingMap(modelHdf5Filename);
 
         int rddDataSetNumExamples = 32;
         int batchSize = 32;
@@ -86,18 +93,20 @@ public class ElephasModelImport {
      *
      * @param sparkContext                            Java SparkContext
      * @param modelHdf5Filename                       Path to HDF5 archive storing Elephas model
-     * @return SparkComputationGraph                  Spark computation graph
+     * @return SparkDl4jMultiLayer                    Spark computation graph
      *
      * @throws IOException                            IO exception
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
-     * @see SparkComputationGraph
+     * @see SparkDl4jMultiLayer
      */
     public static SparkDl4jMultiLayer importElephasSequentialModelAndWeights(JavaSparkContext sparkContext,
                                                                      String modelHdf5Filename)
             throws IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
         MultiLayerNetwork model = KerasModelImport.importKerasSequentialModelAndWeights(
                 modelHdf5Filename, true);
+
+        Map distributedProperties = distributedTrainingMap(modelHdf5Filename);
 
         int rddDataSetNumExamples = 32;
         int batchSize = 32;
@@ -115,5 +124,12 @@ public class ElephasModelImport {
                 .build();
 
         return new SparkDl4jMultiLayer(sparkContext, model, tm);
+    }
+
+    public static Map<String, Object> distributedTrainingMap(String modelHdf5Filename)
+            throws UnsupportedKerasConfigurationException, IOException {
+        Hdf5Archive archive = new Hdf5Archive(modelHdf5Filename);
+        String initialModelJson = archive.readAttributeAsJson(DISTRIBUTED_CONFIG);
+        return KerasModelUtils.parseJsonString(initialModelJson);
     }
 }
