@@ -207,8 +207,9 @@ public abstract  class BaseTransport  implements Transport {
             if (opt.isPresent())
                 this.processMessage(opt.get());
         } else if (message instanceof INDArrayMessage) {
-            // just forward message
-            forwardToParameterServer((INDArrayMessage) message);
+            // just forward message, but ONLY if it's not a Response message, since it's probably processed separately
+            if (!(message instanceof ResponseMessage))
+                forwardToParameterServer((INDArrayMessage) message);
         } else if (message instanceof HandshakeRequest) {
             if (!mesh.get().isKnownNode(this.id())) {
                 mesh.get().getRootNode().setId(this.id);
@@ -287,6 +288,11 @@ public abstract  class BaseTransport  implements Transport {
                 log.error("Wasn't able to propagate message from [{}]", id());
                 throw new RuntimeException(e);
             }
+        }
+
+        // Request messages might be sent back to ParameterServer, which will take care of processing
+        if (message instanceof RequestMessage) {
+            // looks for callback for a given message type
         }
     }
 

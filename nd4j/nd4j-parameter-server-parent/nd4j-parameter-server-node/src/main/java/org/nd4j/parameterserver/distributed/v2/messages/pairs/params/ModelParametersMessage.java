@@ -19,6 +19,7 @@ package org.nd4j.parameterserver.distributed.v2.messages.pairs.params;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.parameterserver.distributed.v2.messages.ResponseMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseINDArrayMessage;
 
 /**
@@ -26,7 +27,7 @@ import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseINDArrayMe
  * @author raver119@gmail.com
  */
 @NoArgsConstructor
-public final class ModelParametersMessage extends BaseINDArrayMessage {
+public final class ModelParametersMessage extends BaseINDArrayMessage implements ResponseMessage {
     private static final long serialVersionUID = 1L;
 
     public ModelParametersMessage(@NonNull String messageId, INDArray payload) {
