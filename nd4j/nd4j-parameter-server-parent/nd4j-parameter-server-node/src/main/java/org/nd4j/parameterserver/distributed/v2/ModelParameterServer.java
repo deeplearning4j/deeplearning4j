@@ -101,11 +101,8 @@ public final class ModelParameterServer {
              */
             if (message instanceof GradientsUpdateMessage) {
                 updatesQueue.add(message.getPayload());
-            } else if (message instanceof ModelParametersMessage) {
-                //
-            } else if (message instanceof UpdaterParametersMessage) {
-                //
-            }
+            } else
+                throw new UnsupportedOperationException("Unknown message received: [" + message.getClass().getCanonicalName() + "]");
         });
 
         // we start transport only once we're ready
