@@ -206,8 +206,8 @@ public class TestFileIterators extends BaseDL4JTest {
         while(iter.hasNext()){
             MultiDataSet ds1 = iter.next();
             MultiDataSet ds2 = iterMultiDir.next();
-            m1.put(ds1.getFeatures(0).getDouble(0), d1);
-            m2.put(ds2.getFeatures(0).getDouble(0), d2);
+            m1.put(ds1.getFeatures(0).getDouble(0), ds1);
+            m2.put(ds2.getFeatures(0).getDouble(0), ds2);
             count++;
         }
         assertEquals(3, count);
