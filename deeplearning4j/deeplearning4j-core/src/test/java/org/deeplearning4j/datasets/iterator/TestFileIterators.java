@@ -201,13 +201,17 @@ public class TestFileIterators extends BaseDL4JTest {
 
         iter.reset();
         int count = 0;
+        Map<Double,MultiDataSet> m1 = new HashMap<>();  //Use maps due to possibility of file iteration order differing on some platforms
+        Map<Double,MultiDataSet> m2 = new HashMap<>();
         while(iter.hasNext()){
             MultiDataSet ds1 = iter.next();
             MultiDataSet ds2 = iterMultiDir.next();
-            assertEquals(ds1, ds2);
+            m1.put(ds1.getFeatures(0).getDouble(0), ds1);
+            m2.put(ds2.getFeatures(0).getDouble(0), ds2);
             count++;
         }
         assertEquals(3, count);
+        assertEquals(m1, m2);
 
         //Test with extension filtering:
         exp = new HashMap<>();

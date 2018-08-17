@@ -10,7 +10,7 @@ weight: 3
 
 Deeplearning4j supports CUDA but can be further accelerated with cuDNN. Most 2D CNN layers (such as ConvolutionLayer, SubsamplingLayer, etc), and also LSTM and BatchNormalization layers support CuDNN.
 
-To use cuDNN, you will first need to switch ND4J to the CUDA backend. This can be done by replacing `nd4j-native` with `nd4j-cuda-8.0`, `nd4j-cuda-9.0`, or `nd4j-cuda-9.1`  in your `pom.xml` files, ideally adding a dependency on `nd4j-cuda-8.0-platform`, `nd4j-cuda-9.0-platform`, or `nd4j-cuda-9.2-platform` to include automatically binaries from all platforms:
+To use cuDNN, you will first need to switch ND4J to the CUDA backend. This can be done by replacing `nd4j-native` with `nd4j-cuda-8.0`, `nd4j-cuda-9.0`, or `nd4j-cuda-9.2`  in your `pom.xml` files, ideally adding a dependency on `nd4j-cuda-8.0-platform`, `nd4j-cuda-9.0-platform`, or `nd4j-cuda-9.2-platform` to include automatically binaries from all platforms:
 
 	 <dependency>
 	   <groupId>org.nd4j</groupId>
@@ -78,10 +78,41 @@ Note there are multiple combinations of cuDNN and CUDA supported. At this time t
  
  To install, simply extract the library to a directory found in the system path used by native libraries. The easiest way is to place it alongside other libraries from CUDA in the default directory (`/usr/local/cuda/lib64/` on Linux, `/usr/local/cuda/lib/` on Mac OS X, and `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin\`, `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.0\bin\`, or `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\bin\` on Windows).
 
+Alternatively, in the case of CUDA 9.2, cuDNN comes bundled with the "redist" package of the [JavaCPP Presets for CUDA](https://github.com/bytedeco/javacpp-presets/tree/master/cuda). [After agreeing to the license](https://github.com/bytedeco/javacpp-presets/tree/master/cuda#license-agreements), we can add the following dependencies instead of installing CUDA and cuDNN:
+
+	 <dependency>
+	     <groupId>org.bytedeco.javacpp-presets</groupId>
+	     <artifactId>cuda</artifactId>
+	     <version>9.2-7.1-1.4.2</version>
+	     <classifier>linux-x86_64-redist</classifier>
+	 </dependency>
+	 <dependency>
+	     <groupId>org.bytedeco.javacpp-presets</groupId>
+	     <artifactId>cuda</artifactId>
+	     <version>9.2-7.1-1.4.2</version>
+	     <classifier>linux-ppc64le-redist</classifier>
+	 </dependency>
+	 <dependency>
+	     <groupId>org.bytedeco.javacpp-presets</groupId>
+	     <artifactId>cuda</artifactId>
+	     <version>9.2-7.1-1.4.2</version>
+	     <classifier>macosx-x86_64-redist</classifier>
+	 </dependency>
+	 <dependency>
+	     <groupId>org.bytedeco.javacpp-presets</groupId>
+	     <artifactId>cuda</artifactId>
+	     <version>9.2-7.1-1.4.2</version>
+	     <classifier>windows-x86_64-redist</classifier>
+	 </dependency>
+
 Also note that, by default, Deeplearning4j will use the fastest algorithms available according to cuDNN, but memory usage may be excessive, causing strange launch errors. When this happens, try to reduce memory usage by using the [`NO_WORKSPACE` mode settable via the network configuration](/api/{{page.version}}/org/deeplearning4j/nn/conf/layers/ConvolutionLayer.Builder.html#cudnnAlgoMode-org.deeplearning4j.nn.conf.layers.ConvolutionLayer.AlgoMode-), instead of the default of `ConvolutionLayer.AlgoMode.PREFER_FASTEST`, for example:
 
 ```java
-    // ...
+    // for the whole network
+    new NeuralNetConfiguration.Builder()
+            .cudnnAlgoMode(ConvolutionLayer.AlgoMode.NO_WORKSPACE)
+            // ...
+    // or separately for each layer
     new ConvolutionLayer.Builder(h, w)
             .cudnnAlgoMode(ConvolutionLayer.AlgoMode.NO_WORKSPACE)
             // ...
