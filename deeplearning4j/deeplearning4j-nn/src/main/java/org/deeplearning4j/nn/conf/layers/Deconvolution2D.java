@@ -137,9 +137,6 @@ public class Deconvolution2D extends ConvolutionLayer {
          * @param convolutionMode    Convolution mode for layer
          */
         public Builder convolutionMode(ConvolutionMode convolutionMode) {
-            if(convolutionMode == ConvolutionMode.Same){
-                throw new IllegalArgumentException("SAME mode not yet supported for deconvolution layer");
-            }
             return super.convolutionMode(convolutionMode);
         }
 
