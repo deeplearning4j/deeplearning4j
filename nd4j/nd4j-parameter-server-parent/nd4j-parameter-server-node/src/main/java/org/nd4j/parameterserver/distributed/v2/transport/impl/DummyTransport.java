@@ -20,6 +20,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
@@ -48,6 +49,12 @@ public class DummyTransport extends BaseTransport {
         this.connector = connector;
     }
 
+    public DummyTransport(String id, Connector connector, @NonNull String rootId) {
+        super(rootId);
+        this.id = id;
+        this.connector = connector;
+    }
+
     @Override
     public void launch() {
         super.launch();
@@ -57,6 +64,10 @@ public class DummyTransport extends BaseTransport {
     public void sendMessage(@NonNull VoidMessage message, @NonNull String id) {
         if (message.getOriginatorId() == null)
             message.setOriginatorId(this.id);
+
+        // TODO: get rid of UUID!!!11
+        if (message instanceof RequestMessage)
+            ((RequestMessage) message).setRequestId(java.util.UUID.randomUUID().toString());
 
         connector.transferMessage(message, id);
     }
@@ -125,7 +136,7 @@ public class DummyTransport extends BaseTransport {
      * PLEASE NOTE: This method is suited for tests
      * @return
      */
-    protected MeshOrganizer getMesh() {
+    public MeshOrganizer getMesh() {
         return mesh.get();
     }
 

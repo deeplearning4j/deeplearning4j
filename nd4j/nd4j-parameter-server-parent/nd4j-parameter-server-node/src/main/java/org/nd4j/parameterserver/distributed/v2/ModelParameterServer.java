@@ -115,8 +115,9 @@ public final class ModelParameterServer {
         // we start transport only once we're ready
         if (this.masterMode)
             transport.launchAsMaster();
-        else
+        else {
             transport.launch();
+        }
 
         launchLock.set(true);
     }

@@ -41,4 +41,30 @@ public class ModelParameterServerTest {
 
         rootServer.shutdown();
     }
+
+    @Test(timeout = 20000L)
+    public void testBasicInitialization_2() throws Exception {
+        val connector = new DummyTransport.Connector();
+        val rootTransport = new DummyTransport(rootId, connector);
+        val clientTransportA = new DummyTransport("123", connector, rootId);
+        val clientTransportB = new DummyTransport("1234", connector, rootId);
+
+        connector.register(rootTransport, clientTransportA, clientTransportB);
+
+        val rootServer = new ModelParameterServer(rootTransport, true);
+        val clientServerA = new ModelParameterServer(clientTransportA, false);
+        val clientServerB = new ModelParameterServer(clientTransportB, false);
+        rootServer.launch();
+        clientServerA.launch();
+        clientServerB.launch();
+
+        val meshR = rootTransport.getMesh();
+        val meshA = clientTransportA.getMesh();
+        val meshB = clientTransportB.getMesh();
+
+        assertEquals(3, meshA.totalNodes());
+        assertEquals(meshR, meshA);
+        assertEquals(meshA, meshB);
+
+    }
 }

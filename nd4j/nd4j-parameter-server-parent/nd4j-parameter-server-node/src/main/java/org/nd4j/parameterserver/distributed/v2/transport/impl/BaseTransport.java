@@ -63,6 +63,11 @@ public abstract  class BaseTransport  implements Transport {
     // this is Id of this Transport instance
     protected String id;
 
+    // id of the root node is used for initial communication
+    protected String rootId;
+
+    protected boolean masterMode = false;
+
     // this is simple storage for replies
     protected final Map<String, ResponseMessage> replies = new ConcurrentHashMap<>();
 
@@ -74,6 +79,11 @@ public abstract  class BaseTransport  implements Transport {
 
     protected BaseTransport() {
         mesh.set(new MeshOrganizer(MeshBuildMode.SYMMETRIC_MODE));
+    }
+
+    protected BaseTransport(@NonNull String rootId) {
+        this();
+        this.rootId = rootId;
     }
 
     @Override
@@ -111,6 +121,15 @@ public abstract  class BaseTransport  implements Transport {
             // and propagating message across mesh network
             propagateMessage(voidMessage, PropagationMode.BOTH_WAYS);
         });
+
+        // now we're going for Handshake
+        if (!masterMode) {
+            try {
+                sendMessageBlocking(new HandshakeRequest(), rootId);
+            } catch (Exception e) {
+                throw new ND4JIllegalStateException("Can't proceed with handshake from [" + this.id() + "] to [" + rootId + "]", e);
+            }
+        }
     }
 
     @Override
@@ -118,6 +137,7 @@ public abstract  class BaseTransport  implements Transport {
         if (mesh.get() == null)
             mesh.set(new MeshOrganizer(MeshBuildMode.SYMMETRIC_MODE));
 
+        masterMode = true;
         mesh.get().getRootNode().setId(this.id());
         this.launch();
     }
@@ -248,6 +268,7 @@ public abstract  class BaseTransport  implements Transport {
             }
 
 
+            response.setRequestId(((HandshakeRequest) message).getRequestId());
             sendMessage(response, message.getOriginatorId());
 
             // update all other nodes with new mesh
@@ -274,6 +295,10 @@ public abstract  class BaseTransport  implements Transport {
                 else
                     log.warn("Got restart message from master, but there's no defined RestartCallback");
             }
+
+            // in any way we're putting this message back to replies
+            val reply = (ResponseMessage) message;
+            replies.putIfAbsent(reply.getRequestId(), reply);
 
          // this is default handler for message pairs
         } else if (message instanceof ResponseMessage) {
@@ -322,7 +347,10 @@ public abstract  class BaseTransport  implements Transport {
     }
 
     @Override
-    public <T extends ResponseMessage> T sendMessageBlocking(RequestMessage message, String id) throws InterruptedException {
+    public <T extends ResponseMessage> T sendMessageBlocking(@NonNull RequestMessage message, @NonNull String id) throws InterruptedException {
+        if (message.getRequestId() == null)
+            message.setRequestId(java.util.UUID.randomUUID().toString());
+
         // we send message to the node first
         sendMessage(message, id);
 
@@ -331,6 +359,9 @@ public abstract  class BaseTransport  implements Transport {
         while ((r = replies.get(message.getRequestId())) == null) {
             Thread.sleep(10);
         }
+
+        // remove response from holder
+        replies.remove(message.getRequestId());
 
         //and return reply back
         return (T) r;
