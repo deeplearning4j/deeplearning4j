@@ -79,7 +79,11 @@ public final class ModelParameterServer {
                 // upon restart command we'll request current parameters from the current upstream (without any propagation
                 try {
                     ModelParametersMessage modelParams = transport.sendMessageBlocking(new ModelParametersRequest(), transport.getUpstreamId());
+                    val mParams = modelParams.getPayload();
+
+                    // updater parameters are optional, it's possible to have models without updater parameters (i.e. SGD)
                     UpdaterParametersMessage updaterParams = transport.sendMessageBlocking(new UpdaterParametersRequest(), transport.getUpstreamId());
+                    val uParams = updaterParams.getPayload();
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
