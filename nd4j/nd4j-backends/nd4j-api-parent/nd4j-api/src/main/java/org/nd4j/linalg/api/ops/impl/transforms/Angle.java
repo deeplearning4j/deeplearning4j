@@ -18,46 +18,45 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Collections;
 import java.util.List;
 
 /**
- * Matrix Inverse Function
+ * Angle op for tensorflow import<br>
+ * Given ND4J currently only supports real arrays; hence by definition this always outputs 0
  *
  * @author Alex Black
  */
-public class MatrixInverse extends DynamicCustomOp {
+public class Angle extends DynamicCustomOp {
 
-    public MatrixInverse() {
-        //
+    public Angle(SameDiff sameDiff, SDVariable input) {
+        super(sameDiff, new SDVariable[]{input}, false);
     }
 
-    public MatrixInverse(SameDiff sameDiff, SDVariable in, boolean inPlace) {
-        super(null, sameDiff, new SDVariable[]{in}, inPlace);
-    }
-
+    public Angle() { }
 
     @Override
     public String opName() {
-        return "matrix_inverse";
+        return "zeros_like";
     }
 
     @Override
-    public String[] tensorflowNames() {
-        return new String[]{"MatrixInverse", "BatchMatrixInverse"};
+    public String onnxName() { throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
+
+    @Override
+    public String tensorflowName() {
+        return "Angle";
+    }
+
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        //Derivative of matrix determinant
-        //From: Matrix Cookbook - Petersen & Pedersen
-        //if z = inverse(X)
-        //dz/dx = - z * dX/dx * z
-        //note that dX/dx is just identity matrix
-        //TODO non-matrix case
-        SDVariable dOutdIn = outputVariable().mmul(outputVariable()).neg();
-        return Collections.singletonList(i_v.get(0).mul(dOutdIn));
+        return Collections.singletonList(f().zerosLike(arg()));
     }
 }

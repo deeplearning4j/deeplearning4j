@@ -786,6 +786,15 @@ public class OpValidation {
                 "BatchMatrixDeterminant",   //Deprecated in favor of "MatrixDeterminant"
                 "BatchMatrixDiagPart",      //Deprecated in favor of "MatrixDiagPart"
                 "BatchMatrixDiag",          //Deprecated in favor of "MatrixDiag"
+                "BatchMatrixBandPart",      //Deprecated in favor of "MatrixBandPart"
+                "BatchMatrixInverse",       //Deprecated in favor of "MatrixInverse"
+                "BatchMatrixSetDiag",       //Deprecated in favor of "MatrixSetDiag"
+                "BatchMatrixSolve",         //Deprecated in favor of "MatrixSolve"
+                "BatchMatrixSolveLs",       //Deprecated in favor of "MatrixSolveLs"
+                "BatchMatrixTriangularSolve",   //Deprecated in favor of "MatrixTriangularSolve"
+                "BatchSelfAdjointEig",      //Deprecated in favor of "SelfAdjointEigV2"
+                "BatchSelfAdjointEigV2",    //Deprecated in favor of "SelfAdjointEigV2"
+                "BatchSvd",                 //Deprecated in favor of "Svd"
 
                 //All of the following ops - not available in TF (can't find them) - op mapping is wrong?
                 //TODO: Check these and remove the import mapping from the Java classes if they are indeed bad
