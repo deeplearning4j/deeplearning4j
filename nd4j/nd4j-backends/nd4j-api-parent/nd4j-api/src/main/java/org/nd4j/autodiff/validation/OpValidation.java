@@ -783,6 +783,9 @@ public class OpValidation {
                 "Pad",          //As far as I can tell: Only PadV2 and MirrorPad are used in practice
                 "TopK",         //TopKV2 used
                 "InTopK",       //InTopKV2 used
+                "BatchMatrixDeterminant",   //Deprecated in favor of "MatrixDeterminant"
+                "BatchMatrixDiagPart",      //Deprecated in favor of "MatrixDiagPart"
+                "BatchMatrixDiag",          //Deprecated in favor of "MatrixDiag"
 
                 //All of the following ops - not available in TF (can't find them) - op mapping is wrong?
                 //TODO: Check these and remove the import mapping from the Java classes if they are indeed bad
