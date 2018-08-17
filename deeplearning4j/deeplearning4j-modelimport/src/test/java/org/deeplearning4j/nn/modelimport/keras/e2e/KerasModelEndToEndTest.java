@@ -292,6 +292,24 @@ public class KerasModelEndToEndTest {
     }
 
     /**
+     * Auxillary classifier GAN import test
+     */
+    @Test
+    public void importAcganDiscriminator() throws Exception {
+        importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_discriminator_1_epochs.h5");
+    }
+
+    @Test
+    public void importAcganGenerator() throws Exception {
+        importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_generator_1_epochs.h5");
+    }
+
+    @Test
+    public void importAcganCombined() throws Exception {
+        importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_combined_1_epochs.h5");
+    }
+
+    /**
      * Deep convolutional GAN import test
      */
     @Test

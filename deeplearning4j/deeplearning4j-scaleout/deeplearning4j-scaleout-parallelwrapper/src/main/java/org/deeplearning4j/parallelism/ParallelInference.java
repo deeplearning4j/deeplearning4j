@@ -42,6 +42,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * This class is simple wrapper for
@@ -77,6 +78,40 @@ public class ParallelInference {
 
     protected ParallelInference() {
         //
+    }
+
+    /**
+     * This method allows to update Model used for inference in runtime, without queue reset
+     *
+     * @param model
+     */
+    public void updateModel(@NonNull Model model) {
+        if (zoo != null) {
+            for (val w: zoo)
+                w.updateModel(model);
+        } else {
+            // if zoo wasn't initalized yet - just replace model
+            this.model = model;
+        }
+    }
+
+    /**
+     * This method returns Models used in workers at this moment
+     * PLEASE NOTE: This method is NOT thread safe, and should NOT be used anywhere but tests
+     *
+     * @return
+     */
+    protected Model[] getCurrentModelsFromWorkers() {
+        if (zoo == null)
+            return new Model[0];
+
+        val models = new Model[zoo.length];
+        int cnt = 0;
+        for (val w:zoo) {
+            models[cnt++] = w.replicatedModel;
+        }
+
+        return models;
     }
 
     protected void init() {
@@ -335,6 +370,8 @@ public class ParallelInference {
         private AtomicLong counter = new AtomicLong(0);
         private boolean rootDevice;
 
+        private ReentrantReadWriteLock modelLock = new ReentrantReadWriteLock();
+
         private InferenceWorker(int id, @NonNull Model model, @NonNull BlockingQueue inputQueue, boolean rootDevice) {
             this.inputQueue = inputQueue;
             this.protoModel = model;
@@ -349,39 +386,61 @@ public class ParallelInference {
             return counter.get();
         }
 
+        protected void updateModel(@NonNull Model model) {
+            try {
+                modelLock.writeLock().lock();
+                this.protoModel = model;
+
+                // now re-init model
+                initializeReplicaModel();
+            } finally {
+                modelLock.writeLock().unlock();
+            }
+        }
+
+        /**
+         * This method duplicates model for future use during inference
+         */
+        protected void initializeReplicaModel() {
+            if (protoModel instanceof ComputationGraph) {
+                if (!rootDevice) {
+                    this.replicatedModel = new ComputationGraph(ComputationGraphConfiguration
+                            .fromJson(((ComputationGraph) protoModel).getConfiguration().toJson()));
+                    this.replicatedModel.init();
+
+                    synchronized (locker) {
+                        this.replicatedModel.setParams(protoModel.params().unsafeDuplication(true));
+
+                        Nd4j.getExecutioner().commit();
+                    }
+                } else {
+                    this.replicatedModel = protoModel;
+                }
+            } else if (protoModel instanceof MultiLayerNetwork) {
+                if (!rootDevice) {
+                    this.replicatedModel = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(
+                            ((MultiLayerNetwork) protoModel).getLayerWiseConfigurations().toJson()));
+                    this.replicatedModel.init();
+
+                    synchronized (locker) {
+                        this.replicatedModel.setParams(protoModel.params().unsafeDuplication(true));
+
+                        Nd4j.getExecutioner().commit();
+                    }
+                } else {
+                    this.replicatedModel = protoModel;
+                }
+            }
+        }
+
         @Override
         public void run() {
             try {
                 // model should be replicated & initialized here
-                if (protoModel instanceof ComputationGraph) {
-                    if (!rootDevice) {
-                        this.replicatedModel = new ComputationGraph(ComputationGraphConfiguration
-                                        .fromJson(((ComputationGraph) protoModel).getConfiguration().toJson()));
-                        this.replicatedModel.init();
+                initializeReplicaModel();
 
-                        synchronized (locker) {
-                            this.replicatedModel.setParams(protoModel.params().unsafeDuplication(true));
-
-                            Nd4j.getExecutioner().commit();
-                        }
-                    } else {
-                        this.replicatedModel = protoModel;
-                    }
-                } else if (protoModel instanceof MultiLayerNetwork) {
-                    if (!rootDevice) {
-                        this.replicatedModel = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(
-                                        ((MultiLayerNetwork) protoModel).getLayerWiseConfigurations().toJson()));
-                        this.replicatedModel.init();
-
-                        synchronized (locker) {
-                            this.replicatedModel.setParams(protoModel.params().unsafeDuplication(true));
-
-                            Nd4j.getExecutioner().commit();
-                        }
-                    } else {
-                        this.replicatedModel = protoModel;
-                    }
-                }
+                boolean isCG = replicatedModel instanceof  ComputationGraph;
+                boolean isMLN = replicatedModel instanceof  MultiLayerNetwork;
 
                 while (shouldWork.get()) {
                     InferenceObservable request = inputQueue.take();
@@ -390,27 +449,40 @@ public class ParallelInference {
                         counter.incrementAndGet();
 
                         // FIXME: get rid of instanceof here, model won't change during runtime anyway
-                        if (replicatedModel instanceof ComputationGraph) {
+                        if (isCG) {
                             List<Pair<INDArray[],INDArray[]>> batches = request.getInputBatches();
                             List<INDArray[]> out = new ArrayList<>(batches.size());
                             try {
                                 for (Pair<INDArray[],INDArray[]> inBatch : batches) {
-                                    INDArray[] output = ((ComputationGraph) replicatedModel).output(false, inBatch.getFirst(), inBatch.getSecond());
-                                    out.add(output);
+                                    try {
+                                        modelLock.readLock().lock();
+
+                                        INDArray[] output = ((ComputationGraph) replicatedModel).output(false, inBatch.getFirst(), inBatch.getSecond());
+                                        out.add(output);
+                                    } finally {
+                                        modelLock.readLock().unlock();
+                                    }
+
                                 }
                                 request.setOutputBatches(out);
                             } catch (Exception e){
                                 request.setOutputException(e);
                             }
-                        } else if (replicatedModel instanceof MultiLayerNetwork) {
+                        } else if (isMLN) {
                             List<Pair<INDArray[],INDArray[]>> batches = request.getInputBatches();
                             List<INDArray[]> out = new ArrayList<>(batches.size());
                             try {
                                 for (Pair<INDArray[],INDArray[]> inBatch : batches) {
                                     INDArray f = inBatch.getFirst()[0];
                                     INDArray fm = (inBatch.getSecond() == null ? null : inBatch.getSecond()[0]);
-                                    INDArray output = ((MultiLayerNetwork) replicatedModel).output(f, false, fm, null);
-                                    out.add(new INDArray[]{output});
+                                    try {
+                                        modelLock.readLock().lock();
+
+                                        INDArray output = ((MultiLayerNetwork) replicatedModel).output(f, false, fm, null);
+                                        out.add(new INDArray[]{output});
+                                    } finally {
+                                        modelLock.readLock().unlock();
+                                    }
                                 }
                                 request.setOutputBatches(out);
                             } catch (Exception e){
