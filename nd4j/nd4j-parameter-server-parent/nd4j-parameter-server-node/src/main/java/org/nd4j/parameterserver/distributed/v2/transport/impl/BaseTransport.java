@@ -31,6 +31,7 @@ import org.nd4j.parameterserver.distributed.v2.messages.*;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.MeshUpdateMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeResponse;
+import org.nd4j.parameterserver.distributed.v2.transport.RestartCallback;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
@@ -64,6 +65,8 @@ public abstract  class BaseTransport  implements Transport {
     // this is simple storage for replies
     protected final Map<String, ResponseMessage> replies = new ConcurrentHashMap<>();
 
+    protected RestartCallback restartCallback;
+
     protected BaseTransport() {
         mesh.set(new MeshOrganizer(MeshBuildMode.SYMMETRIC_MODE));
     }
@@ -76,6 +79,14 @@ public abstract  class BaseTransport  implements Transport {
     @Override
     public Publisher<INDArrayMessage> incomingPublisher() {
         return incomingFlow;
+    }
+
+    @Override
+    public String getUpstreamId() {
+        if (mesh.get().getRootNode().getId().equals(this.id()))
+            return this.id();
+
+        return mesh.get().getNodeById(this.id()).getUpstreamNode().getId();
     }
 
     @Override
@@ -229,12 +240,21 @@ public abstract  class BaseTransport  implements Transport {
                 throw new RuntimeException(e);
             }
         } else if (message instanceof HandshakeResponse) {
+            val response = (HandshakeResponse) message;
             if (mesh.get() == null)
-                mesh.set(((HandshakeResponse) message).getMesh());
+                mesh.set(response.getMesh());
             else {
                 // we update only if new mesh is older that existing one
-                if (mesh.get().getVersion() < ((HandshakeResponse) message).getMesh().getVersion())
-                    mesh.set(((HandshakeResponse) message).getMesh());
+                if (mesh.get().getVersion() < response.getMesh().getVersion())
+                    mesh.set(response.getMesh());
+            }
+
+            // optionally calling out callback, which will happen approximately 100% of time
+            if (response.isRestart()) {
+                if (restartCallback != null)
+                    restartCallback.call(response);
+                else
+                    log.warn("Got restart message from master, but there's no defined RestartCallback");
             }
 
          // this is default handler for message pairs
@@ -283,6 +303,11 @@ public abstract  class BaseTransport  implements Transport {
 
         //and return reply back
         return (T) r;
+    }
+
+    @Override
+    public void setRestartCallback(RestartCallback callback) {
+        this.restartCallback = callback;
     }
 
     protected void handshake() {

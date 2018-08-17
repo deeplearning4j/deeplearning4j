@@ -24,8 +24,12 @@ import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeResponse;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.ModelParametersMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.ModelParametersRequest;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.UpdaterParametersMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.UpdaterParametersRequest;
+import org.nd4j.parameterserver.distributed.v2.transport.RestartCallback;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
 
 import java.util.ArrayList;
@@ -60,6 +64,19 @@ public final class ModelParameterServer {
         if (launchLock.get())
             return;
 
+        transport.setRestartCallback(new RestartCallback() {
+            @Override
+            public void call(HandshakeResponse response) {
+                // upon restart command we'll request current parameters from the current upstream (without any propagation
+                try {
+                    ModelParametersMessage modelParams = transport.sendMessageBlocking(new ModelParametersRequest(), transport.getUpstreamId());
+                    UpdaterParametersMessage updaterParams = transport.sendMessageBlocking(new UpdaterParametersRequest(), transport.getUpstreamId());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+
         // this flow will be providing INDArray messages
         disposable = Flowable.fromPublisher(transport.incomingPublisher()).subscribe(message -> {
             /**
@@ -73,6 +90,9 @@ public final class ModelParameterServer {
                 //
             }
         });
+
+        // we start transport only once we're ready
+        transport.launch();
 
         launchLock.set(true);
     }
@@ -110,5 +130,14 @@ public final class ModelParameterServer {
         val list = new ArrayList<INDArray>();
         updatesQueue.drainTo(list);
         return list;
+    }
+
+
+    private class MPSRestartCallback implements RestartCallback {
+
+        @Override
+        public void call(HandshakeResponse response) {
+
+        }
     }
 }

@@ -35,6 +35,12 @@ public interface Transport {
     String id();
 
     /**
+     * This methos returns Id of the upstream node
+     * @return
+     */
+    String getUpstreamId();
+
+    /**
      * This method returns consumer that accepts messages for delivery
      * @return
      */
@@ -82,4 +88,11 @@ public interface Transport {
      * @param message
      */
     void processMessage(VoidMessage message);
+
+
+    /**
+     * This method allows to set callback instance, which will be called upon restart event
+     * @param callback
+     */
+    void setRestartCallback(RestartCallback callback);
 }
