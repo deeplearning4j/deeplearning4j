@@ -36,7 +36,7 @@ For best results, you’ll need the following:
 To be able to use Deeplearning4J in your project, add the following compile dependencies to your app module’s build.gradle file:
 
 ``` groovy
-compile (group: 'org.deeplearning4j', name: 'deeplearning4j-nn', version: '{{page.version}}') {
+compile (group: 'org.deeplearning4j', name: 'deeplearning4j-core', version: '{{page.version}}') {
     exclude group: 'org.bytedeco.javacpp-presets', module: 'opencv-platform'
     exclude group: 'org.bytedeco.javacpp-presets', module: 'leptonica-platform'
     exclude group: 'org.bytedeco.javacpp-presets', module: 'hdf5-platform'

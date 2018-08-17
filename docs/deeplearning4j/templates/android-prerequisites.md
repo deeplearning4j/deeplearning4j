@@ -33,7 +33,7 @@ It is also recommended that you download and install IntelliJ IDEA, Maven, and t
 In order to use Deeplearning4J in your Android projects, you will need to add the following dependencies to your app module’s build.gradle file. Depending on the type of neural network used in your application, you may need to add additional dependencies.
 
 ``` groovy
-compile (group: 'org.deeplearning4j', name: 'deeplearning4j-nn', version: '{{page.version}}') {
+compile (group: 'org.deeplearning4j', name: 'deeplearning4j-core', version: '{{page.version}}') {
     exclude group: 'org.bytedeco.javacpp-presets', module: 'opencv-platform'
     exclude group: 'org.bytedeco.javacpp-presets', module: 'leptonica-platform'
     exclude group: 'org.bytedeco.javacpp-presets', module: 'hdf5-platform'
