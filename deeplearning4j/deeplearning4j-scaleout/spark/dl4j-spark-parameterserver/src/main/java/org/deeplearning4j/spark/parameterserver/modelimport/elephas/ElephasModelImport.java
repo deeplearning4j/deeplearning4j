@@ -28,6 +28,7 @@ import org.deeplearning4j.spark.api.RDDTrainingApproach;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
+import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingMaster;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 
@@ -45,6 +46,8 @@ public class ElephasModelImport {
 
     private static final String DISTRIBUTED_CONFIG = "distributed_config";
     private static final RDDTrainingApproach APPROACH = RDDTrainingApproach.Export;
+    private static final int WORKERS_PER_NODE = 4;
+    private static final double UPDATES_THRESHOLD = 1e-3;
 
     /**
      * Load Elephas model stored using model.save(...) in case that the underlying Keras
@@ -64,24 +67,8 @@ public class ElephasModelImport {
             throws IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
         ComputationGraph model = KerasModelImport.importKerasModelAndWeights(modelHdf5Filename, true);
 
-        Map distributedProperties = distributedTrainingMap(modelHdf5Filename);
-
-        int rddDataSetNumExamples = 32;
-        int batchSize = 32;
-        double updateThreshold = 1e-3;
-        int workersPerNode = -1;
-
-        // TODO: read training config properly
-        VoidConfiguration voidConfiguration = VoidConfiguration.builder()
-                .unicastPort(40123)
-                .build();
-
-        TrainingMaster tm = new SharedTrainingMaster.Builder(voidConfiguration, rddDataSetNumExamples)
-                .updatesThreshold(updateThreshold)
-                .rddTrainingApproach(APPROACH)
-                .batchSizePerWorker(batchSize)
-                .workersPerNode(workersPerNode)
-                .build();
+        Map<String, Object> distributedProperties = distributedTrainingMap(modelHdf5Filename);
+        TrainingMaster tm = getTrainingMaster(distributedProperties);
 
         return new SparkComputationGraph(sparkContext, model, tm);
     }
@@ -105,30 +92,42 @@ public class ElephasModelImport {
         MultiLayerNetwork model = KerasModelImport.importKerasSequentialModelAndWeights(
                 modelHdf5Filename, true);
 
-        Map distributedProperties = distributedTrainingMap(modelHdf5Filename);
-
-        int rddDataSetNumExamples = 32;
-        int batchSize = 32;
-        double updateThreshold = 1e-3;
-        int workersPerNode = -1;
-
-        // TODO: read training config properly
-        VoidConfiguration voidConfiguration = VoidConfiguration.builder().build();
-
-        TrainingMaster tm = new SharedTrainingMaster.Builder(voidConfiguration, rddDataSetNumExamples)
-                .updatesThreshold(updateThreshold)
-                .rddTrainingApproach(APPROACH)
-                .batchSizePerWorker(batchSize)
-                .workersPerNode(workersPerNode)
-                .build();
+        Map<String, Object> distributedProperties = distributedTrainingMap(modelHdf5Filename);
+        TrainingMaster tm = getTrainingMaster(distributedProperties);
 
         return new SparkDl4jMultiLayer(sparkContext, model, tm);
     }
 
-    public static Map<String, Object> distributedTrainingMap(String modelHdf5Filename)
+    private static Map<String, Object> distributedTrainingMap(String modelHdf5Filename)
             throws UnsupportedKerasConfigurationException, IOException {
         Hdf5Archive archive = new Hdf5Archive(modelHdf5Filename);
         String initialModelJson = archive.readAttributeAsJson(DISTRIBUTED_CONFIG);
         return KerasModelUtils.parseJsonString(initialModelJson);
+    }
+
+    private static TrainingMaster getTrainingMaster(Map<String, Object> distributedProperties) {
+        Map innerConfig = (Map) distributedProperties.get("config");
+
+        Integer numWorkers = (Integer) innerConfig.get("num_workers");
+        int batchSize = (int) innerConfig.get("batch_size");
+        String mode = (String) innerConfig.get("mode");
+
+        TrainingMaster tm;
+        if (mode.equals("synchronous"))
+            tm = new ParameterAveragingTrainingMaster.Builder(numWorkers, batchSize)
+                    .rddTrainingApproach(APPROACH)
+                    .batchSizePerWorker(batchSize)
+                    .build();
+        else {
+            VoidConfiguration voidConfiguration = VoidConfiguration.builder()
+                    .build();
+            tm = new SharedTrainingMaster.Builder(voidConfiguration, batchSize)
+                    .updatesThreshold(UPDATES_THRESHOLD)
+                    .rddTrainingApproach(APPROACH)
+                    .batchSizePerWorker(batchSize)
+                    .workersPerNode(WORKERS_PER_NODE)
+                    .build();
+        }
+        return tm;
     }
 }
