@@ -132,31 +132,22 @@ TEST_F(DeclarableOpsTests10, Test_Size_at_1) {
 
     delete result;
 }
-/*
+
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests10, ReverseMod_BP_Test_1) {
+TEST_F(DeclarableOpsTests10, Pad_SGO_Test_1) {
 
-    NDArray<double> inputX('c', {1, 6});
-    NDArray<double> inputY('c', {3, 4, 5, 1});
+    NDArray<double> in({1., 1., 1., 1., 1.});
+//    NDArray<double> pad('c', {1, 2}, {1., 1.});// = Nd4j.create(new double[]{1, 1}, new long[]{1, 2});
+    NDArray<double> pad('c', {1, 2}, {1., 1.});
+//    NDArray<double> value(10.0);
 
-    NDArray<double> axis(1.);
+    NDArray<double> exp({10., 1., 1., 1., 1., 1., 10.});
 
-    NDArray<double> gradO('c', {3, 4, 5, 6});
+    nd4j::ops::pad<double> op;
 
-    int exclusive, reverse;
-    inputX.assign(2.0);
-    inputY.assign(9.0);
-    ////////////////////////////////////////
+    auto res = op.execute({&in, &pad}, {10.0}, {0});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    res->at(0)->printIndexedBuffer("PAD!:");
 
-
-    const OpArgsHolder<double> argsHolderFF({&inputX, &inputY}, {}, {});
-    const OpArgsHolder<double> argsHolderBP({&inputX, &inputY, &gradO}, {}, {});
-
-    nd4j::ops::reversemod<double> opFF;
-    nd4j::ops::reversemod_bp<double> opBP;
-
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
-
-    ASSERT_TRUE(isGradCorrect);
+    delete res;
 }
-*/
