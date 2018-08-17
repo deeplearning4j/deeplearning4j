@@ -132,31 +132,27 @@ TEST_F(DeclarableOpsTests10, Test_Size_at_1) {
 
     delete result;
 }
-/*
+
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests10, ReverseMod_BP_Test_1) {
+TEST_F(DeclarableOpsTests10, InTopK_SGO_Test_1) {
 
-    NDArray<double> inputX('c', {1, 6});
-    NDArray<double> inputY('c', {3, 4, 5, 1});
+    NDArray<double> input('c', {4, 5});
+    NDArray<double> idx('c', {4});
 
-    NDArray<double> axis(1.);
-
-    NDArray<double> gradO('c', {3, 4, 5, 6});
+    NDArray<double> exp({0., 0., 0., 1.});
 
     int exclusive, reverse;
-    inputX.assign(2.0);
-    inputY.assign(9.0);
+    input.linspace(1);
+    idx.linspace(1);
     ////////////////////////////////////////
 
+    nd4j::ops::in_top_k<double> op;
 
-    const OpArgsHolder<double> argsHolderFF({&inputX, &inputY}, {}, {});
-    const OpArgsHolder<double> argsHolderBP({&inputX, &inputY, &gradO}, {}, {});
+    auto res = op.execute({&input, &idx}, {}, {1});
 
-    nd4j::ops::reversemod<double> opFF;
-    nd4j::ops::reversemod_bp<double> opBP;
-
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
-
-    ASSERT_TRUE(isGradCorrect);
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    //res->at(0)->printIndexedBuffer("IN_TOP_K output");
+    ASSERT_TRUE(res->at(0)->equalsTo(&exp));
+    delete res;
 }
-*/
+
