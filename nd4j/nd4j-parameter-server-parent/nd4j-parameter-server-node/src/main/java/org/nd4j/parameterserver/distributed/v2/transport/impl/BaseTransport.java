@@ -203,11 +203,22 @@ public abstract  class BaseTransport  implements Transport {
                 mesh.get().getRootNode().setId(this.id);
             }
 
-            // first we add new node to the mesh
-            mesh.get().addNode(message.getOriginatorId());
+            // our response
+            val response = HandshakeResponse.builder()
+                                                                    .mesh(mesh.get())
+                                                                    .build();
+            if (mesh.get().isKnownNode(message.getOriginatorId())) {
+                // first we add new node to the mesh
+                mesh.get().remapNode(message.getOriginatorId());
 
-            // send response
-            val response = new HandshakeResponse(0L, mesh.get());
+                // we say that this model has restarted
+                response.setRestart(true);
+            } else {
+                // first we add new node to the mesh
+                mesh.get().addNode(message.getOriginatorId());
+            }
+
+
             sendMessage(response, message.getOriginatorId());
 
             // update all other nodes with new mesh

@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.v2.messages.impl;
+package org.nd4j.parameterserver.distributed.v2.messages.pairs.params;
 
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -26,10 +26,10 @@ import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseINDArrayMe
  * @author raver119@gmail.com
  */
 @NoArgsConstructor
-public final class ModelParametersMessage extends BaseINDArrayMessage {
+public final class UpdaterParametersMessage extends BaseINDArrayMessage {
     private static final long serialVersionUID = 1L;
 
-    public ModelParametersMessage(@NonNull String messageId, INDArray payload) {
+    public UpdaterParametersMessage(@NonNull String messageId, INDArray payload) {
         super(messageId, payload);
     }
 }

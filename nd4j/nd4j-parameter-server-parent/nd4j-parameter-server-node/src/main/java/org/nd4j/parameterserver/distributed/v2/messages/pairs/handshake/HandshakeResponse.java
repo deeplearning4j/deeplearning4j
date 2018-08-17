@@ -16,10 +16,7 @@
 
 package org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseResponseMessage;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
@@ -34,4 +31,11 @@ public class HandshakeResponse extends BaseResponseMessage {
 
     @Getter
     private MeshOrganizer mesh;
+
+    /**
+     * This method returns true if our node failed earlier, and should re-acquire model/updater/whatever params
+     */
+    @Getter
+    @Setter
+    @Builder.Default private boolean restart = false;
 }

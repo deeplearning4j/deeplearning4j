@@ -151,4 +151,52 @@ public class DummyTransportTest {
         // we expect that each of the nodes gets this message
         assertEquals(400, counter.get());
     }
+
+    @Test
+    public void testReconnectAfterFailure_1() throws Exception {
+        val counter = new AtomicInteger(0);
+        val connector = new DummyTransport.Connector();
+        val transportA = new DummyTransport("alpha", connector);
+        val transportB = new DummyTransport("beta", connector);
+        val transportG = new DummyTransport("gamma", connector);
+        val transportD = new DummyTransport("delta", connector);
+        val transportE = new DummyTransport("epsilon", connector);
+        val transportZ = new DummyTransport("zeta", connector);
+        val transportT = new DummyTransport("theta", connector);
+
+        connector.register(transportA, transportB, transportG, transportD, transportE, transportZ, transportT);
+
+        transportB.sendMessage(new HandshakeRequest(), "alpha");
+        transportG.sendMessage(new HandshakeRequest(), "alpha");
+        transportD.sendMessage(new HandshakeRequest(), "alpha");
+        transportE.sendMessage(new HandshakeRequest(), "alpha");
+        transportZ.sendMessage(new HandshakeRequest(), "alpha");
+        transportT.sendMessage(new HandshakeRequest(), "alpha");
+
+        val originalMeshA = transportA.getMesh();
+        val originalMeshZ = transportZ.getMesh();
+
+        assertEquals(originalMeshA, originalMeshZ);
+
+        val version = originalMeshA.getVersion();
+        val upstream = originalMeshZ.getUpstreamForNode("zeta");
+
+
+        val f = new DummyTransport.MessageCallable<HandshakeResponse>() {
+            @Override
+            public void apply(HandshakeResponse message) {
+                assertTrue(message.isRestart());
+            }
+        };
+        transportZ.addPrecursor(HandshakeResponse.class, f);
+
+        // this message basically says that Z is restarting
+        transportZ.sendMessage(new HandshakeRequest(), "alpha");
+
+        val newMesh = transportZ.getMesh();
+        val newUpstream = newMesh.getUpstreamForNode("zeta");
+
+        assertNotEquals(version, newMesh.getVersion());
+        assertNotEquals(upstream.getId(), newUpstream.getId());
+    }
 }

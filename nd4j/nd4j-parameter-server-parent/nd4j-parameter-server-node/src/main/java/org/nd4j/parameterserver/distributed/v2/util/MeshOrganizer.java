@@ -223,6 +223,10 @@ public class MeshOrganizer implements Serializable {
      */
     public void remapNode(@NonNull Node node) {
         synchronized (node) {
+            // TODO: use atomiclong here
+            synchronized (this) {
+                version++;
+            }
 
             node.getUpstreamNode().removeFromDownstreams(node);
 

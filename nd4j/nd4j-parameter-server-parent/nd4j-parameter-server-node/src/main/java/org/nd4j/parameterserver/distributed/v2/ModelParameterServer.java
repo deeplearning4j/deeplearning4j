@@ -24,8 +24,8 @@ import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
-import org.nd4j.parameterserver.distributed.v2.messages.impl.ModelParametersMessage;
-import org.nd4j.parameterserver.distributed.v2.messages.impl.UpdaterParametersMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.ModelParametersMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.UpdaterParametersMessage;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
 
 import java.util.ArrayList;
