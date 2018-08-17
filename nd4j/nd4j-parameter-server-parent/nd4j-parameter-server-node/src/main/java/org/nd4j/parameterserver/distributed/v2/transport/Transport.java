@@ -95,4 +95,13 @@ public interface Transport {
      * @param callback
      */
     void setRestartCallback(RestartCallback callback);
+
+    /**
+     * This methd allows to set callback instance for various
+     * @param cls
+     * @param callback
+     * @param <T1> RequestMessage class
+     * @param <T2> ResponseMessage class
+     */
+    <T extends RequestMessage> void  addRequestConsumer(Class<T> cls, Consumer<T> consumer);
 }

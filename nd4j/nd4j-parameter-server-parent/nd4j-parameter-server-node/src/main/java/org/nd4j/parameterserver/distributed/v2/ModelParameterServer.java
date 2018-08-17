@@ -18,6 +18,7 @@ package org.nd4j.parameterserver.distributed.v2;
 
 import io.reactivex.Flowable;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -74,6 +75,22 @@ public final class ModelParameterServer {
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
+            }
+        });
+
+        // listener for model params requests
+        transport.addRequestConsumer(ModelParametersRequest.class, new Consumer<ModelParametersRequest>() {
+            @Override
+            public void accept(ModelParametersRequest modelParametersRequest) throws Exception {
+                // send model parameters somewhere
+            }
+        });
+
+        // listener for updater params requests
+        transport.addRequestConsumer(UpdaterParametersRequest.class, new Consumer<UpdaterParametersRequest>() {
+            @Override
+            public void accept(UpdaterParametersRequest updaterParametersRequest) throws Exception {
+                // send updater parameters somewhere
             }
         });
 

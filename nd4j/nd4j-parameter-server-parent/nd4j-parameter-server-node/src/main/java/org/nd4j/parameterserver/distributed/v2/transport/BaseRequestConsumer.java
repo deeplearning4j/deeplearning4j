@@ -16,7 +16,8 @@
 
 package org.nd4j.parameterserver.distributed.v2.transport;
 
-import org.nd4j.parameterserver.distributed.messages.RequestMessage;
+import io.reactivex.functions.Consumer;
+import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.ResponseMessage;
 
 /**
@@ -24,6 +25,10 @@ import org.nd4j.parameterserver.distributed.v2.messages.ResponseMessage;
  *
  * @author raver119@gmail.com
  */
-public interface RequestCallback<R1 extends RequestMessage, R2 extends ResponseMessage> {
-    R2 call(R1 message);
+public class BaseRequestConsumer<T extends RequestMessage> implements Consumer<T> {
+
+    @Override
+    public void accept(T t) throws Exception {
+
+    }
 }

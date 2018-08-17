@@ -39,6 +39,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -65,7 +66,11 @@ public abstract  class BaseTransport  implements Transport {
     // this is simple storage for replies
     protected final Map<String, ResponseMessage> replies = new ConcurrentHashMap<>();
 
+    // dedicated callback for restart messages
     protected RestartCallback restartCallback;
+
+    // collection of callbacks for connection with ParameterServer implementation
+    protected Map<String, Consumer> consumers = new HashMap<>();
 
     protected BaseTransport() {
         mesh.set(new MeshOrganizer(MeshBuildMode.SYMMETRIC_MODE));
@@ -293,6 +298,14 @@ public abstract  class BaseTransport  implements Transport {
         // Request messages might be sent back to ParameterServer, which will take care of processing
         if (message instanceof RequestMessage) {
             // looks for callback for a given message type
+            val consumer = consumers.get(message.getClass().getCanonicalName());
+            if (consumer != null) {
+                try {
+                    consumer.accept(message);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
     }
 
@@ -314,6 +327,14 @@ public abstract  class BaseTransport  implements Transport {
     @Override
     public void setRestartCallback(RestartCallback callback) {
         this.restartCallback = callback;
+    }
+
+    @Override
+    public <T extends RequestMessage> void addRequestConsumer(@NonNull Class<T> cls, Consumer<T> consumer) {
+        if (consumer == null)
+            consumers.remove(cls.getCanonicalName());
+        else
+            consumers.put(cls.getCanonicalName(), consumer);
     }
 
     protected void handshake() {
