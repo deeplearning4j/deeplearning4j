@@ -19,6 +19,7 @@ package org.nd4j.parameterserver.distributed.v2;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.DummyTransport;
 
 import static org.junit.Assert.*;
@@ -65,6 +66,35 @@ public class ModelParameterServerTest {
         assertEquals(3, meshA.totalNodes());
         assertEquals(meshR, meshA);
         assertEquals(meshA, meshB);
+    }
 
+    @Test
+    public void testUpdatesPropagation_1() throws Exception {
+        val connector = new DummyTransport.Connector();
+        val rootTransport = new DummyTransport(rootId, connector);
+        val clientTransportA = new DummyTransport("412334", connector, rootId);
+        val clientTransportB = new DummyTransport("123441", connector, rootId);
+
+        connector.register(rootTransport, clientTransportA, clientTransportB);
+
+        val rootServer = new ModelParameterServer(rootTransport, true);
+        val clientServerA = new ModelParameterServer(clientTransportA, false);
+        val clientServerB = new ModelParameterServer(clientTransportB, false);
+        rootServer.launch();
+        clientServerA.launch();
+        clientServerB.launch();
+
+        val array = Nd4j.ones(10, 10);
+        clientServerA.sendUpdate(array);
+
+        val updatesR = rootServer.getUpdates();
+        val updatesA = clientServerA.getUpdates();
+        val updatesB = clientServerB.getUpdates();
+
+        assertEquals(1, updatesR.size());
+        assertEquals(1, updatesB.size());
+
+        // we should NOT get this message back to A
+        assertEquals(0, updatesA.size());
     }
 }

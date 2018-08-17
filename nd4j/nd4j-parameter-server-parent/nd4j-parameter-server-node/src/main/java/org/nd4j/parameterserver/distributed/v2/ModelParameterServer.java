@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.AtomicBoolean;
+import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeResponse;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.ModelParametersMessage;
@@ -141,9 +142,12 @@ public final class ModelParameterServer {
     /**
      * This method sends gradient updates to the cluster
      */
-    public void sendUpdate(INDArray array) {
+    public void sendUpdate(@NonNull INDArray array) {
         try {
-            transport.outgoingConsumer().accept(null);
+            //transport.outgoingConsumer().accept(new GradientsUpdateMessage(java.util.UUID.randomUUID().toString(), array));
+            val msg = new GradientsUpdateMessage(java.util.UUID.randomUUID().toString(), array);
+            msg.setOriginatorId(transport.id());
+            transport.propagateMessage(msg, PropagationMode.BOTH_WAYS);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

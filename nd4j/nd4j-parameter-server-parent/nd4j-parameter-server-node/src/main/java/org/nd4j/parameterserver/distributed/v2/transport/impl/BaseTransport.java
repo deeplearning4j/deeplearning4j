@@ -151,12 +151,16 @@ public abstract  class BaseTransport  implements Transport {
     public void propagateMessage(@NonNull VoidMessage voidMessage, PropagationMode mode) throws IOException {
         val node = mesh.get().getNodeById(id);
 
-        if (voidMessage.getOriginatorId() != null && id != null && voidMessage.getOriginatorId().equals(id))
-            return;
+        //if (voidMessage.getOriginatorId() != null && id != null && voidMessage.getOriginatorId().equals(id))
+         //   return;
 
         val root = mesh.get().getRootNode();
         val upstream = node.getUpstreamNode();
         val downstreams = node.getDownstreamNodes();
+
+        // setting on first one
+        //if (voidMessage.getOriginatorId() == null)
+            //voidMessage.setOriginatorId(this.id());
 
         if (voidMessage instanceof BroadcastableMessage) {
             ((BroadcastableMessage) voidMessage).setRelayId(id);
