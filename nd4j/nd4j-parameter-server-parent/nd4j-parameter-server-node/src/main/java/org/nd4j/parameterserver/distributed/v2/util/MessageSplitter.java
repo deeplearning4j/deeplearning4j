@@ -20,9 +20,11 @@ import lombok.NonNull;
 import lombok.val;
 import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.parameterserver.distributed.v2.chunks.ChunksTracker;
 import org.nd4j.parameterserver.distributed.v2.chunks.impl.FileChunksTracker;
 import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;
+import org.nd4j.parameterserver.distributed.v2.chunks.impl.InmemoryChunksTracker;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.linalg.primitives.Optional;
 
@@ -159,13 +161,34 @@ public class MessageSplitter {
      */
     public <T extends VoidMessage> Optional<T> merge(@NonNull VoidChunk chunk, long memoryLimit) {
         val originalId= chunk.getOriginalId();
+        val checker = new AtomicBoolean(false);
+        ChunksTracker tracker = null;
 
-        trackers.putIfAbsent(originalId, new FileChunksTracker<T>(chunk));
-        val tracker = trackers.get(originalId);
+        if (memoryUse.get() + chunk.getTotalSize() < memoryLimit) {
+            tracker = new InmemoryChunksTracker(chunk);
+            tracker = trackers.putIfAbsent(originalId, tracker);
+            if (tracker == null) {
+                memoryUse.addAndGet(chunk.getTotalSize());
+            }
+        } else {
+            tracker = new FileChunksTracker(chunk);
+            tracker = trackers.putIfAbsent(originalId, tracker);
+        }
 
-        if (tracker.append(chunk))
-            return Optional.of((T) tracker.getMessage());
-        else
+        if (tracker == null)
+            tracker = trackers.get(chunk.getOriginalId());
+
+        if (tracker.append(chunk)) {
+            try {
+                return Optional.of((T) tracker.getMessage());
+            } finally {
+                // we should decrease  memory amouint
+                if (tracker instanceof InmemoryChunksTracker)
+                    memoryUse.addAndGet(-chunk.getTotalSize());
+
+                tracker.release();
+            }
+        } else
             return Optional.empty();
     }
 }

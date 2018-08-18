@@ -64,9 +64,6 @@ public class FileChunksTracker<T extends VoidMessage> implements ChunksTracker<T
             // we'll pre-initialize states map
             for (int e = 0; e < numChunks; e++)
                 map.put(e, new AtomicBoolean(false));
-
-            // and write down this chunk
-            append(chunk);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -63,9 +63,6 @@ public class InmemoryChunksTracker<T extends VoidMessage> implements ChunksTrack
             // we'll pre-initialize states map
             for (int e = 0; e < numChunks; e++)
                 map.put(e, new AtomicBoolean(false));
-
-            // and write down this chunk
-            append(chunk);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
