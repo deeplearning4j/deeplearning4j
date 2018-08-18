@@ -86,10 +86,43 @@
                 <groupId>org.bytedeco</groupId>
                 <artifactId>javacpp</artifactId>
                 <version>${javacpp.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.bytedeco.javacpp-presets</groupId>
+                        <artifactId>mkl-dnn-platform</artifactId>
+                        <version>${mkl-dnn.javacpp.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.bytedeco.javacpp-presets</groupId>
+                        <artifactId>openblas-platform</artifactId>
+                        <version>${openblas.version}-${javacpp-presets.version}</version>
+                    </dependency>
+                </dependencies>
                 <configuration>
                     <properties>${libnd4j.platform}</properties>
+                    <buildResources>
+                        <buildResource>/${javacpp.platform.library.path}/</buildResource>
+                        <buildResource>/org/bytedeco/javacpp/${libnd4j.platform}/</buildResource>
+                    </buildResources>
+                    <includeResources>
+                        <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
+                        <includeResource>/org/bytedeco/javacpp/${libnd4j.platform}/include/</includeResource>
+                    </includeResources>
+                    <linkResources>
+                        <linkResource>/${javacpp.platform.library.path}/</linkResource>
+                        <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
+                        <linkResource>/org/bytedeco/javacpp/${libnd4j.platform}/</linkResource>
+                        <linkResource>/org/bytedeco/javacpp/${libnd4j.platform}/lib/</linkResource>
+                    </linkResources>
                 </configuration>
                 <executions>
+                    <execution>
+                        <id>javacpp.cppbuild.validate</id>
+                        <phase>validate</phase>
+                        <goals>
+                          <goal>build</goal>
+                        </goals>
+                    </execution>
                     <execution>
                         <id>javacpp.cppbuild.compile</id>
                         <phase>compile</phase>

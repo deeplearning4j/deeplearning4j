@@ -71,12 +71,12 @@
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>mkl-dnn</artifactId>
-            <version>${mkl-dnn.version}-${javacpp-presets.version}</version>
+            <version>${mkl-dnn.javacpp.version}</version>
         </dependency>
 <!--        <dependency>-->
 <!--            <groupId>org.bytedeco.javacpp-presets</groupId>-->
 <!--            <artifactId>mkl-dnn</artifactId>-->
-<!--            <version>${mkl-dnn.version}-${javacpp-presets.version}</version>-->
+<!--            <version>${mkl-dnn.javacpp.version}</version>-->
 <!--            <classifier>${dependency.platform}</classifier>-->
 <!--        </dependency>-->
 

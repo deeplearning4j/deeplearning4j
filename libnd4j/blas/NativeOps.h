@@ -56,6 +56,14 @@
 #include <dll.h>
 #include <helpers/BlasHelper.h>
 
+#ifdef HAVE_MKLDNN
+#include <mkldnn.hpp>
+#endif
+
+#ifdef HAVE_OPENBLAS
+#include <openblas_config.h>
+#endif
+
 /*
 int tad_threshold = 1;
 int element_threshold = 32;
