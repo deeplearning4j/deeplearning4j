@@ -105,7 +105,7 @@ TEST_F(DeclarableOpsTests3, Test_Permute_2) {
 TEST_F(DeclarableOpsTests3, Test_Unique_1) {
     NDArray<float> x('c', {1, 5}, {1, 2, 1, 2, 3});
     NDArray<float> expV('c', {3}, {1, 2, 3});
-    NDArray<float> expI('c', {5}, {0, 1, 0, 1, 4});
+    NDArray<float> expI('c', {5}, {0, 1, 0, 1, 2});
 //    NDArray<float> expI('c', {3}, {0, 1, 4});
 
     nd4j::ops::unique<float> op;
@@ -129,7 +129,7 @@ TEST_F(DeclarableOpsTests3, Test_Unique_1) {
 TEST_F(DeclarableOpsTests3, Test_Unique_2) {
     NDArray<float> x('c', {1, 5}, {1, 2, 1, 2, 3});
     NDArray<float> expV('c', {3}, {1, 2, 3});
-    NDArray<float> expI('c', {5}, {0, 1, 0, 1, 4});
+    NDArray<float> expI('c', {5}, {0, 1, 0, 1, 2});
     NDArray<float> expC('c', {3}, {2, 2, 1});
 
     nd4j::ops::unique_with_counts<float> op;
