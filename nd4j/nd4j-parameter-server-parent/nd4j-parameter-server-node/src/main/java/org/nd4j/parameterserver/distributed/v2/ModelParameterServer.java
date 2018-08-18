@@ -23,6 +23,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
@@ -104,6 +105,8 @@ public final class ModelParameterServer {
             public void call(HandshakeResponse response) {
                 // upon restart command we'll request current parameters from the current upstream (without any propagation
                 try {
+                    // TODO: do something with parameters. i.e. propagate them to the model? :)
+
                     ModelParametersMessage modelParams = transport.sendMessageBlocking(new ModelParametersRequest(), transport.getUpstreamId());
                     val mParams = modelParams.getPayload();
 
@@ -121,6 +124,9 @@ public final class ModelParameterServer {
             @Override
             public void accept(ModelParametersRequest modelParametersRequest) throws Exception {
                 // send model parameters somewhere
+                val msg = new ModelParametersMessage("msg", Nd4j.create(10, 10));
+                msg.setRequestId(modelParametersRequest.getRequestId());
+                transport.sendMessage(msg, modelParametersRequest.getOriginatorId());
             }
         });
 
@@ -129,6 +135,9 @@ public final class ModelParameterServer {
             @Override
             public void accept(UpdaterParametersRequest updaterParametersRequest) throws Exception {
                 // send updater parameters somewhere
+                val msg = new UpdaterParametersMessage("msg", Nd4j.create(10, 10));
+                msg.setRequestId(updaterParametersRequest.getRequestId());
+                transport.sendMessage(msg, updaterParametersRequest.getOriginatorId());
             }
         });
 

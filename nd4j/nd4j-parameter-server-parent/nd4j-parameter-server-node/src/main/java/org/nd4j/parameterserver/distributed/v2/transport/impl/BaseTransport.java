@@ -40,6 +40,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -260,6 +261,11 @@ public abstract  class BaseTransport  implements Transport {
             // just forward message, but ONLY if it's not a Response message, since it's probably processed separately
             if (!(message instanceof ResponseMessage))
                 forwardToParameterServer((INDArrayMessage) message);
+            else {
+                // in this case we store message to the map, to be fetched later
+                val reply = (ResponseMessage) message;
+                replies.putIfAbsent(reply.getRequestId(), reply);
+            }
         } else if (message instanceof HandshakeRequest) {
             if (!mesh.get().isKnownNode(this.id())) {
                 mesh.get().getRootNode().setId(this.id);
@@ -271,7 +277,18 @@ public abstract  class BaseTransport  implements Transport {
                                                                     .build();
             if (mesh.get().isKnownNode(message.getOriginatorId())) {
                 // first we add new node to the mesh
-                mesh.get().remapNode(message.getOriginatorId());
+                val nodeToRemap = mesh.get().getNodeById(message.getOriginatorId());
+                val nodesToRemap = new ArrayList<MeshOrganizer.Node>();
+
+                // we're remapping node, and its downstreams
+                nodesToRemap.add(nodeToRemap);
+                nodesToRemap.addAll(nodeToRemap.getDownstreamNodes());
+
+                for (val n: nodesToRemap)
+                    mesh.get().remapNode(n);
+
+                // we don't want remapped node to have any downstreams
+                nodeToRemap.truncateDownstreams();
 
                 // we say that this model has restarted
                 response.setRestart(true);
@@ -331,7 +348,13 @@ public abstract  class BaseTransport  implements Transport {
                     mesh.set(newMesh);
             }
         } else {
-            throw new ND4JIllegalStateException("Unknown message received: [" + message.getClass().getCanonicalName() + "]");
+            if (message instanceof RequestMessage) {
+                val name = message.getClass().getCanonicalName();
+                val consumer = consumers.get(name);
+                if (consumer == null)
+                    throw new ND4JIllegalStateException("Unknown message received: [" + message.getClass().getCanonicalName() + "]");
+            } else
+                throw new ND4JIllegalStateException("Unknown message received: [" + message.getClass().getCanonicalName() + "]");
         }
 
 

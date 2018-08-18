@@ -22,6 +22,8 @@ import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.DummyTransport;
 
+import java.util.ArrayList;
+
 import static org.junit.Assert.*;
 
 @Slf4j
@@ -96,5 +98,63 @@ public class ModelParameterServerTest {
 
         // we should NOT get this message back to A
         assertEquals(0, updatesA.size());
+    }
+
+    @Test //(timeout = 10000L)
+    public void testReconnectPropagation_1() throws Exception {
+        val connector = new DummyTransport.Connector();
+        val rootTransport = new DummyTransport(rootId, connector);
+
+        connector.register(rootTransport);
+
+        val rootServer = new ModelParameterServer(rootTransport, true);
+        rootServer.launch();
+
+        val servers = new ArrayList<ModelParameterServer>();
+        val transports = new ArrayList<DummyTransport>();
+        for (int e = 0; e < 2048; e++) {
+            val clientTransport = new DummyTransport(java.util.UUID.randomUUID().toString(), connector, rootId);
+            val clientServer = new ModelParameterServer(clientTransport, false);
+
+            servers.add(clientServer);
+            transports.add(clientTransport);
+
+            connector.register(clientTransport);
+
+            clientServer.launch();
+        }
+
+        // at this point we should have 2048 nodes within
+        val rootMesh = rootTransport.getMesh();
+        val originalVersion = rootMesh.getVersion();
+        assertEquals(2048, rootMesh.getVersion());
+
+        // all mesh structures should be equal
+        for (val t:transports)
+            assertEquals(rootMesh, t.getMesh());
+
+        // now we're picking one server that'll play bad role
+        val badServer = servers.get(23);
+        val badTransport = transports.get(23);
+        val badId = badTransport.id();
+        val badNode = rootMesh.getNodeById(badId);
+
+        val upstreamId = badNode.getUpstreamNode().getId();
+        log.info("Upstream: [{}]; Number of downstreams: [{}]", upstreamId, badNode.numberOfDownstreams());
+
+        connector.dropConnection(badId);
+        val clientTransport = new DummyTransport(badId, connector, rootId);
+        val clientServer = new ModelParameterServer(clientTransport, false);
+        connector.register(clientTransport);
+        clientServer.launch();
+
+        // at this point we have re-registered node
+        assertNotEquals(originalVersion, rootMesh.getVersion());
+        val newNode = rootMesh.getNodeById(badId);
+        val newUpstream = newNode.getUpstreamNode().getId();
+
+        // after reconnect node should have 0 downstreams and new upstream
+        assertNotEquals(upstreamId, newUpstream);
+        assertEquals(0, newNode.numberOfDownstreams());
     }
 }

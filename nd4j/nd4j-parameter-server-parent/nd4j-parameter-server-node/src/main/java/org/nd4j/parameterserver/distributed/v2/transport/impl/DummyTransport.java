@@ -26,8 +26,10 @@ import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -135,6 +137,10 @@ public class DummyTransport extends BaseTransport {
                 throw new ND4JIllegalStateException("Unknown target specified");
 
             target.processMessage(message);
+        }
+
+        public void dropConnection(@NonNull String... ids) {
+            Arrays.stream(ids).filter(Objects::nonNull).forEach(transports::remove);
         }
     }
 

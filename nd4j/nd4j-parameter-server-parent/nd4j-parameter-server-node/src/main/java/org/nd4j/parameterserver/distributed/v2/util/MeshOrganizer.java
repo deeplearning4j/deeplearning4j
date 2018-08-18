@@ -551,6 +551,13 @@ public class MeshOrganizer implements Serializable {
         }
 
         /**
+         * This method remove all downstreams for a given node
+         */
+        public void truncateDownstreams() {
+            downstream.clear();
+        }
+
+        /**
          * This method removes
          * @param node
          */
