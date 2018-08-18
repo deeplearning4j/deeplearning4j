@@ -1,20 +1,3 @@
-################################################################################
-# Copyright (c) 2015-2018 Skymind, Inc.
-#
-# This program and the accompanying materials are made available under the
-# terms of the Apache License, Version 2.0 which is available at
-# https://www.apache.org/licenses/LICENSE-2.0.
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-#
-# SPDX-License-Identifier: Apache-2.0
-################################################################################
-
-
 import jnius_config
 import os
 
@@ -32,6 +15,7 @@ else:
 
 jnius_config.set_classpath(class_path)
 
+# -------------JVM starts here-------------
 from jnius import autoclass
 
 
@@ -70,3 +54,15 @@ HashSet = autoclass('java.util.HashSet')
 
 JDouble = autoclass('java.lang.Double')
 JFloat = autoclass('java.lang.Float')
+
+
+SparkConf = autoclass('org.apache.spark.SparkConf')
+SparkContext = autoclass('org.apache.spark.api.java.JavaSparkContext')
+JavaRDD = autoclass('org.apache.spark.api.java.JavaRDD')
+SparkTransformExecutor = autoclass('org.datavec.spark.transform.SparkTransformExecutor')
+
+CSVRecordReader = autoclass('org.datavec.api.records.reader.impl.csv.CSVRecordReader')
+StringToWritablesFunction = autoclass('org.datavec.spark.transform.misc.StringToWritablesFunction')
+WritablesToStringFunction = autoclass('org.datavec.spark.transform.misc.WritablesToStringFunction')
+
+LocalTransformExecutor = autoclass('org.datavec.local.transforms.LocalTransformExecutor')
