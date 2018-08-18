@@ -65,4 +65,4 @@ CSVRecordReader = autoclass('org.datavec.api.records.reader.impl.csv.CSVRecordRe
 StringToWritablesFunction = autoclass('org.datavec.spark.transform.misc.StringToWritablesFunction')
 WritablesToStringFunction = autoclass('org.datavec.spark.transform.misc.WritablesToStringFunction')
 
-LocalTransformExecutor = autoclass('org.datavec.local.transforms.LocalTransformExecutor')
+#LocalTransformExecutor = autoclass('org.datavec.local.transforms.LocalTransformExecutor')

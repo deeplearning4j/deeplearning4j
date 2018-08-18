@@ -1,5 +1,6 @@
-from ..java_classes import SparkConf, SparkContext, SparkTransformExecutor
-from ..java_classes import CSVRecordReader, WritablesToStringFunction, StringToWritablesFunction
+import os
+
+_JVM_RUNNING = False
 
 
 class StringRDD(object):
@@ -25,15 +26,41 @@ class StringRDD(object):
 class SparkExecutor(object):
 
     def __init__(self, master='local[*]', app_name='pydatavec'):
+        global _JVM_RUNNING
+        if not _JVM_RUNNING:
+            from ..java_classes import SparkConf, SparkContext, SparkTransformExecutor
+            from ..java_classes import CSVRecordReader, WritablesToStringFunction, StringToWritablesFunction
+            _JVM_RUNNING = True
         spark_conf = SparkConf()
         spark_conf.setMaster(master)
         spark_conf.setAppName(app_name)
         self.spark_context = SparkContext(spark_conf)
         self.rr = CSVRecordReader()
+        self.executor = SparkTransformExecutor
+        self.str2wf = StringToWritablesFunction
+        self.w2strf = WritablesToStringFunction
 
-    def __call__(self, tp, csv):
-        string_data = self.spark_context.textFile(csv)  # JavaRDD<String>
-        parsed_input_data = string_data.map(StringToWritablesFunction(self.rr))   # JavaRDD<List<Writable>>
-        processed_data = SparkTransformExecutor.execute(parsed_input_data, tp.to_java())  # JavaRDD<List<Writable>>
-        processed_as_string = processed_data.map(WritablesToStringFunction(","))  # JavaRDD<String>
+    def __call__(self, tp, source):
+        source_type = getattr(type(source), '__name__', None)
+        if source_type == 'str':
+            if os.path.isfile(source) or os.path.isdir(source):
+                string_data = self.spark_context.textFile(source)  # JavaRDD<String>
+            else:
+                raise ValueError('Invalid source ' + source)
+        elif source_type == 'org.apache.spark.api.java.JavaRDD':
+            string_data = source
+        elif source_type.endswith('RDD'):
+            tempid = 0
+            path = 'temp_0'
+            while(os.path.isdir(path)):
+                tempid += 1
+                path = 'temp_' + str(tempid)
+            print('Converting pyspark RDD to JavaRDD...')
+            source.saveAsTextFile(path)
+            string_data = self.spark_context.textFile(path)
+        else:
+            raise Exception('Unexpected source type: ' + str(type(source)))
+        parsed_input_data = string_data.map(self.str2wf(self.rr))   # JavaRDD<List<Writable>>
+        processed_data = self.executor.execute(parsed_input_data, tp.to_java())  # JavaRDD<List<Writable>>
+        processed_as_string = processed_data.map(self.w2strf(","))  # JavaRDD<String>
         return StringRDD(processed_as_string)  # StringRDD

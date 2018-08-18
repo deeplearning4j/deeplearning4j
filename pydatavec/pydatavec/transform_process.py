@@ -107,6 +107,13 @@ class TransformProcess(object):
         self.add_step("exec", code)
         self.final_schema.add_column("integer", new_column)
 
+    def categorical_to_integer(self, column):
+        if self.final_schema.columns[column][0] != 'categorical':
+            raise Exception('Can not apply categorical_to_integer'
+            ' transform on column \"{}\" because it is not a categorcal column.'.format(column))
+        self.final_schema.columns[column][0] = 'integer'
+        self.add_step('categoricalToInteger', column)
+
     def serialize(self):
         config = {'steps' : self.steps, 'schema' : self.schema.serialize()}
         return config
