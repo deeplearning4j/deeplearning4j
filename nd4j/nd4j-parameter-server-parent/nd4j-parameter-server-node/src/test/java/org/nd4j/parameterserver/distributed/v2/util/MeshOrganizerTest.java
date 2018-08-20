@@ -20,8 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.SerializationUtils;
 import org.junit.Test;
-import org.nd4j.parameterserver.distributed.enums.MeshBuildMode;
-import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
+import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -93,7 +92,7 @@ public class MeshOrganizerTest {
 
     @Test
     public void testBasicMesh_3() {
-        val mesh = new MeshOrganizer(MeshBuildMode.DEPTH_FIRST);
+        val mesh = new MeshOrganizer(MeshBuildMode.MESH);
 
         val node1 = mesh.addNode("192.168.1.1");
         val node2 = mesh.addNode("192.168.2.1");
@@ -115,7 +114,7 @@ public class MeshOrganizerTest {
 
     @Test
     public void testBasicMesh_4() {
-        val mesh = new MeshOrganizer(MeshBuildMode.DEPTH_FIRST);
+        val mesh = new MeshOrganizer(MeshBuildMode.MESH);
 
         // smoke test
         for (int e = 0; e < 8192; e++)
@@ -134,7 +133,7 @@ public class MeshOrganizerTest {
 
     @Test
     public void testRemap_1() throws Exception {
-        val mesh = new MeshOrganizer(MeshBuildMode.SYMMETRIC_MODE);
+        val mesh = new MeshOrganizer(MeshBuildMode.MESH);
 
         for (int e = 0; e < MeshOrganizer.MAX_DOWNSTREAMS; e++)
             mesh.addNode(String.valueOf(e));
@@ -157,7 +156,7 @@ public class MeshOrganizerTest {
 
     @Test
     public void testRemap_2() throws Exception {
-        val mesh = new MeshOrganizer(MeshBuildMode.WIDTH_FIRST);
+        val mesh = new MeshOrganizer(MeshBuildMode.MESH);
         mesh.getRootNode().setId("ROOT_NODE");
         val nodes = new ArrayList<MeshOrganizer.Node>();
 
@@ -242,20 +241,19 @@ public class MeshOrganizerTest {
     public void testEquality_3() throws Exception {
         val mesh1 = new MeshOrganizer();
         val mesh2 = new MeshOrganizer();
-        val mesh3 = new MeshOrganizer(MeshBuildMode.DEPTH_FIRST);
-        val mesh4 = new MeshOrganizer(MeshBuildMode.WIDTH_FIRST);
+        val mesh3 = new MeshOrganizer(MeshBuildMode.PLAIN);
+        val mesh4 = new MeshOrganizer(MeshBuildMode.PLAIN);
 
         assertEquals(mesh1, mesh2);
         assertNotEquals(mesh1, mesh3);
         assertNotEquals(mesh1, mesh4);
-        assertNotEquals(mesh4, mesh3);
     }
 
     @Test
     public void testEquality_4() throws Exception {
-        val mesh1 = new MeshOrganizer(MeshBuildMode.DEPTH_FIRST);
-        val mesh2 = new MeshOrganizer(MeshBuildMode.DEPTH_FIRST);
-        val mesh3 = new MeshOrganizer(MeshBuildMode.WIDTH_FIRST);
+        val mesh1 = new MeshOrganizer(MeshBuildMode.MESH);
+        val mesh2 = new MeshOrganizer(MeshBuildMode.MESH);
+        val mesh3 = new MeshOrganizer(MeshBuildMode.PLAIN);
 
         mesh1.addNode("192.168.1.1");
         mesh2.addNode("192.168.1.1");
@@ -267,7 +265,7 @@ public class MeshOrganizerTest {
 
     @Test
     public void testClone_1() throws Exception {
-        val mesh1 = new MeshOrganizer(MeshBuildMode.DEPTH_FIRST);
+        val mesh1 = new MeshOrganizer(MeshBuildMode.MESH);
 
         for (int e = 0; e < 8192; e++)
             mesh1.addNode(java.util.UUID.randomUUID().toString());
@@ -278,7 +276,7 @@ public class MeshOrganizerTest {
 
     @Test
     public void testSerialization_1() throws Exception {
-        val mesh1 = new MeshOrganizer(MeshBuildMode.DEPTH_FIRST);
+        val mesh1 = new MeshOrganizer(MeshBuildMode.MESH);
 
         for (int e = 0; e < 1000; e++)
             mesh1.addNode(java.util.UUID.randomUUID().toString());

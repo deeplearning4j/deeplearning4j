@@ -25,7 +25,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
-import org.nd4j.parameterserver.distributed.enums.MeshBuildMode;
+import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
 import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;
 import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
 import org.nd4j.parameterserver.distributed.v2.messages.*;
@@ -82,6 +82,8 @@ public abstract  class BaseTransport  implements Transport {
     // just configuration bean
     protected final VoidConfiguration configuration;
 
+    protected final MeshBuildMode meshBuildMode = MeshBuildMode.MESH;
+
     protected BaseTransport() {
         this(java.util.UUID.randomUUID().toString());
     }
@@ -91,7 +93,7 @@ public abstract  class BaseTransport  implements Transport {
     }
 
     protected BaseTransport(@NonNull String rootId, @NonNull VoidConfiguration configuration) {
-        this.mesh.set(new MeshOrganizer(MeshBuildMode.SYMMETRIC_MODE));
+        this.mesh.set(new MeshOrganizer(meshBuildMode));
         this.rootId = rootId;
         this.configuration = configuration;
     }
@@ -145,7 +147,7 @@ public abstract  class BaseTransport  implements Transport {
     @Override
     public synchronized void launchAsMaster() {
         if (mesh.get() == null)
-            mesh.set(new MeshOrganizer(MeshBuildMode.SYMMETRIC_MODE));
+            mesh.set(new MeshOrganizer(meshBuildMode));
 
         masterMode = true;
         mesh.get().getRootNode().setId(this.id());

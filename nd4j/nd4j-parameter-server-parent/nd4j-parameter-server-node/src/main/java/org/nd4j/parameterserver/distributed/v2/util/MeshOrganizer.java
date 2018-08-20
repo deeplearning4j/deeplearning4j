@@ -20,11 +20,10 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.linalg.util.SerializationUtils;
-import org.nd4j.parameterserver.distributed.enums.MeshBuildMode;
+import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
 import org.nd4j.parameterserver.distributed.enums.NodeStatus;
 
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
@@ -42,8 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class MeshOrganizer implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    @Deprecated
-    private MeshBuildMode buildMode = MeshBuildMode.SYMMETRIC_MODE;
+    private MeshBuildMode buildMode = MeshBuildMode.MESH;
 
     // this value determines max number of direct downstream connections for any given node (affects root node as well)
     public static final int MAX_DOWNSTREAMS = 6;
@@ -123,22 +121,25 @@ public class MeshOrganizer implements Serializable {
     public synchronized Node addNode(@NonNull Node node) {
         version++;
 
-        // :)
-        val candidate = fillQueue.poll();
+        if (buildMode == MeshBuildMode.MESH) {
+            // :)
+            val candidate = fillQueue.poll();
 
-        // adding node to the candidate
-        candidate.addDownstreamNode(node);
+            // adding node to the candidate
+            candidate.addDownstreamNode(node);
 
-        // adding this node for future connections
-        for (int e = 0; e < MAX_DOWNSTREAMS; e++)
-            fillQueue.add(node);
+            // adding this node for future connections
+            for (int e = 0; e < MAX_DOWNSTREAMS; e++)
+                fillQueue.add(node);
 
+            sortedNodes.add(node);
+            Collections.sort(sortedNodes);
+        } else {
+            rootNode.addDownstreamNode(node);
+        }
 
         // after all we add this node to the flattened map, for future access
         nodeMap.put(node.getId(), node);
-
-        sortedNodes.add(node);
-        Collections.sort(sortedNodes);
 
         return node;
     }
@@ -193,17 +194,14 @@ public class MeshOrganizer implements Serializable {
     /**
      * This method reconnects given node to another node
      */
-    public void remapNode(@NonNull Node node) {
-        synchronized (node) {
-            // TODO: use atomiclong here
-            synchronized (this) {
-                version++;
-            }
+    public synchronized void remapNode(@NonNull Node node) {
+        version++;
 
+        if (buildMode == MeshBuildMode.MESH) {
             node.getUpstreamNode().removeFromDownstreams(node);
 
             boolean m = false;
-            for (val n: sortedNodes) {
+            for (val n : sortedNodes) {
                 // we dont want to remap node to itself
                 if (!Objects.equals(n, node) && n.status().equals(NodeStatus.ONLINE)) {
                     n.addDownstreamNode(node);
@@ -221,6 +219,8 @@ public class MeshOrganizer implements Serializable {
             synchronized (this) {
                 Collections.sort(sortedNodes);
             }
+        } else if (buildMode == MeshBuildMode.PLAIN) {
+            // nothing to do here
         }
     }
 

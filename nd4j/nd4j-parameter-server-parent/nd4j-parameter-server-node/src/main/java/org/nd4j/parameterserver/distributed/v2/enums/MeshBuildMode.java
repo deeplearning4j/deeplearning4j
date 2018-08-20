@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.enums;
+package org.nd4j.parameterserver.distributed.v2.enums;
 
 /**
  * This enum
@@ -22,17 +22,12 @@ package org.nd4j.parameterserver.distributed.enums;
  */
 public enum MeshBuildMode {
     /**
-     * In this mode Mesh will be built intensively, building to the right first
+     * In this mode all nodes are connected to the master, and master is responsible for messages propagation
      */
-    WIDTH_FIRST,
+    PLAIN,
 
     /**
-     * In this mode Mesh will be built extensively, building to the bottom first
+     * In this mode all nodes are organized into mesh, and each node is responsible for messages propagation
      */
-    DEPTH_FIRST,
-
-    /**
-     * In this mode Mesh will be built symmetrically
-     */
-    SYMMETRIC_MODE,
+    MESH,
 }
