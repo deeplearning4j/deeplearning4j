@@ -296,17 +296,24 @@ public class KerasModelEndToEndTest {
      */
     @Test
     public void importAcganDiscriminator() throws Exception {
-        importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_discriminator_1_epochs.h5");
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_discriminator_1_epochs.h5");
+        INDArray input = Nd4j.create(10, 1, 28, 28);
+        INDArray[] output = model.output(input);
     }
 
     @Test
     public void importAcganGenerator() throws Exception {
-        importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_generator_1_epochs.h5");
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_generator_1_epochs.h5");
+        //System.out.println(model.summary()) ;
+        INDArray latent = Nd4j.create(10, 100);
+        INDArray label = Nd4j.create(10, 1);
+        INDArray[] output = model.output(latent, label);
     }
 
     @Test
     public void importAcganCombined() throws Exception {
-        importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_combined_1_epochs.h5");
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_combined_1_epochs.h5");
+        // TODO: imports, but incorrectly. Has only one input, should have two.
     }
 
     /**
