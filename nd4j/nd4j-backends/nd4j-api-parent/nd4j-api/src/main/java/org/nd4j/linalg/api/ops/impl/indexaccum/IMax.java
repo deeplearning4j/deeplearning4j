@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.indexaccum;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
 
@@ -80,7 +81,7 @@ public class IMax extends BaseIndexAccumulation {
 
     @Override
     public String tensorflowName() {
-        return "argmax";
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
     @Override

@@ -1002,7 +1002,7 @@ public class SameDiffTests {
                 SDVariable activation = sameDiff.softmax("activation", sameDiff.mmul("mmul", x, w));
                 SDVariable ret = sameDiff.sum("totalsum", activation, Integer.MAX_VALUE);
                 SDVariable ret2 = sameDiff.neg("negtotalsum", ret);
-                return new SDVariable[]{ret2};
+                return new SDVariable[]{y.sub(ret2)};
             }
         }, vars);
 
@@ -2987,7 +2987,43 @@ public class SameDiffTests {
         sd.execBackwards();
         INDArray inGrad = in.getGradient().getArr();
         assertArrayEquals(new long[]{2,5}, inGrad.shape());
-        
+    }
+
+    @Test
+    public void testMultiOutput1(){
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.create(3,4));
+        SDVariable mean = in.mean();
+        SDVariable sum = in.sum();
+
+        try{
+            sd.createGradFunction();
+            fail("Expected exception");
+        } catch (IllegalStateException e){
+            assertTrue(e.getMessage(), e.getMessage().contains("multiple outputs"));
+        }
+
+        SDVariable add = mean.add(sum);
+        sd.createGradFunction();
+    }
+
+    @Test
+    public void testMultiOutput2(){
+        //Edge case: no functions
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.trueScalar(0));
+        SDVariable in2 = sd.var("in2", Nd4j.trueScalar(1));
+
+        try{
+            sd.createGradFunction();
+            fail("Expected exception");
+        } catch (IllegalStateException e){
+            assertTrue(e.getMessage(), e.getMessage().contains("multiple outputs"));
+        }
+
+        SDVariable add = in.add(in2);
+        sd.createGradFunction();
     }
 
 }

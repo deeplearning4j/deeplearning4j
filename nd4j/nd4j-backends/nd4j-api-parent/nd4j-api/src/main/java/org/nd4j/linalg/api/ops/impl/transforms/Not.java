@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -34,22 +35,14 @@ public class Not extends BaseTransformOp {
 
     protected double comparable = 0.0;
 
-    public Not(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double comparable) {
-        super(sameDiff, i_v, inPlace);
-        this.comparable = comparable;
+    public Not(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, i_v, false);
+        this.extraArgs = new Object[] {this.comparable};
     }
 
-    public Not(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double comparable) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.comparable = comparable;
+    public Not() {
+        this.extraArgs = new Object[] {this.comparable};
     }
-
-    public Not(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double comparable) {
-        super(sameDiff, i_v, extraArgs);
-        this.comparable = comparable;
-    }
-
-    public Not() {}
 
     public Not(@NonNull INDArray x) {
         this(x, 0.0);
@@ -100,6 +93,6 @@ public class Not extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        return Collections.singletonList(f().zerosLike(arg()));
     }
 }

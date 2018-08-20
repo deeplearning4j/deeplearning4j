@@ -72,10 +72,6 @@ public class ConvolutionUtils {
         int hIn = (int) inputData.size(2);
         int wIn = (int) inputData.size(3);
         int[] eKernel = effectiveKernelSize(kernel, dilation);
-        boolean atrous = (eKernel == kernel);
-
-        int[] inShape = new int[]{hIn, wIn};
-        validateShapes(inputData, kernel, strides, padding, convolutionMode, dilation, inShape, atrous);
 
         if (convolutionMode == ConvolutionMode.Same) {
             int hOut = strides[0] * hIn;
