@@ -26,6 +26,7 @@ import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.concurrent.locks.LockSupport;
 
 @Slf4j
 public class DelayedDummyTransport extends DummyTransport {
@@ -58,9 +59,9 @@ public class DelayedDummyTransport extends DummyTransport {
             @Override
             public void run() {
                 try {
-                    // imitate some bad network here
-                    val sleepTime = RandomUtils.nextInt(1, 10);
-                    Thread.sleep(sleepTime);
+                    // imitate some bad network here, latency of 0.2ms - 0.7ms
+                    val sleepTime = RandomUtils.nextInt(200, 700) * 1000;
+                    LockSupport.parkNanos(sleepTime);
 
                     DelayedDummyTransport.super.sendMessage(msg, id);
                 } catch (Exception e) {

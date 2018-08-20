@@ -82,6 +82,8 @@ public class DelayedModelParameterServerTest {
 
     @Test
     public void testUpdatesPropagation_1() throws Exception {
+        val array = Nd4j.ones(10, 10);
+
         val connector = new DummyTransport.Connector();
         val rootTransport = new DelayedDummyTransport(rootId, connector);
         val clientTransportA = new DelayedDummyTransport("412334", connector, rootId);
@@ -114,7 +116,6 @@ public class DelayedModelParameterServerTest {
         // 259 == 256 + A+B+R
         assertEquals(259, rootTransport.getMesh().totalNodes());
 
-        val array = Nd4j.ones(10, 10);
         clientServerA.sendUpdate(array);
 
         val updatesR = rootServer.getUpdates();
