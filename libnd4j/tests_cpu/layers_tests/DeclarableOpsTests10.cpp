@@ -132,31 +132,28 @@ TEST_F(DeclarableOpsTests10, Test_Size_at_1) {
 
     delete result;
 }
-/*
+
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests10, ReverseMod_BP_Test_1) {
+TEST_F(DeclarableOpsTests10, ZetaTest_SGO_Test_1) {
 
-    NDArray<double> inputX('c', {1, 6});
-    NDArray<double> inputY('c', {3, 4, 5, 1});
+    NDArray<double> inputX('c', {3, 4});
+    NDArray<double> inputY('c', {3, 4});
 
-    NDArray<double> axis(1.);
-
-    NDArray<double> gradO('c', {3, 4, 5, 6});
+    NDArray<double> exp('c', {3, 4}, { 3.63621, 3.63621, 7.275357, 3.636210,
+                                      7.275357, 3.63621, 7.275357, 3.63621,
+                                      7.275357, 3.63621, 3.63621,  3.63621});
 
     int exclusive, reverse;
     inputX.assign(2.0);
-    inputY.assign(9.0);
+    inputY.assign(0.6);
     ////////////////////////////////////////
+    inputY(2) = inputY(4) = inputY(6) = inputY(8) = 0.4;
+    nd4j::ops::zeta<double> op;
+    auto res = op.execute({&inputX, &inputY}, {}, {});
 
-
-    const OpArgsHolder<double> argsHolderFF({&inputX, &inputY}, {}, {});
-    const OpArgsHolder<double> argsHolderBP({&inputX, &inputY, &gradO}, {}, {});
-
-    nd4j::ops::reversemod<double> opFF;
-    nd4j::ops::reversemod_bp<double> opBP;
-
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
-
-    ASSERT_TRUE(isGradCorrect);
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    //res->at(0)->printIndexedBuffer("Zeta OUT");
+    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+    delete res;
 }
-*/
+
