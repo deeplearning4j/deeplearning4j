@@ -78,6 +78,48 @@ TEST_F(DeclarableOpsTests10, Test_ArgMax_2) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests10, Test_And_1) {
+    NDArray<double> x('c', {4}, {1, 1, 0, 1});
+    NDArray<double> y('c', {4}, {0, 0, 0, 1});
+    NDArray<double> e('c', {4}, {0, 0, 0, 1});
+
+    nd4j::ops::boolean_and<double> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests10, Test_Or_1) {
+    NDArray<double> x('c', {4}, {1, 1, 0, 1});
+    NDArray<double> y('c', {4}, {0, 0, 0, 1});
+    NDArray<double> e('c', {4}, {1, 1, 0, 1});
+
+    nd4j::ops::boolean_or<double> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests10, Test_Not_1) {
+    NDArray<double> x('c', {4}, {1, 1, 0, 1});
+    NDArray<double> y('c', {4}, {0, 0, 0, 1});
+    NDArray<double> e('c', {4}, {1, 1, 1, 0});
+
+    nd4j::ops::boolean_not<double> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests10, Test_Size_at_1) {
     NDArray<double> x('c', {10, 20, 30});
     NDArray<double> e(20.0);
@@ -89,4 +131,20 @@ TEST_F(DeclarableOpsTests10, Test_Size_at_1) {
     ASSERT_EQ(e, *result->at(0));
 
     delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Unique_SGO_Test_1) {
+    NDArray<double> input({3., 4., 3., 1., 3., 0., 2., 4., 2., 4.});
+    NDArray<double> expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
+    NDArray<double> exp({3., 4., 1., 0., 2.});
+
+    nd4j::ops::unique<double> op;
+    auto res = op.execute({&input}, {}, {});
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    //res->at(0)->printIndexedBuffer("Unique values");
+    //res->at(1)->printIndexedBuffer("Unique idxs");
+    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+    ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
+    delete res;
 }

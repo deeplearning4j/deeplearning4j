@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -44,10 +45,13 @@ import java.util.Map;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class PReLULayer extends FeedForwardLayer {
+public class PReLULayer extends BaseLayer {
 
     private long[] inputShape = null;
     private long[] sharedAxes = null;
+
+    private int nIn;
+    private int nOut;
 
     private PReLULayer(Builder builder) {
         super(builder);
@@ -75,6 +79,47 @@ public class PReLULayer extends FeedForwardLayer {
         if (inputType == null)
             throw new IllegalStateException("Invalid input type: null for layer name \"" + getLayerName() + "\"");
         return inputType;
+    }
+
+    @Override
+    public void setNIn(InputType inputType, boolean override) {
+        // not needed
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+        // None needed
+        return null;
+    }
+
+    @Override
+    public boolean isPretrain() {
+        return false;
+    }
+
+    @Override
+    public double getL1ByParam(String paramName) {
+        switch (paramName) {
+            case DefaultParamInitializer.WEIGHT_KEY:
+                return l1;
+            default:
+                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
+        }
+    }
+
+    @Override
+    public double getL2ByParam(String paramName) {
+        switch (paramName) {
+            case DefaultParamInitializer.WEIGHT_KEY:
+                return l2;
+            default:
+                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
+        }
+    }
+
+    @Override
+    public boolean isPretrainParam(String paramName) {
+        return false;
     }
 
     @Override

@@ -292,6 +292,31 @@ public class KerasModelEndToEndTest {
     }
 
     /**
+     * Auxillary classifier GAN import test
+     */
+    @Test
+    public void importAcganDiscriminator() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_discriminator_1_epochs.h5");
+        INDArray input = Nd4j.create(10, 1, 28, 28);
+        INDArray[] output = model.output(input);
+    }
+
+    @Test
+    public void importAcganGenerator() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_generator_1_epochs.h5");
+        //System.out.println(model.summary()) ;
+        INDArray latent = Nd4j.create(10, 100);
+        INDArray label = Nd4j.create(10, 1);
+        INDArray[] output = model.output(latent, label);
+    }
+
+    @Test
+    public void importAcganCombined() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_combined_1_epochs.h5");
+        // TODO: imports, but incorrectly. Has only one input, should have two.
+    }
+
+    /**
      * Deep convolutional GAN import test
      */
     @Test
@@ -479,6 +504,64 @@ public class KerasModelEndToEndTest {
 
     }
 
+
+    /**
+     * Import all AlphaGo Zero model variants, i.e.
+     * - Dual residual architecture
+     * - Dual convolutional architecture
+     * - Separate (policy and value) residual architecture
+     * - Separate (policy and value) convolutional architecture
+     */
+    @Test
+    public void importSepConvPolicy() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_conv_policy.h5");
+        INDArray input = Nd4j.create(32, 19, 19, 10);
+        model.output(input);
+    }
+
+    @Test
+    public void importSepResPolicy() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_res_policy.h5");
+        INDArray input = Nd4j.create(32, 19, 19, 10);
+        model.output(input);
+    }
+
+
+    @Test
+    public void importSepConvValue() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_conv_value.h5");
+        INDArray input = Nd4j.create(32, 19, 19, 10);
+        model.output(input);
+    }
+
+    @Test
+    public void importSepResValue() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_res_value.h5");
+        INDArray input = Nd4j.create(32, 19, 19, 10);
+        model.output(input);
+    }
+
+    @Test
+    public void importDualRes() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/dual_res.h5");
+        INDArray input = Nd4j.create(32, 19, 19, 10);
+        model.output(input);
+    }
+
+    @Test
+    public void importDualConv() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/dual_conv.h5");
+        INDArray input = Nd4j.create(32, 19, 19, 10);
+        model.output(input);
+    }
+
+    /**
+     * MTCNN
+     */
+    @Test
+    public void importMTCNN() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/48net_complete.h5");
+    }
 
     private ComputationGraph importFunctionalModelH5Test(String modelPath) throws Exception {
         return importFunctionalModelH5Test(modelPath, null, false);
