@@ -78,6 +78,8 @@ public class TFGraphTestAllSameDiff {
             //https://github.com/deeplearning4j/deeplearning4j/issues/6182
             "zeta.*",
 
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6210
+            "reductions/argmax3,4,5_-1",
             //Not sure what's up here yet:
             "svd/rank2_3,3_noFull_uv"
     };
@@ -111,7 +113,7 @@ public class TFGraphTestAllSameDiff {
         this.modelName = modelName;
     }
 
-    @Test(timeout = 10000L)
+    @Test(timeout = 25000L)
     public void testOutputOnly() throws Exception {
         Nd4j.create(1);
         if (SKIP_SET.contains(modelName)) {
