@@ -19,8 +19,11 @@ package org.nd4j.parameterserver.distributed.v2;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.DelayedDummyTransport;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.DummyTransport;
+
+import java.util.ArrayList;
 
 import static org.junit.Assert.assertEquals;
 
@@ -43,7 +46,7 @@ public class DelayedModelParameterServerTest {
         rootServer.shutdown();
     }
 
-    @Test(timeout = 30000L)
+    @Test(timeout = 40000L)
     public void testBasicInitialization_2() throws Exception {
         for (int e = 0; e < 100; e++) {
             val connector = new DummyTransport.Connector();
@@ -60,7 +63,7 @@ public class DelayedModelParameterServerTest {
             clientServerA.launch();
             clientServerB.launch();
 
-            // since clientB starts AFTER clientA, we have to wait till MeshUpdate message is propagated
+            // since clientB starts AFTER clientA, we have to wait till MeshUpdate message is propagated, since ithis message is NOT blocking
             Thread.sleep(25);
 
             val meshR = rootTransport.getMesh();
@@ -75,5 +78,53 @@ public class DelayedModelParameterServerTest {
 
             log.info("Iteration [{}] finished", e);
         }
+    }
+
+    @Test
+    public void testUpdatesPropagation_1() throws Exception {
+        val connector = new DummyTransport.Connector();
+        val rootTransport = new DelayedDummyTransport(rootId, connector);
+        val clientTransportA = new DelayedDummyTransport("412334", connector, rootId);
+        val clientTransportB = new DelayedDummyTransport("123441", connector, rootId);
+
+        connector.register(rootTransport, clientTransportA, clientTransportB);
+
+        val rootServer = new ModelParameterServer(rootTransport, true);
+        val clientServerA = new ModelParameterServer(clientTransportA, false);
+        val clientServerB = new ModelParameterServer(clientTransportB, false);
+        rootServer.launch();
+        clientServerA.launch();
+        clientServerB.launch();
+
+        val servers = new ArrayList<ModelParameterServer>();
+        val transports = new ArrayList<DelayedDummyTransport>();
+        for (int e = 0; e < 256; e++) {
+            val clientTransport = new DelayedDummyTransport(String.valueOf(e), connector, rootId);
+            val clientServer = new ModelParameterServer(clientTransport, false);
+
+            connector.register(clientTransport);
+            servers.add(clientServer);
+            transports.add(clientTransport);
+
+            clientServer.launch();
+
+            log.info("Server [{}] started...", e);
+        }
+
+        // 259 == 256 + A+B+R
+        assertEquals(259, rootTransport.getMesh().totalNodes());
+
+        val array = Nd4j.ones(10, 10);
+        clientServerA.sendUpdate(array);
+
+        val updatesR = rootServer.getUpdates();
+        val updatesA = clientServerA.getUpdates();
+        val updatesB = clientServerB.getUpdates();
+
+        assertEquals(1, updatesR.size());
+        assertEquals(1, updatesB.size());
+
+        // we should NOT get this message back to A
+        assertEquals(0, updatesA.size());
     }
 }
