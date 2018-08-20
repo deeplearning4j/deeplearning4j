@@ -57,7 +57,31 @@ public class TFGraphTestAllSameDiff {
             //https://github.com/deeplearning4j/deeplearning4j/issues/6142
             "reverse/shape5.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6155
-            "reductions/argmin.*"
+            "reductions/argmin.*",
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6172
+            "pad/rank1.*",
+            "pad/rank2Pone_const10",
+            "pad/rank3.*",
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6173
+            "unique.*",
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6177
+            "topk/.*",
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6179
+            "in_top_k/.*",
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6181
+            "confusion/.*",
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6180
+            "identity_n.*",
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6189
+            "matmul/rank4.*",
+            "matmul/rank5.*",
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6182
+            "zeta.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6210
+            "reductions/argmax3,4,5_-1",
+            //Not sure what's up here yet:
+            "svd/rank2_3,3_noFull_uv"
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 
@@ -89,7 +113,7 @@ public class TFGraphTestAllSameDiff {
         this.modelName = modelName;
     }
 
-    @Test
+    @Test(timeout = 25000L)
     public void testOutputOnly() throws Exception {
         Nd4j.create(1);
         if (SKIP_SET.contains(modelName)) {

@@ -18,33 +18,45 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Collections;
 import java.util.List;
 
-public class MatrixDiag extends DynamicCustomOp {
+/**
+ * Angle op for tensorflow import<br>
+ * Given ND4J currently only supports real arrays; hence by definition this always outputs 0
+ *
+ * @author Alex Black
+ */
+public class Angle extends DynamicCustomOp {
 
-    public MatrixDiag() {
-        //
+    public Angle(SameDiff sameDiff, SDVariable input) {
+        super(sameDiff, new SDVariable[]{input}, false);
     }
 
-    public MatrixDiag(SameDiff sameDiff, SDVariable in, boolean inPlace) {
-        super(null, sameDiff, new SDVariable[]{in}, inPlace);
-    }
-
+    public Angle() { }
 
     @Override
     public String opName() {
-        return "matrix_diag";
+        return "zeros_like";
     }
 
     @Override
-    public String[] tensorflowNames() {
-        return new String[]{"MatrixDiag","BatchMatrixDiag"};
+    public String onnxName() { throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
+
+    @Override
+    public String tensorflowName() {
+        return "Angle";
+    }
+
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return Collections.singletonList(f().zerosLike(arg()));
     }
 }

@@ -532,7 +532,8 @@ public class OpValidation {
 
             List<String> notMapped = new ArrayList<>();
             for(String s : allTFOps.keySet()){
-                if(DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(s) == null){
+                if(DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(s) == null &&
+                        !tfIgnored.contains(s)){
                     notMapped.add(s);
                 }
             }
@@ -779,6 +780,21 @@ public class OpValidation {
                 "HardSigmoid",   //Also implemented as python, NOT a single native op
                 "SpaceToBatch", //Old name - SpaceToBatchNd is used in practice (inc. for tf.space_to_batch)
                 "BatchToSpace", //Old name - BatchToSpaceNd is used in practice
+                "Pad",          //As far as I can tell: Only PadV2 and MirrorPad are used in practice
+                "TopK",         //TopKV2 used
+                "InTopK",       //InTopKV2 used
+                "BatchMatrixDeterminant",   //Deprecated in favor of "MatrixDeterminant"
+                "BatchMatrixDiagPart",      //Deprecated in favor of "MatrixDiagPart"
+                "BatchMatrixDiag",          //Deprecated in favor of "MatrixDiag"
+                "BatchMatrixBandPart",      //Deprecated in favor of "MatrixBandPart"
+                "BatchMatrixInverse",       //Deprecated in favor of "MatrixInverse"
+                "BatchMatrixSetDiag",       //Deprecated in favor of "MatrixSetDiag"
+                "BatchMatrixSolve",         //Deprecated in favor of "MatrixSolve"
+                "BatchMatrixSolveLs",       //Deprecated in favor of "MatrixSolveLs"
+                "BatchMatrixTriangularSolve",   //Deprecated in favor of "MatrixTriangularSolve"
+                "BatchSelfAdjointEig",      //Deprecated in favor of "SelfAdjointEigV2"
+                "BatchSelfAdjointEigV2",    //Deprecated in favor of "SelfAdjointEigV2"
+                "BatchSvd",                 //Deprecated in favor of "Svd"
 
                 //All of the following ops - not available in TF (can't find them) - op mapping is wrong?
                 //TODO: Check these and remove the import mapping from the Java classes if they are indeed bad
