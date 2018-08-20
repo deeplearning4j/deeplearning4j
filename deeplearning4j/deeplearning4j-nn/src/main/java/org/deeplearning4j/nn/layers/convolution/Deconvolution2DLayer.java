@@ -153,9 +153,6 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
     @Override
     protected Pair<INDArray, INDArray> preOutput(boolean training , boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
-        if (convolutionMode == ConvolutionMode.Same) {
-            throw new IllegalArgumentException("Border mode Same currently not supported.");
-        }
 
         INDArray bias = getParamWithNoise(DeconvolutionParamInitializer.BIAS_KEY, training, workspaceMgr);
         INDArray weights = getParamWithNoise(DeconvolutionParamInitializer.WEIGHT_KEY, training, workspaceMgr);
@@ -179,7 +176,9 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         int inDepth = (int) weights.size(0);
         int outDepth = (int) weights.size(1);
 
-        if (input.size(1) != inDepth) {
+        if (input.size(1) != inDepth && input.size(3) == inDepth) {
+            input = input.permute(0, 3, 1, 2);
+        } else if (input.size(1) != inDepth && input.size(3) != inDepth) {
             String layerName = conf.getLayer().getLayerName();
             if (layerName == null)
                 layerName = "(not named)";

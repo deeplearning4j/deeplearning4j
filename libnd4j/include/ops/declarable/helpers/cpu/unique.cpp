@@ -71,9 +71,10 @@ namespace helpers {
                 (*counts)(e) = countsMap[valuesVector[e]];
         }
 
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+//#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < indices->lengthOf(); e++) {
-            (*indices)(e) = indicesMap[(*input)(e)];
+            auto posI = std::find(valuesVector.begin(), valuesVector.end(), (*input)(e));
+            (*indices)(e) = std::distance(valuesVector.begin(), posI);//indicesMap[(*input)(e)];
         }
 
         return ND4J_STATUS_OK;

@@ -104,7 +104,7 @@ public class PReLUParamInitializer implements ParamInitializer {
 
     @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
-        if (!(conf.getLayer() instanceof FeedForwardLayer))
+        if (!(conf.getLayer() instanceof BaseLayer))
             throw new IllegalArgumentException("unsupported layer type: " + conf.getLayer().getClass().getName());
 
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
@@ -138,7 +138,7 @@ public class PReLUParamInitializer implements ParamInitializer {
     protected INDArray createWeightMatrix(NeuralNetConfiguration conf, INDArray weightParamView,
                     boolean initializeParameters) {
 
-        FeedForwardLayer layerConf = (FeedForwardLayer) conf.getLayer();
+        PReLULayer layerConf = (PReLULayer) conf.getLayer();
         if (initializeParameters) {
             Distribution dist = Distributions.createDistribution(layerConf.getDist());
             return WeightInitUtil.initWeights(layerConf.getNIn(), layerConf.getNOut(),

@@ -82,6 +82,7 @@ public class MirrorPad extends DynamicCustomOp {
 
         map.put("isSymmetric", symmetric);
 
+        ret.put(tensorflowName(), map);
         return ret;
     }
 }

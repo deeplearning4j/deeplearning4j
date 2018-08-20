@@ -45,6 +45,8 @@ namespace nd4j {
             } else {
                 auto output = OUTPUT_VARIABLE(0);
 
+                helpers::adjustAxis(input->shapeInfo(), axis);
+
                 input->template applyIndexReduce<simdOps::IndexMin<T>>(output, axis);
                 STORE_RESULT(output);
             }

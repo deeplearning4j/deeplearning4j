@@ -16,35 +16,48 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.imports.NoOpNameFoundException;
 
+import java.util.Arrays;
 import java.util.List;
 
-public class MatrixDiag extends DynamicCustomOp {
+/**
+ * Element-wise Zeta function.
+ *
+ * Note that it is only defined for values x > 1, q > 0
+ *
+ * @author Alex Black
+ */
+public class Zeta extends BaseDynamicTransformOp {
 
-    public MatrixDiag() {
-        //
+    public Zeta(SameDiff sameDiff, SDVariable x, SDVariable q) {
+        super(sameDiff, new SDVariable[] {x, q} ,false);
     }
 
-    public MatrixDiag(SameDiff sameDiff, SDVariable in, boolean inPlace) {
-        super(null, sameDiff, new SDVariable[]{in}, inPlace);
-    }
-
+    public Zeta() {}
 
     @Override
     public String opName() {
-        return "matrix_diag";
+        return "zeta";
+    }
+
+
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
-    public String[] tensorflowNames() {
-        return new String[]{"MatrixDiag","BatchMatrixDiag"};
+    public String tensorflowName() {
+        return "Zeta";
     }
+
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        throw new UnsupportedOperationException("Not yet implemented: " + opName());
     }
 }
