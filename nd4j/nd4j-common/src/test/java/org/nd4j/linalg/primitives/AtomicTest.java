@@ -51,4 +51,20 @@ public class AtomicTest {
             }
         }
     }
+
+    @Test
+    public void testCas_1() throws Exception {
+        val v0 = new Atomic<String>();
+
+        v0.cas(null, "alpha");
+        assertEquals("alpha", v0.get());
+    }
+
+    @Test
+    public void testCas_2() throws Exception {
+        val v0 = new Atomic<String>("beta");
+
+        v0.cas(null, "alpha");
+        assertEquals("beta", v0.get());
+    }
 }

@@ -168,7 +168,9 @@ public class DummyTransport extends BaseTransport {
      * @return
      */
     public MeshOrganizer getMesh() {
-        return mesh.get();
+        synchronized (mesh) {
+            return mesh.get();
+        }
     }
 
     /**

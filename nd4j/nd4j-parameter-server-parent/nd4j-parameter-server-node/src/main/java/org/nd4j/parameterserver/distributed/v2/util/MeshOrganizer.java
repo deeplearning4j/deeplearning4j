@@ -19,10 +19,12 @@ package org.nd4j.parameterserver.distributed.v2.util;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.primitives.Atomic;
+import org.nd4j.linalg.util.SerializationUtils;
 import org.nd4j.parameterserver.distributed.enums.MeshBuildMode;
 import org.nd4j.parameterserver.distributed.enums.NodeStatus;
 
 
+import java.io.ByteArrayOutputStream;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -90,6 +92,15 @@ public class MeshOrganizer implements Serializable {
                 .build();
 
          return this.addNode(node);
+    }
+
+    /**
+     * This method returns absolutely independent copy of this Mesh
+     * @return
+     */
+    public MeshOrganizer clone() {
+        val b = SerializationUtils.toByteArray(this);
+        return org.apache.commons.lang3.SerializationUtils.deserialize(b);
     }
 
     /**

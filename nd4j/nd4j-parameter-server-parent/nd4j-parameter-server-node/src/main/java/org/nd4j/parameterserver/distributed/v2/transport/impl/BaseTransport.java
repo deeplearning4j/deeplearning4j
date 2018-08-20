@@ -267,36 +267,41 @@ public abstract  class BaseTransport  implements Transport {
                 replies.putIfAbsent(reply.getRequestId(), reply);
             }
         } else if (message instanceof HandshakeRequest) {
-            if (!mesh.get().isKnownNode(this.id())) {
-                mesh.get().getRootNode().setId(this.id);
+            synchronized (mesh) {
+                if (!mesh.get().isKnownNode(this.id())) {
+                    mesh.get().getRootNode().setId(this.id);
+                }
             }
 
             // our response
             val response = HandshakeResponse.builder()
-                                                                    .mesh(mesh.get())
-                                                                    .build();
-            if (mesh.get().isKnownNode(message.getOriginatorId())) {
-                // first we add new node to the mesh
-                val nodeToRemap = mesh.get().getNodeById(message.getOriginatorId());
-                val nodesToRemap = new ArrayList<MeshOrganizer.Node>();
+                    .build();
 
-                // we're remapping node, and its downstreams
-                nodesToRemap.add(nodeToRemap);
-                nodesToRemap.addAll(nodeToRemap.getDownstreamNodes());
+            synchronized (mesh) {
+                if (mesh.get().isKnownNode(message.getOriginatorId())) {
+                    // first we add new node to the mesh
+                    val nodeToRemap = mesh.get().getNodeById(message.getOriginatorId());
+                    val nodesToRemap = new ArrayList<MeshOrganizer.Node>();
 
-                for (val n: nodesToRemap)
-                    mesh.get().remapNode(n);
+                    // we're remapping node, and its downstreams
+                    nodesToRemap.add(nodeToRemap);
+                    nodesToRemap.addAll(nodeToRemap.getDownstreamNodes());
 
-                // we don't want remapped node to have any downstreams
-                nodeToRemap.truncateDownstreams();
+                    for (val n : nodesToRemap)
+                        mesh.get().remapNode(n);
 
-                // we say that this model has restarted
-                response.setRestart(true);
-            } else {
-                // first we add new node to the mesh
-                mesh.get().addNode(message.getOriginatorId());
+                    // we don't want remapped node to have any downstreams
+                    nodeToRemap.truncateDownstreams();
+
+                    // we say that this model has restarted
+                    response.setRestart(true);
+                } else {
+                    // first we add new node to the mesh
+                    mesh.get().addNode(message.getOriginatorId());
+                }
+
+                response.setMesh(mesh.get().clone());
             }
-
 
             response.setRequestId(((HandshakeRequest) message).getRequestId());
             sendMessage(response, message.getOriginatorId());
@@ -310,21 +315,28 @@ public abstract  class BaseTransport  implements Transport {
             }
         } else if (message instanceof HandshakeResponse) {
             val response = (HandshakeResponse) message;
-            if (mesh.get() == null)
-                mesh.set(response.getMesh());
-            else {
+            val newMesh = response.getMesh();
+
+            mesh.cas(null, response.getMesh());
+
+            synchronized (mesh) {
+                val v1 = mesh.get().getVersion();
+                val v2 = newMesh.getVersion();
+
+                //log.info("Starting update A on [{}]; version: [{}/{}]; size: [{}]", this.id(), v1, v2, newMesh.totalNodes());
                 // we update only if new mesh is older that existing one
-                if (mesh.get().getVersion() < response.getMesh().getVersion())
-                    mesh.set(response.getMesh());
+                if (v1 < v2)
+                    mesh.set(newMesh);
             }
 
-            // optionally calling out callback, which will happen approximately 100% of time
+                // optionally calling out callback, which will happen approximately 100% of time
             if (response.isRestart()) {
                 if (restartCallback != null)
                     restartCallback.call(response);
                 else
                     log.warn("Got restart message from master, but there's no defined RestartCallback");
             }
+
 
             // in any way we're putting this message back to replies
             val reply = (ResponseMessage) message;
@@ -339,12 +351,15 @@ public abstract  class BaseTransport  implements Transport {
         } else if (message instanceof MeshUpdateMessage) {
             val newMesh = ((MeshUpdateMessage) message).getMesh();
 
-            // first check shouldn't ever be the case
-            if (mesh.get() == null)
-                mesh.set(newMesh);
-            else {
+            mesh.cas(null, newMesh);
+
+            synchronized (mesh) {
+                val v1 = mesh.get().getVersion();
+                val v2 = newMesh.getVersion();
+
+                //log.info("Starting update B on [{}]; version: [{}/{}]; size: [{}]", this.id(), v1, v2, newMesh.totalNodes());
                 // we update only if new mesh is older that existing one
-                if (mesh.get().getVersion() < newMesh.getVersion())
+                if (v1 < v2)
                     mesh.set(newMesh);
             }
         } else {

@@ -30,6 +30,7 @@ public class HandshakeResponse extends BaseResponseMessage {
     private long sequenceId;
 
     @Getter
+    @Setter
     private MeshOrganizer mesh;
 
     /**

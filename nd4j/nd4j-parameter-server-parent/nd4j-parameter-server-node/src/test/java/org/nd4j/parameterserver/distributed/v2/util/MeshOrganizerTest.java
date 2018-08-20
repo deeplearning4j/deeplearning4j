@@ -321,6 +321,16 @@ public class MeshOrganizerTest {
         assertNotEquals(mesh1, mesh3);
     }
 
+    @Test
+    public void testClone_1() throws Exception {
+        val mesh1 = new MeshOrganizer(MeshBuildMode.DEPTH_FIRST);
+
+        for (int e = 0; e < 100; e++)
+            mesh1.addNode(java.util.UUID.randomUUID().toString());
+
+        val mesh2 = mesh1.clone();
+        assertEquals(mesh1, mesh2);
+    }
 
     @Test
     public void testSerialization_1() throws Exception {

@@ -43,28 +43,37 @@ public class DelayedModelParameterServerTest {
         rootServer.shutdown();
     }
 
-    @Test(timeout = 20000L)
+    @Test(timeout = 30000L)
     public void testBasicInitialization_2() throws Exception {
-        val connector = new DummyTransport.Connector();
-        val rootTransport = new DelayedDummyTransport(rootId, connector);
-        val clientTransportA = new DelayedDummyTransport("123", connector, rootId);
-        val clientTransportB = new DelayedDummyTransport("1234", connector, rootId);
+        for (int e = 0; e < 100; e++) {
+            val connector = new DummyTransport.Connector();
+            val rootTransport = new DelayedDummyTransport(rootId, connector);
+            val clientTransportA = new DelayedDummyTransport("123", connector, rootId);
+            val clientTransportB = new DelayedDummyTransport("1234", connector, rootId);
 
-        connector.register(rootTransport, clientTransportA, clientTransportB);
+            connector.register(rootTransport, clientTransportA, clientTransportB);
 
-        val rootServer = new ModelParameterServer(rootTransport, true);
-        val clientServerA = new ModelParameterServer(clientTransportA, false);
-        val clientServerB = new ModelParameterServer(clientTransportB, false);
-        rootServer.launch();
-        clientServerA.launch();
-        clientServerB.launch();
+            val rootServer = new ModelParameterServer(rootTransport, true);
+            val clientServerA = new ModelParameterServer(clientTransportA, false);
+            val clientServerB = new ModelParameterServer(clientTransportB, false);
+            rootServer.launch();
+            clientServerA.launch();
+            clientServerB.launch();
 
-        val meshR = rootTransport.getMesh();
-        val meshA = clientTransportA.getMesh();
-        val meshB = clientTransportB.getMesh();
+            // since clientB starts AFTER clientA, we have to wait till MeshUpdate message is propagated
+            Thread.sleep(25);
 
-        assertEquals(3, meshA.totalNodes());
-        assertEquals(meshR, meshA);
-        assertEquals(meshA, meshB);
+            val meshR = rootTransport.getMesh();
+            val meshA = clientTransportA.getMesh();
+            val meshB = clientTransportB.getMesh();
+
+            assertEquals("Root node failed",3, meshR.totalNodes());
+            assertEquals("B node failed", 3, meshB.totalNodes());
+            assertEquals("A node failed", 3, meshA.totalNodes());
+            assertEquals(meshR, meshA);
+            assertEquals(meshA, meshB);
+
+            log.info("Iteration [{}] finished", e);
+        }
     }
 }
