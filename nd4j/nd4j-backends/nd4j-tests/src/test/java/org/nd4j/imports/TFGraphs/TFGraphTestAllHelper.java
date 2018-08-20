@@ -23,9 +23,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.OpValidationSuite;
+import org.junit.BeforeClass;
 import org.nd4j.autodiff.execution.NativeGraphExecutioner;
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
@@ -39,23 +37,17 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.list.IntNDArrayList;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
-import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.regex.Pattern;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.nd4j.imports.TFGraphs.TFGraphsSkipNodes.skipNode;
 
 /**
@@ -63,6 +55,7 @@ import static org.nd4j.imports.TFGraphs.TFGraphsSkipNodes.skipNode;
  */
 @Slf4j
 public class TFGraphTestAllHelper {
+
 
     public enum ExecuteWith {
         SAMEDIFF(SAMEDIFF_DEFAULT_BASE_DIR),
@@ -78,6 +71,11 @@ public class TFGraphTestAllHelper {
         public String getDefaultBaseDir() {
             return BASE_DIR;
         }
+    }
+
+    @BeforeClass
+    public void beforeClass(){
+        log.info("Starting tests for class: " + getClass().getName());
     }
 
     @Before
