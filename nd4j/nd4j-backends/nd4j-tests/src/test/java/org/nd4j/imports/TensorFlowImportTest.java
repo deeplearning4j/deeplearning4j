@@ -116,6 +116,15 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     }
 
     @Test
+    public void testArgMaxImport_2() throws Exception {
+        val graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource("/tf_graphs/examples/reductions/argmax3,4,5_-1/frozen_graph.pbtxt").getInputStream());
+
+        graph.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/argmax_macos.fb"), ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build());
+
+        log.info(graph.asFlatPrint());
+    }
+
+    @Test
     public void testArgMaxImport_1() throws Exception {
         val graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource("/tf_graphs/argmax.pb.txt").getInputStream());
 

@@ -109,8 +109,8 @@ public class TFGraphTestAllSameDiff {
 
     @After
     public void tearDown() throws Exception {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(true);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(true);
     }
 
     @Parameterized.Parameters(name="{2}")
