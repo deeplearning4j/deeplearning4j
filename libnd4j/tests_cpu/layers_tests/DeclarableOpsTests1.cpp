@@ -3339,24 +3339,27 @@ TEST_F(DeclarableOpsTests1, ArgMax5) {
 }
 
 TEST_F(DeclarableOpsTests1, ArgMax6) {
-    NDArray<float> x('c', {3, 5});
+    NDArray<float> x('c', {3, 4, 5});
     NDArray<float> dim(-1.f);
     x.linspace(1);
-    NDArray<float> exp('c', {3});
-    exp.assign(4.0f);
+
 
     nd4j::ops::argmax<float> op;
 
-    auto result = op.execute({&x, &dim}, {}, {});
+    auto expected = op.execute({&x}, {}, {2});
+    ASSERT_EQ(Status::OK(), expected->status());
+    auto exp = expected->at(0);
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto result = op.execute({&x, &dim}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
 
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
+    ASSERT_EQ(*exp, *z);
 
     delete result;
+    delete expected;
 }
 
 
