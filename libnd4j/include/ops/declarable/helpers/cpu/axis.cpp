@@ -37,13 +37,12 @@ namespace helpers {
         }
     }
 
-    void adjustAxis(Nd4jLong *inputShape, std::vector<int> *axisVector) {
+    void adjustAxis(Nd4jLong *inputShape, std::vector<int> &axisVector) {
         auto rank = shape::rank(inputShape);
-        auto av = *axisVector;
-        for (int e = 0; e < av.size(); e++) {
-            auto a = av[e];
+        for (int e = 0; e < axisVector.size(); e++) {
+            auto a = axisVector[e];
             if (a < 0)
-                av[e] = a + rank;
+                axisVector[e] = a + rank;
         }
     }
 

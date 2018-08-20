@@ -31,24 +31,17 @@ namespace nd4j {
 
             auto axis = *block.getIArguments();
 
-            nd4j_printf("A %i\n", 0);
-
             // axis might be dynamic (i.e. tf mode)
             if (block.width() > 1 && axis.size() == 0) {
                 auto axisVector = INPUT_VARIABLE(1);
-                axis.resize(axisVector->lengthOf());
                 helpers::adjustAxis(input, axisVector, axis);
-
-                nd4j_printf("A %i\n", 1);
 
                 input->template applyIndexReduce<simdOps::IndexMax<T>>(output, axis);
             } else {
-                helpers::adjustAxis(input->shapeInfo(), &axis);
-                nd4j_printf("A %i\n", 2);
+                helpers::adjustAxis(input->shapeInfo(), axis);
+
                 input->template applyIndexReduce<simdOps::IndexMax<T>>(output, axis);
             }
-
-            nd4j_printf("A %i\n", 3);
 
             STORE_RESULT(output);
 
@@ -65,31 +58,22 @@ namespace nd4j {
                 dims = y->template asVectorT<int>();
             }
 
-            nd4j_printf("B %i\n", 1);
-
             // we're resolving negative axis here
-            helpers::adjustAxis(inputShape->at(0), &dims);
+            helpers::adjustAxis(inputShape->at(0), dims);
 
             if (dims.size() > 1)
                 std::sort(dims.begin(), dims.end());
-
-                nd4j_printf("B %i\n", 2);
 
             // special case - output is scalar
             if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == MAX_INT)) {
                 return SHAPELIST(ShapeUtils<T>::createScalarShapeInfo(block.workspace()));
             }
 
-            nd4j_printf("B %i\n", 3);
-            nd4j_printv("Dims", dims);
-
             shape::TAD tad(inputShape->at(0), dims.data(), dims.size());
             tad.createTadOnlyShapeInfo();
 
             Nd4jLong tadLength = shape::tadLength(inputShape->at(0), dims.data(), dims.size());
             Nd4jLong numTads = shape::length(inputShape->at(0)) /  tadLength;
-
-            nd4j_printf("B %i\n", 4);
 
             auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', dims, inputShape->at(0), false, false, block.getWorkspace());
 

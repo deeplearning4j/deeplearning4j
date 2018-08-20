@@ -33,7 +33,6 @@ namespace nd4j {
             // axis might be dynamic (i.e. tf mode)
             if (block.width() > 1 && axis.size() == 0) {
                 auto vector = INPUT_VARIABLE(1);
-                axis.resize(vector->lengthOf());
                 helpers::adjustAxis(input, vector, axis);
 
                 auto shape = ShapeUtils<T>::evalReduceShapeInfo(input->ordering(), axis, *input, false);
@@ -46,7 +45,7 @@ namespace nd4j {
             } else {
                 auto output = OUTPUT_VARIABLE(0);
 
-                helpers::adjustAxis(input->shapeInfo(), &axis);
+                helpers::adjustAxis(input->shapeInfo(), axis);
 
                 input->template applyIndexReduce<simdOps::IndexMin<T>>(output, axis);
                 STORE_RESULT(output);
