@@ -9435,6 +9435,26 @@ public class SameDiff {
             log.trace("Defining function \"grad\"");
         }
 
+        //First thing: check that there's only one output... throw an exception if so
+        //A variable is an output if it's eithen an input, or if it's the output of a function, but not an input
+        Set<String> variablesNotAsFunctionInput = new HashSet<>();
+        for(SDVariable s : variables()){
+            variablesNotAsFunctionInput.add(s.getVarName());
+        }
+        for(String[] fnInputs : incomingArgsReverse.values()){
+            for(String s : fnInputs) {
+                variablesNotAsFunctionInput.remove(s);
+            }
+        }
+        if(variablesNotAsFunctionInput.size() > 1){
+            List<String> outputs = new ArrayList<>(variablesNotAsFunctionInput);
+            Collections.sort(outputs);
+            throw new IllegalStateException("Cannot create gradient function for graph with multiple outputs." +
+                    "Gradient calculation assumes a single output which defines a scalar loss function value. " +
+                    "An output is any variable that is not used as the input to a function in the graph. All outputs for graph: "
+                    + outputs);
+        }
+
         final SameDiff outer = this;
         defineFunction("grad", new SameDiffFunctionDefinition() {
 
