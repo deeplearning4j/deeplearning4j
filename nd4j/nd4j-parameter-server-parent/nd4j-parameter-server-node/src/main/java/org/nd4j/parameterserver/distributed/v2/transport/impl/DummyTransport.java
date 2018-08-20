@@ -31,6 +31,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * This class is an in-memory implementation of Transport interface, written for tests
@@ -40,10 +42,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class DummyTransport extends BaseTransport {
     // this is for tests only
-    private Map<String, MessageCallable> interceptors = new HashMap<>();
-    private Map<String, MessageCallable> precursors = new HashMap<>();
+    protected Map<String, MessageCallable> interceptors = new HashMap<>();
+    protected Map<String, MessageCallable> precursors = new HashMap<>();
 
-    private final Connector connector;
+    protected final Connector connector;
 
 
     public DummyTransport(String id, Connector connector) {
@@ -125,6 +127,7 @@ public class DummyTransport extends BaseTransport {
      */
     public static class Connector {
         private Map<String, Transport> transports = new ConcurrentHashMap<>();
+        private ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
         public void register(Transport... transports) {
             for (val transport:transports)
@@ -137,6 +140,10 @@ public class DummyTransport extends BaseTransport {
                 throw new ND4JIllegalStateException("Unknown target specified");
 
             target.processMessage(message);
+        }
+
+        public ExecutorService executorService() {
+            return executorService;
         }
 
         public void dropConnection(@NonNull String... ids) {
