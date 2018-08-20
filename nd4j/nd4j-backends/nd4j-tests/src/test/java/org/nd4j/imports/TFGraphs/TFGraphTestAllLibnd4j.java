@@ -93,7 +93,7 @@ public class TFGraphTestAllLibnd4j {
         this.modelName = modelName;
     }
 
-    @Test
+    @Test(timeout = 10000L)
     public void test() throws Exception {
         Nd4j.create(1);
         if (SKIP_SET.contains(modelName)) {
