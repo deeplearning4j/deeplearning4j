@@ -9449,9 +9449,11 @@ public class SameDiff {
         if(variablesNotAsFunctionInput.size() > 1){
             List<String> outputs = new ArrayList<>(variablesNotAsFunctionInput);
             Collections.sort(outputs);
-            throw new IllegalStateException("Cannot create gradient function for graph with multiple outputs." +
-                    "Gradient calculation assumes a single output which defines a scalar loss function value. " +
-                    "An output is any variable that is not used as the input to a function in the graph. All outputs for graph: "
+            throw new IllegalStateException("Cannot create gradient function for graph with multiple outputs.\n" +
+                    "Gradient calculation assumes a single output which defines a scalar loss function value.\n" +
+                    "An output is any variable that is not used as the input to a function in the graph.\n" +
+                    "In the case of multiple outputs that are components of an additive loss function, simply add the" +
+                    "component variables to create a scalar output.\nAll outputs for graph: "
                     + outputs);
         }
 
