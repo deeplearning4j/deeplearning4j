@@ -36,6 +36,16 @@ namespace helpers {
             }
     }
 
+    void adjustAxis(Nd4jLong *inputShape, std::vector<int> *axisVector) {
+        auto rank = shape::rank(inputShape);
+        auto av = *axisVector;
+        for (int e = 0; e < av.size(); e++) {
+            auto a = av[e];
+            if (a < 0)
+                av[e] = a + rank;
+        }
+    }
+
     template void adjustAxis(NDArray<float>* input, NDArray<float>* axisVector, std::vector<int>& output);
     template void adjustAxis(NDArray<float16>* input, NDArray<float16>* axisVector, std::vector<int>& output);
     template void adjustAxis(NDArray<double>* input, NDArray<double>* axisVector, std::vector<int>& output);

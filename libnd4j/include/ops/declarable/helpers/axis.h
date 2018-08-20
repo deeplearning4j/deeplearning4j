@@ -29,6 +29,9 @@ namespace helpers {
     template <typename T>
     void adjustAxis(NDArray<T>* input, NDArray<T>* axisVector, std::vector<int>& output);
 
+
+    void adjustAxis(Nd4jLong *inputShape, std::vector<int> *axisVector);
+
 }
 }
 }

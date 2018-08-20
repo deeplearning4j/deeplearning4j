@@ -39,6 +39,7 @@ namespace nd4j {
 
                 input->template applyIndexReduce<simdOps::IndexMax<T>>(output, axis);
             } else {
+                helpers::adjustAxis(input->shapeInfo(), &axis);
                 input->template applyIndexReduce<simdOps::IndexMax<T>>(output, axis);
             }
 
@@ -56,6 +57,9 @@ namespace nd4j {
                 auto y = INPUT_VARIABLE(1);
                 dims = y->template asVectorT<int>();
             }
+
+            // we're resolving negative axis here
+            helpers::adjustAxis(inputShape->at(0), &dims);
 
             if (dims.size() > 1)
                 std::sort(dims.begin(), dims.end());
