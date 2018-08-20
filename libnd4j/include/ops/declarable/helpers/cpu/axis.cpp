@@ -27,7 +27,9 @@ namespace helpers {
 
     template <typename T>
     void adjustAxis(NDArray<T>* input, NDArray<T>* axisVector, std::vector<int>& output) {
-            for (int e = 0; e < axisVector->lengthOf(); e++) {
+        output.resize(axisVector->lengthOf());
+
+        for (int e = 0; e < axisVector->lengthOf(); e++) {
                     int ca = (int) (*axisVector)(e);
                     if (ca < 0)
                         ca += input->rankOf();

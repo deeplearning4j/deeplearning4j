@@ -34,7 +34,7 @@ namespace nd4j {
             // axis might be dynamic (i.e. tf mode)
             if (block.width() > 1 && axis.size() == 0) {
                 NDArray<T>* axisVector = INPUT_VARIABLE(1);
-                axis.resize(axisVector->lengthOf());
+
                 helpers::adjustAxis(input, axisVector, axis);
 
                 input->template applyIndexReduce<simdOps::IndexMax<T>>(output, axis);
