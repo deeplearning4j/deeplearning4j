@@ -19,6 +19,7 @@ package org.nd4j.parameterserver.distributed.v2.transport.impl;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
@@ -33,6 +34,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 /**
  * This class is an in-memory implementation of Transport interface, written for tests
@@ -74,11 +76,13 @@ public class DummyTransport extends BaseTransport {
     @Override
     public void sendMessage(@NonNull VoidMessage message, @NonNull String id) {
         if (message.getOriginatorId() == null)
-            message.setOriginatorId(this.id);
+            message.setOriginatorId(this.id());
 
         // TODO: get rid of UUID!!!11
-        if (message instanceof RequestMessage)
-            ((RequestMessage) message).setRequestId(java.util.UUID.randomUUID().toString());
+        if (message instanceof RequestMessage) {
+            if (((RequestMessage) message).getRequestId() == null)
+                ((RequestMessage) message).setRequestId(java.util.UUID.randomUUID().toString());
+        }
 
         connector.transferMessage(message, id);
     }
@@ -127,7 +131,14 @@ public class DummyTransport extends BaseTransport {
      */
     public static class Connector {
         private Map<String, Transport> transports = new ConcurrentHashMap<>();
-        private ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        private ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactory() {
+            @Override
+            public Thread newThread(@NotNull Runnable r) {
+                val t = Executors.defaultThreadFactory().newThread(r);
+                t.setDaemon(true);
+                return t;
+            }
+        });
 
         public void register(Transport... transports) {
             for (val transport:transports)

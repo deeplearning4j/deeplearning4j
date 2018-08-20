@@ -20,12 +20,23 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 
 @Slf4j
 public class DelayedDummyTransport extends DummyTransport {
 
+    public DelayedDummyTransport(@NonNull String id, @NonNull Connector connector) {
+        super(id, connector);
+    }
+
+    public DelayedDummyTransport(@NonNull String id, @NonNull Connector connector, @NonNull String rootId) {
+        super(id, connector, rootId);
+    }
 
     public DelayedDummyTransport(@NonNull String id, @NonNull Connector connector, @NonNull String rootId, @NonNull VoidConfiguration configuration) {
         super(id, connector, rootId, configuration);
@@ -33,16 +44,25 @@ public class DelayedDummyTransport extends DummyTransport {
 
     @Override
     public void sendMessage(@NonNull VoidMessage message, @NonNull String id) {
+        if (message.getOriginatorId() == null)
+            message.setOriginatorId(this.id());
+
+        val bos = new ByteArrayOutputStream();
+        SerializationUtils.serialize(message, bos);
+
+        val bis = new ByteArrayInputStream(bos.toByteArray());
+        final VoidMessage msg = SerializationUtils.deserialize(bis);
+
         //super.sendMessage(message, id);
         connector.executorService().submit(new Runnable() {
             @Override
             public void run() {
                 try {
                     // imitate some bad network here
-                    val sleepTime = RandomUtils.nextInt(1, 5);
+                    val sleepTime = RandomUtils.nextInt(1, 10);
                     Thread.sleep(sleepTime);
 
-                    DelayedDummyTransport.super.sendMessage(message, id);
+                    DelayedDummyTransport.super.sendMessage(msg, id);
                 } catch (Exception e) {
                     //
                 }
