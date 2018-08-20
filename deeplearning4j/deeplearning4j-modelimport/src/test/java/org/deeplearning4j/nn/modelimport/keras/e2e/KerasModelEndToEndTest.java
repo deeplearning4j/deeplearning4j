@@ -505,6 +505,56 @@ public class KerasModelEndToEndTest {
     }
 
 
+    /**
+     * Import all AlphaGo Zero model variants, i.e.
+     * - Dual residual architecture
+     * - Dual convolutional architecture
+     * - Separate (policy and value) residual architecture
+     * - Separate (policy and value) convolutional architecture
+     */
+    @Test
+    public void importSepConvPolicy() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_conv_policy.h5");
+        INDArray input = Nd4j.create(32, 19, 19, 10);
+        model.output(input);
+    }
+
+    @Test
+    public void importSepResPolicy() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_res_policy.h5");
+        INDArray input = Nd4j.create(32, 19, 19, 10);
+        model.output(input);
+    }
+
+
+    @Test
+    public void importSepConvValue() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_conv_value.h5");
+        INDArray input = Nd4j.create(32, 19, 19, 10);
+        model.output(input);
+    }
+
+    @Test
+    public void importSepResValue() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_res_value.h5");
+        INDArray input = Nd4j.create(32, 19, 19, 10);
+        model.output(input);
+    }
+
+    @Test
+    public void importDualRes() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/dual_res.h5");
+        INDArray input = Nd4j.create(32, 19, 19, 10);
+        model.output(input);
+    }
+
+    @Test
+    public void importDualConv() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/dual_conv.h5");
+        INDArray input = Nd4j.create(32, 19, 19, 10);
+        model.output(input);
+    }
+
     private ComputationGraph importFunctionalModelH5Test(String modelPath) throws Exception {
         return importFunctionalModelH5Test(modelPath, null, false);
     }
