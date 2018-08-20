@@ -555,6 +555,14 @@ public class KerasModelEndToEndTest {
         model.output(input);
     }
 
+    /**
+     * MTCNN
+     */
+    @Test
+    public void importMTCNN() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/48net_complete.h5");
+    }
+
     private ComputationGraph importFunctionalModelH5Test(String modelPath) throws Exception {
         return importFunctionalModelH5Test(modelPath, null, false);
     }
