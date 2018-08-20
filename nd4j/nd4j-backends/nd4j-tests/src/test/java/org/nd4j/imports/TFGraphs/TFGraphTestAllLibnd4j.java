@@ -17,10 +17,9 @@
 package org.nd4j.imports.TFGraphs;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
@@ -41,6 +40,19 @@ import static org.nd4j.imports.TFGraphs.TFGraphTestAllHelper.fetchTestParams;
 @RunWith(Parameterized.class)
 @Slf4j
 public class TFGraphTestAllLibnd4j {
+
+    @Rule
+    public TestWatcher testWatcher = new TestWatcher() {
+
+        @Override
+        protected void starting(Description description){
+            log.info("TFGraphTestAllLibnd4j: Starting parameterized test: " + description.getDisplayName());
+        }
+
+        //protected void failed(Throwable e, Description description) {
+        //protected void succeeded(Description description) {
+    };
+
     private Map<String, INDArray> inputs;
     private Map<String, INDArray> predictions;
     private String modelName;
