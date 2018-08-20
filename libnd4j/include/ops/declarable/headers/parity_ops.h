@@ -793,20 +793,7 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_dropout)
         DECLARE_CONFIGURABLE_OP(dropout, 1, 1, true, 1, 1);
         #endif
-        #if NOT_EXCLUDED(OP_dropout_bp)
-        DECLARE_CONFIGURABLE_OP(dropout_bp, 2, 1, false, 1, 1);
-        #endif
-        /*
-            T params:
-                0 - drop probability
-                1 - alpha value
-                2 - alpha' value
-                3 - beta value
-         */
-        #if NOT_EXCLUDED(OP_alpha_dropout_bp)
-        DECLARE_CONFIGURABLE_OP(alpha_dropout_bp, 2, 1, false, 4, 1);
-        #endif
-
+        
 
         /**
          * bincount operation return a vector with element counted.
