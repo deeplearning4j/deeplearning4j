@@ -181,8 +181,9 @@ public class ConvolutionLayer extends FeedForwardLayer {
                     + "\"): Expected CNN input, got " + inputType);
         }
 
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation,
+        InputType outputTypeCnnLayers = InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation,
                 convolutionMode, nOut, layerIndex, getLayerName(), ConvolutionLayer.class);
+        return outputTypeCnnLayers;
     }
 
     @Override
