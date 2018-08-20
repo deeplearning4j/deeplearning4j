@@ -1002,7 +1002,7 @@ public class SameDiffTests {
                 SDVariable activation = sameDiff.softmax("activation", sameDiff.mmul("mmul", x, w));
                 SDVariable ret = sameDiff.sum("totalsum", activation, Integer.MAX_VALUE);
                 SDVariable ret2 = sameDiff.neg("negtotalsum", ret);
-                return new SDVariable[]{ret2};
+                return new SDVariable[]{y.sub(ret2)};
             }
         }, vars);
 
