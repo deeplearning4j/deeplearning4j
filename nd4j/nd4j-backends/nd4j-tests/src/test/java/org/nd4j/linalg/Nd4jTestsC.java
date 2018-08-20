@@ -6762,7 +6762,16 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray exp = Nd4j.create(new double[]{5, 15, 25, 35, 45, 55, 65, 75, 85, 95}, new int[]{10,1});
         INDArray col = m.getColumn(5);
 
-        assertEquals(90, exp.data().length());
+        for(int i=0; i<10; i++ ){
+            System.out.println(i + "\t" + col.slice(i));
+        }
+
+        //First element: index 5
+        //Last element: index 95
+        //91 total elements
+        assertEquals(5, m.getDouble(5), 1e-6);
+        assertEquals(95, m.getDouble(95), 1e-6);
+        assertEquals(91, col.data().length());
 
         assertEquals(exp, col);
         assertEquals(exp.toString(), col.toString());
