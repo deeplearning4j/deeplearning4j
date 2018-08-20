@@ -376,7 +376,7 @@ public abstract  class BaseTransport  implements Transport {
         if (message instanceof BroadcastableMessage) {
             // here we should propagate message down
             try {
-                propagateBroadcastableMessage((BroadcastableMessage) message, PropagationMode.BOTH_WAYS);
+                propagateBroadcastableMessage((BroadcastableMessage) message, PropagationMode.ONLY_DOWN);
             } catch (Exception e) {
                 log.error("Wasn't able to propagate message from [{}]", id());
                 throw new RuntimeException(e);

@@ -122,6 +122,7 @@ public class ModelParameterServerTest {
             connector.register(clientTransport);
 
             clientServer.launch();
+            //log.info("Client [{}] started", e );
         }
 
         // at this point we should have 2048 nodes within
@@ -146,6 +147,7 @@ public class ModelParameterServerTest {
         val clientTransport = new DummyTransport(badId, connector, rootId);
         val clientServer = new ModelParameterServer(clientTransport, false);
         connector.register(clientTransport);
+
         clientServer.launch();
 
         // at this point we have re-registered node

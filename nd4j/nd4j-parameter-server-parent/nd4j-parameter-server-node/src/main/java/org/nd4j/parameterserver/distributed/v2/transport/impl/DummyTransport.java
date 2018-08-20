@@ -84,7 +84,7 @@ public class DummyTransport extends BaseTransport {
                 ((RequestMessage) message).setRequestId(java.util.UUID.randomUUID().toString());
         }
 
-        connector.transferMessage(message, id);
+        connector.transferMessage(message, this.id(), id);
     }
 
     @Override
@@ -145,8 +145,9 @@ public class DummyTransport extends BaseTransport {
                 this.transports.putIfAbsent(transport.id(), transport);
         }
 
-        public void transferMessage(@NonNull VoidMessage message, @NonNull String id) {
-            val target = transports.get(id);
+        public void transferMessage(@NonNull VoidMessage message, @NonNull String senderId, @NonNull String targetId) {
+            //log.info("Trying to send message [{}] from [{}] to [{}]", message.getClass().getSimpleName(), senderId, targetId);
+            val target = transports.get(targetId);
             if (target == null)
                 throw new ND4JIllegalStateException("Unknown target specified");
 

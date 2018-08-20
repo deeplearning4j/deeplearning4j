@@ -92,83 +92,6 @@ public class MeshOrganizerTest {
     }
 
     @Test
-    public void testBasicMesh_1() {
-        val mesh = new MeshOrganizer(MeshBuildMode.SYMMETRIC_MODE);
-
-        val node1 = mesh.addNode("192.168.1.1");
-        val node2 = mesh.addNode("192.168.2.1");
-        val node3 = mesh.addNode("192.168.2.2");
-
-        assertEquals(4, mesh.totalNodes());
-        assertEquals(3, mesh.getRootNode().numberOfDownstreams());
-
-        // now we're adding one more node, and it should go elsewhere
-        val node4 = mesh.addNode("192.168.3.1");
-
-        assertEquals(5, mesh.totalNodes());
-        assertEquals(3, mesh.getRootNode().numberOfDownstreams());
-
-        // now we're adding one more node, and it should go elsewhere
-        val node5 = mesh.addNode("192.168.4.1");
-        val node6 = mesh.addNode("192.168.5.1");
-
-        assertEquals(7, mesh.totalNodes());
-        // now we expect flat distribution of descendants for all 3 first nodes
-        assertEquals(1, node1.numberOfDownstreams());
-        assertEquals(1, node2.numberOfDownstreams());
-        assertEquals(1, node3.numberOfDownstreams());
-
-
-
-        // smoke test
-        for (int e = 0; e < 8192; e++)
-            mesh.addNode(java.util.UUID.randomUUID().toString());
-
-
-        for (val v: mesh.flatNodes())
-            assertTrue(v.numberOfDownstreams() <= MeshOrganizer.MAX_DOWNSTREAMS);
-    }
-
-    @Test
-    public void testBasicMesh_2() {
-        val mesh = new MeshOrganizer(MeshBuildMode.WIDTH_FIRST);
-
-        val node1 = mesh.addNode("192.168.1.1");
-        val node2 = mesh.addNode("192.168.2.1");
-        val node3 = mesh.addNode("192.168.2.2");
-
-        assertEquals(4, mesh.totalNodes());
-        assertEquals(3, mesh.getRootNode().numberOfDownstreams());
-
-        val node4 = mesh.addNode("192.168.4.1");
-        val node5 = mesh.addNode("192.168.5.1");
-
-        assertEquals(2, node1.numberOfDownstreams());
-
-        val node6 = mesh.addNode("192.168.6.1");
-        val node7 = mesh.addNode("192.168.7.1");
-
-        assertEquals(3, node1.numberOfDownstreams());
-        assertEquals(1, node2.numberOfDownstreams());
-
-        // now we just drop in 20 nodes
-        for (int e = 0; e < 20; e++)
-            mesh.addNode(java.util.UUID.randomUUID().toString());
-
-
-        for (val v: mesh.flatNodes())
-            assertTrue(v.numberOfDownstreams() <= MeshOrganizer.MAX_DOWNSTREAMS);
-
-        // smoke test
-        for (int e = 0; e < 8192; e++)
-            mesh.addNode(java.util.UUID.randomUUID().toString());
-
-        // and now we'll make sure there's no nodes with number of downstreams > MAX_DOWNSTREAMS
-        for (val v: mesh.flatNodes())
-            assertTrue(v.numberOfDownstreams() <= MeshOrganizer.MAX_DOWNSTREAMS);
-    }
-
-    @Test
     public void testBasicMesh_3() {
         val mesh = new MeshOrganizer(MeshBuildMode.DEPTH_FIRST);
 
@@ -177,17 +100,17 @@ public class MeshOrganizerTest {
         val node3 = mesh.addNode("192.168.2.2");
 
         assertEquals(4, mesh.totalNodes());
-        assertEquals(1, mesh.getRootNode().numberOfDownstreams());
+        assertEquals(3, mesh.getRootNode().numberOfDownstreams());
 
         val node4 = mesh.addNode("192.168.2.3");
         val node5 = mesh.addNode("192.168.2.4");
         val node6 = mesh.addNode("192.168.2.5");
 
-        assertEquals(1, node1.numberOfDownstreams());
-        assertEquals(1, node4.numberOfDownstreams());
-        assertEquals(1, node5.numberOfDownstreams());
+        assertEquals(0, node1.numberOfDownstreams());
+        assertEquals(0, node4.numberOfDownstreams());
+        assertEquals(0, node5.numberOfDownstreams());
 
-        assertEquals(1, node2.numberOfDownstreams());
+        assertEquals(0, node2.numberOfDownstreams());
     }
 
     @Test
@@ -206,35 +129,56 @@ public class MeshOrganizerTest {
             assertTrue(v.numberOfDownstreams() <= MeshOrganizer.MAX_DOWNSTREAMS);
             assertTrue(v.distanceFromRoot() <= MeshOrganizer.MAX_DEPTH + 1);
         }
-
-        // each of the root nodes should have limited number of descendants
-        val rootDownstreams = new ArrayList<MeshOrganizer.Node>(mesh.getRootNode().getDownstreamNodes());
-        for (val r: rootDownstreams)
-            assertTrue(r.numberOfDescendants() <= MeshOrganizer.MAX_DOWNSTREAMS * MeshOrganizer.MAX_DEPTH);
     }
 
 
     @Test
-    public void testRemap_1() {
+    public void testRemap_1() throws Exception {
         val mesh = new MeshOrganizer(MeshBuildMode.SYMMETRIC_MODE);
 
-        val node1 = mesh.addNode("192.168.1.1");
-        val node2 = mesh.addNode("192.168.2.1");
-        val node3 = mesh.addNode("192.168.2.2");
+        for (int e = 0; e < MeshOrganizer.MAX_DOWNSTREAMS; e++)
+            mesh.addNode(String.valueOf(e));
 
-        mesh.markNodeOffline(node3);
 
-        assertEquals(3, mesh.getRootNode().numberOfDownstreams());
+        mesh.markNodeOffline("3");
+
+        assertEquals(MeshOrganizer.MAX_DOWNSTREAMS, mesh.getRootNode().numberOfDownstreams());
 
         val node4 = mesh.addNode("192.168.1.7");
+        val node1 = mesh.getNodeById("0");
 
         assertEquals(1, node1.numberOfDownstreams());
 
-
         mesh.remapNode(node4);
 
-        assertEquals(1, node2.numberOfDownstreams());
+        //assertEquals(1, node1.numberOfDownstreams());
         assertEquals(0, node1.numberOfDownstreams());
+    }
+
+    @Test
+    public void testRemap_2() throws Exception {
+        val mesh = new MeshOrganizer(MeshBuildMode.WIDTH_FIRST);
+        mesh.getRootNode().setId("ROOT_NODE");
+        val nodes = new ArrayList<MeshOrganizer.Node>();
+
+        for (int e = 0; e < 8192; e++) {
+            val node = mesh.addNode(java.util.UUID.randomUUID().toString());
+            nodes.add(node);
+        }
+
+        for (val n:nodes)
+            log.info("Number of downstreams: [{}]", n.numberOfDownstreams());
+
+        log.info("Going for first clone");
+        val clone1 = mesh.clone();
+        assertEquals(mesh, clone1);
+
+        val badNode = nodes.get(119);
+        mesh.remapNode(badNode.getId());
+
+        log.info("Going for second clone");
+        val clone2 = mesh.clone();
+        assertEquals(mesh, clone2);
     }
 
 
@@ -325,7 +269,7 @@ public class MeshOrganizerTest {
     public void testClone_1() throws Exception {
         val mesh1 = new MeshOrganizer(MeshBuildMode.DEPTH_FIRST);
 
-        for (int e = 0; e < 100; e++)
+        for (int e = 0; e < 8192; e++)
             mesh1.addNode(java.util.UUID.randomUUID().toString());
 
         val mesh2 = mesh1.clone();

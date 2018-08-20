@@ -25,8 +25,11 @@ import org.nd4j.parameterserver.distributed.enums.NodeStatus;
 
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -35,37 +38,45 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
-@NoArgsConstructor
 @Slf4j
 public class MeshOrganizer implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    @Deprecated
     private MeshBuildMode buildMode = MeshBuildMode.SYMMETRIC_MODE;
 
     // this value determines max number of direct downstream connections for any given node (affects root node as well)
-    public static final int MAX_DOWNSTREAMS = 3;
+    public static final int MAX_DOWNSTREAMS = 6;
 
     // max distance from root
     public static final int MAX_DEPTH = 5;
 
     // just shortcut to the root node of the tree
-    @Getter(AccessLevel.PUBLIC) private Node rootNode = new Node(true);
+    @Getter(AccessLevel.PUBLIC)
+    private Node rootNode = new Node(true);
 
     // SortedSet, with sort by number of downstreams
-    private List<Node> sortedNodes = new ArrayList<>();
+    private transient List<Node> sortedNodes = new ArrayList<>();
 
     // flattened map of the tree, ID -> Node
-    private Map<String, Node> nodeMap = new HashMap<>();
-
-    // used in DEPTH_MODE
-    private Node lastRoot = null;
+    private transient Map<String, Node> nodeMap = new HashMap<>();
 
     // this field is used
     private long version = 0L;
 
+    public MeshOrganizer() {
+        for (int e = 0; e < MAX_DOWNSTREAMS; e++)
+            fillQueue.add(rootNode);
+    }
+
+    @Deprecated
     public MeshOrganizer(@NonNull MeshBuildMode mode) {
+        this();
         this.buildMode = mode;
     }
+
+    // queue with future leafs
+    protected transient Queue<Node> fillQueue = new LinkedTransferQueue<>();
 
     public long getVersion() {
         return version;
@@ -112,72 +123,22 @@ public class MeshOrganizer implements Serializable {
     public synchronized Node addNode(@NonNull Node node) {
         version++;
 
-        // if node isn't mapped yet - in this case we're mapping node automatically here
-                switch (buildMode) {
-                    case DEPTH_FIRST: {
-                            sortedNodes.add(node);
-                            nodeMap.put(node.getId(), node);
-                            return rootNode.pushDownstreamNode(node);
-                        }
-                    case WIDTH_FIRST: {
-                            if (rootNode.numberOfDownstreams() < MAX_DOWNSTREAMS) {
-                                if (lastRoot == null)
-                                    lastRoot = node;
+        // :)
+        val candidate = fillQueue.poll();
 
-                                rootNode.addDownstreamNode(node);
-                                sortedNodes.add(node);
-                                nodeMap.put(node.getId(), node);
-                                return node;
-                            }
+        // adding node to the candidate
+        candidate.addDownstreamNode(node);
 
-                            sortedNodes.add(node);
+        // adding this node for future connections
+        for (int e = 0; e < MAX_DOWNSTREAMS; e++)
+            fillQueue.add(node);
 
-
-                            // if lastRoot isn't full yet - we'll just add new node to it (this one)
-                            if (lastRoot.numberOfDownstreams() < MAX_DOWNSTREAMS)
-                                lastRoot.addDownstreamNode(node);
-                            else { // or we'll pull next node otherwise
-                                val upstream = lastRoot.getUpstreamNode();
-
-                                Node c = upstream.getNextCandidate(lastRoot);
-
-                                if (c == null)
-                                    c = upstream.getNextCandidate(null);
-
-                                // if we've maxed out number of downstreams - just step down
-                                if (c.numberOfDownstreams() >= MAX_DOWNSTREAMS)
-                                    c = c.downstream.get(0);
-
-                                c.addDownstreamNode(node);
-                                lastRoot = c;
-                            }
-                        };
-                        break;
-                    case SYMMETRIC_MODE: {
-                            if (rootNode.numberOfDownstreams() < MAX_DOWNSTREAMS) {
-                                if (lastRoot == null)
-                                    lastRoot = node;
-
-                                rootNode.addDownstreamNode(node);
-                                sortedNodes.add(node);
-                                nodeMap.put(node.getId(), node);
-                                return node;
-                            }
-
-                            val f = sortedNodes.get(0);
-                            f.addDownstreamNode(node);
-
-                            // we update sorted list, so we always know node with least number of
-                            sortedNodes.add(node);
-                            Collections.sort(sortedNodes);
-                        }
-                        break;
-                    default:
-                        throw new UnsupportedOperationException();
-                }
 
         // after all we add this node to the flattened map, for future access
         nodeMap.put(node.getId(), node);
+
+        sortedNodes.add(node);
+        Collections.sort(sortedNodes);
 
         return node;
     }
@@ -267,7 +228,22 @@ public class MeshOrganizer implements Serializable {
      * This method removes  node from tree
      */
     public void removeNode() {
-        //
+        // TODO: implement this one
+        throw new UnsupportedOperationException();
+    }
+
+
+    private void readObject(ObjectInputStream ois)
+            throws ClassNotFoundException, IOException {
+        // default deserialization
+        ois.defaultReadObject();
+
+        val desc = rootNode.getDescendantNodes();
+
+        nodeMap = new HashMap<>();
+
+        for (val d: desc)
+            nodeMap.put(d.getId(), d);
     }
 
 
@@ -345,7 +321,7 @@ public class MeshOrganizer implements Serializable {
      * @return
      */
     public Node getNodeById(@NonNull String id) throws NoSuchElementException {
-        if (rootNode.getId().equals(id))
+        if (id.equals(rootNode.getId()))
             return rootNode;
 
         val node = nodeMap.get(id);
@@ -361,7 +337,6 @@ public class MeshOrganizer implements Serializable {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    @Data
     public static class Node implements Serializable, Comparable<Node> {
         private static final long serialVersionUID = 1L;
 
@@ -371,9 +346,11 @@ public class MeshOrganizer implements Serializable {
         private boolean rootNode = false;
 
         @Getter
+        @Setter
         private String id;
 
         @Getter
+        @Setter
         private int port;
 
         @Getter(AccessLevel.NONE)
@@ -525,6 +502,18 @@ public class MeshOrganizer implements Serializable {
          */
         public Collection<Node> getDownstreamNodes() {
             return downstream;
+        }
+
+        /**
+         * This method returns all nodes
+         * @return
+         */
+        public Collection<Node> getDescendantNodes() {
+            val result = new ArrayList<Node>(getDownstreamNodes());
+            for (val n:downstream)
+                result.addAll(n.getDescendantNodes());
+
+            return result;
         }
 
         /**
