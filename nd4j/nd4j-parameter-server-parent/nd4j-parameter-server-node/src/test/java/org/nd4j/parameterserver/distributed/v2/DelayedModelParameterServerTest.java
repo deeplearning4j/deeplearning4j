@@ -114,9 +114,11 @@ public class DelayedModelParameterServerTest {
         }
 
         // 259 == 256 + A+B+R
-        assertEquals(259, rootTransport.getMesh().totalNodes());
+        assertEquals(servers.size() + 3, rootTransport.getMesh().totalNodes());
 
         clientServerA.sendUpdate(array);
+
+        Thread.sleep(150);
 
         val updatesR = rootServer.getUpdates();
         val updatesA = clientServerA.getUpdates();
@@ -127,5 +129,10 @@ public class DelayedModelParameterServerTest {
 
         // we should NOT get this message back to A
         assertEquals(0, updatesA.size());
+
+        for (int e = 0; e < servers.size(); e++) {
+            val s = servers.get(e);
+            assertEquals("Failed at node [" + e + "]", 1, s.getUpdates().size());
+        }
     }
 }
