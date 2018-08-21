@@ -20,6 +20,18 @@ package org.deeplearning4j.parallelism.inference;
  * @author raver119@gmail.com
  */
 public enum InferenceMode {
-    SEQUENTIAL, // input will be passed into the model as is
-    BATCHED, // input will be included into the batch
+    /**
+     * input will be passed into the model as is
+     */
+    SEQUENTIAL,
+
+    /**
+     * input will be included into the batch if computation device is busy, and executed immediately otherwise
+     */
+    BATCHED,
+
+    /**
+     * Inference will applied in the calling thread instead of workers.
+     */
+    INPLACE,
 }

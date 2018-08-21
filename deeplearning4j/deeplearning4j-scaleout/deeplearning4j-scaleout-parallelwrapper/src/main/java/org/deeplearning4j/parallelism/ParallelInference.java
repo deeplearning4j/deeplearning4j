@@ -52,14 +52,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 @Slf4j
 public class ParallelInference {
-    private Model model;
-    private long nanos;
-    private int workers;
-    private int batchLimit;
-    private InferenceMode inferenceMode;
-    private int queueLimit;
+    protected Model model;
+    protected long nanos;
+    protected int workers;
+    protected int batchLimit;
+    protected InferenceMode inferenceMode;
+    protected int queueLimit;
 
-    // this queue
+    // this queue holds data for inference
     private BlockingQueue<InferenceObservable> observables;
 
     private final Object locker = new Object();
@@ -343,16 +343,27 @@ public class ParallelInference {
          * @return
          */
         public ParallelInference build() {
-            ParallelInference inference = new ParallelInference();
-            inference.batchLimit = this.batchLimit;
-            inference.queueLimit = this.queueLimit;
-            inference.inferenceMode = this.inferenceMode;
-            inference.model = this.model;
-            inference.workers = this.workers;
+            if (this.inferenceMode == InferenceMode.INPLACE) {
+                val inf = new InplaceParallelInference();
+                inf.inferenceMode = this.inferenceMode;
+                inf.model = this.model;
+                inf.workers = this.workers;
 
-            inference.init();
+                inf.init();
 
-            return inference;
+                return inf;
+            } else {
+                ParallelInference inference = new ParallelInference();
+                inference.batchLimit = this.batchLimit;
+                inference.queueLimit = this.queueLimit;
+                inference.inferenceMode = this.inferenceMode;
+                inference.model = this.model;
+                inference.workers = this.workers;
+
+                inference.init();
+
+                return inference;
+            }
         }
     }
 
