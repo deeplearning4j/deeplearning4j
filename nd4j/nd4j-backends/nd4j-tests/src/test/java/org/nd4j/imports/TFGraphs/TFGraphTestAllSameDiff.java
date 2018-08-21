@@ -74,8 +74,6 @@ public class TFGraphTestAllSameDiff {
             "pad/rank1.*",
             "pad/rank2Pone_const10",
             "pad/rank3.*",
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6173
-            "unique.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6177
             "topk/.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6179
@@ -90,8 +88,6 @@ public class TFGraphTestAllSameDiff {
             //https://github.com/deeplearning4j/deeplearning4j/issues/6182
             "zeta.*",
 
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6210
-            "reductions/argmax3,4,5_-1",
             //Not sure what's up here yet:
             "svd/rank2_3,3_noFull_uv"
     };
