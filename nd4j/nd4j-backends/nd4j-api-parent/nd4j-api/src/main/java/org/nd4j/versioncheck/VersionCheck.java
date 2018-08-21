@@ -17,6 +17,7 @@
 package org.nd4j.versioncheck;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.config.ND4JSystemProperties;
 
 import java.io.IOException;
 import java.net.URI;
@@ -37,10 +38,10 @@ import java.util.*;
 public class VersionCheck {
 
     /**
-     * Setting the system property to false will stop ND4J from performing the version check, and logging any
-     * warnings/errors. By default, the version check is unable.
+     * @deprecated Use {@link org.nd4j.config.ND4JSystemProperties#VERSION_CHECK_PROPERTY}
      */
-    public static final String VERSION_CHECK_PROPERTY = "org.nd4j.versioncheck";
+    @Deprecated
+    public static final String VERSION_CHECK_PROPERTY = ND4JSystemProperties.VERSION_CHECK_PROPERTY;
     public static final String GIT_PROPERTY_FILE_SUFFIX = "-git.properties";
 
     private static final String SCALA_210_SUFFIX = "_2.10";
@@ -85,7 +86,7 @@ public class VersionCheck {
      * if necessary.
      */
     public static void checkVersions(){
-        boolean doCheck = Boolean.parseBoolean(System.getProperty(VERSION_CHECK_PROPERTY, "true"));
+        boolean doCheck = Boolean.parseBoolean(System.getProperty(ND4JSystemProperties.VERSION_CHECK_PROPERTY, "true"));
 
         if(!doCheck){
             return;

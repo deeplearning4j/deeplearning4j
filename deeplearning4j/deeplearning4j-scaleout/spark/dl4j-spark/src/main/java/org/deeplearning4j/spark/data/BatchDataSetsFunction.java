@@ -76,7 +76,7 @@ class BatchDataSetsFunctionAdapter implements FlatMapFunctionAdapter<Iterator<Da
             int count = 0;
             while (count < minibatchSize && iter.hasNext()) {
                 DataSet ds = iter.next();
-                count += ds.getFeatureMatrix().size(0);
+                count += ds.getFeatures().size(0);
                 list.add(ds);
             }
 

@@ -40,7 +40,6 @@ public class VectorDeSerializer extends JsonDeserializer<INDArray> {
         int offset = node.get("offsetField").asInt();
         JsonNode shape = node.get("shapeField");
         JsonNode stride = node.get("strideField");
-        String type = node.get("typeField").asText();
         int[] realShape = new int[rank];
         int[] realStride = new int[rank];
         DataBuffer buff = Nd4j.createBuffer(numElements);
@@ -54,8 +53,7 @@ public class VectorDeSerializer extends JsonDeserializer<INDArray> {
             realStride[i] = stride.get(i).asInt();
         }
 
-        INDArray ret = type.equals("real") ? Nd4j.create(buff, realShape, realStride, offset, ordering.charAt(0))
-                        : Nd4j.createComplex(buff, realShape, realStride, offset, ordering.charAt(0));
+        INDArray ret = Nd4j.create(buff, realShape, realStride, offset, ordering.charAt(0));
         return ret;
     }
 }

@@ -76,7 +76,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
+        layer.setInput(irisData.getFeatures(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
         layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
 
@@ -94,7 +94,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
+        layer.setInput(irisData.getFeatures(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
         layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         score1 = layer.score();
@@ -115,7 +115,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
+        layer.setInput(irisData.getFeatures(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
         layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         score1 = layer.score();
@@ -143,7 +143,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100, LossFunctions.LossFunction.MCXENT);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
+        layer.setInput(irisData.getFeatures(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
         layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         score1 = layer.score();
@@ -193,7 +193,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         network.setListeners(Collections.singletonList(listener));
         double oldScore = network.score(data);
         for( int i=0; i<100; i++ ) {
-            network.fit(data.getFeatureMatrix(), data.getLabels());
+            network.fit(data.getFeatures(), data.getLabels());
         }
         double score = network.score();
         assertTrue(score < oldScore);
@@ -212,7 +212,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         double firstScore = network.score(data);
 
         for( int i=0; i<5; i++ ) {
-            network.fit(data.getFeatureMatrix(), data.getLabels());
+            network.fit(data.getFeatures(), data.getLabels());
         }
         double score = network.score();
         assertTrue(score < firstScore);
@@ -231,29 +231,12 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         double oldScore = network.score(data);
 
         for( int i=0; i<5; i++ ) {
-            network.fit(data.getFeatureMatrix(), data.getLabels());
+            network.fit(data.getFeatures(), data.getLabels());
         }
         double score = network.score();
         assertTrue(score < oldScore);
 
     }
-
-    @Test(expected = Exception.class)
-    public void testBackTrackLineHessian() {
-        OptimizationAlgorithm optimizer = OptimizationAlgorithm.HESSIAN_FREE;
-        DataSet data = irisIter.next();
-
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.RELU, optimizer));
-        network.init();
-        TrainingListener listener = new ScoreIterationListener(1);
-        network.setListeners(Collections.singletonList(listener));
-
-        for( int i=0; i<100; i++ ) {
-            network.fit(data.getFeatureMatrix(), data.getLabels());
-        }
-    }
-
-
 
     private static MultiLayerConfiguration getIrisMultiLayerConfig(Activation activationFunction, OptimizationAlgorithm optimizer) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(optimizer)

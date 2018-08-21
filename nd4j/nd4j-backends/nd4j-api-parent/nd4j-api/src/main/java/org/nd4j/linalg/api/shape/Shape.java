@@ -21,8 +21,8 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import lombok.NonNull;
 import lombok.val;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
@@ -594,39 +594,21 @@ public class Shape {
      * elements set to zero
      */
     public static INDArray toOffsetZero(INDArray arr) {
-        if (arr.offset() < 1 && arr.data().length() == arr.length()
-                || arr instanceof IComplexNDArray && arr.length() * 2 == arr.data().length())
+        if (arr.offset() < 1 && arr.data().length() == arr.length())
             if (arr.ordering() == 'f' && arr.stride(-1) != arr.elementStride()
                     || arr.ordering() == 'c' && arr.stride(0) != arr.elementStride())
                 return arr;
 
         if (arr.isRowVector()) {
-            if (arr instanceof IComplexNDArray) {
-                /*IComplexNDArray ret = Nd4j.createComplex(arr.shape());
-                for (int i = 0; i < ret.length(); i++)
-                    ret.putScalar(i, ((IComplexNDArray) arr).getComplex(i));
-                return ret;*/
-                throw new UnsupportedOperationException("Complex arrays aren't supported yet");
-            } else {
-                INDArray ret = Nd4j.create(arr.shape());
-                for (int i = 0; i < ret.length(); i++)
-                    ret.putScalar(i, arr.getDouble(i));
-                return ret;
-            }
-        }
-
-
-        if (arr instanceof IComplexNDArray) {
-            /*IComplexNDArray ret = Nd4j.createComplex(arr.shape());
-            for (int i = 0; i < ret.slices(); i++)
-                ret.putSlice(i, arr.slice(i));
-            return ret;*/
-            throw new UnsupportedOperationException("Complex arrays aren't supported yet");
-        } else {
-            INDArray ret = Nd4j.create(arr.shape(), arr.ordering());
-            ret.assign(arr);
+            INDArray ret = Nd4j.create(arr.shape());
+            for (int i = 0; i < ret.length(); i++)
+                ret.putScalar(i, arr.getDouble(i));
             return ret;
         }
+
+        INDArray ret = Nd4j.create(arr.shape(), arr.ordering());
+        ret.assign(arr);
+        return ret;
     }
 
 
@@ -665,29 +647,13 @@ public class Shape {
     }
 
     private static INDArray toOffsetZeroCopyHelper(final INDArray arr, char order, boolean anyOrder) {
-        if (arr instanceof IComplexNDArray) {
-            /*
-            if (arr.isRowVector()) {
-                IComplexNDArray ret = Nd4j.createComplex(arr.shape(), order);
-                for (int i = 0; i < ret.length(); i++)
-                    ret.putScalar(i, ((IComplexNDArray) arr).getComplex(i));
-                return ret;
-            }
-            IComplexNDArray ret = Nd4j.createComplex(arr.shape(), order);
-            for (int i = 0; i < ret.slices(); i++)
-                ret.putSlice(i, arr.slice(i));
-            return ret;
-            */
-            throw new UnsupportedOperationException();
-        } else {
-            //Use CopyOp:
-            char outOrder = (anyOrder ? arr.ordering() : order);
-            if (outOrder == 'a')
-                outOrder = Nd4j.order();
-            INDArray z = Nd4j.createUninitialized(arr.shape(), outOrder);
-            z.assign(arr);
-            return z;
-        }
+        //Use CopyOp:
+        char outOrder = (anyOrder ? arr.ordering() : order);
+        if (outOrder == 'a')
+            outOrder = Nd4j.order();
+        INDArray z = Nd4j.createUninitialized(arr.shape(), outOrder);
+        z.assign(arr);
+        return z;
     }
 
 
@@ -2031,14 +1997,7 @@ public class Shape {
             newStrides[nk] = last_stride;
         }
 
-        if (arr instanceof IComplexNDArray)
-            //return Nd4j.createComplex(arr.data(), newShape, newStrides, arr.offset());
-            throw new UnsupportedOperationException();
-
-
         INDArray ret = Nd4j.create(arr.data(), newShape, newStrides, arr.offset(), isFOrder ? 'f' : 'c');
-
-
         return ret;
     }
 
@@ -3516,6 +3475,42 @@ public class Shape {
             return 1L;
         else
             return ArrayUtil.prodLong(shape);
+    }
+
+    /**
+     * Calculate the length of the buffer required to store the given shape with the given strides
+     *
+     * @param shape  Shape of the array
+     * @param stride Strides
+     * @return Length of the buffer
+     */
+    public static long lengthOfBuffer(@NonNull long[] shape, @NonNull long[] stride){
+        Preconditions.checkArgument(shape.length == stride.length, "Shape and strides must be same length: shape %s, stride %s",
+                shape, stride);
+        //Length is simply 1 + the buffer index of the last element
+        long length = 1;
+        for(int i=0; i<shape.length; i++ ){
+            length += (shape[i]-1) * stride[i];
+        }
+        return length;
+    }
+
+    /**
+     * Calculate the length of the buffer required to store the given shape with the given strides
+     *
+     * @param shape  Shape of the array
+     * @param stride Strides
+     * @return Length of the buffer
+     */
+    public static long lengthOfBuffer(@NonNull int[] shape, @NonNull int[] stride){
+        Preconditions.checkArgument(shape.length == stride.length, "Shape and strides must be same length: shape %s, stride %s",
+                shape, stride);
+        //Length is simply 1 + the buffer index of the last element
+        long length = 1;
+        for(int i=0; i<shape.length; i++ ){
+            length += (shape[i]-1) * stride[i];
+        }
+        return length;
     }
 
     public static boolean hasDefaultStridesForShape(INDArray input){

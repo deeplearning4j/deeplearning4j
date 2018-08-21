@@ -23,6 +23,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -73,7 +74,17 @@ public class ShannonEntropy extends BaseAccumulation {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        //dL/dx = dL/dOut * dOut/dIn
+        //out = -sum(x*log2(x))
+        // let z = x * log2(x)
+        //Then we can do sumBp(z, -dL/dOut)
+        //Note d/dx(x*log2(x)) = (log(x)+1)/log(2)
+
+        SDVariable log2x = f().log(arg(),2);
+        SDVariable logx = f().log(arg());
+        SDVariable xLog2X = arg().mul(log2x);
+        SDVariable sumBp = f().sumBp(xLog2X, f1.get(0).neg(), false, dimensions);
+        return Collections.singletonList(sumBp.mul(logx.add(1.0)).div(Math.log(2.0)));
     }
 
     @Override

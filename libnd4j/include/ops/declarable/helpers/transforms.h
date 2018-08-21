@@ -75,7 +75,7 @@ namespace helpers {
 	void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& dimensions, const T clipNorm, const bool isInplace);
 
 	template<typename T>
-	void clipByNormBp(NDArray<T>& input, NDArray<T>& epsNext, NDArray<T>& output, const std::vector<int>& dimensions, const T clipNorm);
+	void clipByNormBP(const NDArray<T>& input, const NDArray<T>& gradO, NDArray<T>& gradI /*output*/, const std::vector<int>& dimensions, const T clipNorm); 
 
 	template<typename T>
 	void clipByAveraged(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& dimensions, const T clipNorm, const bool isInplace);

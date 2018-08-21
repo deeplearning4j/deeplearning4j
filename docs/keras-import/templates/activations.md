@@ -1,3 +1,11 @@
+---
+title: Keras Activations
+short_title: Activations
+description: Supported Keras activations.
+category: Keras Import
+weight: 4
+---
+
 ## Available activations
 
 We support all [Keras activation functions](https://keras.io/activations), namely:

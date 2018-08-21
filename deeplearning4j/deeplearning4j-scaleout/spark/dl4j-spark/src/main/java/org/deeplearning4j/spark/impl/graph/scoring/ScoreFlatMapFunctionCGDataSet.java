@@ -84,7 +84,7 @@ class ScoreFlatMapFunctionCGDataSetAdapter
             double score = network.score(ds, false);
 
             // FIXME: int cast
-            int numExamples = (int) ds.getFeatureMatrix().size(0);
+            int numExamples = (int) ds.getFeatures().size(0);
             out.add(new Tuple2<>(numExamples, score * numExamples));
         }
 

@@ -32,6 +32,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.graph.FlatGraph;
+import org.nd4j.graph.FlatNode;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -50,6 +51,7 @@ import org.tensorflow.framework.GraphDef;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -93,6 +95,45 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     @Test
     public void testClassHolder() {
         DifferentialFunctionClassHolder.getInstance();
+    }
+
+    @Test
+    public void testSingleExample_1() throws Exception{
+        val g =TFGraphMapper.getInstance().importGraph(new File("C:\\Users\\raver\\Downloads\\mnist.pb"));
+
+        val array = Nd4j.ones(1, 28, 28);
+        g.associateArrayWithVariable(array, "flatten_1_input");
+
+        //g.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/mnist.fb"), ExecutorConfiguration.builder().outputMode(OutputMode.VARIABLE_SPACE).build());
+
+        g.execAndEndResult();
+    }
+
+
+    @Test
+    public void testAssertImport_1() throws Exception {
+        val graph = TFGraphMapper.getInstance().importGraph(new File("C:\\Users\\raver\\Downloads\\test.pb"));
+    }
+
+    @Test
+    public void testArgMaxImport_2() throws Exception {
+        val graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource("/tf_graphs/examples/reductions/argmax3,4,5_-1/frozen_graph.pbtxt").getInputStream());
+
+        graph.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/argmax_macos.fb"), ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build());
+
+        log.info(graph.asFlatPrint());
+    }
+
+    @Test
+    public void testArgMaxImport_1() throws Exception {
+        val graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource("/tf_graphs/argmax.pb.txt").getInputStream());
+
+        log.info(graph.asFlatPrint());
+        val result = graph.execAndEndResult();
+
+        val exp = Nd4j.trueVector(new double[]{2.0, 2.0, 2.0});
+
+        assertEquals(exp, result);
     }
 
 
@@ -503,8 +544,8 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     @Test
     public void testIntermediateReduction() throws Exception {
         Nd4j.create(1);
-        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/reduce_dim.pb.txt").getInputStream());
-        val sumResultVar = tg.getVariable("Sum");
+        SameDiff tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/reduce_dim.pb.txt").getInputStream());
+        SDVariable sumResultVar = tg.getVariable("Sum");
 
       /*  val func = tg.getFunctionForVertexId(sumResultVar.getVertexId());
         assertEquals(0,func.getDimensions()[0]);
@@ -516,16 +557,16 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         assertNotNull(func.getDimensions());
         assertEquals(0,func.getDimensions()[0]);*/
 
-        val fb = tg.asFlatBuffers();
+        ByteBuffer fb = tg.asFlatBuffers();
         assertNotNull(fb);
 
-        val graph = FlatGraph.getRootAsFlatGraph(fb);
+        FlatGraph graph = FlatGraph.getRootAsFlatGraph(fb);
         assertEquals(1, graph.nodesLength());
         assertEquals(2, graph.variablesLength());
 
         assertEquals("Sum", graph.nodes(0).name());
 
-        val nodeSum = graph.nodes(0);
+        FlatNode nodeSum = graph.nodes(0);
         assertEquals(2, nodeSum.inputPairedLength());
 
 
@@ -541,8 +582,12 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         assertEquals(2, in1.first());
         assertEquals(0, in1.second());
 
+        System.out.println(tg.summary());
 
-        assertEquals(1, nodeSum.dimensions(1));
+        int dimensionsLength = nodeSum.dimensionsLength();
+        assertEquals(1, dimensionsLength);
+        int d = nodeSum.dimensions(0);
+        assertEquals(1, d);
 
 
         //log.info("nodeSum inputs length: {}; inputPaired length: {}",nodeSum.inputLength(), nodeSum.inputPairedLength());

@@ -311,7 +311,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public void fit(DataSet data) {
-        fit(data.getFeatures(), data.getLabels());
+        throw new UnsupportedOperationException("Not supported");
     }
 
     /**
@@ -322,8 +322,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public void fit(INDArray examples, int[] labels) {
-        INDArray outcomeMatrix = FeatureUtil.toOutcomeMatrix(labels, numLabels());
-        fit(examples, outcomeMatrix);
+        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override
@@ -337,14 +336,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         fullNetworkL2 = 0.0;
     }
 
-    /**
-     * Fit the model to the given data
-     *
-     * @param data the data to fit the model to
-     */
     @Override
     public void fit(INDArray data, LayerWorkspaceMgr workspaceMgr) {
-        //no-op
+        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override

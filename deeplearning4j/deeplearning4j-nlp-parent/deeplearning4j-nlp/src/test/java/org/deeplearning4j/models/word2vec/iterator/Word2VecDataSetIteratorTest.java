@@ -73,7 +73,7 @@ public class Word2VecDataSetIteratorTest {
         while (iterator.hasNext()) {
             DataSet ds = iterator.next();
 
-            assertArrayEquals(array.shape(), ds.getFeatureMatrix().shape());
+            assertArrayEquals(array.shape(), ds.getFeatures().shape());
         }
     }
 

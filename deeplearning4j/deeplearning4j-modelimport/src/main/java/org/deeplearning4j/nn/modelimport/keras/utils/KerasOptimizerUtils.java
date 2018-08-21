@@ -1,4 +1,4 @@
-/*
+/*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -13,6 +13,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
+
 package org.deeplearning4j.nn.modelimport.keras.utils;
 
 import lombok.extern.slf4j.Slf4j;
@@ -115,7 +116,13 @@ public class KerasOptimizerUtils {
             }
             case "SGD": {
                 double lr = (double) optimizerParameters.get("lr");
-                double momentum = (double) optimizerParameters.get("epsilon");
+                double momentum = 0.0;
+                try {
+                    momentum = (double) optimizerParameters.get("epsilon");
+                } catch (Exception e) {
+                    log.warn("couldn't read momentum parameter");
+                }
+
                 double decay = (double) optimizerParameters.get("decay");
 
                 dl4jOptimizer = new Nesterovs.Builder()

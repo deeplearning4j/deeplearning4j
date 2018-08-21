@@ -26,13 +26,17 @@ import org.apache.spark.mllib.linalg.Matrix;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.rdd.RDD;
+import org.deeplearning4j.api.loader.DataSetLoader;
+import org.deeplearning4j.api.loader.impl.SerializedDataSetLoader;
 import org.deeplearning4j.eval.*;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
+import org.deeplearning4j.spark.data.loader.RemoteFileSourceFactory;
 import org.deeplearning4j.spark.impl.SparkListenable;
+import org.deeplearning4j.spark.impl.common.LoadDataSetFunction;
 import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateAggregateFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateFlatMapFunction;
@@ -41,6 +45,7 @@ import org.deeplearning4j.spark.impl.multilayer.scoring.*;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.util.ModelSerializer;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
@@ -66,10 +71,12 @@ import java.util.List;
 public class SparkDl4jMultiLayer extends SparkListenable {
     public static final int DEFAULT_EVAL_SCORE_BATCH_SIZE = 64;
     public static final int DEFAULT_ROC_THRESHOLD_STEPS = 32;
+    public static final int DEFAULT_EVAL_WORKERS = 4;
     private transient JavaSparkContext sc;
     private MultiLayerConfiguration conf;
     private MultiLayerNetwork network;
     private double lastScore;
+    private int defaultEvaluationWorkers = DEFAULT_EVAL_WORKERS;
 
     /**
      * Instantiate a multi layer spark instance
@@ -149,6 +156,38 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      */
     public void setNetwork(MultiLayerNetwork network) {
         this.network = network;
+    }
+
+
+    /**
+     * Returns the currently set default number of evaluation workers/threads.
+     * Note that when the number of workers is provided explicitly in an evaluation method, the default value
+     * is not used.<br>
+     * In many cases, we may want this to be smaller than the number of Spark threads, to reduce memory requirements.
+     * For example, with 32 Spark threads and a large network, we don't want to spin up 32 instances of the network
+     * to perform evaluation. Better (for memory requirements, and reduced cache thrashing) to use say 4 workers.<br>
+     * If it is not set explicitly, {@link #DEFAULT_EVAL_WORKERS} will be used
+     *
+     * @return Default number of evaluation workers (threads).
+     */
+    public int getDefaultEvaluationWorkers(){
+        return defaultEvaluationWorkers;
+    }
+
+    /**
+     * Set the default number of evaluation workers/threads.
+     * Note that when the number of workers is provided explicitly in an evaluation method, the default value
+     * is not used.<br>
+     * In many cases, we may want this to be smaller than the number of Spark threads, to reduce memory requirements.
+     * For example, with 32 Spark threads and a large network, we don't want to spin up 32 instances of the network
+     * to perform evaluation. Better (for memory requirements, and reduced cache thrashing) to use say 4 workers.<br>
+     * If it is not set explicitly, {@link #DEFAULT_EVAL_WORKERS} will be used
+     *
+     * @return Default number of evaluation workers (threads).
+     */
+    public void setDefaultEvaluationWorkers(int workers){
+        Preconditions.checkArgument(workers > 0, "Number of workers must be > 0: got %s", workers);
+        this.defaultEvaluationWorkers = workers;
     }
 
     /**
@@ -252,7 +291,11 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @return trained network
      */
     public MultiLayerNetwork fitPaths(JavaRDD<String> paths) {
-        trainingMaster.executeTrainingPaths(this, paths);
+        return fitPaths(paths, new SerializedDataSetLoader());
+    }
+
+    public MultiLayerNetwork fitPaths(JavaRDD<String> paths, DataSetLoader loader) {
+        trainingMaster.executeTrainingPaths(this, null, paths, loader, null);
         network.incrementEpochCount();
         return network;
     }
@@ -456,6 +499,43 @@ public class SparkDl4jMultiLayer extends SparkListenable {
     }
 
     /**
+     * Evaluate on a directory containing a set of DataSet objects serialized with {@link DataSet#save(OutputStream)}
+     * @param path Path/URI to the directory containing the dataset objects
+     * @return Evaluation
+     */
+    public Evaluation evaluate(String path){
+        return evaluate(path, new SerializedDataSetLoader());
+    }
+
+    /**
+     * Evaluate on a directory containing a set of DataSet objects to be loaded with a {@link DataSetLoader}.
+     * Uses default batch size of {@link #DEFAULT_EVAL_SCORE_BATCH_SIZE}
+     * @param path Path/URI to the directory containing the datasets to load
+     * @return Evaluation
+     */
+    public Evaluation evaluate(String path, DataSetLoader loader) {
+        return evaluate(path, DEFAULT_EVAL_SCORE_BATCH_SIZE, loader);
+    }
+
+    /**
+     * Evaluate on a directory containing a set of DataSet objects to be loaded with a {@link DataSetLoader}.
+     * Uses default batch size of {@link #DEFAULT_EVAL_SCORE_BATCH_SIZE}
+     * @param path Path/URI to the directory containing the datasets to load
+     * @return Evaluation
+     */
+    public Evaluation evaluate(String path, int batchSize, DataSetLoader loader){
+        JavaRDD<String> paths;
+        try {
+            paths = SparkUtils.listPaths(sc, path);
+        } catch (IOException e) {
+            throw new RuntimeException("Error listing paths in directory", e);
+        }
+
+        JavaRDD<DataSet> rdd = paths.map(new LoadDataSetFunction(new SerializedDataSetLoader(), new RemoteFileSourceFactory()));
+        return doEvaluation(rdd, batchSize, new Evaluation())[0];
+    }
+
+    /**
      * Evaluate the network (classification performance) in a distributed manner on the provided data
      *
      * @param data Data to evaluate on
@@ -604,8 +684,12 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      */
     @SuppressWarnings("unchecked")
     public <T extends IEvaluation> T[] doEvaluation(JavaRDD<DataSet> data, int evalBatchSize, T... emptyEvaluations) {
+        return doEvaluation(data, getDefaultEvaluationWorkers(), evalBatchSize, emptyEvaluations );
+    }
+
+    public <T extends IEvaluation> T[] doEvaluation(JavaRDD<DataSet> data, int evalNumWorkers, int evalBatchSize, T... emptyEvaluations) {
         IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(false, sc.broadcast(conf.toJson()),
-                        sc.broadcast(network.params()), evalBatchSize, emptyEvaluations);
+                        sc.broadcast(network.params()), evalNumWorkers, evalBatchSize, emptyEvaluations);
         JavaRDD<T[]> evaluations = data.mapPartitions(evalFn);
         return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<T>(), new IEvaluationReduceFunction<T>());
     }

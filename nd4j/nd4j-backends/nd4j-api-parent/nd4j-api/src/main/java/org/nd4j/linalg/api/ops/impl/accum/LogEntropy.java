@@ -22,6 +22,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -70,11 +71,6 @@ public class  LogEntropy extends BaseAccumulation {
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
-    }
-
-    @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
@@ -87,5 +83,12 @@ public class  LogEntropy extends BaseAccumulation {
     @Override
     public Type getOpType() {
         return Type.REDUCE;
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        //If y=log(x), and x=entropy(in) then dL/dx = dL/dy * dy/dx; d(log(x))/dx = 1/x
+        List<SDVariable> entropyGrad = Entropy.grad(f(), arg(), f1.get(0), dimensions);
+        return Collections.singletonList(entropyGrad.get(0).div(f().exp(outputVariable())));
     }
 }

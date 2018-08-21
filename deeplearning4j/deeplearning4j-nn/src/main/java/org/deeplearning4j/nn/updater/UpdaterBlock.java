@@ -200,7 +200,7 @@ public class UpdaterBlock {
         if (l2 > 0) {
             //This can be an axpy op, saving an allocation...
             //gradientView += params * l2           i.e., dC/dW = dC0/dW + lambda/n * w where C0 is pre-l2 cost function
-            //Equivalent to gradientView.addi(paramsView.mul(conf.getL2ByParam(paramName)));
+            //Equivalent to gradientView.addi(paramsView.mul(layerConf().getL2ByParam(paramName)));
             val length = gradientView.length();
             Nd4j.getBlasWrapper().level1().axpy(length, l2, paramsView, gradientView);
         }

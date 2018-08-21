@@ -111,6 +111,17 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         return def;
     }
 
+
+    /**
+     *
+     * @param graphFile
+     * @return
+     */
+    @Override
+    public  SameDiff importGraph(String graphFile) {
+        return importGraph(new File(graphFile));
+    }
+
     /**
      *
      * @param graphFile
@@ -172,7 +183,8 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         //map the names of the nodes while accumulating the vertex ids
         //for each variable
         for(Map.Entry<String,TENSOR_TYPE> entry : variablesForGraph.entrySet()) {
-            if(dataTypeForTensor(entry.getValue()) == DataBuffer.Type.UNKNOWN) {
+            DataBuffer.Type dt = dataTypeForTensor(entry.getValue());
+            if(dt == DataBuffer.Type.UNKNOWN && !unknownTypeNodeImportable(entry.getValue())) {
                 val var = importState.getSameDiff().var(entry.getKey(),null,new ZeroInitScheme('c'));
                 //mark as place holder for validating resolution later.
                 if(isPlaceHolder(entry.getValue())) {

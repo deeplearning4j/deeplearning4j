@@ -19,8 +19,6 @@ package org.nd4j.linalg.api.blas.impl;
 import org.nd4j.linalg.api.blas.Level2;
 import org.nd4j.linalg.api.blas.params.SparseCOOGemvParameters;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 
@@ -63,60 +61,13 @@ public abstract class SparseBaseLevel2 extends SparseBaseLevel implements Level2
     }
 
     @Override
-    public void gemv(char order, char transA, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X,
-                    IComplexNumber beta, IComplexNDArray Y) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void gbmv(char order, char TransA, int KL, int KU, double alpha, INDArray A, INDArray X, double beta,
                     INDArray Y) {
 
     }
 
     @Override
-    public void gbmv(char order, char TransA, int KL, int KU, IComplexNumber alpha, IComplexNDArray A,
-                    IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void ger(char order, double alpha, INDArray X, INDArray Y, INDArray A) {
-
-    }
-
-    @Override
-    public void geru(char order, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y, IComplexNDArray A) {
-
-    }
-
-    @Override
-    public void hbmv(char order, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X,
-                    IComplexNumber beta, IComplexNDArray Y) {
-
-    }
-
-    @Override
-    public void hemv(char order, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X,
-                    IComplexNumber beta, IComplexNDArray Y) {
-
-    }
-
-    @Override
-    public void her2(char order, char Uplo, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y,
-                    IComplexNDArray A) {
-
-    }
-
-    @Override
-    public void hpmv(char order, char Uplo, int N, IComplexNumber alpha, IComplexNDArray Ap, IComplexNDArray X,
-                    IComplexNumber beta, IComplexNDArray Y) {
-
-    }
-
-    @Override
-    public void hpr2(char order, char Uplo, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y,
-                    IComplexNDArray Ap) {
 
     }
 

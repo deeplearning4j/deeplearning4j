@@ -68,20 +68,6 @@ public class InputTypeUtil {
                     convolutionMode));
         }
 
-        if (kH <= 0 || kH > inHeight + 2 * padH) {
-            throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, true)
-                    + " Invalid input configuration for kernel height. Require 0 < kH <= inHeight + 2*padH; got (kH="
-                    + kH + ", inHeight=" + inHeight + ", padH=" + padH + ")\n" + getConfigErrorCommonLastLine(
-                    inputType, kernelSize, stride, padding, outputDepth, convolutionMode));
-        }
-
-        if (kW <= 0 || kW > inWidth + 2 * padW) {
-            throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, false)
-                    + " Invalid input configuration for kernel width. Require 0 < kW <= inWidth + 2*padW; got (kW="
-                    + kW + ", inWidth=" + inWidth + ", padW=" + padW + ")\n" + getConfigErrorCommonLastLine(
-                    inputType, kernelSize, stride, padding, outputDepth, convolutionMode));
-        }
-
         if (convolutionMode == ConvolutionMode.Same) {
             int hOut = stride[0] * hIn;
             int wOut = stride[1] * wIn ;

@@ -29,9 +29,6 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
-import org.nd4j.linalg.api.complex.IComplexDouble;
-import org.nd4j.linalg.api.complex.IComplexFloat;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
@@ -695,11 +692,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         //referencing.add(id);
     }
 
-    @Override
-    public void put(long i, IComplexNumber result) {
-        throw new UnsupportedOperationException("ComplexNumbers are not supported yet");
-    }
-
 
     @Deprecated
     public Pointer getHostPointer(INDArray arr, int stride, long offset, int length) {
@@ -735,21 +727,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public Pointer addressPointer() {
         return AtomicAllocator.getInstance().getHostPointer(this);
-    }
-
-    @Override
-    public IComplexFloat getComplexFloat(long i) {
-        return Nd4j.createFloat(getFloat(i), getFloat(i + 1));
-    }
-
-    @Override
-    public IComplexDouble getComplexDouble(long i) {
-        return Nd4j.createDouble(getDouble(i), getDouble(i + 1));
-    }
-
-    @Override
-    public IComplexNumber getComplex(long i) {
-        return dataType() == Type.FLOAT ? getComplexFloat(i) : getComplexDouble(i);
     }
 
     /**
@@ -922,9 +899,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 this.type = t;
 
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asLongPointer();
-                indexer = LongRawIndexer.create((LongPointer) pointer);
+                indexer = LongIndexer.create((LongPointer) pointer);
 
-                LongRawIndexer Lindexer = (LongRawIndexer) indexer;
+                LongIndexer Lindexer = (LongIndexer) indexer;
 
                 for (long i = 0; i < length(); i++) {
                     if (t == Type.LONG)

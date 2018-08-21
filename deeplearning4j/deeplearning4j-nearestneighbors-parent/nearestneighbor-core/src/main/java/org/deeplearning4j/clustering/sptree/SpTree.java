@@ -17,6 +17,8 @@
 package org.deeplearning4j.clustering.sptree;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import lombok.Getter;
+import lombok.Setter;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -69,7 +71,8 @@ public class SpTree implements Serializable {
             .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
             .policyLearning(LearningPolicy.OVER_TIME).build();
 
-    protected WorkspaceMode workspaceMode;
+    @Getter @Setter
+    protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
     protected final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
             .initialSize(0).overallocationLimit(0.3).policyLearning(LearningPolicy.FIRST_LOOP)
             .policyReset(ResetPolicy.BLOCK_LEFT).policySpill(SpillPolicy.REALLOCATE)
@@ -99,10 +102,10 @@ public class SpTree implements Serializable {
                     meanY.getDouble(i) - minY.getDouble(i) + Nd4j.EPS_THRESHOLD));
         }
 
-        init(null, data, meanY, width, indices, similarityFunction);
-        fill(N);
-
-
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            init(null, data, meanY, width, indices, similarityFunction);
+            fill(N);
+        }
     }
 
 
@@ -152,7 +155,6 @@ public class SpTree implements Serializable {
         boundary.setWidth(width.dup());
         centerOfMass = Nd4j.create(D);
         buf = Nd4j.create(D);
-
     }
 
 

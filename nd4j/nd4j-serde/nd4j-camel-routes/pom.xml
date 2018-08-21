@@ -31,12 +31,6 @@
         <module>nd4j-kafka</module>
     </modules>
 
-    <properties>
-        <camel.version>2.16.3</camel.version>
-        <zookeeper.version>3.4.6</zookeeper.version>
-        <kafka.version>0.8.2.2</kafka.version>
-    </properties>
-
     <profiles>
         <profile>
             <id>testresources</id>

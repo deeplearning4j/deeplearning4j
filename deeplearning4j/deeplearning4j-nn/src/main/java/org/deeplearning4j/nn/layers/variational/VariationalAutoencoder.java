@@ -471,11 +471,6 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public void accumulateScore(double accum) {
-
-    }
-
-    @Override
     public INDArray params() {
         return paramsFlattened;
     }
@@ -573,11 +568,6 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public void validateInput() {
-        throw new UnsupportedOperationException("Not supported " + layerId());
-    }
-
-    @Override
     public ConvexOptimizer getOptimizer() {
         return optimizer;
     }
@@ -585,11 +575,6 @@ public class VariationalAutoencoder implements Layer {
     @Override
     public INDArray getParam(String param) {
         return params.get(param);
-    }
-
-    @Override
-    public void initParams() {
-        throw new UnsupportedOperationException("Deprecated " + layerId());
     }
 
     @Override
@@ -645,7 +630,7 @@ public class VariationalAutoencoder implements Layer {
     public double calcL2(boolean backpropParamsOnly) {
         double l2Sum = 0.0;
         for (Map.Entry<String, INDArray> e : paramTable().entrySet()) {
-            double l2 = conf().getL2ByParam(e.getKey());
+            double l2 = conf().getLayer().getL2ByParam(e.getKey());
             if (l2 <= 0.0 || (backpropParamsOnly && isPretrainParam(e.getKey()))) {
                 continue;
             }
@@ -661,7 +646,7 @@ public class VariationalAutoencoder implements Layer {
     public double calcL1(boolean backpropParamsOnly) {
         double l1Sum = 0.0;
         for (Map.Entry<String, INDArray> e : paramTable().entrySet()) {
-            double l1 = conf().getL1ByParam(e.getKey());
+            double l1 = conf().getLayer().getL1ByParam(e.getKey());
             if (l1 <= 0.0 || (backpropParamsOnly && isPretrainParam(e.getKey()))) {
                 continue;
             }
@@ -808,16 +793,6 @@ public class VariationalAutoencoder implements Layer {
     public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         setInput(input, workspaceMgr);
         return activate(training, workspaceMgr);
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not supported " + layerId());
-    }
-
-    @Override
-    public Layer clone() {
-        throw new UnsupportedOperationException("Not yet implemented " + layerId());
     }
 
     @Override

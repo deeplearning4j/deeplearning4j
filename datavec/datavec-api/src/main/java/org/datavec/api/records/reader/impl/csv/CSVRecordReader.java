@@ -155,7 +155,7 @@ public class CSVRecordReader extends LineRecordReader {
 
     @Override
     public List<List<Writable>> next(int num) {
-        List<List<Writable>> ret = new ArrayList<>(num);
+        List<List<Writable>> ret = new ArrayList<>(Math.min(num, 10000));
         int recordsRead = 0;
         while(hasNext() && recordsRead++ < num) {
             ret.add(next());
@@ -168,8 +168,7 @@ public class CSVRecordReader extends LineRecordReader {
     public List<Writable> next() {
         if (!skipLines())
             throw new NoSuchElementException("No next element found!");
-        Text t = (Text) super.next().iterator().next();
-        String val = t.toString();
+        String val = readStringLine();
         return parseLine(val);
     }
 
@@ -185,6 +184,11 @@ public class CSVRecordReader extends LineRecordReader {
             ret.add(new Text(s));
         }
         return ret;
+    }
+
+    protected String readStringLine(){
+        Text t = (Text) super.next().iterator().next();
+        return t.toString();
     }
 
     @Override

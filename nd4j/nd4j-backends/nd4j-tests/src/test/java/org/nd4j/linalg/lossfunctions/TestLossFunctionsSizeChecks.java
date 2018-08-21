@@ -75,7 +75,7 @@ public class TestLossFunctionsSizeChecks {
             Assert.assertTrue(
                             "Loss function exception " + loss.toString()
                                             + " did not indicate size mismatch when vectors of incorrect size were used.",
-                            exceptionMessage.contains("does not match"));
+                            exceptionMessage.contains("shapes"));
         }
 
         try {
@@ -92,7 +92,7 @@ public class TestLossFunctionsSizeChecks {
             Assert.assertTrue(
                             "Loss function exception " + loss.toString()
                                             + " did not indicate size mismatch when vectors of incorrect size were used.",
-                            exceptionMessage.contains("does not match"));
+                            exceptionMessage.contains("shapes"));
         }
 
     }

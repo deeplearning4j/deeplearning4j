@@ -81,7 +81,33 @@ public class GraphRunner implements Closeable {
      *                                                          graph inputs and outputs
      */
     public GraphRunner(List<String> inputNames,tensorflow.TF_Graph graph,org.tensorflow.framework.GraphDef graphDef) {
+        this(inputNames,graph,graphDef,null);
+
+    }
+
+    /**
+     * Pass in a graph instance and
+     * the length of the protobuf
+     * that it was instantiated with.
+     * For files this is typically
+     * {@link File#length()},
+     * for byte arrays, this is
+     * byte array.length
+     * and for {@link java.nio.ByteBuffer}
+     * this would be something like the
+     * {@link java.nio.ByteBuffer#capacity()}
+     * @param graph a pointer to the {@link TF_Graph} to use when executing
+     * @param graphDef {@link org.tensorflow.framework.GraphDef} protobuf
+     *                                                          definition containing
+     *                                                          the graph configuration
+     *                                                          for automatically inferring
+     *                                                          things like
+     *                                                          graph inputs and outputs
+     * @param configProto  the session configuration proto to use with this runner
+     */
+    public GraphRunner(List<String> inputNames,tensorflow.TF_Graph graph,org.tensorflow.framework.GraphDef graphDef,ConfigProto configProto) {
         this.graph = graph;
+        this.protoBufConfigProto = configProto;
         this.inputOrder = inputNames;
         initSessionAndStatusIfNeeded(graphDef);
 

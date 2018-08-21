@@ -33,7 +33,7 @@ import java.util.Map;
 
 
 /**
- * Elementwise multiplication layer with weights: implements out = activationFn(input .* w + b) where:<br>
+ * Elementwise multiplication layer with weights: implements {@code out = activationFn(input .* w + b)} where:<br>
  * - w is a learnable weight vector of length nOut<br>
  * - ".*" is element-wise multiplication<br>
  * - b is a bias vector<br>

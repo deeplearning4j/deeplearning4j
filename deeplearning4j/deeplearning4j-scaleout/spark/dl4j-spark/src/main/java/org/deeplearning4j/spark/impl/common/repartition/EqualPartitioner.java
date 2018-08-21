@@ -61,8 +61,8 @@ public class EqualPartitioner extends Partitioner {
             return elementIdx / partitionSizeExRemainder;
         } else {
             //Is a 'remainder' element
-            int remainderNum = elementIdx % partitionSizeExRemainder;
-            return remainderPositions[remainderNum];
+            int remainderNum = elementIdx % numPartitions;
+            return remainderPositions[remainderNum %remainderPositions.length];     //Final mod here shouldn't be necessary, but is here for safety...
         }
     }
 }

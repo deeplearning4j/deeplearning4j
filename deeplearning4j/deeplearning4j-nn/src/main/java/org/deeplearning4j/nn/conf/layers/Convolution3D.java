@@ -153,24 +153,24 @@ public class Convolution3D extends ConvolutionLayer {
             super(new int[]{2, 2, 2}, new int[]{1, 1, 1}, new int[]{0, 0, 0}, new int[]{1, 1, 1}, 3);
         }
 
-
-        public Builder(int[] kernelSize, int[] stride, int[] padding) {
-            super(kernelSize, stride, padding, 3);
+        public Builder(int[] kernelSize, int[] stride, int[] padding, int[] dilation) {
+            super(kernelSize, stride, padding, dilation, 3);
             Preconditions.checkState(kernelSize.length == 3, "Kernel size argument has to have length 3.");
             Preconditions.checkState(stride.length == 3, "Stride size argument has to have length 3.");
             Preconditions.checkState(padding.length == 3, "Padding size argument has to have length 3.");
+            Preconditions.checkState(dilation.length == 3, "Padding size argument has to have length 3.");
+        }
 
+        public Builder(int[] kernelSize, int[] stride, int[] padding) {
+            this(kernelSize, stride, padding, new int[]{1,1,1});
         }
 
         public Builder(int[] kernelSize, int[] stride) {
-            super(kernelSize, stride, 3);
-            Preconditions.checkState(kernelSize.length == 3, "Kernel size argument has to have length 3.");
-            Preconditions.checkState(stride.length == 3, "Stride size argument has to have length 3.");
+            this(kernelSize, stride, new int[]{0,0,0});
         }
 
         public Builder(int... kernelSize) {
-            super(3, kernelSize);
-            Preconditions.checkState(kernelSize.length == 3, "Kernel size argument has to have length 3.");
+            this(kernelSize, new int[]{1,1,1});
         }
 
         /**

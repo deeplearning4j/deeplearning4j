@@ -22,12 +22,14 @@ import com.google.common.util.concurrent.MoreExecutors;
 import lombok.Setter;
 import org.deeplearning4j.arbiter.optimize.api.*;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSource;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -112,6 +114,21 @@ public class LocalOptimizationRunner extends BaseOptimizationRunner {
         for (Candidate candidate : candidates) {
             Callable<OptimizationResult> task =
                             taskCreator.create(candidate, dataProvider, scoreFunction, statusListeners, this);
+            list.add(executor.submit(task));
+        }
+        return list;
+    }
+
+    @Override
+    protected ListenableFuture<OptimizationResult> execute(Candidate candidate, Class<? extends DataSource> dataSource, Properties dataSourceProperties, ScoreFunction scoreFunction) {
+        return execute(Collections.singletonList(candidate), dataSource, dataSourceProperties, scoreFunction).get(0);
+    }
+
+    @Override
+    protected List<ListenableFuture<OptimizationResult>> execute(List<Candidate> candidates, Class<? extends DataSource> dataSource, Properties dataSourceProperties, ScoreFunction scoreFunction) {
+        List<ListenableFuture<OptimizationResult>> list = new ArrayList<>(candidates.size());
+        for (Candidate candidate : candidates) {
+            Callable<OptimizationResult> task = taskCreator.create(candidate, dataSource, dataSourceProperties, scoreFunction, statusListeners, this);
             list.add(executor.submit(task));
         }
         return list;

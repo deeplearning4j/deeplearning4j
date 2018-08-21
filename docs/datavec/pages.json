@@ -1,0 +1,204 @@
+{
+  "excludes": [
+    "abstract"
+  ],
+  "indices": [
+  ],
+  "pages": [
+    {
+      "page": "overview.md",
+      "class": []
+    },
+    {
+      "page": "normalization.md",
+      "module": [
+        "/../nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/preprocessor/"
+      ]
+    },
+    {
+      "page": "records.md",
+      "class": [
+        "datavec-api/src/main/java/org/datavec/api/records/impl/Record.java",
+        "datavec-api/src/main/java/org/datavec/api/records/impl/SequenceRecord.java"
+      ]
+    },
+    {
+      "page": "readers.md",
+      "class": [
+        "datavec-data/datavec-data-image/src/main/java/org/datavec/image/recordreader/ImageRecordReader.java",
+        "datavec-data/datavec-data-image/src/main/java/org/datavec/image/recordreader/VideoRecordReader.java",
+        "datavec-data/datavec-data-audio/src/main/java/org/datavec/audio/recordreader/NativeAudioRecordReader.java",
+        "datavec-data/datavec-data-audio/src/main/java/org/datavec/audio/recordreader/WavFileRecordReader.java",
+        "datavec-data/datavec-data-nlp/src/main/java/org/datavec/nlp/reader/TfidfRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/FileRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/LineRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/ComposableRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVRegexRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVSequenceRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVVariableSlidingWindowRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/ConcatenatingRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/transform/TransformProcessRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/transform/TransformProcessSequenceRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/collection/CollectionRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/collection/CollectionSequenceRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/collection/ListStringRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/misc/LibSvmRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/misc/MatlabRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/misc/SVMLightRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/regex/RegexLineRecordReader.java",
+        "datavec-api/src/main/java/org/datavec/api/records/reader/impl/regex/RegexSequenceRecordReader.java"
+      ]
+    },
+    {
+      "page": "executors.md",
+      "class": [
+        "datavec-local/src/main/java/org/datavec/local/transforms/LocalTransformExecutor.java",
+        "datavec-spark/src/main/java/org/datavec/spark/transform/SparkTransformExecutor.java"
+      ]
+    },
+    {
+      "page": "schema.md",
+      "class": [
+        "datavec-api/src/main/java/org/datavec/api/transform/schema/Schema.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/schema/SequenceSchema.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/schema/InferredSchema.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/join/Join.java"
+      ]
+    },
+    {
+      "page": "transforms.md",
+      "class": [
+        "datavec-api/src/main/java/org/datavec/api/transform/TransformProcess.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/categorical/CategoricalToIntegerTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/categorical/CategoricalToOneHotTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/categorical/IntegerToCategoricalTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/categorical/PivotTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/categorical/StringToCategoricalTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/column/AddConstantColumnTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/column/DuplicateColumnsTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/column/RemoveAllColumnsExceptForTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/column/RemoveColumnsTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/column/RenameColumnsTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/column/ReorderColumnsTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/doubletransform/DoubleColumnsMathOpTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/doubletransform/DoubleMathFunctionTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/doubletransform/DoubleMathOpTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/integer/IntegerColumnsMathOpTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/integer/IntegerMathOpTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/integer/IntegerToOneHotTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/integer/ReplaceEmptyIntegerWithValueTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/integer/ReplaceInvalidWithIntegerTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/longtransform/LongColumnsMathOpTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/longtransform/LongMathOpTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/nlp/TextToCharacterIndexTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/nlp/TextToTermIndexSequenceTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/sequence/SequenceDifferenceTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/sequence/SequenceMovingWindowReduceTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/sequence/SequenceOffsetTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/string/AppendStringColumnTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/string/ChangeCaseStringTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/string/ConcatenateStringColumns.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/string/MapAllStringsExceptListTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/string/RemoveWhiteSpaceTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/string/ReplaceEmptyStringTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/string/ReplaceStringTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/string/StringListToCategoricalSetTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/string/StringListToCountsNDArrayTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/string/StringListToIndicesNDArrayTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/string/StringMapTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/time/DeriveColumnsFromTimeTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/time/StringToTimeTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/time/TimeMathOpTransform.java",
+
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/condition/ConditionalCopyValueTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/condition/ConditionalReplaceValueTransform.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/condition/ConditionalReplaceValueTransformWithDefault.java",
+
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/doubletransform/ConvertToDouble.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/integer/ConvertToInteger.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/string/ConvertToString.java",
+
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/doubletransform/Log2Normalizer.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/doubletransform/MinMaxNormalizer.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/doubletransform/StandardizeNormalizer.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/transform/doubletransform/SubtractMeanNormalizer.java"
+      ]
+    },
+    {
+      "page": "operations.md",
+      "class": [
+        "datavec-api/src/main/java/org/datavec/api/transform/ops/AggregableCheckingOp.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/ops/AggregableMultiOp.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/ops/ByteWritableOp.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/ops/DispatchOp.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/ops/DispatchWithConditionOp.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/ops/DoubleWritableOp.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/ops/FloatWritableOp.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/ops/IntWritableOp.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/ops/LongWritableOp.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/ops/StringWritableOp.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/rank/CalculateSortedRank.java"
+      ]
+    },
+    {
+      "page": "conditions.md",
+      "class": [
+        "datavec-api/src/main/java/org/datavec/api/transform/condition/column/BooleanColumnCondition.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/condition/column/CategoricalColumnCondition.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/condition/column/DoubleColumnCondition.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/condition/column/InfiniteColumnCondition.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/condition/column/IntegerColumnCondition.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/condition/column/InvalidValueColumnCondition.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/condition/column/LongColumnCondition.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/condition/column/NaNColumnCondition.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/condition/column/NullWritableColumnCondition.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/condition/column/StringColumnCondition.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/condition/column/TimeColumnCondition.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/condition/column/TrivialColumnCondition.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/condition/sequence/SequenceLengthCondition.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/condition/string/StringRegexColumnCondition.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/condition/BooleanCondition.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/condition/SequenceConditionMode.java"
+      ]
+    },
+    {
+      "page": "filters.md",
+      "class": [
+        "datavec-api/src/main/java/org/datavec/api/transform/filter/Filter.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/filter/ConditionFilter.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/filter/FilterInvalidValues.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/filter/InvalidNumColumns.java"
+      ]
+    },
+    {
+      "page": "reductions.md",
+      "class": [
+        "datavec-api/src/main/java/org/datavec/api/transform/reduce/impl/GeographicMidpointReduction.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/stringreduce/StringReducer.java"
+      ]
+    },
+    {
+      "page": "serialization.md",
+      "class": [
+        "datavec-api/src/main/java/org/datavec/api/transform/serde/JsonSerializer.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/serde/YamlSerializer.java"
+      ]
+    },
+    {
+      "page": "visualization.md",
+      "class": [
+        "datavec-api/src/main/java/org/datavec/api/transform/ui/HtmlAnalysis.java",
+        "datavec-api/src/main/java/org/datavec/api/transform/ui/HtmlSequencePlotting.java"
+      ]
+    },
+    {
+      "page": "analysis.md",
+      "class": [
+        "datavec-spark/src/main/java/org/datavec/spark/transform/AnalyzeSpark.java",
+        "datavec-local/src/main/java/org/datavec/local/transforms/AnalyzeLocal.java"
+      ]
+    }
+  ]
+}
+

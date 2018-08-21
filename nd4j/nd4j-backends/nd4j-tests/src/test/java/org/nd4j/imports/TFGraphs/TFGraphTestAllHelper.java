@@ -18,17 +18,21 @@ package org.nd4j.imports.TFGraphs;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.junit.After;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.nd4j.autodiff.execution.NativeGraphExecutioner;
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.validation.OpValidation;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -38,13 +42,12 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.regex.Pattern;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static org.nd4j.imports.TFGraphs.TFGraphsSkipNodes.skipNode;
 
 /**
@@ -52,6 +55,7 @@ import static org.nd4j.imports.TFGraphs.TFGraphsSkipNodes.skipNode;
  */
 @Slf4j
 public class TFGraphTestAllHelper {
+
 
     public enum ExecuteWith {
         SAMEDIFF(SAMEDIFF_DEFAULT_BASE_DIR),
@@ -67,6 +71,16 @@ public class TFGraphTestAllHelper {
         public String getDefaultBaseDir() {
             return BASE_DIR;
         }
+    }
+
+    @BeforeClass
+    public void beforeClass(){
+        log.info("Starting tests for class: " + getClass().getName());
+    }
+
+    @Before
+    public void setup(){
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
     }
 
     @After
@@ -104,17 +118,18 @@ public class TFGraphTestAllHelper {
         return modelParams;
     }
 
-    protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, ExecuteWith execType) throws IOException {
+    protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, ExecuteWith execType, Double precisionOverride) throws IOException {
         log.info("Running model " + modelName + " only output");
-        checkOnlyOutput(inputs, predictions, modelName, execType.getDefaultBaseDir(), execType);
+        checkOnlyOutput(inputs, predictions, modelName, execType.getDefaultBaseDir(), execType, precisionOverride);
     }
 
-    protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, String baseDir, ExecuteWith execType) throws IOException {
+    protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, String baseDir, ExecuteWith execType, Double precisionOverride) throws IOException {
         Nd4j.EPS_THRESHOLD = 1e-3;
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
 
-        val graph = getGraphAfterExec(baseDir, modelName, inputs, execType);
+        SameDiff graph = getGraphAfterExec(baseDir, modelName, inputs, execType);
+
+        //Collect coverage info about ops
+        OpValidation.collectTensorflowImportCoverage(graph);
 
         if (!execType.equals(ExecuteWith.JUST_PRINT)) {
             for (String outputNode : predictions.keySet()) {
@@ -142,7 +157,12 @@ public class TFGraphTestAllHelper {
                 assertNotNull(nd4jPred);
                 assertNotNull(tfPred);
 
-                assertEquals("Predictions do not match on " + modelName, tfPred, nd4jPred);
+                if(precisionOverride == null) {
+                    assertEquals("Predictions do not match on " + modelName + ", node " + outputNode, tfPred, nd4jPred);
+                } else {
+                    boolean eq = tfPred.equalsWithEps(nd4jPred, precisionOverride);
+                    assertTrue("Predictions do not match on " + modelName + ", node " + outputNode + " - precision " + precisionOverride, eq);
+                }
             }
             log.info("\n\tTEST " + modelName + " PASSED...");
             log.info("\n========================================================\n");
@@ -157,9 +177,11 @@ public class TFGraphTestAllHelper {
 
     public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, String baseDir, ExecuteWith execType) throws IOException {
         Nd4j.EPS_THRESHOLD = 1e-3;
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
         val graph = getGraphAfterExec(baseDir, modelName, inputs, execType);
+
+        //Collect coverage info about ops
+        OpValidation.collectTensorflowImportCoverage(graph);
+
         if (!execType.equals(ExecuteWith.JUST_PRINT)) {
             for (String varName : graph.variableMap().keySet()) {
                 if (!inputs.containsKey(varName)) { //avoiding placeholders
@@ -190,15 +212,12 @@ public class TFGraphTestAllHelper {
             if (!inputs.isEmpty()) {
                 graph.execWithPlaceHolder(inputs); //This is expected to be just one result
             } else {
-                graph.execAndEndResult(); //there are graphs with no placeholders like g_00
+                graph.execAndEndResults(); //there are graphs with no placeholders like g_00
             }
         } else if (executeWith.equals(ExecuteWith.LIBND4J)) {
             for (String input : inputs.keySet()) {
                 graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));
             }
-
-            Nd4j.getExecutioner().enableDebugMode(true);
-            Nd4j.getExecutioner().enableVerboseMode(true);
 
 //            val string = graph.asFlatPrint();
 //            log.info("Graph structure: \n{}", string);
@@ -239,6 +258,7 @@ public class TFGraphTestAllHelper {
 
     /**
      * Possible for a single node to give multiple outputs
+     *
      * How is a node that has a list of outputs like in the case of "node_multiple_out" work
      * Below is hardcoded for a single node
      */
@@ -285,31 +305,62 @@ public class TFGraphTestAllHelper {
             String varPath = modelDir + "/" + fileName;
             String[] varNameArr = fileName.split("\\.");
             String varName = String.join(".", Arrays.copyOfRange(varNameArr, 0, varNameArr.length - 2));
-            int[] varShape = Nd4j.readNumpy(new ClassPathResource(varPath).getInputStream(), ",").data().asInt();
-            try {
+//            int[] varShape = Nd4j.readNumpy(new ClassPathResource(varPath).getInputStream(), ",").data().asInt();
+
+            List<String> lines = FileUtils.readLines(new ClassPathResource(varPath).getFile(), Charset.forName("UTF-8"));
+            List<String> filtered = new ArrayList<>(lines.size());
+            for(String s : lines){
+                String trimmed = s.trim();
+                if(!trimmed.isEmpty()){
+                    filtered.add(trimmed);
+                }
+            }
+
+            INDArray varValue;
+            if(filtered.size() == 0){
+                //Scalar
                 float[] varContents = Nd4j.readNumpy(new ClassPathResource(varPath.replace(".shape", ".csv")).getInputStream(), ",").data().asFloat();
-                INDArray varValue;
-                if (varShape.length == 1) {
-                    if (varShape[0] == 0) {
-                        varValue = Nd4j.trueScalar(varContents[0]);
+                Preconditions.checkState(varContents.length == 1, "Expected length 1 content for scalar shape; got length %s", varContents.length);
+                varValue = Nd4j.trueScalar(varContents[0]);
+            } else {
+                int[] varShape = new int[filtered.size()];
+                for( int j=0; j<filtered.size(); j++ ){
+                    varShape[j] = Integer.parseInt(filtered.get(j));
+                }
+                try {
+                    float[] varContents = Nd4j.readNumpy(new ClassPathResource(varPath.replace(".shape", ".csv")).getInputStream(), ",").data().asFloat();
+                    if (varShape.length == 1) {
+                        if (varShape[0] == 0) {
+                            varValue = Nd4j.trueScalar(varContents[0]);
+                        } else {
+                            varValue = Nd4j.trueVector(varContents);
+                        }
                     } else {
-                        varValue = Nd4j.trueVector(varContents);
+                        varValue = Nd4j.create(varContents, varShape);
                     }
-                } else {
-                    varValue = Nd4j.create(varContents, varShape);
+                } catch (NumberFormatException e) {
+                    // FIXME: we can't parse boolean arrays right now :(
+                    log.warn("Error parsing number", e);
+                    continue;
                 }
-                //varValue = Nd4j.readNumpy(new ClassPathResource(varPath.replace(".shape", ".csv")).getInputStream(), ",").reshape(varShape);
-                if (varName.contains("____")) {
-                    //these are intermediate node outputs
-                    varMap.put(varName.replaceAll("____", "/"), varValue);
-                } else {
-                    varMap.put(varName, varValue);
-                }
-            } catch (NumberFormatException e) {
-                // FIXME: we can't parse boolean arrays right now :(
-                continue;
+            }
+            //varValue = Nd4j.readNumpy(new ClassPathResource(varPath.replace(".shape", ".csv")).getInputStream(), ",").reshape(varShape);
+            if (varName.contains("____")) {
+                //these are intermediate node outputs
+                varMap.put(varName.replaceAll("____", "/"), varValue);
+            } else {
+                varMap.put(varName, varValue);
             }
         }
         return varMap;
+    }
+
+
+    public static Double testPrecisionOverride(String testName){
+        if("conv_4".equalsIgnoreCase(testName)){
+            //Most values: around 1k. So this is the 6th significant figure, which is OK
+            return 1e-2;
+        }
+        return null;
     }
 }

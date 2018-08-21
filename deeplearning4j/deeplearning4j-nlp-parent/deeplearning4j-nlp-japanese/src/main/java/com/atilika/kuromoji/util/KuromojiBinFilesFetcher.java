@@ -71,9 +71,4 @@ public class KuromojiBinFilesFetcher {
 
         return rootDir.getAbsoluteFile();
     }
-
-    @Deprecated
-    public static String getRootPath() {
-        return getKuromojiRoot().getAbsolutePath();
-    }
 }

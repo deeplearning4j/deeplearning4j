@@ -785,5 +785,5 @@ TEST_F(NDArrayTest2, allTensorsAlongDimension_test1) {
     ASSERT_TRUE(exp.isSameShape(set->at(0)));
     ASSERT_TRUE(exp.equalsTo(set->at(0)));
 
-    delete set;    
+    delete set;
 }

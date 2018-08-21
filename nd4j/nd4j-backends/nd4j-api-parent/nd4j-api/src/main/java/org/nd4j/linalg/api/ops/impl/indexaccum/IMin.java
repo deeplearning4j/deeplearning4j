@@ -18,12 +18,10 @@ package org.nd4j.linalg.api.ops.impl.indexaccum;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
-import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -79,11 +77,6 @@ public class IMin extends BaseIndexAccumulation {
         return 65503.0f;
     }
 
-    @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(Double.MAX_VALUE, 0);
-    }
-
 
     @Override
     public String onnxName() {
@@ -92,14 +85,13 @@ public class IMin extends BaseIndexAccumulation {
 
     @Override
     public String tensorflowName() {
-        return "argmin";
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         //Not differentiable, but (assuming no ties) output does not change for a given infinitesimal change in the input
-
         return Collections.singletonList(f().zerosLike(arg()));
     }
 }

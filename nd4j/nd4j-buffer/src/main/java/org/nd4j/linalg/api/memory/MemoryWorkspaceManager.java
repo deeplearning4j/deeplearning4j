@@ -20,6 +20,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.nd4j.linalg.api.memory.enums.DebugMode;
 
 import java.util.List;
 
@@ -37,6 +38,19 @@ public interface MemoryWorkspaceManager {
      * @return
      */
     String getUUID();
+
+    /**
+     * This method returns current debug mode active in this JVM
+     * @return
+     */
+    DebugMode getDebugMode();
+
+    /**
+     * This method allows to enable (and pick one) global debug mode for workspaces
+     * Default value: DISABLED
+     * @param mode
+     */
+    void setDebugMode(DebugMode mode);
 
     /**
      * This method sets default workspace configuration for this provider instance

@@ -549,7 +549,7 @@ TEST_F(PlaygroundTests, loop_test_1) {
     int cnt = 0;
     int iterations = 1;
 
-    nd4j_printf("Array length: %lld\n", array->lengthOf());
+    //nd4j_printf("Array length: %lld\n", array->lengthOf());
 
     int length = (int) array->lengthOf();
     int span = (int) (array->lengthOf() / 6) + 8;
@@ -570,7 +570,7 @@ TEST_F(PlaygroundTests, loop_test_1) {
     t[1] = length;
     t[2] = fb.i_;
 
-    nd4j_printf("number of elements: [%i]\n", le);
+    //nd4j_printf("number of elements: [%i]\n", le);
 
     long permTime = 0;
 

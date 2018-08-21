@@ -62,7 +62,7 @@ public class VirtualDataSetIteratorTest {
         while (vdsi.hasNext()) {
             DataSet ds = vdsi.next();
 
-            assertEquals((double) cnt, ds.getFeatureMatrix().meanNumber().doubleValue(), 0.0001);
+            assertEquals((double) cnt, ds.getFeatures().meanNumber().doubleValue(), 0.0001);
             assertEquals((double) cnt, ds.getLabels().meanNumber().doubleValue(), 0.0001);
 
             cnt++;

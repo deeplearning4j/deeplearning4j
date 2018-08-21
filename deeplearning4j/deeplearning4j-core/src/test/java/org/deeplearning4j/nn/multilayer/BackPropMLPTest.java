@@ -106,7 +106,7 @@ public class BackPropMLPTest extends BaseDL4JTest {
 
         while (iris.hasNext()) {
             DataSet data = iris.next();
-            INDArray x = data.getFeatureMatrix();
+            INDArray x = data.getFeatures();
             INDArray y = data.getLabels();
             float[] xFloat = asFloat(x);
             float[] yFloat = asFloat(y);
@@ -243,7 +243,7 @@ public class BackPropMLPTest extends BaseDL4JTest {
 
         while (iris.hasNext()) {
             DataSet data = iris.next();
-            INDArray x = data.getFeatureMatrix();
+            INDArray x = data.getFeatures();
             INDArray y = data.getLabels();
 
             //Do forward pass:

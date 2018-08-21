@@ -53,8 +53,8 @@ public class AddOp extends BaseDynamicTransformOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "Add";
+    public String[] tensorflowNames() {
+        return new String[]{"Add", "AddV2"};
     }
 
     @Override

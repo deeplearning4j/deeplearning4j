@@ -57,7 +57,7 @@ public class Mmul extends DynamicCustomOp {
                 MMulTranspose mt) {
         super(null,sameDiff,new SDVariable[]{i_v1,i_v2});
         this.mt = mt;
-        addIArgument(ArrayUtil.fromBoolean(mt.isTransposeA()), ArrayUtil.fromBoolean(mt.isTransposeB()));
+        addIArgument(ArrayUtil.fromBoolean(mt.isTransposeA()), ArrayUtil.fromBoolean(mt.isTransposeB()), ArrayUtil.fromBoolean(mt.isTransposeResult()));
     }
 
 
@@ -87,7 +87,8 @@ public class Mmul extends DynamicCustomOp {
         if (mt != null) {
           this.mt = mt;
           addIArgument(ArrayUtil.fromBoolean(mt.isTransposeA()),
-                       ArrayUtil.fromBoolean(mt.isTransposeB()));
+                       ArrayUtil.fromBoolean(mt.isTransposeB()),
+                       ArrayUtil.fromBoolean(mt.isTransposeResult()));
         }
     }
 
@@ -119,10 +120,13 @@ public class Mmul extends DynamicCustomOp {
         if(mt == null)
             mt = MMulTranspose.allFalse();
 
-        long[] aShape = mt.isTransposeA() ? transposeShapeArray(larg().getShape()) : larg().getShape();
-        long[] bShape = mt.isTransposeB() ? transposeShapeArray(rarg().getShape()) : rarg().getShape();
+
+        long[] aShape = larg().getShape();
+        long[] bShape = rarg().getShape();
         if(Shape.isPlaceholderShape(aShape) || Shape.isPlaceholderShape(bShape))
             return Collections.emptyList();
+        aShape = mt.isTransposeA() ? transposeShapeArray(aShape) : aShape;
+        bShape = mt.isTransposeB() ? transposeShapeArray(bShape) : bShape;
 
         long[] shape =  Shape.getMatrixMultiplyShape(aShape,bShape);
         if(mt.isTransposeResult())
@@ -143,8 +147,8 @@ public class Mmul extends DynamicCustomOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "MatMul";
+    public String[] tensorflowNames() {
+        return new String[]{"MatMul", "BatchMatMul"};
     }
 
 
@@ -159,8 +163,25 @@ public class Mmul extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
-        val isTransposeA = attributesForNode.get("transpose_a").getB();
-        val isTransposeB = attributesForNode.get("transpose_b").getB();
+
+        boolean isTransposeA;
+        boolean isTransposeB;
+        if(nodeDef.getOp().equalsIgnoreCase("BatchMatMul")){
+            //In practice, BatchMatMul seems to use "adj_x" and "adj_y" instead of "transpose_a" and "transpose_b"
+            if(attributesForNode.containsKey("transpose_a")){
+                isTransposeA = attributesForNode.get("transpose_a").getB();
+            } else {
+                isTransposeA = attributesForNode.get("adj_x").getB();
+            }
+            if(attributesForNode.containsKey("transpose_b")){
+                isTransposeB = attributesForNode.get("transpose_b").getB();
+            } else {
+                isTransposeB = attributesForNode.get("adj_y").getB();
+            }
+        } else {
+            isTransposeA = attributesForNode.get("transpose_a").getB();
+            isTransposeB = attributesForNode.get("transpose_b").getB();
+        }
         MMulTranspose mMulTranspose = MMulTranspose.builder()
                 .transposeA(isTransposeA).transposeB(isTransposeB)
                 .build();
@@ -171,6 +192,8 @@ public class Mmul extends DynamicCustomOp {
                 sameDiff.addPropertyToResolve(this,arg.getVarName());
             }
         }
+        iArguments.clear();
+        addIArgument(ArrayUtil.fromBoolean(mt.isTransposeA()), ArrayUtil.fromBoolean(mt.isTransposeB()));
     }
 
     @Override
@@ -189,30 +212,15 @@ public class Mmul extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-//        List<SDVariable> ret = new ArrayList<>();
-//        SDVariable dLdOut = i_v1.get(0);
-//
-//        SDVariable dLdx = sameDiff.mmul(dLdOut, rarg(), MMulTranspose.builder()
-//                .transposeB(true)
-//                .build());
-//
-//        SDVariable dLdy = sameDiff.mmul(larg(), dLdOut, MMulTranspose.builder()
-//                .transposeA(true)
-//                .build());
-//
-//        ret.add(dLdx);
-//        ret.add(dLdy);
-//        return ret;
-
         List<SDVariable> ret = new ArrayList<>();
         SDVariable dLdOut = i_v1.get(0);
         /*
         In: x=[a,b], y=[b,c]
-        tX  tY  tZ  x       y       z       dz          dLdx
-        F   F   F   [a,b]   [b,c]   [a,c]   [a,c]       [a,c]*[b,c]T = [a,b]
-        T   F   F   [b,a]   [b,c]   [a,c]   [a,c]       ([a,c]*[b,c]T)T = [b,a]
-        F   T   F   [a,b]   [c,b]   [a,c]   [a,c]       ([a,c]*[c,b]) = [a,b]
-        T   T   F   [b,a]   [c,b]   [a,c]   [a,c]       ([a,c]*[c,b])T = [b,a]
+        tX  tY  tZ  x       y       z       dz          dLdx                                    dLdy
+        F   F   F   [a,b]   [b,c]   [a,c]   [a,c]       [a,c]*[b,c]T = [a,b]        x*yT        [a,b]T*[a,c] = [b,c]        xT*y
+        T   F   F   [b,a]   [b,c]   [a,c]   [a,c]       ([a,c]*[b,c]T)T = [b,a]     (x*yT)T     [b,a]*[a,c] = [b,c]         x*y
+        F   T   F   [a,b]   [c,b]   [a,c]   [a,c]       ([a,c]*[c,b]) = [a,b]       x*y         [a,b]T*[a,c] = [b,c] ->T    xT*y
+        T   T   F   [b,a]   [c,b]   [a,c]   [a,c]       ([a,c]*[c,b])T = [b,a]      (x*y)T      [b,a]*[a,c] = [b,c]  ->T    x*y
         F   F   T   [a,b]   [b,c]   [c,a]   [c,a]
 
          */
@@ -256,7 +264,9 @@ public class Mmul extends DynamicCustomOp {
         map.put("transposeA",transposeA);
         map.put("transposeB",transposeB);
 
-        ret.put(tensorflowName(),map);
+        for(String s : tensorflowNames()){
+            ret.put(s,map);
+        }
         ret.put(onnxName(),map);
 
         return ret;

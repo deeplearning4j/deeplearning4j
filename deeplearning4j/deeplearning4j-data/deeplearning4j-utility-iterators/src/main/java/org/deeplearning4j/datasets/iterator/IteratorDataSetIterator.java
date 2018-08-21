@@ -25,11 +25,13 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import java.util.*;
 
 /**
- * A DataSetIterator that works on an Iterator<DataSet>, combining and splitting the input DataSet objects as
- * required to get a consistent batch size.
+ * A DataSetIterator that works on an {@code Iterator<DataSet>}, combining and splitting the input DataSet objects as
+ * required to get the specified batch size.<br>
  *
- * Typically used in Spark training, but may be used elsewhere.
+ * Typically used in Spark training, but may be used elsewhere.<br>
  * NOTE: reset method is not supported here.
+ *
+ * @author Alex Black
  */
 public class IteratorDataSetIterator implements DataSetIterator {
 
@@ -94,7 +96,7 @@ public class IteratorDataSetIterator implements DataSetIterator {
             DataSet temp = list.get(0);
 
             // FIXME: int cast
-            inputColumns = (int) temp.getFeatureMatrix().size(1);
+            inputColumns = (int) temp.getFeatures().size(1);
             totalOutcomes = temp.getLabels() == null ? 0 : (int) temp.getLabels().size(1); //May be null for layerwise pretraining
         }
 
@@ -170,7 +172,7 @@ public class IteratorDataSetIterator implements DataSetIterator {
         if (!iterator.hasNext())
             return;
         DataSet next = iterator.next();
-        inputColumns = (int) next.getFeatureMatrix().size(1);
+        inputColumns = (int) next.getFeatures().size(1);
         totalOutcomes = (int) next.getLabels().size(1);
         queued.add(next);
     }

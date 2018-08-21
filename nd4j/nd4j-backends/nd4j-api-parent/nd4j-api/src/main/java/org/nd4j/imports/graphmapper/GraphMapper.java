@@ -208,6 +208,13 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      */
     DataBuffer.Type dataTypeForTensor(TENSOR_TYPE tensorType);
 
+    /**
+     * If {@link #dataTypeForTensor(Object)} return UNKNOWN we *might* still be able
+     * to import it. This method will return true if it is importable in spite of unknown type
+     * @param tensor
+     * @return
+     */
+    boolean unknownTypeNodeImportable(TENSOR_TYPE tensor);
 
     /**
      *
@@ -383,5 +390,12 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      * @return
      */
     SameDiff importGraph(GRAPH_TYPE tfGraph);
+
+    /**
+     * This method converts given TF graph file
+     * @param file
+     * @return
+     */
+    SameDiff importGraph(String graphFile);
 
 }

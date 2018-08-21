@@ -152,4 +152,6 @@ public interface TrainingWorker<R extends TrainingResult> extends Serializable {
      * @return Worker configuration
      */
     WorkerConfiguration getDataConfiguration();
+
+    long getInstanceId();
 }

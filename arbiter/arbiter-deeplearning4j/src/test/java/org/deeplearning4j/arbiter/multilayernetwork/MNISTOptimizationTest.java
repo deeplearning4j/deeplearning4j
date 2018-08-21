@@ -85,10 +85,10 @@ public class MNISTOptimizationTest {
                                                         .activation(new DiscreteParameterSpace<>(Activation.RELU,
                                                                         Activation.SOFTPLUS, Activation.LEAKYRELU))
                                                         .build(),
-                                        new IntegerParameterSpace(1, 2), true) //1-2 identical layers
+                                        new IntegerParameterSpace(1, 2)) //1-2 identical layers
                         .addLayer(new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
                                         .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
-                                        .build(), new IntegerParameterSpace(0, 1), true) //0 to 1 layers
+                                        .build(), new IntegerParameterSpace(0, 1)) //0 to 1 layers
                         .addLayer(new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .earlyStoppingConfiguration(esConf).pretrain(false).backprop(true).build();
@@ -110,7 +110,8 @@ public class MNISTOptimizationTest {
             throw new RuntimeException();
 
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
-                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
+                        .candidateGenerator(candidateGenerator)
+                        .dataProvider(dataProvider)
                         .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(new TestSetLossScoreFunction(true))
                         .terminationConditions(new MaxTimeCondition(120, TimeUnit.MINUTES),
                                         new MaxCandidatesCondition(100))

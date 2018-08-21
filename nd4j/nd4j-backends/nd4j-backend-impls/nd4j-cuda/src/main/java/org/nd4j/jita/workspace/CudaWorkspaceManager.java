@@ -19,6 +19,9 @@ package org.nd4j.jita.workspace;
 import lombok.NonNull;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.DebugMode;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.memory.provider.BasicWorkspaceManager;
 
 /**
@@ -30,15 +33,28 @@ public class CudaWorkspaceManager extends BasicWorkspaceManager {
         super();
     }
 
+    protected MemoryWorkspace newWorkspace(WorkspaceConfiguration configuration) {
+        return Nd4j.getWorkspaceManager().getDebugMode() == DebugMode.BYPASS_EVERYTHING ? new DummyWorkspace() : new CudaWorkspace(configuration);
+    }
+
+    protected MemoryWorkspace newWorkspace(WorkspaceConfiguration configuration, String id) {
+        return Nd4j.getWorkspaceManager().getDebugMode() == DebugMode.BYPASS_EVERYTHING ? new DummyWorkspace() : new CudaWorkspace(configuration, id);
+    }
+
+    protected MemoryWorkspace newWorkspace(WorkspaceConfiguration configuration, String id, int deviceId) {
+        return Nd4j.getWorkspaceManager().getDebugMode() == DebugMode.BYPASS_EVERYTHING ? new DummyWorkspace() : new CudaWorkspace(configuration, id, deviceId);
+    }
 
     @Override
     public MemoryWorkspace createNewWorkspace(@NonNull WorkspaceConfiguration configuration) {
         ensureThreadExistense();
 
-        MemoryWorkspace workspace = new CudaWorkspace(configuration);
+        MemoryWorkspace workspace = newWorkspace(configuration);
 
         backingMap.get().put(workspace.getId(), workspace);
-        pickReference(workspace);
+
+        if (Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.BYPASS_EVERYTHING)
+            pickReference(workspace);
 
         return workspace;
     }
@@ -47,10 +63,12 @@ public class CudaWorkspaceManager extends BasicWorkspaceManager {
     public MemoryWorkspace createNewWorkspace() {
         ensureThreadExistense();
 
-        MemoryWorkspace workspace = new CudaWorkspace(defaultConfiguration);
+        MemoryWorkspace workspace = newWorkspace(defaultConfiguration);
 
         backingMap.get().put(workspace.getId(), workspace);
-        pickReference(workspace);
+
+        if (Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.BYPASS_EVERYTHING)
+            pickReference(workspace);
 
         return workspace;
     }
@@ -60,10 +78,12 @@ public class CudaWorkspaceManager extends BasicWorkspaceManager {
     public MemoryWorkspace createNewWorkspace(WorkspaceConfiguration configuration, String id) {
         ensureThreadExistense();
 
-        MemoryWorkspace workspace = new CudaWorkspace(configuration, id);
+        MemoryWorkspace workspace = newWorkspace(configuration, id);
 
         backingMap.get().put(id, workspace);
-        pickReference(workspace);
+
+        if (Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.BYPASS_EVERYTHING)
+            pickReference(workspace);
 
         return workspace;
     }
@@ -72,10 +92,12 @@ public class CudaWorkspaceManager extends BasicWorkspaceManager {
     public MemoryWorkspace createNewWorkspace(WorkspaceConfiguration configuration, String id, Integer deviceId) {
         ensureThreadExistense();
 
-        MemoryWorkspace workspace = new CudaWorkspace(configuration, id, deviceId);
+        MemoryWorkspace workspace = newWorkspace(configuration, id, deviceId);
 
         backingMap.get().put(id, workspace);
-        pickReference(workspace);
+
+        if (Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.BYPASS_EVERYTHING)
+            pickReference(workspace);
 
         return workspace;
     }
@@ -86,9 +108,11 @@ public class CudaWorkspaceManager extends BasicWorkspaceManager {
 
         MemoryWorkspace workspace = backingMap.get().get(id);
         if (workspace == null) {
-            workspace = new CudaWorkspace(configuration, id);
+            workspace = newWorkspace(configuration, id);
             backingMap.get().put(id, workspace);
-            pickReference(workspace);
+
+            if (Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.BYPASS_EVERYTHING)
+                pickReference(workspace);
         }
 
         return workspace;

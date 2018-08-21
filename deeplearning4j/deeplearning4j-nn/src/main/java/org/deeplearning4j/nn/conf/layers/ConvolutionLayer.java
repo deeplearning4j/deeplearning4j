@@ -36,6 +36,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 2D Convolution layer (for example, spatial convolution over images).
+ * Input activations should be format {@code [minibatch, channels, height, width]}
+ *
  * @author Adam Gibson
  */
 @Data
@@ -45,49 +48,55 @@ import java.util.Map;
 public class ConvolutionLayer extends FeedForwardLayer {
     protected boolean hasBias = true;
     protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate; //Default to truncate here - default for 0.6.0 and earlier networks on JSON deserialization
-    protected int dilation[] = new int[]{1,1};
+    protected int dilation[] = new int[]{1, 1};
     protected int[] kernelSize; // Square filter
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
     protected int[] padding;
     protected boolean cudnnAllowFallback = true;
 
-    /** The "PREFER_FASTEST" mode will pick the fastest algorithm for the specified parameters
+    /**
+     * The "PREFER_FASTEST" mode will pick the fastest algorithm for the specified parameters
      * from the {@link FwdAlgo}, {@link BwdFilterAlgo}, and {@link BwdDataAlgo} lists, but they
      * may be very memory intensive, so if weird errors occur when using cuDNN, please try the
      * "NO_WORKSPACE" mode. Alternatively, it is possible to specify the algorithm manually by
      * setting the "USER_SPECIFIED" mode, but this is not recommended.
-     *
+     * <p>
      * Note: Currently only supported with cuDNN.
      */
     public enum AlgoMode {
         NO_WORKSPACE, PREFER_FASTEST, USER_SPECIFIED
     }
 
-    /** The forward algorithm to use when {@link AlgoMode} is set to "USER_SPECIFIED".
-     *
+    /**
+     * The forward algorithm to use when {@link AlgoMode} is set to "USER_SPECIFIED".
+     * <p>
      * Note: Currently only supported with cuDNN.
      */
     public enum FwdAlgo {
         IMPLICIT_GEMM, IMPLICIT_PRECOMP_GEMM, GEMM, DIRECT, FFT, FFT_TILING, WINOGRAD, WINOGRAD_NONFUSED, COUNT
     }
 
-    /** The backward filter algorithm to use when {@link AlgoMode} is set to "USER_SPECIFIED".
-     *
+    /**
+     * The backward filter algorithm to use when {@link AlgoMode} is set to "USER_SPECIFIED".
+     * <p>
      * Note: Currently only supported with cuDNN.
      */
     public enum BwdFilterAlgo {
         ALGO_0, ALGO_1, FFT, ALGO_3, WINOGRAD, WINOGRAD_NONFUSED, FFT_TILING, COUNT
     }
 
-    /** The backward data algorithm to use when {@link AlgoMode} is set to "USER_SPECIFIED".
-     *
+    /**
+     * The backward data algorithm to use when {@link AlgoMode} is set to "USER_SPECIFIED".
+     * <p>
      * Note: Currently only supported with cuDNN.
      */
     public enum BwdDataAlgo {
         ALGO_0, ALGO_1, FFT, FFT_TILING, WINOGRAD, WINOGRAD_NONFUSED, COUNT
     }
 
-    /** Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory. */
+    /**
+     * Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory.
+     */
     protected AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
     protected FwdAlgo cudnnFwdAlgo;
     protected BwdFilterAlgo cudnnBwdFilterAlgo;
@@ -128,7 +137,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
         initializeConstraints(builder);
     }
 
-    public boolean hasBias(){
+    public boolean hasBias() {
         return hasBias;
     }
 
@@ -146,11 +155,11 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("ConvolutionLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.ConvolutionLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf);
+                new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -169,7 +178,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
-                            + "\"): Expected CNN input, got " + inputType);
+                    + "\"): Expected CNN input, got " + inputType);
         }
 
         return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation,
@@ -180,7 +189,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
-                            + "\"): Expected CNN input, got " + inputType);
+                    + "\"): Expected CNN input, got " + inputType);
         }
 
         if (nIn <= 0 || override) {
@@ -193,7 +202,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
-                            + "\"): input is null");
+                    + "\"): input is null");
         }
 
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
@@ -235,7 +244,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
         //During forward pass: im2col array, mmul (result activations), in-place broadcast add
         val im2colSizePerEx =
-                        c.getChannels() * outputType.getHeight() * outputType.getWidth() * kernelSize[0] * kernelSize[1];
+                c.getChannels() * outputType.getHeight() * outputType.getWidth() * kernelSize[0] * kernelSize[1];
 
         //During training: have im2col array, in-place gradient calculation, then epsilons...
         //But: im2col array may be cached...
@@ -267,10 +276,10 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
 
         return new LayerMemoryReport.Builder(layerName, ConvolutionLayer.class, inputType, outputType)
-                        .standardMemory(paramSize, updaterStateSize)
-                        //im2col caching -> only variable size caching
-                        .workingMemory(0, im2colSizePerEx, MemoryReport.CACHE_MODE_ALL_ZEROS, trainWorkingMemoryPerEx)
-                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, cachedPerEx).build();
+                .standardMemory(paramSize, updaterStateSize)
+                //im2col caching -> only variable size caching
+                .workingMemory(0, im2colSizePerEx, MemoryReport.CACHE_MODE_ALL_ZEROS, trainWorkingMemoryPerEx)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, cachedPerEx).build();
 
     }
 
@@ -295,6 +304,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
         /**
          * Size of the convolution
          * rows/columns
+         *
          * @param kernelSize the height and width of the
          *                   kernel
          * @return
@@ -324,14 +334,14 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
     }
 
-    protected static abstract class BaseConvBuilder<T extends BaseConvBuilder<T>> extends FeedForwardLayer.Builder<T> {
+    public static abstract class BaseConvBuilder<T extends BaseConvBuilder<T>> extends FeedForwardLayer.Builder<T> {
         protected int convolutionDim = 2; // 2D convolution by default
         protected boolean hasBias = true;
-        protected ConvolutionMode convolutionMode = null;
+        protected ConvolutionMode convolutionMode;
         protected int[] dilation = new int[]{1, 1};
-        public int[] kernelSize = new int[] {5, 5};
-        protected int[] stride = new int[] {1, 1};
-        protected int[] padding = new int[] {0, 0};
+        public int[] kernelSize = new int[]{5, 5};
+        protected int[] stride = new int[]{1, 1};
+        protected int[] padding = new int[]{0, 0};
         protected AlgoMode cudnnAlgoMode = null;
         protected FwdAlgo cudnnFwdAlgo;
         protected BwdFilterAlgo cudnnBwdFilterAlgo;
@@ -389,23 +399,24 @@ public class ConvolutionLayer extends FeedForwardLayer {
             this.kernelSize = kernelSize;
         }
 
-        protected BaseConvBuilder() {}
+        protected BaseConvBuilder() {
+        }
 
         /**
          * If true (default): include bias parameters in the model. False: no bias.
          *
          * @param hasBias If true: include bias parameters in this model
          */
-        public T hasBias(boolean hasBias){
+        public T hasBias(boolean hasBias) {
             this.hasBias = hasBias;
-            return (T)this;
+            return (T) this;
         }
 
         /**
          * Set the convolution mode for the Convolution layer.
          * See {@link ConvolutionMode} for more details
          *
-         * @param convolutionMode    Convolution mode for layer
+         * @param convolutionMode Convolution mode for layer
          */
         public T convolutionMode(ConvolutionMode convolutionMode) {
             this.convolutionMode = convolutionMode;
@@ -415,21 +426,38 @@ public class ConvolutionLayer extends FeedForwardLayer {
         /**
          * Kernel dilation. Default: {1, 1}, which is standard convolutions. Used for implementing dilated convolutions,
          * which are also known as atrous convolutions.
-         *
+         * <p>
          * For more details, see:
          * <a href="https://arxiv.org/abs/1511.07122">Yu and Koltun (2014)</a> and
          * <a href="https://arxiv.org/abs/1412.7062">Chen et al. (2014)</a>, as well as
          * <a href="http://deeplearning.net/software/theano/tutorial/conv_arithmetic.html#dilated-convolutions">
-         *     http://deeplearning.net/software/theano/tutorial/conv_arithmetic.html#dilated-convolutions</a><br>
+         * http://deeplearning.net/software/theano/tutorial/conv_arithmetic.html#dilated-convolutions</a><br>
          *
          * @param dilation Dilation for kernel
          */
-        public T dilation(int... dilation){
+        public T dilation(int... dilation) {
             this.dilation = dilation;
             return (T) this;
         }
 
-        /** Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory. */
+        public T kernelSize(int... kernelSize) {
+            this.kernelSize = kernelSize;
+            return (T) this;
+        }
+
+        public T stride(int... stride) {
+            this.stride = stride;
+            return (T) this;
+        }
+
+        public T padding(int... padding) {
+            this.padding = padding;
+            return (T) this;
+        }
+
+        /**
+         * Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory.
+         */
         public T cudnnAlgoMode(AlgoMode cudnnAlgoMode) {
             this.cudnnAlgoMode = cudnnAlgoMode;
             return (T) this;
@@ -457,7 +485,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
          *
          * @param allowFallback Whether fallback to non-CuDNN implementation should be used
          */
-        public T cudnnAllowFallback(boolean allowFallback){
+        public T cudnnAllowFallback(boolean allowFallback) {
             this.cudnnAllowFallback = allowFallback;
             return (T) this;
         }

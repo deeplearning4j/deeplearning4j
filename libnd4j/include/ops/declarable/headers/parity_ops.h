@@ -35,7 +35,7 @@ namespace nd4j {
          * 0: optional axis
          */
         #if NOT_EXCLUDED(OP_argmax)
-        DECLARE_REDUCTION_OP(argmax, 1, 1, false, 0, -2);
+        DECLARE_CUSTOM_OP(argmax, 1, 1, false, 0, -2);
         #endif
 
         /**
@@ -155,58 +155,80 @@ namespace nd4j {
         #endif
 
         /**
-         * This operation applies Add opeartion to specific inputs wrt indices
+         * This operation applies Add operation to specific inputs wrt indices
          * Expected arguments:
-         * input: N-dimensional array
-         * indices: either scalar, vector, or N-dimensional array
-         * updates: N-dimensional array
+         * input: array to be updated
+         * indices: array containing indexes for first dimension of input
+         * updates: array containing elements to be interfered with input 
          */
         #if NOT_EXCLUDED(OP_scatter_add)
         DECLARE_OP(scatter_add, 3, 1, true);
         #endif
 
         /**
-         * This operation applies Subtract opeartion to specific inputs wrt indices
+         * This operation applies Subtract operation to specific inputs wrt indices
          * Expected arguments:
-         * input: N-dimensional array
-         * indices: either scalar, vector, or N-dimensional array
-         * updates: N-dimensional array
+         * input: array to be updated
+         * indices: array containing indexes for first dimension of input
+         * updates: array containing elements to be interfered with input 
          */
         #if NOT_EXCLUDED(OP_scatter_sub)
         DECLARE_OP(scatter_sub, 3, 1, true);
         #endif
 
         /**
-         * This operation applies Multiply opeartion to specific inputs wrt indices
+         * This operation applies Multiply operation to specific inputs wrt indices
          * Expected arguments:
-         * input: N-dimensional array
-         * indices: either scalar, vector, or N-dimensional array
-         * updates: N-dimensional array
+         * input: array to be updated
+         * indices: array containing indexes for first dimension of input
+         * updates: array containing elements to be interfered with input 
          */
         #if NOT_EXCLUDED(OP_scatter_mul)
         DECLARE_OP(scatter_mul, 3, 1, true);
         #endif
 
         /**
-         * This operation applies Divide opeartion to specific inputs wrt indices
+         * This operation applies Divide operation to specific inputs wrt indices
          * Expected arguments:
-         * input: N-dimensional array
-         * indices: either scalar, vector, or N-dimensional array
-         * updates: N-dimensional array
+         * input: array to be updated
+         * indices: array containing indexes for first dimension of input
+         * updates: array containing elements to be interfered with input 
          */
         #if NOT_EXCLUDED(OP_scatter_div)
         DECLARE_OP(scatter_div, 3, 1, true);
         #endif
 
         /**
-         * This operation applies Assign opeartion to specific inputs wrt indices
+         * This operation applies Assign operation to specific inputs wrt indices
          * Expected arguments:
-         * input: N-dimensional array
-         * indices: either scalar, vector, or N-dimensional array
-         * updates: N-dimensional array
+         * input: array to be updated
+         * indices: array containing indexes for first dimension of input
+         * updates: array containing elements to be interfered with input 
          */
         #if NOT_EXCLUDED(OP_scatter_upd)
         DECLARE_OP(scatter_upd, 3, 1, true);
+        #endif
+
+        /**
+         * This operation applies Max operation to specific inputs through given indices
+         * Expected arguments:
+         * input: array to be updated
+         * indices: array containing indexes for first dimension of input
+         * updates: array containing elements to be interfered with input 
+         */
+        #if NOT_EXCLUDED(OP_scatter_max)
+        DECLARE_OP(scatter_max, 3, 1, true);
+        #endif
+
+        /**
+         * This operation applies Min operation to specific inputs through given indices
+         * Expected arguments:
+         * input: array to be updated
+         * indices: array containing indexes for first dimension of input
+         * updates: array containing elements to be interfered with input 
+         */
+        #if NOT_EXCLUDED(OP_scatter_min)
+        DECLARE_OP(scatter_min, 3, 1, true);
         #endif
 
         /**
@@ -618,6 +640,10 @@ namespace nd4j {
          */
         #if NOT_EXCLUDED(OP_dynamic_partition)
         DECLARE_CUSTOM_OP(dynamic_partition, 2, 1, false, 0, 1);
+        #endif
+
+        #if NOT_EXCLUDED(OP_dynamic_partition_bp)
+        DECLARE_CUSTOM_OP(dynamic_partition_bp, 3, 2, false, 0, 1);
         #endif
 
         /**
@@ -1219,7 +1245,7 @@ namespace nd4j {
         */
 
         #if NOT_EXCLUDED(OP_reduce_dot_bp)
-        DECLARE_CUSTOM_OP(reduce_dot_bp, 3, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_dot_bp, 3, 2, false, 0, 0);
         #endif
 
     }

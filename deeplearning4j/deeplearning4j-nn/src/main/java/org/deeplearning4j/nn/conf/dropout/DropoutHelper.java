@@ -16,15 +16,34 @@
 
 package org.deeplearning4j.nn.conf.dropout;
 
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+/**
+ * A helper interface for native dropout implementations
+ *
+ * @author Alex Black
+ */
 public interface DropoutHelper {
 
+    /**
+     * @return Check if this dropout helper is supported in the current environment
+     */
     boolean checkSupported();
 
+    /**
+     * Apply the dropout during forward pass
+     * @param inputActivations       Input activations (pre dropout)
+     * @param resultArray            Output activations (post dropout). May be same as (or different to) input array
+     * @param dropoutInputRetainProb Probability of retaining an activation
+     */
     void applyDropout(INDArray inputActivations, INDArray resultArray, double dropoutInputRetainProb);
 
+    /**
+     * Perform backpropagation. Note that the same dropout mask should be used for backprop as was used during the last
+     * call to {@link #applyDropout(INDArray, INDArray, double)}
+     * @param gradAtOutput Gradient at output (from perspective of forward pass)
+     * @param gradAtInput  Result array - gradient at input. May be same as (or different to) gradient at input
+     */
     void backprop(INDArray gradAtOutput, INDArray gradAtInput);
 
 

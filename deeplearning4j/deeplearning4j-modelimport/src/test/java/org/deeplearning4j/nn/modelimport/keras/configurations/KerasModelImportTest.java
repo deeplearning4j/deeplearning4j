@@ -17,14 +17,21 @@
 package org.deeplearning4j.nn.modelimport.keras.configurations;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 
+import java.io.File;
 import java.io.IOException;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Test import of Keras models.
@@ -38,20 +45,20 @@ public class KerasModelImportTest {
     @Test
     public void testH5WithoutTensorflowScope() throws Exception {
         MultiLayerNetwork model = loadModel("modelimport/keras/tfscope/model.h5");
-        assert (model != null);
+        assertNotNull(model);
     }
 
     @Test
     public void testH5WithTensorflowScope() throws Exception {
         MultiLayerNetwork model = loadModel("modelimport/keras/tfscope/model.h5.with.tensorflow.scope");
-        assert (model != null);
+        assertNotNull(model);
     }
 
     @Test
     public void testWeightAndJsonWithoutTensorflowScope() throws Exception {
         MultiLayerNetwork model = loadModel("modelimport/keras/tfscope/model.json",
                 "modelimport/keras/tfscope/model.weight");
-        assert (model != null);
+        assertNotNull(model);
     }
 
     @Test
@@ -59,7 +66,7 @@ public class KerasModelImportTest {
         MultiLayerNetwork model = loadModel(
                 "modelimport/keras/tfscope/model.json.with.tensorflow.scope",
                 "modelimport/keras/tfscope/model.weight.with.tensorflow.scope");
-        assert (model != null);
+        assertNotNull(model);
     }
 
     private MultiLayerNetwork loadModel(String modelJsonFilename, String modelWeightFilename)

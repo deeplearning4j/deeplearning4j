@@ -22,6 +22,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.preprocessor.Cnn3DToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
@@ -93,6 +94,11 @@ public abstract class FeedForwardLayer extends BaseLayer {
                 //CNN -> FF
                 InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
                 return new CnnToFeedForwardPreProcessor(c.getHeight(), c.getWidth(), c.getChannels());
+            case CNN3D:
+                //CNN3D -> FF
+                InputType.InputTypeConvolutional3D c3d = (InputType.InputTypeConvolutional3D)inputType;
+                //TODO don't hardcode NCDHW
+                return new Cnn3DToFeedForwardPreProcessor(c3d.getDepth(), c3d.getHeight(), c3d.getWidth(), c3d.getChannels(), true);
             default:
                 throw new RuntimeException("Unknown input type: " + inputType);
         }

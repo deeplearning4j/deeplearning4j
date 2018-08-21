@@ -17,11 +17,13 @@
 package org.deeplearning4j.nn.modelimport.keras.configurations;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
+import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSpaceToDepth;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
@@ -29,11 +31,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertArrayEquals;
 
 
 /**
@@ -98,6 +102,10 @@ public class Keras2ModelConfigurationTest {
         runSequentialConfigTest("modelimport/keras/configs/keras2/simple_rnn_tf_keras_2_config.json");
     }
 
+    @Test
+    public void simplePreluConfigTest() throws Exception {
+        runSequentialConfigTest("modelimport/keras/configs/keras2/prelu_config_tf_keras_2.json");
+    }
 
     @Test
     public void mnistMlpTfSequentialConfigTest() throws Exception {
@@ -205,6 +213,20 @@ public class Keras2ModelConfigurationTest {
     @Test
     public void conv1dDilationTest() throws Exception {
         runModelConfigTest("/modelimport/keras/configs/keras2/conv1d_dilation_tf_keras_2_config.json");
+    }
+
+    @Test
+    public void test5982() throws Exception {
+        File jsonFile = new ClassPathResource("modelimport/keras/configs/bidirectional_last_timeStep.json").getFile();
+        val modelGraphConf = KerasModelImport.importKerasSequentialConfiguration(jsonFile.getAbsolutePath());
+        MultiLayerNetwork model = new MultiLayerNetwork(modelGraphConf);
+
+        INDArray features = Nd4j.create(new double[]{1, 3, 1, 2, 2, 1, 82, 2, 10,1, 3, 1, 2, 1, 82, 3, 1, 10, 1, 2, 1, 3,
+                1, 10, 82, 2, 1, 1, 10, 82, 2, 3, 1, 2, 1, 10, 1, 2, 3, 82, 2, 1, 10, 3, 82, 1, 2, 1, 10, 1}, new int[]{1,1,50});
+
+        model.init();
+        INDArray out = model.output(features);
+        assertArrayEquals(new long[]{1,14}, out.shape());
     }
 
     @Test

@@ -1,0 +1,18 @@
+{
+  "excludes": [
+    "abstract"
+  ],
+  "indices": [
+  ],
+  "pages": [
+    {
+      "page": "training.md",
+      "class": []
+    },
+    {
+      "page": "parameter-server.md",
+      "class": []
+    }
+  ]
+}
+

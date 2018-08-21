@@ -29,7 +29,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.deeplearning4j</groupId>
-    <artifactId>scalnet_2.11</artifactId>
+    <artifactId>scalnet_2.10</artifactId>
 
     <name>ScalNet</name>
     <description>A Scala wrapper for Deeplearning4j, inspired by Keras. Scala + DL + Spark + GPUs
@@ -52,8 +52,8 @@
 
     <properties>
         <!-- Scala version is linked with the artifact name so cannot move to parent pom.xml -->
-        <scala.version>2.11.12</scala.version>
-        <scala.binary.version>2.11</scala.binary.version>
+        <scala.version>2.10.7</scala.version>
+        <scala.binary.version>2.10</scala.binary.version>
     </properties>
 
     <dependencies>

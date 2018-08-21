@@ -52,7 +52,7 @@
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-parallel-wrapper_2.11</artifactId>
+            <artifactId>deeplearning4j-parallel-wrapper_2.10</artifactId>
             <version>${project.version}</version>
         </dependency>
         <!-- For unit tests -->
