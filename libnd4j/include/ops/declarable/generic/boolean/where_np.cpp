@@ -128,20 +128,18 @@ namespace nd4j {
             } else {
                 // FIXME: we can't estimate result here in this case
                 auto inShape = inputShape->at(0);
+                auto condition = INPUT_VARIABLE(0);
 
-                Nd4jLong *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
-
-                newshape[0] = 2;
-                newshape[1] = 10;
-                newshape[2] = 10;
-                newshape[3] = 1;
-                newshape[4] = 1;
-                newshape[5] = 0;
-                newshape[6] = 1;
-                newshape[7] = 99;
-
-                return SHAPELIST(newshape);
+                Nd4jLong numOfTrue = condition->template reduceNumber<simdOps::CountNonZero<T>>();
+                // output shape - a tuple of rank(inShape) 1D tensors with numOfTrue len
+                ShapeList* shapes = new ShapeList;
+                for (Nd4jLong e = 0; e < shape::rank(inShape); ++e) {
+                    Nd4jLong *newShape;
+                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
+                    shape::shapeVector(numOfTrue, newShape);
+                    shapes->push_back(newShape);
+                }
+                return shapes;
             }
         }
     }
