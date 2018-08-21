@@ -28,7 +28,7 @@ public enum LoadBalanceMode {
     ROUND_ROBIN,
 
     /**
-     * in this mode we'll be
+     * in this mode we'll be picking free node for next request, blocking if we don't have free nodes at the moment
      */
     FIFO,
 }

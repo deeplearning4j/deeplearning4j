@@ -17,6 +17,8 @@
 package org.deeplearning4j.parallelism.inference;
 
 /**
+ * This enum describes different modes for ParallelInference
+ *
  * @author raver119@gmail.com
  */
 public enum InferenceMode {
@@ -31,7 +33,7 @@ public enum InferenceMode {
     BATCHED,
 
     /**
-     * Inference will applied in the calling thread instead of workers.
+     * Inference will applied in the calling thread instead of workers. Worker models will be using shared parameters on per-device basis.
      */
     INPLACE,
 }

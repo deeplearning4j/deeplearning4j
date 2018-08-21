@@ -37,7 +37,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * This ParallelInference implementation provides inference functionality without launching additional threads, so inference happens in the calling thread
+ * This ParallelInference implementation provides inference functionality without launching additional threads, so inference happens in the calling thread.
+ *
+ * To instantiate this implementation one should use InferenceMode.INPLACE in ParallelInference.Builder
+ *
+ * PLEASE NOTE: This implementation does not create additional threads
+ * PLEASE NOTE: This implementation uses shared parameters for models on per-device basis
+ *
  * @author raver119@gmail.com
  */
 @Slf4j
@@ -90,7 +96,7 @@ public class InplaceParallelInference extends ParallelInference {
     }
 
 
-    public static class ModelSelector {
+    protected static class ModelSelector {
         // this map stores collection of shared
         protected Map<Integer, ModelHolder> map = new HashMap<>();
 
@@ -131,7 +137,7 @@ public class InplaceParallelInference extends ParallelInference {
     @NoArgsConstructor
     @AllArgsConstructor
     @lombok.Builder
-    public static class ModelHolder {
+    protected static class ModelHolder {
         protected Model sourceModel;
         @lombok.Builder.Default protected int workers = 4;
         @lombok.Builder.Default protected List<Model> replicas = new ArrayList<>();
