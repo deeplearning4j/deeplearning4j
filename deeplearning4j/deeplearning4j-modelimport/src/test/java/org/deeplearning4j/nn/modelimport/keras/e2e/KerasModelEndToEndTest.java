@@ -430,7 +430,9 @@ public class KerasModelEndToEndTest {
      */
     @Test
     public void importMobileNet() throws Exception {
-        importFunctionalModelH5Test("modelimport/keras/examples/mobilenet/mobilenet_tf_keras_2.h5");
+        ComputationGraph graph = importFunctionalModelH5Test("modelimport/keras/examples/mobilenet/alternative.hdf5");
+        INDArray input = Nd4j.ones(10, 3, 299, 299);
+        graph.output(input);
     }
 
     /**
