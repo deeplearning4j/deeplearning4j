@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.parallelism.inference.InferenceMode;
 import org.deeplearning4j.parallelism.inference.InferenceObservable;
+import org.deeplearning4j.parallelism.inference.LoadBalanceMode;
 import org.deeplearning4j.parallelism.inference.observers.BasicInferenceObservable;
 import org.deeplearning4j.parallelism.inference.observers.BasicInferenceObserver;
 import org.deeplearning4j.parallelism.inference.observers.BatchedInferenceObservable;
@@ -58,6 +59,7 @@ public class ParallelInference {
     protected int batchLimit;
     protected InferenceMode inferenceMode;
     protected int queueLimit;
+    protected LoadBalanceMode loadBalanceMode;
 
     // this queue holds data for inference
     private BlockingQueue<InferenceObservable> observables;
@@ -264,6 +266,7 @@ public class ParallelInference {
         private int batchLimit = DEFAULT_BATCH_LIMIT;
         private InferenceMode inferenceMode = DEFAULT_INFERENCE_MODE;
         private int queueLimit = DEFAULT_QUEUE_LIMIT;
+        protected LoadBalanceMode loadBalanceMode;
 
         public Builder(@NonNull Model model) {
             this.model = model;
@@ -285,6 +288,17 @@ public class ParallelInference {
             return this;
         }
 
+
+        /**
+         * This method allows you to specify load balance mode
+         *
+         * @param loadBalanceMode
+         * @return
+         */
+        public Builder loadBalanceMode(@NonNull LoadBalanceMode loadBalanceMode) {
+            this.loadBalanceMode = loadBalanceMode;
+            return this;
+        }
 
 
         /**
@@ -348,6 +362,7 @@ public class ParallelInference {
                 inf.inferenceMode = this.inferenceMode;
                 inf.model = this.model;
                 inf.workers = this.workers;
+                inf.loadBalanceMode = this.loadBalanceMode;
 
                 inf.init();
 
@@ -359,6 +374,7 @@ public class ParallelInference {
                 inference.inferenceMode = this.inferenceMode;
                 inference.model = this.model;
                 inference.workers = this.workers;
+                inference.loadBalanceMode = this.loadBalanceMode;
 
                 inference.init();
 
