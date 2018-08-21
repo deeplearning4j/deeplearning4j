@@ -40,8 +40,8 @@ public class MatrixDiagPart extends DynamicCustomOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "MatrixDiagPart";
+    public String[] tensorflowNames() {
+        return new String[]{"MatrixDiagPart","MatrixDiagPart"};
     }
 
     @Override

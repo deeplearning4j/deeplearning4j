@@ -45,8 +45,8 @@ public class MatrixInverse extends DynamicCustomOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "MatrixInverse";
+    public String[] tensorflowNames() {
+        return new String[]{"MatrixInverse", "BatchMatrixInverse"};
     }
 
     @Override
