@@ -109,14 +109,16 @@ namespace nd4j {
                 return SHAPELIST(newshape);
             } else {
                 // FIXME: we can't estimate result here in this case
+                // output shape is the 2D tensor num_true x rankOf (inShape)
+                auto condition = INPUT_VARIABLE(0);
                 auto inShape = inputShape->at(0);
-
+                Nd4jLong numOfTrue = condition->template reduceNumber<simdOps::CountNonZero<T>>();
                 Nd4jLong *newshape;
                 ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
 
                 newshape[0] = 2;
-                newshape[1] = 10;
-                newshape[2] = 10;
+                newshape[1] = numOfTrue;
+                newshape[2] = shape::rank(inShape);
                 newshape[3] = 1;
                 newshape[4] = 1;
                 newshape[5] = 0;
