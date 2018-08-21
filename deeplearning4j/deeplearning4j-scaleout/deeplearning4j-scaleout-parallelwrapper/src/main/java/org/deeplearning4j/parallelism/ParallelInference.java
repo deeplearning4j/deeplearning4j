@@ -305,6 +305,7 @@ public class ParallelInference {
          * This method defines, how many model copies will be used for inference.
          *
          * PLEASE NOTE: This method primarily suited for multi-GPU systems
+         * PLEASE NOTE: For INPLACE inference mode this value will mean number of models per DEVICE
          *
          * @param workers
          * @return
