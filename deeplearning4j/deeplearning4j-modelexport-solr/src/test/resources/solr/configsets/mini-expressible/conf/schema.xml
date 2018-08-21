@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+
+<schema name="mini" version="1.6">
+
+  <fieldType name="float"  class="solr.FloatPointField"/>
+  <fieldType name="long"   class="solr.LongPointField"/>
+  <fieldType name="string" class="solr.StrField"/>
+
+  <dynamicField name="*_f" type="float"  indexed="true" stored="true" docValues="true"/>
+  <field name="id"         type="string" indexed="true" stored="true" docValues="true" required="true"/>
+  <field name="_version_"  type="long"   indexed="true" stored="true" docValues="true"/>
+
+  <uniqueKey>id</uniqueKey>
+
+</schema>

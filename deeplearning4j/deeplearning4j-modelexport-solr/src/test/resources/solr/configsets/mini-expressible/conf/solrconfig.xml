@@ -1,0 +1,14 @@
+<?xml version="1.0" ?>
+
+<!--
+  This file is a minimal test configuration. For comprehensive information about solrconfig.xml please refer to
+  http://lucene.apache.org/solr/guide/7_5/configuring-solrconfig-xml.html
+  and the well-commented example files in the Apache Solr release's server/solr/configsets directories.
+-->
+
+<config>
+  <luceneMatchVersion>7.5.0</luceneMatchVersion>
+
+  <expressible name="modelTuple" class="org.deeplearning4j.nn.modelexport.solr.handler.ModelTupleStream"/>
+
+</config>
