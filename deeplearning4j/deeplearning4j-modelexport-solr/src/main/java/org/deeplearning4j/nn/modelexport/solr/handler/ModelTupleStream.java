@@ -34,9 +34,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * <p>
  * Illustrative configuration snippet:
  * <pre>
-  &lt;lst name="streamFunctions"&gt;
-    &lt;str name="emailModel"&gt;org.deeplearning4j.nn.modelexport.solr.handler.ModelTupleStream&lt;/str&gt;
-  &lt;/lst&gt;
+  &lt;expressible name="emailModel" class="org.deeplearning4j.nn.modelexport.solr.handler.ModelTupleStream"/&gt;
 </pre>
  * <p>
  * Illustrative expression snippet:
@@ -57,6 +55,14 @@ import org.nd4j.linalg.factory.Nd4j;
  * </ul>
  */
 public class ModelTupleStream extends TupleStream implements Expressible {
+
+  public Map toMap(Map<String, Object> map) {
+    // We (ModelTupleStream) extend TupleStream which implements MapWriter which extends MapSerializable.
+    // MapSerializable says to have a toMap method.
+    // org.apache.solr.common.MapWriter has a toMap method which has 'default' visibility.
+    // So MapWriter.toMap here is not 'visible' but it is 'callable' it seems.
+    return super.toMap(map);
+  }
 
   final private static String SERIALIZED_MODEL_FILE_NAME_PARAM = "serializedModelFileName";
   final private static String INPUT_KEYS_PARAM = "inputKeys";
@@ -94,11 +100,6 @@ public class ModelTupleStream extends TupleStream implements Expressible {
     this.solrResourceLoader = ((SolrDefaultStreamFactory)streamFactory).getSolrResourceLoader();
 
     this.model = restoreModel(openInputStream());
-  }
-
-  // TODO
-  public Map toMap(Map<String, Object> map) {
-    return super.toMap(map);
   }
 
   private static String getOperandValue(StreamExpression streamExpression, StreamFactory streamFactory, String operandName) throws IOException {
