@@ -82,9 +82,6 @@ public class TFGraphTestAllSameDiff {
             "confusion/.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6180
             "identity_n.*",
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6189
-            "matmul/rank4.*",
-            "matmul/rank5.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6182
             "zeta.*",
 
