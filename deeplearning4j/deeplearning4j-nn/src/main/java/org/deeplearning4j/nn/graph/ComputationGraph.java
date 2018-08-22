@@ -1152,6 +1152,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 solver.optimize(workspaceMgr);
 
             }
+        } else {
+            throw new IllegalStateException("Network configuration is set to backprop(false). Use the pretrain" +
+                    " and pretrainLayer methods to perform training for unsupervised layerwise training of neural networks");
         }
 
         if (featureMaskArrays != null || labelMaskArrays != null) {
