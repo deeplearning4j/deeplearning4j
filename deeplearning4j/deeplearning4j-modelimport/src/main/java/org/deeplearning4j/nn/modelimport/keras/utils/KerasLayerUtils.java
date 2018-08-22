@@ -195,6 +195,8 @@ public class KerasLayerUtils {
             layer = new KerasActivation(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LEAKY_RELU())) {
             layer = new KerasLeakyReLU(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MASKING())) {
+            layer = new KerasMasking(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_THRESHOLDED_RELU())) {
             layer = new KerasThresholdedReLU(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_PRELU())) {
