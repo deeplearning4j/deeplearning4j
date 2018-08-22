@@ -24,6 +24,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
+import org.nd4j.parameterserver.distributed.v2.transport.MessageCallable;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 
@@ -172,12 +173,5 @@ public class DummyTransport extends BaseTransport {
         synchronized (mesh) {
             return mesh.get();
         }
-    }
-
-    /**
-     * Simple runnable interface for interceptors
-     */
-    public interface MessageCallable<T extends VoidMessage> {
-        void apply(T message);
     }
 }

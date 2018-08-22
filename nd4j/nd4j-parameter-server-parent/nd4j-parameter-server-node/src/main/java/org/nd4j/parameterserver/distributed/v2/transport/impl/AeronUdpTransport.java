@@ -36,7 +36,9 @@ import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.enums.TransmissionStatus;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
+import org.nd4j.parameterserver.distributed.v2.transport.MessageCallable;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,7 +49,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class AeronUdpTransport extends BaseTransport {
+public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
+    // this is for tests only
+    protected Map<String, MessageCallable> interceptors = new HashMap<>();
+    protected Map<String, MessageCallable> precursors = new HashMap<>();
+
     // this map holds outgoing connections, basically
     private Map<String, RemoteConnection> remoteConnections = new ConcurrentHashMap<>();
 
@@ -142,6 +148,11 @@ public class AeronUdpTransport extends BaseTransport {
             // :(
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void close() throws Exception {
+        shutdown();
     }
 
     @Override
@@ -245,6 +256,47 @@ public class AeronUdpTransport extends BaseTransport {
         shutdownSilent();
 
         super.shutdown();
+    }
+
+
+    /**
+     * This method add interceptor for incoming messages. If interceptor is defined for given message class - runnable will be executed instead of processMessage()
+     * @param cls
+     * @param callable
+     */
+    public <T extends VoidMessage> void addInterceptor(@NonNull Class<T> cls, @NonNull MessageCallable<T> callable) {
+        interceptors.put(cls.getCanonicalName(), callable);
+    }
+
+    /**
+     * This method add precursor for incoming messages. If precursor is defined for given message class - runnable will be executed before processMessage()
+     * @param cls
+     * @param callable
+     */
+    public <T extends VoidMessage> void addPrecursor(@NonNull Class<T> cls, @NonNull MessageCallable<T> callable) {
+        precursors.put(cls.getCanonicalName(), callable);
+    }
+
+    @Override
+    public void processMessage(@NonNull VoidMessage message) {
+        // fast super call if there's no callbacks where defined
+        if (interceptors.isEmpty() && precursors.isEmpty()) {
+            super.processMessage(message);
+            return;
+        }
+
+        val name = message.getClass().getCanonicalName();
+        val callable = interceptors.get(name);
+
+        if (callable != null)
+            callable.apply(message);
+        else {
+            val precursor = precursors.get(name);
+            if (precursor != null)
+                precursor.apply(message);
+
+            super.processMessage(message);
+        }
     }
 
     @Data
