@@ -69,22 +69,6 @@ public class KerasModelImportTest {
         assertNotNull(model);
     }
 
-    @Test
-    public void test5982() throws Exception {
-        File jsonFile = new ClassPathResource("modelimport/keras/configs/bidirectional_last_timeStep.json").getFile();
-        val modelGraphConf = KerasModelImport.importKerasSequentialConfiguration(jsonFile.getAbsolutePath());
-        MultiLayerNetwork model = new MultiLayerNetwork(modelGraphConf);
-
-        INDArray features = Nd4j.create(new double[]{1, 3, 1, 2, 2, 1, 82, 2, 10,1, 3, 1, 2, 1, 82, 3, 1, 10, 1, 2, 1, 3,
-                1, 10, 82, 2, 1, 1, 10, 82, 2, 3, 1, 2, 1, 10, 1, 2, 3, 82, 2, 1, 10, 3, 82, 1, 2, 1, 10, 1}, new int[]{1,1,50});
-
-        model.init();
-//        System.out.println(model.summary());
-        INDArray out = model.output(features);
-        assertArrayEquals(new long[]{1,14}, out.shape());
-    }
-
-
     private MultiLayerNetwork loadModel(String modelJsonFilename, String modelWeightFilename)
             throws NullPointerException {
         ClassPathResource modelResource = new ClassPathResource(modelJsonFilename, classLoader);

@@ -152,6 +152,10 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         this.inplaceCall = inPlace;
     }
 
+    public DynamicCustomOp(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+        this(null, sameDiff, args, inPlace);
+    }
+
     protected DynamicCustomOp(String opName) {
         this.opName = opName;
         iArguments = new ArrayList<>();
