@@ -149,3 +149,27 @@ TEST_F(DeclarableOpsTests10, Unique_SGO_Test_1) {
     delete res;
 }
 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, svd_test11) {
+
+    NDArray<double> x('c', {3,3}, {1.,2.,3.,4.,5.,6.,7.,8.,9.});
+    NDArray<double> expS('c', {3});
+    NDArray<double> expU('c', {3,3});
+    NDArray<double> expV('c', {3,3});
+
+    nd4j::ops::svd<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&x}, {}, {0, 1, 16});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *s = results->at(0);
+    NDArray<double> *u = results->at(1);
+    NDArray<double> *v = results->at(2);
+
+    ASSERT_TRUE(expS.isSameShape(s));
+    ASSERT_TRUE(expU.isSameShape(u));
+    ASSERT_TRUE(expV.isSameShape(v));
+
+    delete results;
+}
+
