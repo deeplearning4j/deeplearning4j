@@ -6778,6 +6778,18 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertArrayEquals(exp.toDoubleVector(), col.toDoubleVector(), 1e-6);
     }
 
+    @Test
+    public void testWhere1(){
+
+        INDArray arr = Nd4j.create(new double[][]{{0,1,0},{0,0,1},{0,0,1}});
+        INDArray exp = Nd4j.create(new double[][]{{0,1},{1,2},{2,2}});
+
+        INDArray act = Nd4j.where(arr, null, null);
+
+        assertEquals(exp, act);
+
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;
