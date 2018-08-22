@@ -20,7 +20,7 @@
 
 #include <op_boilerplate.h>
 #if NOT_EXCLUDED(OP_matrix_band_part)
-
+#include <ops/declarable/helpers/matrix_band.h>
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -41,6 +41,7 @@ namespace nd4j {
             REQUIRE_TRUE(maxUpper > -M && maxUpper < M, 0, "matrix_band_part: upper diagonal count %i should be less than %i.",
                     maxUpper, M);
 
+            helpers::matrixBandPart(input, output, minLower, maxUpper);
             return ND4J_STATUS_OK;
         }
         DECLARE_SYN(band_part, matrix_band_part);

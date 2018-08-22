@@ -173,3 +173,27 @@ TEST_F(DeclarableOpsTests10, svd_test11) {
     delete results;
 }
 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, TestMarixBandPart_Test_1) {
+
+    NDArray<double> x('c', {2, 3, 3});
+
+    NDArray<double> exp('c', {2, 3, 3});
+    x.linspace(1);
+    exp.linspace(1);
+    exp(0, 0, 2)  = 0.;
+    exp(1, 0, 2)  = 0.;
+    exp(0, 2, 0)  = 0.;
+    exp(1, 2, 0)  = 0.;
+
+    nd4j::ops::matrix_band_part<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&x}, {}, {1, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    //results->at(0)->printIndexedBuffer("MBP Test1");
+    //exp.printIndexedBuffer("MBP Expec");
+    ASSERT_TRUE(exp.equalsTo(results->at(0)));
+
+    delete results;
+}
+
