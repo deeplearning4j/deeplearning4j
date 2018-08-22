@@ -44,7 +44,6 @@ OP_IMPL(scatter_nd_add, 3, 1, true) {
     REQUIRE_TRUE(indLastDim <= inRank, 0, "SCATTER_ND_ADD OP: the last dimension of indices array must be <= input_array_rank, but got %i instead !", indLastDim);
     REQUIRE_TRUE(updRank == (indRank - 1 + inRank - indLastDim), 0, "SCATTER_ND_ADD OP: the equality updates_rank = (indices_rank - 1 + input_rank - last_indices_dimension) must be true for input arrays, but got instead: updates_rank = %i, indices_rank = %i, last_indices_dimension = %i !", updRank, indRank, indLastDim);
 
-
     std::vector<Nd4jLong> inShape  = input->getShapeAsVector();
     std::vector<Nd4jLong> updShape = updates->getShapeAsVector();
     std::vector<Nd4jLong> indShape = indices->getShapeAsVector();    

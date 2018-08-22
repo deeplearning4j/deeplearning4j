@@ -165,29 +165,39 @@ static FORCEINLINE void scatterND(const NDArray<T>& indices, const NDArray<T>& u
     const int updRank = updates.rankOf();
     const Nd4jLong indLastDim = indices.sizeAt(-1);
 
-    int sizeExludeUpd = updRank == 1 ? 0 : indRank - 1;
-    int sizeExludeOut = std::is_same<OpClass, simdOps::Copy<T>>::value ? 1 : indices.sizeAt(-1) - 1;    
+    if(outRank == 1) {
 
-    std::vector<int> dimsToExcludeUpd(sizeExludeUpd);
-    std::vector<int> dimsToExcludeOut(sizeExludeOut);
-    std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
-    std::iota(dimsToExcludeOut.begin(), dimsToExcludeOut.end(), 0);
+#pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+        for(Nd4jLong i = 0; i < indLen; ++i) {
+            T& out = output(indices(i));                    
+#pragma omp critical                    
+            out = OpClass::op(out, updates(i), nullptr);
+            }
+    } 
+    else {
 
-    std::vector<Nd4jLong> idxRangesOut(2 * outRank);
-    std::vector<Nd4jLong> idxRangesUpd(2 * updRank);
+        int sizeExludeOut = std::is_same<OpClass, simdOps::Copy<T>>::value ? 1 : indices.sizeAt(-1) - 1;    
 
+        std::vector<int> dimsToExcludeUpd(indRank - 1);
+        std::vector<int> dimsToExcludeOut(sizeExludeOut);
+        std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
+        std::iota(dimsToExcludeOut.begin(), dimsToExcludeOut.end(), 0);
+
+        std::vector<Nd4jLong> idxRangesOut(2 * outRank);
+        std::vector<Nd4jLong> idxRangesUpd(2 * updRank);
 // #pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) firstprivate(idxRangesOut, idxRangesUpd)  // causes known openMP asan bug !
 #pragma omp parallel for schedule(guided) firstprivate(idxRangesOut, idxRangesUpd)
-    for(Nd4jLong i = 0; i < indLen; ++i) {                    
+        for(Nd4jLong i = 0; i < indLen; ++i) {                    
         
-        ShapeUtils<T>::evalIdxRangesForSubArr(static_cast<Nd4jLong>(indices(i)), output.getShapeInfo(), dimsToExcludeOut, idxRangesOut.data());
-        ShapeUtils<T>::evalIdxRangesForSubArr(i, updates.getShapeInfo(), dimsToExcludeUpd, idxRangesUpd.data());
+            ShapeUtils<T>::evalIdxRangesForSubArr(static_cast<Nd4jLong>(indices(i)), output.getShapeInfo(), dimsToExcludeOut, idxRangesOut.data());
+            ShapeUtils<T>::evalIdxRangesForSubArr(i, updates.getShapeInfo(), dimsToExcludeUpd, idxRangesUpd.data());
 
-        NDArray<T> outSubArr = output(idxRangesOut.data());                
-        NDArray<T> updSubArr = updates(idxRangesUpd.data());
+            NDArray<T> outSubArr = output(idxRangesOut.data());                
+            NDArray<T> updSubArr = updates(idxRangesUpd.data());
 
 #pragma omp critical
-        outSubArr.template applyPairwiseTransform<OpClass>(&updSubArr, nullptr);
+            outSubArr.template applyPairwiseTransform<OpClass>(&updSubArr, nullptr);
+        }
     }
 }
 

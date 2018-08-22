@@ -996,12 +996,33 @@ TEST_F(ParityOpsTests, scatterND_test3) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-TEST_F(ParityOpsTests, scatterND_add_test1) {    
-    
-    NDArray<float> input('c', {8}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f});
+TEST_F(ParityOpsTests, scatterND_test4) {    
+        
     NDArray<float> indices('c', {4, 1}, {4.f, 3.f, 1.f, 7.f});
     NDArray<float> updates('c', {4}, {9.f, 10.f, 11.f, 12.f});    
-    NDArray<float> exp('c', {8}, {1.f, 13.f,  3.f, 14.f, 14.f,  6.f,  7.f, 20});
+    NDArray<float> shape('c', {1}, {8.f});
+    NDArray<float> exp('c', {8}, {0.f, 11.f, 0.f, 10.f, 9.f, 0.f, 0.f, 12.f});
+    
+    nd4j::ops::scatter_nd<float> op;
+    auto result = op.execute({&indices, &updates, &shape}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_add_test1) {    
+    
+    NDArray<float> input('c', {5, 4}, {-6.f, -1.f, -1.f, 7.f, -10.f, -1.f, -2.f, 9.f, -2.f, -8.f, -6.f, 9.f, 3.f, -8.f, -3.f, 7.f, 4.f, 6.f, 9.f, -8.f});
+    NDArray<float> indices('c', {3, 3, 2}, {});
+    NDArray<float> updates('c', {4}, {9.f, 10.f, 11.f, 12.f});    
+    NDArray<float> exp('c', {8}, {1.f, 13.f,  3.f, 14.f, 14.f,  6.f,  7.f, 20.f});
     
     nd4j::ops::scatter_nd_add<float> op;
     auto result = op.execute({&input, &indices, &updates}, {}, {});
@@ -1015,4 +1036,3 @@ TEST_F(ParityOpsTests, scatterND_add_test1) {
     delete result;
 }
 
-  
