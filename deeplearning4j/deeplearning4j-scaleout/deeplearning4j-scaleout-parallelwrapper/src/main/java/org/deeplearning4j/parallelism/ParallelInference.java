@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.parallelism.inference.InferenceMode;
 import org.deeplearning4j.parallelism.inference.InferenceObservable;
+import org.deeplearning4j.parallelism.inference.LoadBalanceMode;
 import org.deeplearning4j.parallelism.inference.observers.BasicInferenceObservable;
 import org.deeplearning4j.parallelism.inference.observers.BasicInferenceObserver;
 import org.deeplearning4j.parallelism.inference.observers.BatchedInferenceObservable;
@@ -52,14 +53,15 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 @Slf4j
 public class ParallelInference {
-    private Model model;
-    private long nanos;
-    private int workers;
-    private int batchLimit;
-    private InferenceMode inferenceMode;
-    private int queueLimit;
+    protected Model model;
+    protected long nanos;
+    protected int workers;
+    protected int batchLimit;
+    protected InferenceMode inferenceMode;
+    protected int queueLimit;
+    protected LoadBalanceMode loadBalanceMode;
 
-    // this queue
+    // this queue holds data for inference
     private BlockingQueue<InferenceObservable> observables;
 
     private final Object locker = new Object();
@@ -264,6 +266,7 @@ public class ParallelInference {
         private int batchLimit = DEFAULT_BATCH_LIMIT;
         private InferenceMode inferenceMode = DEFAULT_INFERENCE_MODE;
         private int queueLimit = DEFAULT_QUEUE_LIMIT;
+        protected LoadBalanceMode loadBalanceMode;
 
         public Builder(@NonNull Model model) {
             this.model = model;
@@ -286,11 +289,23 @@ public class ParallelInference {
         }
 
 
+        /**
+         * This method allows you to specify load balance mode
+         *
+         * @param loadBalanceMode
+         * @return
+         */
+        public Builder loadBalanceMode(@NonNull LoadBalanceMode loadBalanceMode) {
+            this.loadBalanceMode = loadBalanceMode;
+            return this;
+        }
+
 
         /**
          * This method defines, how many model copies will be used for inference.
          *
          * PLEASE NOTE: This method primarily suited for multi-GPU systems
+         * PLEASE NOTE: For INPLACE inference mode this value will mean number of models per DEVICE
          *
          * @param workers
          * @return
@@ -343,16 +358,29 @@ public class ParallelInference {
          * @return
          */
         public ParallelInference build() {
-            ParallelInference inference = new ParallelInference();
-            inference.batchLimit = this.batchLimit;
-            inference.queueLimit = this.queueLimit;
-            inference.inferenceMode = this.inferenceMode;
-            inference.model = this.model;
-            inference.workers = this.workers;
+            if (this.inferenceMode == InferenceMode.INPLACE) {
+                val inf = new InplaceParallelInference();
+                inf.inferenceMode = this.inferenceMode;
+                inf.model = this.model;
+                inf.workers = this.workers;
+                inf.loadBalanceMode = this.loadBalanceMode;
 
-            inference.init();
+                inf.init();
 
-            return inference;
+                return inf;
+            } else {
+                ParallelInference inference = new ParallelInference();
+                inference.batchLimit = this.batchLimit;
+                inference.queueLimit = this.queueLimit;
+                inference.inferenceMode = this.inferenceMode;
+                inference.model = this.model;
+                inference.workers = this.workers;
+                inference.loadBalanceMode = this.loadBalanceMode;
+
+                inference.init();
+
+                return inference;
+            }
         }
     }
 
