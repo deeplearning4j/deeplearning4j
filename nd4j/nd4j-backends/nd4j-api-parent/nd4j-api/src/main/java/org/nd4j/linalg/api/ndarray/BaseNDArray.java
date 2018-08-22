@@ -26,6 +26,7 @@ import lombok.val;
 import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.graph.ByteOrder;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
@@ -5517,11 +5518,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray permute(int... rearrange) {
+        Preconditions.checkArgument(rearrange.length == rank(), "Incorrect number of arguments for permute function:" +
+                " got arguments %s for rank %s array. Number of arguments must equal array rank", rearrange, rank());
         Nd4j.getCompressor().autoDecompress(this);
-
-
-        if (rearrange.length != rank())
-            return dup();
         boolean alreadyInOrder = true;
         //IntBuffer shapeInfo = shapeInfo();
         int rank = jvmShapeInfo.rank;
@@ -5555,6 +5554,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray permutei(int... rearrange) {
+        Preconditions.checkArgument(rearrange.length == rank(), "Incorrect number of arguments for permute function:" +
+                " got arguments %s for rank %s array. Number of arguments must equal array rank", rearrange, rank());
         boolean alreadyInOrder = true;
         val shapeInfo = shapeInfo();
         int rank = jvmShapeInfo.rank;
