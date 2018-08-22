@@ -16,12 +16,29 @@
 
 package org.nd4j.parameterserver.distributed.v2.transport.impl;
 
+import io.aeron.Aeron;
+import io.aeron.FragmentAssembler;
+import io.aeron.Publication;
+import io.aeron.Subscription;
+import io.aeron.driver.MediaDriver;
+import io.aeron.logbuffer.Header;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.agrona.DirectBuffer;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.util.HashUtil;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This class is a UDP implementation of Transport interface, based on Aeron
@@ -31,18 +48,111 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class AeronUdpTransport extends BaseTransport {
     // this map holds outgoing connections, basically
-    private Map<String, Object> remoteConnections = new ConcurrentHashMap<>();
+    private Map<String, RemoteConnection> remoteConnections = new ConcurrentHashMap<>();
+
+    protected Aeron aeron;
+    protected Aeron.Context context;
+
+    protected VoidConfiguration voidConfiguration;
+
+    protected Subscription ownSubscription;
+    protected FragmentAssembler messageHandler;
+    protected Thread subscriptionThread;
+
+    // TODO: move this to singleton holder
+    protected MediaDriver driver;
+
+    // this is intermediate buffer for incoming messages
+    protected BlockingQueue<VoidMessage> messageQueue = new LinkedTransferQueue<>();
+
+
+    protected void createSubscription() {
+        // create subscription
+        ownSubscription = aeron.addSubscription("aeron:udp?endpoint=" + id() + ":" + voidConfiguration.getUnicastPort(), voidConfiguration.getStreamId());
+
+        // create thread that polls messages from subscription
+        messageHandler = new FragmentAssembler((buffer, offset, length, header) -> jointMessageHandler(buffer, offset, length, header));
+    }
+
+    /**
+     * This method converts aeron buffer into VoidMessage and puts into temp queue for further processing
+     *
+     * @param buffer
+     * @param offset
+     * @param length
+     * @param header
+     */
+    protected void jointMessageHandler(DirectBuffer buffer, int offset, int length, Header header) {
+        byte[] data = new byte[length];
+        buffer.getBytes(offset, data);
+
+        // deserialize message
+        val message = VoidMessage.fromBytes(data);
+
+        // we're just putting deserialized message into the buffer
+        try {
+            messageQueue.put(message);
+        } catch (InterruptedException e) {
+            // :(
+            throw new RuntimeException(e);
+        }
+    }
+
+    protected void shutdownSilent() {
+        // closing own connection
+        ownSubscription.close();
+
+        // and all known publications
+        for (val rc: remoteConnections.values())
+            rc.getPublication().close();
+
+        // closing aeron stuff
+        aeron.close();
+        context.close();
+        driver.close();
+    }
+
+    @Override
+    public void shutdown() {
+
+        if (subscriptionThread != null)
+            subscriptionThread.interrupt();
+
+        shutdownSilent();
+
+        super.shutdown();
+    }
 
     @Override
     public synchronized void launch() {
-        // we set up aeron first
+        // we set up aeron  connection to master first
+        val id = mesh.get().getRootNode().getId();
+        val port = voidConfiguration.getUnicastPort();
+
+        // we add connection to the root node
+        val v = aeron.addPublication("aeron:udp?endpoint=" + id + ":" + port, voidConfiguration.getStreamId());
+
+        val hash = HashUtil.getLongHash(id + ":" + port);
+
+        val rc = RemoteConnection.builder()
+                .ip(id)
+                .port(voidConfiguration.getUnicastPort())
+                .longHash(hash)
+                .publication(v)
+                .build();
+
+        remoteConnections.put(id, rc);
+
+        // add own subscription
+        createSubscription();
 
         super.launch();
     }
 
     @Override
     public synchronized void launchAsMaster() {
-        // connection goes first
+        // connection goes first, we're just creating subscription
+        createSubscription();
 
         super.launchAsMaster();
     }
@@ -53,7 +163,7 @@ public class AeronUdpTransport extends BaseTransport {
     }
 
     @Override
-    public void sendMessage(VoidMessage message, String id) {
+    public void sendMessage(@NonNull VoidMessage message, @NonNull String id) {
         if (message.getOriginatorId() == null)
             message.setOriginatorId(this.id());
 
@@ -62,5 +172,24 @@ public class AeronUdpTransport extends BaseTransport {
             if (((RequestMessage) message).getRequestId() == null)
                 ((RequestMessage) message).setRequestId(java.util.UUID.randomUUID().toString());
         }
+
+        val conn = remoteConnections.get(id);
+        if (conn == null)
+            throw new ND4JIllegalStateException("Unknown target ID specified: [" + id + "]");
+
+        // serialize & send message right away
+        conn.getPublication().offer(message.asUnsafeBuffer());
     }
+
+    @Data
+    @Builder
+    public static class RemoteConnection {
+        private String ip;
+        private int port;
+        private Publication publication;
+        private final Object locker = new Object();
+        private final AtomicBoolean activated = new AtomicBoolean(false);
+        protected long longHash;
+    }
+
 }

@@ -16,6 +16,9 @@
 
 package org.nd4j.parameterserver.distributed.v2.messages;
 
+import org.agrona.concurrent.UnsafeBuffer;
+import org.apache.commons.lang3.SerializationUtils;
+
 import java.io.Serializable;
 
 public interface VoidMessage extends Serializable {
@@ -36,4 +39,15 @@ public interface VoidMessage extends Serializable {
      * PLEASE NOTE: This method must be used only from Transport context
      */
     void setOriginatorId(String id);
+
+    /**
+     * This method serializes this VoidMessage into UnsafeBuffer
+     *
+     * @return
+     */
+    UnsafeBuffer asUnsafeBuffer();
+
+    static VoidMessage fromBytes(byte[] bytes) {
+        return SerializationUtils.deserialize(bytes);
+    }
 }
