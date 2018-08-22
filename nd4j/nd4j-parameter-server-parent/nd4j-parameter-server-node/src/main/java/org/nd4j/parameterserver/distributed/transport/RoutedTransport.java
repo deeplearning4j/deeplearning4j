@@ -88,8 +88,9 @@ public class RoutedTransport extends BaseTransport {
             System.setProperty(ND4JSystemProperties.AERON_TERM_BUFFER_PROP, String.valueOf(DEFAULT_TERM_BUFFER_PROP));
         }
 
-        context = new Aeron.Context().publicationConnectionTimeout(30000000000L).driverTimeoutMs(30000)
-                        .keepAliveInterval(100000000);
+
+        context = new Aeron.Context().driverTimeoutMs(30000)
+                       .keepAliveInterval(100000000);
 
         driver = MediaDriver.launchEmbedded();
         context.aeronDirectoryName(driver.aeronDirectoryName());
