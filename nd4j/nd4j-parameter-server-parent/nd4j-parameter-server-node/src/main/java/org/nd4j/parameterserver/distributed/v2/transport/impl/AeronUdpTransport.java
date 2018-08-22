@@ -33,6 +33,7 @@ import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.v2.enums.TransmissionStatus;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 
@@ -143,30 +144,6 @@ public class AeronUdpTransport extends BaseTransport {
         }
     }
 
-    protected void shutdownSilent() {
-        // closing own connection
-        ownSubscription.close();
-
-        // and all known publications
-        for (val rc: remoteConnections.values())
-            rc.getPublication().close();
-
-        // shutting down executor
-        messagesExecutorService.shutdown();
-
-        // closing aeron stuff
-        aeron.close();
-        context.close();
-        driver.close();
-    }
-
-    @Override
-    public void shutdown() {
-        shutdownSilent();
-
-        super.shutdown();
-    }
-
     @Override
     public synchronized void launch() {
         // we set up aeron  connection to master first
@@ -222,7 +199,52 @@ public class AeronUdpTransport extends BaseTransport {
             throw new ND4JIllegalStateException("Unknown target ID specified: [" + id + "]");
 
         // serialize & send message right away
-        conn.getPublication().offer(message.asUnsafeBuffer());
+        TransmissionStatus status;
+        while ((status= TransmissionStatus.fromLong(conn.getPublication().offer(message.asUnsafeBuffer()))) != TransmissionStatus.OK) {
+            // if response != OK we must do something with response
+            switch (status) {
+                case MAX_POSITION_EXCEEDED:
+                case NOT_CONNECTED:
+                case CLOSED: {
+                    // TODO: here we should properly handle reconnection
+                    log.warn("Upstream connection was closed");
+                    break;
+                }
+                case ADMIN_ACTION:
+                case BACK_PRESSURED: {
+                    try {
+                        // in case of backpressure we're just sleeping for a while, and message out again
+                        Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                    } catch (InterruptedException e) {
+                        //
+                    }
+                }
+            }
+        }
+    }
+
+    protected void shutdownSilent() {
+        // closing own connection
+        ownSubscription.close();
+
+        // and all known publications
+        for (val rc: remoteConnections.values())
+            rc.getPublication().close();
+
+        // shutting down executor
+        messagesExecutorService.shutdown();
+
+        // closing aeron stuff
+        aeron.close();
+        context.close();
+        driver.close();
+    }
+
+    @Override
+    public void shutdown() {
+        shutdownSilent();
+
+        super.shutdown();
     }
 
     @Data
