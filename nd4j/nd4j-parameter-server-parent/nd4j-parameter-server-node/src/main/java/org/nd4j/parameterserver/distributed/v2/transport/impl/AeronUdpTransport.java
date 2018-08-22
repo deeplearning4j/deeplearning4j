@@ -28,6 +28,8 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.SleepingIdleStrategy;
+import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
@@ -35,9 +37,7 @@ import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -49,6 +49,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class AeronUdpTransport extends BaseTransport {
     // this map holds outgoing connections, basically
     private Map<String, RemoteConnection> remoteConnections = new ConcurrentHashMap<>();
+
+    protected final int MESSAGE_THREADS = 2;
+    protected final int SUBSCRIPTION_THREADS = 1;
 
     protected Aeron aeron;
     protected Aeron.Context context;
@@ -65,6 +68,16 @@ public class AeronUdpTransport extends BaseTransport {
     // this is intermediate buffer for incoming messages
     protected BlockingQueue<VoidMessage> messageQueue = new LinkedTransferQueue<>();
 
+    // this executor service han
+    protected ExecutorService messagesExecutorService = Executors.newFixedThreadPool(MESSAGE_THREADS + SUBSCRIPTION_THREADS, new ThreadFactory() {
+        @Override
+        public Thread newThread(@NotNull Runnable r) {
+            val t = Executors.defaultThreadFactory().newThread(r);
+            t.setDaemon(true);
+            return t;
+        }
+    });
+
 
     protected void createSubscription() {
         // create subscription
@@ -72,6 +85,38 @@ public class AeronUdpTransport extends BaseTransport {
 
         // create thread that polls messages from subscription
         messageHandler = new FragmentAssembler((buffer, offset, length, header) -> jointMessageHandler(buffer, offset, length, header));
+
+        // starting thread(s) that will be fetching messages from network
+        for (int e = 0; e < SUBSCRIPTION_THREADS; e++) {
+            messagesExecutorService.execute(new Runnable() {
+                @Override
+                public void run() {
+                    val idler = new SleepingIdleStrategy(1000);
+                    while (true) {
+                        idler.idle(ownSubscription.poll(messageHandler, 1024));
+                    }
+                }
+            });
+        }
+
+        // starting thread(s) that will be actually executing message
+        for (int e = 0; e < MESSAGE_THREADS; e++) {
+            messagesExecutorService.execute(new Runnable() {
+                @Override
+                public void run() {
+                    while (true) {
+                        try {
+                            // basically fetching messages from queue one by one, and processing them
+                            val msg = messageQueue.take();
+                            processMessage(msg);
+                        } catch (InterruptedException e) {
+                            // just terminate loop
+                            break;
+                        }
+                    }
+                }
+            });
+        }
     }
 
     /**
@@ -106,6 +151,9 @@ public class AeronUdpTransport extends BaseTransport {
         for (val rc: remoteConnections.values())
             rc.getPublication().close();
 
+        // shutting down executor
+        messagesExecutorService.shutdown();
+
         // closing aeron stuff
         aeron.close();
         context.close();
@@ -114,10 +162,6 @@ public class AeronUdpTransport extends BaseTransport {
 
     @Override
     public void shutdown() {
-
-        if (subscriptionThread != null)
-            subscriptionThread.interrupt();
-
         shutdownSilent();
 
         super.shutdown();
