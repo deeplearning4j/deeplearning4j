@@ -48,7 +48,7 @@ namespace nd4j {
          * 0: optional axis
          */
         #if NOT_EXCLUDED(OP_argmin)
-        DECLARE_REDUCTION_OP(argmin, 1, 1, false, 0, -2);
+        DECLARE_CUSTOM_OP(argmin, 1, 1, false, 0, -2);
         #endif
 
         /**

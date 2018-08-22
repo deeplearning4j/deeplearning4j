@@ -430,7 +430,9 @@ public class KerasModelEndToEndTest {
      */
     @Test
     public void importMobileNet() throws Exception {
-        importFunctionalModelH5Test("modelimport/keras/examples/mobilenet/mobilenet_tf_keras_2.h5");
+        ComputationGraph graph = importFunctionalModelH5Test("modelimport/keras/examples/mobilenet/alternative.hdf5");
+        INDArray input = Nd4j.ones(10, 3, 299, 299);
+        graph.output(input);
     }
 
     /**
@@ -555,11 +557,29 @@ public class KerasModelEndToEndTest {
         model.output(input);
     }
 
+    /**
+     * MTCNN
+     */
+    @Test
+    public void importMTCNN() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/48net_complete.h5");
+    }
+
+    @Test
+    public void importMTCNN2D() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/12net.h5",
+                new int[] {24, 24, 3}, false);
+        INDArray input = Nd4j.create(10, 3, 24, 24);
+        model.output(input);
+    }
+
     private ComputationGraph importFunctionalModelH5Test(String modelPath) throws Exception {
         return importFunctionalModelH5Test(modelPath, null, false);
     }
 
-    private ComputationGraph importFunctionalModelH5Test(String modelPath, int[] inputShape, boolean train) throws Exception {
+
+    private ComputationGraph importFunctionalModelH5Test(String modelPath, int[] inputShape, boolean train)
+            throws Exception {
         ClassPathResource modelResource =
                 new ClassPathResource(modelPath,
                         KerasModelEndToEndTest.class.getClassLoader());
