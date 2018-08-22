@@ -19,28 +19,46 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.util.List;
+import java.util.Map;
 
-public class MatrixDiag extends DynamicCustomOp {
+/**
+ * Pad op
+ * @author Alex Black
+ */
+public class Pad extends DynamicCustomOp {
 
-    public MatrixDiag() {
-        //
+    public enum Mode {CONSTANT, REFLECT, SYMMETRIC}
+
+    private Mode mode;
+
+    public Pad(){ }
+
+    public Pad(SameDiff sd, SDVariable in, SDVariable padding, Mode mode){
+        super(sd, new SDVariable[]{in, padding}, false);
+        this.mode = mode;
+        addIArgument(mode.ordinal());
     }
-
-    public MatrixDiag(SameDiff sameDiff, SDVariable in, boolean inPlace) {
-        super(null, sameDiff, new SDVariable[]{in}, inPlace);
-    }
-
 
     @Override
-    public String opName() {
-        return "matrix_diag";
+    public String opName(){
+        return "pad";
     }
 
     @Override
-    public String[] tensorflowNames() {
-        return new String[]{"MatrixDiag","BatchMatrixDiag"};
+    public String tensorflowName() {
+        return "PadV2";
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        //Based on TF codebase: gen_array_ops.mirror_pad is osed for BOTH REFLECT and SYMMETRIC mode. Hence only constant being imported here
+        this.mode = Mode.CONSTANT;
+        addIArgument(mode.ordinal());
     }
 
     @Override

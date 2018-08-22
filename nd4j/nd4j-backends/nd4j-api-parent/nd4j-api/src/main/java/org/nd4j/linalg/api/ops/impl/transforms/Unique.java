@@ -19,32 +19,38 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.util.List;
+import java.util.Map;
 
-public class MatrixDiag extends DynamicCustomOp {
+public class Unique extends DynamicCustomOp {
 
-    public MatrixDiag() {
-        //
-    }
+    public Unique(){ }
 
-    public MatrixDiag(SameDiff sameDiff, SDVariable in, boolean inPlace) {
-        super(null, sameDiff, new SDVariable[]{in}, inPlace);
-    }
-
-
-    @Override
-    public String opName() {
-        return "matrix_diag";
+    public Unique(SameDiff sd, SDVariable in){
+        super(sd, new SDVariable[]{in}, false);
     }
 
     @Override
-    public String[] tensorflowNames() {
-        return new String[]{"MatrixDiag","BatchMatrixDiag"};
+    public String opName(){
+        return "unique";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "Unique";
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public int numOutputArguments(){
+        return 2;
     }
 }

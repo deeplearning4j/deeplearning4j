@@ -27,6 +27,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
+import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -1492,5 +1493,224 @@ public class TransformOpValidation extends BaseOpValidation {
 
             assertEquals(s, exp, out);
         }
+    }
+
+
+    @Test
+    public void testPad(){
+        OpValidationSuite.ignoreFailing();
+
+        INDArray in = Nd4j.valueArrayOf(new long[]{5}, 1.0);
+        INDArray pad = Nd4j.create(new double[]{1,1}, new long[]{1,2});
+        INDArray value = Nd4j.trueScalar(10.0);
+
+        INDArray out = Nd4j.create(new long[]{7});
+
+        DynamicCustomOp op = DynamicCustomOp.builder("pad")
+                .addInputs(in, pad, value)
+                //.addInputs(in, pad) //Also doesn't work
+                .addOutputs(out)
+                .addIntegerArguments(0) //0 = CONSTANT
+                .build();
+
+        OpValidation.validate(new OpTestCase(op)
+                .expectedOutput(0, Nd4j.trueVector(new double[]{10, 1, 1, 1, 1, 1, 10})));
+    }
+
+
+    @Test
+    public void testMirrorPad(){
+//        OpValidationSuite.ignoreFailing();
+
+        INDArray in = Nd4j.linspace(1, 6, 6).reshape(2,3);
+        INDArray pad = Nd4j.create(new double[][]{{1,1},{2,2}});
+
+        INDArray out = Nd4j.create(new long[]{4,7});
+
+        DynamicCustomOp op = DynamicCustomOp.builder("mirror_pad")
+                .addInputs(in, pad)
+                .addOutputs(out)
+                .addIntegerArguments(0) //0=reflect, 1=symmetric
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        INDArray exp = Nd4j.create(new double[][]{
+                {6, 5, 4, 5, 6, 5, 4},
+                {3, 2, 1, 2, 3, 2, 1},
+                {6, 5, 4, 5, 6, 5, 4},
+                {3, 2, 1, 2, 3, 2, 1}});
+        String err = OpValidation.validate(new OpTestCase(op)
+            .expectedOutput(0, exp));
+
+        assertNull(err);
+    }
+
+    @Test
+    public void testMirrorPad2(){
+//        OpValidationSuite.ignoreFailing();
+
+        INDArray in = Nd4j.linspace(1, 6, 6).reshape(2,3);
+        INDArray pad = Nd4j.create(new double[][]{{1,1},{2,2}});
+
+        INDArray out = Nd4j.create(new long[]{4,7});
+
+        DynamicCustomOp op = DynamicCustomOp.builder("mirror_pad")
+                .addInputs(in, pad)
+                .addOutputs(out)
+                .addIntegerArguments(1) //0=reflect, 1=symmetric
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        INDArray exp = Nd4j.create(new double[][]{
+                {2, 1, 1, 2, 3, 3, 2},
+                {2, 1, 1, 2, 3, 3, 2},
+                {5, 4, 4, 5, 6, 6, 5},
+                {5, 4, 4, 5, 6, 6, 5}});
+        String err = OpValidation.validate(new OpTestCase(op)
+                .expectedOutput(0, exp));
+
+        assertNull(err);
+    }
+
+    @Test
+    public void testMirrorPadSymmetric(){
+        INDArray in = Nd4j.linspace(1, 12, 12).reshape(3,4);
+        INDArray pad = Nd4j.create(new double[][]{{1,1},{1,1}});
+
+        INDArray out = Nd4j.create(new long[]{5,6});
+
+        DynamicCustomOp op = DynamicCustomOp.builder("mirror_pad")
+                .addInputs(in, pad)
+                .addOutputs(out)
+                .addIntegerArguments(1) //0=reflect, 1=symmetric
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        INDArray exp = Nd4j.create(new double[][]{
+                { 1,  1,  2,  3,  4,  4},
+                { 1,  1,  2,  3,  4,  4},
+                { 5,  5,  6,  7,  8,  8},
+                { 9,  9, 10, 11, 12, 12},
+                { 9,  9, 10, 11, 12, 12}});
+        String err = OpValidation.validate(new OpTestCase(op)
+                .expectedOutput(0, exp));
+
+        assertNull(err);
+    }
+
+    @Test
+    public void testUnique(){
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6173
+        INDArray in = Nd4j.trueVector(new double[]{3, 4, 3, 1, 3, 0, 2, 4, 2, 4});
+
+        INDArray expUnique = Nd4j.trueVector(new double[]{3, 4, 1, 0, 2});
+        INDArray expUniqueIdxs = Nd4j.trueVector(new double[]{0, 1, 0, 2, 0, 3, 4, 1, 4, 1});
+
+        INDArray outUnique = Nd4j.create(expUnique.shape());
+        INDArray outUniqueIdxs = Nd4j.create(expUniqueIdxs.shape());
+
+        DynamicCustomOp op = DynamicCustomOp.builder("unique")
+                .addInputs(in)
+                .addOutputs(outUnique, outUniqueIdxs)
+                .build();
+
+        String err = OpValidation.validate(new OpTestCase(op)
+                .expectedOutput(0, expUnique)
+                .expectedOutput(1, expUniqueIdxs));
+
+        assertNull(err);
+    }
+
+    @Test
+    public void testTopK(){
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6177
+        INDArray in = Nd4j.trueVector(new double[]{7, 3, 1, 2, 5, 0, 4, 6, 9, 8});
+
+        INDArray expTopK = Nd4j.trueVector(new double[]{7, 5, 6, 9, 8});
+        INDArray expIndices = Nd4j.trueVector(new double[]{0, 4, 7, 8, 9});
+
+        INDArray expTopK_sorted = Nd4j.trueVector(new double[]{9, 8, 7, 6, 5});
+        INDArray expIndices_sorted = Nd4j.trueVector(new double[]{8, 9, 0, 7, 4});
+
+        for(boolean sort : new boolean[]{false, true}) {
+            INDArray outUnique = Nd4j.create(expTopK.shape());
+            INDArray outUniqueIdxs = Nd4j.create(expIndices.shape());
+
+            DynamicCustomOp op = DynamicCustomOp.builder("top_k")
+                    .addInputs(in)
+                    .addOutputs(outUnique, outUniqueIdxs)
+                    .addIntegerArguments(5, sort ? 1 : 0)  //k=5, sort
+                    .build();
+
+            String err = OpValidation.validate(new OpTestCase(op)
+                    .expectedOutput(0, sort ? expTopK_sorted : expTopK)
+                    .expectedOutput(1, sort ? expIndices_sorted : expIndices));
+
+            assertNull(err);
+        }
+    }
+
+    @Test
+    public void testInTopK() {
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6179
+
+        for( int k=4; k>= 1; k--){
+            log.info("Testing: k=" + k);
+            INDArray in = Nd4j.linspace(1, 20, 20).reshape(4, 5);
+            INDArray idxs = Nd4j.trueVector(new double[]{1, 2, 3, 4});
+
+            INDArray expOut;
+            switch (k){
+                case 4:
+                    expOut = Nd4j.trueVector(new double[]{1, 1, 1, 1});
+                    break;
+                case 3:
+                    expOut = Nd4j.trueVector(new double[]{0, 1, 1, 1});
+                    break;
+                case 2:
+                    expOut = Nd4j.trueVector(new double[]{0, 0, 1, 1});
+                    break;
+                case 1:
+                    expOut = Nd4j.trueVector(new double[]{0, 0, 0, 1});
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+
+
+            INDArray out = Nd4j.create(expOut.shape());
+
+            DynamicCustomOp op = DynamicCustomOp.builder("in_top_k")
+                    .addInputs(in, idxs)
+                    .addOutputs(out)
+                    .addIntegerArguments(k)  //k=1
+                    .build();
+
+            String err = OpValidation.validate(new OpTestCase(op)
+                    .expectedOutput(0, expOut));
+
+            assertNull(err);
+        }
+    }
+
+    @Test
+    public void testZeta(){
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6182
+        INDArray x = Nd4j.rand(3,4).addi(1.0);
+        INDArray q = Nd4j.rand(3,4);
+
+        INDArray out = Nd4j.create(3,4);
+        DynamicCustomOp op = DynamicCustomOp.builder("zeta")
+                .addInputs(x,q)
+                .addOutputs(out)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        System.out.println(out);
     }
 }

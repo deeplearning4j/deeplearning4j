@@ -48,12 +48,13 @@ public class MatrixDeterminant extends DynamicCustomOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "MatrixDeterminant";
+    public String[] tensorflowNames() {
+        return new String[]{"MatrixDeterminant","BatchMatrixDeterminant"};
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        //TODO support rank 3+ case
         //Derivative of matrix determinant
         //From: Matrix Cookbook - Petersen & Pedersen
         // z=det(X) then dz/dx = z * tr(X^-1)
