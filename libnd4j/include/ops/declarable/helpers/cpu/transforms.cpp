@@ -215,28 +215,33 @@ void recursiveLoopForPad(const int mode, NDArray<T>& input, const NDArray<T>& pa
     // loop through current dimension
     for(int i = 0; i < output.sizeAt(dim); ++i) {
         // corresponds to outer range (relevant indices are absent in input)                        
-        if(i < (int)paddings(dim,0) || i >= (input.sizeAt(dim) + (int)paddings(dim,0)))           
+        leftOffset = (int)paddings(dim, 0);
+        if(i < leftOffset || i >= (input.sizeAt(dim) + leftOffset))
             continue;
+
         // increase input tads number
         ++k;
         // recursion condition allows for the fact that tad can't reduce to scalar
         if(dim < input.rankOf() - 2)
-            recursiveLoopForPad(mode, input, paddings, output, dimensions, dim+1, inIdx + k, outIdx + i, padValue);
+            recursiveLoopForPad(mode, input, paddings, output, dimensions, dim + 1, inIdx + k, outIdx + i, padValue);
         else if (paddings.sizeAt(0) > dim + 1){
+            leftOffset = (int)paddings(dim + 1, 0);
             // shift buffers pointers to actual element position
             if (output.rankOf() > 1) {
                 subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + i]);
                 subArrIn.setBuffer(input.getBuffer() + tadIn.tadOffsets[inIdx + i - (int) paddings(dim, 0)]);
             }
-            leftOffset = (int)paddings(dim + 1, 0);
+            else {
+                subArrOut(i) = subArrIn(i - leftOffset);
+            }
             // most inner loop, corresponds to last dim = rank-1
             switch (mode) {
                 case 0:             // CONSTANT mode                    
                     for(int j = 0; j < subArrOut.lengthOf(); ++j)                   
-                        if(j < leftOffset || j >= (subArrIn.lengthOf() + leftOffset) )                  // firstly fill with zeros outer ranges
-                            subArrOut.putIndexedScalar(j, (T)0.);
-                        else
-                            subArrOut.putIndexedScalar(j, subArrIn.getIndexedScalar(j - leftOffset));   // fill middle with elements of input array
+                            if(j < leftOffset || j >= (subArrIn.lengthOf() + leftOffset) )                  // firstly fill with zeros outer ranges
+                                subArrOut(j) = (T)0.;
+                            else
+                                subArrOut(j) = subArrIn(j - leftOffset);   // fill middle with elements of input array
                     break;
 
                 case 1:             // REFLECT mode                 
@@ -257,9 +262,13 @@ void recursiveLoopForPad(const int mode, NDArray<T>& input, const NDArray<T>& pa
                         subArrOut.putIndexedScalar(j, subArrIn.getIndexedScalar(subArrOut.lengthOf() - j));     
                     break;
             }
+        }
+        else {
+
+             if (mode == 0 && input.rankOf() < 2)
+                 subArrOut(i) = subArrIn(i - leftOffset);   // fill middle with elements of input array
         }   
     }   
-
     // populate sub-array formed previously 
     leftOffset = (int)paddings(dim,0);       
     switch (mode) {
