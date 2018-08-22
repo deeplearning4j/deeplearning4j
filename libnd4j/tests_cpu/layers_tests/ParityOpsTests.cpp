@@ -995,4 +995,24 @@ TEST_F(ParityOpsTests, scatterND_test3) {
     delete result;
 }
 
- 
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_add_test1) {    
+    
+    NDArray<float> input('c', {8}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f});
+    NDArray<float> indices('c', {4, 1}, {4.f, 3.f, 1.f, 7.f});
+    NDArray<float> updates('c', {4}, {9.f, 10.f, 11.f, 12.f});    
+    NDArray<float> exp('c', {8}, {1.f, 13.f,  3.f, 14.f, 14.f,  6.f,  7.f, 20});
+    
+    nd4j::ops::scatter_nd_add<float> op;
+    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+  
