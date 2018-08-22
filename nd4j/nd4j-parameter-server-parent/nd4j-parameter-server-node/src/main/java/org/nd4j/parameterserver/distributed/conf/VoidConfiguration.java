@@ -23,6 +23,7 @@ import org.nd4j.parameterserver.distributed.enums.ExecutionMode;
 import org.nd4j.parameterserver.distributed.enums.FaultToleranceStrategy;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.enums.TransportType;
+import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -92,7 +93,13 @@ public class VoidConfiguration implements Serializable {
      * This variable defines network transport to be used for comms
      */
     @Builder.Default
-    private TransportType transportType = TransportType.ROUTED;
+    private TransportType transportType = TransportType.ROUTED_UDP;
+
+    /**
+     * This variable defines how cluster nodes are organized
+     */
+    @Builder.Default
+    private MeshBuildMode meshBuildMode = MeshBuildMode.PLAIN;
 
     /**
      * This variable acts as hint for ParameterServer about IP address to be used for comms.
