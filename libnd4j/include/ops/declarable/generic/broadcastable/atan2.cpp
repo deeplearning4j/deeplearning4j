@@ -15,7 +15,8 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 10.02.18.
+// @author raver119@gmail.com, created on 10.02.18.
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <op_boilerplate.h>
@@ -24,22 +25,27 @@
 #include <ops/declarable/headers/broadcastable.h>
 
 namespace nd4j {
-    namespace ops {
-        BROADCASTABLE_OP_IMPL(tf_atan2, 0, 0) {
-            auto y = INPUT_VARIABLE(0);
-            auto x = INPUT_VARIABLE(1);
-            auto z = OUTPUT_VARIABLE(0);
+namespace ops {
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Atan2<T>>(y, x, z);
-            if (tZ == nullptr)
-                return ND4J_STATUS_KERNEL_FAILURE;
-            else if (tZ != z) {
-                OVERWRITE_RESULT(tZ);
-            }
+BROADCASTABLE_OP_IMPL(tf_atan2, 0, 0) {
+    
+    auto y = INPUT_VARIABLE(0);
+    auto x = INPUT_VARIABLE(1);
+    auto z = OUTPUT_VARIABLE(0);
 
-            return Status::OK();
-        }
-    }
+    // auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Atan2<T>>(y, x, z);
+    x->template applyTrueBroadcast<simdOps::Atan2<T>>(y, z, true);
+    
+    // if (tZ == nullptr)
+    //     return ND4J_STATUS_KERNEL_FAILURE;
+    // else if (tZ != z) {
+    //     OVERWRITE_RESULT(tZ);
+    // }
+
+    return Status::OK();
+}
+
+}
 }
 
 #endif
