@@ -166,3 +166,4 @@ TEST_F(DeclarableOpsTests10, Unique_SGO_Test_1) {
     ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
     delete res;
 }
+

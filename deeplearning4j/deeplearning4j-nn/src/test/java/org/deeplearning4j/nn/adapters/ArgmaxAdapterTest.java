@@ -14,26 +14,32 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.parallelism.inference;
+package org.deeplearning4j.nn.adapters;
 
-/**
- * This enum describes different modes for ParallelInference
- *
- * @author raver119@gmail.com
- */
-public enum InferenceMode {
-    /**
-     * input will be passed into the model as is
-     */
-    SEQUENTIAL,
+import lombok.val;
+import org.junit.Test;
+import org.nd4j.linalg.factory.Nd4j;
 
-    /**
-     * input will be included into the batch if computation device is busy, and executed immediately otherwise
-     */
-    BATCHED,
+import static org.junit.Assert.*;
 
-    /**
-     * Inference will applied in the calling thread instead of workers. Worker models will be using shared parameters on per-device basis.
-     */
-    INPLACE,
+public class ArgmaxAdapterTest {
+    @Test
+    public void testSoftmax_2D_1() {
+        val in = new double[][] {{1, 3, 2}, { 4, 5, 6}};
+
+        val adapter = new ArgmaxAdapter();
+        val result = adapter.apply(Nd4j.create(in));
+
+        assertArrayEquals(new int[]{1, 2}, result);
+    }
+
+    @Test
+    public void testSoftmax_1D_1() {
+        val in = new double[] {1, 3, 2};
+
+        val adapter = new ArgmaxAdapter();
+        val result = adapter.apply(Nd4j.create(in));
+
+        assertArrayEquals(new int[]{1}, result);
+    }
 }
