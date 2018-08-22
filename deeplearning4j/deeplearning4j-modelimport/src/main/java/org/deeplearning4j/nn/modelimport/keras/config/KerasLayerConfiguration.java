@@ -168,6 +168,10 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_MASK_ZERO = "mask_zero";
     private final String LAYER_FIELD_INPUT_LENGTH = "input_length";
 
+    /* Masking layer properties */
+    private final String LAYER_FIELD_MASK_VALUE = "mask_value";
+
+
     /* Keras separable convolution types */
     private final String LAYER_PARAM_NAME_DEPTH_WISE_KERNEL = "depthwise_kernel";
     private final String LAYER_PARAM_NAME_POINT_WISE_KERNEL = "pointwise_kernel";

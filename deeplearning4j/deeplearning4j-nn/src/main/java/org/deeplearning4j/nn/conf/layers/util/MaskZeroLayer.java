@@ -16,10 +16,14 @@
 
 package org.deeplearning4j.nn.conf.layers.util;
 
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -40,18 +44,17 @@ public class MaskZeroLayer extends BaseWrapperLayer {
 
     private static final long serialVersionUID = 9074525846200921839L;
 
-    /**
-     * @param underlying The underlying layer to wrap and mask activations for
-     */
+    public MaskZeroLayer(Builder builder) {
+        super(builder);
+        this.underlying = builder.underlying;
+        this.maskingValue = builder.maskValue;
+    }
+
+
     public MaskZeroLayer(Layer underlying) {
         this.underlying = underlying;
     }
 
-
-    public MaskZeroLayer(Layer underlying, double maskingValue) {
-        this.underlying = underlying;
-        this.maskingValue = maskingValue;
-    }
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
@@ -103,6 +106,30 @@ public class MaskZeroLayer extends BaseWrapperLayer {
     @Override
     public String toString(){
         return "MaskZeroLayer(" + underlying.toString() + ")";
+    }
+
+
+    @NoArgsConstructor
+    public static class Builder extends Layer.Builder<Builder> {
+
+        private Layer underlying;
+        private double maskValue;
+
+        public Builder setUnderlying(Layer underlying) {
+            this.underlying = underlying;
+            return this;
+        }
+
+        public Builder setMaskValue(double maskValue) {
+            this.maskValue = maskValue;
+            return this;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public MaskZeroLayer build() {
+            return new MaskZeroLayer(this);
+        }
     }
 
 }

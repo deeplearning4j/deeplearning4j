@@ -571,6 +571,29 @@ public class KerasLayerUtils {
     }
 
     /**
+     * Get mask value
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return mask value, defaults to 0.0
+     * @throws InvalidKerasConfigurationException Invalid Keras configuration
+     */
+    public static double getMaskingValueFromConfig(Map<String, Object> layerConfig,
+                                                   KerasLayerConfiguration conf)
+            throws InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
+        double maskValue = 0.0;
+        if (innerConfig.containsKey(conf.getLAYER_FIELD_MASK_ZERO())) {
+            try {
+                maskValue = (double) innerConfig.get(conf.getLAYER_FIELD_MASK_ZERO());
+            } catch (Exception e) {
+                log.warn("Couldn't read masking value, default to 0.0");
+            }
+        }
+        return maskValue;
+    }
+
+
+    /**
      * Remove weights from config after weight setting.
      *
      * @param weights layer weights
