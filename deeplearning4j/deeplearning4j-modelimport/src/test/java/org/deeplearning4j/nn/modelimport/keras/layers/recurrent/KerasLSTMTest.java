@@ -182,7 +182,7 @@ public class KerasLSTMTest {
     private KerasEmbedding getEmbedding(boolean maskZero)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         KerasEmbedding embedding = new KerasEmbedding();
-        embedding.setHasZeroMasking(maskZero);
+        embedding.setZeroMasking(maskZero);
         return embedding;
     }
 }

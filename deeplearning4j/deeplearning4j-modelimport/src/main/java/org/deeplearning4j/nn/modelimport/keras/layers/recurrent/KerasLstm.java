@@ -180,7 +180,7 @@ public class KerasLstm extends KerasLayer {
         for (String inboundLayerName : inboundLayerNames) {
             if (previousLayers.containsKey(inboundLayerName)) {
                 KerasLayer inbound = previousLayers.get(inboundLayerName);
-                if (inbound instanceof KerasEmbedding && ((KerasEmbedding) inbound).isHasZeroMasking()) {
+                if (inbound instanceof KerasEmbedding && ((KerasEmbedding) inbound).isZeroMasking()) {
                     zeroMasking = true;
                 }
             }

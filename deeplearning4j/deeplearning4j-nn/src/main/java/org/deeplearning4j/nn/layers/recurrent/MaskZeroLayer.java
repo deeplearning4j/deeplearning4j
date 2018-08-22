@@ -35,9 +35,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
  */
 public class MaskZeroLayer extends BaseWrapperLayer {
 
-    /**
-     *
-     */
     private static final long serialVersionUID = -7369482676002469854L;
 
     public MaskZeroLayer(@NonNull Layer underlying){
@@ -73,7 +70,10 @@ public class MaskZeroLayer extends BaseWrapperLayer {
         if (input.rank() != 3) {
             throw new IllegalArgumentException("Expected input of shape [batch_size, timestep_input_size, timestep], got shape "+Arrays.toString(input.shape()) + " instead");
         }
-        INDArray mask = input.eq(0).sum(1).neq(input.shape()[1]);
+        double maskValue =  ((org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer)
+                this.conf().getLayer()).getMaskingValue();
+
+        INDArray mask = input.eq(maskValue).sum(1).neq(input.shape()[1]);
         underlying.setMaskArray(mask);
     }
 

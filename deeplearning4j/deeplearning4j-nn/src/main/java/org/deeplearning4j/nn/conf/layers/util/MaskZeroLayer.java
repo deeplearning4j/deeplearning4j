@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers.util;
 
+import lombok.Data;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -32,7 +33,10 @@ import java.util.Collection;
  * Assumes that the input shape is [batch_size, input_size, timesteps].
  * @author Martin Boyanov mboyanov@gmail.com
  */
+@Data
 public class MaskZeroLayer extends BaseWrapperLayer {
+
+    private double maskingValue = 0.0;
 
     private static final long serialVersionUID = 9074525846200921839L;
 
@@ -43,6 +47,12 @@ public class MaskZeroLayer extends BaseWrapperLayer {
         this.underlying = underlying;
     }
 
+
+    public MaskZeroLayer(Layer underlying, double maskingValue) {
+        this.underlying = underlying;
+        this.maskingValue = maskingValue;
+    }
+
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                                                        int layerIndex, INDArray layerParamsView, boolean initializeParams) {
@@ -50,7 +60,8 @@ public class MaskZeroLayer extends BaseWrapperLayer {
         NeuralNetConfiguration conf2 = conf.clone();
         conf2.setLayer(((BaseWrapperLayer)conf2.getLayer()).getUnderlying());
 
-        org.deeplearning4j.nn.api.Layer underlyingLayer = underlying.instantiate(conf2, trainingListeners, layerIndex, layerParamsView, initializeParams);
+        org.deeplearning4j.nn.api.Layer underlyingLayer =
+                underlying.instantiate(conf2, trainingListeners, layerIndex, layerParamsView, initializeParams);
         return new org.deeplearning4j.nn.layers.recurrent.MaskZeroLayer(underlyingLayer);
     }
 
