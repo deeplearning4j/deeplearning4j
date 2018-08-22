@@ -17,23 +17,18 @@
 package org.deeplearning4j.parallelism.inference;
 
 /**
- * This enum describes different modes for ParallelInference
+ * This enum describes various load balance modes for ParallelInference
  *
  * @author raver119@gmail.com
  */
-public enum InferenceMode {
+public enum LoadBalanceMode {
     /**
-     * input will be passed into the model as is
+     * In this mode, `n+1 % nodes` node will be used for next request
      */
-    SEQUENTIAL,
+    ROUND_ROBIN,
 
     /**
-     * input will be included into the batch if computation device is busy, and executed immediately otherwise
+     * in this mode we'll be picking free node for next request, blocking if we don't have free nodes at the moment
      */
-    BATCHED,
-
-    /**
-     * Inference will applied in the calling thread instead of workers. Worker models will be using shared parameters on per-device basis.
-     */
-    INPLACE,
+    FIFO,
 }
