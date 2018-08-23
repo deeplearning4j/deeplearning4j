@@ -99,20 +99,13 @@ public class KerasPermute extends KerasLayer {
         if (inputType[0] instanceof InputType.InputTypeConvolutional) {
             switch (this.getDimOrder()) {
                 case THEANO:
-                    if (Arrays.equals(permutationIndices, new int[]{1, 3, 2})) // channels first, swapping H and W.
-                        preprocessor = new PermutePreprocessor(permutationIndices);
-                    else
-                        throw new InvalidKerasConfigurationException("Attempting to permute dimensions other than" +
-                                "spatial dimensions (height and width), got " + Arrays.toString(permutationIndices));
+                    preprocessor = new PermutePreprocessor(permutationIndices);
                     break;
                 case NONE: // TF by default
                 case TENSORFLOW:
-                    if (Arrays.equals(permutationIndices, new int[]{2, 1, 3})) // channels last, swapping H and W
-                        preprocessor = new PermutePreprocessor(new int[]{1, 3, 2}); // DL4J is channels first
-                    else
-                        throw new InvalidKerasConfigurationException("Attempting to permute dimensions other than" +
-                                "spatial dimensions (height and width) in Permute layer, got "
-                                + Arrays.toString(permutationIndices));
+                    // account for channels last
+                    permutationIndices = new int[] {permutationIndices[2], permutationIndices[0], permutationIndices[1]};
+                    preprocessor = new PermutePreprocessor(new int[]{1, 3, 2});
             }
         } else if (inputType[0] instanceof InputType.InputTypeRecurrent) {
             if (Arrays.equals(permutationIndices, new int[] {2, 1}))

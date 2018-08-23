@@ -14,28 +14,37 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-// Created by raver119 on 10.02.18.
-//
+package org.nd4j.linalg.api.ops.impl.transforms;
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_tf_atan2)
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-#include <ops/declarable/headers/parity_ops.h>
+import java.util.Arrays;
+import java.util.List;
 
-namespace nd4j {
-    namespace ops {
+public class LogicalXor extends DynamicCustomOp {
 
-        OP_IMPL(tf_atan2, 2, 1, true) {
-            auto y = INPUT_VARIABLE(0);
-            auto x = INPUT_VARIABLE(1);
-            auto z = OUTPUT_VARIABLE(0);
+    public LogicalXor(){ }
 
-            x->template applyPairwiseTransform<simdOps::Atan2<T>>(y, z, nullptr);
-
-            return Status::OK();
-        }
+    public LogicalXor(SameDiff sd, SDVariable in1, SDVariable in2){
+        super(null, sd, new SDVariable[]{in1, in2});
     }
-}
 
-#endif
+    @Override
+    public String opName(){
+        return "boolean_xor";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "LogicalXor";
+    }
+
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        return Arrays.asList( sameDiff.zerosLike(larg()), sameDiff.zerosLike(rarg()));
+    }
+
+}

@@ -23,7 +23,6 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
 import org.deeplearning4j.nn.conf.layers.EmbeddingSequenceLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
@@ -42,7 +41,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
 
 /**
@@ -56,7 +54,7 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getN
 public class KerasEmbedding extends KerasLayer {
 
     private final int NUM_TRAINABLE_PARAMS = 1;
-    private boolean hasZeroMasking;
+    private boolean zeroMasking;
     private int inputDim;
     private int inputLength;
     private boolean inferInputLength;
@@ -100,8 +98,8 @@ public class KerasEmbedding extends KerasLayer {
         if (this.inferInputLength)
             this.inputLength = 1; // set dummy value, so shape inference works
 
-        this.hasZeroMasking = KerasLayerUtils.getZeroMaskingFromConfig(layerConfig, conf);
-        if (hasZeroMasking)
+        this.zeroMasking = KerasLayerUtils.getZeroMaskingFromConfig(layerConfig, conf);
+        if (zeroMasking)
             log.warn("Masking in keras and DL4J work differently. We do not completely support mask_zero flag " +
                     "on Embedding layers. Zero Masking for the Embedding layer only works with unidirectional LSTM for now."
                     + " If you want to have this behaviour for your imported model " +
@@ -190,7 +188,7 @@ public class KerasEmbedding extends KerasLayer {
             throw new InvalidKerasConfigurationException(
                     "Parameter " + conf.getLAYER_FIELD_EMBEDDING_WEIGHTS() + " does not exist in weights");
         INDArray kernel = weights.get(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS());
-        if (this.hasZeroMasking) {
+        if (this.zeroMasking) {
             kernel.putRow(0, Nd4j.zeros(kernel.columns()));
         }
         this.weights.put(DefaultParamInitializer.WEIGHT_KEY, kernel);

@@ -3338,11 +3338,36 @@ TEST_F(DeclarableOpsTests1, ArgMax5) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests1, ArgMax6) {
+    NDArray<float> x('c', {3, 4, 5});
+    NDArray<float> dim(-1.f);
+    x.linspace(1);
+
+
+    nd4j::ops::argmax<float> op;
+
+    auto expected = op.execute({&x}, {}, {2});
+    ASSERT_EQ(Status::OK(), expected->status());
+    auto exp = expected->at(0);
+
+
+    auto result = op.execute({&x, &dim}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_EQ(*exp, *z);
+
+    delete result;
+    delete expected;
+}
+
 
 TEST_F(DeclarableOpsTests1, ArgMin1) {
     NDArray<float> x('c', {3, 5});
     x.linspace(1);
-    NDArray<float> exp('c', {3, 1});
+//    NDArray<float> exp('c', {3, 1});
+    NDArray<float> exp('c', {3});
     exp.assign(0.0f);
 
     nd4j::ops::argmin<float> op;
