@@ -12,6 +12,14 @@ def _to_camel(x):
         y += t[0].upper() + t[1:]
     return y
 
+
+def _dict_to_jmap(d, JMap):
+    jmap = JMap()
+    for k, v in d.items():
+        jmap.put(k, v)
+    return jmap
+
+
 class TransformProcess(object):
 
     def __init__(self, schema):
@@ -114,6 +122,61 @@ class TransformProcess(object):
         self.final_schema.columns[column][0] = 'integer'
         self.add_step('categoricalToInteger', column)
 
+    def append_string(self, column, string):
+        if self.final_schema.columns[column][0] != 'string':
+            raise Exception('Can not apply append_string transform to column {} because it is not a string column'.format(column))
+        self.add_step('appendStringColumnTransform', column, string)
+
+    def lower(self, column):
+        if self.final_schema.columns[column][0] != 'string':
+            raise Exception('Can not apply lower transform to column {} because it is not a string column'.format(column))
+        self.add_step('exec', 'transform(ChangeCaseStringTransform({}, ChangeCaseStringTransformCaseType.LOWER))'.format(_dq(column)))
+        
+    def upper(self, column):
+        if self.final_schema.columns[column][0] != 'string':
+            raise Exception('Can not apply lower transform to column {} because it is not a string column'.format(column))
+        self.add_step('exec', 'transform(ChangeCaseStringTransform({}, ChangeCaseStringTransformCaseType.UPPER))'.format(_dq(column)))
+
+    def concat(self, columns, new_column=None, delimiter=','):
+        for column in columns:
+            if self.final_schema.columns[column][0] != 'string':
+                raise Exception('Can not apply concat transform to column {} because it is not a string column'.format(column))
+        if new_column is None:
+            new_column = 'concat({})'.format(','.join(columns))
+        if new_column in self.final_schema.columns:
+            raise Exception('Another column with name {} already exists.'.format(new_column))
+        columns = [_dq(c) for c in columns]
+        self.final_schema.add_string_column(new_column)
+        self.add_step('exec', 'transform(ConcatenateStringColumns({}, {}, Arrays.asList({})))'.format(_dq(new_column), _dq(delimiter), ', '.join(columns)))  
+
+    def remove_white_spaces(self, column):
+        if self.final_schema.columns[column][0] != 'string':
+            raise Exception('Can not apply remove_white_spaces transform to column {} because it is not a string column'.format(column))
+        self.add_step('exec', 'transform(RemoveWhiteSpaceTransform({}))'.format(_dq(column)))
+
+    def replace_empty_string(self, column, value):
+        if self.final_schema.columns[column][0] != 'string':
+            raise Exception('Can not apply replace_empty_string transform to column {} because it is not a string column'.format(column))
+        self.add_step('exec', 'transform(ReplaceEmptyStringTransform({}, {}))'.format(_dq(column), _dq(value)))
+ 
+    def replace_string(self, column, *args):
+        if self.final_schema.columns[column][0] != 'string':
+            raise Exception('Can not apply replace_string transform to column {} because it is not a string column'.format(column))
+        if len(args) == 1:
+            args = args[0]
+            assert type(args) is dict, 'Invalid argument. Possible signatures are replace(str, str, str) and replace(str, dict)'
+        elif len(args) == 2:
+            assert type(args[0]) == str and type(args[1]) == str, 'Invalid argument. Possible signatures are replace(str, str, str) and replace(str, dict)'
+            args = {args[0] : args[1]}
+        else:
+            raise Exception('Invalid argument. Possible signatures are replace(str, str, str) and replace(str, dict)')
+        self.add_step('exec', 'transform(ReplaceStringTransform({}, _dict_to_jmap({}, JMap)))'.format(_dq(column), str(args)))
+
+    def map_string(self, column, mapping):
+        if self.final_schema.columns[column][0] != 'string':
+            raise Exception('Can not apply replace_string transform to column {} because it is not a string column'.format(column))
+        self.add_step('exec', 'transform(StringMapTransform({}, _dict_to_jmap({}, JMap)))'.format(_dq(column), str(mapping)))
+
     def serialize(self):
         config = {'steps' : self.steps, 'schema' : self.schema.serialize()}
         return config
@@ -143,12 +206,23 @@ class TransformProcess(object):
         from .java_classes import FloatWritable
         from .java_classes import DoubleWritable
         from .java_classes import DateTimeFieldType
+        from .java_classes import ChangeCaseStringTransform
+        from .java_classes import ChangeCaseStringTransformCaseType
+        from .java_classes import ConcatenateStringColumns
+        from .java_classes import RemoveWhiteSpaceTransform
+        from .java_classes import ReplaceEmptyStringTransform
+        from .java_classes import ReplaceStringTransform
+        from .java_classes import StringMapTransform
+        from .java_classes import JMap
+        from .java_classes import Arrays
+
 
         jschema = self.schema.to_java()
         builder = TransformProcessBuilder(jschema)
         for step in self.steps:
             if step[0] == "exec":
                 code = step[1]
+                print(code)
                 exec("builder." + code)
             else:
                 f = getattr(builder, step[0])

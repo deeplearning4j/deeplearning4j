@@ -55,6 +55,9 @@ HashSet = autoclass('java.util.HashSet')
 JDouble = autoclass('java.lang.Double')
 JFloat = autoclass('java.lang.Float')
 
+Arrays = autoclass('java.util.Arrays')
+JMap = autoclass('java.util.HashMap')
+
 
 SparkConf = autoclass('org.apache.spark.SparkConf')
 SparkContext = autoclass('org.apache.spark.api.java.JavaSparkContext')
@@ -66,3 +69,11 @@ StringToWritablesFunction = autoclass('org.datavec.spark.transform.misc.StringTo
 WritablesToStringFunction = autoclass('org.datavec.spark.transform.misc.WritablesToStringFunction')
 
 #LocalTransformExecutor = autoclass('org.datavec.local.transforms.LocalTransformExecutor')
+
+ChangeCaseStringTransform = autoclass('org.datavec.api.transform.transform.string.ChangeCaseStringTransform')
+ChangeCaseStringTransformCaseType = autoclass('org.datavec.api.transform.transform.string.ChangeCaseStringTransform$CaseType')
+ConcatenateStringColumns = autoclass('org.datavec.api.transform.transform.string.ConcatenateStringColumns')
+RemoveWhiteSpaceTransform = autoclass('org.datavec.api.transform.transform.string.RemoveWhiteSpaceTransform')
+ReplaceEmptyStringTransform = autoclass('org.datavec.api.transform.transform.string.ReplaceEmptyStringTransform')
+ReplaceStringTransform = autoclass('org.datavec.api.transform.transform.string.ReplaceStringTransform')
+StringMapTransform = autoclass('org.datavec.api.transform.transform.string.StringMapTransform')
