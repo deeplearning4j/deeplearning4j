@@ -149,6 +149,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     protected static final String WS_LAYER_ACT_1 = "WS_LAYER_ACT_1";
     protected static final String WS_LAYER_ACT_2 = "WS_LAYER_ACT_2";
+
+    /**
+     * Workspace for output methods that use OutputAdapter
+     */
+    protected static final String WS_OUTPUT_MEM = "WS_OUTPUT_MEM";
+
     /**
      * Workspace for working memory in RNNs - opened and closed once per RNN time step
      */
@@ -2274,6 +2280,24 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
+     * This method uses provided OutputAdapter to return custom object built from INDArray
+     *
+     * PLEASE NOTE: This method uses dedicated Workspace for output generation to avoid redundant allocations
+     *
+     * @param input Input arrays to the netwonk
+     * @param inputMask Optional input mask arrays (may be null)
+     * @param labelMask Optional label mask arrays (may be null
+     * @param outputAdapter OutputAdapter<T> instance
+     * @param <T> T extends Object
+     * @return T instance produced by OutputAdapter
+     */
+    public synchronized <T> T output(@NonNull INDArray inputs, INDArray inputMasks, INDArray labelMasks, @NonNull OutputAdapter<T> outputAdapter) {
+        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, WS_OUTPUT_MEM)) {
+            return outputAdapter.apply(output(inputs, false, inputMasks, labelMasks, ws));
+        }
+    }
+
+    /**
      * Label the probabilities of the input
      *
      * @param input the input to label
@@ -3445,8 +3469,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     in = String.valueOf(((Bidirectional)bi.conf().getLayer()).getNIn());
                     out = String.valueOf(((Bidirectional)bi.conf().getLayer()).getNOut());
                 } else {
-                    in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
-                    out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
+                    try {
+                        in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
+                        out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
+                    }
+                    catch (Exception e) { // Some layers, like PReLU, are just BaseLayers (but have parameters)
+                    }
                 }
                 Set<String> paraNames = currentLayer.paramTable().keySet();
                 for (String aP : paraNames) {
