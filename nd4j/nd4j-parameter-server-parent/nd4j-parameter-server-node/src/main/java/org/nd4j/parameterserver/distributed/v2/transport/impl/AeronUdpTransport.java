@@ -38,6 +38,7 @@ import org.nd4j.parameterserver.distributed.v2.enums.TransmissionStatus;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.v2.transport.MessageCallable;
+import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -309,6 +310,17 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                 precursor.apply(message);
 
             super.processMessage(message);
+        }
+    }
+
+    /**
+     * This method returns Mesh stored in this Transport instance
+     * PLEASE NOTE: This method is suited for tests
+     * @return
+     */
+    protected MeshOrganizer getMesh() {
+        synchronized (mesh) {
+            return mesh.get();
         }
     }
 

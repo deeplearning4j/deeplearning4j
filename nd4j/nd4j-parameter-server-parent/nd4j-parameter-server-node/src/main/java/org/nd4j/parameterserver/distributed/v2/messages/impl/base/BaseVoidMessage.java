@@ -33,10 +33,4 @@ public abstract class BaseVoidMessage implements VoidMessage {
     @Getter
     @Setter
     protected String originatorId;
-
-
-    @Override
-    public UnsafeBuffer asUnsafeBuffer() {
-        return new UnsafeBuffer(SerializationUtils.toByteArray(this));
-    }
 }

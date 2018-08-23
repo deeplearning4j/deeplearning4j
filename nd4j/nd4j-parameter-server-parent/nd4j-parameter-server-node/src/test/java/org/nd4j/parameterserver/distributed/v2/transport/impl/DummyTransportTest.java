@@ -25,6 +25,7 @@ import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeResponse;
+import org.nd4j.parameterserver.distributed.v2.transport.MessageCallable;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -131,7 +132,7 @@ public class DummyTransportTest {
         transportD.sendMessage(new HandshakeRequest(), "alpha");
 
 
-        val f = new DummyTransport.MessageCallable<GradientsUpdateMessage>() {
+        val f = new MessageCallable<GradientsUpdateMessage>() {
             @Override
             public void apply(GradientsUpdateMessage message) {
                 val update = message.getPayload();
@@ -182,7 +183,7 @@ public class DummyTransportTest {
         val upstream = originalMeshZ.getUpstreamForNode("zeta");
 
 
-        val f = new DummyTransport.MessageCallable<HandshakeResponse>() {
+        val f = new MessageCallable<HandshakeResponse>() {
             @Override
             public void apply(HandshakeResponse message) {
                 assertTrue(message.isRestart());

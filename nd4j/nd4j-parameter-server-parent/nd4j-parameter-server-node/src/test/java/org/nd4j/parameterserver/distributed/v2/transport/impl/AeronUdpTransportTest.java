@@ -15,16 +15,17 @@ public class AeronUdpTransportTest {
     private static final int ROOT_PORT = 40781;
 
     @Test
-    @Ignore
+    //@Ignore
     public void testBasic_Connection_1() throws Exception {
         // we definitely want to shutdown all transports after test, to avoid issues with shmem
         try(val transportA = new AeronUdpTransport(IP, ROOT_PORT, IP, ROOT_PORT, VoidConfiguration.builder().build());  val transportB = new AeronUdpTransport(IP, 40781, IP, ROOT_PORT, VoidConfiguration.builder().build())) {
             transportA.launchAsMaster();
             transportB.launch();
 
-            val ping = new PingMessage();
+            Thread.sleep(100);
 
-            transportA.sendMessageBlocking(ping, transportA.id());
+            assertEquals(2, transportA.getMesh());
+            assertEquals(transportA.getMesh(), transportB.getMesh());
         }
     }
 }

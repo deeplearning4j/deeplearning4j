@@ -45,7 +45,9 @@ public interface VoidMessage extends Serializable {
      *
      * @return
      */
-    UnsafeBuffer asUnsafeBuffer();
+    default UnsafeBuffer asUnsafeBuffer() {
+        return new UnsafeBuffer(org.nd4j.linalg.util.SerializationUtils.toByteArray(this));
+    }
 
     static VoidMessage fromBytes(byte[] bytes) {
         return SerializationUtils.deserialize(bytes);
