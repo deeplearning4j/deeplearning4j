@@ -218,14 +218,14 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
 
     NDArray<T>* colVec0 = _m.subarray({{col1+shift, col1+shift+len },{col1+shift, col1+shift+1}});  
         
-    NDArray<T>* diagInterval = _m({{col1+shift, col1+shift+len},{col1+shift, col1+shift+len}}, true).diagonal('c');        
+    NDArray<T>* diagInterval = _m({col1+shift, col1+shift+len, col1+shift,col1+shift+len}, true).diagonal('c');        
   
     const T almostZero = DataTypeUtils::min<T>();
     T maxElem;
     if(len == 1)
         maxElem = math::nd4j_abs<T>((*diagInterval)(0));
     else
-        maxElem = (*diagInterval)({{1,-1},{}}, true).template reduceNumber<simdOps::AMax<T>>();                
+        maxElem = (*diagInterval)({1,-1, 0,0}, true).template reduceNumber<simdOps::AMax<T>>();                
     T maxElem0 = colVec0->template reduceNumber<simdOps::AMax<T>>();     
 
     T eps = math::nd4j_max<T>(almostZero, DataTypeUtils::eps<T>() * maxElem);
@@ -605,8 +605,8 @@ template <typename T>
 void SVD<T>::calcBlockSVD(int col1, int size, NDArray<T>& U, NDArray<T>& singVals, NDArray<T>& V) {  
     
     const T almostZero = DataTypeUtils::min<T>();
-    NDArray<T> col0 = _m({{col1, col1+size},{col1, col1+1}}, true);
-    NDArray<T>* diagP = _m({{col1, col1+size},{col1, col1+size}}, true).diagonal('c');
+    NDArray<T> col0 = _m({col1, col1+size, col1, col1+1}, true);
+    NDArray<T>* diagP = _m({col1, col1+size, col1, col1+size}, true).diagonal('c');
     NDArray<T> diag = *diagP;
     delete diagP;
 
@@ -712,7 +712,7 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
     
     if(n < _switchSize) { 
                             
-        JacobiSVD<T> jac(_m({{col1, col1+n+1}, {col1, col1+n}}, true), _calcU, _calcV, _fullUV);
+        JacobiSVD<T> jac(_m({col1,col1+n+1, col1,col1+n}, true), _calcU, _calcV, _fullUV);
         
         if (_calcU) {
             NDArray<T>* temp = _u.subarray({{col1, col1+n+1},{col1, col1+n+1}});
@@ -721,10 +721,10 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
         }
         else {
             NDArray<T>* temp1 = _u.subarray({{0, 1},{col1, col1+n+1}});
-            temp1->assign(jac._u({{0,1},{}}, true));
+            temp1->assign(jac._u({0,1, 0,0}, true));
             delete temp1;
             NDArray<T>* temp2 = _u.subarray({{1, 2},{col1, col1+n+1}});
-            temp2->assign(jac._u({{n,n+1},{}}, true));    
+            temp2->assign(jac._u({n,n+1, 0,0}, true));    
             delete temp2;
         }
     
@@ -738,7 +738,7 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
         temp->assign(0.);
         delete temp;
         NDArray<T>* diag = _m.diagonal('c');
-        (*diag)({{col1+shift, col1+shift+n}, {}}, true).assign(jac._s({{0, n},{}}, true));
+        (*diag)({col1+shift, col1+shift+n, 0,0}, true).assign(jac._s({0,n, 0,0}, true));
         delete diag;        
     
         return;
@@ -762,12 +762,12 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
     r0 = math::nd4j_sqrt<T>((math::nd4j_abs<T>(alphaK * lambda) * math::nd4j_abs<T>(alphaK * lambda)) + math::nd4j_abs<T>(betaK * phi) * math::nd4j_abs<T>(betaK * phi));
     
     if(_calcU) {
-        l.assign(_u({{col1+k, col1+k+1},{col1, col1+k}}, true));
-        f.assign(_u({{col1+k+1, col1+k+2},{col1+k+1, col1+n}}, true));
+        l.assign(_u({col1+k,  col1+k+1,  col1,col1+k}, true));
+        f.assign(_u({col1+k+1,col1+k+2,  col1+k+1,col1+n}, true));
     }
     else {
-        l.assign(_u({{1, 2},{col1, col1+k}}, true));
-        f.assign(_u({{0, 1},{col1+k+1, col1+n}}, true));
+        l.assign(_u({1,2, col1, col1+k}, true));
+        f.assign(_u({0,1, col1+k+1, col1+n}, true));
     }
 
     // UofSVD.printIndexedBuffer();
@@ -795,7 +795,7 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
 
         for (int i = col1 + k - 1; i >= col1; --i) {
             NDArray<T>* temp = _u.subarray({{col1, col1+k+1}, {i+1, i+2}});
-            temp->assign(_u({{col1, col1+k+1}, {i, i+1}}, true));
+            temp->assign(_u({col1, col1+k+1, i, i+1}, true));
             delete temp;
         }
 
@@ -806,7 +806,7 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
         temp2->assign(q1 * (-s0));
         delete temp2;
         NDArray<T>* temp3 = _u.subarray({{col1+k+1, col1+n+1}, {col1, col1+1}});
-        temp3->assign(_u({{col1+k+1, col1+n+1}, {col2+1, col2+2}}, true) * s0);        
+        temp3->assign(_u({col1+k+1, col1+n+1, col2+1, col2+2}, true) * s0);        
         delete temp3;
         NDArray<T>* temp4 =_u.subarray({{col1+k+1, col1+n+1}, {col2+1, col2+2}});
         *temp4 *= c0;
@@ -823,8 +823,8 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
         _u(0, col2+1) = -q1*s0;    
         _u(1, col1) = _u(1, col2+1) * s0;     
         _u(1, col2 + 1) *= c0;
-        _u({{1, 2}, {col1+1, col1+k+1}}, true) = 0.;
-        _u({{0, 1}, {col1+k+1, col1+n}}, true) = 0.;    
+        _u({1,2,  col1+1, col1+k+1}, true) = 0.;
+        _u({0,1,  col1+k+1, col1+n}, true) = 0.;    
     }
     
     _m(col1 + shift, col1 + shift) = r0;
@@ -880,7 +880,7 @@ void SVD<T>::exchangeUV(const HHsequence<T>& hhU, const HHsequence<T>& hhV, cons
         _u = temp1;        
 
         NDArray<T>* temp2 = _u.subarray({{0, _diagSize},{0, _diagSize}});        
-        temp2->assign(V({{0,_diagSize},{0,_diagSize}}, true));                
+        temp2->assign(V({0,_diagSize, 0,_diagSize}, true));                
         hhU.mulLeft(_u);
         delete temp2;
     }
@@ -893,7 +893,7 @@ void SVD<T>::exchangeUV(const HHsequence<T>& hhU, const HHsequence<T>& hhV, cons
         _v = temp1;
 
         NDArray<T>* temp2 = _v.subarray({{0, _diagSize},{0, _diagSize}});        
-        temp2->assign(U({{0,_diagSize},{0,_diagSize}}, true));        
+        temp2->assign(U({0,_diagSize, 0,_diagSize}, true));        
         hhV.mulLeft(_v);        
         delete temp2;        
     }

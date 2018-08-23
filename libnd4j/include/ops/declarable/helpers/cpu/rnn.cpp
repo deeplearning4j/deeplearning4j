@@ -87,14 +87,14 @@ void rnnTimeLoop(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* h, NDArray<
 
             int maxStep = maxTimeStep ? (int)(*maxTimeStep)(e) : time;
 
-            NDArray<T> xt   = (*x)({{t,t+1}, {e,e+1}, {}}, true);
-            NDArray<T> ht   = (*h)({{t,t+1}, {e,e+1}, {}}, true);
-            NDArray<T> ht_1 = (*hFinal)({{e,e+1}, {}}, true);                       // previous state 
+            NDArray<T> xt   = (*x)({t,t+1, e,e+1, 0,0}, true);
+            NDArray<T> ht   = (*h)({t,t+1, e,e+1, 0,0}, true);
+            NDArray<T> ht_1 = (*hFinal)({e,e+1, 0,0}, true);                       // previous state 
             
             if(t >= maxStep) {
                 ht = 0.;
                 if(maxStep != 0)                    
-                    ht_1.assign((*h)({{maxStep-1,maxStep}, {e,e+1}, {}}));
+                    ht_1.assign((*h)({maxStep-1,maxStep, e,e+1, 0,0}));
             }
             else {
                 helpers::rnnCell<T>({&xt, Wx, Wh, b, &ht_1}, &ht);

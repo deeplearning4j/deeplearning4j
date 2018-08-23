@@ -263,7 +263,7 @@ void JacobiSVD<T>::evalData(const NDArray<T>& matrix) {
     if(_rows > _cols) {
 
         HHcolPivQR<T> qr(matrix / scale);
-        _m.assign(qr._qr({{0, _cols},{0, _cols}}));
+        _m.assign(qr._qr({0,_cols, 0,_cols}));
         _m.setValueInDiagMatrix(0., -1, 'l');
             
         HHsequence<T>  hhSeg(qr._qr, qr._coeffs, 'u');
@@ -282,7 +282,7 @@ void JacobiSVD<T>::evalData(const NDArray<T>& matrix) {
 
         NDArray<T>* matrixT = matrix.transpose();
         HHcolPivQR<T> qr(*matrixT / scale);
-        _m.assign(qr._qr({{0, _rows},{0, _rows}}));
+        _m.assign(qr._qr({0,_rows, 0,_rows}));
         _m.setValueInDiagMatrix(0., -1, 'l');
         _m.transposei();
     
@@ -302,7 +302,7 @@ void JacobiSVD<T>::evalData(const NDArray<T>& matrix) {
     }
     else {
 
-        _m.assign(matrix({{0, _diagSize}, {0,_diagSize}}) / scale);
+        _m.assign(matrix({0,_diagSize, 0,_diagSize}) / scale);
 
         if(_calcU) 
             _u.setIdentity();
@@ -373,8 +373,8 @@ void JacobiSVD<T>::evalData(const NDArray<T>& matrix) {
     
     for(int i = 0; i < _diagSize; i++) {
                 
-        int pos = (int)(_s({{i, -1}, {}}).template indexReduceNumber<simdOps::IndexMax<T>>());
-        T maxSingVal =  _s({{i, -1}, {}}).template reduceNumber<simdOps::Max<T>>();
+        int pos = (int)(_s({i,-1, 0,0}).template indexReduceNumber<simdOps::IndexMax<T>>());
+        T maxSingVal =  _s({i,-1, 0,0}).template reduceNumber<simdOps::Max<T>>();
 
         if(maxSingVal == (T)0.)   
             break;

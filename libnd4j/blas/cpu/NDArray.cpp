@@ -2429,7 +2429,7 @@ void NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target,
         for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
 
             ShapeUtils<T>::evalIdxRangesForSubArr(i, target->_shapeInfo, dimsToExclude, idxRanges.data());
-            NDArray<T> targetSubArr = (*target)(idxRanges.data());
+            NDArray<T> targetSubArr = (*target)(idxRanges);
             pMin->template applyPairwiseTransform<OpName>(&targetSubArr, &targetSubArr, extraArgs);
         }
     }
@@ -2980,7 +2980,7 @@ bool NDArray<T>::isUnitary() {
     ////////////////////////////////////////////////////////////////////////
     // operator returns sub-array with buffer pointing at this->_buffer + certain offset
     template<typename T>
-    NDArray<T> NDArray<T>::operator()(const Nd4jLong* idx, bool keepUnitiesInShape)  const {
+    NDArray<T> NDArray<T>::operator()(const std::vector<Nd4jLong>& idx, bool keepUnitiesInShape)  const {
 
         const int rank = rankOf();
         Nd4jLong *newShape;
@@ -3028,59 +3028,7 @@ bool NDArray<T>::isUnitary() {
 
         return result;
     }
-
-
-    ////////////////////////////////////////////////////////////////////////
-    // operator returns sub-array with buffer pointing at this->_buffer + certain offset
-    template<typename T>
-    NDArray<T> NDArray<T>::operator()(const Intervals& idx, bool keepUnitiesInShape)  const {
-
-        const int rank = rankOf();
-        if (idx.size() != rank)
-            throw std::runtime_error("NDArray::operator(Intervals): number of indices should match the rank of array!");
-
-        Nd4jLong *newShape;
-        ALLOCATE(newShape, _workspace, shape::shapeInfoLength(rank), Nd4jLong);
-        memcpy(newShape, _shapeInfo, shape::shapeInfoByteLength(rank));
-        newShape[shape::shapeInfoLength(rank) - 2] = -1;
-
-        auto shapeOf = shape::shapeOf(newShape);
-        auto stridesOf = shape::stride(newShape);
-
-        Nd4jLong offset = 0;
-        int first, last;
-        for (int d = 0; d < idx.size(); ++d) {
-            // building new shape first
-            if (!idx[d].empty()) {
-                if (idx[d].size() != 2)
-                    throw std::runtime_error("NDArray::operator(Intervals): the interval must contain only two numbers {first, last} !");
-                first = idx[d][0] >= 0 ? idx[d][0] : idx[d][0] + sizeAt(d) + 1;
-                last  = idx[d][1] >= 0 ? idx[d][1] : idx[d][1] + sizeAt(d) + 1;
-
-                shapeOf[d] = last - first;
-                // for offset we're taking only the first index
-                offset += first * stridesOf[d];
-            }
-        }
-
-        NDArray<T> result(_buffer + offset, newShape, _workspace);
-        result._isShapeAlloc = true;
-
-        if(!keepUnitiesInShape) {
-            // check whether units are present in newShape, if yes then remove them by applying corresponding reshape
-            // for example if result has shape {1,a,1,b} then after reshaping it acquire new shape {a,b}
-            std::vector<Nd4jLong> nonUnitDims;
-            for(int i = 0; i < result.rankOf(); ++i)
-                if(newShape[i+1] != 1)
-                    nonUnitDims.push_back(newShape[i+1]);
-
-            if(nonUnitDims.size() != result.rankOf())
-                result.reshapei(nonUnitDims);
-        }
-
-        return result;
-    }
-        
+      
 ////////////////////////////////////////////////////////////////////////
 // addition operator array + array
 template<typename T>

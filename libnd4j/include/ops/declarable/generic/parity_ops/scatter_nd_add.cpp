@@ -48,7 +48,7 @@ OP_IMPL(scatter_nd_add, 3, 1, true) {
     std::vector<Nd4jLong> updShape = updates->getShapeAsVector();
     std::vector<Nd4jLong> indShape = indices->getShapeAsVector();    
     std::vector<Nd4jLong> expectedUpdShape(std::begin(indShape), std::end(indShape) - 1);     
-    if(indLastDim > 1)
+    if(inRank > indLastDim)
         std::move(std::begin(inShape) + indLastDim - 1, std::end(inShape), std::back_inserter(expectedUpdShape));        
     REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ND_ADD OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString(expectedUpdShape).c_str(), ShapeUtils<T>::shapeAsString(updShape).c_str());
 
