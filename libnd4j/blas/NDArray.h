@@ -823,6 +823,14 @@ namespace nd4j {
         NDArray<T> operator()(const std::vector<Nd4jLong>& idx, bool keepUnitiesInShape = false)  const;
 
         /**
+        *  evaluates subarray with buffer pointing at this->_buffer and offset defined by given sequential index subArrIdx and dimensions in dimsToExclude
+        *  subArrIdx - index of current sub-array
+        *  dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-array along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5], and subArrIdx must be in range [0,7]
+        *                  if dimsToExclude is empty then idxRanges containing all zeros (means whole array) will be returned.
+        */ 
+        NDArray<T> operator()(const Nd4jLong subArrIdx, const std::vector<int>& dimsToExclude, bool keepUnitiesInShape = false)  const;
+
+        /**
         *  addition operator: array + other
         *  other - input array to add
         */

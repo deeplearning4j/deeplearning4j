@@ -644,14 +644,13 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
         else {
 
             std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(rank, dimensions);
-            const Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
-            std::vector<Nd4jLong> idxRanges(rank * 2);
+            const Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);            
 
-#pragma omp parallel for schedule(guided) firstprivate(idxRanges)
+#pragma omp parallel for schedule(guided) 
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
                 if (norm2(i) > clipNorm) {
-                    ShapeUtils<T>::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
-                    NDArray<T> inputSubArr  = input(idxRanges);
+                    
+                    NDArray<T> inputSubArr  = input(i, dimsToExclude);
                     inputSubArr *= (clipNorm / norm2(i));
                 }
             }

@@ -2424,12 +2424,11 @@ void NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target,
     
         std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(target->rankOf(), sameDims);
         const Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(target->_shapeInfo, dimsToExclude);
-        std::vector<Nd4jLong> idxRanges(target->rankOf() * 2);
-#pragma omp parallel for schedule(guided) firstprivate(idxRanges) 
+        
+#pragma omp parallel for schedule(guided)
         for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
-
-            ShapeUtils<T>::evalIdxRangesForSubArr(i, target->_shapeInfo, dimsToExclude, idxRanges.data());
-            NDArray<T> targetSubArr = (*target)(idxRanges);
+            
+            NDArray<T> targetSubArr = (*target)(i, dimsToExclude);
             pMin->template applyPairwiseTransform<OpName>(&targetSubArr, &targetSubArr, extraArgs);
         }
     }
@@ -3028,6 +3027,17 @@ bool NDArray<T>::isUnitary() {
 
         return result;
     }
+
+////////////////////////////////////////////////////////////////////////
+template<typename T>
+NDArray<T> NDArray<T>::operator()(const Nd4jLong subArrIdx, const std::vector<int>& dimsToExclude, bool keepUnitiesInShape)  const {
+
+    std::vector<Nd4jLong> idxRanges(2 * rankOf());        
+        
+    ShapeUtils<T>::evalIdxRangesForSubArr(subArrIdx, _shapeInfo, dimsToExclude, idxRanges.data());
+
+    return (*this)(idxRanges, keepUnitiesInShape);
+}
       
 ////////////////////////////////////////////////////////////////////////
 // addition operator array + array

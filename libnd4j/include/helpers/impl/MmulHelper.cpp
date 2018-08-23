@@ -554,15 +554,13 @@ void MmulHelper<T>::matmul(const nd4j::NDArray<T>* x, const nd4j::NDArray<T>* y,
             dimsToExclude[i] = i;
 
         const Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(xT->getShapeInfo(), dimsToExclude);
-        std::vector<Nd4jLong> idxRanges(xRank * 2);
 
-#pragma omp parallel for schedule(guided) firstprivate(idxRanges)
+#pragma omp parallel for schedule(guided)
         for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
-
-            ShapeUtils<T>::evalIdxRangesForSubArr(i, xT->getShapeInfo(), dimsToExclude, idxRanges.data());
-            NDArray<T> xSubArr = (*xT)(idxRanges);
-            NDArray<T> ySubArr = (*yT)(idxRanges);
-            NDArray<T> zSubArr = (*zT)(idxRanges);
+            
+            NDArray<T> xSubArr = (*xT)(i, dimsToExclude);
+            NDArray<T> ySubArr = (*yT)(i, dimsToExclude);
+            NDArray<T> zSubArr = (*zT)(i, dimsToExclude);
             mmul(&xSubArr, &ySubArr, &zSubArr, (T)1., (T)0.);
         }
     }
