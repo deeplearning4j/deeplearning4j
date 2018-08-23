@@ -30,6 +30,7 @@ import lombok.val;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.SleepingIdleStrategy;
 import org.jetbrains.annotations.NotNull;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
@@ -55,15 +56,13 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     protected Map<String, MessageCallable> precursors = new HashMap<>();
 
     // this map holds outgoing connections, basically
-    private Map<String, RemoteConnection> remoteConnections = new ConcurrentHashMap<>();
+    protected Map<String, RemoteConnection> remoteConnections = new ConcurrentHashMap<>();
 
     protected final int MESSAGE_THREADS = 2;
     protected final int SUBSCRIPTION_THREADS = 1;
 
     protected Aeron aeron;
     protected Aeron.Context context;
-
-    protected VoidConfiguration voidConfiguration;
 
     protected Subscription ownSubscription;
     protected FragmentAssembler messageHandler;
@@ -74,6 +73,17 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
     // this is intermediate buffer for incoming messages
     protected BlockingQueue<VoidMessage> messageQueue = new LinkedTransferQueue<>();
+
+    public AeronUdpTransport(@NonNull String ownIp, @NonNull String rootIp, @NonNull VoidConfiguration configuration) {
+        this(ownIp, configuration.getUnicastPort(), rootIp, configuration.getUnicastPort(), configuration);
+    }
+
+    public AeronUdpTransport(@NonNull String ownIp, int ownPort, @NonNull String rootIp, int rootPort, @NonNull VoidConfiguration configuration) {
+        super("aeron:udp?endpoint=" + ownIp + ":" + ownPort, "aeron:udp?endpoint=" + rootIp + ":" + rootPort, configuration);
+
+        Preconditions.checkArgument(ownPort > 0 && ownPort < 65536, "Own UDP port should be positive value in range of 1 and 65536");
+        Preconditions.checkArgument(rootPort > 0 && rootPort < 65536, "Master node UDP port should be positive value in range of 1 and 65536");
+    }
 
     // this executor service han
     protected ExecutorService messagesExecutorService = Executors.newFixedThreadPool(MESSAGE_THREADS + SUBSCRIPTION_THREADS, new ThreadFactory() {
@@ -88,7 +98,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
     protected void createSubscription() {
         // create subscription
-        ownSubscription = aeron.addSubscription("aeron:udp?endpoint=" + id() + ":" + voidConfiguration.getUnicastPort(), voidConfiguration.getStreamId());
+        ownSubscription = aeron.addSubscription(this.id() , voidConfiguration.getStreamId());
 
         // create thread that polls messages from subscription
         messageHandler = new FragmentAssembler((buffer, offset, length, header) -> jointMessageHandler(buffer, offset, length, header));
@@ -157,28 +167,31 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
     @Override
     public synchronized void launch() {
-        // we set up aeron  connection to master first
-        val id = mesh.get().getRootNode().getId();
-        val port = voidConfiguration.getUnicastPort();
+        if (!masterMode) {
+            // we set up aeron  connection to master first
+            val id = mesh.get().getRootNode().getId();
+            val port = voidConfiguration.getUnicastPort();
 
-        // we add connection to the root node
-        val v = aeron.addPublication("aeron:udp?endpoint=" + id + ":" + port, voidConfiguration.getStreamId());
+            // we add connection to the root node
+            val v = aeron.addPublication(this.rootId, voidConfiguration.getStreamId());
 
-        val hash = HashUtil.getLongHash(id + ":" + port);
+            val hash = HashUtil.getLongHash(id + ":" + port);
 
-        val rc = RemoteConnection.builder()
-                .ip(id)
-                .port(voidConfiguration.getUnicastPort())
-                .longHash(hash)
-                .publication(v)
-                .build();
+            val rc = RemoteConnection.builder()
+                    .ip(id)
+                    .port(voidConfiguration.getUnicastPort())
+                    .longHash(hash)
+                    .publication(v)
+                    .build();
 
-        remoteConnections.put(id, rc);
+            remoteConnections.put(id, rc);
 
-        // add own subscription
-        createSubscription();
+            // add own subscription
+            createSubscription();
 
-        super.launch();
+            super.launch();
+        } else
+            log.warn("launch() was called on master node!");
     }
 
     @Override

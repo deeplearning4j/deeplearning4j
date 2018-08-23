@@ -80,7 +80,7 @@ public abstract  class BaseTransport  implements Transport {
     protected Map<String, Consumer> consumers = new HashMap<>();
 
     // just configuration bean
-    protected final VoidConfiguration configuration;
+    protected final VoidConfiguration voidConfiguration;
 
     protected final MeshBuildMode meshBuildMode = MeshBuildMode.MESH;
 
@@ -92,10 +92,19 @@ public abstract  class BaseTransport  implements Transport {
         this(rootId, VoidConfiguration.builder().build());
     }
 
-    protected BaseTransport(@NonNull String rootId, @NonNull VoidConfiguration configuration) {
+    protected BaseTransport(@NonNull String rootId, @NonNull VoidConfiguration voidConfiguration) {
         this.mesh.set(new MeshOrganizer(meshBuildMode));
         this.rootId = rootId;
-        this.configuration = configuration;
+        this.voidConfiguration = voidConfiguration;
+    }
+
+    protected BaseTransport(@NonNull String ownId, @NonNull String rootId, @NonNull VoidConfiguration voidConfiguration) {
+        this.mesh.set(new MeshOrganizer(meshBuildMode));
+        this.id = ownId;
+        this.rootId = rootId;
+        this.voidConfiguration = voidConfiguration;
+
+        masterMode = ownId.equalsIgnoreCase(rootId);
     }
 
     @Override
