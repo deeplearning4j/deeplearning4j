@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+@Library('skymind@bugfix/ppc64-docker') _
+
 /*
     To redefine some job/run parameters,
     please provide arguments to jenkinsBuilder step.
