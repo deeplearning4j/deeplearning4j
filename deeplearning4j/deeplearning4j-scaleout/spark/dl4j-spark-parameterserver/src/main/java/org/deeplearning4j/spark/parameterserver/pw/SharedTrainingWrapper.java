@@ -47,13 +47,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.TransportType;
-import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
-import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
-import org.nd4j.parameterserver.distributed.transport.Transport;
 import org.nd4j.parameterserver.distributed.util.NetworkOrganizer;
+import org.nd4j.parameterserver.distributed.v2.ModelParameterServer;
+import org.nd4j.parameterserver.distributed.v2.transport.impl.AeronUdpTransport;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -274,10 +272,7 @@ public class SharedTrainingWrapper {
                                     .memoryParameters(bufferSize, queueSize).build();
 
                     // FIXME: implement support for Custom transport implementation
-                    Transport transport =
-                                    voidConfiguration.getTransportType() == TransportType.ROUTED ? new RoutedTransport()
-                                                    : voidConfiguration.getTransportType() == TransportType.BROADCAST
-                                                                    ? new MulticastTransport() : null;
+                    val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP ? new AeronUdpTransport() :  null;
 
                     if (transport == null)
                         throw new DL4JInvalidConfigException(
@@ -292,7 +287,8 @@ public class SharedTrainingWrapper {
                     }
 
                     driver = new SilentTrainingDriver(accumulator);
-                    VoidParameterServer.getInstance().init(voidConfiguration, transport, driver);
+                    ModelParameterServer.getInstance().configure(voidConfiguration, transport, false, driver);
+
 
                     // we're saving reference to original model
                     originalModel = model;

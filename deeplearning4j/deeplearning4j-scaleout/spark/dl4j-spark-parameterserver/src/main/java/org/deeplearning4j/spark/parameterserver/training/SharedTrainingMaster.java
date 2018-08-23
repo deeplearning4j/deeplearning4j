@@ -19,6 +19,7 @@ package org.deeplearning4j.spark.parameterserver.training;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
@@ -55,15 +56,14 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.ExecutionMode;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.enums.TransportType;
-import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
-import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
-import org.nd4j.parameterserver.distributed.transport.Transport;
 import org.nd4j.parameterserver.distributed.util.NetworkOrganizer;
+import org.nd4j.parameterserver.distributed.v2.ModelParameterServer;
+import org.nd4j.parameterserver.distributed.v2.transport.Transport;
+import org.nd4j.parameterserver.distributed.v2.transport.impl.AeronUdpTransport;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
@@ -438,9 +438,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         voidConfiguration.setShardAddresses(voidConfiguration.getControllerAddress());
         voidConfiguration.setNumberOfShards(1);
 
-        Transport transport = voidConfiguration.getTransportType() == TransportType.ROUTED ? new RoutedTransport()
-                        : voidConfiguration.getTransportType() == TransportType.BROADCAST ? new MulticastTransport()
-                                        : this.transport;
+        val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP ? new AeronUdpTransport() : null;
 
         if (transport == null)
             throw new DL4JInvalidConfigException("No Transport implementation was defined for this training session!");
@@ -455,7 +453,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             if(LAST_TRAINING_INSTANCE.get() >= 0 && LAST_TRAINING_INSTANCE.get() != instanceId){
                 log.debug("Detected changed training instance - setting up new parameter server - old instance {}, new instance {}",
                         LAST_TRAINING_INSTANCE, instanceId);
-                VoidParameterServer.getInstance().shutdown();
+
+                ModelParameterServer.getInstance().shutdown();
                 try{    //TODO is this required?
                     Thread.sleep(3000);
                 } catch (Exception e){
@@ -467,7 +466,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                             network != null ? network.getNetwork().params() : graph.getNetwork().params(),
                             network != null ? network.getNetwork().getOptimizer().getStepFunction()
                                             : graph.getNetwork().getOptimizer().getStepFunction());
-            VoidParameterServer.getInstance().init(voidConfiguration, transport, trainingDriver);
+
+
+            ModelParameterServer.getInstance().configure(voidConfiguration, transport, true, trainingDriver);
             LAST_TRAINING_INSTANCE.set(instanceId);
         }
 

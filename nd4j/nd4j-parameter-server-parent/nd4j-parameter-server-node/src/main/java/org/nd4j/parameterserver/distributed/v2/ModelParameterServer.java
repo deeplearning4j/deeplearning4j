@@ -46,14 +46,24 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 @Slf4j
 public final class ModelParameterServer {
-    private final Transport transport;
+    protected static final ModelParameterServer INSTANCE = new ModelParameterServer();
+
+    private Transport transport;
 
     // TODO: we need better capacity here, it should scale properly
     private final BlockingQueue<INDArray> updatesQueue = new LinkedBlockingQueue<>(4096);
 
-    private final boolean masterMode;
+    private boolean masterMode;
 
-    protected final VoidConfiguration configuration;
+    protected VoidConfiguration configuration;
+
+    protected ModelParameterServer() {
+        //
+    }
+
+    public static ModelParameterServer getInstance() {
+        return INSTANCE;
+    }
 
     /**
      * This constructor is for tests only
@@ -81,7 +91,18 @@ public final class ModelParameterServer {
      * @param transport Transport instance to be used for communications
      * @param isMasterNode set to true if this parameter server instance will be a master node, false otherwise
      */
-    public ModelParameterServer(VoidConfiguration configuration, Transport transport, boolean isMasterNode) {
+    public ModelParameterServer(@NonNull VoidConfiguration configuration, @NonNull Transport transport, boolean isMasterNode) {
+        this();
+        configure(configuration, transport, isMasterNode);
+    }
+
+    /**
+     * This method applies
+     * @param configuration
+     * @param transport
+     * @param isMasterNode
+     */
+    public void configure(@NonNull VoidConfiguration configuration, @NonNull Transport transport, boolean isMasterNode) {
         this.transport = transport;
         this.masterMode = isMasterNode;
         this.configuration = configuration;
