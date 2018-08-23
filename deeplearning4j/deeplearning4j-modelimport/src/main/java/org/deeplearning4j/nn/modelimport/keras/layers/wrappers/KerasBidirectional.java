@@ -27,7 +27,7 @@ import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLstm;
+import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLSTM;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasSimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -119,13 +119,13 @@ public class KerasBidirectional extends KerasLayer {
         String rnnClass = (String) innerRnnConfig.get("class_name");
         switch (rnnClass) {
             case "LSTM":
-                kerasRnnlayer = new KerasLstm(innerRnnConfig, enforceTrainingConfig);
+                kerasRnnlayer = new KerasLSTM(innerRnnConfig, enforceTrainingConfig);
                 try {
-                    LSTM rnnLayer = (LSTM) ((KerasLstm) kerasRnnlayer).getLSTMLayer();
+                    LSTM rnnLayer = (LSTM) ((KerasLSTM) kerasRnnlayer).getLSTMLayer();
                     layer = new Bidirectional(mode, rnnLayer);
                     layer.setLayerName(layerName);
                 } catch (Exception e) {
-                    LastTimeStep rnnLayer = (LastTimeStep) ((KerasLstm) kerasRnnlayer).getLSTMLayer();
+                    LastTimeStep rnnLayer = (LastTimeStep) ((KerasLSTM) kerasRnnlayer).getLSTMLayer();
                     this.layer = new Bidirectional(mode, rnnLayer);
                     layer.setLayerName(layerName);
                 }
@@ -229,7 +229,7 @@ public class KerasBidirectional extends KerasLayer {
     private Map<String, INDArray> getUnderlyingWeights(Map<String, INDArray> weights, String direction)
             throws InvalidKerasConfigurationException {
         int keras1SubstringLength;
-        if (kerasRnnlayer instanceof KerasLstm)
+        if (kerasRnnlayer instanceof KerasLSTM)
             keras1SubstringLength = 3;
         else if (kerasRnnlayer instanceof KerasSimpleRnn)
             keras1SubstringLength = 1;

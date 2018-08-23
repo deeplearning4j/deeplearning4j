@@ -63,7 +63,7 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getN
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class KerasLstm extends KerasLayer {
+public class KerasLSTM extends KerasLayer {
 
     private final String LSTM_FORGET_BIAS_INIT_ZERO = "zero";
     private final String LSTM_FORGET_BIAS_INIT_ONE = "one";
@@ -94,7 +94,7 @@ public class KerasLstm extends KerasLayer {
      * @param kerasVersion major keras version
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasLstm(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
+    public KerasLSTM(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
         super(kerasVersion);
     }
 
@@ -105,7 +105,7 @@ public class KerasLstm extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasLstm(Map<String, Object> layerConfig)
+    public KerasLSTM(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
@@ -118,7 +118,7 @@ public class KerasLstm extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasLstm(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+    public KerasLSTM(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, enforceTrainingConfig, Collections.<String, KerasLayer>emptyMap());
     }
@@ -132,7 +132,7 @@ public class KerasLstm extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasLstm(Map<String, Object> layerConfig, Map<String, ? extends KerasLayer> previousLayers)
+    public KerasLSTM(Map<String, Object> layerConfig, Map<String, ? extends KerasLayer> previousLayers)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true, previousLayers);
     }
@@ -147,7 +147,7 @@ public class KerasLstm extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasLstm(Map<String, Object> layerConfig, boolean enforceTrainingConfig, Map<String, ? extends KerasLayer> previousLayers)
+    public KerasLSTM(Map<String, Object> layerConfig, boolean enforceTrainingConfig, Map<String, ? extends KerasLayer> previousLayers)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
