@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.nn.conf.layers.util;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -28,20 +30,29 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 
 /**
- * Wrapper which masks timesteps with 0 activation.
+ * Wrapper which masks timesteps with activation equal to the specified masking value (0.0 default).
  * Assumes that the input shape is [batch_size, input_size, timesteps].
  * @author Martin Boyanov mboyanov@gmail.com
  */
+@Data
 public class MaskZeroLayer extends BaseWrapperLayer {
+
+    private double maskingValue = 0.0;
 
     private static final long serialVersionUID = 9074525846200921839L;
 
-    /**
-     * @param underlying The underlying layer to wrap and mask activations for
-     */
-    public MaskZeroLayer(Layer underlying) {
-        this.underlying = underlying;
+    public MaskZeroLayer(Builder builder) {
+        super(builder);
+        this.underlying = builder.underlying;
+        this.maskingValue = builder.maskValue;
     }
+
+
+    public MaskZeroLayer(Layer underlying, double maskingValue) {
+        this.underlying = underlying;
+        this.maskingValue = maskingValue;
+    }
+
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
@@ -50,8 +61,9 @@ public class MaskZeroLayer extends BaseWrapperLayer {
         NeuralNetConfiguration conf2 = conf.clone();
         conf2.setLayer(((BaseWrapperLayer)conf2.getLayer()).getUnderlying());
 
-        org.deeplearning4j.nn.api.Layer underlyingLayer = underlying.instantiate(conf2, trainingListeners, layerIndex, layerParamsView, initializeParams);
-        return new org.deeplearning4j.nn.layers.recurrent.MaskZeroLayer(underlyingLayer);
+        org.deeplearning4j.nn.api.Layer underlyingLayer =
+                underlying.instantiate(conf2, trainingListeners, layerIndex, layerParamsView, initializeParams);
+        return new org.deeplearning4j.nn.layers.recurrent.MaskZeroLayer(underlyingLayer, maskingValue);
     }
 
     @Override
@@ -92,6 +104,30 @@ public class MaskZeroLayer extends BaseWrapperLayer {
     @Override
     public String toString(){
         return "MaskZeroLayer(" + underlying.toString() + ")";
+    }
+
+
+    @NoArgsConstructor
+    public static class Builder extends Layer.Builder<Builder> {
+
+        private Layer underlying;
+        private double maskValue;
+
+        public Builder setUnderlying(Layer underlying) {
+            this.underlying = underlying;
+            return this;
+        }
+
+        public Builder setMaskValue(double maskValue) {
+            this.maskValue = maskValue;
+            return this;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public MaskZeroLayer build() {
+            return new MaskZeroLayer(this);
+        }
     }
 
 }

@@ -111,7 +111,7 @@ public class KerasLSTMTest {
 
         LSTM layer;
         LastTimeStep lts;
-        KerasLstm kerasLstm = new KerasLstm(layerConfig);
+        KerasLSTM kerasLstm = new KerasLSTM(layerConfig);
         if (rs) {
             InputType outputType = kerasLstm.getOutputType(InputType.recurrent(1337));
             assertEquals(outputType, InputType.recurrent(N_OUT));
@@ -175,14 +175,14 @@ public class KerasLSTMTest {
         KerasEmbedding embedding = getEmbedding(maskZero);
         Map<String, KerasEmbedding> previousLayers = Collections.singletonMap("embedding", embedding);
 
-        KerasLstm kerasLstm = new KerasLstm(layerConfig, previousLayers);
+        KerasLSTM kerasLstm = new KerasLSTM(layerConfig, previousLayers);
         Assert.assertEquals(kerasLstm.getLayer() instanceof MaskZeroLayer, maskZero);
     }
 
     private KerasEmbedding getEmbedding(boolean maskZero)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         KerasEmbedding embedding = new KerasEmbedding();
-        embedding.setHasZeroMasking(maskZero);
+        embedding.setZeroMasking(maskZero);
         return embedding;
     }
 }
