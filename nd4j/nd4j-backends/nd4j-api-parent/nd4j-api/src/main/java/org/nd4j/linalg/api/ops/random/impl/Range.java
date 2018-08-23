@@ -101,10 +101,19 @@ public class Range extends DynamicCustomOp {
         val end = TFGraphMapper.getInstance().getNDArrayFromTensor("value",endNode,graph);
         val delta = TFGraphMapper.getInstance().getNDArrayFromTensor("value",deltaNode,graph);
         if(start != null && end != null && delta != null) {
+
+            if(endNode.getName() != null && endNode.getName().equalsIgnoreCase("Rank")){
+                //Edge case: TF seems to produce rank 0 arrays for range op sometimes, in spite of docs - properties are [range/start, Rank, range/delta]
+                this.from = start.getDouble(0);
+                this.to = from+1;
+                this.delta = 1.0;
+            } else {
+                this.from = start.getDouble(0);
+                this.to = end.getDouble(0);
+                this.delta = delta.getDouble(0);
+            }
+
             val outputVars = outputVariables();
-            this.from = start.getDouble(0);
-            this.to = end.getDouble(0);
-            this.delta = delta.getDouble(0);
             addTArgument(this.from,this.to,this.delta);
             val outputVertexId = outputVars[0].getVarName();
             if(sameDiff.getArrForVarName(outputVertexId) == null) {
@@ -113,8 +122,8 @@ public class Range extends DynamicCustomOp {
                     sameDiff.putShapeForVarName(outputVars[0].getVarName(),calcShape.get(0));
                 }
 
-
-                val arr = Nd4j.create(outputVars[0].getShape());
+                long[] shape = outputVars[0].getShape();
+                val arr = Nd4j.create(shape);
                 initWith.putArrayForVarName(outputVertexId, arr);
                 addOutputArgument(arr);
 

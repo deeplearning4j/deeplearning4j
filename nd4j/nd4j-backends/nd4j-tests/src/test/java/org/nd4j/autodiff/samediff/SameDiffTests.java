@@ -18,11 +18,10 @@ package org.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.lang3.ArrayUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.autodiff.OpValidationSuite;
+import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.impl.DefaultSameDiffConditional;
 import org.nd4j.linalg.activations.Activation;
@@ -30,16 +29,11 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.Mean;
 import org.nd4j.linalg.api.ops.impl.accum.bp.MeanBp;
-import org.nd4j.linalg.api.ops.impl.accum.bp.StandardDeviationBp;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
-import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.layers.Linear;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision;
-import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
@@ -58,7 +52,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.weightinit.impl.OneInitScheme;
 import org.nd4j.weightinit.impl.UniformInitScheme;
@@ -1009,7 +1002,7 @@ public class SameDiffTests {
                 SDVariable activation = sameDiff.softmax("activation", sameDiff.mmul("mmul", x, w));
                 SDVariable ret = sameDiff.sum("totalsum", activation, Integer.MAX_VALUE);
                 SDVariable ret2 = sameDiff.neg("negtotalsum", ret);
-                return new SDVariable[]{ret2};
+                return new SDVariable[]{y.sub(ret2)};
             }
         }, vars);
 
@@ -2994,7 +2987,43 @@ public class SameDiffTests {
         sd.execBackwards();
         INDArray inGrad = in.getGradient().getArr();
         assertArrayEquals(new long[]{2,5}, inGrad.shape());
-        
+    }
+
+    @Test
+    public void testMultiOutput1(){
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.create(3,4));
+        SDVariable mean = in.mean();
+        SDVariable sum = in.sum();
+
+        try{
+            sd.createGradFunction();
+            fail("Expected exception");
+        } catch (IllegalStateException e){
+            assertTrue(e.getMessage(), e.getMessage().contains("multiple outputs"));
+        }
+
+        SDVariable add = mean.add(sum);
+        sd.createGradFunction();
+    }
+
+    @Test
+    public void testMultiOutput2(){
+        //Edge case: no functions
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.trueScalar(0));
+        SDVariable in2 = sd.var("in2", Nd4j.trueScalar(1));
+
+        try{
+            sd.createGradFunction();
+            fail("Expected exception");
+        } catch (IllegalStateException e){
+            assertTrue(e.getMessage(), e.getMessage().contains("multiple outputs"));
+        }
+
+        SDVariable add = in.add(in2);
+        sd.createGradFunction();
     }
 
 }

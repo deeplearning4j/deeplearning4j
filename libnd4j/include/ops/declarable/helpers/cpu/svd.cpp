@@ -987,7 +987,7 @@ void svd(const NDArray<T>* x, const std::vector<NDArray<T>*>& outArrs, const boo
     NDArray<T>* v = outArrs[2];
 
     const int rank =  x->rankOf();    
-    const int sRank = rank == 2 ? 2 : rank - 1; 
+    const int sRank = rank - 1; 
 
     ResultSet<T>* listX = x->allTensorsAlongDimension({rank-2, rank-1});
     ResultSet<T>* listS = s->allTensorsAlongDimension({sRank-1});

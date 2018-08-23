@@ -6755,6 +6755,29 @@ public class Nd4jTestsC extends BaseNd4jTest {
         fail("Excepted exception on invalid input");
     }
 
+    @Test
+    public void testGet(){
+        //https://github.com/deeplearning4j/deeplearning4j/issues/6133
+        INDArray m = Nd4j.linspace(0,99,100).reshape('c', 10,10);
+        INDArray exp = Nd4j.create(new double[]{5, 15, 25, 35, 45, 55, 65, 75, 85, 95}, new int[]{10,1});
+        INDArray col = m.getColumn(5);
+
+        for(int i=0; i<10; i++ ){
+            System.out.println(i + "\t" + col.slice(i));
+        }
+
+        //First element: index 5
+        //Last element: index 95
+        //91 total elements
+        assertEquals(5, m.getDouble(5), 1e-6);
+        assertEquals(95, m.getDouble(95), 1e-6);
+        assertEquals(91, col.data().length());
+
+        assertEquals(exp, col);
+        assertEquals(exp.toString(), col.toString());
+        assertArrayEquals(exp.toDoubleVector(), col.toDoubleVector(), 1e-6);
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;

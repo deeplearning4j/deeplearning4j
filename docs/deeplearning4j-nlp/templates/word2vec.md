@@ -494,41 +494,7 @@ Deeplearning4j has a class called [SequenceVectors](https://github.com/deeplearn
 * [Word2Vec: an introduction](http://www.folgertkarsdorp.nl/word2vec-an-introduction/); Folgert Karsdorp
 * [Mikolov's Original Word2vec Code @Google](https://code.google.com/p/word2vec/)
 * [word2vec Explained: Deriving Mikolov et al.’s Negative-Sampling Word-Embedding Method](http://arxiv.org/pdf/1402.3722v1.pdf); Yoav Goldberg and Omer Levy
-* [Bag of Words & Term Frequency-Inverse Document Frequency (TF-IDF)](./bagofwords-tf-idf.html)
 * [Advances in Pre-Training Distributed Word Representations - by Mikolov et al](https://arxiv.org/abs/1712.09405)
-
-### <a name="beginner">Other Machine Learning Tutorials</a>
-
-* [Multilayer Perceptron (MLPs) for Classification](./multilayerperceptron.html)
-* [Eigenvectors, Eigenvalues, Covariance, PCA and Entropy](./eigenvector.html)
-* [LSTMs and Recurrent Networks](./lstm.html)
-* [Introduction to Deep Neural Networks](./neuralnet-overview.html)
-* [Deep Convolutional Networks](./convolutionalnetwork.html)
-* [Generative Adversarial Networks (GANs)](./generative-adversarial-network.html)
-* [Deep Reinforcement Learning](./deepreinforcementlearning.html)
-* [Attention Mechanisms and Memory Networks](./attention-memory-network)
-* [Quickstart Examples for Deeplearning4j](./quickstart.html)
-* [ND4J: A Tensor Library for the JVM](http://nd4j.org)
-* [MNIST for Beginners](./mnist-for-beginners.html)
-* [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
-* [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
-* [Inference: Machine Learning Model Server](./machine-learning-server.html)
-* [AI vs. Machine Learning vs. Deep Learning](./ai-machinelearning-deeplearning.html)
-* [Convolutional Networks (CNNs)](./convolutionalnetwork.html)
-* [Graph Data and Deep Learning](./graphanalytics.html)
-* [Deep Learning on Apache Spark](./spark.html)
-* [Symbolic Reasoning (Symbolic AI) & Deep Learning](./symbolicreasoning.html)
-* [Markov Chain Monte Carlo & Machine Learning](/markovchainmontecarlo.html)
-* [Distributed Deep Learning on Apache Spark](https://deeplearning4j.org/spark)
-* [Neural Networks & Regression](./logistic-regression.html)
-* [Introduction to Decision Trees](./decision-tree.html)
-* [Introduction to Random Forests](./random-forest.html)
-* [Open Datasets for Machine Learning](./opendata.html)
-* [Definition of Artificial Intelligence (AI)](./ai-artificial-intelligence-definition.html)
-* [How CIOs Should Think about Machine Learning and AI](./cio-chief-information-officer-machine-learning-ai.html)
-* [AI Infrastructure: Machine Learning Operations (MlOps)](./ai-infrastructure-machine-learning-operations-mlops.html)
-* [AI Winter: Deep Learning and its Discontents](./ai-winter.html)
-* [FastText: Fast text representation and classification](./fasttext.html)
 
 
 ### <a name="doctorow">Word2Vec in Literature</a>

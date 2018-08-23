@@ -24,7 +24,7 @@ import java.util.NoSuchElementException;
 
 /**
  * A very simple adapter class for converting a single MultiDataSet to a MultiDataSetIterator.
- * Returns a single MultiDataSet
+ * Returns a single MultiDataSet as-is, once for each epoch
  *
  * @author Alex Black
  */
@@ -35,6 +35,9 @@ public class SingletonMultiDataSetIterator implements MultiDataSetIterator {
     private boolean preprocessed = false;
     private MultiDataSetPreProcessor preProcessor;
 
+    /**
+     * @param multiDataSet The underlying MultiDataSet to return
+     */
     public SingletonMultiDataSetIterator(MultiDataSet multiDataSet) {
         this.multiDataSet = multiDataSet;
     }

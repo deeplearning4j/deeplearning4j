@@ -360,7 +360,7 @@ public class KerasConvolutionUtils {
 
         } else if (dimension == 1) {
             int paddingInt = (int) innerConfig.get(layerField);
-            padding = new int[]{paddingInt};
+            padding = new int[]{paddingInt, paddingInt};
         } else {
             throw new UnsupportedKerasConfigurationException(
                     "Keras padding layer not supported");

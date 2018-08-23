@@ -41,20 +41,34 @@ import java.util.Map;
 
 /**
  * Output (loss) layer for YOLOv2 object detection model, based on the papers:
- * YOLO9000: Better, Faster, Stronger - Redmon & Farhadi (2016) - https://arxiv.org/abs/1612.08242<br>
+ * YOLO9000: Better, Faster, Stronger - Redmon & Farhadi (2016) - <a href="https://arxiv.org/abs/1612.08242">https://arxiv.org/abs/1612.08242</a><br>
  * and<br>
  * You Only Look Once: Unified, Real-Time Object Detection - Redmon et al. (2016) -
- * http://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Redmon_You_Only_Look_CVPR_2016_paper.pdf<br>
- *
+ * <a href="http://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Redmon_You_Only_Look_CVPR_2016_paper.pdf">http://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Redmon_You_Only_Look_CVPR_2016_paper.pdf</a>
+ * <br>
  * This loss function implementation is based on the YOLOv2 version of the paper. However, note that it doesn't
  * currently support simultaneous training on both detection and classification datasets as described in the
- * YOlO9000 paper.
+ * YOlO9000 paper.<br>
  *
  * Note: Input activations to the Yolo2OutputLayer should have shape: [minibatch, b*(5+c), H, W], where:<br>
- * b = number of bounding boxes (determined by config)<br>
+ * b = number of bounding boxes (determined by config - see papers for details)<br>
  * c = number of classes<br>
  * H = output/label height<br>
  * W = output/label width<br>
+ * <br>
+ * Important: In practice, this means that the last convolutional layer before your Yolo2OutputLayer should have output
+ * depth of b*(5+c). Thus if you change the number of bounding boxes, or change the number of object classes,
+ * the number of channels (nOut of the last convolution layer) needs to also change.
+ * <br>
+ * Label format: [minibatch, 4+C, H, W]<br>
+ * Order for labels depth: [x1,y1,x2,y2,(class labels)]<br>
+ * x1 = box top left position<br>
+ * y1 = as above, y axis<br>
+ * x2 = box bottom right position<br>
+ * y2 = as above y axis<br>
+ * Note: labels are represented as a multiple of grid size - for a 13x13 grid, (0,0) is top left, (13,13) is bottom right<br>
+ * Note also that mask arrays are not required - this implementation infers the presence or absence of objects in each grid
+ * cell from the class labels (which should be 1-hot if an object is present, or all 0s otherwise).
  *
  * @author Alex Black
  */

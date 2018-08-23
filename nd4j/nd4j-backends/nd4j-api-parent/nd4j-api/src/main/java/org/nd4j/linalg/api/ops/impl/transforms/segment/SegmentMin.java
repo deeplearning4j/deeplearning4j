@@ -38,4 +38,9 @@ public class SegmentMin extends DynamicCustomOp {
         return "segment_min";
     }
 
+    @Override
+    public String tensorflowName() {
+        return "SegmentMin";
+    }
+
 }

@@ -14,16 +14,23 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.nn.simple.binary;
+package org.nd4j.linalg.api.ops.impl.accum;
 
-import lombok.Data;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 /**
- * Created by agibsonccc on 4/28/17.
+ * ArgMin function
+ *
+ * @author Alex Black
  */
-@Data
-public class BinaryClassificationResult {
-    private double decisionThreshold = 0.5;
-    private double[] classWeights;
+public class ArgMin extends DynamicCustomOp {
+    @Override
+    public String opName() {
+        return "argmin";
+    }
 
+    @Override
+    public String tensorflowName() {
+        return "ArgMin";
+    }
 }

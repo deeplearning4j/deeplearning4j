@@ -45,6 +45,11 @@ public class MatrixInverse extends DynamicCustomOp {
     }
 
     @Override
+    public String[] tensorflowNames() {
+        return new String[]{"MatrixInverse", "BatchMatrixInverse"};
+    }
+
+    @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //Derivative of matrix determinant
         //From: Matrix Cookbook - Petersen & Pedersen

@@ -38,4 +38,9 @@ public class SegmentMean extends DynamicCustomOp {
         return "segment_mean";
     }
 
+    @Override
+    public String tensorflowName() {
+        return "SegmentMean";
+    }
+
 }

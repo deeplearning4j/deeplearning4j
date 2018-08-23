@@ -39,7 +39,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Batch normalization configuration
+ * Batch normalization layer<br>
+ * See: Ioffe and Szegedy, 2014, <i>Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift</i>
+ * <a href="https://arxiv.org/abs/1502.03167">https://arxiv.org/abs/1502.03167</a>
+ *
  */
 @Data
 @ToString(callSuper = true)

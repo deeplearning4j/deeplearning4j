@@ -1037,7 +1037,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else if (dataType() == Type.INT) {
             return ((IntIndexer) indexer).get(offset() + i);
         } else if (dataType() == Type.LONG) {
-                return ((LongRawIndexer) indexer).get(offset() + i);
+                return ((LongIndexer) indexer).get(offset() + i);
         } else {
             return ((DoubleIndexer) indexer).get(offset() + i);
         }
@@ -1085,7 +1085,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else if (dataType() == Type.INT) {
             return ((IntIndexer) indexer).get(offset() + i);
         } else if (dataType() == Type.LONG) {
-            return ((LongRawIndexer) indexer).get(offset() + i);
+            return ((LongIndexer) indexer).get(offset() + i);
         } else if (dataType() == Type.HALF) {
             return ((HalfIndexer) indexer).get(offset() + i);
         } else {
@@ -1120,7 +1120,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public void pointerIndexerByGlobalType(Type currentType) {
         if (currentType == Type.LONG) {
             pointer = new LongPointer(length());
-            setIndexer(LongRawIndexer.create((LongPointer) pointer));
+            setIndexer(LongIndexer.create((LongPointer) pointer));
             type = Type.LONG;
         } else if (currentType == Type.INT) {
             pointer = new IntPointer(length());
@@ -1163,7 +1163,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else if (dataType() == Type.INT) {
             ((IntIndexer) indexer).put(offset() + i, (int) element);
         } else if (dataType() == Type.LONG) {
-            ((LongRawIndexer) indexer).put(offset() + i, (long) element);
+            ((LongIndexer) indexer).put(offset() + i, (long) element);
         } else {
             ((FloatIndexer) indexer).put(offset() + i, element);
         }
@@ -1182,7 +1182,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else if (dataType() == Type.INT) {
             ((IntIndexer) indexer).put(offset() + i, (int) element);
         } else if (dataType() == Type.LONG) {
-            ((LongRawIndexer) indexer).put(offset() + i, (long) element);
+            ((LongIndexer) indexer).put(offset() + i, (long) element);
         } else if (dataType() == Type.HALF) {
             ((HalfIndexer) indexer).put(offset() + i, (float) element);
         } else {
@@ -1200,7 +1200,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else if (dataType() == Type.INT) {
             ((IntIndexer) indexer).put(offset() + i, element);
         } else if (dataType() == Type.LONG) {
-            ((LongRawIndexer) indexer).put(offset() + i, element);
+            ((LongIndexer) indexer).put(offset() + i, element);
         } else {
             ((FloatIndexer) indexer).put(offset() + i, element);
         }
@@ -1216,7 +1216,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else if (dataType() == Type.INT) {
             ((IntIndexer) indexer).put(offset() + i, (int) element);
         } else if (dataType() == Type.LONG) {
-            ((LongRawIndexer) indexer).put(offset() + i, element);
+            ((LongIndexer) indexer).put(offset() + i, element);
         } else {
             ((FloatIndexer) indexer).put(offset() + i, (float) element);
         }

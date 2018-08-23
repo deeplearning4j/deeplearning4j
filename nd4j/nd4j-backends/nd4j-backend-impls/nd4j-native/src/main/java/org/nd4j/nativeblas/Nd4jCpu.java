@@ -112,6 +112,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_greater.class,
         float_boolean_and.class,
         float_boolean_or.class,
+        float_boolean_xor.class,
+        float_boolean_not.class,
         float_percentile.class,
         float_conv1d.class,
         float_conv1d_bp.class,
@@ -254,6 +256,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_moments.class,
         float_embedding_lookup.class,
         float_dynamic_partition.class,
+        float_dynamic_partition_bp.class,
         float_dynamic_stitch.class,
         float_zero_fraction.class,
         float_xw_plus_b.class,
@@ -481,6 +484,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_greater.class,
         half_boolean_and.class,
         half_boolean_or.class,
+        half_boolean_xor.class,
+        half_boolean_not.class,
         half_percentile.class,
         half_conv1d.class,
         half_conv1d_bp.class,
@@ -623,6 +628,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_moments.class,
         half_embedding_lookup.class,
         half_dynamic_partition.class,
+        half_dynamic_partition_bp.class,
         half_dynamic_stitch.class,
         half_zero_fraction.class,
         half_xw_plus_b.class,
@@ -850,6 +856,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_greater.class,
         double_boolean_and.class,
         double_boolean_or.class,
+        double_boolean_xor.class,
+        double_boolean_not.class,
         double_percentile.class,
         double_conv1d.class,
         double_conv1d_bp.class,
@@ -992,6 +1000,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_moments.class,
         double_embedding_lookup.class,
         double_dynamic_partition.class,
+        double_dynamic_partition_bp.class,
         double_dynamic_stitch.class,
         double_zero_fraction.class,
         double_xw_plus_b.class,
@@ -7930,16 +7939,16 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */
 
         /**
-        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays to point on
+        *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the subarrays to point on
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
         public native @ByVal @Name("operator ()") FloatNDArray apply(@Const @ByRef Intervals idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
         public native @ByVal @Name("operator ()") FloatNDArray apply(@Const @ByRef Intervals idx);
 
         /**
-        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
+        *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the subarrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
@@ -8066,9 +8075,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         
 
         /**
-        *  this method assigns elements of other array to the sub-array of this array defined by given intervals
+        *  this method assigns elements of other array to the subarray of this array defined by given intervals
         *  other - input array to assign elements from
-        *  idx - intervals of indexes which define the sub-array
+        *  idx - intervals of indexes which define the subarray
         */ 
         public native void assign(@Const @ByRef FloatNDArray other, @Const @ByRef Intervals idx);
 
@@ -8142,7 +8151,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native FloatResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
 
         public native FloatResultSet allExamples();
-        
+
         /**
         *  default destructor
         */ 
@@ -9117,16 +9126,16 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */
 
         /**
-        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays to point on
+        *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the subarrays to point on
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
         public native @ByVal @Name("operator ()") HalfNDArray apply(@Const @ByRef Intervals idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
         public native @ByVal @Name("operator ()") HalfNDArray apply(@Const @ByRef Intervals idx);
 
         /**
-        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
+        *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the subarrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
@@ -9253,9 +9262,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         
 
         /**
-        *  this method assigns elements of other array to the sub-array of this array defined by given intervals
+        *  this method assigns elements of other array to the subarray of this array defined by given intervals
         *  other - input array to assign elements from
-        *  idx - intervals of indexes which define the sub-array
+        *  idx - intervals of indexes which define the subarray
         */ 
         public native void assign(@Const @ByRef HalfNDArray other, @Const @ByRef Intervals idx);
 
@@ -9329,7 +9338,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native HalfResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
 
         public native HalfResultSet allExamples();
-        
+
         /**
         *  default destructor
         */ 
@@ -10304,16 +10313,16 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */
 
         /**
-        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays to point on
+        *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the subarrays to point on
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
         public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const @ByRef Intervals idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
         public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const @ByRef Intervals idx);
 
         /**
-        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
+        *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the subarrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
@@ -10440,9 +10449,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         
 
         /**
-        *  this method assigns elements of other array to the sub-array of this array defined by given intervals
+        *  this method assigns elements of other array to the subarray of this array defined by given intervals
         *  other - input array to assign elements from
-        *  idx - intervals of indexes which define the sub-array
+        *  idx - intervals of indexes which define the subarray
         */ 
         public native void assign(@Const @ByRef DoubleNDArray other, @Const @ByRef Intervals idx);
 
@@ -10516,7 +10525,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native DoubleResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
 
         public native DoubleResultSet allExamples();
-        
+
         /**
         *  default destructor
         */ 
@@ -22972,6 +22981,102 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
+         *
+         */
+//         #if NOT_EXCLUDED(OP_boolean_xor)
+        @Name("nd4j::ops::boolean_xor<float>") public static class float_boolean_xor extends FloatBroadcastableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_boolean_xor(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_boolean_xor(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_boolean_xor position(long position) {
+                return (float_boolean_xor)super.position(position);
+            }
+        
+                                                                                    public float_boolean_xor() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                }
+        @Name("nd4j::ops::boolean_xor<float16>") public static class half_boolean_xor extends HalfBroadcastableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_boolean_xor(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_boolean_xor(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_boolean_xor position(long position) {
+                return (half_boolean_xor)super.position(position);
+            }
+        
+                                                                                    public half_boolean_xor() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                }
+        @Name("nd4j::ops::boolean_xor<double>") public static class double_boolean_xor extends DoubleBroadcastableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_boolean_xor(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_boolean_xor(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_boolean_xor position(long position) {
+                return (double_boolean_xor)super.position(position);
+            }
+        
+                                                                                    public double_boolean_xor() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                }
+//         #endif
+
+        /**
+         *
+         */
+//         #if NOT_EXCLUDED(OP_boolean_not)
+        @Name("nd4j::ops::boolean_not<float>") public static class float_boolean_not extends FloatBroadcastableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_boolean_not(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_boolean_not(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_boolean_not position(long position) {
+                return (float_boolean_not)super.position(position);
+            }
+        
+                                                                                    public float_boolean_not() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                }
+        @Name("nd4j::ops::boolean_not<float16>") public static class half_boolean_not extends HalfBroadcastableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_boolean_not(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_boolean_not(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_boolean_not position(long position) {
+                return (half_boolean_not)super.position(position);
+            }
+        
+                                                                                    public half_boolean_not() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                }
+        @Name("nd4j::ops::boolean_not<double>") public static class double_boolean_not extends DoubleBroadcastableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_boolean_not(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_boolean_not(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_boolean_not position(long position) {
+                return (double_boolean_not)super.position(position);
+            }
+        
+                                                                                    public double_boolean_not() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                }
+//         #endif
+
+        /**
          * This operation performs calculation of percentile of input array along given axises
          *
          * Input - tensor with rank N > 0
@@ -31860,6 +31965,54 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public double_dynamic_partition() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+//         #endif
+
+//         #if NOT_EXCLUDED(OP_dynamic_partition_bp)
+        @Name("nd4j::ops::dynamic_partition_bp<float>") public static class float_dynamic_partition_bp extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_dynamic_partition_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_dynamic_partition_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_dynamic_partition_bp position(long position) {
+                return (float_dynamic_partition_bp)super.position(position);
+            }
+        
+                                                                                    public float_dynamic_partition_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::dynamic_partition_bp<float16>") public static class half_dynamic_partition_bp extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_dynamic_partition_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_dynamic_partition_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_dynamic_partition_bp position(long position) {
+                return (half_dynamic_partition_bp)super.position(position);
+            }
+        
+                                                                                    public half_dynamic_partition_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::dynamic_partition_bp<double>") public static class double_dynamic_partition_bp extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_dynamic_partition_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_dynamic_partition_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_dynamic_partition_bp position(long position) {
+                return (double_dynamic_partition_bp)super.position(position);
+            }
+        
+                                                                                    public double_dynamic_partition_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
