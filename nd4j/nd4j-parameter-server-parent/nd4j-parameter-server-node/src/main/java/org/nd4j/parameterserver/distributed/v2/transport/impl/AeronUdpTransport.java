@@ -301,6 +301,12 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         super.shutdown();
     }
 
+    @Override
+    public synchronized void onMeshUpdate(MeshOrganizer mesh) {
+        mesh.flatNodes().forEach(n -> addConnection(n.getId()));
+
+        super.onMeshUpdate(mesh);
+    }
 
     /**
      * This method add interceptor for incoming messages. If interceptor is defined for given message class - runnable will be executed instead of processMessage()

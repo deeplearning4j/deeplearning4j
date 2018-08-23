@@ -22,6 +22,7 @@ import org.nd4j.parameterserver.distributed.v2.messages.ResponseMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
+import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 import org.reactivestreams.Publisher;
 
 import java.io.IOException;
@@ -114,4 +115,12 @@ public interface Transport {
      * @param <T2> ResponseMessage class
      */
     <T extends RequestMessage> void  addRequestConsumer(Class<T> cls, Consumer<T> consumer);
+
+    /**
+     * This method will be called if mesh update was received
+     *
+     * PLEASE NOTE: This method will be called ONLY if new mesh differs from current one
+     * @param mesh
+     */
+    void onMeshUpdate(MeshOrganizer mesh);
 }

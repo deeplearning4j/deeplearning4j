@@ -370,8 +370,10 @@ public abstract  class BaseTransport  implements Transport {
 
                 //log.info("Starting update B on [{}]; version: [{}/{}]; size: [{}]", this.id(), v1, v2, newMesh.totalNodes());
                 // we update only if new mesh is older that existing one
-                if (v1 < v2)
+                if (v1 < v2) {
                     mesh.set(newMesh);
+                    onMeshUpdate(newMesh);
+                }
             }
         } else {
             if (message instanceof RequestMessage) {
@@ -442,8 +444,9 @@ public abstract  class BaseTransport  implements Transport {
             consumers.put(cls.getCanonicalName(), consumer);
     }
 
-    protected void handshake() {
-
+    @Override
+    public void onMeshUpdate(MeshOrganizer mesh) {
+        // no-op
     }
 
     /**
