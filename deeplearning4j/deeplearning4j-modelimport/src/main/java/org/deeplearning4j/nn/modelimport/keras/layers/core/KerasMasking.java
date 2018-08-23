@@ -62,7 +62,8 @@ public class KerasMasking extends KerasLayer {
         double maskValue = KerasLayerUtils.getMaskingValueFromConfig(layerConfig, conf);
         this.layer = new MaskZeroLayer.Builder()
                 .setMaskValue(maskValue)
-                .setUnderlying(new IdentityLayer()).name(this.layerName)
+                .setUnderlying(new IdentityLayer(this.layerName))
+                .name(this.layerName)
                 .build();
     }
 
