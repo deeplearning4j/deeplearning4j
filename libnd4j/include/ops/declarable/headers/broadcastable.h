@@ -335,6 +335,15 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_percentile)
         DECLARE_CUSTOM_OP(percentile, 1, 1, false, 1, -2);
         #endif
+
+
+        /**
+         * Special atan2 op impl for TF's args order
+         * @tparam T
+         */
+        #if NOT_EXCLUDED(OP_tf_atan2)
+        DECLARE_BROADCASTABLE_OP(tf_atan2, 0, 0);
+        #endif
     }
 }
 

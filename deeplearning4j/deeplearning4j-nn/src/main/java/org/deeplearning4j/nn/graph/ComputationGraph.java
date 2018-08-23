@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -4184,8 +4185,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             in = String.valueOf(((Bidirectional)bi.conf().getLayer()).getNIn());
                             out = String.valueOf(((Bidirectional)bi.conf().getLayer()).getNOut());
                         } else {
-                            in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
-                            out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
+                            try {
+                                in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
+                                out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
+                            }
+                            catch (Exception e) { // Some layers, like PReLU, are just BaseLayers (but have parameters)
+                            }
                         }
                         List<String> paraNames = currentLayer.conf().variables();
                         for (String aP : paraNames) {
@@ -4433,7 +4438,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     /**
      * Get the current learning rate, for the specified layer, from the network.
      * Note: If the layer has no learning rate (no parameters, or an updater without a learning rate) then null is returned
-     * @param layerNumber   Layer number to get the learning rate for
+     * @param layerName   Layer name
      * @return Learning rate for the specified layer, or null
      */
     public Double getLearningRate(String layerName){
