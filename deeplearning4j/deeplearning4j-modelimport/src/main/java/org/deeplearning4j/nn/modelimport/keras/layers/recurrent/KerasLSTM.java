@@ -176,7 +176,7 @@ public class KerasLSTM extends KerasLayer {
         LayerConstraint recurrentConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_RECURRENT_CONSTRAINT(), conf, kerasMajorVersion);
 
-        Pair<Boolean, Double> maskingConfig = getMaskingConfiguration(inboundLayerNames, previousLayers);
+        Pair<Boolean, Double> maskingConfig = KerasLayerUtils.getMaskingConfiguration(inboundLayerNames, previousLayers);
 
         LSTM.Builder builder = new LSTM.Builder()
                 .gateActivationFunction(getGateActivationFromConfig(layerConfig))
@@ -202,31 +202,12 @@ public class KerasLSTM extends KerasLayer {
             builder.constrainRecurrent(recurrentConstraint);
 
         this.layer = builder.build();
-        if (maskingConfig.getFirst()) {
-            this.layer = new MaskZeroLayer(this.layer, maskingConfig.getSecond());
-        }
         if (!returnSequences) {
             this.layer = new LastTimeStep(this.layer);
         }
-    }
-
-
-    public static Pair<Boolean, Double> getMaskingConfiguration(List<String> inboundLayerNames,
-                                                                Map<String, ? extends KerasLayer> previousLayers) {
-        Boolean hasMasking = false;
-        Double maskingValue = 0.0;
-        for (String inboundLayerName : inboundLayerNames) {
-            if (previousLayers.containsKey(inboundLayerName)) {
-                KerasLayer inbound = previousLayers.get(inboundLayerName);
-                if (inbound instanceof KerasEmbedding && ((KerasEmbedding) inbound).isZeroMasking()) {
-                    hasMasking = true;
-                } else if (inbound instanceof KerasMasking) {
-                    hasMasking = true;
-                    maskingValue = ((KerasMasking) inbound).getMaskingValue();
-                }
-            }
+        if (maskingConfig.getFirst()) {
+            this.layer = new MaskZeroLayer(this.layer, maskingConfig.getSecond());
         }
-        return new Pair<>(hasMasking, maskingValue);
     }
 
     /**

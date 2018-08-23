@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasSimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -63,7 +64,20 @@ public class KerasBidirectional extends KerasLayer {
      */
     public KerasBidirectional(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        this(layerConfig, true);
+        this(layerConfig, true, Collections.<String, KerasLayer>emptyMap());
+    }
+
+
+    /**
+     * Constructor from parsed Keras layer configuration dictionary.
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
+     */
+    public KerasBidirectional(Map<String, Object> layerConfig, Map<String, ? extends KerasLayer> previousLayers)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        this(layerConfig, true, previousLayers);
     }
 
     /**
@@ -74,7 +88,8 @@ public class KerasBidirectional extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasBidirectional(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+    public KerasBidirectional(Map<String, Object> layerConfig, boolean enforceTrainingConfig,
+                              Map<String, ? extends KerasLayer> previousLayers)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
@@ -119,7 +134,7 @@ public class KerasBidirectional extends KerasLayer {
         String rnnClass = (String) innerRnnConfig.get("class_name");
         switch (rnnClass) {
             case "LSTM":
-                kerasRnnlayer = new KerasLSTM(innerRnnConfig, enforceTrainingConfig);
+                kerasRnnlayer = new KerasLSTM(innerRnnConfig, enforceTrainingConfig, previousLayers);
                 try {
                     LSTM rnnLayer = (LSTM) ((KerasLSTM) kerasRnnlayer).getLSTMLayer();
                     layer = new Bidirectional(mode, rnnLayer);
@@ -131,7 +146,7 @@ public class KerasBidirectional extends KerasLayer {
                 }
                 break;
             case "SimpleRNN":
-                kerasRnnlayer = new KerasSimpleRnn(innerRnnConfig, enforceTrainingConfig);
+                kerasRnnlayer = new KerasSimpleRnn(innerRnnConfig, enforceTrainingConfig, previousLayers);
                 SimpleRnn rnnLayer = (SimpleRnn) ((KerasSimpleRnn) kerasRnnlayer).getSimpleRnnLayer();
                 this.layer = new Bidirectional(mode, rnnLayer);
                 layer.setLayerName(layerName);

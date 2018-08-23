@@ -43,6 +43,7 @@ import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLSTM;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasSimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.layers.wrappers.KerasBidirectional;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -217,11 +218,11 @@ public class KerasLayerUtils {
                 layerClassName.equals(conf.getLAYER_CLASS_NAME_TIME_DISTRIBUTED_DENSE())) {
             layer = new KerasDense(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_BIDIRECTIONAL())) {
-            layer = new KerasBidirectional(layerConfig, enforceTrainingConfig);
+            layer = new KerasBidirectional(layerConfig, enforceTrainingConfig, previousLayers);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LSTM())) {
             layer = new KerasLSTM(layerConfig, enforceTrainingConfig, previousLayers);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SIMPLE_RNN())) {
-            layer = new KerasSimpleRnn(layerConfig, enforceTrainingConfig);
+            layer = new KerasSimpleRnn(layerConfig, enforceTrainingConfig, previousLayers);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_3D())) {
             layer = new KerasConvolution3D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_2D())) {
@@ -613,6 +614,24 @@ public class KerasLayerUtils {
             log.warn("Attemping to set weights for unknown parameters: "
                     + unknownParamNames.substring(1, unknownParamNames.length() - 1));
         }
+    }
+
+    public static Pair<Boolean, Double> getMaskingConfiguration(List<String> inboundLayerNames,
+                                                                Map<String, ? extends KerasLayer> previousLayers) {
+        Boolean hasMasking = false;
+        Double maskingValue = 0.0;
+        for (String inboundLayerName : inboundLayerNames) {
+            if (previousLayers.containsKey(inboundLayerName)) {
+                KerasLayer inbound = previousLayers.get(inboundLayerName);
+                if (inbound instanceof KerasEmbedding && ((KerasEmbedding) inbound).isZeroMasking()) {
+                    hasMasking = true;
+                } else if (inbound instanceof KerasMasking) {
+                    hasMasking = true;
+                    maskingValue = ((KerasMasking) inbound).getMaskingValue();
+                }
+            }
+        }
+        return new Pair<>(hasMasking, maskingValue);
     }
 
 }
