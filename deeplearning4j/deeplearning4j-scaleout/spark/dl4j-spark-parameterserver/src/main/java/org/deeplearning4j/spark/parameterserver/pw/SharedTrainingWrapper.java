@@ -38,6 +38,8 @@ import org.deeplearning4j.spark.parameterserver.iterators.VirtualMultiDataSetIte
 import org.deeplearning4j.spark.parameterserver.networking.v1.SilentTrainingDriver;
 import org.deeplearning4j.spark.parameterserver.networking.v1.WiredEncodingHandler;
 import org.deeplearning4j.spark.parameterserver.networking.v1.messages.SilentIntroductoryMessage;
+import org.deeplearning4j.spark.parameterserver.networking.v2.ModelParamsConsumer;
+import org.deeplearning4j.spark.parameterserver.networking.v2.UpdaterParamsConsumer;
 import org.deeplearning4j.spark.parameterserver.networking.v2.UpdatesConsumer;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingResult;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingWorker;
@@ -248,10 +250,14 @@ public class SharedTrainingWrapper {
                     }
                 }
 
-                MessageHandler handler = new WiredEncodingHandler(trainingConfiguration.getThreshold(),
+                val handler = new WiredEncodingHandler(trainingConfiguration.getThreshold(),
                                 trainingConfiguration.getMinThreshold(), trainingConfiguration.getThresholdStep(),
                                 trainingConfiguration.getStepTrigger(), trainingConfiguration.getStepDelay(),
                                 trainingConfiguration.getShakeFrequency());
+
+                // TODO: if there will be no code difference - use the same class instead of 2 different classes
+                val modelParamsSupplier = new ModelParamsConsumer();
+                val updateParamsSupplier = new UpdaterParamsConsumer();
 
                 // this accumulator will provide sharing gradients over network, via WiredEncodedHandler. But we create it only once
                 if (accumulator == null) {
@@ -315,6 +321,8 @@ public class SharedTrainingWrapper {
                     //  pass values right away
                     ModelParameterServer.getInstance().configure(voidConfiguration, transport, false);
                     ModelParameterServer.getInstance().addUpdatesSubscriber(consumer);
+                    ModelParameterServer.getInstance().addModelParamsSubscriber(modelParamsSupplier);
+                    ModelParameterServer.getInstance().addUpdaterParamsSubscriber(updateParamsSupplier);
 
 
                     // we're saving reference to original model
@@ -335,10 +343,14 @@ public class SharedTrainingWrapper {
                 if (numWorkers > 1) {
                     //log.debug("Params at PW: {}", originalModel.params().meanNumber().doubleValue());
 
-                    wrapper = new ParallelWrapper.Builder<>(originalModel).workers(numWorkers)
+                    wrapper = new ParallelWrapper.Builder<>(originalModel)
+                                    .workers(numWorkers)
                                     .workspaceMode(trainingConfiguration.getWorkspaceMode())
-                                    .trainingMode(ParallelWrapper.TrainingMode.CUSTOM).gradientsAccumulator(accumulator)
+                                    .trainingMode(ParallelWrapper.TrainingMode.CUSTOM)
+                                    .gradientsAccumulator(accumulator)
                                     .prefetchBuffer(trainingConfiguration.getPrefetchSize())
+                                    .modelParamsSupplier(modelParamsSupplier)
+                                    .updaterParamsSupplier(updateParamsSupplier)
                                     .build();
                     wrapper.setExceptionEncountered(exceptionEncountered);
                 } else {

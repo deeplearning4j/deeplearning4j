@@ -16,10 +16,7 @@
 
 package org.deeplearning4j.parallelism;
 
-import lombok.Data;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
@@ -50,6 +47,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.function.Supplier;
 
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -88,6 +86,9 @@ public class ParallelWrapper implements AutoCloseable {
          */
         CUSTOM,
     }
+
+    protected Supplier<INDArray> modelParamsSupplier;
+    protected Supplier<INDArray> updaterParamsSupplier;
 
     protected AtomicBoolean exceptionEncountered;
     protected Throwable exception;
@@ -229,6 +230,20 @@ public class ParallelWrapper implements AutoCloseable {
 
         long time1 = System.currentTimeMillis();
         while (iterator.hasNext() && !stopFit.get()) {
+            if (modelParamsSupplier != null) {
+                val params = modelParamsSupplier.get();
+                if (params != null) {
+                    // TODO: We should propagate params across the workers
+                }
+            }
+
+            if (updaterParamsSupplier != null) {
+                val params = updaterParamsSupplier.get();
+                if (params != null) {
+                    // TODO: We should propagate params across the workers
+                }
+            }
+
             MultiDataSet dataSet = iterator.next();
             long time2 = System.currentTimeMillis();
 
@@ -520,6 +535,20 @@ public class ParallelWrapper implements AutoCloseable {
         log.info("Starting ParallelWrapper training round...");
         long intcnt = 0;
         while (iterator.hasNext() && !stopFit.get()) {
+            if (modelParamsSupplier != null) {
+                val params = modelParamsSupplier.get();
+                if (params != null) {
+                    // TODO: We should propagate params across the workers
+                }
+            }
+
+            if (updaterParamsSupplier != null) {
+                val params = updaterParamsSupplier.get();
+                if (params != null) {
+                    // TODO: We should propagate params across the workers
+                }
+            }
+
             //while (intcnt < 1000) {
             intcnt++;
             DataSet dataSet = iterator.next();
@@ -682,6 +711,8 @@ public class ParallelWrapper implements AutoCloseable {
         protected TrainerContext trainerContext = new DefaultTrainerContext();
         protected Object[] trainerContextArgs;
         protected WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
+        protected Supplier<INDArray> modelParamsSupplier;
+        protected Supplier<INDArray> updaterParamsSupplier;
 
         protected GradientsAccumulator accumulator;
 
@@ -711,8 +742,37 @@ public class ParallelWrapper implements AutoCloseable {
             return this;
         }
 
+        /**
+         * This method allows to override model's WorkspaceMode configuration option
+         * @param mode
+         * @return
+         */
         public Builder workspaceMode(@NonNull WorkspaceMode mode) {
             this.workspaceMode = mode;
+            return this;
+        }
+
+        /**
+         * This method attaches supplier that'll probably provide model params update
+         *
+         * PLEASE NOTE: This method is mostly used in Spark environment as part of fault tolerance logic
+         * @param supplier
+         * @return
+         */
+        public Builder modelParamsSupplier(Supplier<INDArray> supplier) {
+            this.modelParamsSupplier = supplier;
+            return this;
+        }
+
+        /**
+         * This method attaches supplier that'll probably provide updater params update
+         *
+         * PLEASE NOTE: This method is mostly used in Spark environment as part of fault tolerance logic
+         * @param supplier
+         * @return
+         */
+        public Builder updaterParamsSupplier(Supplier<INDArray> supplier) {
+            this.updaterParamsSupplier = supplier;
             return this;
         }
 
@@ -840,6 +900,8 @@ public class ParallelWrapper implements AutoCloseable {
             wrapper.legacyAveraging = this.legacyAveraging;
             wrapper.isMQ = this.isMQ;
             wrapper.workspaceMode = this.workspaceMode;
+            wrapper.modelParamsSupplier = this.modelParamsSupplier;
+            wrapper.updaterParamsSupplier = this.updaterParamsSupplier;
 
 
             switch (trainingMode) {
