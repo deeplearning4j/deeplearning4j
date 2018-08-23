@@ -155,7 +155,8 @@ TEST_F(DeclarableOpsTests10, InTopK_SGO_Test_1) {
     ASSERT_TRUE(res->at(0)->equalsTo(&exp));
     delete res;
 }
-Ї
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, Pad_SGO_Test_1) {
 
     NDArray<double> in({1., 1., 1., 1., 1.});
