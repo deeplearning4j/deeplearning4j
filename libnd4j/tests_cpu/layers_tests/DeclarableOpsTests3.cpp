@@ -2358,13 +2358,6 @@ TEST_F(DeclarableOpsTests3, svd_test8) {
    NDArray<double> *u = results->at(1);
    NDArray<double> *v = results->at(2);
 
-   s->printIndexedBuffer();
-   printf("\n");
-   u->printIndexedBuffer();
-   printf("\n");
-   v->printIndexedBuffer();
-   printf("\n");
-
    ASSERT_TRUE(expS.isSameShape(s));
    ASSERT_TRUE(expU.isSameShape(u));
    ASSERT_TRUE(expV.isSameShape(v));
