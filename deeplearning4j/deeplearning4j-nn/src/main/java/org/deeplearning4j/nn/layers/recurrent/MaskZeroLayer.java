@@ -29,16 +29,19 @@ import lombok.NonNull;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
+ * Masks timesteps with activation equal to the specified masking value, defaulting to 0.0.
+ * Assumes that the input shape is [batch_size, input_size, timesteps].
  *
- * Masks timesteps with 0 activation. Assumes that the input shape is [batch_size, input_size, timesteps].
-   @author Martin Boyanov mboyanov@gmail.com
+ * @author Martin Boyanov mboyanov@gmail.com
  */
 public class MaskZeroLayer extends BaseWrapperLayer {
 
     private static final long serialVersionUID = -7369482676002469854L;
+    private double maskingValue;
 
-    public MaskZeroLayer(@NonNull Layer underlying){
+    public MaskZeroLayer(@NonNull Layer underlying, double maskingValue){
         super(underlying);
+        this.maskingValue = maskingValue;
     }
 
 
@@ -68,12 +71,10 @@ public class MaskZeroLayer extends BaseWrapperLayer {
 
     private void setMaskFromInput(INDArray input) {
         if (input.rank() != 3) {
-            throw new IllegalArgumentException("Expected input of shape [batch_size, timestep_input_size, timestep], got shape "+Arrays.toString(input.shape()) + " instead");
+            throw new IllegalArgumentException("Expected input of shape [batch_size, timestep_input_size, timestep], " +
+                    "got shape "+Arrays.toString(input.shape()) + " instead");
         }
-        double maskValue =  ((org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer)
-                this.conf().getLayer()).getMaskingValue();
-
-        INDArray mask = input.eq(maskValue).sum(1).neq(input.shape()[1]);
+        INDArray mask = input.eq(maskingValue).sum(1).neq(input.shape()[1]);
         underlying.setMaskArray(mask);
     }
 
@@ -83,10 +84,12 @@ public class MaskZeroLayer extends BaseWrapperLayer {
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+                                                          int minibatchSize) {
         underlying.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
 
-        //Input: 2d mask array, for masking a time series. After extracting out the last time step, we no longer need the mask array
+        //Input: 2d mask array, for masking a time series. After extracting out the last time step,
+        // we no longer need the mask array
         return new Pair<>(null, currentMaskState);
     }
 

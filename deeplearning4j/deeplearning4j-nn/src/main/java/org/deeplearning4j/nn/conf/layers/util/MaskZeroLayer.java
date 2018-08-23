@@ -16,14 +16,11 @@
 
 package org.deeplearning4j.nn.conf.layers.util;
 
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -33,7 +30,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 
 /**
- * Wrapper which masks timesteps with 0 activation.
+ * Wrapper which masks timesteps with activation equal to the specified masking value (0.0 default).
  * Assumes that the input shape is [batch_size, input_size, timesteps].
  * @author Martin Boyanov mboyanov@gmail.com
  */
@@ -65,7 +62,7 @@ public class MaskZeroLayer extends BaseWrapperLayer {
 
         org.deeplearning4j.nn.api.Layer underlyingLayer =
                 underlying.instantiate(conf2, trainingListeners, layerIndex, layerParamsView, initializeParams);
-        return new org.deeplearning4j.nn.layers.recurrent.MaskZeroLayer(underlyingLayer);
+        return new org.deeplearning4j.nn.layers.recurrent.MaskZeroLayer(underlyingLayer, maskingValue);
     }
 
     @Override
