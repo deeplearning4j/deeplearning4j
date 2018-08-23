@@ -35,10 +35,13 @@ import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.UpdaterPara
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.UpdaterParametersRequest;
 import org.nd4j.parameterserver.distributed.v2.transport.RestartCallback;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
+import org.reactivestreams.Subscriber;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -50,8 +53,13 @@ public final class ModelParameterServer {
 
     private Transport transport;
 
-    // TODO: we need better capacity here, it should scale properly
+    // queue is used only if there's no subscribers defined
     private final BlockingQueue<INDArray> updatesQueue = new LinkedBlockingQueue<>(4096);
+
+    // subsribers that are connected to actual model
+    protected final List<Subscriber<INDArray>> updatesSubscribers = new CopyOnWriteArrayList<>();
+    protected final List<Subscriber<INDArray>> modelParamsSubsribers = new CopyOnWriteArrayList<>();
+    protected final List<Subscriber<INDArray>> updaterParamsSubscribers = new CopyOnWriteArrayList<>();
 
     private boolean masterMode;
 
@@ -115,6 +123,39 @@ public final class ModelParameterServer {
     private Disposable disposable;
 
     /**
+     * This method adds subcriber that will be called upon gradients update receival
+     * @param s
+     */
+    public void addUpdatesSubscriber(@NonNull Subscriber<INDArray> s) {
+        updatesSubscribers.add(s);
+    }
+
+    /**
+     * This method adds subcriber that will be called upon model params receival
+     * @param s
+     */
+    public void addModelParamsSubscriber(@NonNull Subscriber<INDArray> s) {
+        modelParamsSubsribers.add(s);
+    }
+
+    /**
+     * This method adds subcriber that will be called upon updater params receival
+     * @param s
+     */
+    public void addUpdaterParamsSubscriber(@NonNull Subscriber<INDArray> s) {
+        updaterParamsSubscribers.add(s);
+    }
+
+    /**
+     * This method checks if ModelParameterServer was initialized
+     *
+     * @return true if already initalized, false otherwise
+     */
+    public boolean isInitialized() {
+        return launchLock.get();
+    }
+
+    /**
      * This method starts parameter server
      */
     public synchronized void launch() {
@@ -130,10 +171,12 @@ public final class ModelParameterServer {
 
                     ModelParametersMessage modelParams = transport.sendMessageBlocking(new ModelParametersRequest(), transport.getUpstreamId());
                     val mParams = modelParams.getPayload();
+                    modelParamsSubsribers.forEach(s -> s.onNext(mParams));
 
                     // updater parameters are optional, it's possible to have models without updater parameters (i.e. SGD)
                     UpdaterParametersMessage updaterParams = transport.sendMessageBlocking(new UpdaterParametersRequest(), transport.getUpstreamId());
                     val uParams = updaterParams.getPayload();
+                    updaterParamsSubscribers.forEach(s -> s.onNext(uParams));
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -168,7 +211,10 @@ public final class ModelParameterServer {
              * We process messages here. Messages are either contain INDArrays, say, as gradients update, or as  model parameters.
              */
             if (message instanceof GradientsUpdateMessage) {
-                updatesQueue.add(message.getPayload());
+                if (updatesSubscribers.isEmpty())
+                    updatesQueue.add(message.getPayload());
+                else
+                    updatesSubscribers.forEach(s -> s.onNext(message.getPayload()));
             } else
                 throw new UnsupportedOperationException("Unknown message received: [" + message.getClass().getCanonicalName() + "]");
         });

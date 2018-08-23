@@ -85,6 +85,17 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         this(ownIp, configuration.getUnicastPort(), rootIp, configuration.getUnicastPort(), configuration);
     }
 
+    /**
+     * This constructor creates root transport instance
+     * @param rootIp
+     * @param rootPort
+     * @param configuration
+     */
+    public AeronUdpTransport(@NonNull String rootIp, int rootPort, @NonNull VoidConfiguration configuration) {
+        this(rootIp, rootPort, rootIp, rootPort, configuration);
+    }
+
+
     public AeronUdpTransport(@NonNull String ownIp, int ownPort, @NonNull String rootIp, int rootPort, @NonNull VoidConfiguration configuration) {
         super("aeron:udp?endpoint=" + ownIp + ":" + ownPort, "aeron:udp?endpoint=" + rootIp + ":" + rootPort, configuration);
 

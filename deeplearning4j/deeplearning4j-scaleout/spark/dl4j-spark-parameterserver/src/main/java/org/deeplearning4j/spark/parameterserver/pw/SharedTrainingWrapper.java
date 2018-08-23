@@ -35,9 +35,10 @@ import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualDataSetIterator;
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualIterator;
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualMultiDataSetIterator;
-import org.deeplearning4j.spark.parameterserver.networking.SilentTrainingDriver;
-import org.deeplearning4j.spark.parameterserver.networking.WiredEncodingHandler;
-import org.deeplearning4j.spark.parameterserver.networking.messages.SilentIntroductoryMessage;
+import org.deeplearning4j.spark.parameterserver.networking.v1.SilentTrainingDriver;
+import org.deeplearning4j.spark.parameterserver.networking.v1.WiredEncodingHandler;
+import org.deeplearning4j.spark.parameterserver.networking.v1.messages.SilentIntroductoryMessage;
+import org.deeplearning4j.spark.parameterserver.networking.v2.UpdatesConsumer;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingResult;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingWorker;
 import org.deeplearning4j.spark.parameterserver.util.BlockingObserver;
@@ -271,28 +272,6 @@ public class SharedTrainingWrapper {
                                     .encodingThreshold(trainingConfiguration.getThreshold())
                                     .memoryParameters(bufferSize, queueSize).build();
 
-                    // FIXME: implement support for Custom transport implementation
-                    val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP ? new AeronUdpTransport() :  null;
-
-                    if (transport == null)
-                        throw new DL4JInvalidConfigException(
-                                        "No Transport implementation was defined for this training session!");
-
-                    // let's check for spark local edge case
-                    if (!VoidParameterServer.getInstance().isInit()) {
-                        // all nodes that are NOT master - enforced to be Clients
-                        voidConfiguration.setForcedRole(null);
-
-                        // TODO: tbd: let's allow one of executor nodes to be silent worker maybe? or this going to be too expensive?
-                    }
-
-                    driver = new SilentTrainingDriver(accumulator);
-                    ModelParameterServer.getInstance().configure(voidConfiguration, transport, false, driver);
-
-
-                    // we're saving reference to original model
-                    originalModel = model;
-
                     // we should introduce ourselves to controller
                     // FIXME: if localIP is null - use original ip discovery available in VoidParameterServer
                     String localIP = null;
@@ -313,14 +292,36 @@ public class SharedTrainingWrapper {
                         log.warn("Can't get IP address to start VoidParameterServer client. Using localhost instead");
                     }
 
-                    // FIXME: do we need port here, in case of Multicast/Broadcast Transport?
-                    SilentIntroductoryMessage sim =
-                                    new SilentIntroductoryMessage(localIP, voidConfiguration.getUnicastPort());
+                    // FIXME: implement support for Custom transport implementation
+                    val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP ? new AeronUdpTransport(localIP, voidConfiguration.getUnicastPort(), voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort(), voidConfiguration) :  null;
 
-                    // we're sending this message to all shards, though it's just one Shard by design here - Spark Master
-                    VoidParameterServer.getInstance().sendMessageToAllShards(sim);
+                    if (transport == null)
+                        throw new DL4JInvalidConfigException(
+                                        "No Transport implementation was defined for this training session!");
+
+                    // let's check for spark local edge case
+                    if (!ModelParameterServer.getInstance().isInitialized()) {
+                        // all nodes that are NOT master - enforced to be Clients
+                        voidConfiguration.setForcedRole(null);
+
+                        // TODO: tbd: let's allow one of executor nodes to be silent worker maybe? or this going to be too expensive?
+                    }
+
+                    //driver = new SilentTrainingDriver(accumulator);
+                    val consumer = UpdatesConsumer.builder()
+                            .accumulator(accumulator)
+                            .build();
+
+                    //  pass values right away
+                    ModelParameterServer.getInstance().configure(voidConfiguration, transport, false);
+                    ModelParameterServer.getInstance().addUpdatesSubscriber(consumer);
+
+
+                    // we're saving reference to original model
+                    originalModel = model;
 
                     // after initialization finished, we're ok to actually start training
+                    ModelParameterServer.getInstance().launch();
                 }
 
                 // if we're going to extend iteratation for debugging purposes - let's do that here

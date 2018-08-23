@@ -20,7 +20,6 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.function.FlatMapFunction;
@@ -49,7 +48,8 @@ import org.deeplearning4j.spark.parameterserver.accumulation.SharedTrainingAccum
 import org.deeplearning4j.spark.parameterserver.accumulation.SharedTrainingAggregateFunction;
 import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
 import org.deeplearning4j.spark.parameterserver.functions.*;
-import org.deeplearning4j.spark.parameterserver.networking.SilentTrainingDriver;
+import org.deeplearning4j.spark.parameterserver.networking.v1.SilentTrainingDriver;
+import org.deeplearning4j.spark.parameterserver.networking.v2.UpdatesConsumer;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.base.Preconditions;
@@ -438,7 +438,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         voidConfiguration.setShardAddresses(voidConfiguration.getControllerAddress());
         voidConfiguration.setNumberOfShards(1);
 
-        val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP ? new AeronUdpTransport() : null;
+        val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP
+                ? new AeronUdpTransport(voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort(), voidConfiguration)
+                : null;
 
         if (transport == null)
             throw new DL4JInvalidConfigException("No Transport implementation was defined for this training session!");
@@ -462,13 +464,25 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                 }
             }
 
-            trainingDriver = new SilentTrainingDriver(
-                            network != null ? network.getNetwork().params() : graph.getNetwork().params(),
-                            network != null ? network.getNetwork().getOptimizer().getStepFunction()
-                                            : graph.getNetwork().getOptimizer().getStepFunction());
+            val params = network != null ? network.getNetwork().params() : graph.getNetwork().params();
+
+            val updatesConsumer = UpdatesConsumer.builder()
+                    .params(params)
+                    .updates(Nd4j.create(params.shape(), params.ordering()))
+                    .stepFunction(network != null ? network.getNetwork().getOptimizer().getStepFunction() : graph.getNetwork().getOptimizer().getStepFunction())
+                    .build();
+
+            // apply configuration
+            ModelParameterServer.getInstance().configure(voidConfiguration, transport, true);
+
+            // and attach our consumer
+            ModelParameterServer.getInstance().addUpdatesSubscriber(updatesConsumer);
 
 
-            ModelParameterServer.getInstance().configure(voidConfiguration, transport, true, trainingDriver);
+            // and start actual server
+            if (!ModelParameterServer.getInstance().isInitialized())
+                ModelParameterServer.getInstance().launch();
+
             LAST_TRAINING_INSTANCE.set(instanceId);
         }
 

@@ -14,11 +14,11 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.spark.parameterserver.networking;
+package org.deeplearning4j.spark.parameterserver.networking.v1;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodingHandler;
-import org.deeplearning4j.spark.parameterserver.networking.messages.SilentUpdatesMessage;
+import org.deeplearning4j.spark.parameterserver.networking.v1.messages.SilentUpdatesMessage;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.spark.parameterserver.networking.messages;
+package org.deeplearning4j.spark.parameterserver.networking.v1.messages;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
