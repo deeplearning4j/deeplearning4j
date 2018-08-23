@@ -12,53 +12,61 @@ Deeplearning4j supports CUDA but can be further accelerated with cuDNN. Most 2D 
 
 To use cuDNN, you will first need to switch ND4J to the CUDA backend. This can be done by replacing `nd4j-native` with `nd4j-cuda-8.0`, `nd4j-cuda-9.0`, or `nd4j-cuda-9.2`  in your `pom.xml` files, ideally adding a dependency on `nd4j-cuda-8.0-platform`, `nd4j-cuda-9.0-platform`, or `nd4j-cuda-9.2-platform` to include automatically binaries from all platforms:
 
-	 <dependency>
-	   <groupId>org.nd4j</groupId>
-	   <artifactId>nd4j-cuda-8.0-platform</artifactId>
-	   <version>{{page.version}}</version>
-	 </dependency>
+```xml
+<dependency>
+	<groupId>org.nd4j</groupId>
+	<artifactId>nd4j-cuda-8.0-platform</artifactId>
+	<version>{{page.version}}</version>
+</dependency>
+```
 
 or
-
-	 <dependency>
-	   <groupId>org.nd4j</groupId>
-	   <artifactId>nd4j-cuda-9.0-platform</artifactId>
-	   <version>{{page.version}}</version>
-	 </dependency>
+```xml
+<dependency>
+	<groupId>org.nd4j</groupId>
+	<artifactId>nd4j-cuda-9.0-platform</artifactId>
+	<version>{{page.version}}</version>
+</dependency>
+```
 
 or
-
-	 <dependency>
-	   <groupId>org.nd4j</groupId>
-	   <artifactId>nd4j-cuda-9.2-platform</artifactId>
-	   <version>{{page.version}}</version>
-	 </dependency>
+```xml
+<dependency>
+	<groupId>org.nd4j</groupId>
+	<artifactId>nd4j-cuda-9.2-platform</artifactId>
+	<version>{{page.version}}</version>
+</dependency>
+```
 
 More information about that can be found among the [installation instructions for ND4J](http://nd4j.org/getstarted).
 
 The only other thing we need to do to have DL4J load cuDNN is to add a dependency on `deeplearning4j-cuda-8.0`, `deeplearning4j-cuda-9.0`, or `deeplearning4j-cuda-9.2`, for example:
 
-	 <dependency>
-	   <groupId>org.deeplearning4j</groupId>
-	   <artifactId>deeplearning4j-cuda-8.0</artifactId>
-	   <version>{{page.version}}</version>
-	 </dependency>
+```xml
+<dependency>
+	<groupId>org.deeplearning4j</groupId>
+	<artifactId>deeplearning4j-cuda-8.0</artifactId>
+	<version>{{page.version}}</version>
+</dependency>
+```
 
 or
-
-	 <dependency>
-	   <groupId>org.deeplearning4j</groupId>
-	   <artifactId>deeplearning4j-cuda-9.0</artifactId>
-	   <version>{{page.version}}</version>
-	 </dependency>
+```xml
+<dependency>
+	<groupId>org.deeplearning4j</groupId>
+	<artifactId>deeplearning4j-cuda-9.0</artifactId>
+	<version>{{page.version}}</version>
+</dependency>
+```
 
 or
-
-	 <dependency>
-	   <groupId>org.deeplearning4j</groupId>
-	   <artifactId>deeplearning4j-cuda-9.2</artifactId>
-	   <version>{{page.version}}</version>
-	 </dependency>
+```xml
+<dependency>
+	<groupId>org.deeplearning4j</groupId>
+	<artifactId>deeplearning4j-cuda-9.2</artifactId>
+	<version>{{page.version}}</version>
+</dependency>
+```
 
 The actual library for cuDNN is not bundled, so be sure to download and install the appropriate package for your platform from NVIDIA:
 

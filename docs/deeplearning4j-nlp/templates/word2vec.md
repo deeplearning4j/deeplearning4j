@@ -24,31 +24,23 @@ Contents
 
 ## <a name="intro">Introduction to Word2Vec</a>
 
-Word2vec is a two-layer neural net that processes text. Its input is a text corpus and its output is a set of vectors: feature vectors for words in that corpus. While Word2vec is not a [deep neural network](./neuralnet-overview.html), it turns text into a numerical form that deep nets can understand. [Deeplearning4j](./quickstart.html) implements a distributed form of Word2vec for Java and [Scala](./scala.html), which works on Spark with GPUs. 
+Word2vec is a two-layer neural net that processes text. Its input is a text corpus and its output is a set of vectors: feature vectors for words in that corpus. While Word2vec is not a [deep neural network](https://skymind.ai/wiki/neural-network), it turns text into a numerical form that deep nets can understand. [Deeplearning4j](./deeplearning4j-quickstart) implements a distributed form of Word2vec for Java and Scala, which works on Spark with GPUs. 
 
 Word2vec's applications extend beyond parsing sentences in the wild. It can be applied just as well to <a href="#sequence">genes, code, likes, playlists, social media graphs and other verbal or symbolic series</a> in which patterns may be discerned. 
 
 Why? Because words are simply discrete states like the other data mentioned above, and we are simply looking for the transitional probabilities between those states: the likelihood that they will co-occur. So gene2vec, like2vec and follower2vec are all possible. With that in mind, the tutorial below will help you understand how to create neural embeddings for any group of discrete and co-occurring states. 
 
-The purpose and usefulness of Word2vec is to group the vectors of similar words together in vectorspace. That is, it detects similarities mathematically. Word2vec creates vectors that are distributed numerical representations of word features, features such as the context of individual words. It does so without human intervention. 
-
-<p align="center">
-<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success"
-        data-ga-event="click"
-        data-ga-category="Click/Button"
-        data-ga-action="GoTo/SKILDocs"
-        data-ga-label="Word2VecPage">GET STARTED WITH WORD2VEC</a>
-</p>
+The purpose and usefulness of Word2vec is to group the vectors of similar words together in vectorspace. That is, it detects similarities mathematically. Word2vec creates vectors that are distributed numerical representations of word features, features such as the context of individual words. It does so without human intervention.
 
 Given enough data, usage and contexts, Word2vec can make highly accurate guesses about a word’s meaning based on past appearances. Those guesses can be used to establish a word's association with other words (e.g. "man" is to "boy" what "woman" is to "girl"), or cluster documents and classify them by topic. Those clusters can form the basis of search, [sentiment analysis](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java) and recommendations in such diverse fields as scientific research, legal discovery, e-commerce and customer relationship management. 
 
 The output of the Word2vec neural net is a vocabulary in which each item has a vector attached to it, which can be fed into a deep-learning net or simply queried to detect relationships between words. 
 
-Measuring [cosine similarity](./glossary.html#cosine), no similarity is expressed as a 90 degree angle, while total similarity of 1 is a 0 degree angle, complete overlap; i.e. Sweden equals Sweden, while Norway has a cosine distance of 0.760124 from Sweden, the highest of any other country. 
+Measuring [cosine similarity](https://skymind.ai/wiki/glossary#cosine), no similarity is expressed as a 90 degree angle, while total similarity of 1 is a 0 degree angle, complete overlap; i.e. Sweden equals Sweden, while Norway has a cosine distance of 0.760124 from Sweden, the highest of any other country. 
 
 Here's a list of words associated with "Sweden" using Word2vec, in order of proximity:
 
-![Alt text](/images/guide/sweden_cosine_distance.png) 
+![Cosine Distance](/images/guide/sweden_cosine_distance.png) 
 
 The nations of Scandinavia and several wealthy, northern European, Germanic countries are among the top nine. 
 
@@ -58,11 +50,11 @@ The vectors we use to represent words are called *neural word embeddings*, and r
 
 So a neural word embedding represents a word with numbers. It's a simple, yet unlikely, translation. 
 
-Word2vec is similar to an autoencoder, encoding each word in a vector, but rather than training against the input words through [reconstruction](./restrictedboltzmannmachine.html#reconstruct), as a [restricted Boltzmann machine](./restrictedboltzmannmachine.html) does, word2vec trains words against other words that neighbor them in the input corpus. 
+Word2vec is similar to an autoencoder, encoding each word in a vector, but rather than training against the input words through [reconstruction](.https://skymind.ai/wiki/variational-autoencoder) word2vec trains words against other words that neighbor them in the input corpus. 
 
 It does so in one of two ways, either using context to predict a target word (a method known as continuous bag of words, or CBOW), or using a word to predict a target context, which is called skip-gram. We use the latter method because it produces more accurate results on large datasets.
 
-![Alt text](/images/guide/word2vec_diagrams.png) 
+![word2vec diagram](/images/guide/word2vec_diagrams.png) 
 
 When the feature vector assigned to a word cannot be used to accurately predict that word's context, the components of the vector are adjusted. Each word's context in the corpus is the *teacher* sending error signals back to adjust the feature vector. The vectors of words judged similar by their context are nudged closer together by adjusting the numbers in the vector.
 
@@ -74,11 +66,11 @@ A well trained set of word vectors will place similar words close to each other 
 
 Similar things and ideas are shown to be "close". Their relative meanings have been translated to measurable distances. Qualities become quantities, and algorithms can do their work. But similarity is just the basis of many associations that Word2vec can learn. For example, it can gauge relations between words of one language, and map them to another.
 
-![Alt text](/images/guide/word2vec_translation.png) 
+![word2vec translation](/images/guide/word2vec_translation.png) 
 
 These vectors are the basis of a more comprehensive geometry of words. As shown in the graph, capital cities such as Rome, Paris, Berlin and Beijing cluster near each other, and they will each have similar distances in vectorspace to their countries; i.e. Rome - Italy = Beijing - China. If you only knew that Rome was the capital of Italy, and were wondering about the capital of China, then the equation Rome -Italy + China would return Beijing. No kidding. 
 
-![Alt text](/images/guide/countries_capitals.png) 
+![capitals output](/images/guide/countries_capitals.png) 
 
 ## <a name="crazy">Amusing Word2Vec Results</a>
 
@@ -140,11 +132,11 @@ Here are Deeplearning4j's natural-language processing components:
 * **VocabCache**: Used for tracking metadata including word counts, document occurrences, the set of tokens (not vocab in this case, but rather tokens that have occurred), vocab (the features included in both [bag of words](./bagofwords-tf-idf.html) as well as the word vector lookup table)
 * **Inverted Index**: Stores metadata about where words occurred. Can be used for understanding the dataset. A Lucene index with the Lucene implementation[1] is automatically created. 
 
-While Word2vec refers to a family of related algorithms, this implementation uses <a href="../glossary.html#skipgram">Skip-Gram</a> Negative Sampling.
+While Word2vec refers to a family of related algorithms, this implementation uses [Negative Sampling](https://skymind.ai/wiki/glossary#skipgram).
 
 ## <a name="setup">Word2Vec Setup</a> 
 
-Create a new project in IntelliJ using Maven. If you don't know how to do that, see our [Quickstart page](./quickstart.html). Then specify these properties and dependencies in the POM.xml file in your project's root directory (You can [check Maven](https://search.maven.org/#search%7Cga%7C1%7Cnd4j) for the most recent versions -- please use those...).
+Create a new project in IntelliJ using Maven. If you don't know how to do that, see our [Quickstart page](./deeplearning4j-quickstart). Then specify these properties and dependencies in the POM.xml file in your project's root directory (You can [check Maven](https://search.maven.org/#search%7Cga%7C1%7Cnd4j) for the most recent versions -- please use those...).
 
 
 
@@ -350,7 +342,7 @@ If you trained with the [C vectors](https://docs.google.com/file/d/0B7XkCwpI5KDY
 
 Remember to add `import java.io.File;` to your imported packages.
 
-With large models, you may run into trouble with your heap space. The Google model may take as much as 10G of RAM, and the JVM only launches with 256 MB of RAM, so you have to adjust your heap space. You can do that either with a `bash_profile` file (see our [Troubleshooting section](./gettingstarted.html#trouble)), or through IntelliJ itself: 
+With large models, you may run into trouble with your heap space. The Google model may take as much as 10G of RAM, and the JVM only launches with 256 MB of RAM, so you have to adjust your heap space. You can do that either with a `bash_profile` file (see our [Troubleshooting section](./deeplearning4j-troubleshooting-training)), or through IntelliJ itself: 
 
 ``` java
     //Click:
@@ -377,7 +369,7 @@ Now that you have a basic idea of how to set up Word2Vec, here's [one example](h
 
 <script src="https://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/nlp/word2vec/Word2VecRawTextExample.java?slice=22:64"></script>
 
-After following the instructions in the [Quickstart](./quickstart.html), you can open this example in IntelliJ and hit run to see it work. If you query the Word2vec model with a word isn't contained in the training corpus, it will return null. 
+After following the instructions in the [Quickstart](./deeplearning4j-quickstart), you can open this example in IntelliJ and hit run to see it work. If you query the Word2vec model with a word isn't contained in the training corpus, it will return null. 
 
 ### <a name="trouble">Troubleshooting & Tuning Word2Vec</a>
 
@@ -449,7 +441,7 @@ Kenny Helsens, a data scientist based in Belgium, [applied Deeplearning4j's impl
 
 Andreas Klintberg trained Deeplearning4j's implementation of Word2vec on Swedish, and wrote a [thorough walkthrough on Medium](https://medium.com/@klintcho/training-a-word2vec-model-for-swedish-e14b15be6cb). 
 
-Word2Vec is especially useful in preparing text-based data for information retrieval and QA systems, which DL4J implements with [deep autoencoders](./deepautoencoder.html). 
+Word2Vec is especially useful in preparing text-based data for information retrieval and QA systems, which DL4J implements with [deep autoencoders](./deeplearning4j-nn-autoencoders). 
 
 Marketers might seek to establish relationships among products to build a recommendation engine. Investigators might analyze a social graph to surface members of a single group, or other relations they might have to location or financial sponsorship. 
 
@@ -487,8 +479,8 @@ Deeplearning4j has a class called [SequenceVectors](https://github.com/deeplearn
 
 * [DL4J Example of Text Classification With Word2vec & RNNs](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)
 * [DL4J Example of Text Classification With Paragraph Vectors](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/paragraphvectors/ParagraphVectorsClassifierExample.java)
-* [Doc2vec, or Paragraph Vectors, With Deeplearning4j](./doc2vec.html)
-* [Thought Vectors, Natural Language Processing & the Future of AI](./thoughtvectors.html)
+* [Doc2vec, or Paragraph Vectors, With Deeplearning4j](./deeplearning4j-nlp-doc2vec)
+* [Thought Vectors, Natural Language Processing & the Future of AI](https://skymind.ai/wiki/thought-vectors)
 * [Quora: How Does Word2vec Work?](http://www.quora.com/How-does-word2vec-work)
 * [Quora: What Are Some Interesting Word2Vec Results?](http://www.quora.com/Word2vec/What-are-some-interesting-Word2Vec-results/answer/Omer-Levy)
 * [Word2Vec: an introduction](http://www.folgertkarsdorp.nl/word2vec-an-introduction/); Folgert Karsdorp
