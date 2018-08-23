@@ -388,7 +388,7 @@
 
         <scalatest.version>3.0.5</scalatest.version>
         <scalafmt.version>1.3.0</scalafmt.version>
-        <scalacheck.version>1.13.5</scalacheck.version>
+        <scalacheck.version>1.14.0</scalacheck.version>
 
         <libnd4j.tests>--tests</libnd4j.tests>
         <libnd4j.test.skip>false</libnd4j.test.skip>

@@ -3469,8 +3469,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     in = String.valueOf(((Bidirectional)bi.conf().getLayer()).getNIn());
                     out = String.valueOf(((Bidirectional)bi.conf().getLayer()).getNOut());
                 } else {
-                    in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
-                    out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
+                    try {
+                        in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
+                        out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
+                    }
+                    catch (Exception e) { // Some layers, like PReLU, are just BaseLayers (but have parameters)
+                    }
                 }
                 Set<String> paraNames = currentLayer.paramTable().keySet();
                 for (String aP : paraNames) {
