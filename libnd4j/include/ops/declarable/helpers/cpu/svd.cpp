@@ -223,7 +223,7 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
     const T almostZero = DataTypeUtils::min<T>();
     T maxElem;
     if(len == 1)
-        maxElem = math::nd4j_abs<T>((*diagInterval)(0));
+        maxElem = math::nd4j_abs<T>((*diagInterval)(0.));
     else
         maxElem = (*diagInterval)({1,-1, 0,0}, true).template reduceNumber<simdOps::AMax<T>>();                
     T maxElem0 = colVec0->template reduceNumber<simdOps::AMax<T>>();     
@@ -231,8 +231,8 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
     T eps = math::nd4j_max<T>(almostZero, DataTypeUtils::eps<T>() * maxElem);
     T epsBig = (T)8. * DataTypeUtils::eps<T>() * math::nd4j_max<T>(maxElem0, maxElem);        
 
-    if((*diagInterval)(0) < epsBig)
-        (*diagInterval)(0) = epsBig;
+    if((*diagInterval)(0.) < epsBig)
+        (*diagInterval)(0.) = epsBig;
   
     for(int i=1; i < len; ++i)
         if(math::nd4j_abs<T>((*colVec0)(i)) < eps)    
@@ -281,7 +281,7 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
         if(totDefl) {
             for(int i=1; i<len; ++i) {
                 int ki = permut[i];
-                if(math::nd4j_abs<T>((*diagInterval)(ki)) < almostZero || (*diagInterval)(0) < (*diagInterval)(ki))
+                if(math::nd4j_abs<T>((*diagInterval)(ki)) < almostZero || (*diagInterval)(0.) < (*diagInterval)(ki))
                     permut[i-1] = permut[i];
                 else {
                     permut[i-1] = 0;
@@ -610,7 +610,7 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray<T>& U, NDArray<T>& singVal
     NDArray<T> diag = *diagP;
     delete diagP;
 
-    diag(0) = 0.;
+    diag(0.) = T(0);
     singVals = NDArray<T>(_m.ordering(), {size, 1}, _m.getWorkspace());
     U = NDArray<T>(_u.ordering(), {size+1, size+1}, _u.getWorkspace());
     if (_calcV) 

@@ -127,7 +127,7 @@ void randomShuffle(NDArray<T>& input, NDArray<T>& output, nd4j::random::RandomBu
         else {        
             std::vector<int> indices(firstDim);        
             std::iota(indices.begin(), indices.end(), 0);        
-            output(0) = input(0);
+            output(0.) = input(0.);
 #pragma omp parallel for if((firstDim-1) > Environment::getInstance()->elementwiseThreshold()) schedule(guided)       
             for(int i = firstDim-1; i > 0; --i) {
                 int r = rng.nextInt(0, i);
@@ -638,8 +638,8 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
 
         if(norm2.lengthOf() == 1) {
 
-            if(norm2(0) > clipNorm)
-                input *= (clipNorm / norm2(0));
+            if(norm2(0.) > clipNorm)
+                input *= (clipNorm / norm2(0.));
         }
         else {
 
@@ -661,8 +661,8 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
         
         if(norm2.lengthOf() == 1) {
 
-            if(norm2(0) > clipNorm)
-                output.assign( input * (clipNorm / norm2(0)));
+            if(norm2(0.) > clipNorm)
+                output.assign( input * (clipNorm / norm2(0.)));
             else
                 output.assign( input );
         }
@@ -699,7 +699,7 @@ void clipByNormBP(const NDArray<T>& input, const NDArray<T>& gradO, NDArray<T>& 
 
     if(norm2.lengthOf() == 1) {        
 
-        const T N = norm2(0);
+        const T N = norm2(0.);
         
         if(N > clipNorm) {            
 

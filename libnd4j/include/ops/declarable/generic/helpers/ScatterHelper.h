@@ -178,7 +178,7 @@ static FORCEINLINE void scatterND(const NDArray<T>& indices, const NDArray<T>& u
     else if(outRank == indLastDim) {
 
         std::vector<int> dimsToExcludeInd = ShapeUtils<T>::evalDimsToExclude(indRank, {indRank-1});
-        std::vector<Nd4jLong> outIdx(outRank);        
+        Nd4jLong* outIdx = new Nd4jLong[outRank];        
         std::vector<Nd4jLong> idxRangesInd(2 * indRank);
 
 #pragma omp parallel for schedule(guided) firstprivate(outIdx, idxRangesInd)
@@ -189,9 +189,10 @@ static FORCEINLINE void scatterND(const NDArray<T>& indices, const NDArray<T>& u
 #pragma omp simd
             for(Nd4jLong j = 0; j < indLastDim; ++j)
                 outIdx[j] = indSubArr(j);
-// #pragma omp critical
-            // output(outIdx) = updates(i);
+#pragma omp critical
+            output(outIdx) = updates(i);
         }
+        delete []outIdx;
     }
     else {
 

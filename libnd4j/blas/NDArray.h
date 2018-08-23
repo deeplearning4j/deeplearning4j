@@ -1228,17 +1228,17 @@ namespace nd4j {
         */
         FORCEINLINE T operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) const;
 
-        // /**
-        // *  inline modifying operator for ND array
-        // *  idx - vector with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
-        // */ 
-        // FORCEINLINE T& operator()(const std::vector<Nd4jLong>& idx);
+        /**
+        *  inline modifying operator for ND array
+        *  idx - array with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
+        */ 
+        FORCEINLINE T& operator()(const Nd4jLong* idx);
 
-        // /**
-        // *  inline accessing operator for ND array
-        // *  idx - vector with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
-        // */
-        // FORCEINLINE T operator()(const std::vector<Nd4jLong>& idx) const;
+        /**
+        *  inline accessing operator for ND array
+        *  idx - array with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
+        */
+        FORCEINLINE T operator()(const Nd4jLong* idx) const;
 
 
 
@@ -1566,27 +1566,27 @@ template<typename T>
     return _buffer[xOffset];
 }
 
-// //////////////////////////////////////////////////////////////////////////
-// template<typename T>
-// T NDArray<T>::operator()(const std::vector<Nd4jLong>& idx) const {
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+T NDArray<T>::operator()(const Nd4jLong* idx) const {
 
-//     for(int i = 0; i < rankOf(); ++i)    
-//         if (idx[i] >= sizeAt(i))
-//             throw std::invalid_argument("NDArray::operator(const Nd4jLong* idx): input index is out of dimension length !");
+    for(int i = 0; i < rankOf(); ++i)    
+        if (idx[i] >= sizeAt(i))
+            throw std::invalid_argument("NDArray::operator(const Nd4jLong* idx): input index is out of dimension length !");
     
-//     return _buffer[shape::getOffset(0, shapeOf(), stridesOf(), &idx[0], rankOf())];
-// }
+    return _buffer[shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf())];
+}
 
-// //////////////////////////////////////////////////////////////////////////
-// template<typename T>
-// T& NDArray<T>::operator()(const std::vector<Nd4jLong>& idx) {
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+T& NDArray<T>::operator()(const Nd4jLong* idx) {
 
-//     for(int i = 0; i < rankOf(); ++i)    
-//         if (idx[i] >= sizeAt(i))
-//             throw std::invalid_argument("NDArray::operator(const Nd4jLong* idx): input index is out of dimension length !");
+    for(int i = 0; i < rankOf(); ++i)    
+        if (idx[i] >= sizeAt(i))
+            throw std::invalid_argument("NDArray::operator(const Nd4jLong* idx): input index is out of dimension length !");
 
-//     return _buffer[shape::getOffset(0, shapeOf(), stridesOf(), &idx[0], rankOf())];
-// }
+    return _buffer[shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf())];
+}
 
 //////////////////////////////////////////////////////////////////////////
 // Return value from linear buffer
