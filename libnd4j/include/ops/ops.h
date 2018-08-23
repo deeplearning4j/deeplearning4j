@@ -2017,6 +2017,11 @@ namespace simdOps {
         op_def static T op(T d1, T d2, T *params) {
             return nd4j::math::nd4j_atan2<T>(d2, d1);
         }
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return nd4j::math::nd4j_atan2<T>(params[0], d1);
+		}
     };
 
 
