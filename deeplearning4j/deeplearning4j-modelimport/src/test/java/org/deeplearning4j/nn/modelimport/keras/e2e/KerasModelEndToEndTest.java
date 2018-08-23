@@ -571,6 +571,7 @@ public class KerasModelEndToEndTest {
                 new int[] {24, 24, 3}, false);
         INDArray input = Nd4j.create(10, 3, 24, 24);
         model.output(input);
+        System.out.println(model.summary());
     }
 
     private ComputationGraph importFunctionalModelH5Test(String modelPath) throws Exception {
