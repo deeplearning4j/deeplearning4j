@@ -18,8 +18,6 @@ package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -33,7 +31,7 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasLoss;
-import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLstm;
+import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLSTM;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasSimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
@@ -221,8 +219,8 @@ public class KerasModel {
                     layerConfigMap, this.enforceTrainingConfig, kerasLayerConf, customLayers, lambdaLayers, layers);
             layersOrdered.add(layer);
             layers.put(layer.getLayerName(), layer);
-            if (layer instanceof KerasLstm)
-                this.useTruncatedBPTT = this.useTruncatedBPTT || ((KerasLstm) layer).getUnroll();
+            if (layer instanceof KerasLSTM)
+                this.useTruncatedBPTT = this.useTruncatedBPTT || ((KerasLSTM) layer).getUnroll();
             if (layer instanceof KerasSimpleRnn)
                 this.useTruncatedBPTT = this.useTruncatedBPTT || ((KerasSimpleRnn) layer).getUnroll();
         }
