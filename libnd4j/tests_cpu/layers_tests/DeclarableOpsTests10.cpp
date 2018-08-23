@@ -167,6 +167,57 @@ TEST_F(DeclarableOpsTests10, Unique_SGO_Test_1) {
     delete res;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Where_SGO_Test_1) {
+    NDArray<double> input('c', {3, 3}, {1., 0., 0., 1., 1., 0., 1., 1., 1.});
+    //NDArray<double> expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
+    NDArray<double> exp('c', {6, 2}, {0., 0., 1., 0., 1., 1., 2., 0., 2., 1., 2., 2.});
+
+    nd4j::ops::Where<double> op;
+    auto res = op.execute({&input}, {}, {});
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    NDArray<double>* resA = res->at(0);
+
+    ASSERT_TRUE(exp.equalsTo(resA));
+    ASSERT_TRUE(exp.isSameShape(resA));
+//    ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, WhereNP_SGO_Test_1) {
+    NDArray<double> cond3d('c', {2, 2, 2}, {1., 0., 0., 1., 1., 1., 1., 0.});
+//    NDArray<double> expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
+    NDArray<double> exp1({0., 0., 1., 1., 1.});
+    NDArray<double> exp2({0., 1., 0., 0., 1.});
+    NDArray<double> exp3({0., 1., 0., 1., 0.});
+    nd4j::ops::where_np<double> op;
+    auto res = op.execute({&cond3d}, {}, {});
+    ASSERT_TRUE(res->size() == 3);
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    ASSERT_TRUE(exp1.equalsTo(res->at(0)));
+    ASSERT_TRUE(exp2.equalsTo(res->at(1)));
+    ASSERT_TRUE(exp3.equalsTo(res->at(2)));
+    //ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, WhereNP_SGO_Test_2) {
+    NDArray<double> cond2d('c', {3, 5}, {1., 1., 0., 0., 1., 1., 1., 1., 1., 1., 0., 1., 1., 1., 1.});
+//    NDArray<double> expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
+    NDArray<double> exp1({0., 0., 0., 1., 1., 1., 1., 1., 2., 2., 2., 2.});
+    NDArray<double> exp2({0., 1., 4., 0., 1., 2., 3., 4., 1., 2., 3., 4.});
+    nd4j::ops::where_np<double> op;
+    auto res = op.execute({&cond2d}, {}, {});
+    ASSERT_TRUE(res->size() == 2);
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    ASSERT_TRUE(exp1.equalsTo(res->at(0)));
+    ASSERT_TRUE(exp2.equalsTo(res->at(1)));
+    //ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
+    delete res;
+}
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, svd_test11) {
 
@@ -190,4 +241,3 @@ TEST_F(DeclarableOpsTests10, svd_test11) {
 
     delete results;
 }
-
