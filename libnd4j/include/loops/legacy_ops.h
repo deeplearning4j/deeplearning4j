@@ -59,11 +59,12 @@
        (22, simdOps::Mod) ,\
        (23, simdOps::TruncateDiv), \
        (24, simdOps::And), \
-       (25, simdOps::Or),\
-       (26, simdOps::LogicalOr) ,\
-       (27, simdOps::LogicalXor) ,\
-       (28, simdOps::LogicalNot) ,\
-       (29, simdOps::LogicalAnd)
+       (25, simdOps::Or) ,\
+       (26, simdOps::Atan2) ,\
+       (27, simdOps::LogicalOr) ,\
+       (28, simdOps::LogicalXor) ,\
+       (29, simdOps::LogicalNot) ,\
+       (30, simdOps::LogicalAnd)
 
 
 
@@ -200,11 +201,12 @@
         (24, simdOps::AMax), \
         (25, simdOps::AMin), \
         (26, simdOps::And), \
-        (27, simdOps::Or) ,\
-        (28, simdOps::LogicalOr) ,\
-        (29, simdOps::LogicalXor) ,\
-        (30, simdOps::LogicalNot) ,\
-        (31, simdOps::LogicalAnd)
+        (27, simdOps::Or), \
+        (28, simdOps::Atan2) ,\
+        (29, simdOps::LogicalOr) ,\
+        (30, simdOps::LogicalXor) ,\
+        (31, simdOps::LogicalNot) ,\
+        (32, simdOps::LogicalAnd)
 
 
 
