@@ -195,12 +195,13 @@ public class LocallyConnected1D extends SameDiffLayer {
 
         SDVariable result = sameDiff.permute(mmulResult,1, 2, 0); // (miniBatch, nOut, outH)
 
-        SDVariable b = sameDiff.zero("bias", new long[] {1, nOut});
         if(hasBias){
-            b = paramTable.get(ConvolutionParamInitializer.BIAS_KEY);
+            SDVariable b = paramTable.get(ConvolutionParamInitializer.BIAS_KEY);
+            SDVariable biasAddedResult = sameDiff.biasAdd(result, b);
+            return activation.asSameDiff("out", sameDiff, biasAddedResult);
+        } else {
+            return activation.asSameDiff("out", sameDiff, result);
         }
-        SDVariable biasAddedResult = sameDiff.biasAdd(result, b);
-        return activation.asSameDiff("out", sameDiff, biasAddedResult);
 
     }
 

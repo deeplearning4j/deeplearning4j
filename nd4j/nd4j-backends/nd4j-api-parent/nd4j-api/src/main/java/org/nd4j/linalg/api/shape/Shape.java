@@ -21,6 +21,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import lombok.NonNull;
 import lombok.val;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
@@ -3474,6 +3475,42 @@ public class Shape {
             return 1L;
         else
             return ArrayUtil.prodLong(shape);
+    }
+
+    /**
+     * Calculate the length of the buffer required to store the given shape with the given strides
+     *
+     * @param shape  Shape of the array
+     * @param stride Strides
+     * @return Length of the buffer
+     */
+    public static long lengthOfBuffer(@NonNull long[] shape, @NonNull long[] stride){
+        Preconditions.checkArgument(shape.length == stride.length, "Shape and strides must be same length: shape %s, stride %s",
+                shape, stride);
+        //Length is simply 1 + the buffer index of the last element
+        long length = 1;
+        for(int i=0; i<shape.length; i++ ){
+            length += (shape[i]-1) * stride[i];
+        }
+        return length;
+    }
+
+    /**
+     * Calculate the length of the buffer required to store the given shape with the given strides
+     *
+     * @param shape  Shape of the array
+     * @param stride Strides
+     * @return Length of the buffer
+     */
+    public static long lengthOfBuffer(@NonNull int[] shape, @NonNull int[] stride){
+        Preconditions.checkArgument(shape.length == stride.length, "Shape and strides must be same length: shape %s, stride %s",
+                shape, stride);
+        //Length is simply 1 + the buffer index of the last element
+        long length = 1;
+        for(int i=0; i<shape.length; i++ ){
+            length += (shape[i]-1) * stride[i];
+        }
+        return length;
     }
 
     public static boolean hasDefaultStridesForShape(INDArray input){

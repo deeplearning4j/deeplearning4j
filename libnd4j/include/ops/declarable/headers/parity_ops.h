@@ -48,7 +48,7 @@ namespace nd4j {
          * 0: optional axis
          */
         #if NOT_EXCLUDED(OP_argmin)
-        DECLARE_REDUCTION_OP(argmin, 1, 1, false, 0, -2);
+        DECLARE_CUSTOM_OP(argmin, 1, 1, false, 0, -2);
         #endif
 
         /**
@@ -229,6 +229,17 @@ namespace nd4j {
          */
         #if NOT_EXCLUDED(OP_scatter_min)
         DECLARE_OP(scatter_min, 3, 1, true);
+        #endif
+
+        /**
+         * This operation scatter "updates" elements into new output array according to given "indices"
+         * Expected arguments:         
+         * indices: array containing elements/slices indexes of output array to put "updates" elements into, the rest output elements will be zeros
+         * updates: array containing elements to be inserted into output array
+         * shape: contains shape of output array
+         */
+        #if NOT_EXCLUDED(OP_scatter_nd)
+        DECLARE_CUSTOM_OP(scatter_nd, 3, 1, false, 0, 0);
         #endif
 
         /**

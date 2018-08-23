@@ -19,6 +19,8 @@
 //
 
 #include <op_boilerplate.h>
+#include <ops/declarable/headers/boolean.h>
+
 #if NOT_EXCLUDED(OP_where_np)
 
 #include <helpers/ShapeUtils.h>
@@ -87,30 +89,19 @@ namespace nd4j {
 
                 REQUIRE_TRUE(block.width() == 1, 0, "Where op takes either 1 or 3 operands, But got %d operands instead", block.width());
 
-                int width = condition->rankOf();
-
-                std::vector<int> dims = ShapeUtils<T>::convertAxisToTadTarget(width, {0});
-
-                NDArrayList<T> list(0, true);
-                int cnt = 0;
-
-                Nd4jLong idx[MAX_RANK];
-                for (int e = 0; e < condition->lengthOf(); e++) {
-                    shape::ind2subC(condition->rankOf(), condition->shapeOf(), e, idx);
-
-                    auto offset = shape::getOffset(0, condition->shapeOf(), condition->stridesOf(), idx, condition->rankOf());
-                    T v = condition->buffer()[offset];
-                    if (v != (T) 0.0f) {
-                        auto array = new NDArray<T>('c', {1, condition->rankOf()});
-                        for (int f = 0; f < condition->rankOf(); f++)
-                            array->putIndexedScalar(f, (T) idx[f]);
-
-                        list.write(cnt++, array);
+                Nd4jLong width = condition->rankOf();
+                nd4j::ops::Where<T> op;
+                std::unique_ptr<ResultSet<T>> res(op.execute({condition}, {}, {}));
+                REQUIRE_OK(res->status());
+                NDArray<T>* whereTrue = res->at(0);
+                for (Nd4jLong outNext = 0; outNext < width; ++outNext) {
+                    auto output = OUTPUT_VARIABLE(outNext);
+                    for (Nd4jLong e = 0; e < output->lengthOf(); ++e) {
+                        (*output)(e) =  (*whereTrue)(e, outNext);
                     }
                 }
-
-                auto result = list.stack();
-                OVERWRITE_RESULT(result);
+//                auto result = list.stack();
+//                OVERWRITE_RESULT(result);
             }
 
             return ND4J_STATUS_OK;
@@ -119,30 +110,27 @@ namespace nd4j {
 
 
         DECLARE_SHAPE_FN(where_np) {
+            auto shapes = SHAPELIST();
+            Nd4jLong *newShape;
             if (block.width() == 3) {
                 auto inShape = inputShape->at(1);
-                Nd4jLong *newshape;
-                COPY_SHAPE(inShape, newshape);
+                COPY_SHAPE(inShape, newShape);
 
-                return SHAPELIST(newshape);
+                shapes->push_back(newShape);
             } else {
-                // FIXME: we can't estimate result here in this case
-                auto inShape = inputShape->at(0);
+                auto condition = INPUT_VARIABLE(0);
 
-                Nd4jLong *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
-
-                newshape[0] = 2;
-                newshape[1] = 10;
-                newshape[2] = 10;
-                newshape[3] = 1;
-                newshape[4] = 1;
-                newshape[5] = 0;
-                newshape[6] = 1;
-                newshape[7] = 99;
-
-                return SHAPELIST(newshape);
+                Nd4jLong numOfTrue = condition->template reduceNumber<simdOps::CountNonZero<T>>();
+                // output shape - a tuple of rank(inShape) 1D tensors with numOfTrue len
+                for (Nd4jLong e = 0; e < condition->rankOf(); ++e) {
+                    Nd4jLong *newShape;
+//                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
+  //                  shape::shapeVector(numOfTrue, newShape);
+                    newShape = ShapeUtils<T>::createVectorShapeInfo(numOfTrue, block.getWorkspace());
+                    shapes->push_back(newShape);
+                }
             }
+            return shapes;
         }
     }
 }

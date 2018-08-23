@@ -17,10 +17,9 @@
 package org.nd4j.imports.TFGraphs;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
@@ -38,6 +37,19 @@ import java.util.*;
 @Slf4j
 @RunWith(Parameterized.class)
 public class TFGraphTestAllSameDiff {
+
+    @Rule
+    public TestWatcher testWatcher = new TestWatcher() {
+
+        @Override
+        protected void starting(Description description){
+            log.info("TFGraphTestAllSameDiff: Starting parameterized test: " + description.getDisplayName());
+        }
+
+        //protected void failed(Throwable e, Description description) {
+        //protected void succeeded(Description description) {
+    };
+
     private Map<String, INDArray> inputs;
     private Map<String, INDArray> predictions;
     private String modelName;
@@ -62,8 +74,6 @@ public class TFGraphTestAllSameDiff {
             "pad/rank1.*",
             "pad/rank2Pone_const10",
             "pad/rank3.*",
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6173
-            "unique.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6177
             "topk/.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6179
@@ -78,8 +88,6 @@ public class TFGraphTestAllSameDiff {
             //https://github.com/deeplearning4j/deeplearning4j/issues/6182
             "zeta.*",
 
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6210
-            "reductions/argmax3,4,5_-1",
             //Not sure what's up here yet:
             "svd/rank2_3,3_noFull_uv"
     };
@@ -97,8 +105,8 @@ public class TFGraphTestAllSameDiff {
 
     @After
     public void tearDown() throws Exception {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(true);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(true);
     }
 
     @Parameterized.Parameters(name="{2}")

@@ -134,6 +134,24 @@ TEST_F(DeclarableOpsTests10, Test_Size_at_1) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Pad_SGO_Test_1) {
+
+    NDArray<double> in({1., 1., 1., 1., 1.});
+//    NDArray<double> pad('c', {1, 2}, {1., 1.});// = Nd4j.create(new double[]{1, 1}, new long[]{1, 2});
+    NDArray<double> pad('c', {1, 2}, {1., 1.});
+//    NDArray<double> value(10.0);
+
+    NDArray<double> exp({10., 1., 1., 1., 1., 1., 10.});
+
+    nd4j::ops::pad<double> op;
+
+    auto res = op.execute({&in, &pad}, {10.0}, {0});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, Unique_SGO_Test_1) {
     NDArray<double> input({3., 4., 3., 1., 3., 0., 2., 4., 2., 4.});
     NDArray<double> expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
@@ -147,4 +165,79 @@ TEST_F(DeclarableOpsTests10, Unique_SGO_Test_1) {
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
     ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
     delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Where_SGO_Test_1) {
+    NDArray<double> input('c', {3, 3}, {1., 0., 0., 1., 1., 0., 1., 1., 1.});
+    //NDArray<double> expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
+    NDArray<double> exp('c', {6, 2}, {0., 0., 1., 0., 1., 1., 2., 0., 2., 1., 2., 2.});
+
+    nd4j::ops::Where<double> op;
+    auto res = op.execute({&input}, {}, {});
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    NDArray<double>* resA = res->at(0);
+
+    ASSERT_TRUE(exp.equalsTo(resA));
+    ASSERT_TRUE(exp.isSameShape(resA));
+//    ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, WhereNP_SGO_Test_1) {
+    NDArray<double> cond3d('c', {2, 2, 2}, {1., 0., 0., 1., 1., 1., 1., 0.});
+//    NDArray<double> expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
+    NDArray<double> exp1({0., 0., 1., 1., 1.});
+    NDArray<double> exp2({0., 1., 0., 0., 1.});
+    NDArray<double> exp3({0., 1., 0., 1., 0.});
+    nd4j::ops::where_np<double> op;
+    auto res = op.execute({&cond3d}, {}, {});
+    ASSERT_TRUE(res->size() == 3);
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    ASSERT_TRUE(exp1.equalsTo(res->at(0)));
+    ASSERT_TRUE(exp2.equalsTo(res->at(1)));
+    ASSERT_TRUE(exp3.equalsTo(res->at(2)));
+    //ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, WhereNP_SGO_Test_2) {
+    NDArray<double> cond2d('c', {3, 5}, {1., 1., 0., 0., 1., 1., 1., 1., 1., 1., 0., 1., 1., 1., 1.});
+//    NDArray<double> expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
+    NDArray<double> exp1({0., 0., 0., 1., 1., 1., 1., 1., 2., 2., 2., 2.});
+    NDArray<double> exp2({0., 1., 4., 0., 1., 2., 3., 4., 1., 2., 3., 4.});
+    nd4j::ops::where_np<double> op;
+    auto res = op.execute({&cond2d}, {}, {});
+    ASSERT_TRUE(res->size() == 2);
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    ASSERT_TRUE(exp1.equalsTo(res->at(0)));
+    ASSERT_TRUE(exp2.equalsTo(res->at(1)));
+    //ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
+    delete res;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, svd_test11) {
+
+    NDArray<double> x('c', {3,3}, {1.,2.,3.,4.,5.,6.,7.,8.,9.});
+    NDArray<double> expS('c', {3});
+    NDArray<double> expU('c', {3,3});
+    NDArray<double> expV('c', {3,3});
+
+    nd4j::ops::svd<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&x}, {}, {0, 1, 16});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *s = results->at(0);
+    NDArray<double> *u = results->at(1);
+    NDArray<double> *v = results->at(2);
+
+    ASSERT_TRUE(expS.isSameShape(s));
+    ASSERT_TRUE(expU.isSameShape(u));
+    ASSERT_TRUE(expV.isSameShape(v));
+
+    delete results;
 }
