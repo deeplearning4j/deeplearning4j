@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
@@ -33,7 +34,10 @@ import java.util.Map;
  * @author Max Pumperla
  */
 @Slf4j
+@Data
 public class KerasMasking extends KerasLayer {
+
+    private double maskingValue;
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
@@ -59,9 +63,9 @@ public class KerasMasking extends KerasLayer {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
-        double maskValue = KerasLayerUtils.getMaskingValueFromConfig(layerConfig, conf);
+        maskingValue = KerasLayerUtils.getMaskingValueFromConfig(layerConfig, conf);
         this.layer = new MaskZeroLayer.Builder()
-                .setMaskValue(maskValue)
+                .setMaskValue(maskingValue)
                 .setUnderlying(new IdentityLayer(this.layerName))
                 .name(this.layerName)
                 .build();

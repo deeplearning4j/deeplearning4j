@@ -48,8 +48,9 @@ public class MaskZeroLayer extends BaseWrapperLayer {
     }
 
 
-    public MaskZeroLayer(Layer underlying) {
+    public MaskZeroLayer(Layer underlying, double maskingValue) {
         this.underlying = underlying;
+        this.maskingValue = maskingValue;
     }
 
 
