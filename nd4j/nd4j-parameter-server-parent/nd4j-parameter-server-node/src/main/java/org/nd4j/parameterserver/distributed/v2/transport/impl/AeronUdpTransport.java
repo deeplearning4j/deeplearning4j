@@ -16,6 +16,7 @@
 
 package org.nd4j.parameterserver.distributed.v2.transport.impl;
 
+import com.google.common.math.IntMath;
 import io.aeron.Aeron;
 import io.aeron.FragmentAssembler;
 import io.aeron.Publication;
@@ -31,6 +32,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.SleepingIdleStrategy;
 import org.jetbrains.annotations.NotNull;
 import org.nd4j.base.Preconditions;
+import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
@@ -44,6 +46,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static java.lang.System.setProperty;
 
 /**
  * This class is a UDP implementation of Transport interface, based on Aeron
@@ -72,6 +76,8 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     // TODO: move this to singleton holder
     protected MediaDriver driver;
 
+    private static final long DEFAULT_TERM_BUFFER_PROP = IntMath.pow(2,25); //32MB
+
     // this is intermediate buffer for incoming messages
     protected BlockingQueue<VoidMessage> messageQueue = new LinkedTransferQueue<>();
 
@@ -84,6 +90,23 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
         Preconditions.checkArgument(ownPort > 0 && ownPort < 65536, "Own UDP port should be positive value in range of 1 and 65536");
         Preconditions.checkArgument(rootPort > 0 && rootPort < 65536, "Master node UDP port should be positive value in range of 1 and 65536");
+
+        setProperty("aeron.client.liveness.timeout", "30000000000");
+
+        // setting this property to try to increase maxmessage length, not sure if it still works though
+        //Term buffer length: must be power of 2 and in range 64kB to 1GB: https://github.com/real-logic/aeron/wiki/Configuration-Options
+        String p = System.getProperty(ND4JSystemProperties.AERON_TERM_BUFFER_PROP);
+        if(p == null){
+            System.setProperty(ND4JSystemProperties.AERON_TERM_BUFFER_PROP, String.valueOf(DEFAULT_TERM_BUFFER_PROP));
+        }
+
+
+        context = new Aeron.Context().driverTimeoutMs(30000)
+                .keepAliveInterval(100000000);
+
+        driver = MediaDriver.launchEmbedded();
+        context.aeronDirectoryName(driver.aeronDirectoryName());
+        aeron = Aeron.connect(context);
     }
 
     // this executor service han
@@ -152,6 +175,10 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         // deserialize message
         val message = VoidMessage.fromBytes(data);
 
+        // we're checking if this is known connection or not, and add it if not
+        if (!remoteConnections.containsKey(message.getOriginatorId()))
+            addConnection(message.getOriginatorId());
+
         // we're just putting deserialized message into the buffer
         try {
             messageQueue.put(message);
@@ -159,6 +186,24 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             // :(
             throw new RuntimeException(e);
         }
+    }
+
+    protected synchronized void addConnection(@NonNull String ipAndPort) {
+        if (remoteConnections.containsKey(ipAndPort))
+            return;
+
+        val v = aeron.addPublication(ipAndPort, voidConfiguration.getStreamId());
+
+        val hash = HashUtil.getLongHash(ipAndPort);
+
+        val rc = RemoteConnection.builder()
+                .ip(ipAndPort)
+                .port(voidConfiguration.getUnicastPort())
+                .longHash(hash)
+                .publication(v)
+                .build();
+
+        remoteConnections.put(ipAndPort, rc);
     }
 
     @Override
@@ -170,29 +215,13 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     public synchronized void launch() {
         if (!masterMode) {
             // we set up aeron  connection to master first
-            val id = mesh.get().getRootNode().getId();
-            val port = voidConfiguration.getUnicastPort();
-
-            // we add connection to the root node
-            val v = aeron.addPublication(this.rootId, voidConfiguration.getStreamId());
-
-            val hash = HashUtil.getLongHash(id + ":" + port);
-
-            val rc = RemoteConnection.builder()
-                    .ip(id)
-                    .port(voidConfiguration.getUnicastPort())
-                    .longHash(hash)
-                    .publication(v)
-                    .build();
-
-            remoteConnections.put(id, rc);
+            addConnection(this.rootId);
 
             // add own subscription
             createSubscription();
+        }
 
-            super.launch();
-        } else
-            log.warn("launch() was called on master node!");
+        super.launch();
     }
 
     @Override
@@ -229,13 +258,13 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             // if response != OK we must do something with response
             switch (status) {
                 case MAX_POSITION_EXCEEDED:
-                case NOT_CONNECTED:
                 case CLOSED: {
                     // TODO: here we should properly handle reconnection
-                    log.warn("Upstream connection was closed");
-                    break;
+                    log.warn("Upstream connection was closed: [{}]", id);
+                    return;
                 }
                 case ADMIN_ACTION:
+                case NOT_CONNECTED:
                 case BACK_PRESSURED: {
                     try {
                         // in case of backpressure we're just sleeping for a while, and message out again

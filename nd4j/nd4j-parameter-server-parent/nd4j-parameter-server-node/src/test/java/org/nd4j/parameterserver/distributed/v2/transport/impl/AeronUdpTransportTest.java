@@ -18,13 +18,16 @@ public class AeronUdpTransportTest {
     //@Ignore
     public void testBasic_Connection_1() throws Exception {
         // we definitely want to shutdown all transports after test, to avoid issues with shmem
-        try(val transportA = new AeronUdpTransport(IP, ROOT_PORT, IP, ROOT_PORT, VoidConfiguration.builder().build());  val transportB = new AeronUdpTransport(IP, 40781, IP, ROOT_PORT, VoidConfiguration.builder().build())) {
+        try(val transportA = new AeronUdpTransport(IP, ROOT_PORT, IP, ROOT_PORT, VoidConfiguration.builder().build());  val transportB = new AeronUdpTransport(IP, 40782, IP, ROOT_PORT, VoidConfiguration.builder().build())) {
             transportA.launchAsMaster();
+
+            Thread.sleep(50);
+
             transportB.launch();
 
-            Thread.sleep(100);
+            Thread.sleep(50);
 
-            assertEquals(2, transportA.getMesh());
+            assertEquals(2, transportA.getMesh().totalNodes());
             assertEquals(transportA.getMesh(), transportB.getMesh());
         }
     }
