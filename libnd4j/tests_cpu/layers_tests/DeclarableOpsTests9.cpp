@@ -1246,8 +1246,8 @@ TEST_F(DeclarableOpsTests9, cumprod_bp_check_1) {
 
     x.linspace(1);
 
-    const OpArgsHolder<double> argsHolderFF({&x},         {}, {});
-    const OpArgsHolder<double> argsHolderBP({&x, &gradO}, {}, {});
+    const OpArgsHolder<double> argsHolderFF({&x},         {}, {0, 0});
+    const OpArgsHolder<double> argsHolderBP({&x, &gradO}, {}, {0, 0});
 
     nd4j::ops::cumprod<double> opFF;
     nd4j::ops::cumprod_bp<double> opBP;
@@ -1418,37 +1418,6 @@ TEST_F(DeclarableOpsTests9, cumprod_test2) {
     const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 1, 1, 1}, {1, 1},GradCheck::MEAN);
 
     ASSERT_TRUE(isGradCorrect);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, cumprod_test3) {
-    
-    NDArray<double> inputC('c', {2, 2});
-    NDArray<double> axis(1.);
-
-//    NDArray<double> expFF('c', {3, 5}, {1.,   2.,   6.,    24.,   120., 6.,  42., 336.,  3024., 30240.,11., 132.,1716., 24024.,360360.});
-//    NDArray<double> expTF('c', {3, 5}, {1, 1, 2, 6, 24,1, 6, 42, 336, 3024,1, 11, 132, 1716, 24024});
-
-//    NDArray<double> expFT('c', {3, 5}, {120, 120, 60, 20, 5,30240, 5040, 720, 90, 10,360360, 32760, 2730, 210, 15});    //+++
-//    NDArray<double> expTT('c', {3, 5}, {120, 60, 20, 5, 1,5040, 720, 90, 10, 1,32760, 2730, 210, 15, 1});
-    NDArray<double> gradO('c', {2, 2});
-
-    int exclusive, reverse;    
-
-    //************************************//
-    exclusive = 0; reverse = 0;
-    inputC.linspace(1);
-//    const OpArgsHolder<double> argsHolderFF({&inputC, &axis}, {}, {exclusive, reverse});
-//    const OpArgsHolder<double> argsHolderBP({&inputC, &axis, &gradO}, {}, {exclusive, reverse});
-
-    nd4j::ops::cumprod<double> opFF;
-//    nd4j::ops::cumprod_bp<double> opBP;
-    auto res = opFF.execute({&inputC, &axis}, {}, {exclusive, reverse});
-//    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
-    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
-    res->at(0)->printIndexedBuffer("Cumulative product of 4 ints");
-//    ASSERT_TRUE(isGradCorrect);
-    delete res;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2154,17 +2123,11 @@ TEST_F(DeclarableOpsTests9, Dynamic_Partition_BP_1) {
 
     nd4j::ops::dynamic_partition<double> op1;
     auto res1 = op1.execute({&x, &y}, {}, {3});
-    for (size_t e = 0; e < res1->size(); ++e) {
-        res1->at(e)->printIndexedBuffer("RES1");
-        res1->at(e)->printShapeInfo("RES1");
-    }
 
     nd4j::ops::dynamic_partition_bp<double> op2;
     auto res2 = op2.execute({&x, &y, res1->at(0), res1->at(1), res1->at(2)}, {}, {3});
     ASSERT_TRUE(res2->status() == ND4J_STATUS_OK);
     ASSERT_TRUE(res2->size() == 2);
-    res2->at(0)->printIndexedBuffer("PARTITION");
-    res2->at(1)->printIndexedBuffer("INDICES");
     delete res1;
     delete res2;
 }

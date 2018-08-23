@@ -32,6 +32,16 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
+/**
+ * Dropout layer. This layer simply applies dropout at training time, and passes activations through unmodified at test
+ * time. Internally, this uses an {@link IDropout} instance. See the IDropout instances for details:<br>
+ * {@link Dropout}<br>
+ * {@link org.nd4j.linalg.api.ops.random.impl.AlphaDropOut}<br>
+ * {@link org.deeplearning4j.nn.conf.dropout.GaussianDropout}<br>
+ * {@link org.deeplearning4j.nn.conf.dropout.GaussianNoise}<br>
+ * {@link org.deeplearning4j.nn.conf.dropout.SpatialDropout}
+ *
+ */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
@@ -117,10 +127,19 @@ public class DropoutLayer extends FeedForwardLayer {
     @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<DropoutLayer.Builder> {
 
+        /**
+         * Create a dropout layer with standard {@link Dropout}, with the specified probability of retaining the
+         * input activation. See {@link Dropout} for the full details
+         *
+         * @param dropout Activation retain probability.
+         */
         public Builder(double dropout){
             this.dropOut(new Dropout(dropout));
         }
 
+        /**
+         * @param dropout Specified {@link IDropout} instance for the dropout layer
+         */
         public Builder(IDropout dropout){
             this.dropOut(dropout);
         }
