@@ -124,8 +124,13 @@ ${OPS_SOURCES})
 
 add_executable(runtests ${TEST_SOURCES})
 
-add_executable(GraphServer ../../server/GraphServer.cpp ../../include/graph/generated/graph.grpc.fb.cc)
+find_package(GRPC REQUIRED)
+if (${GRPC_FOUND})
+    message("gRPC found, building GraphServer")
+    add_executable(GraphServer ../../server/GraphServer.cpp ../../include/graph/generated/graph.grpc.fb.cc)
+    target_link_libraries(GraphServer interm ${GRPC_LIBRARIES})
+endif()
 
 target_link_libraries(runtests gtest gtest_main interm)
 
-target_link_libraries(GraphServer interm ${GRPC_LIBRARIES})
+
