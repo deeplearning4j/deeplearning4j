@@ -19,6 +19,7 @@
 //
 
 
+#include <grpc++/grpc++.h>
 #include <NDArray.h>
 #include <graph/Graph.h>
 #include <ops/declarable/CustomOperations.h>
