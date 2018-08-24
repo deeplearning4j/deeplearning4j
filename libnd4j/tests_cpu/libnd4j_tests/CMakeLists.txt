@@ -124,7 +124,7 @@ ${OPS_SOURCES})
 
 add_executable(runtests ${TEST_SOURCES})
 
-add_executable(GraphServer ../../server/GraphServer.cpp)
+add_executable(GraphServer ../../server/GraphServer.cpp ../../include/graph/generated/graph.grpc.fb.cc)
 
 target_link_libraries(runtests gtest gtest_main interm)
 

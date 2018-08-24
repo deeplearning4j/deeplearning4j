@@ -18,21 +18,26 @@ public final class FlatInferenceRequest extends Table {
   public nd4j.graph.FlatVariable variables(int j) { return variables(new nd4j.graph.FlatVariable(), j); }
   public nd4j.graph.FlatVariable variables(nd4j.graph.FlatVariable obj, int j) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int variablesLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
+  public nd4j.graph.FlatConfiguration configuration() { return configuration(new nd4j.graph.FlatConfiguration()); }
+  public nd4j.graph.FlatConfiguration configuration(nd4j.graph.FlatConfiguration obj) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
 
   public static int createFlatInferenceRequest(FlatBufferBuilder builder,
       long id,
-      int variablesOffset) {
-    builder.startObject(2);
+      int variablesOffset,
+      int configurationOffset) {
+    builder.startObject(3);
     FlatInferenceRequest.addId(builder, id);
+    FlatInferenceRequest.addConfiguration(builder, configurationOffset);
     FlatInferenceRequest.addVariables(builder, variablesOffset);
     return FlatInferenceRequest.endFlatInferenceRequest(builder);
   }
 
-  public static void startFlatInferenceRequest(FlatBufferBuilder builder) { builder.startObject(2); }
+  public static void startFlatInferenceRequest(FlatBufferBuilder builder) { builder.startObject(3); }
   public static void addId(FlatBufferBuilder builder, long id) { builder.addLong(0, id, 0L); }
   public static void addVariables(FlatBufferBuilder builder, int variablesOffset) { builder.addOffset(1, variablesOffset, 0); }
   public static int createVariablesVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startVariablesVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static void addConfiguration(FlatBufferBuilder builder, int configurationOffset) { builder.addOffset(2, configurationOffset, 0); }
   public static int endFlatInferenceRequest(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

@@ -45,8 +45,20 @@ class FlatInferenceRequest(object):
             return self._tab.VectorLen(o)
         return 0
 
-def FlatInferenceRequestStart(builder): builder.StartObject(2)
+    # FlatInferenceRequest
+    def Configuration(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
+        if o != 0:
+            x = self._tab.Indirect(o + self._tab.Pos)
+            from .FlatConfiguration import FlatConfiguration
+            obj = FlatConfiguration()
+            obj.Init(self._tab.Bytes, x)
+            return obj
+        return None
+
+def FlatInferenceRequestStart(builder): builder.StartObject(3)
 def FlatInferenceRequestAddId(builder, id): builder.PrependInt64Slot(0, id, 0)
 def FlatInferenceRequestAddVariables(builder, variables): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(variables), 0)
 def FlatInferenceRequestStartVariablesVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def FlatInferenceRequestAddConfiguration(builder, configuration): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(configuration), 0)
 def FlatInferenceRequestEnd(builder): return builder.EndObject()

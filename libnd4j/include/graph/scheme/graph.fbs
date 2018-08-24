@@ -13,4 +13,26 @@ table FlatGraph {
     configuration:FlatConfiguration; // optional execution configuration
 }
 
+
+table FlatDropRequest {
+    id:long; // id of the graph to be droppoed
+}
+
+table FlatInferenceRequest {
+    id:long; // id of the graph to be executed
+    variables:[FlatVariable]; // input variables to be set as input
+    configuration:FlatConfiguration; // optional configuration for this inference run
+}
+
+table FlatResponse {
+    status:int; // status of operation
+}
+
+
+rpc_service GraphInferenceServer {
+    RegisterGraph(FlatGraph):FlatResponse;
+    ForgetGraph(FlatDropRequest):FlatResponse;
+    InferenceRequest(FlatInferenceRequest):FlatResponse (streaming: "server");
+}
+
 root_type FlatGraph;

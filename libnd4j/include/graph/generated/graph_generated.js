@@ -245,5 +245,270 @@ nd4j.graph.FlatGraph.finishFlatGraphBuffer = function(builder, offset) {
   builder.finish(offset);
 };
 
+/**
+ * @constructor
+ */
+nd4j.graph.FlatDropRequest = function() {
+  /**
+   * @type {flatbuffers.ByteBuffer}
+   */
+  this.bb = null;
+
+  /**
+   * @type {number}
+   */
+  this.bb_pos = 0;
+};
+
+/**
+ * @param {number} i
+ * @param {flatbuffers.ByteBuffer} bb
+ * @returns {nd4j.graph.FlatDropRequest}
+ */
+nd4j.graph.FlatDropRequest.prototype.__init = function(i, bb) {
+  this.bb_pos = i;
+  this.bb = bb;
+  return this;
+};
+
+/**
+ * @param {flatbuffers.ByteBuffer} bb
+ * @param {nd4j.graph.FlatDropRequest=} obj
+ * @returns {nd4j.graph.FlatDropRequest}
+ */
+nd4j.graph.FlatDropRequest.getRootAsFlatDropRequest = function(bb, obj) {
+  return (obj || new nd4j.graph.FlatDropRequest).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+};
+
+/**
+ * @returns {flatbuffers.Long}
+ */
+nd4j.graph.FlatDropRequest.prototype.id = function() {
+  var offset = this.bb.__offset(this.bb_pos, 4);
+  return offset ? this.bb.readInt64(this.bb_pos + offset) : this.bb.createLong(0, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ */
+nd4j.graph.FlatDropRequest.startFlatDropRequest = function(builder) {
+  builder.startObject(1);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Long} id
+ */
+nd4j.graph.FlatDropRequest.addId = function(builder, id) {
+  builder.addFieldInt64(0, id, builder.createLong(0, 0));
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @returns {flatbuffers.Offset}
+ */
+nd4j.graph.FlatDropRequest.endFlatDropRequest = function(builder) {
+  var offset = builder.endObject();
+  return offset;
+};
+
+/**
+ * @constructor
+ */
+nd4j.graph.FlatInferenceRequest = function() {
+  /**
+   * @type {flatbuffers.ByteBuffer}
+   */
+  this.bb = null;
+
+  /**
+   * @type {number}
+   */
+  this.bb_pos = 0;
+};
+
+/**
+ * @param {number} i
+ * @param {flatbuffers.ByteBuffer} bb
+ * @returns {nd4j.graph.FlatInferenceRequest}
+ */
+nd4j.graph.FlatInferenceRequest.prototype.__init = function(i, bb) {
+  this.bb_pos = i;
+  this.bb = bb;
+  return this;
+};
+
+/**
+ * @param {flatbuffers.ByteBuffer} bb
+ * @param {nd4j.graph.FlatInferenceRequest=} obj
+ * @returns {nd4j.graph.FlatInferenceRequest}
+ */
+nd4j.graph.FlatInferenceRequest.getRootAsFlatInferenceRequest = function(bb, obj) {
+  return (obj || new nd4j.graph.FlatInferenceRequest).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+};
+
+/**
+ * @returns {flatbuffers.Long}
+ */
+nd4j.graph.FlatInferenceRequest.prototype.id = function() {
+  var offset = this.bb.__offset(this.bb_pos, 4);
+  return offset ? this.bb.readInt64(this.bb_pos + offset) : this.bb.createLong(0, 0);
+};
+
+/**
+ * @param {number} index
+ * @param {nd4j.graph.FlatVariable=} obj
+ * @returns {nd4j.graph.FlatVariable}
+ */
+nd4j.graph.FlatInferenceRequest.prototype.variables = function(index, obj) {
+  var offset = this.bb.__offset(this.bb_pos, 6);
+  return offset ? (obj || new nd4j.graph.FlatVariable).__init(this.bb.__indirect(this.bb.__vector(this.bb_pos + offset) + index * 4), this.bb) : null;
+};
+
+/**
+ * @returns {number}
+ */
+nd4j.graph.FlatInferenceRequest.prototype.variablesLength = function() {
+  var offset = this.bb.__offset(this.bb_pos, 6);
+  return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+};
+
+/**
+ * @param {nd4j.graph.FlatConfiguration=} obj
+ * @returns {nd4j.graph.FlatConfiguration|null}
+ */
+nd4j.graph.FlatInferenceRequest.prototype.configuration = function(obj) {
+  var offset = this.bb.__offset(this.bb_pos, 8);
+  return offset ? (obj || new nd4j.graph.FlatConfiguration).__init(this.bb.__indirect(this.bb_pos + offset), this.bb) : null;
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ */
+nd4j.graph.FlatInferenceRequest.startFlatInferenceRequest = function(builder) {
+  builder.startObject(3);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Long} id
+ */
+nd4j.graph.FlatInferenceRequest.addId = function(builder, id) {
+  builder.addFieldInt64(0, id, builder.createLong(0, 0));
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} variablesOffset
+ */
+nd4j.graph.FlatInferenceRequest.addVariables = function(builder, variablesOffset) {
+  builder.addFieldOffset(1, variablesOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {Array.<flatbuffers.Offset>} data
+ * @returns {flatbuffers.Offset}
+ */
+nd4j.graph.FlatInferenceRequest.createVariablesVector = function(builder, data) {
+  builder.startVector(4, data.length, 4);
+  for (var i = data.length - 1; i >= 0; i--) {
+    builder.addOffset(data[i]);
+  }
+  return builder.endVector();
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {number} numElems
+ */
+nd4j.graph.FlatInferenceRequest.startVariablesVector = function(builder, numElems) {
+  builder.startVector(4, numElems, 4);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} configurationOffset
+ */
+nd4j.graph.FlatInferenceRequest.addConfiguration = function(builder, configurationOffset) {
+  builder.addFieldOffset(2, configurationOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @returns {flatbuffers.Offset}
+ */
+nd4j.graph.FlatInferenceRequest.endFlatInferenceRequest = function(builder) {
+  var offset = builder.endObject();
+  return offset;
+};
+
+/**
+ * @constructor
+ */
+nd4j.graph.FlatResponse = function() {
+  /**
+   * @type {flatbuffers.ByteBuffer}
+   */
+  this.bb = null;
+
+  /**
+   * @type {number}
+   */
+  this.bb_pos = 0;
+};
+
+/**
+ * @param {number} i
+ * @param {flatbuffers.ByteBuffer} bb
+ * @returns {nd4j.graph.FlatResponse}
+ */
+nd4j.graph.FlatResponse.prototype.__init = function(i, bb) {
+  this.bb_pos = i;
+  this.bb = bb;
+  return this;
+};
+
+/**
+ * @param {flatbuffers.ByteBuffer} bb
+ * @param {nd4j.graph.FlatResponse=} obj
+ * @returns {nd4j.graph.FlatResponse}
+ */
+nd4j.graph.FlatResponse.getRootAsFlatResponse = function(bb, obj) {
+  return (obj || new nd4j.graph.FlatResponse).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+};
+
+/**
+ * @returns {number}
+ */
+nd4j.graph.FlatResponse.prototype.status = function() {
+  var offset = this.bb.__offset(this.bb_pos, 4);
+  return offset ? this.bb.readInt32(this.bb_pos + offset) : 0;
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ */
+nd4j.graph.FlatResponse.startFlatResponse = function(builder) {
+  builder.startObject(1);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {number} status
+ */
+nd4j.graph.FlatResponse.addStatus = function(builder, status) {
+  builder.addFieldInt32(0, status, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @returns {flatbuffers.Offset}
+ */
+nd4j.graph.FlatResponse.endFlatResponse = function(builder) {
+  var offset = builder.endObject();
+  return offset;
+};
+
 // Exports for Node.js and RequireJS
 this.nd4j = nd4j;

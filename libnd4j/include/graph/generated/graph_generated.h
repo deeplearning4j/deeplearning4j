@@ -18,6 +18,12 @@ namespace graph {
 
 struct FlatGraph;
 
+struct FlatDropRequest;
+
+struct FlatInferenceRequest;
+
+struct FlatResponse;
+
 struct FlatGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_ID = 4,
@@ -119,6 +125,161 @@ inline flatbuffers::Offset<FlatGraph> CreateFlatGraphDirect(
       nodes ? _fbb.CreateVector<flatbuffers::Offset<nd4j::graph::FlatNode>>(*nodes) : 0,
       outputs ? _fbb.CreateVector<flatbuffers::Offset<nd4j::graph::IntPair>>(*outputs) : 0,
       configuration);
+}
+
+struct FlatDropRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_ID = 4
+  };
+  int64_t id() const {
+    return GetField<int64_t>(VT_ID, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int64_t>(verifier, VT_ID) &&
+           verifier.EndTable();
+  }
+};
+
+struct FlatDropRequestBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_id(int64_t id) {
+    fbb_.AddElement<int64_t>(FlatDropRequest::VT_ID, id, 0);
+  }
+  FlatDropRequestBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  FlatDropRequestBuilder &operator=(const FlatDropRequestBuilder &);
+  flatbuffers::Offset<FlatDropRequest> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<FlatDropRequest>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<FlatDropRequest> CreateFlatDropRequest(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int64_t id = 0) {
+  FlatDropRequestBuilder builder_(_fbb);
+  builder_.add_id(id);
+  return builder_.Finish();
+}
+
+struct FlatInferenceRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_ID = 4,
+    VT_VARIABLES = 6,
+    VT_CONFIGURATION = 8
+  };
+  int64_t id() const {
+    return GetField<int64_t>(VT_ID, 0);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<nd4j::graph::FlatVariable>> *variables() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<nd4j::graph::FlatVariable>> *>(VT_VARIABLES);
+  }
+  const nd4j::graph::FlatConfiguration *configuration() const {
+    return GetPointer<const nd4j::graph::FlatConfiguration *>(VT_CONFIGURATION);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int64_t>(verifier, VT_ID) &&
+           VerifyOffset(verifier, VT_VARIABLES) &&
+           verifier.Verify(variables()) &&
+           verifier.VerifyVectorOfTables(variables()) &&
+           VerifyOffset(verifier, VT_CONFIGURATION) &&
+           verifier.VerifyTable(configuration()) &&
+           verifier.EndTable();
+  }
+};
+
+struct FlatInferenceRequestBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_id(int64_t id) {
+    fbb_.AddElement<int64_t>(FlatInferenceRequest::VT_ID, id, 0);
+  }
+  void add_variables(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<nd4j::graph::FlatVariable>>> variables) {
+    fbb_.AddOffset(FlatInferenceRequest::VT_VARIABLES, variables);
+  }
+  void add_configuration(flatbuffers::Offset<nd4j::graph::FlatConfiguration> configuration) {
+    fbb_.AddOffset(FlatInferenceRequest::VT_CONFIGURATION, configuration);
+  }
+  FlatInferenceRequestBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  FlatInferenceRequestBuilder &operator=(const FlatInferenceRequestBuilder &);
+  flatbuffers::Offset<FlatInferenceRequest> Finish() {
+    const auto end = fbb_.EndTable(start_, 3);
+    auto o = flatbuffers::Offset<FlatInferenceRequest>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<FlatInferenceRequest> CreateFlatInferenceRequest(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int64_t id = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<nd4j::graph::FlatVariable>>> variables = 0,
+    flatbuffers::Offset<nd4j::graph::FlatConfiguration> configuration = 0) {
+  FlatInferenceRequestBuilder builder_(_fbb);
+  builder_.add_id(id);
+  builder_.add_configuration(configuration);
+  builder_.add_variables(variables);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<FlatInferenceRequest> CreateFlatInferenceRequestDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int64_t id = 0,
+    const std::vector<flatbuffers::Offset<nd4j::graph::FlatVariable>> *variables = nullptr,
+    flatbuffers::Offset<nd4j::graph::FlatConfiguration> configuration = 0) {
+  return nd4j::graph::CreateFlatInferenceRequest(
+      _fbb,
+      id,
+      variables ? _fbb.CreateVector<flatbuffers::Offset<nd4j::graph::FlatVariable>>(*variables) : 0,
+      configuration);
+}
+
+struct FlatResponse FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_STATUS = 4
+  };
+  int32_t status() const {
+    return GetField<int32_t>(VT_STATUS, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_STATUS) &&
+           verifier.EndTable();
+  }
+};
+
+struct FlatResponseBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_status(int32_t status) {
+    fbb_.AddElement<int32_t>(FlatResponse::VT_STATUS, status, 0);
+  }
+  FlatResponseBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  FlatResponseBuilder &operator=(const FlatResponseBuilder &);
+  flatbuffers::Offset<FlatResponse> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<FlatResponse>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<FlatResponse> CreateFlatResponse(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t status = 0) {
+  FlatResponseBuilder builder_(_fbb);
+  builder_.add_status(status);
+  return builder_.Finish();
 }
 
 inline const nd4j::graph::FlatGraph *GetFlatGraph(const void *buf) {

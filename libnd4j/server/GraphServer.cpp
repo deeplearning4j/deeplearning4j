@@ -22,6 +22,25 @@
 #include <graph/Graph.h>
 #include <ops/declarable/CustomOperations.h>
 
+#include <graph/generated/graph.grpc.fb.h>
+
+namespace nd4j {
+    namespace graph {
+        class GraphInferenceServerImpl final : public GraphInferenceServer::Service {
+            virtual grpc::Status RegisterGraph( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatGraph> *request_msg, flatbuffers::grpc::Message<FlatResponse> *response_msg) {
+                return grpc::Status::OK();
+            }
+
+            virtual grpc::Status ForgetGraph( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatDropRequest> *request_msg, flatbuffers::grpc::Message<FlatResponse> *response_msg) {
+                return grpc::Status::OK();
+            }
+
+            virtual grpc::Status InferenceRequest( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatInferenceRequest> *request_msg, flatbuffers::grpc::Message<FlatResponse> *response_msg) {
+                return grpc::Status::OK();
+            }
+        }
+    }
+}
 
 int main() {
     /**
