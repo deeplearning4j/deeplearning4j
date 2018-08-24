@@ -128,4 +128,4 @@ add_executable(GraphServer ../../server/GraphServer.cpp ../../include/graph/gene
 
 target_link_libraries(runtests gtest gtest_main interm)
 
-target_link_libraries(GraphServer interm)
+target_link_libraries(GraphServer interm ${GRPC_LIBRARIES})
