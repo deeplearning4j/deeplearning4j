@@ -139,7 +139,7 @@ class ScatterHelper {
                 std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
 
 // #pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) // causes known openMP asan bug !
-#pragma omp parallel for schedule(guided)
+// #pragma omp parallel for schedule(guided)
                 for(Nd4jLong i = 0; i < indLen; ++i) {                                       
 
                     NDArray<T> outSubArr = output(indices(i), std::vector<int>({0}));

@@ -1276,23 +1276,6 @@ TEST_F(ParityOpsTests, scatterND_sub_test5) {
 }
 
 
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ////////////////////////////////////////////////////////////////////////
 TEST_F(ParityOpsTests, scatterND_update_test1) {    
     
