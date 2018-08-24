@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
 project(dev_tests)
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../cmake" ${CMAKE_MODULE_PATH})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../lib/googletest-release-1.8.0 ${CMAKE_CURRENT_BINARY_DIR}/lib/googletest-release-1.8.0)
 set(gtest_SOURCE_DIR ../lib/googletest-release-1.8.0)
 
