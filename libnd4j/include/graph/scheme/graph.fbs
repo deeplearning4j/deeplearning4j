@@ -2,7 +2,7 @@ include "node.fbs";
 include "config.fbs";
 include "variable.fbs";
 include "utils.fbs";
-include "result.fbs"
+include "result.fbs";
 
 namespace nd4j.graph;
 
