@@ -338,7 +338,7 @@
         <failIfNoTests>false</failIfNoTests>
         <hadoop.version>2.2.0
         </hadoop.version>  <!-- Hadoop version used by Spark 1.6.3 and 2.2.1 (and likely others) -->
-        <spark.version>1.6.3</spark.version>
+        <spark.version>2.1.0</spark.version>
         <camel.version>2.16.3</camel.version>
         <zookeeper.version>3.4.6</zookeeper.version>
         <agrona.version>0.5.4</agrona.version>

@@ -115,6 +115,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_boolean_xor.class,
         float_boolean_not.class,
         float_percentile.class,
+        float_tf_atan2.class,
         float_conv1d.class,
         float_conv1d_bp.class,
         float_conv2d.class,
@@ -219,6 +220,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_scatter_upd.class,
         float_scatter_max.class,
         float_scatter_min.class,
+        float_scatter_nd.class,
         float_fill_as.class,
         float_rint.class,
         float_unique.class,
@@ -266,7 +268,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_log_poison_loss.class,
         float_normalize_moments.class,
         float_sufficient_statistics.class,
-        float_tf_atan2.class,
         float_weighted_cross_entropy_with_logits.class,
         float_dropout.class,
         float_bincount.class,
@@ -487,6 +488,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_boolean_xor.class,
         half_boolean_not.class,
         half_percentile.class,
+        half_tf_atan2.class,
         half_conv1d.class,
         half_conv1d_bp.class,
         half_conv2d.class,
@@ -591,6 +593,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_scatter_upd.class,
         half_scatter_max.class,
         half_scatter_min.class,
+        half_scatter_nd.class,
         half_fill_as.class,
         half_rint.class,
         half_unique.class,
@@ -638,7 +641,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_log_poison_loss.class,
         half_normalize_moments.class,
         half_sufficient_statistics.class,
-        half_tf_atan2.class,
         half_weighted_cross_entropy_with_logits.class,
         half_dropout.class,
         half_bincount.class,
@@ -859,6 +861,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_boolean_xor.class,
         double_boolean_not.class,
         double_percentile.class,
+        double_tf_atan2.class,
         double_conv1d.class,
         double_conv1d_bp.class,
         double_conv2d.class,
@@ -963,6 +966,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_scatter_upd.class,
         double_scatter_max.class,
         double_scatter_min.class,
+        double_scatter_nd.class,
         double_fill_as.class,
         double_rint.class,
         double_unique.class,
@@ -1010,7 +1014,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_log_poison_loss.class,
         double_normalize_moments.class,
         double_sufficient_statistics.class,
-        double_tf_atan2.class,
         double_weighted_cross_entropy_with_logits.class,
         double_dropout.class,
         double_bincount.class,
@@ -23135,6 +23138,56 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
 //         #endif
+
+
+        /**
+         * Special atan2 op impl for TF's args order
+         * \tparam T
+         */
+//         #if NOT_EXCLUDED(OP_tf_atan2)
+        @Name("nd4j::ops::tf_atan2<float>") public static class float_tf_atan2 extends FloatBroadcastableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_tf_atan2(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_tf_atan2(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_tf_atan2 position(long position) {
+                return (float_tf_atan2)super.position(position);
+            }
+        
+                                                                                    public float_tf_atan2() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                }
+        @Name("nd4j::ops::tf_atan2<float16>") public static class half_tf_atan2 extends HalfBroadcastableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_tf_atan2(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_tf_atan2(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_tf_atan2 position(long position) {
+                return (half_tf_atan2)super.position(position);
+            }
+        
+                                                                                    public half_tf_atan2() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                }
+        @Name("nd4j::ops::tf_atan2<double>") public static class double_tf_atan2 extends DoubleBroadcastableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_tf_atan2(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_tf_atan2(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_tf_atan2 position(long position) {
+                return (double_tf_atan2)super.position(position);
+            }
+        
+                                                                                    public double_tf_atan2() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                }
+//         #endif
     
 
 
@@ -28962,7 +29015,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * 0: optional axis
          */
 //         #if NOT_EXCLUDED(OP_argmin)
-        @Name("nd4j::ops::argmin<float>") public static class float_argmin extends FloatDeclarableReductionOp {
+        @Name("nd4j::ops::argmin<float>") public static class float_argmin extends FloatDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public float_argmin(Pointer p) { super(p); }
@@ -28975,8 +29028,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         
                                                                                     public float_argmin() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
-        @Name("nd4j::ops::argmin<float16>") public static class half_argmin extends HalfDeclarableReductionOp {
+        @Name("nd4j::ops::argmin<float16>") public static class half_argmin extends HalfDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public half_argmin(Pointer p) { super(p); }
@@ -28989,8 +29043,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         
                                                                                     public half_argmin() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
-        @Name("nd4j::ops::argmin<double>") public static class double_argmin extends DoubleDeclarableReductionOp {
+        @Name("nd4j::ops::argmin<double>") public static class double_argmin extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public double_argmin(Pointer p) { super(p); }
@@ -29003,6 +29058,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         
                                                                                     public double_argmin() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
 //         #endif
 
@@ -29929,6 +29985,61 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                     private native void allocate();
                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
+//         #endif
+
+        /**
+         * This operation scatter "updates" elements into new output array according to given "indices"
+         * Expected arguments:         
+         * indices: array containing elements/slices indexes of output array to put "updates" elements into, the rest output elements will be zeros
+         * updates: array containing elements to be inserted into output array
+         * shape: contains shape of output array
+         */
+//         #if NOT_EXCLUDED(OP_scatter_nd)
+        @Name("nd4j::ops::scatter_nd<float>") public static class float_scatter_nd extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_scatter_nd(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_scatter_nd(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_scatter_nd position(long position) {
+                return (float_scatter_nd)super.position(position);
+            }
+        
+                                                                                    public float_scatter_nd() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::scatter_nd<float16>") public static class half_scatter_nd extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_scatter_nd(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_scatter_nd(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_scatter_nd position(long position) {
+                return (half_scatter_nd)super.position(position);
+            }
+        
+                                                                                    public half_scatter_nd() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::scatter_nd<double>") public static class double_scatter_nd extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_scatter_nd(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_scatter_nd(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_scatter_nd position(long position) {
+                return (double_scatter_nd)super.position(position);
+            }
+        
+                                                                                    public double_scatter_nd() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
 //         #endif
 
         /**
@@ -32525,58 +32636,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
-//         #endif
-
-        /**
-         * Special atan2 op impl for TF's args order
-         * \tparam T
-         */
-//         #if NOT_EXCLUDED(OP_tf_atan2)
-        @Name("nd4j::ops::tf_atan2<float>") public static class float_tf_atan2 extends FloatDeclarableOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public float_tf_atan2(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public float_tf_atan2(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public float_tf_atan2 position(long position) {
-                return (float_tf_atan2)super.position(position);
-            }
-        
-                                                    public float_tf_atan2() { super((Pointer)null); allocate(); }
-                                                    private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
-                                                }
-        @Name("nd4j::ops::tf_atan2<float16>") public static class half_tf_atan2 extends HalfDeclarableOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public half_tf_atan2(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public half_tf_atan2(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public half_tf_atan2 position(long position) {
-                return (half_tf_atan2)super.position(position);
-            }
-        
-                                                    public half_tf_atan2() { super((Pointer)null); allocate(); }
-                                                    private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
-                                                }
-        @Name("nd4j::ops::tf_atan2<double>") public static class double_tf_atan2 extends DoubleDeclarableOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public double_tf_atan2(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public double_tf_atan2(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public double_tf_atan2 position(long position) {
-                return (double_tf_atan2)super.position(position);
-            }
-        
-                                                    public double_tf_atan2() { super((Pointer)null); allocate(); }
-                                                    private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
-                                                }
 //         #endif
 
         /**
