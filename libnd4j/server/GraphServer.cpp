@@ -42,11 +42,26 @@ namespace nd4j {
     }
 }
 
-int main() {
+void RunServer() {
+  std::string server_address("0.0.0.0:40123");
+  nd4j::graph::GraphInferenceServerImpl service;
+
+  grpc::ServerBuilder builder;
+  builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+  builder.RegisterService(&service);
+  std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
+  std::cerr << "Server listening on " << server_address << std::endl;
+
+  server->Wait();
+}
+
+int main(int argc, const char *argv[]) {
     /**
      * basically we only care about few things here:
      * 1) port number
      * 2) graphs and their IDs
      */
+    RunServer();
+
     return 0;
 }
