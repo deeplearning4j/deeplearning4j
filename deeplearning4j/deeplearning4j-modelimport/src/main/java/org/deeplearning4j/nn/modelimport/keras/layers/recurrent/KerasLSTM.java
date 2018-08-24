@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.layers.core.KerasMasking;
 import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
@@ -44,10 +45,7 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getIActivationFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.mapToIActivation;
@@ -63,7 +61,7 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getN
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class KerasLstm extends KerasLayer {
+public class KerasLSTM extends KerasLayer {
 
     private final String LSTM_FORGET_BIAS_INIT_ZERO = "zero";
     private final String LSTM_FORGET_BIAS_INIT_ONE = "one";
@@ -94,7 +92,7 @@ public class KerasLstm extends KerasLayer {
      * @param kerasVersion major keras version
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasLstm(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
+    public KerasLSTM(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
         super(kerasVersion);
     }
 
@@ -105,7 +103,7 @@ public class KerasLstm extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasLstm(Map<String, Object> layerConfig)
+    public KerasLSTM(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
@@ -118,7 +116,7 @@ public class KerasLstm extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasLstm(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+    public KerasLSTM(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, enforceTrainingConfig, Collections.<String, KerasLayer>emptyMap());
     }
@@ -132,7 +130,7 @@ public class KerasLstm extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasLstm(Map<String, Object> layerConfig, Map<String, ? extends KerasLayer> previousLayers)
+    public KerasLSTM(Map<String, Object> layerConfig, Map<String, ? extends KerasLayer> previousLayers)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true, previousLayers);
     }
@@ -147,7 +145,8 @@ public class KerasLstm extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasLstm(Map<String, Object> layerConfig, boolean enforceTrainingConfig, Map<String, ? extends KerasLayer> previousLayers)
+    public KerasLSTM(Map<String, Object> layerConfig, boolean enforceTrainingConfig,
+                     Map<String, ? extends KerasLayer> previousLayers)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
@@ -176,15 +175,9 @@ public class KerasLstm extends KerasLayer {
                 layerConfig, conf.getLAYER_FIELD_W_CONSTRAINT(), conf, kerasMajorVersion);
         LayerConstraint recurrentConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_RECURRENT_CONSTRAINT(), conf, kerasMajorVersion);
-        boolean zeroMasking = false;
-        for (String inboundLayerName : inboundLayerNames) {
-            if (previousLayers.containsKey(inboundLayerName)) {
-                KerasLayer inbound = previousLayers.get(inboundLayerName);
-                if (inbound instanceof KerasEmbedding && ((KerasEmbedding) inbound).isHasZeroMasking()) {
-                    zeroMasking = true;
-                }
-            }
-        }
+
+        Pair<Boolean, Double> maskingConfig = KerasLayerUtils.getMaskingConfiguration(inboundLayerNames, previousLayers);
+
         LSTM.Builder builder = new LSTM.Builder()
                 .gateActivationFunction(getGateActivationFromConfig(layerConfig))
                 .forgetGateBiasInit(getForgetBiasInitFromConfig(layerConfig, enforceTrainingConfig))
@@ -209,11 +202,11 @@ public class KerasLstm extends KerasLayer {
             builder.constrainRecurrent(recurrentConstraint);
 
         this.layer = builder.build();
-        if (zeroMasking) {
-            this.layer = new MaskZeroLayer(this.layer);
-        }
         if (!returnSequences) {
             this.layer = new LastTimeStep(this.layer);
+        }
+        if (maskingConfig.getFirst()) {
+            this.layer = new MaskZeroLayer(this.layer, maskingConfig.getSecond());
         }
     }
 

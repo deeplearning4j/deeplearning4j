@@ -22,8 +22,6 @@ Contents
 
 ## DL4JIrisClassifierDemo
 
-![](/images/guide/screen.PNG)
-
 ## <a name="head_link1">Setting the Dependencies</a>
 Deeplearning4J applications require several dependencies in the build.gradle file. The Deeplearning library in turn depends on the libraries of ND4J and OpenBLAS, thus these must also be added to the dependencies declaration. Starting with Android Studio 3.0, annotationProcessors need to be defined as well, requiring dependencies for -x86 or -arm processors. 
 ```groovy

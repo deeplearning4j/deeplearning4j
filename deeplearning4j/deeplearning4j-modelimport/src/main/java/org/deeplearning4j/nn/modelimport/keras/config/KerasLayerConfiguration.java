@@ -40,6 +40,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_DROPOUT = "Dropout";
     private final String LAYER_CLASS_NAME_REPEAT = "RepeatVector";
     private final String LAYER_CLASS_NAME_LAMBDA = "Lambda";
+    private final String LAYER_CLASS_NAME_MASKING = "Masking";
 
 
     private final String LAYER_CLASS_NAME_SPATIAL_DROPOUT_1D = "SpatialDropout1D";
@@ -167,6 +168,10 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_EMBEDDINGS_CONSTRAINT = ""; // 1: W_constraint, 2: embeddings_constraint
     private final String LAYER_FIELD_MASK_ZERO = "mask_zero";
     private final String LAYER_FIELD_INPUT_LENGTH = "input_length";
+
+    /* Masking layer properties */
+    private final String LAYER_FIELD_MASK_VALUE = "mask_value";
+
 
     /* Keras separable convolution types */
     private final String LAYER_PARAM_NAME_DEPTH_WISE_KERNEL = "depthwise_kernel";
