@@ -2,6 +2,7 @@ include "node.fbs";
 include "config.fbs";
 include "variable.fbs";
 include "utils.fbs";
+include "result.fbs"
 
 namespace nd4j.graph;
 
@@ -32,7 +33,7 @@ table FlatResponse {
 rpc_service GraphInferenceServer {
     RegisterGraph(FlatGraph):FlatResponse;
     ForgetGraph(FlatDropRequest):FlatResponse;
-    InferenceRequest(FlatInferenceRequest):FlatResponse (streaming: "server");
+    InferenceRequest(FlatInferenceRequest):FlatResult (streaming: "server");
 }
 
 root_type FlatGraph;

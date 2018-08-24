@@ -29,11 +29,14 @@
 namespace nd4j {
     namespace graph {
         class GraphInferenceServerImpl final : public GraphInferenceServer::Service {
+        private:
+            flatbuffers::grpc::MessageBuilder mb_;
+        public:
             virtual grpc::Status RegisterGraph( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatGraph> *request_msg, flatbuffers::grpc::Message<FlatResponse> *response_msg);
 
             virtual grpc::Status ForgetGraph( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatDropRequest> *request_msg, flatbuffers::grpc::Message<FlatResponse> *response_msg);
 
-            virtual grpc::Status InferenceRequest( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatInferenceRequest> *request_msg, flatbuffers::grpc::Message<FlatResponse> *response_msg);
+            virtual grpc::Status InferenceRequest( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatInferenceRequest> *request_msg, flatbuffers::grpc::Message<FlatResult> *response_msg);
         };
     }
 }
