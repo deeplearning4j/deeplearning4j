@@ -103,6 +103,7 @@ int main(int argc, const char *argv[]) {
      * basically we only care about few things here:
      * 1) port number
      * 2) if we should use gprc, json, or both
+     * 3) if there's any graph(s) provided at startup
      */
     RunServer(40123);
 
