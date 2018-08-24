@@ -296,31 +296,26 @@ public class SharedTrainingWrapper {
                         log.warn("Can't get IP address to start VoidParameterServer client. Using localhost instead");
                     }
 
-                    // FIXME: implement support for Custom transport implementation
-                    val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP ? new AeronUdpTransport(localIP, voidConfiguration.getUnicastPort(), voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort(), voidConfiguration) :  null;
 
-                    if (transport == null)
-                        throw new DL4JInvalidConfigException(
-                                        "No Transport implementation was defined for this training session!");
-
-                    // let's check for spark local edge case
+                    // if we're running in spark localhost mode - we don't want double initialization
                     if (!ModelParameterServer.getInstance().isInitialized()) {
-                        // all nodes that are NOT master - enforced to be Clients
-                        voidConfiguration.setForcedRole(null);
+                        // FIXME: implement support for Custom transport implementation
+                        val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP ? new AeronUdpTransport(localIP, voidConfiguration.getUnicastPort(), voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort(), voidConfiguration) :  null;
 
-                        // TODO: tbd: let's allow one of executor nodes to be silent worker maybe? or this going to be too expensive?
+                        if (transport == null)
+                            throw new DL4JInvalidConfigException(
+                                    "No Transport implementation was defined for this training session!");
+
+                        consumer = UpdatesConsumer.builder()
+                                .accumulator(accumulator)
+                                .build();
+
+                        //  pass values right away
+                        ModelParameterServer.getInstance().configure(voidConfiguration, transport, false);
+                        ModelParameterServer.getInstance().addUpdatesSubscriber(consumer);
+                        ModelParameterServer.getInstance().addModelParamsSubscriber(modelParamsSupplier);
+                        ModelParameterServer.getInstance().addUpdaterParamsSubscriber(updateParamsSupplier);
                     }
-
-                    //driver = new SilentTrainingDriver(accumulator);
-                    consumer = UpdatesConsumer.builder()
-                            .accumulator(accumulator)
-                            .build();
-
-                    //  pass values right away
-                    ModelParameterServer.getInstance().configure(voidConfiguration, transport, false);
-                    ModelParameterServer.getInstance().addUpdatesSubscriber(consumer);
-                    ModelParameterServer.getInstance().addModelParamsSubscriber(modelParamsSupplier);
-                    ModelParameterServer.getInstance().addUpdaterParamsSubscriber(updateParamsSupplier);
 
 
                     // we're saving reference to original model
@@ -374,7 +369,8 @@ public class SharedTrainingWrapper {
             // TODO: optionally we might be waiting until we have >1 splits delivered
 
 
-            consumer.bypassMode(false);
+            if (consumer != null)
+                consumer.bypassMode(false);
 
             // now we're just calling for fit
             if(iteratorDS == null && iteratorMDS == null)
@@ -426,7 +422,8 @@ public class SharedTrainingWrapper {
             accumulator.reset();
 
             // current TrainingDriver won't be receiving any updates beyond this point
-            consumer.bypassMode(true);
+            if (consumer != null)
+                consumer.bypassMode(true);
 
 
             isFirst.set(false);

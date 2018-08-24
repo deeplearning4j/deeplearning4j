@@ -178,6 +178,12 @@ public abstract  class BaseTransport  implements Transport {
         //if (voidMessage.getOriginatorId() != null && id != null && voidMessage.getOriginatorId().equals(id))
          //   return;
 
+        // it's possible situation to have master as regular node. i.e. spark localhost mode
+        if (mesh.get().totalNodes() == 1) {
+            processMessage(voidMessage);
+            return;
+        }
+
         val root = mesh.get().getRootNode();
         val upstream = node.getUpstreamNode();
         val downstreams = node.getDownstreamNodes();
@@ -228,13 +234,13 @@ public abstract  class BaseTransport  implements Transport {
         // we never send to the latest node
         // we never send to the original node
         if (!node.isRootNode() && (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_UP == mode) && !isLoopedNode(upstream, voidMessage)) {
-            voidMessage.setRelayId(id);
+            voidMessage.setRelayId(id());
             sendMessage(voidMessage, upstream.getId());
         }
 
         // now we're sending message down
         if (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_DOWN == mode) {
-            voidMessage.setRelayId(id);
+            voidMessage.setRelayId(id());
             downstreams.forEach(n -> {
                 if (!isLoopedNode(n, voidMessage))
                     sendMessage(voidMessage, n.getId());

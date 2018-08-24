@@ -76,7 +76,7 @@ public class UpdatesConsumer implements Subscriber<INDArray> {
     }
 
     /**
-     * 
+     *
      * @return
      */
     public boolean isBypassMod() {
@@ -113,7 +113,7 @@ public class UpdatesConsumer implements Subscriber<INDArray> {
                     hasSomething.set(true);
 
                     // we apply updates every X iterations, and we don't really need X to be small here
-                    if (updatesCount.incrementAndGet() % 10 == 0) {
+                    if (updatesCount.incrementAndGet() > 0) {
                         stepFunction.step(params, updates);
 
                         // once accumulated updates are applied - reset storage, and wait for other messsages

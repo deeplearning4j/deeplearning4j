@@ -128,6 +128,7 @@ public final class ModelParameterServer {
      */
     public void addUpdatesSubscriber(@NonNull Subscriber<INDArray> s) {
         updatesSubscribers.add(s);
+
     }
 
     /**
@@ -236,11 +237,15 @@ public final class ModelParameterServer {
         if (stopLock.get())
             return;
 
+
         // shutting down underlying transport
         transport.shutdown();
 
         // disposing INDArray flow
         disposable.dispose();
+
+        // state that we're done
+        launchLock.set(false);
 
         stopLock.set(true);
     }
