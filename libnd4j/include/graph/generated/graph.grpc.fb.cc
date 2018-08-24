@@ -57,16 +57,16 @@ GraphInferenceServer::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface
   return ::grpc::internal::ClientAsyncResponseReaderFactory< flatbuffers::grpc::Message<FlatResponse>>::Create(channel_.get(), cq, rpcmethod_ForgetGraph_, context, request, false);
 }
 
-::grpc::ClientReader< flatbuffers::grpc::Message<FlatResponse>>* GraphInferenceServer::Stub::InferenceRequestRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>& request) {
-  return ::grpc::internal::ClientReaderFactory< flatbuffers::grpc::Message<FlatResponse>>::Create(channel_.get(), rpcmethod_InferenceRequest_, context, request);
+::grpc::ClientReader< flatbuffers::grpc::Message<FlatResult>>* GraphInferenceServer::Stub::InferenceRequestRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>& request) {
+  return ::grpc::internal::ClientReaderFactory< flatbuffers::grpc::Message<FlatResult>>::Create(channel_.get(), rpcmethod_InferenceRequest_, context, request);
 }
 
-::grpc::ClientAsyncReader< flatbuffers::grpc::Message<FlatResponse>>* GraphInferenceServer::Stub::AsyncInferenceRequestRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>& request, ::grpc::CompletionQueue* cq, void* tag) {
-  return ::grpc::internal::ClientAsyncReaderFactory< flatbuffers::grpc::Message<FlatResponse>>::Create(channel_.get(), cq, rpcmethod_InferenceRequest_, context, request, true, tag);
+::grpc::ClientAsyncReader< flatbuffers::grpc::Message<FlatResult>>* GraphInferenceServer::Stub::AsyncInferenceRequestRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>& request, ::grpc::CompletionQueue* cq, void* tag) {
+  return ::grpc::internal::ClientAsyncReaderFactory< flatbuffers::grpc::Message<FlatResult>>::Create(channel_.get(), cq, rpcmethod_InferenceRequest_, context, request, true, tag);
 }
 
-::grpc::ClientAsyncReader< flatbuffers::grpc::Message<FlatResponse>>* GraphInferenceServer::Stub::PrepareAsyncInferenceRequestRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncReaderFactory< flatbuffers::grpc::Message<FlatResponse>>::Create(channel_.get(), cq, rpcmethod_InferenceRequest_, context, request, false, nullptr);
+::grpc::ClientAsyncReader< flatbuffers::grpc::Message<FlatResult>>* GraphInferenceServer::Stub::PrepareAsyncInferenceRequestRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncReaderFactory< flatbuffers::grpc::Message<FlatResult>>::Create(channel_.get(), cq, rpcmethod_InferenceRequest_, context, request, false, nullptr);
 }
 
 GraphInferenceServer::Service::Service() {
@@ -83,7 +83,7 @@ GraphInferenceServer::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       GraphInferenceServer_method_names[2],
       ::grpc::internal::RpcMethod::SERVER_STREAMING,
-      new ::grpc::internal::ServerStreamingHandler< GraphInferenceServer::Service, flatbuffers::grpc::Message<FlatInferenceRequest>, flatbuffers::grpc::Message<FlatResponse>>(
+      new ::grpc::internal::ServerStreamingHandler< GraphInferenceServer::Service, flatbuffers::grpc::Message<FlatInferenceRequest>, flatbuffers::grpc::Message<FlatResult>>(
           std::mem_fn(&GraphInferenceServer::Service::InferenceRequest), this)));
 }
 
@@ -104,7 +104,7 @@ GraphInferenceServer::Service::~Service() {
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
-::grpc::Status GraphInferenceServer::Service::InferenceRequest(::grpc::ServerContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>* request, ::grpc::ServerWriter< flatbuffers::grpc::Message<FlatResponse>>* writer) {
+::grpc::Status GraphInferenceServer::Service::InferenceRequest(::grpc::ServerContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>* request, ::grpc::ServerWriter< flatbuffers::grpc::Message<FlatResult>>* writer) {
   (void) context;
   (void) request;
   (void) writer;

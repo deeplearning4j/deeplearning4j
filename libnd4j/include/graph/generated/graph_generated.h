@@ -10,6 +10,7 @@
 #include "config_generated.h"
 #include "node_generated.h"
 #include "properties_generated.h"
+#include "result_generated.h"
 #include "utils_generated.h"
 #include "variable_generated.h"
 
