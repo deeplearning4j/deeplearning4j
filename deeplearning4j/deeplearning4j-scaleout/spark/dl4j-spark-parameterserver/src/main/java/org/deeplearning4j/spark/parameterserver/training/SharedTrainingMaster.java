@@ -438,12 +438,6 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         voidConfiguration.setShardAddresses(voidConfiguration.getControllerAddress());
         voidConfiguration.setNumberOfShards(1);
 
-        val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP
-                ? new AeronUdpTransport(voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort(), voidConfiguration)
-                : null;
-
-        if (transport == null)
-            throw new DL4JInvalidConfigException("No Transport implementation was defined for this training session!");
 
         if (network != null)
             network.getNetwork().init();
@@ -463,6 +457,13 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                     throw new RuntimeException(e);
                 }
             }
+
+            val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP
+                    ? new AeronUdpTransport(voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort(), voidConfiguration)
+                    : null;
+
+            if (transport == null)
+                throw new DL4JInvalidConfigException("No Transport implementation was defined for this training session!");
 
             val params = network != null ? network.getNetwork().params() : graph.getNetwork().params();
 

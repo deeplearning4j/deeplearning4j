@@ -68,7 +68,7 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
 
         INDArray last = null;
         INDArray lastDup = null;
-        for (String s : new String[]{"direct", "export", "paths"}) {
+        for (String s : new String[]{"paths", "direct", "export"}) {
             System.out.println("--------------------------------------------------------------------------------------------------------------");
             log.info("Starting: {}", s);
             boolean isPaths = "paths".equals(s);

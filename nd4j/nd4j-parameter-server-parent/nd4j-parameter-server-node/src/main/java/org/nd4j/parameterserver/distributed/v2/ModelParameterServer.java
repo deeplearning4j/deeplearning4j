@@ -227,6 +227,9 @@ public final class ModelParameterServer {
             transport.launch();
         }
 
+        // instance can be stopped now
+        stopLock.set(false);
+
         launchLock.set(true);
     }
 
@@ -243,6 +246,11 @@ public final class ModelParameterServer {
 
         // disposing INDArray flow
         disposable.dispose();
+
+        updaterParamsSubscribers.clear();
+        modelParamsSubsribers.clear();
+        updatesSubscribers.clear();
+        updatesQueue.clear();
 
         // state that we're done
         launchLock.set(false);
