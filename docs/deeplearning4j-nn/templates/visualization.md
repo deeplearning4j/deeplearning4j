@@ -65,7 +65,7 @@ The full set of UI examples are available [here](https://github.com/deeplearning
 
 ### <a name="overviewpage">Deeplearning4j UI: The Overview Page</a>
 
-![Overview Page](./images/guide/DL4J_UI_01.png)
+![Overview Page](/images/guide/DL4J_UI_01.png)
 
 The overview page (one of 3 available pages) contains the following information:
 
@@ -82,7 +82,7 @@ See the later section of this page on how to use these values in practice.
 
 ### <a name="modelpage">Deeplearning4j UI: The Model Page</a>
 
-![Model Page](./images/guide/DL4J_UI_02.png)
+![Model Page](/images/guide/DL4J_UI_02.png)
 
 The model page contains a graph of the neural network layers, which operates as a selection mechanism. Click on a layer to display information for it.
 
