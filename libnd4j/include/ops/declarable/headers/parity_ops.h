@@ -243,6 +243,17 @@ namespace nd4j {
         #endif
 
         /**
+         * This operation scatter "updates" elements into input array along given "indices"
+         * Expected arguments:   
+         * input: array to be updated      
+         * indices: array containing elements/slices indexes of input array to put "updates" elements into
+         * updates: array containing elements to be inserted into input array
+         */
+        #if NOT_EXCLUDED(OP_scatter_nd_update)
+        DECLARE_OP(scatter_nd_update, 3, 1, true);
+        #endif
+
+        /**
          * This operation adds "updates" elements to input array along given "indices"
          * Expected arguments:
          * input: array to be updated

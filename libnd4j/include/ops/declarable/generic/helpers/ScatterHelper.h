@@ -121,7 +121,8 @@ class ScatterHelper {
 
             if(outRank == 1) {
 
-#pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+// #pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+#pragma omp parallel for schedule(guided)
                 for(Nd4jLong i = 0; i < indLen; ++i) {
                     T& out = output(indices(i));                    
 #pragma omp critical                    
@@ -161,8 +162,10 @@ static FORCEINLINE void scatterND(const NDArray<T>& indices, const NDArray<T>& u
 
     if(outRank == 1) {
 
-#pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+// #pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+#pragma omp parallel for schedule(guided)        
         for(Nd4jLong i = 0; i < indLen; ++i) {
+
             T& elemOut = output(indices(i));                    
 #pragma omp critical                    
             elemOut = OpClass::op(elemOut, updates(i), nullptr);
@@ -174,7 +177,8 @@ static FORCEINLINE void scatterND(const NDArray<T>& indices, const NDArray<T>& u
         std::vector<int> dimsToExcludeUpd(indRank - 1);
         std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
         std::vector<Nd4jLong> idxRangeOut(2*outRank, 0);
-
+ 
+// #pragma omp parallel for if(indLen/indLastDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided) firstprivate(idxRangeOut)
 #pragma omp parallel for schedule(guided) firstprivate(idxRangeOut)
         for(Nd4jLong i = 0; i < indLen/indLastDim; ++i) {
             
