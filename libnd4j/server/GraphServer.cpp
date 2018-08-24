@@ -22,6 +22,7 @@
 #include <graph/GraphHolder.h>
 #include <GraphExecutioner.h>
 #include <graph/generated/result_generated.h>
+#include <helpers/StringUtils.h>
 
 namespace nd4j {
     namespace graph {
@@ -80,8 +81,12 @@ namespace nd4j {
     }
 }
 
-void RunServer() {
-  std::string server_address("0.0.0.0:40123");
+void RunServer(int port) {
+  assert(port > 0 && port < 65535);
+
+  std::string server_address("0.0.0.0:");
+  server_address += nd4j::StringUtils::valueToString<int>(port);
+
   nd4j::graph::GraphInferenceServerImpl service;
 
   grpc::ServerBuilder builder;
@@ -97,9 +102,9 @@ int main(int argc, const char *argv[]) {
     /**
      * basically we only care about few things here:
      * 1) port number
-     * 2) graphs and their IDs
+     * 2) if we should use gprc, json, or both
      */
-    RunServer();
+    RunServer(40123);
 
     return 0;
 }
