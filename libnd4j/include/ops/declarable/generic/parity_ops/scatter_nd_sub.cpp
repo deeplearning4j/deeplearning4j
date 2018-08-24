@@ -15,11 +15,11 @@
  ******************************************************************************/
 
 //
-// @author Yurii Shyrma (iuriish@yahoo.com), created on 22.08.2018
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 24.08.2018
 //
 
 #include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_scatter_nd_add)
+#if NOT_EXCLUDED(OP_scatter_nd_sub)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/ScatterHelper.h>
@@ -27,7 +27,7 @@
 namespace nd4j {
 namespace ops  {
 
-OP_IMPL(scatter_nd_add, 3, 1, true) {
+OP_IMPL(scatter_nd_sub, 3, 1, true) {
     
     NDArray<T>* input   = INPUT_VARIABLE(0);
     NDArray<T>* indices = INPUT_VARIABLE(1);
@@ -41,8 +41,8 @@ OP_IMPL(scatter_nd_add, 3, 1, true) {
 
     const Nd4jLong indLastDim = indices->sizeAt(-1);
     
-    REQUIRE_TRUE(indLastDim <= inRank, 0, "SCATTER_ND_ADD OP: the last dimension of indices array must be <= input_array_rank, but got %i instead !", indLastDim);
-    REQUIRE_TRUE(updRank == (indRank - 1 + inRank - indLastDim), 0, "SCATTER_ND_ADD OP: the equality updates_rank = (indices_rank - 1 + input_rank - last_indices_dimension) must be true for input arrays, but got instead: updates_rank = %i, indices_rank = %i, last_indices_dimension = %i !", updRank, indRank, indLastDim);
+    REQUIRE_TRUE(indLastDim <= inRank, 0, "SCATTER_ND_SUB OP: the last dimension of indices array must be <= input_array_rank, but got %i instead !", indLastDim);
+    REQUIRE_TRUE(updRank == (indRank - 1 + inRank - indLastDim), 0, "SCATTER_ND_SUB OP: the equality updates_rank = (indices_rank - 1 + input_rank - last_indices_dimension) must be true for input arrays, but got instead: updates_rank = %i, indices_rank = %i, last_indices_dimension = %i !", updRank, indRank, indLastDim);
 
     std::vector<Nd4jLong> inShape  = input->getShapeAsVector();
     std::vector<Nd4jLong> updShape = updates->getShapeAsVector();
@@ -50,12 +50,12 @@ OP_IMPL(scatter_nd_add, 3, 1, true) {
     std::vector<Nd4jLong> expectedUpdShape(std::begin(indShape), std::end(indShape) - 1);     
     if(inRank > indLastDim)
         std::move(std::begin(inShape) + indLastDim, std::end(inShape), std::back_inserter(expectedUpdShape));        
-    REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ND_ADD OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString(expectedUpdShape).c_str(), ShapeUtils<T>::shapeAsString(updShape).c_str());
+    REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ND_SUB OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString(expectedUpdShape).c_str(), ShapeUtils<T>::shapeAsString(updShape).c_str());
 
     if (!block.isInplace())
         output->assign(input);
     
-    ScatterHelper<T>::template scatterND<simdOps::Add<T>>(*indices, *updates, *output);
+    ScatterHelper<T>::template scatterND<simdOps::Subtract<T>>(*indices, *updates, *output);
 
     return Status::OK();
 }
