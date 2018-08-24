@@ -20,7 +20,8 @@
 
 #include "GraphServer.h"
 #include <graph/GraphHolder.h>
-
+#include <GraphExecutioner.h>
+#include <graph/generated/result_generated.h>
 
 namespace nd4j {
     namespace graph {
@@ -60,6 +61,19 @@ namespace nd4j {
 
             grpc::Status GraphInferenceServerImpl::InferenceRequest( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatInferenceRequest> *request_msg, flatbuffers::grpc::Message<FlatResult> *response_msg) {
                 auto request = request_msg->GetRoot();
+
+                // trying to get graph by id
+                auto graph = GraphHolder::getInstance()->cloneGraph<float>(request->id());
+                
+                // TODO: add validation here
+                GraphExecutioner<float>::execute(graph);
+
+                // provide results here
+                auto response_offset = CreateFlatResult(mb_, request->id());
+
+                mb_.Finish(response_offset);
+                *response_msg = mb_.ReleaseMessage<FlatResult>();
+                assert(response_msg->Verify());
 
                 return grpc::Status::OK;
             }
