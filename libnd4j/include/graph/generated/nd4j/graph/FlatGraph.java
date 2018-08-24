@@ -15,17 +15,17 @@ public final class FlatGraph extends Table {
   public FlatGraph __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public long id() { int o = __offset(4); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public nd4j.graph.FlatVariable variables(int j) { return variables(new nd4j.graph.FlatVariable(), j); }
-  public nd4j.graph.FlatVariable variables(nd4j.graph.FlatVariable obj, int j) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public FlatVariable variables(int j) { return variables(new FlatVariable(), j); }
+  public FlatVariable variables(FlatVariable obj, int j) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int variablesLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
-  public nd4j.graph.FlatNode nodes(int j) { return nodes(new nd4j.graph.FlatNode(), j); }
-  public nd4j.graph.FlatNode nodes(nd4j.graph.FlatNode obj, int j) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public FlatNode nodes(int j) { return nodes(new FlatNode(), j); }
+  public FlatNode nodes(FlatNode obj, int j) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int nodesLength() { int o = __offset(8); return o != 0 ? __vector_len(o) : 0; }
-  public nd4j.graph.IntPair outputs(int j) { return outputs(new nd4j.graph.IntPair(), j); }
-  public nd4j.graph.IntPair outputs(nd4j.graph.IntPair obj, int j) { int o = __offset(10); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public IntPair outputs(int j) { return outputs(new IntPair(), j); }
+  public IntPair outputs(IntPair obj, int j) { int o = __offset(10); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int outputsLength() { int o = __offset(10); return o != 0 ? __vector_len(o) : 0; }
-  public nd4j.graph.FlatConfiguration configuration() { return configuration(new nd4j.graph.FlatConfiguration()); }
-  public nd4j.graph.FlatConfiguration configuration(nd4j.graph.FlatConfiguration obj) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
+  public FlatConfiguration configuration() { return configuration(new FlatConfiguration()); }
+  public FlatConfiguration configuration(FlatConfiguration obj) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
 
   public static int createFlatGraph(FlatBufferBuilder builder,
       long id,
@@ -59,5 +59,6 @@ public final class FlatGraph extends Table {
     return o;
   }
   public static void finishFlatGraphBuffer(FlatBufferBuilder builder, int offset) { builder.finish(offset); }
+  public static void finishSizePrefixedFlatGraphBuffer(FlatBufferBuilder builder, int offset) { builder.finishSizePrefixed(offset); }
 }
 

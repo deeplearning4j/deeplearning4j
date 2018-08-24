@@ -4,8 +4,8 @@
 #ifndef GRPC_graph__INCLUDED
 #define GRPC_graph__INCLUDED
 
-#include "flatbuffers/grpc.h"
 #include "graph_generated.h"
+#include "flatbuffers/grpc.h"
 
 #include <grpc++/impl/codegen/async_stream.h>
 #include <grpc++/impl/codegen/async_unary_call.h>
@@ -20,7 +20,6 @@
 namespace grpc {
 class CompletionQueue;
 class Channel;
-class RpcService;
 class ServerCompletionQueue;
 class ServerContext;
 }  // namespace grpc
@@ -40,9 +39,15 @@ class GraphInferenceServer final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< flatbuffers::grpc::Message<FlatResponse>>> AsyncRegisterGraph(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatGraph>& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< flatbuffers::grpc::Message<FlatResponse>>>(AsyncRegisterGraphRaw(context, request, cq));
     }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< flatbuffers::grpc::Message<FlatResponse>>> PrepareAsyncRegisterGraph(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatGraph>& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< flatbuffers::grpc::Message<FlatResponse>>>(PrepareAsyncRegisterGraphRaw(context, request, cq));
+    }
     virtual ::grpc::Status ForgetGraph(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatDropRequest>& request, flatbuffers::grpc::Message<FlatResponse>* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< flatbuffers::grpc::Message<FlatResponse>>> AsyncForgetGraph(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatDropRequest>& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< flatbuffers::grpc::Message<FlatResponse>>>(AsyncForgetGraphRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< flatbuffers::grpc::Message<FlatResponse>>> PrepareAsyncForgetGraph(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatDropRequest>& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< flatbuffers::grpc::Message<FlatResponse>>>(PrepareAsyncForgetGraphRaw(context, request, cq));
     }
     std::unique_ptr< ::grpc::ClientReaderInterface< flatbuffers::grpc::Message<FlatResponse>>> InferenceRequest(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>& request) {
       return std::unique_ptr< ::grpc::ClientReaderInterface< flatbuffers::grpc::Message<FlatResponse>>>(InferenceRequestRaw(context, request));
@@ -50,11 +55,17 @@ class GraphInferenceServer final {
     std::unique_ptr< ::grpc::ClientAsyncReaderInterface< flatbuffers::grpc::Message<FlatResponse>>> AsyncInferenceRequest(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>& request, ::grpc::CompletionQueue* cq, void* tag) {
       return std::unique_ptr< ::grpc::ClientAsyncReaderInterface< flatbuffers::grpc::Message<FlatResponse>>>(AsyncInferenceRequestRaw(context, request, cq, tag));
     }
+    std::unique_ptr< ::grpc::ClientAsyncReaderInterface< flatbuffers::grpc::Message<FlatResponse>>> PrepareAsyncInferenceRequest(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderInterface< flatbuffers::grpc::Message<FlatResponse>>>(PrepareAsyncInferenceRequestRaw(context, request, cq));
+    }
   private:
     virtual ::grpc::ClientAsyncResponseReaderInterface< flatbuffers::grpc::Message<FlatResponse>>* AsyncRegisterGraphRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatGraph>& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< flatbuffers::grpc::Message<FlatResponse>>* PrepareAsyncRegisterGraphRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatGraph>& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< flatbuffers::grpc::Message<FlatResponse>>* AsyncForgetGraphRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatDropRequest>& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< flatbuffers::grpc::Message<FlatResponse>>* PrepareAsyncForgetGraphRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatDropRequest>& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientReaderInterface< flatbuffers::grpc::Message<FlatResponse>>* InferenceRequestRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>& request) = 0;
     virtual ::grpc::ClientAsyncReaderInterface< flatbuffers::grpc::Message<FlatResponse>>* AsyncInferenceRequestRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>& request, ::grpc::CompletionQueue* cq, void* tag) = 0;
+    virtual ::grpc::ClientAsyncReaderInterface< flatbuffers::grpc::Message<FlatResponse>>* PrepareAsyncInferenceRequestRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>& request, ::grpc::CompletionQueue* cq) = 0;
   };
   class Stub final : public StubInterface {
    public:
@@ -63,9 +74,15 @@ class GraphInferenceServer final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< flatbuffers::grpc::Message<FlatResponse>>> AsyncRegisterGraph(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatGraph>& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< flatbuffers::grpc::Message<FlatResponse>>>(AsyncRegisterGraphRaw(context, request, cq));
     }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< flatbuffers::grpc::Message<FlatResponse>>> PrepareAsyncRegisterGraph(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatGraph>& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< flatbuffers::grpc::Message<FlatResponse>>>(PrepareAsyncRegisterGraphRaw(context, request, cq));
+    }
     ::grpc::Status ForgetGraph(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatDropRequest>& request, flatbuffers::grpc::Message<FlatResponse>* response) override;
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< flatbuffers::grpc::Message<FlatResponse>>> AsyncForgetGraph(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatDropRequest>& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< flatbuffers::grpc::Message<FlatResponse>>>(AsyncForgetGraphRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< flatbuffers::grpc::Message<FlatResponse>>> PrepareAsyncForgetGraph(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatDropRequest>& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< flatbuffers::grpc::Message<FlatResponse>>>(PrepareAsyncForgetGraphRaw(context, request, cq));
     }
     std::unique_ptr< ::grpc::ClientReader< flatbuffers::grpc::Message<FlatResponse>>> InferenceRequest(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>& request) {
       return std::unique_ptr< ::grpc::ClientReader< flatbuffers::grpc::Message<FlatResponse>>>(InferenceRequestRaw(context, request));
@@ -73,16 +90,22 @@ class GraphInferenceServer final {
     std::unique_ptr< ::grpc::ClientAsyncReader< flatbuffers::grpc::Message<FlatResponse>>> AsyncInferenceRequest(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>& request, ::grpc::CompletionQueue* cq, void* tag) {
       return std::unique_ptr< ::grpc::ClientAsyncReader< flatbuffers::grpc::Message<FlatResponse>>>(AsyncInferenceRequestRaw(context, request, cq, tag));
     }
+    std::unique_ptr< ::grpc::ClientAsyncReader< flatbuffers::grpc::Message<FlatResponse>>> PrepareAsyncInferenceRequest(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncReader< flatbuffers::grpc::Message<FlatResponse>>>(PrepareAsyncInferenceRequestRaw(context, request, cq));
+    }
   
    private:
     std::shared_ptr< ::grpc::ChannelInterface> channel_;
     ::grpc::ClientAsyncResponseReader< flatbuffers::grpc::Message<FlatResponse>>* AsyncRegisterGraphRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatGraph>& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< flatbuffers::grpc::Message<FlatResponse>>* PrepareAsyncRegisterGraphRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatGraph>& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< flatbuffers::grpc::Message<FlatResponse>>* AsyncForgetGraphRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatDropRequest>& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< flatbuffers::grpc::Message<FlatResponse>>* PrepareAsyncForgetGraphRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatDropRequest>& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientReader< flatbuffers::grpc::Message<FlatResponse>>* InferenceRequestRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>& request) override;
     ::grpc::ClientAsyncReader< flatbuffers::grpc::Message<FlatResponse>>* AsyncInferenceRequestRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>& request, ::grpc::CompletionQueue* cq, void* tag) override;
-    const ::grpc::RpcMethod rpcmethod_RegisterGraph_;
-    const ::grpc::RpcMethod rpcmethod_ForgetGraph_;
-    const ::grpc::RpcMethod rpcmethod_InferenceRequest_;
+    ::grpc::ClientAsyncReader< flatbuffers::grpc::Message<FlatResponse>>* PrepareAsyncInferenceRequestRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>& request, ::grpc::CompletionQueue* cq) override;
+    const ::grpc::internal::RpcMethod rpcmethod_RegisterGraph_;
+    const ::grpc::internal::RpcMethod rpcmethod_ForgetGraph_;
+    const ::grpc::internal::RpcMethod rpcmethod_InferenceRequest_;
   };
   static std::unique_ptr<Stub> NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
   
@@ -213,7 +236,7 @@ class GraphInferenceServer final {
    public:
     WithStreamedUnaryMethod_RegisterGraph() {
       ::grpc::Service::MarkMethodStreamed(0,
-        new ::grpc::StreamedUnaryHandler< flatbuffers::grpc::Message<FlatGraph>, flatbuffers::grpc::Message<FlatResponse>>(std::bind(&WithStreamedUnaryMethod_RegisterGraph<BaseClass>::StreamedRegisterGraph, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler< flatbuffers::grpc::Message<FlatGraph>, flatbuffers::grpc::Message<FlatResponse>>(std::bind(&WithStreamedUnaryMethod_RegisterGraph<BaseClass>::StreamedRegisterGraph, this, std::placeholders::_1, std::placeholders::_2)));
     }
     ~WithStreamedUnaryMethod_RegisterGraph() override {
       BaseClassMustBeDerivedFromService(this);
@@ -233,7 +256,7 @@ class GraphInferenceServer final {
    public:
     WithStreamedUnaryMethod_ForgetGraph() {
       ::grpc::Service::MarkMethodStreamed(1,
-        new ::grpc::StreamedUnaryHandler< flatbuffers::grpc::Message<FlatDropRequest>, flatbuffers::grpc::Message<FlatResponse>>(std::bind(&WithStreamedUnaryMethod_ForgetGraph<BaseClass>::StreamedForgetGraph, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler< flatbuffers::grpc::Message<FlatDropRequest>, flatbuffers::grpc::Message<FlatResponse>>(std::bind(&WithStreamedUnaryMethod_ForgetGraph<BaseClass>::StreamedForgetGraph, this, std::placeholders::_1, std::placeholders::_2)));
     }
     ~WithStreamedUnaryMethod_ForgetGraph() override {
       BaseClassMustBeDerivedFromService(this);
@@ -254,7 +277,7 @@ class GraphInferenceServer final {
    public:
     WithSplitStreamingMethod_InferenceRequest() {
       ::grpc::Service::MarkMethodStreamed(2,
-        new ::grpc::SplitServerStreamingHandler< flatbuffers::grpc::Message<FlatInferenceRequest>, flatbuffers::grpc::Message<FlatResponse>>(std::bind(&WithSplitStreamingMethod_InferenceRequest<BaseClass>::StreamedInferenceRequest, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::SplitServerStreamingHandler< flatbuffers::grpc::Message<FlatInferenceRequest>, flatbuffers::grpc::Message<FlatResponse>>(std::bind(&WithSplitStreamingMethod_InferenceRequest<BaseClass>::StreamedInferenceRequest, this, std::placeholders::_1, std::placeholders::_2)));
     }
     ~WithSplitStreamingMethod_InferenceRequest() override {
       BaseClassMustBeDerivedFromService(this);

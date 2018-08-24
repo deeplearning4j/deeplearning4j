@@ -28,7 +28,7 @@ public struct FlatProperties : IFlatbufferObject
   public double D(int j) { int o = __p.__offset(10); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
   public int DLength { get { int o = __p.__offset(10); return o != 0 ? __p.__vector_len(o) : 0; } }
   public ArraySegment<byte>? GetDBytes() { return __p.__vector_as_arraysegment(10); }
-  public nd4j.graph.FlatArray? A(int j) { int o = __p.__offset(12); return o != 0 ? (nd4j.graph.FlatArray?)(new nd4j.graph.FlatArray()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
+  public FlatArray? A(int j) { int o = __p.__offset(12); return o != 0 ? (FlatArray?)(new FlatArray()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int ALength { get { int o = __p.__offset(12); return o != 0 ? __p.__vector_len(o) : 0; } }
 
   public static Offset<FlatProperties> CreateFlatProperties(FlatBufferBuilder builder,
@@ -58,13 +58,14 @@ public struct FlatProperties : IFlatbufferObject
   public static VectorOffset CreateDVector(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); for (int i = data.Length - 1; i >= 0; i--) builder.AddDouble(data[i]); return builder.EndVector(); }
   public static void StartDVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(8, numElems, 8); }
   public static void AddA(FlatBufferBuilder builder, VectorOffset aOffset) { builder.AddOffset(4, aOffset.Value, 0); }
-  public static VectorOffset CreateAVector(FlatBufferBuilder builder, Offset<nd4j.graph.FlatArray>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateAVector(FlatBufferBuilder builder, Offset<FlatArray>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static void StartAVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static Offset<FlatProperties> EndFlatProperties(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<FlatProperties>(o);
   }
   public static void FinishFlatPropertiesBuffer(FlatBufferBuilder builder, Offset<FlatProperties> offset) { builder.Finish(offset.Value); }
+  public static void FinishSizePrefixedFlatPropertiesBuffer(FlatBufferBuilder builder, Offset<FlatProperties> offset) { builder.FinishSizePrefixed(offset.Value); }
 };
 
 

@@ -20,16 +20,16 @@ public struct FlatNode : IFlatbufferObject
   public int Id { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public string Name { get { int o = __p.__offset(6); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
   public ArraySegment<byte>? GetNameBytes() { return __p.__vector_as_arraysegment(6); }
-  public nd4j.graph.OpType OpType { get { int o = __p.__offset(8); return o != 0 ? (nd4j.graph.OpType)__p.bb.GetSbyte(o + __p.bb_pos) : nd4j.graph.OpType.TRANSFORM; } }
+  public OpType OpType { get { int o = __p.__offset(8); return o != 0 ? (OpType)__p.bb.GetSbyte(o + __p.bb_pos) : OpType.TRANSFORM; } }
   public long OpNum { get { int o = __p.__offset(10); return o != 0 ? __p.bb.GetLong(o + __p.bb_pos) : (long)0; } }
-  public nd4j.graph.FlatProperties? Properties(int j) { int o = __p.__offset(12); return o != 0 ? (nd4j.graph.FlatProperties?)(new nd4j.graph.FlatProperties()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
+  public FlatProperties? Properties(int j) { int o = __p.__offset(12); return o != 0 ? (FlatProperties?)(new FlatProperties()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int PropertiesLength { get { int o = __p.__offset(12); return o != 0 ? __p.__vector_len(o) : 0; } }
   public int Input(int j) { int o = __p.__offset(14); return o != 0 ? __p.bb.GetInt(__p.__vector(o) + j * 4) : (int)0; }
   public int InputLength { get { int o = __p.__offset(14); return o != 0 ? __p.__vector_len(o) : 0; } }
   public ArraySegment<byte>? GetInputBytes() { return __p.__vector_as_arraysegment(14); }
-  public nd4j.graph.IntPair? InputPaired(int j) { int o = __p.__offset(16); return o != 0 ? (nd4j.graph.IntPair?)(new nd4j.graph.IntPair()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
+  public IntPair? InputPaired(int j) { int o = __p.__offset(16); return o != 0 ? (IntPair?)(new IntPair()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int InputPairedLength { get { int o = __p.__offset(16); return o != 0 ? __p.__vector_len(o) : 0; } }
-  public nd4j.graph.DataType DataType { get { int o = __p.__offset(18); return o != 0 ? (nd4j.graph.DataType)__p.bb.GetSbyte(o + __p.bb_pos) : nd4j.graph.DataType.INHERIT; } }
+  public DataType DataType { get { int o = __p.__offset(18); return o != 0 ? (DataType)__p.bb.GetSbyte(o + __p.bb_pos) : DataType.INHERIT; } }
   public int Output(int j) { int o = __p.__offset(20); return o != 0 ? __p.bb.GetInt(__p.__vector(o) + j * 4) : (int)0; }
   public int OutputLength { get { int o = __p.__offset(20); return o != 0 ? __p.__vector_len(o) : 0; } }
   public ArraySegment<byte>? GetOutputBytes() { return __p.__vector_as_arraysegment(20); }
@@ -51,12 +51,12 @@ public struct FlatNode : IFlatbufferObject
   public static Offset<FlatNode> CreateFlatNode(FlatBufferBuilder builder,
       int id = 0,
       StringOffset nameOffset = default(StringOffset),
-      nd4j.graph.OpType opType = nd4j.graph.OpType.TRANSFORM,
+      OpType opType = OpType.TRANSFORM,
       long opNum = 0,
       VectorOffset propertiesOffset = default(VectorOffset),
       VectorOffset inputOffset = default(VectorOffset),
       VectorOffset inputPairedOffset = default(VectorOffset),
-      nd4j.graph.DataType dataType = nd4j.graph.DataType.INHERIT,
+      DataType dataType = DataType.INHERIT,
       VectorOffset outputOffset = default(VectorOffset),
       VectorOffset extraParamsOffset = default(VectorOffset),
       VectorOffset extraIntegerOffset = default(VectorOffset),
@@ -88,18 +88,18 @@ public struct FlatNode : IFlatbufferObject
   public static void StartFlatNode(FlatBufferBuilder builder) { builder.StartObject(16); }
   public static void AddId(FlatBufferBuilder builder, int id) { builder.AddInt(0, id, 0); }
   public static void AddName(FlatBufferBuilder builder, StringOffset nameOffset) { builder.AddOffset(1, nameOffset.Value, 0); }
-  public static void AddOpType(FlatBufferBuilder builder, nd4j.graph.OpType opType) { builder.AddSbyte(2, (sbyte)opType, 0); }
+  public static void AddOpType(FlatBufferBuilder builder, OpType opType) { builder.AddSbyte(2, (sbyte)opType, 0); }
   public static void AddOpNum(FlatBufferBuilder builder, long opNum) { builder.AddLong(3, opNum, 0); }
   public static void AddProperties(FlatBufferBuilder builder, VectorOffset propertiesOffset) { builder.AddOffset(4, propertiesOffset.Value, 0); }
-  public static VectorOffset CreatePropertiesVector(FlatBufferBuilder builder, Offset<nd4j.graph.FlatProperties>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreatePropertiesVector(FlatBufferBuilder builder, Offset<FlatProperties>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static void StartPropertiesVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static void AddInput(FlatBufferBuilder builder, VectorOffset inputOffset) { builder.AddOffset(5, inputOffset.Value, 0); }
   public static VectorOffset CreateInputVector(FlatBufferBuilder builder, int[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddInt(data[i]); return builder.EndVector(); }
   public static void StartInputVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static void AddInputPaired(FlatBufferBuilder builder, VectorOffset inputPairedOffset) { builder.AddOffset(6, inputPairedOffset.Value, 0); }
-  public static VectorOffset CreateInputPairedVector(FlatBufferBuilder builder, Offset<nd4j.graph.IntPair>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateInputPairedVector(FlatBufferBuilder builder, Offset<IntPair>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static void StartInputPairedVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
-  public static void AddDataType(FlatBufferBuilder builder, nd4j.graph.DataType dataType) { builder.AddSbyte(7, (sbyte)dataType, 0); }
+  public static void AddDataType(FlatBufferBuilder builder, DataType dataType) { builder.AddSbyte(7, (sbyte)dataType, 0); }
   public static void AddOutput(FlatBufferBuilder builder, VectorOffset outputOffset) { builder.AddOffset(8, outputOffset.Value, 0); }
   public static VectorOffset CreateOutputVector(FlatBufferBuilder builder, int[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddInt(data[i]); return builder.EndVector(); }
   public static void StartOutputVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
@@ -121,6 +121,7 @@ public struct FlatNode : IFlatbufferObject
     return new Offset<FlatNode>(o);
   }
   public static void FinishFlatNodeBuffer(FlatBufferBuilder builder, Offset<FlatNode> offset) { builder.Finish(offset.Value); }
+  public static void FinishSizePrefixedFlatNodeBuffer(FlatBufferBuilder builder, Offset<FlatNode> offset) { builder.FinishSizePrefixed(offset.Value); }
 };
 
 

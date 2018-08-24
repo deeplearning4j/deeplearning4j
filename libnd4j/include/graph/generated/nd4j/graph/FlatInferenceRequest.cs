@@ -18,14 +18,14 @@ public struct FlatInferenceRequest : IFlatbufferObject
   public FlatInferenceRequest __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public long Id { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetLong(o + __p.bb_pos) : (long)0; } }
-  public nd4j.graph.FlatVariable? Variables(int j) { int o = __p.__offset(6); return o != 0 ? (nd4j.graph.FlatVariable?)(new nd4j.graph.FlatVariable()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
+  public FlatVariable? Variables(int j) { int o = __p.__offset(6); return o != 0 ? (FlatVariable?)(new FlatVariable()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int VariablesLength { get { int o = __p.__offset(6); return o != 0 ? __p.__vector_len(o) : 0; } }
-  public nd4j.graph.FlatConfiguration? Configuration { get { int o = __p.__offset(8); return o != 0 ? (nd4j.graph.FlatConfiguration?)(new nd4j.graph.FlatConfiguration()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
+  public FlatConfiguration? Configuration { get { int o = __p.__offset(8); return o != 0 ? (FlatConfiguration?)(new FlatConfiguration()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
 
   public static Offset<FlatInferenceRequest> CreateFlatInferenceRequest(FlatBufferBuilder builder,
       long id = 0,
       VectorOffset variablesOffset = default(VectorOffset),
-      Offset<nd4j.graph.FlatConfiguration> configurationOffset = default(Offset<nd4j.graph.FlatConfiguration>)) {
+      Offset<FlatConfiguration> configurationOffset = default(Offset<FlatConfiguration>)) {
     builder.StartObject(3);
     FlatInferenceRequest.AddId(builder, id);
     FlatInferenceRequest.AddConfiguration(builder, configurationOffset);
@@ -36,9 +36,9 @@ public struct FlatInferenceRequest : IFlatbufferObject
   public static void StartFlatInferenceRequest(FlatBufferBuilder builder) { builder.StartObject(3); }
   public static void AddId(FlatBufferBuilder builder, long id) { builder.AddLong(0, id, 0); }
   public static void AddVariables(FlatBufferBuilder builder, VectorOffset variablesOffset) { builder.AddOffset(1, variablesOffset.Value, 0); }
-  public static VectorOffset CreateVariablesVector(FlatBufferBuilder builder, Offset<nd4j.graph.FlatVariable>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateVariablesVector(FlatBufferBuilder builder, Offset<FlatVariable>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static void StartVariablesVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
-  public static void AddConfiguration(FlatBufferBuilder builder, Offset<nd4j.graph.FlatConfiguration> configurationOffset) { builder.AddOffset(2, configurationOffset.Value, 0); }
+  public static void AddConfiguration(FlatBufferBuilder builder, Offset<FlatConfiguration> configurationOffset) { builder.AddOffset(2, configurationOffset.Value, 0); }
   public static Offset<FlatInferenceRequest> EndFlatInferenceRequest(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<FlatInferenceRequest>(o);

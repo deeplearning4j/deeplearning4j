@@ -33,8 +33,8 @@ struct FlatProperties FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<double> *d() const {
     return GetPointer<const flatbuffers::Vector<double> *>(VT_D);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<nd4j::graph::FlatArray>> *a() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<nd4j::graph::FlatArray>> *>(VT_A);
+  const flatbuffers::Vector<flatbuffers::Offset<FlatArray>> *a() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<FlatArray>> *>(VT_A);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -68,16 +68,16 @@ struct FlatPropertiesBuilder {
   void add_d(flatbuffers::Offset<flatbuffers::Vector<double>> d) {
     fbb_.AddOffset(FlatProperties::VT_D, d);
   }
-  void add_a(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<nd4j::graph::FlatArray>>> a) {
+  void add_a(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatArray>>> a) {
     fbb_.AddOffset(FlatProperties::VT_A, a);
   }
-  FlatPropertiesBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit FlatPropertiesBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   FlatPropertiesBuilder &operator=(const FlatPropertiesBuilder &);
   flatbuffers::Offset<FlatProperties> Finish() {
-    const auto end = fbb_.EndTable(start_, 5);
+    const auto end = fbb_.EndTable(start_);
     auto o = flatbuffers::Offset<FlatProperties>(end);
     return o;
   }
@@ -89,7 +89,7 @@ inline flatbuffers::Offset<FlatProperties> CreateFlatProperties(
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> i = 0,
     flatbuffers::Offset<flatbuffers::Vector<int64_t>> l = 0,
     flatbuffers::Offset<flatbuffers::Vector<double>> d = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<nd4j::graph::FlatArray>>> a = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatArray>>> a = 0) {
   FlatPropertiesBuilder builder_(_fbb);
   builder_.add_a(a);
   builder_.add_d(d);
@@ -105,18 +105,22 @@ inline flatbuffers::Offset<FlatProperties> CreateFlatPropertiesDirect(
     const std::vector<int32_t> *i = nullptr,
     const std::vector<int64_t> *l = nullptr,
     const std::vector<double> *d = nullptr,
-    const std::vector<flatbuffers::Offset<nd4j::graph::FlatArray>> *a = nullptr) {
+    const std::vector<flatbuffers::Offset<FlatArray>> *a = nullptr) {
   return nd4j::graph::CreateFlatProperties(
       _fbb,
       name ? _fbb.CreateString(name) : 0,
       i ? _fbb.CreateVector<int32_t>(*i) : 0,
       l ? _fbb.CreateVector<int64_t>(*l) : 0,
       d ? _fbb.CreateVector<double>(*d) : 0,
-      a ? _fbb.CreateVector<flatbuffers::Offset<nd4j::graph::FlatArray>>(*a) : 0);
+      a ? _fbb.CreateVector<flatbuffers::Offset<FlatArray>>(*a) : 0);
 }
 
 inline const nd4j::graph::FlatProperties *GetFlatProperties(const void *buf) {
   return flatbuffers::GetRoot<nd4j::graph::FlatProperties>(buf);
+}
+
+inline const nd4j::graph::FlatProperties *GetSizePrefixedFlatProperties(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<nd4j::graph::FlatProperties>(buf);
 }
 
 inline bool VerifyFlatPropertiesBuffer(
@@ -124,10 +128,21 @@ inline bool VerifyFlatPropertiesBuffer(
   return verifier.VerifyBuffer<nd4j::graph::FlatProperties>(nullptr);
 }
 
+inline bool VerifySizePrefixedFlatPropertiesBuffer(
+    flatbuffers::Verifier &verifier) {
+  return verifier.VerifySizePrefixedBuffer<nd4j::graph::FlatProperties>(nullptr);
+}
+
 inline void FinishFlatPropertiesBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
     flatbuffers::Offset<nd4j::graph::FlatProperties> root) {
   fbb.Finish(root);
+}
+
+inline void FinishSizePrefixedFlatPropertiesBuffer(
+    flatbuffers::FlatBufferBuilder &fbb,
+    flatbuffers::Offset<nd4j::graph::FlatProperties> root) {
+  fbb.FinishSizePrefixed(root);
 }
 
 }  // namespace graph

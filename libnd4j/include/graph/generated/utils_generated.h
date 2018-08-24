@@ -38,8 +38,8 @@ enum OpType {
   OpType_MAX = OpType_LOGIC
 };
 
-inline OpType (&EnumValuesOpType())[16] {
-  static OpType values[] = {
+inline const OpType (&EnumValuesOpType())[16] {
+  static const OpType values[] = {
     OpType_TRANSFORM,
     OpType_ACCUMULATION,
     OpType_INDEX_ACCUMULATION,
@@ -70,8 +70,8 @@ enum InputType {
   InputType_MAX = InputType_STRINGULAR_SET
 };
 
-inline InputType (&EnumValuesInputType())[5] {
-  static InputType values[] = {
+inline const InputType (&EnumValuesInputType())[5] {
+  static const InputType values[] = {
     InputType_UNDEFINED,
     InputType_NUMERIC,
     InputType_STRINGULAR,
@@ -81,8 +81,8 @@ inline InputType (&EnumValuesInputType())[5] {
   return values;
 }
 
-inline const char **EnumNamesInputType() {
-  static const char *names[] = {
+inline const char * const *EnumNamesInputType() {
+  static const char * const names[] = {
     "UNDEFINED",
     "NUMERIC",
     "STRINGULAR",
@@ -109,8 +109,8 @@ enum OpClass {
   OpClass_MAX = OpClass_LOOP
 };
 
-inline OpClass (&EnumValuesOpClass())[6] {
-  static OpClass values[] = {
+inline const OpClass (&EnumValuesOpClass())[6] {
+  static const OpClass values[] = {
     OpClass_TRANSFORM,
     OpClass_REDUCTION,
     OpClass_MULTIPLICATOR,
@@ -121,8 +121,8 @@ inline OpClass (&EnumValuesOpClass())[6] {
   return values;
 }
 
-inline const char **EnumNamesOpClass() {
-  static const char *names[] = {
+inline const char * const *EnumNamesOpClass() {
+  static const char * const names[] = {
     "TRANSFORM",
     "REDUCTION",
     "MULTIPLICATOR",
@@ -167,13 +167,13 @@ struct LongPairBuilder {
   void add_second(int64_t second) {
     fbb_.AddElement<int64_t>(LongPair::VT_SECOND, second, 0);
   }
-  LongPairBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit LongPairBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   LongPairBuilder &operator=(const LongPairBuilder &);
   flatbuffers::Offset<LongPair> Finish() {
-    const auto end = fbb_.EndTable(start_, 2);
+    const auto end = fbb_.EndTable(start_);
     auto o = flatbuffers::Offset<LongPair>(end);
     return o;
   }
@@ -225,13 +225,13 @@ struct LongTripleBuilder {
   void add_third(int64_t third) {
     fbb_.AddElement<int64_t>(LongTriple::VT_THIRD, third, 0);
   }
-  LongTripleBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit LongTripleBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   LongTripleBuilder &operator=(const LongTripleBuilder &);
   flatbuffers::Offset<LongTriple> Finish() {
-    const auto end = fbb_.EndTable(start_, 3);
+    const auto end = fbb_.EndTable(start_);
     auto o = flatbuffers::Offset<LongTriple>(end);
     return o;
   }
@@ -277,13 +277,13 @@ struct IntPairBuilder {
   void add_second(int32_t second) {
     fbb_.AddElement<int32_t>(IntPair::VT_SECOND, second, 0);
   }
-  IntPairBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit IntPairBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   IntPairBuilder &operator=(const IntPairBuilder &);
   flatbuffers::Offset<IntPair> Finish() {
-    const auto end = fbb_.EndTable(start_, 2);
+    const auto end = fbb_.EndTable(start_);
     auto o = flatbuffers::Offset<IntPair>(end);
     return o;
   }
@@ -335,13 +335,13 @@ struct IntTripleBuilder {
   void add_third(int32_t third) {
     fbb_.AddElement<int32_t>(IntTriple::VT_THIRD, third, 0);
   }
-  IntTripleBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit IntTripleBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   IntTripleBuilder &operator=(const IntTripleBuilder &);
   flatbuffers::Offset<IntTriple> Finish() {
-    const auto end = fbb_.EndTable(start_, 3);
+    const auto end = fbb_.EndTable(start_);
     auto o = flatbuffers::Offset<IntTriple>(end);
     return o;
   }

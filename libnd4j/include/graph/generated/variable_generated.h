@@ -22,8 +22,8 @@ struct FlatVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_NDARRAY = 10,
     VT_DEVICE = 12
   };
-  const nd4j::graph::IntPair *id() const {
-    return GetPointer<const nd4j::graph::IntPair *>(VT_ID);
+  const IntPair *id() const {
+    return GetPointer<const IntPair *>(VT_ID);
   }
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -31,8 +31,8 @@ struct FlatVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<int64_t> *shape() const {
     return GetPointer<const flatbuffers::Vector<int64_t> *>(VT_SHAPE);
   }
-  const nd4j::graph::FlatArray *ndarray() const {
-    return GetPointer<const nd4j::graph::FlatArray *>(VT_NDARRAY);
+  const FlatArray *ndarray() const {
+    return GetPointer<const FlatArray *>(VT_NDARRAY);
   }
   int32_t device() const {
     return GetField<int32_t>(VT_DEVICE, 0);
@@ -55,7 +55,7 @@ struct FlatVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct FlatVariableBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_id(flatbuffers::Offset<nd4j::graph::IntPair> id) {
+  void add_id(flatbuffers::Offset<IntPair> id) {
     fbb_.AddOffset(FlatVariable::VT_ID, id);
   }
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
@@ -64,19 +64,19 @@ struct FlatVariableBuilder {
   void add_shape(flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape) {
     fbb_.AddOffset(FlatVariable::VT_SHAPE, shape);
   }
-  void add_ndarray(flatbuffers::Offset<nd4j::graph::FlatArray> ndarray) {
+  void add_ndarray(flatbuffers::Offset<FlatArray> ndarray) {
     fbb_.AddOffset(FlatVariable::VT_NDARRAY, ndarray);
   }
   void add_device(int32_t device) {
     fbb_.AddElement<int32_t>(FlatVariable::VT_DEVICE, device, 0);
   }
-  FlatVariableBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit FlatVariableBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   FlatVariableBuilder &operator=(const FlatVariableBuilder &);
   flatbuffers::Offset<FlatVariable> Finish() {
-    const auto end = fbb_.EndTable(start_, 5);
+    const auto end = fbb_.EndTable(start_);
     auto o = flatbuffers::Offset<FlatVariable>(end);
     return o;
   }
@@ -84,10 +84,10 @@ struct FlatVariableBuilder {
 
 inline flatbuffers::Offset<FlatVariable> CreateFlatVariable(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<nd4j::graph::IntPair> id = 0,
+    flatbuffers::Offset<IntPair> id = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
     flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape = 0,
-    flatbuffers::Offset<nd4j::graph::FlatArray> ndarray = 0,
+    flatbuffers::Offset<FlatArray> ndarray = 0,
     int32_t device = 0) {
   FlatVariableBuilder builder_(_fbb);
   builder_.add_device(device);
@@ -100,10 +100,10 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariable(
 
 inline flatbuffers::Offset<FlatVariable> CreateFlatVariableDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<nd4j::graph::IntPair> id = 0,
+    flatbuffers::Offset<IntPair> id = 0,
     const char *name = nullptr,
     const std::vector<int64_t> *shape = nullptr,
-    flatbuffers::Offset<nd4j::graph::FlatArray> ndarray = 0,
+    flatbuffers::Offset<FlatArray> ndarray = 0,
     int32_t device = 0) {
   return nd4j::graph::CreateFlatVariable(
       _fbb,
@@ -118,15 +118,30 @@ inline const nd4j::graph::FlatVariable *GetFlatVariable(const void *buf) {
   return flatbuffers::GetRoot<nd4j::graph::FlatVariable>(buf);
 }
 
+inline const nd4j::graph::FlatVariable *GetSizePrefixedFlatVariable(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<nd4j::graph::FlatVariable>(buf);
+}
+
 inline bool VerifyFlatVariableBuffer(
     flatbuffers::Verifier &verifier) {
   return verifier.VerifyBuffer<nd4j::graph::FlatVariable>(nullptr);
+}
+
+inline bool VerifySizePrefixedFlatVariableBuffer(
+    flatbuffers::Verifier &verifier) {
+  return verifier.VerifySizePrefixedBuffer<nd4j::graph::FlatVariable>(nullptr);
 }
 
 inline void FinishFlatVariableBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
     flatbuffers::Offset<nd4j::graph::FlatVariable> root) {
   fbb.Finish(root);
+}
+
+inline void FinishSizePrefixedFlatVariableBuffer(
+    flatbuffers::FlatBufferBuilder &fbb,
+    flatbuffers::Offset<nd4j::graph::FlatVariable> root) {
+  fbb.FinishSizePrefixed(root);
 }
 
 }  // namespace graph
