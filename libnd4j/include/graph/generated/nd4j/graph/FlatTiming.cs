@@ -20,12 +20,12 @@ public struct FlatTiming : IFlatbufferObject
   public int Id { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public string Name { get { int o = __p.__offset(6); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
   public ArraySegment<byte>? GetNameBytes() { return __p.__vector_as_arraysegment(6); }
-  public LongPair? Timing { get { int o = __p.__offset(8); return o != 0 ? (LongPair?)(new LongPair()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
+  public nd4j.graph.LongPair? Timing { get { int o = __p.__offset(8); return o != 0 ? (nd4j.graph.LongPair?)(new nd4j.graph.LongPair()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
 
   public static Offset<FlatTiming> CreateFlatTiming(FlatBufferBuilder builder,
       int id = 0,
       StringOffset nameOffset = default(StringOffset),
-      Offset<LongPair> timingOffset = default(Offset<LongPair>)) {
+      Offset<nd4j.graph.LongPair> timingOffset = default(Offset<nd4j.graph.LongPair>)) {
     builder.StartObject(3);
     FlatTiming.AddTiming(builder, timingOffset);
     FlatTiming.AddName(builder, nameOffset);
@@ -36,7 +36,7 @@ public struct FlatTiming : IFlatbufferObject
   public static void StartFlatTiming(FlatBufferBuilder builder) { builder.StartObject(3); }
   public static void AddId(FlatBufferBuilder builder, int id) { builder.AddInt(0, id, 0); }
   public static void AddName(FlatBufferBuilder builder, StringOffset nameOffset) { builder.AddOffset(1, nameOffset.Value, 0); }
-  public static void AddTiming(FlatBufferBuilder builder, Offset<LongPair> timingOffset) { builder.AddOffset(2, timingOffset.Value, 0); }
+  public static void AddTiming(FlatBufferBuilder builder, Offset<nd4j.graph.LongPair> timingOffset) { builder.AddOffset(2, timingOffset.Value, 0); }
   public static Offset<FlatTiming> EndFlatTiming(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<FlatTiming>(o);

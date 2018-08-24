@@ -115,11 +115,17 @@ foreach (TMP_PATH ${TEST_SOURCES})
     endif ()
 endforeach(TMP_PATH)
 
-add_executable(runtests  ../../blas/cpu/NativeOps.cpp ../../blas/cpu/GraphExecutioner.cpp
-        ../../blas/cpu/NativeOpExcutioner.cpp ../../blas/cpu/NDArray.cpp
-        ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h
-        ../../blas/Environment.cpp ../../blas/Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
-        ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
-        ${OPS_SOURCES} ${TEST_SOURCES})
+add_library(interm STATIC ../../blas/cpu/NativeOps.cpp ../../blas/cpu/GraphExecutioner.cpp
+../../blas/cpu/NativeOpExcutioner.cpp ../../blas/cpu/NDArray.cpp
+../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h
+../../blas/Environment.cpp ../../blas/Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
+${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
+${OPS_SOURCES})
 
-target_link_libraries(runtests gtest gtest_main)
+add_executable(runtests ${TEST_SOURCES})
+
+add_executable(GraphServer ../../server/GraphServer.cpp)
+
+target_link_libraries(runtests gtest gtest_main interm)
+
+target_link_libraries(GraphServer interm)

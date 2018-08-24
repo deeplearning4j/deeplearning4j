@@ -1,0 +1,20 @@
+include "node.fbs";
+include "utils.fbs";
+include "variable.fbs";
+include "graph.fbs";
+
+namespace nd4j.graph;
+
+table FlatInferenceRequest {
+    id:long; // id of the graph to be executed
+    variables:[FlatVariable]; // input variables to be set as input
+}
+
+table FlatResponse {
+    status:int; // status of operation
+}
+
+rpc_service GraphInferenceServer {
+  RegisterGraph(FlatGraph):FlatResponse;
+  InferenceRequest(FlatInferenceRequest):FlatResponse (streaming: "server");
+}

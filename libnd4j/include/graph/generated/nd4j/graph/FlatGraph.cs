@@ -18,20 +18,20 @@ public struct FlatGraph : IFlatbufferObject
   public FlatGraph __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public long Id { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetLong(o + __p.bb_pos) : (long)0; } }
-  public FlatVariable? Variables(int j) { int o = __p.__offset(6); return o != 0 ? (FlatVariable?)(new FlatVariable()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
+  public nd4j.graph.FlatVariable? Variables(int j) { int o = __p.__offset(6); return o != 0 ? (nd4j.graph.FlatVariable?)(new nd4j.graph.FlatVariable()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int VariablesLength { get { int o = __p.__offset(6); return o != 0 ? __p.__vector_len(o) : 0; } }
-  public FlatNode? Nodes(int j) { int o = __p.__offset(8); return o != 0 ? (FlatNode?)(new FlatNode()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
+  public nd4j.graph.FlatNode? Nodes(int j) { int o = __p.__offset(8); return o != 0 ? (nd4j.graph.FlatNode?)(new nd4j.graph.FlatNode()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int NodesLength { get { int o = __p.__offset(8); return o != 0 ? __p.__vector_len(o) : 0; } }
-  public IntPair? Outputs(int j) { int o = __p.__offset(10); return o != 0 ? (IntPair?)(new IntPair()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
+  public nd4j.graph.IntPair? Outputs(int j) { int o = __p.__offset(10); return o != 0 ? (nd4j.graph.IntPair?)(new nd4j.graph.IntPair()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int OutputsLength { get { int o = __p.__offset(10); return o != 0 ? __p.__vector_len(o) : 0; } }
-  public FlatConfiguration? Configuration { get { int o = __p.__offset(12); return o != 0 ? (FlatConfiguration?)(new FlatConfiguration()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
+  public nd4j.graph.FlatConfiguration? Configuration { get { int o = __p.__offset(12); return o != 0 ? (nd4j.graph.FlatConfiguration?)(new nd4j.graph.FlatConfiguration()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
 
   public static Offset<FlatGraph> CreateFlatGraph(FlatBufferBuilder builder,
       long id = 0,
       VectorOffset variablesOffset = default(VectorOffset),
       VectorOffset nodesOffset = default(VectorOffset),
       VectorOffset outputsOffset = default(VectorOffset),
-      Offset<FlatConfiguration> configurationOffset = default(Offset<FlatConfiguration>)) {
+      Offset<nd4j.graph.FlatConfiguration> configurationOffset = default(Offset<nd4j.graph.FlatConfiguration>)) {
     builder.StartObject(5);
     FlatGraph.AddId(builder, id);
     FlatGraph.AddConfiguration(builder, configurationOffset);
@@ -44,15 +44,15 @@ public struct FlatGraph : IFlatbufferObject
   public static void StartFlatGraph(FlatBufferBuilder builder) { builder.StartObject(5); }
   public static void AddId(FlatBufferBuilder builder, long id) { builder.AddLong(0, id, 0); }
   public static void AddVariables(FlatBufferBuilder builder, VectorOffset variablesOffset) { builder.AddOffset(1, variablesOffset.Value, 0); }
-  public static VectorOffset CreateVariablesVector(FlatBufferBuilder builder, Offset<FlatVariable>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateVariablesVector(FlatBufferBuilder builder, Offset<nd4j.graph.FlatVariable>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static void StartVariablesVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static void AddNodes(FlatBufferBuilder builder, VectorOffset nodesOffset) { builder.AddOffset(2, nodesOffset.Value, 0); }
-  public static VectorOffset CreateNodesVector(FlatBufferBuilder builder, Offset<FlatNode>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateNodesVector(FlatBufferBuilder builder, Offset<nd4j.graph.FlatNode>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static void StartNodesVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static void AddOutputs(FlatBufferBuilder builder, VectorOffset outputsOffset) { builder.AddOffset(3, outputsOffset.Value, 0); }
-  public static VectorOffset CreateOutputsVector(FlatBufferBuilder builder, Offset<IntPair>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateOutputsVector(FlatBufferBuilder builder, Offset<nd4j.graph.IntPair>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static void StartOutputsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
-  public static void AddConfiguration(FlatBufferBuilder builder, Offset<FlatConfiguration> configurationOffset) { builder.AddOffset(4, configurationOffset.Value, 0); }
+  public static void AddConfiguration(FlatBufferBuilder builder, Offset<nd4j.graph.FlatConfiguration> configurationOffset) { builder.AddOffset(4, configurationOffset.Value, 0); }
   public static Offset<FlatGraph> EndFlatGraph(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<FlatGraph>(o);
