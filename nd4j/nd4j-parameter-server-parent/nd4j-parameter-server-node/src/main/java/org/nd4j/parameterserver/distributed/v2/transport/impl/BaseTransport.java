@@ -93,7 +93,7 @@ public abstract  class BaseTransport  implements Transport {
     }
 
     protected BaseTransport(@NonNull String rootId, @NonNull VoidConfiguration voidConfiguration) {
-        this.mesh.set(new MeshOrganizer(meshBuildMode));
+        this.mesh.set(new MeshOrganizer(voidConfiguration.getMeshBuildMode()));
         this.rootId = rootId;
         this.voidConfiguration = voidConfiguration;
     }
@@ -105,6 +105,9 @@ public abstract  class BaseTransport  implements Transport {
         this.voidConfiguration = voidConfiguration;
 
         masterMode = ownId.equalsIgnoreCase(rootId);
+        if (masterMode) {
+            this.mesh.get().getRootNode().setId(rootId);
+        }
     }
 
     @Override

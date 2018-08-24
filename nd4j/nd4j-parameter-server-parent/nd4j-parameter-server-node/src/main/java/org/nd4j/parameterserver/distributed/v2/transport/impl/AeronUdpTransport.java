@@ -259,6 +259,12 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                 ((RequestMessage) message).setRequestId(java.util.UUID.randomUUID().toString());
         }
 
+        // let's not send messages to ourselves
+        if (message.getOriginatorId().equals(id)) {
+            this.processMessage(message);
+            return;
+        }
+
         val conn = remoteConnections.get(id);
         if (conn == null)
             throw new ND4JIllegalStateException("Unknown target ID specified: [" + id + "]");

@@ -35,12 +35,10 @@ import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualDataSetIterator;
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualIterator;
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualMultiDataSetIterator;
-import org.deeplearning4j.spark.parameterserver.networking.v1.SilentTrainingDriver;
-import org.deeplearning4j.spark.parameterserver.networking.v1.WiredEncodingHandler;
-import org.deeplearning4j.spark.parameterserver.networking.v1.messages.SilentIntroductoryMessage;
 import org.deeplearning4j.spark.parameterserver.networking.v2.ModelParamsConsumer;
 import org.deeplearning4j.spark.parameterserver.networking.v2.UpdaterParamsConsumer;
 import org.deeplearning4j.spark.parameterserver.networking.v2.UpdatesConsumer;
+import org.deeplearning4j.spark.parameterserver.networking.v2.WiredEncodingHandler;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingResult;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingWorker;
 import org.deeplearning4j.spark.parameterserver.util.BlockingObserver;
@@ -92,7 +90,7 @@ public class SharedTrainingWrapper {
     protected EncodedGradientsAccumulator accumulator;
     protected Model originalModel;
 
-    protected SilentTrainingDriver driver;
+    protected UpdatesConsumer consumer;
 
     protected SharedTrainingWrapper() {
         init();
@@ -121,7 +119,7 @@ public class SharedTrainingWrapper {
             INSTANCE.iteratorDataSetCount = new ThreadLocal<>();
             INSTANCE.accumulator = null;
             INSTANCE.originalModel = null;
-            INSTANCE.driver = null;
+            INSTANCE.consumer = null;
             LAST_INSTANCE_ID.set(id);
         }
 
@@ -314,7 +312,7 @@ public class SharedTrainingWrapper {
                     }
 
                     //driver = new SilentTrainingDriver(accumulator);
-                    val consumer = UpdatesConsumer.builder()
+                    consumer = UpdatesConsumer.builder()
                             .accumulator(accumulator)
                             .build();
 
@@ -376,7 +374,7 @@ public class SharedTrainingWrapper {
             // TODO: optionally we might be waiting until we have >1 splits delivered
 
 
-            driver.bypassMode(false);
+            consumer.bypassMode(false);
 
             // now we're just calling for fit
             if(iteratorDS == null && iteratorMDS == null)
@@ -428,7 +426,7 @@ public class SharedTrainingWrapper {
             accumulator.reset();
 
             // current TrainingDriver won't be receiving any updates beyond this point
-            driver.bypassMode(true);
+            consumer.bypassMode(true);
 
 
             isFirst.set(false);

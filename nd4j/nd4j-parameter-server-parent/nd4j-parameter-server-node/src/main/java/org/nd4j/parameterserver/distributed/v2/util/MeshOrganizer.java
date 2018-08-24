@@ -325,8 +325,10 @@ public class MeshOrganizer implements Serializable {
             return rootNode;
 
         val node = nodeMap.get(id);
-        if (node == null)
+        if (node == null) {
+            log.info("Existing nodes: [{}]", this.flatNodes());
             throw new NoSuchElementException(id);
+        }
 
         return node;
     }

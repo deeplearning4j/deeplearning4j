@@ -67,45 +67,63 @@ public class UpdatesConsumer implements Subscriber<INDArray> {
         // no-op
     }
 
+    /**
+     * This
+     * @param reallBypass
+     */
+    public void bypassMode(boolean reallBypass) {
+        bypassMode.set(reallBypass);
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public boolean isBypassMod() {
+        return bypassMode.get();
+    }
+
     @Override
     public void onNext(INDArray array) {
-        if (accumulator != null) {
-            // this means consumer runs on worker node
+        if (!bypassMode.get()) {
+            if (accumulator != null) {
+                // this means consumer runs on worker node
 
-            try {
-                // we're just storing update into buffer, and it'll be consumed by GradientsAccumulator on next cycle
-                updatesBuffer.put(array);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        } else if (params != null && stepFunction != null) {
-            synchronized (this) {
-                // threshold decoder is inplace & fast
-                int encoding = array.data().getInt(3);
-                if (encoding == ThresholdCompression.FLEXIBLE_ENCODING) {
-                    Nd4j.getExecutioner().thresholdDecode(array, updates);
-                    sparseCounter.incrementAndGet();
-                } else if (encoding == ThresholdCompression.BITMAP_ENCODING) {
-                    Nd4j.getExecutioner().bitmapDecode(array, updates);
-                    denseCounter.incrementAndGet();
-                } else
-                    throw new DL4JInvalidConfigException("Unknown compression header received: " + encoding);
-
-
-                // this simple flag shows that we have something not applied, will be used at finishTraining() method
-                hasSomething.set(true);
-
-                // we apply updates every X iterations, and we don't really need X to be small here
-                if (updatesCount.incrementAndGet() % 10 == 0) {
-                    stepFunction.step(params, updates);
-
-                    // once accumulated updates are applied - reset storage, and wait for other messsages
-                    Nd4j.getMemoryManager().memset(updates);
-                    hasSomething.set(false);
+                try {
+                    // we're just storing update into buffer, and it'll be consumed by GradientsAccumulator on next cycle
+                    updatesBuffer.put(array);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
-            }
-        } else
-            throw new ND4JIllegalStateException("Accumulator & StepFunction is null at the same time");
+            } else if (params != null && stepFunction != null) {
+                synchronized (this) {
+                    // threshold decoder is inplace & fast
+                    int encoding = array.data().getInt(3);
+                    if (encoding == ThresholdCompression.FLEXIBLE_ENCODING) {
+                        Nd4j.getExecutioner().thresholdDecode(array, updates);
+                        sparseCounter.incrementAndGet();
+                    } else if (encoding == ThresholdCompression.BITMAP_ENCODING) {
+                        Nd4j.getExecutioner().bitmapDecode(array, updates);
+                        denseCounter.incrementAndGet();
+                    } else
+                        throw new DL4JInvalidConfigException("Unknown compression header received: " + encoding);
+
+
+                    // this simple flag shows that we have something not applied, will be used at finishTraining() method
+                    hasSomething.set(true);
+
+                    // we apply updates every X iterations, and we don't really need X to be small here
+                    if (updatesCount.incrementAndGet() % 10 == 0) {
+                        stepFunction.step(params, updates);
+
+                        // once accumulated updates are applied - reset storage, and wait for other messsages
+                        Nd4j.getMemoryManager().memset(updates);
+                        hasSomething.set(false);
+                    }
+                }
+            } else
+                throw new ND4JIllegalStateException("Accumulator & StepFunction is null at the same time");
+        }
     }
 
     @Override

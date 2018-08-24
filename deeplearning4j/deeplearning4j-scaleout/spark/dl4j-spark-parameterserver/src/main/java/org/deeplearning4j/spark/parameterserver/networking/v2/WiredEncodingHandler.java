@@ -14,8 +14,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.spark.parameterserver.networking.v1;
+package org.deeplearning4j.spark.parameterserver.networking.v2;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodingHandler;
 import org.deeplearning4j.spark.parameterserver.networking.v1.messages.SilentUpdatesMessage;
@@ -23,6 +24,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
+import org.nd4j.parameterserver.distributed.v2.ModelParameterServer;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -33,7 +35,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 @Slf4j
-@Deprecated
 public class WiredEncodingHandler extends EncodingHandler {
     protected AtomicLong updatesCounter = new AtomicLong(0);
 
@@ -75,7 +76,7 @@ public class WiredEncodingHandler extends EncodingHandler {
      * @param shakeFrequency How ofter we'll be sending dense updates with lower threshold
      */
     public WiredEncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger,
-                    int stepDelay, int shakeFrequency) {
+                                int stepDelay, int shakeFrequency) {
         this(threshold, minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, null);
     }
 
@@ -91,7 +92,7 @@ public class WiredEncodingHandler extends EncodingHandler {
      * @param boundary
      */
     public WiredEncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger,
-                    int stepDelay, int shakeFrequency, Double boundary) {
+                                int stepDelay, int shakeFrequency, Double boundary) {
         super(threshold, minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, boundary);
     }
 
@@ -101,7 +102,7 @@ public class WiredEncodingHandler extends EncodingHandler {
      * @param message
      */
     @Override
-    protected void sendMessage(INDArray message) {
+    protected void sendMessage(@NonNull INDArray message) {
         // here we'll send our stuff to other executores over the wire
         // and let's pray for udp broadcast availability
 
@@ -110,8 +111,7 @@ public class WiredEncodingHandler extends EncodingHandler {
         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             long updateId = updatesCounter.getAndIncrement();
 
-            VoidParameterServer.getInstance().execDistributedImmediately(
-                            new SilentUpdatesMessage(message.unsafeDuplication(), updateId));
+            ModelParameterServer.getInstance().sendUpdate(message.unsafeDuplication());
         }
 
 
