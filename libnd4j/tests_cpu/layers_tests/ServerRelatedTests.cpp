@@ -55,4 +55,18 @@ TEST_F(ServerRelatedTests, Basic_Output_Test_1) {
     ASSERT_EQ(*array3, *result.byId("second indexed")->getNDArray());
 
     auto flatResult = result.asFlatResult(builder);
+    builder.Finish(flatResult);
+    auto ptr = builder.GetBufferPointer();
+    auto received = GetFlatResult(ptr);
+
+    ExecutionResult<float> restored(received);
+    ASSERT_EQ(3, restored.size());
+
+    ASSERT_EQ(*array1, *restored.at(0)->getNDArray());
+    ASSERT_EQ(*array2, *restored.at(1)->getNDArray());
+    ASSERT_EQ(*array3, *restored.at(2)->getNDArray());
+
+    ASSERT_EQ(*array1, *restored.byId("first")->getNDArray());
+    ASSERT_EQ(*array2, *restored.byId("second")->getNDArray());
+    ASSERT_EQ(*array3, *restored.byId("second indexed")->getNDArray());
 }

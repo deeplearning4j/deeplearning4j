@@ -1,29 +1,35 @@
 #
 #  @author raver119@gmail.com
+#  @author @sshepel
 #
+FROM ubuntu:bionic as builder
+
+RUN apt-get update && \
+    apt-get -y --no-install-recommends install \
+        git maven gcc g++ automake cmake build-essential autoconf libtool pkg-config libgflags-dev libgtest-dev clang libc++-dev libgomp1 libprotobuf-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+ENV PROTOBUF_HOME /opt/protobuf
+
+RUN git clone https://github.com/grpc/grpc && cd grpc && git submodule update --init && make -j 4 && make install
+
+RUN git clone https://github.com/deeplearning4j/deeplearning4j && cd deeplearning4j && \
+    git checkout r119_twenty_percents && \
+    cd libnd4j/server && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release && make -j 4
+
 FROM ubuntu:bionic
 
-LABEL Description="GraphServer CPU container"  Vendor="SkyMind.ai"  Version="1.0"
+COPY --from=builder /deeplearning4j/libnd4j/server/GraphServer /app/GraphServer
 
-# installing basics
-RUN apt-get update && apt-get  install -y git maven gcc g++ cmake build-essential autoconf libtool pkg-config libgflags-dev libgtest-dev clang libc++-dev libgomp1 libprotobuf-dev
-
-# cloning gRPC and DL4J sources
-RUN git clone https://github.com/grpc/grpc && git clone https://github.com/deeplearning4j/deeplearning4j && cd grpc && git submodule update --init
-
-# Building gRPC
-RUN  cd grpc && make -j 4 && make install
-
-# building libnd4j from sources
-RUN  cd deeplearning4j \
-                && git checkout r119_twenty_percents \
-                && cd libnd4j/server && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release && make -j 4 && cp GraphServer ../../../
-
-# remove everything
-RUN rm -rf grpc deeplearning4j && apt-get purge -y git maven gcc g++ cmake build-essential autoconf libtool pkg-config libgflags-dev libgtest-dev clang libc++-dev && apt autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    apt-get -y --no-install-recommends install \
+        libgomp1 libprotobuf10 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ENV LANG C.UTF-8
 
 EXPOSE 40123/tcp
 
-CMD ["./GraphServer", "-p", "40123"]
+CMD ["/app/GraphServer", "-p", "40123"]

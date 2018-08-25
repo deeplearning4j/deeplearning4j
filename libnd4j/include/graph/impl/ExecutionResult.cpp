@@ -26,8 +26,18 @@
 namespace nd4j {
     namespace graph {
         template <typename T>
-        ExecutionResult<T>::ExecutionResult(FlatResult* flatResult) {
-            //flatResult->
+        ExecutionResult<T>::ExecutionResult(const FlatResult* flatResult) {
+            if (flatResult->variables() != nullptr)
+                for (int e = 0; e < flatResult->variables()->size(); e++) {
+                    auto fv = flatResult->variables()->Get(e);
+                    auto v = new Variable<T>(fv);
+                    this->emplace_back(v);
+                }
+        }
+
+        template <typename T>
+        Nd4jLong ExecutionResult<T>::size() {
+            return variables.size();
         }
 
         template <typename T>
@@ -85,9 +95,15 @@ namespace nd4j {
 
         template <typename T>
         flatbuffers::Offset<FlatResult> ExecutionResult<T>::asFlatResult(flatbuffers::FlatBufferBuilder &builder) {
-            auto offset = CreateFlatResult(builder);
 
-            return offset;
+            std::vector<flatbuffers::Offset<FlatVariable>> vec;
+            for (Variable<T>* v:variables) {
+                vec.emplace_back(v->asFlatVariable(builder));
+            }
+
+            auto vecOffset = builder.CreateVector(vec);
+
+            return CreateFlatResult(builder, 0, vecOffset);
         }
 
 

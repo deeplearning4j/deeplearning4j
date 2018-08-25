@@ -36,7 +36,7 @@ namespace nd4j {
             std::map<std::string, Variable<T>*> stringIdMap;
             std::map<std::pair<int, int>, Variable<T>*> pairIdMap;
         public:
-            ExecutionResult(FlatResult* flatResult);
+            ExecutionResult(const FlatResult* flatResult);
             ExecutionResult(std::initializer_list<Variable<T> *> variables);
             ExecutionResult() = default;
             ~ExecutionResult() = default;
@@ -70,6 +70,12 @@ namespace nd4j {
              * This method returns Variable by its numeric id with index 0
              */
             Variable<T>* byId(int id);
+
+            /**
+             * This method returns number of elements stored in this entity
+             * @return
+             */
+            Nd4jLong size();
 
             /**
              * This method converts ExecutionResult entity to FlatResult
