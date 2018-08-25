@@ -65,6 +65,9 @@ namespace nd4j {
 
                 // trying to get graph by id
                 auto graph = GraphHolder::getInstance()->cloneGraph<float>(request->id());
+
+                // we're fetching variables out of request
+                auto variables = request->variables();
                 
                 // TODO: add validation here
                 GraphExecutioner<float>::execute(graph);
@@ -88,12 +91,13 @@ void RunServer(int port) {
   server_address += nd4j::StringUtils::valueToString<int>(port);
 
   nd4j::graph::GraphInferenceServerImpl service;
+  auto registrator = nd4j::ops::OpRegistrator::getInstance();
 
   grpc::ServerBuilder builder;
   builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
   builder.RegisterService(&service);
   std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
-  std::cerr << "Server listening on " << server_address << std::endl;
+  std::cerr << "Server listening on: [" << server_address << "]; Number of operations: [" <<  registrator->numberOfOperations()  << "]"<< std::endl;
 
   server->Wait();
 }
