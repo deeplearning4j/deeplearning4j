@@ -21,7 +21,9 @@
 #define LIBND4J_EXECUTION_RESULT
 
 #include <vector>
+#include <initializer_list>
 #include <map>
+#include <string>
 #include <flatbuffers/flatbuffers.h>
 #include <graph/Variable.h>
 
@@ -34,6 +36,8 @@ namespace nd4j {
             std::map<std::string, Variable<T>*> stringIdMap;
             std::map<std::pair<int, int>, Variable<T>*> pairIdMap;
         public:
+            ExecutionResult(FlatResult* flatResult);
+            ExecutionResult(std::initializer_list<Variable<T> *> variables);
             ExecutionResult() = default;
             ~ExecutionResult() = default;
 
@@ -51,6 +55,11 @@ namespace nd4j {
              * This method returns Variable by its string id
              */
             Variable<T>* byId(std::string &id);
+
+            /**
+             * This method returns Variable by its string id
+             */
+            Variable<T>* byId(const char *str);
 
             /**
              * This method returns Variable by its numeric id:index pair

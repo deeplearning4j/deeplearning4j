@@ -26,8 +26,25 @@
 namespace nd4j {
     namespace graph {
         template <typename T>
+        ExecutionResult<T>::ExecutionResult(FlatResult* flatResult) {
+            //flatResult->
+        }
+
+        template <typename T>
+        ExecutionResult<T>::ExecutionResult(std::initializer_list<Variable<T> *> variables) {
+            for (auto v: variables)
+                this->emplace_back(v);
+        }
+
+        template <typename T>
         void ExecutionResult<T>::emplace_back(Variable<T> *variable) {
             variables.emplace_back(variable);
+
+            if (variable->getName() != nullptr)
+                stringIdMap[*variable->getName()] = variable;
+
+            std::pair<int,int> p(variable->id(), variable->index());
+            pairIdMap[p] = variable;
         }
 
         template <typename T>
@@ -57,6 +74,12 @@ namespace nd4j {
         template <typename T>
         Variable<T>* ExecutionResult<T>::byId(int id) {
             std::pair<int,int> p(id, 0);
+            return byId(p);
+        }
+
+        template <typename T>
+        Variable<T>* ExecutionResult<T>::byId(const char *str) {
+            std::string p(str);
             return byId(p);
         }
 
