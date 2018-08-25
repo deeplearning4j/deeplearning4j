@@ -43,23 +43,6 @@ else()
 endif()
 
 
-if (APPLE)
-    set(CMAKE_CXX_FLAGS  " -O0 -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D__APPLE_OS__=true")
-elseif(WIN32)
-    set(CMAKE_CXX_FLAGS  " --fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
-else()
-    if ("${_RELEASE}")
-        set(CMAKE_CXX_FLAGS  "-O3  -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
-        if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
-            set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -mcpu=native")
-        else()
-            set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
-        endif()
-    else()
-        set(CMAKE_CXX_FLAGS  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -fsanitize=address")
-    endif()
-endif()
-
 # tests are always compiled with all ops included
 SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true")
 
