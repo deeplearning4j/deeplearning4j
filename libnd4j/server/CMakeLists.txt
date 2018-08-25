@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.9)
 project(dev_tests)
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../cmake" ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}../cmake" ${CMAKE_MODULE_PATH})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../lib/googletest-release-1.8.0 ${CMAKE_CURRENT_BINARY_DIR}/lib/googletest-release-1.8.0)
 set(gtest_SOURCE_DIR ../lib/googletest-release-1.8.0)
 
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
-include_directories(../../include ../../layers ../../include/helpers ../../include/array ../../include/memory ../../include/loops ../../include/graph ../../include/ops ../../include/types ../../include/cnpy ../../blas)
+include_directories(../include ../include/helpers ../include/array ../include/memory ../include/loops ../include/graph ../include/ops ../include/types ../include/cnpy ../blas)
 if(LINUX)
     link_directories(/usr/local/lib)
     link_directories(/usr/lib)
