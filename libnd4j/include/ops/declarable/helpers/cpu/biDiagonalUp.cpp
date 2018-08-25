@@ -63,7 +63,7 @@ void BiDiagonalUp<T>::evalData() {
 		Householder<T>::evalHHmatrixDataI(*column, _HHmatrix(i,i), _HHbidiag(i,i)); 
 		// multiply corresponding matrix block on householder matrix from the left: P * bottomRightCorner		
 		bottomRightCorner =  _HHmatrix.subarray({{i, rows}, {i+1, cols}});	// {i, cols}				
-		Householder<T>::mulLeft(*bottomRightCorner, _HHmatrix({{i+1, rows}, {i, i+1}}, true), _HHmatrix(i,i));		
+		Householder<T>::mulLeft(*bottomRightCorner, _HHmatrix({i+1,rows, i,i+1}, true), _HHmatrix(i,i));		
 
 		delete bottomRightCorner;
 		delete column;
@@ -76,7 +76,7 @@ void BiDiagonalUp<T>::evalData() {
 		Householder<T>::evalHHmatrixDataI(*row, _HHmatrix(i,i+1), _HHbidiag(i,i+1));				
 		// multiply corresponding matrix block on householder matrix from the right: bottomRightCorner * P
 		bottomRightCorner = _HHmatrix.subarray({{i+1, rows}, {i+1, cols}});  // {i, rows}		
-		Householder<T>::mulRight(*bottomRightCorner, _HHmatrix({{i, i+1}, {i+2, cols}}, true), _HHmatrix(i,i+1));
+		Householder<T>::mulRight(*bottomRightCorner, _HHmatrix({i,i+1, i+2,cols}, true), _HHmatrix(i,i+1));
 	
 		delete bottomRightCorner;
 		delete row;

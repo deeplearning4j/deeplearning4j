@@ -58,13 +58,13 @@ namespace nd4j {
 //            resMeans->printBuffer("Output Means");
 //            resVariances->printBuffer("Output Variance");
 
-            means->template applyScalar<simdOps::Divide<T>>((*counts)(0), resMeans, nullptr);
+            means->template applyScalar<simdOps::Divide<T>>((*counts)(0.), resMeans, nullptr);
 
             std::unique_ptr<NDArray<T>> squareMeans(resMeans->dup('c'));
             std::unique_ptr<NDArray<T>> tempVariances(resVariances->dup('c'));
 
             squareMeans->template applyTransform<simdOps::Square<T>>((T*)nullptr);
-            variances->template applyScalar<simdOps::Divide<T>>((*counts)(0), tempVariances.get(), nullptr);
+            variances->template applyScalar<simdOps::Divide<T>>((*counts)(0.), tempVariances.get(), nullptr);
 //            tempVariances->printIndexedBuffer("varianced divided by count");
             tempVariances->template applyPairwiseTransform<simdOps::Subtract<T>>(squareMeans.get(), resVariances, nullptr);
 
