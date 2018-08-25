@@ -65,20 +65,9 @@ namespace nd4j {
 
                 // trying to get graph by id
                 auto graph = GraphHolder::getInstance()->cloneGraph<float>(request->id());
-                auto variableSpace = graph->getVariableSpace();
-
-                // we're fetching variables out of request
-                auto variables = request->variables();
-                for (auto v: *variables) {
-                    auto variable = new Variable<float>(v);
-                    variableSpace->replaceVariable(variable);
-                }
-                
-                // TODO: add validation here
-                GraphExecutioner<float>::execute(graph);
 
                 // provide results here
-                auto response_offset = CreateFlatResult(mb_, request->id());
+                auto response_offset = GraphExecutioner<float>::exec(graph, mb_, request);
 
                 mb_.Finish(response_offset);
                 *response_msg = mb_.ReleaseMessage<FlatResult>();

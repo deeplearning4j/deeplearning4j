@@ -51,6 +51,7 @@
 #include <Status.h>
 #include <deque>
 #include <graph/ResultWrapper.h>
+#include <graph/ExecutionResult.h>
 
 namespace nd4j{
 namespace graph {
@@ -849,6 +850,14 @@ uint8_t* readFlatBuffers(const char * filename) {
     fclose(in);
 
     return data;
+}
+
+
+template <typename T>
+flatbuffers::Offset<FlatResult> GraphExecutioner<T>::execute(Graph<T> *graph, flatbuffers::FlatBufferBuilder &builder, FlatInferenceRequest* request) {
+    ExecutionResult<T> result;
+
+    return result.asFlatResult(builder);
 }
 
 
