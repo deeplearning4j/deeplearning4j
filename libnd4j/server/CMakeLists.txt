@@ -27,15 +27,32 @@ if(WIN32)
     endforeach()
 endif()
 
-# -fsanitize=address
-# -fsanitize=leak
+
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(CMAKE_CXX_FLAGS  "-O3  -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+    if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
+        set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -mcpu=native")
+    else()
+        set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -mmmx  -msse  -msse2  -msse3  -mssse3  -msse4.1  -msse4.2  -msse4")
+    endif()
+else()
+    if (APPLE)
+        set(CMAKE_CXX_FLAGS  " -O0 -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D__APPLE_OS__=true")
+    elseif(WIN32)
+        set(CMAKE_CXX_FLAGS  " -O0 -g --fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+    else()
+        set(CMAKE_CXX_FLAGS  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -fsanitize=address")
+    endif()
+endif()
+
+
 if (APPLE)
     set(CMAKE_CXX_FLAGS  " -O0 -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D__APPLE_OS__=true")
 elseif(WIN32)
-    set(CMAKE_CXX_FLAGS  " -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+    set(CMAKE_CXX_FLAGS  " --fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
 else()
     if ("${_RELEASE}")
-        set(CMAKE_CXX_FLAGS  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+        set(CMAKE_CXX_FLAGS  "-O3  -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
         if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
             set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -mcpu=native")
         else()
@@ -90,40 +107,27 @@ elseif(MSYS)
 endif()
 
 
-file(GLOB_RECURSE TYPES_SOURCES false ../../include/types/*.cpp ../../include/types/*.h)
-file(GLOB_RECURSE ARRAY_SOURCES false ../../include/array/*.cpp ../../include/array/*.h)
-file(GLOB_RECURSE MEMORY_SOURCES false ../../include/memory/*.cpp ../../include/memory/*.h)
-file(GLOB_RECURSE GRAPH_SOURCES false ../../include/graph/*.cpp ../../include/graph/*.h)
-file(GLOB_RECURSE CUSTOMOPS_SOURCES false ../../include/ops/declarable/generic/*.cpp)
-file(GLOB_RECURSE CUSTOMOPS_HELPERS_SOURCES false ../../include/ops/declarable/helpers/cpu/*.cpp)
-file(GLOB_RECURSE OPS_SOURCES false ../../include/ops/impl/*.cpp ../../include/ops/declarable/impl/*.cpp  ../../include/ops/*.h)
-file(GLOB_RECURSE INDEXING_SOURCES false ../../include/indexing/*.cpp ../../include/indexing/*.h)
-file(GLOB_RECURSE HELPERS_SOURCES false ../../include/helpers/*.cpp ../../include/helpers/*.h)
-file(GLOB_RECURSE LOOPS_SOURCES false ../../include/loops/*.cpp ../../include/loops/*.h)
+file(GLOB_RECURSE TYPES_SOURCES false ../include/types/*.cpp ../include/types/*.h)
+file(GLOB_RECURSE ARRAY_SOURCES false ../include/array/*.cpp ../include/array/*.h)
+file(GLOB_RECURSE MEMORY_SOURCES false ../include/memory/*.cpp ../include/memory/*.h)
+file(GLOB_RECURSE GRAPH_SOURCES false ../include/graph/*.cpp ../include/graph/*.h)
+file(GLOB_RECURSE CUSTOMOPS_SOURCES false ../include/ops/declarable/generic/*.cpp)
+file(GLOB_RECURSE CUSTOMOPS_HELPERS_SOURCES false ../include/ops/declarable/helpers/cpu/*.cpp)
+file(GLOB_RECURSE OPS_SOURCES false ../include/ops/impl/*.cpp ../include/ops/declarable/impl/*.cpp  ../include/ops/*.h)
+file(GLOB_RECURSE INDEXING_SOURCES false ../include/indexing/*.cpp ../include/indexing/*.h)
+file(GLOB_RECURSE HELPERS_SOURCES false ../include/helpers/*.cpp ../include/helpers/*.h)
+file(GLOB_RECURSE LOOPS_SOURCES false ../include/loops/*.cpp ../include/loops/*.h)
 
 message("CPU BLAS")
 add_definitions(-D__CPUBLAS__=true)
 
+find_package(GRPC REQUIRED)
+message("gRPC found, building GraphServer")
+add_executable(GraphServer ./GraphServer.cpp ../include/graph/generated/graph.grpc.fb.cc ../blas/cpu/NativeOps.cpp ../blas/cpu/GraphExecutioner.cpp
+        ../blas/cpu/NativeOpExcutioner.cpp ../blas/cpu/NDArray.cpp
+        ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../../include/nd4jmalloc.h
+        ../blas/Environment.cpp ../blas/Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
+        ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES} ${OPS_SOURCES})
 
-file(GLOB_RECURSE TEST_SOURCES false ../layers_tests/*.cpp ../layers_tests/*.h)
-
-# Filter out any source files from */CMakeFiles/* paths. these tend to cause problems such a multiple main definitions.
-set (EXCLUDE_DIR "/CMakeFiles/")
-foreach (TMP_PATH ${TEST_SOURCES})
-    string (FIND ${TMP_PATH} ${EXCLUDE_DIR} EXCLUDE_DIR_FOUND)
-    if (NOT ${EXCLUDE_DIR_FOUND} EQUAL -1)
-        list (REMOVE_ITEM TEST_SOURCES ${TMP_PATH})
-    endif ()
-endforeach(TMP_PATH)
-
-
-add_executable(runtests ../../blas/cpu/NativeOps.cpp ../../blas/cpu/GraphExecutioner.cpp
-    ../../blas/cpu/NativeOpExcutioner.cpp ../../blas/cpu/NDArray.cpp
-    ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h
-    ../../blas/Environment.cpp ../../blas/Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
-    ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
-    ${OPS_SOURCES} ${TEST_SOURCES})
-
-target_link_libraries(runtests gtest gtest_main)
-
+target_link_libraries(GraphServer ${GRPC_LIBRARIES})
 
