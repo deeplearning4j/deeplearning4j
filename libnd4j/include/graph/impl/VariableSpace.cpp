@@ -423,6 +423,11 @@ namespace nd4j {
         }
 
         template <typename T>
+        void VariableSpace<T>::replaceVariable(Variable<T> *variable) {
+
+        }
+
+        template <typename T>
         void VariableSpace<T>::dropVariable(std::pair<int,int> &pair) {
             dropVariable(pair.first, pair.second);
         }

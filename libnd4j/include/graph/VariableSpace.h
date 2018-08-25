@@ -113,6 +113,8 @@ namespace nd4j {
 
             virtual void putOutputVariable(Variable<T> *variable);
 
+            virtual void replaceVariable(Variable<T> *variable);
+
             // memory-related statistics
             virtual Nd4jLong externalMemory();
             virtual Nd4jLong internalMemory();

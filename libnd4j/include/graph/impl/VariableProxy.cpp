@@ -94,7 +94,9 @@ namespace nd4j {
 
         template <typename T>
         void VariableProxy<T>::dropVariable(int id, int idx) {
+            assert(_current->hasVariable(id, idx));
 
+            _current->dropVariable(id, idx);
         }
 
         template <typename T>
@@ -148,6 +150,17 @@ namespace nd4j {
 
             nd4j_printf("Unable to get Variable to proxy: [%s]\n", symbol->c_str());
             throw std::runtime_error("Bad arguments");
+        }
+
+        template <typename T>
+        void VariableProxy<T>::replaceVariable(Variable<T> *variable) {
+            // if proxy has variable - that's one story
+            if (_current->hasVariable(variable->id(), variable->index())) {
+                _current->dropVariable(variable->id(), variable->index());
+            }
+        
+            // if not - we just add it as current variable
+            _current->putVariable(variable->id(), variable->index(), variable);           
         }
 
         template <typename T>

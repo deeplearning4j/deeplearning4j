@@ -61,6 +61,8 @@ namespace nd4j {
             virtual void putVariable(int id, int idx, NDArray<T> *array);
             virtual void putVariable(int id, int idx, Variable<T> *array);
 
+            virtual void replaceVariable(Variable<T> *variable);
+
             virtual void dropVariable(std::pair<int,int> &pair);
             virtual void dropVariable(int id, int idx);
 
