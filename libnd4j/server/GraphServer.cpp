@@ -67,7 +67,7 @@ namespace nd4j {
                 auto graph = GraphHolder::getInstance()->cloneGraph<float>(request->id());
 
                 // provide results here
-                auto response_offset = GraphExecutioner<float>::exec(graph, mb_, request);
+                auto response_offset = GraphExecutioner<float>::execute(graph, mb_, request);
 
                 mb_.Finish(response_offset);
                 *response_msg = mb_.ReleaseMessage<FlatResult>();
