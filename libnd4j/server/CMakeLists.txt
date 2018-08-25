@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.9)
 project(dev_tests)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../cmake" ${CMAKE_MODULE_PATH})
 
+SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+SET(BUILD_SHARED_LIBS OFF)
+SET(CMAKE_EXE_LINKER_FLAGS "-static")
+
 include_directories(../include ../include/helpers ../include/array ../include/memory ../include/loops ../include/graph ../include/ops ../include/types ../include/cnpy ../blas)
 if(LINUX)
     link_directories(/usr/local/lib)
