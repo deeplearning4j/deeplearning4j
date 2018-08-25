@@ -854,7 +854,7 @@ uint8_t* readFlatBuffers(const char * filename) {
 
 
 template <typename T>
-flatbuffers::Offset<FlatResult> GraphExecutioner<T>::execute(Graph<T> *graph, flatbuffers::FlatBufferBuilder &builder, FlatInferenceRequest* request) {
+flatbuffers::Offset<FlatResult> GraphExecutioner<T>::execute(Graph<T> *graph, flatbuffers::FlatBufferBuilder &builder, const FlatInferenceRequest* request) {
     ExecutionResult<T> result;
 
     return result.asFlatResult(builder);

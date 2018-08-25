@@ -64,7 +64,7 @@ namespace nd4j {
         */
         static nd4j::graph::ResultWrapper* executeFlatBuffer(Nd4jPointer pointer);
 
-        static flatbuffers::Offset<FlatResult> execute(Graph<T> *graph, flatbuffers::FlatBufferBuilder &builder, FlatInferenceRequest* request);
+        static flatbuffers::Offset<FlatResult> execute(Graph<T> *graph, flatbuffers::FlatBufferBuilder &builder, const FlatInferenceRequest* request);
 
         static Graph<T> *importFromTensorFlow(const char *fileName);
 
