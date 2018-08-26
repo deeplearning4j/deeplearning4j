@@ -437,7 +437,28 @@ namespace nd4j {
 
         template <typename T>
         void VariableSpace<T>::replaceVariable(Variable<T> *variable) {
+            bool replaced = false;
+            // trying name first
+            if (variable->getName() != nullptr && !variable->getName()->empty()) {
+                if (hasVariable(variable->getName())) {
+                    auto vs = getVariable(variable->getName());
+                    dropVariable(vs->id(), vs->index());
+                    putVariable(vs->id(), vs->index(), variable);
+                    //delete vs;
+                    replaced = true;
+                }
+            } else {
+                if (hasVariable(variable->id(), variable->index())) {
+                    auto vs = getVariable(variable->id(), variable->index());
+                    dropVariable(variable->id(), variable->index());
+                    putVariable(vs->id(), vs->index(), variable);
+                    //delete vs;
+                    replaced = true;
+                }
+            }
 
+            if (!replaced)
+                putVariable(variable->id(), variable->index(), variable);
         }
 
         template <typename T>

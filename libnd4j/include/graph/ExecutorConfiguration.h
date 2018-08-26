@@ -36,10 +36,12 @@ namespace nd4j {
             Nd4jLong _footprintBackward = 0L;
             Direction _direction = Direction_FORWARD_ONLY;
 
-            ExecutorConfiguration(const nd4j::graph::FlatConfiguration *conf = nullptr);
+            explicit ExecutorConfiguration(const nd4j::graph::FlatConfiguration *conf = nullptr);
             ~ExecutorConfiguration() = default;
             
             ExecutorConfiguration* clone();
+
+            flatbuffers::Offset<FlatConfiguration> asFlatConfiguration(flatbuffers::FlatBufferBuilder &builder);
         };
     }
 }

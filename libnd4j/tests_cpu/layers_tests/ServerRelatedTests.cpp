@@ -21,6 +21,7 @@
 #include "testlayers.h"
 #include <GraphExecutioner.h>
 #include <graph/GraphHolder.h>
+#include <graph/InferenceRequest.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -114,7 +115,8 @@ TEST_F(ServerRelatedTests, Basic_Execution_Test_2) {
     auto oGraph = GraphExecutioner<float>::importFromFlatBuffers("./resources/reduce_dim_false.fb");
     oGraph->printOut();
 
-    NDArray<float> exp('c', {3}, {4.f, 4.f, 4.f});
+    NDArray<float> input0('c', {3, 3}, {2.f,2.f,2.f, 2.f,2.f,2.f, 2.f,2.f,2.f});
+    NDArray<float> exp('c', {3}, {6.f, 6.f, 6.f});
 
     GraphHolder::getInstance()->registerGraph<float>(1L, oGraph);
 
@@ -123,7 +125,10 @@ TEST_F(ServerRelatedTests, Basic_Execution_Test_2) {
     ASSERT_TRUE(oGraph != cGraph);
 
     // mastering InferenceRequest
-    auto af = CreateFlatInferenceRequest(otherBuilder, 1L, 0, 0);
+    InferenceRequest<float> ir(1L);
+    ir.appendVariable(1, 0, &input0);
+
+    auto af = ir.asFlatInferenceRequest(otherBuilder);
     otherBuilder.Finish(af);
     auto fptr = otherBuilder.GetBufferPointer();
     auto fir = GetFlatInferenceRequest(fptr);

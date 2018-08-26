@@ -858,7 +858,7 @@ flatbuffers::Offset<FlatResult> GraphExecutioner<T>::execute(Graph<T> *graph, fl
     ExecutionResult<T> result;
     auto varSpace = graph->getVariableSpace();
 
-    if (request != nullptr) {
+    if (request != nullptr && request->variables() != nullptr) {
         auto vars = request->variables();
         for (int e = 0; e < vars->size(); e++) {
             auto fv = vars->Get(e);
