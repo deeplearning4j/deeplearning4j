@@ -42,5 +42,7 @@ public final class FlatInferenceRequest extends Table {
     int o = builder.endObject();
     return o;
   }
+  public static void finishFlatInferenceRequestBuffer(FlatBufferBuilder builder, int offset) { builder.finish(offset); }
+  public static void finishSizePrefixedFlatInferenceRequestBuffer(FlatBufferBuilder builder, int offset) { builder.finishSizePrefixed(offset); }
 }
 

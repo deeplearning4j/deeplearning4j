@@ -283,33 +283,33 @@ inline flatbuffers::Offset<FlatResponse> CreateFlatResponse(
   return builder_.Finish();
 }
 
-inline const nd4j::graph::FlatGraph *GetFlatGraph(const void *buf) {
-  return flatbuffers::GetRoot<nd4j::graph::FlatGraph>(buf);
+inline const nd4j::graph::FlatInferenceRequest *GetFlatInferenceRequest(const void *buf) {
+  return flatbuffers::GetRoot<nd4j::graph::FlatInferenceRequest>(buf);
 }
 
-inline const nd4j::graph::FlatGraph *GetSizePrefixedFlatGraph(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<nd4j::graph::FlatGraph>(buf);
+inline const nd4j::graph::FlatInferenceRequest *GetSizePrefixedFlatInferenceRequest(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<nd4j::graph::FlatInferenceRequest>(buf);
 }
 
-inline bool VerifyFlatGraphBuffer(
+inline bool VerifyFlatInferenceRequestBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<nd4j::graph::FlatGraph>(nullptr);
+  return verifier.VerifyBuffer<nd4j::graph::FlatInferenceRequest>(nullptr);
 }
 
-inline bool VerifySizePrefixedFlatGraphBuffer(
+inline bool VerifySizePrefixedFlatInferenceRequestBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<nd4j::graph::FlatGraph>(nullptr);
+  return verifier.VerifySizePrefixedBuffer<nd4j::graph::FlatInferenceRequest>(nullptr);
 }
 
-inline void FinishFlatGraphBuffer(
+inline void FinishFlatInferenceRequestBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatGraph> root) {
+    flatbuffers::Offset<nd4j::graph::FlatInferenceRequest> root) {
   fbb.Finish(root);
 }
 
-inline void FinishSizePrefixedFlatGraphBuffer(
+inline void FinishSizePrefixedFlatInferenceRequestBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatGraph> root) {
+    flatbuffers::Offset<nd4j::graph::FlatInferenceRequest> root) {
   fbb.FinishSizePrefixed(root);
 }
 

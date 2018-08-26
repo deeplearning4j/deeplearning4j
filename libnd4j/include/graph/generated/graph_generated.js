@@ -238,14 +238,6 @@ nd4j.graph.FlatGraph.endFlatGraph = function(builder) {
 };
 
 /**
- * @param {flatbuffers.Builder} builder
- * @param {flatbuffers.Offset} offset
- */
-nd4j.graph.FlatGraph.finishFlatGraphBuffer = function(builder, offset) {
-  builder.finish(offset);
-};
-
-/**
  * @constructor
  */
 nd4j.graph.FlatDropRequest = function() {
@@ -441,6 +433,14 @@ nd4j.graph.FlatInferenceRequest.addConfiguration = function(builder, configurati
 nd4j.graph.FlatInferenceRequest.endFlatInferenceRequest = function(builder) {
   var offset = builder.endObject();
   return offset;
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} offset
+ */
+nd4j.graph.FlatInferenceRequest.finishFlatInferenceRequestBuffer = function(builder, offset) {
+  builder.finish(offset);
 };
 
 /**

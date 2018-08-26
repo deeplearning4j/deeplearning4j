@@ -43,6 +43,8 @@ public struct FlatInferenceRequest : IFlatbufferObject
     int o = builder.EndObject();
     return new Offset<FlatInferenceRequest>(o);
   }
+  public static void FinishFlatInferenceRequestBuffer(FlatBufferBuilder builder, Offset<FlatInferenceRequest> offset) { builder.Finish(offset.Value); }
+  public static void FinishSizePrefixedFlatInferenceRequestBuffer(FlatBufferBuilder builder, Offset<FlatInferenceRequest> offset) { builder.FinishSizePrefixed(offset.Value); }
 };
 
 
