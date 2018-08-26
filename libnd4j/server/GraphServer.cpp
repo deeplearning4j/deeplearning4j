@@ -120,6 +120,7 @@ int main(int argc, char *argv[]) {
      int port = 40123;
      if(cmdOptionExists(argv, argv+argc, "-p")) {
         auto sPort = getCmdOption(argv, argv + argc, "-p");
+        port = atoi(sPort);
      }
 
     if(cmdOptionExists(argv, argv+argc, "-f")) {
