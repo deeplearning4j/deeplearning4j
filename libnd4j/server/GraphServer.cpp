@@ -23,6 +23,8 @@
 #include <GraphExecutioner.h>
 #include <graph/generated/result_generated.h>
 #include <helpers/StringUtils.h>
+#include <algorithm>
+
 
 namespace nd4j {
     namespace graph {
@@ -96,6 +98,18 @@ void RunServer(int port) {
   server->Wait();
 }
 
+char* getCmdOption(char **begin, char **end, const std::string & option) {
+    auto itr = std::find(begin, end, option);
+    if (itr != end && ++itr != end)
+        return *itr;
+
+    return 0;
+}
+
+bool cmdOptionExists(char** begin, char** end, const std::string& option) {
+    return std::find(begin, end, option) != end;
+}
+
 int main(int argc, const char *argv[]) {
     /**
      * basically we only care about few things here:
@@ -103,7 +117,18 @@ int main(int argc, const char *argv[]) {
      * 2) if we should use gprc, json, or both
      * 3) if there's any graph(s) provided at startup
      */
-    RunServer(40123);
+     int port = 40123;
+     if(cmdOptionExists(argv, argv+argc, "-p")) {
+        auto sPort = getCmdOption(argv, argv + argc, "-p");
+     }
+
+    if(cmdOptionExists(argv, argv+argc, "-f")) {
+        auto file = getCmdOption(argv, argv + argc, "-f");
+        auto graph = GraphExecutioner<T>::importFromFlatBuffers(file);
+        nd4j::graph::GraphHolder::getInstance()->registerGraph<float>(0L, graph);
+    }
+
+    RunServer(port);
 
     return 0;
 }
