@@ -32,14 +32,17 @@ namespace nd4j {
         template <typename T>
         class ExecutionResult {
         private:
-            std::vector<Variable<T> *> variables;
-            std::map<std::string, Variable<T>*> stringIdMap;
-            std::map<std::pair<int, int>, Variable<T>*> pairIdMap;
+            std::vector<Variable<T> *> _variables;
+            std::map<std::string, Variable<T>*> _stringIdMap;
+            std::map<std::pair<int, int>, Variable<T>*> _pairIdMap;
+
+            // this flag is used to optionally release variables
+            bool _releasable = false;
         public:
             ExecutionResult(const FlatResult* flatResult);
             ExecutionResult(std::initializer_list<Variable<T> *> variables);
             ExecutionResult() = default;
-            ~ExecutionResult() = default;
+            ~ExecutionResult();
 
             /**
              * This method adds variable pointer to result

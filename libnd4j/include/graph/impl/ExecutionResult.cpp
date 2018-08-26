@@ -27,17 +27,27 @@ namespace nd4j {
     namespace graph {
         template <typename T>
         ExecutionResult<T>::ExecutionResult(const FlatResult* flatResult) {
-            if (flatResult->variables() != nullptr)
+            if (flatResult->variables() != nullptr) {
                 for (int e = 0; e < flatResult->variables()->size(); e++) {
                     auto fv = flatResult->variables()->Get(e);
                     auto v = new Variable<T>(fv);
                     this->emplace_back(v);
                 }
+
+                _releasable = true;
+            }
+        }
+
+        template <typename T>
+        ExecutionResult<T>::~ExecutionResult(){
+            if (_releasable)
+                for (auto v : _variables)
+                    delete v;
         }
 
         template <typename T>
         Nd4jLong ExecutionResult<T>::size() {
-            return variables.size();
+            return _variables.size();
         }
 
         template <typename T>
@@ -48,37 +58,37 @@ namespace nd4j {
 
         template <typename T>
         void ExecutionResult<T>::emplace_back(Variable<T> *variable) {
-            variables.emplace_back(variable);
+            _variables.emplace_back(variable);
 
             if (variable->getName() != nullptr)
-                stringIdMap[*variable->getName()] = variable;
+                _stringIdMap[*variable->getName()] = variable;
 
             std::pair<int,int> p(variable->id(), variable->index());
-            pairIdMap[p] = variable;
+            _pairIdMap[p] = variable;
         }
 
         template <typename T>
         Variable<T>* ExecutionResult<T>::at(int position) {
-            if (position >= variables.size())
+            if (position >= _variables.size())
                 throw std::runtime_error("Position index is higher then number of variables stored");
 
-            return variables.at(position);
+            return _variables.at(position);
         }
 
         template <typename T>
         Variable<T>* ExecutionResult<T>::byId(std::string &id) {
-            if (stringIdMap.count(id) == 0)
+            if (_stringIdMap.count(id) == 0)
                 throw std::runtime_error("Can't find specified ID");
 
-            return stringIdMap.at(id);
+            return _stringIdMap.at(id);
         }
         
         template <typename T>
         Variable<T>* ExecutionResult<T>::byId(std::pair<int, int> &id) {
-            if (pairIdMap.count(id) == 0)
+            if (_pairIdMap.count(id) == 0)
                 throw std::runtime_error("Can't find specified ID");
 
-            return pairIdMap.at(id);
+            return _pairIdMap.at(id);
         }
 
         template <typename T>
@@ -97,7 +107,7 @@ namespace nd4j {
         flatbuffers::Offset<FlatResult> ExecutionResult<T>::asFlatResult(flatbuffers::FlatBufferBuilder &builder) {
 
             std::vector<flatbuffers::Offset<FlatVariable>> vec;
-            for (Variable<T>* v:variables) {
+            for (Variable<T>* v : _variables) {
                 vec.emplace_back(v->asFlatVariable(builder));
             }
 
