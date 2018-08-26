@@ -11000,6 +11000,20 @@ public class SameDiff {
         return bufferBuilder.dataBuffer();
     }
 
+    public FlatGraph asFlatGraph() {
+        return FlatGraph.getRootAsFlatGraph(this.asFlatBuffers());
+    }
+
+    /**
+     * This method returns FlatGraph structure
+     *
+     * @param configuration
+     * @return
+     */
+    public FlatGraph asFlatGraph(ExecutorConfiguration configuration) {
+        return FlatGraph.getRootAsFlatGraph(asFlatBuffers(configuration));
+    }
+
     /**
      * This method exports the current SameDiff instance into FlatBuffers format, returning the array ops and
      * all arrays as a ByteBuffer containing the FlatBuffers format data
