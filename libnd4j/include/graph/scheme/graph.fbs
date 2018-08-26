@@ -37,3 +37,4 @@ rpc_service GraphInferenceServer {
 }
 
 root_type FlatGraph;
+root_type FlatGraph;
