@@ -57,6 +57,8 @@ public struct FlatGraph : IFlatbufferObject
     int o = builder.EndObject();
     return new Offset<FlatGraph>(o);
   }
+  public static void FinishFlatGraphBuffer(FlatBufferBuilder builder, Offset<FlatGraph> offset) { builder.Finish(offset.Value); }
+  public static void FinishSizePrefixedFlatGraphBuffer(FlatBufferBuilder builder, Offset<FlatGraph> offset) { builder.FinishSizePrefixed(offset.Value); }
 };
 
 
