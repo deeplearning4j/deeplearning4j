@@ -110,7 +110,7 @@ bool cmdOptionExists(char** begin, char** end, const std::string& option) {
     return std::find(begin, end, option) != end;
 }
 
-int main(int argc, const char *argv[]) {
+int main(int argc, char *argv[]) {
     /**
      * basically we only care about few things here:
      * 1) port number
