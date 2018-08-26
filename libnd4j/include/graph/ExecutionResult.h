@@ -80,10 +80,12 @@ namespace nd4j {
              */
             Nd4jLong size();
 
+#ifndef __JAVACPP_HACK__
             /**
              * This method converts ExecutionResult entity to FlatResult
              */
             flatbuffers::Offset<FlatResult> asFlatResult(flatbuffers::FlatBufferBuilder &builder);
+#endif
         };
     }
 }

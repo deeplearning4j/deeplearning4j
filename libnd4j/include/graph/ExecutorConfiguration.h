@@ -41,7 +41,9 @@ namespace nd4j {
             
             ExecutorConfiguration* clone();
 
+#ifndef __JAVACPP_HACK__
             flatbuffers::Offset<FlatConfiguration> asFlatConfiguration(flatbuffers::FlatBufferBuilder &builder);
+#endif
         };
     }
 }

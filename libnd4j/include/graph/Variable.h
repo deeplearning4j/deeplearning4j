@@ -103,12 +103,14 @@ namespace nd4j {
             std::string *getName();
             void setName(std::string *name);
 
+#ifndef __JAVACPP_HACK__
             /**
              * This method returns offset to this Variable in FlatBuffer
              * @param builder
              * @return
              */
             flatbuffers::Offset<FlatVariable> asFlatVariable(flatbuffers::FlatBufferBuilder &builder);
+#endif
         };
     }
 }

@@ -49,7 +49,9 @@ namespace nd4j {
             void appendVariable(std::string &name, int id, int index, NDArray<T> *array);
             void appendVariable(Variable<T> *variable);
 
+#ifndef __JAVACPP_HACK__
             flatbuffers::Offset<FlatInferenceRequest> asFlatInferenceRequest(flatbuffers::FlatBufferBuilder &builder);
+#endif
         };
     }
 }
