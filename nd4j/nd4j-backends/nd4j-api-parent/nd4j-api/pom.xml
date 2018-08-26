@@ -150,19 +150,7 @@
         <dependency>
             <groupId>com.google.flatbuffers</groupId>
             <artifactId>flatbuffers-java</artifactId>
-            <version>1.9.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.flatbuffers</groupId>
-            <artifactId>flatbuffers-java-grpc</artifactId>
-            <version>1.9.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-all</artifactId>
-            <version>1.14.0</version>
+            <version>${flatbuffers.version}</version>
         </dependency>
 
         <!-- Note that this is shaded flatbuffers, see the protoc declaration above

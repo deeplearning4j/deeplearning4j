@@ -352,6 +352,9 @@
         <fbs.version>1.2.0-3f79e055</fbs.version>
         <threadly.version>4.10.0</threadly.version>
 
+        <flatbuffers.version>1.9.0</flatbuffers.version>
+        <grpc.version>1.14.0</grpc.version>
+
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
         <maven-javadoc-plugin.version>2.10.4</maven-javadoc-plugin.version>
