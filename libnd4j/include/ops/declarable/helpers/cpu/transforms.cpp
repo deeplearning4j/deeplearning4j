@@ -40,7 +40,7 @@ void triu(const NDArray<T>& input, NDArray<T>& output, const int diagonal) {
 
         case 1:
             for(int i = 0; i < output.sizeAt(0); ++i)
-                output({{i, i+1}, {}}).assign(input);
+                output({i, i+1, 0,0}).assign(input);
             output.setValueInDiagMatrix(0., diagonal-1, 'l');    
             break;
 
@@ -127,7 +127,7 @@ void randomShuffle(NDArray<T>& input, NDArray<T>& output, nd4j::random::RandomBu
         else {        
             std::vector<int> indices(firstDim);        
             std::iota(indices.begin(), indices.end(), 0);        
-            output(0) = input(0);
+            output(0.) = input(0.);
 #pragma omp parallel for if((firstDim-1) > Environment::getInstance()->elementwiseThreshold()) schedule(guided)       
             for(int i = firstDim-1; i > 0; --i) {
                 int r = rng.nextInt(0, i);
@@ -663,20 +663,19 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
 
         if(norm2.lengthOf() == 1) {
 
-            if(norm2(0) > clipNorm)
-                input *= (clipNorm / norm2(0));
+            if(norm2(0.) > clipNorm)
+                input *= (clipNorm / norm2(0.));
         }
         else {
 
             std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(rank, dimensions);
-            const Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
-            std::vector<Nd4jLong> idxRanges(rank * 2);
+            const Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);            
 
-#pragma omp parallel for schedule(guided) firstprivate(idxRanges)
+#pragma omp parallel for schedule(guided) 
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
                 if (norm2(i) > clipNorm) {
-                    ShapeUtils<T>::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
-                    NDArray<T> inputSubArr  = input(idxRanges.data());
+                    
+                    NDArray<T> inputSubArr  = input(i, dimsToExclude);
                     inputSubArr *= (clipNorm / norm2(i));
                 }
             }
@@ -686,8 +685,8 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
         
         if(norm2.lengthOf() == 1) {
 
-            if(norm2(0) > clipNorm)
-                output.assign( input * (clipNorm / norm2(0)));
+            if(norm2(0.) > clipNorm)
+                output.assign( input * (clipNorm / norm2(0.)));
             else
                 output.assign( input );
         }
@@ -702,8 +701,8 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
 
                 ShapeUtils<T>::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
 
-                NDArray<T> outputSubArr = output(idxRanges.data());                
-                NDArray<T> inputSubArr  = input(idxRanges.data());
+                NDArray<T> outputSubArr = output(idxRanges);                
+                NDArray<T> inputSubArr  = input(idxRanges);
                 outputSubArr.assign(inputSubArr);
                 
                 if (norm2(i) > clipNorm) 
@@ -724,7 +723,7 @@ void clipByNormBP(const NDArray<T>& input, const NDArray<T>& gradO, NDArray<T>& 
 
     if(norm2.lengthOf() == 1) {        
 
-        const T N = norm2(0);
+        const T N = norm2(0.);
         
         if(N > clipNorm) {            
 
@@ -750,12 +749,12 @@ void clipByNormBP(const NDArray<T>& input, const NDArray<T>& gradO, NDArray<T>& 
             ShapeUtils<T>::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
             T N = norm2(i);
 
-            NDArray<T> gradOSubArr = gradO(idxRanges.data());
-            NDArray<T> gradISubArr = gradI(idxRanges.data());                
+            NDArray<T> gradOSubArr = gradO(idxRanges);
+            NDArray<T> gradISubArr = gradI(idxRanges);                
             
             if (N > clipNorm) {
                 
-                NDArray<T> inputSubArr = input(idxRanges.data());
+                NDArray<T> inputSubArr = input(idxRanges);
                 
                 const T sumOfProd = (inputSubArr * gradOSubArr).template reduceNumber<simdOps::Sum<T>>();    // reduce to scalar
                 const T factor1 = static_cast<T>(1.f) / N;
@@ -922,27 +921,23 @@ void concat(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output, const in
     
     const int rank  = inArrs[0]->rankOf();
     const int rank2 = 2*rank;
-    Nd4jLong* indices = new Nd4jLong[2 * rank * numOfArrs];
-    memset(indices, 0, 2 * rank * numOfArrs * sizeof(Nd4jLong));
+    std::vector<std::vector<Nd4jLong>> indices(numOfArrs, std::vector<Nd4jLong>(rank2,0));
 
     // take into account indices for first array
-    indices[2 * axis + 1] = inArrs[0]->sizeAt(axis);
+    indices[0][2 * axis + 1] = inArrs[0]->sizeAt(axis);
 
     // loop through the rest of input arrays
     for(int i = 1; i < numOfArrs; ++i) {
-        indices[i * rank2 + 2 * axis]     = indices[2 * axis + 1 + (i-1) * rank2];                                // index start from
-        indices[i * rank2 + 2 * axis + 1] = indices[2 * axis + 1 + (i-1) * rank2] + inArrs[i]->sizeAt(axis);      // index end with (excluding)
+        indices[i][2 * axis]     = indices[i-1][2 * axis + 1];                                // index start from
+        indices[i][2 * axis + 1] = indices[i-1][2 * axis + 1] + inArrs[i]->sizeAt(axis);      // index end with (excluding)
     }
 
 // #pragma omp parallel for if(numOfArrs > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
 #pragma omp parallel for schedule(guided)
     for(int i = 0; i < numOfArrs; ++i) {
-        NDArray<T> temp = output((indices + i * rank2), true);
+        NDArray<T> temp = output(indices[i], true);
         temp.assign(inArrs[i]);
     }
-
-
-    delete []indices;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -1381,7 +1381,7 @@ TEST_F(DeclarableOpsTests4, lstm_test1) {
 
     NDArray<double> *h = results->at(0);    
     NDArray<double> *c = results->at(1);
-    NDArray<double> cLast = (*c)({{4,5},{},{}},true);
+    NDArray<double> cLast = (*c)({4,5,0,0,0,0},true);
 
     ASSERT_TRUE(expH.isSameShape(h));
     ASSERT_TRUE(expH.equalsTo(h));    
