@@ -208,6 +208,19 @@ namespace nd4j {
         }
 
         template <typename T>
+        std::vector<Variable<T>*> VariableSpace<T>::getVariables() {
+            std::vector<Variable<T>*> result;
+
+            for (auto v: _internal)
+                result.emplace_back(v);
+
+            for (auto v: _external)
+                result.emplace_back(v);
+
+            return result;
+        }
+
+        template <typename T>
         Nd4jLong nd4j::graph::VariableSpace<T>::internalMemory() {
             Nd4jLong size = 0;
             for (auto n: _internal) {

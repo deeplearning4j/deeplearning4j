@@ -99,6 +99,8 @@ namespace nd4j {
             virtual nd4j::graph::Variable<T> *getVariable(std::pair<int,int>& pair);
             virtual nd4j::graph::Variable<T> *getVariable(std::string *symbol);
 
+            virtual std::vector<Variable<T>*> getVariables();
+
             virtual void putVariable(std::pair<int,int>& pair, NDArray<T> *array);
             virtual void putVariable(std::pair<int,int>& pair, Variable<T> *variable);
             virtual void putVariable(int id, Variable<T> *variable);

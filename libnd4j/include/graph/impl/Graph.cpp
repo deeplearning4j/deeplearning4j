@@ -1063,7 +1063,24 @@ namespace nd4j {
 
             // print variables first
             if (_variableSpace->totalEntries() > 0) {
-                // TODO: print variables here
+                nd4j_printf("\nPrinting out Variables...\n", "");
+                auto vars = _variableSpace->getVariables();
+
+                for (Variable<T>* v: vars) {
+                    if (v->hasNDArray()) {
+                        auto shape = ShapeUtils<T>::shapeAsString(v->getNDArray());
+                        auto values = v->getNDArray()->asString(16);
+
+                        if (v->getName() != nullptr && !v->getName()->empty()) {
+                            nd4j_printf("<%s> <%i:%i> shape: %s; values: %s;\n", v->getName()->c_str(), v->id(), v->index(), shape.c_str(), values.c_str());
+                        } else {
+                            nd4j_printf("<%i:%i> shape: %s; values: %s;\n", v->id(), v->index(), shape.c_str(), values.c_str());
+                        }
+                    } else if (v->hasNDArrayList()) {
+                        // TODO: add better NDArrayList printout
+                        nd4j_printf("<%i:%i> holds ArrayList", v->id(), v->index());
+                    }
+                }
             }
 
             if (_onion->size() > 0)

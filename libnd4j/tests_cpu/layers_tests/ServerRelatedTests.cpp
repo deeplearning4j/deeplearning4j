@@ -20,13 +20,22 @@
 
 #include "testlayers.h"
 #include <GraphExecutioner.h>
+#include <graph/GraphHolder.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
 
 class ServerRelatedTests : public testing::Test {
 public:
+    ServerRelatedTests() {
+        Environment::getInstance()->setDebug(true);
+        Environment::getInstance()->setVerbose(true);
+    }
 
+    ~ServerRelatedTests() {
+        Environment::getInstance()->setDebug(false);
+        Environment::getInstance()->setVerbose(false);
+    }
 };
 
 TEST_F(ServerRelatedTests, Basic_Output_Test_1) {
@@ -69,4 +78,28 @@ TEST_F(ServerRelatedTests, Basic_Output_Test_1) {
     ASSERT_EQ(*array1, *restored.byId("first")->getNDArray());
     ASSERT_EQ(*array2, *restored.byId("second")->getNDArray());
     ASSERT_EQ(*array3, *restored.byId("second indexed")->getNDArray());
+}
+
+TEST_F(ServerRelatedTests, Basic_Execution_Test_1) {
+    flatbuffers::FlatBufferBuilder builder(4096);
+    auto oGraph = GraphExecutioner<float>::importFromFlatBuffers("./resources/reduce_dim_false.fb");
+    oGraph->printOut();
+
+    GraphHolder::getInstance()->registerGraph<float>(1L, oGraph);
+
+    auto cGraph = GraphHolder::getInstance()->cloneGraph<float>(1L);
+
+    ASSERT_TRUE(oGraph != cGraph);
+
+    auto flatResult = GraphExecutioner<float>::execute(cGraph, builder, nullptr);
+
+    builder.Finish(flatResult);
+    auto ptr = builder.GetBufferPointer();
+    auto received = GetFlatResult(ptr);
+
+    ExecutionResult<float> restored(received);
+    ASSERT_EQ(1, restored.size());
+
+    delete oGraph;
+    delete cGraph;
 }

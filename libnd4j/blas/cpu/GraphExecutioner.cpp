@@ -856,6 +856,27 @@ uint8_t* readFlatBuffers(const char * filename) {
 template <typename T>
 flatbuffers::Offset<FlatResult> GraphExecutioner<T>::execute(Graph<T> *graph, flatbuffers::FlatBufferBuilder &builder, const FlatInferenceRequest* request) {
     ExecutionResult<T> result;
+    auto varSpace = graph->getVariableSpace();
+
+    if (request != nullptr) {
+        auto vars = request->variables();
+        for (int e = 0; e < vars->size(); e++) {
+            auto fv = vars->Get(e);
+            auto v = new Variable<T>(fv);
+            varSpace->replaceVariable(v);
+        }
+    }
+
+    if (Environment::getInstance()->isDebugAndVerbose())
+        graph->printOut();
+
+    GraphExecutioner<T>::execute(graph);
+
+    auto outputs = *graph->fetchOutputs();
+
+    for (auto v: outputs) {
+        result.emplace_back(v);
+    }
 
     return result.asFlatResult(builder);
 }

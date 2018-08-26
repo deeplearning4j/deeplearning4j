@@ -100,6 +100,22 @@ namespace nd4j {
         }
 
         template <typename T>
+        std::vector<Variable<T>*> VariableProxy<T>::getVariables() {
+            std::vector<Variable<T>*> result;
+
+            auto b = _backed->getVariables();
+            auto c = _current->getVariables();
+
+            for (auto v: b)
+                result.emplace_back(v);
+
+            for (auto v: c)
+                result.emplace_back(v);
+
+            return result;
+        }
+
+        template <typename T>
         bool VariableProxy<T>::hasVariable(std::string *symbol) {
             return _current->hasVariable(symbol) || _backed->hasVariable(symbol);
         }
