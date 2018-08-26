@@ -872,13 +872,17 @@ flatbuffers::Offset<FlatResult> GraphExecutioner<T>::execute(Graph<T> *graph, fl
 
     GraphExecutioner<T>::execute(graph);
 
-    auto outputs = *graph->fetchOutputs();
+    auto outputs = graph->fetchOutputs();
 
-    for (auto v: outputs) {
+    for (auto v: *outputs) {
         result.emplace_back(v);
     }
 
-    return result.asFlatResult(builder);
+    auto t = result.asFlatResult(builder);
+
+    delete outputs;
+
+    return t;
 }
 
 
