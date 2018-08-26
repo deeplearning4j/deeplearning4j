@@ -92,10 +92,13 @@ public class GraphInferenceClient {
      *
      * PLEASE NOTE: You don't need to register graph more then once
      * PLEASE NOTE: You don't need to register graph if GraphServer was used with -f argument
+     * @param graphId id of the graph, if not 0 - should be used in subsequent output() requests
      * @param graph
+     *
      */
-    public void registerGraph(@NonNull SameDiff graph, ExecutorConfiguration configuration) {
-        blockingStub.registerGraph(graph.asFlatGraph(configuration));
+    public void registerGraph(long graphId, @NonNull SameDiff graph, ExecutorConfiguration configuration) {
+        val g = graph.asFlatGraph(graphId, configuration);
+        blockingStub.registerGraph(g);
     }
 
     /**
