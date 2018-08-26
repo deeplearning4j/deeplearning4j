@@ -17,6 +17,7 @@
 //
 // @author raver119@gmail.com
 //
+
 #ifndef LIBND4J_EXECUTION_RESULT
 #define LIBND4J_EXECUTION_RESULT
 
