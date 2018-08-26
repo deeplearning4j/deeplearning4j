@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
 
     if(cmdOptionExists(argv, argv+argc, "-f")) {
         auto file = getCmdOption(argv, argv + argc, "-f");
-        auto graph = GraphExecutioner<T>::importFromFlatBuffers(file);
+        auto graph = GraphExecutioner<float>::importFromFlatBuffers(file);
         nd4j::graph::GraphHolder::getInstance()->registerGraph<float>(0L, graph);
     }
 
