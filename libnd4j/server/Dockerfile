@@ -16,11 +16,12 @@ RUN git clone https://github.com/grpc/grpc && cd grpc && git submodule update --
 
 RUN git clone https://github.com/deeplearning4j/deeplearning4j && cd deeplearning4j && \
     git checkout r119_twenty_percents && \
-    cd libnd4j/server && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release && make -j 5
+    cd libnd4j/server && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release && make -j 6
 
 FROM ubuntu:bionic
 
 COPY --from=builder /deeplearning4j/libnd4j/server/GraphServer /app/GraphServer
+COPY --from=builder /usr/local/lib/libgrpc* /usr/local/lib
 
 RUN apt-get update && \
     apt-get -y --no-install-recommends install \
