@@ -126,7 +126,7 @@ TEST_F(ServerRelatedTests, Basic_Execution_Test_2) {
     auto af = CreateFlatInferenceRequest(otherBuilder, 1L, 0, 0);
     otherBuilder.Finish(af);
     auto fptr = otherBuilder.GetBufferPointer();
-    auto fir = GetF(fptr);
+    auto fir = GetFlatInferenceRequest(fptr);
 
     auto flatResult = GraphExecutioner<float>::execute(cGraph, builder, fir);
 
