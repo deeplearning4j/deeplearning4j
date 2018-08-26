@@ -21,7 +21,7 @@ RUN git clone https://github.com/deeplearning4j/deeplearning4j && cd deeplearnin
 FROM ubuntu:bionic
 
 COPY --from=builder /deeplearning4j/libnd4j/server/GraphServer /app/GraphServer
-COPY --from=builder /usr/local/lib/libgrpc* /usr/local/lib
+COPY --from=builder /usr/local/lib/libgrpc* /usr/local/lib/
 
 RUN apt-get update && \
     apt-get -y --no-install-recommends install \
