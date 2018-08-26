@@ -25,6 +25,7 @@
 #include <vector>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/OpRegistrator.h>
+#include <graph/VariableProxy.h>
 
 namespace nd4j {
     namespace graph {
@@ -1253,6 +1254,58 @@ namespace nd4j {
             clone->replaceState(this->_variableSpace->template asT<N>(), this->_configuration->clone());
 
             clone->template pullState<T>(this);
+
+            return clone;
+        }
+
+        template <typename T>
+        Graph<T>* Graph<T>::cloneWithProxy() {
+            auto clone = new Graph<T>();
+
+            clone->replaceState(new VariableProxy<T>(this->_variableSpace), this->_configuration->clone());
+
+            // transfer nodes
+            for (int e = 0; e < _nodes->size(); e++)
+                clone->_nodes->emplace_back(_nodes->at(e));
+
+            // transfer outputs
+            for (auto v: _output)
+                clone->_output.emplace_back(v);
+
+            // transfer autos
+            for (auto v: _autos)
+                clone->_autos.emplace_back(v);
+
+            // transfer scopes
+            for (auto &v: _mappedScopes) {
+                auto scp = v.second->clone();
+                clone->_mappedScopes[v.first] = scp;
+                clone->_scopes.emplace_back(scp);
+            }
+
+            // transfer mapped nodes
+            for (auto &v: *_onion) {
+                auto vec = clone->_onion->count(v.first) > 0 ? clone->_onion->at(v.first) : new std::vector<Node<T>*>();
+
+
+                // cloning actual nodes
+                auto ovec = (*_onion)[v.first];
+                for (auto x: *(ovec)) {
+                    auto n = x->clone();
+                    vec->emplace_back(n);
+                    _handles.emplace_back(n);
+                    (*clone->_mapped)[n->id()] = n;
+                }
+
+                if (clone->_onion->count(v.first) < 1)
+                    (*clone->_onion)[v.first] = vec;
+            }
+
+            // transfer mapped nodes
+            for (auto &v: _unmapped)
+                clone->_unmapped[v.first] = v.second->clone();
+
+            clone->_built.store(_built.load());
 
             return clone;
         }

@@ -52,7 +52,7 @@ namespace nd4j {
                 throw std::runtime_error("Bad argument");
             }
 
-            auto graph = _graphF[graphId]->clone();
+            auto graph = _graphF[graphId]->cloneWithProxy();
 
             return graph;
         }

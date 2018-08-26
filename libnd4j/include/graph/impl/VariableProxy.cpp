@@ -171,12 +171,7 @@ namespace nd4j {
         template <typename T>
         void VariableProxy<T>::replaceVariable(Variable<T> *variable) {
             // if proxy has variable - that's one story
-            if (_current->hasVariable(variable->id(), variable->index())) {
-                _current->dropVariable(variable->id(), variable->index());
-            }
-        
-            // if not - we just add it as current variable
-            _current->putVariable(variable->id(), variable->index(), variable);           
+            _current->replaceVariable(variable);
         }
 
         template <typename T>
