@@ -617,20 +617,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 String inName = vertexInputNames.get(j);
                 int inputVertexIndex = allNamesReverse.get(inName);
 
-                //Output of vertex 'inputVertexIndex' is the jth input to the current vertex
-                //For input indices, we need to know which output connection of vertex 'inputVertexIndex' this represents
-                GraphVertex inputVertex = vertices[inputVertexIndex];
-                //First: get the outputs of the input vertex...
-                List<String> inputVertexOutputsTo = verticesOutputTo.get(inName);
-                int outputNumberOfInput = inputVertexOutputsTo.indexOf(vertexName);
+                //Here: we have x -> gv connection
+                //gv might have multiple inputs, not just x
+                //Need to know which input x is
+                int inputNumber = vertexInputs.get(vertexName).indexOf(inName);
 
+                if (inputNumber == -1)
+                    throw new IllegalStateException("Could not find vertex " + vertexIndex + " in the list of inputs "
+                            + "for vertex " + gv.getVertexName() + "; error in graph structure?");
 
-                if (outputNumberOfInput == -1)
-                    throw new IllegalStateException("Could not find vertex " + vertexIndex + " in the list of outputs "
-                            + "for vertex " + inputVertex + "; error in graph structure?");
-                //Overall here: the 'outputNumberOfInput'th output of vertex 'inputVertexIndex' is the jth input to the current vertex
-
-                inputIndices[j] = new VertexIndices(inputVertexIndex, outputNumberOfInput);
+                inputIndices[j] = new VertexIndices(inputVertexIndex, inputNumber);
             }
 
             gv.setInputVertices(inputIndices);
