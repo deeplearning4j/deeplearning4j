@@ -20,7 +20,7 @@ Contents
 
 ## DL4JImageRecognitionDemo
 
-This example application uses a neural network trained on the standard MNIST dataset of 28x28 greyscale 0..255 pixel value images of hand drawn numbers 0..9. The application user interace allows the user to draw a number on the device screen which is then tested against the trained network. The output displays the most probable numeric values and the probability score. This tutorial will cover the use of a trained neural network in an Android Application, the handling of user generated images, and the output of the results to the UI from a background thread. More information on general prerequisites for building DL4J Android Applications can be found [here](./deeplearning4-android-prerequisites-configuration). 
+This example application uses a neural network trained on the standard MNIST dataset of 28x28 greyscale 0..255 pixel value images of hand drawn numbers 0..9. The application user interace allows the user to draw a number on the device screen which is then tested against the trained network. The output displays the most probable numeric values and the probability score. This tutorial will cover the use of a trained neural network in an Android Application, the handling of user generated images, and the output of the results to the UI from a background thread. More information on general prerequisites for building DL4J Android Applications can be found [here](./deeplearning4-android-prerequisites). 
 
 ![](/images/guide/screen2.png)
 

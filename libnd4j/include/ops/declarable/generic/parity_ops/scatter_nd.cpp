@@ -15,8 +15,7 @@
  ******************************************************************************/
 
 //
-// @author Created by raver119 on 24.11.17.
-// @author Yurii Shyrma (iuriish@yahoo.com)    
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 21.08.2018
 //
 
 #include <op_boilerplate.h>
@@ -53,6 +52,12 @@ CUSTOM_OP_IMPL(scatter_nd, 3, 1, false, 0, 0) {
     std::move(std::begin(outShape) + indices->sizeAt(-1), std::end(outShape), std::back_inserter(expectedUpdShape));        
     REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ND OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString(expectedUpdShape).c_str(), ShapeUtils<T>::shapeAsString(updShape).c_str());
     
+    // initial zeroing of output
+    if(output->ews() == 1)
+        memset(output->getBuffer(), 0, output->lengthOf() * sizeof(T));
+    else 
+        *output = static_cast<T>(0);
+
     ScatterHelper<T>::template scatterND<simdOps::Copy<T>>(*indices, *updates, *output);
 
     return Status::OK();
