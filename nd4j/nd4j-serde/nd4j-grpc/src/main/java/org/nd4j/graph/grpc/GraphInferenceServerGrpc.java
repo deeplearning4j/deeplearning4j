@@ -2,7 +2,7 @@
 //If you make any local changes, they will be lost
 //source: graph.fbs
 
-package org.nd4j.graph;
+package org.nd4j.graph.grpc;
 
 import com.google.flatbuffers.grpc.FlatbuffersUtils;
 import io.grpc.MethodDescriptor;
@@ -10,20 +10,9 @@ import io.grpc.stub.ClientCalls;
 import io.grpc.stub.ServerCalls;
 
 import java.nio.ByteBuffer;
-import static io.grpc.MethodDescriptor.generateFullMethodName;
-import static io.grpc.stub.ClientCalls.asyncBidiStreamingCall;
-import static io.grpc.stub.ClientCalls.asyncClientStreamingCall;
-import static io.grpc.stub.ClientCalls.asyncServerStreamingCall;
-import static io.grpc.stub.ClientCalls.asyncUnaryCall;
+
 import static io.grpc.stub.ClientCalls.blockingServerStreamingCall;
 import static io.grpc.stub.ClientCalls.blockingUnaryCall;
-import static io.grpc.stub.ClientCalls.futureUnaryCall;
-import static io.grpc.stub.ServerCalls.asyncBidiStreamingCall;
-import static io.grpc.stub.ServerCalls.asyncClientStreamingCall;
-import static io.grpc.stub.ServerCalls.asyncServerStreamingCall;
-import static io.grpc.stub.ServerCalls.asyncUnaryCall;
-import static io.grpc.stub.ServerCalls.asyncUnimplementedStreamingCall;
-import static io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall;
 
 /**
  */

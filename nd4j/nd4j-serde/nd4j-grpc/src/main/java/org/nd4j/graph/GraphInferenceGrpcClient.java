@@ -17,16 +17,18 @@
 package org.nd4j.graph;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import io.grpc.CallOptions;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
-import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.execution.input.OperandsAdapter;
+import org.nd4j.autodiff.execution.input.Operands;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.graph.grpc.GraphInferenceServerGrpc;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
@@ -38,34 +40,34 @@ import java.util.concurrent.TimeUnit;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class GraphInferenceClient {
+public class GraphInferenceGrpcClient {
     private final ManagedChannel channel;
     private final GraphInferenceServerGrpc.GraphInferenceServerBlockingStub blockingStub;
 
     /**
-     * This method creates new GraphInferenceClient, with plain text connection
+     * This method creates new GraphInferenceGrpcClient, with plain text connection
      * @param host
      * @param port
      */
-    public GraphInferenceClient(@NonNull String host, int port) {
+    public GraphInferenceGrpcClient(@NonNull String host, int port) {
         this(host, port, false);
     }
 
     /**
-     * This method creates new GraphInferenceClient, with optional TLS support
+     * This method creates new GraphInferenceGrpcClient, with optional TLS support
      * @param host
      * @param port
      */
-    public GraphInferenceClient(@NonNull String host, int port, boolean useTLS) {
+    public GraphInferenceGrpcClient(@NonNull String host, int port, boolean useTLS) {
         this(useTLS ? ManagedChannelBuilder.forAddress(host, port).build()
                 : ManagedChannelBuilder.forAddress(host, port).usePlaintext().build());
     }
 
     /**
-     * This method creates new GraphInferenceClient over given ManagedChannel
+     * This method creates new GraphInferenceGrpcClient over given ManagedChannel
      * @param channel
      */
-    public GraphInferenceClient(@NonNull ManagedChannel channel) {
+    public GraphInferenceGrpcClient(@NonNull ManagedChannel channel) {
         this.channel = channel;
         this.blockingStub =  GraphInferenceServerGrpc.newBlockingStub(this.channel);
     }
@@ -113,25 +115,34 @@ public class GraphInferenceClient {
     }
 
     /**
-     * This method sends inference request to the GraphServer instance, and returns result as array of INDArrays
-     * @param graphId id of the graph
-     * @param inputs graph inputs with their string ides
+     * This method is suited for use of custom OperandsAdapters
+     * @param adapter
+     * @param <T>
      * @return
      */
-    public INDArray[] output(long graphId, Pair<String, INDArray>... inputs) {
+    public <T> T output(long graphId, T value, OperandsAdapter<T> adapter) {
+        return adapter.output(this.output(graphId, adapter.input(value)));
+    }
+
+
+    public Operands output(long graphId, @NonNull Operands operands) {
         val result = new ArrayList<INDArray>();
         val builder = new FlatBufferBuilder(1024);
 
-        val ins = new int[inputs.length];
+        val ins = new int[operands.size()];
+
+        val col = operands.asCollection();
 
         int cnt = 0;
-        for (val input: inputs) {
+        for (val input: col) {
             val id = input.getFirst();
             val array = input.getSecond();
 
+            val idPair = IntPair.createIntPair(builder, id.getId(), id.getIndex());
+            val nameOff = builder.createString(id.getName());
+
             val arrOff = array.toFlatArray(builder);
-            val nameOff = builder.createString(id);
-            val varOff = FlatVariable.createFlatVariable(builder, 0, nameOff, 0, arrOff, 0);
+            val varOff = FlatVariable.createFlatVariable(builder, idPair, nameOff, 0, arrOff, 0);
             ins[cnt++] = varOff;
         }
 
@@ -144,7 +155,33 @@ public class GraphInferenceClient {
 
         val flatresults = blockingStub.inferenceRequest(req);
 
-        return result.toArray(new INDArray[0]);
+        val res = new Operands();
+        while (flatresults.hasNext()) {
+            val fr = flatresults.next();
+
+            for (int e = 0; e < fr.variablesLength(); e++) {
+                val v = fr.variables(e);
+
+                val array = Nd4j.createFromFlatArray(v.ndarray());
+                res.addArgument(v.name(), v.id().first(), v.id().second(), array);
+            }
+        }
+
+        return res;
+    }
+
+    /**
+     * This method sends inference request to the GraphServer instance, and returns result as array of INDArrays
+     * @param graphId id of the graph
+     * @param inputs graph inputs with their string ides
+     * @return
+     */
+    public INDArray[] output(long graphId, Pair<String, INDArray>... inputs) {
+        val operands = new Operands();
+        for (val in:inputs)
+            operands.addArgument(in.getFirst(), in.getSecond());
+
+        return output(graphId, operands).asArray();
     }
 
     /**
