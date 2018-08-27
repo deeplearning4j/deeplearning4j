@@ -1274,8 +1274,8 @@ void ConvolutionUtils<T>::upsampling2d(const NDArray<T>& input, NDArray<T>& outp
     // input  has shape [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC) 
     // output has shape [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
     
-    Nd4jLong indIn[8]  = {0,0,  0,0,  0,0,  0,0};
-    Nd4jLong indOut[8] = {0,0,  0,0,  0,0,  0,0};
+    std::vector<Nd4jLong> indIn  = {0,0,  0,0,  0,0,  0,0};
+    std::vector<Nd4jLong> indOut = {0,0,  0,0,  0,0,  0,0};
     const int dimIH = isNCHW ? 2 : 1;    
     const int j0 = 2*dimIH;
     const int j1 = j0+1, j2 = j0+2, j3 = j0+3;
@@ -1294,7 +1294,7 @@ void ConvolutionUtils<T>::upsampling2d(const NDArray<T>& input, NDArray<T>& outp
                     
                     indOut[j0] = ih * factorH + fh; indOut[j1] = indOut[j0] + 1; 
                     indOut[j2] = iw * factorW + fw; indOut[j3] = indOut[j2] + 1;                     
-                    auto i = input(indIn);                    
+                    auto i = input(indIn);
                     auto o = output(indOut);
                     o.assign(i);
                 }
@@ -1309,8 +1309,8 @@ template <typename T>
 void ConvolutionUtils<T>::upsampling3d(const NDArray<T>& input, NDArray<T>& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
     // input  has shape [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC) 
     // output has shape [bS, iC, factorD*iD, factorH*iH, factorW*iW ] (NCDHW) or [bS, factorD*iD, factorH*iH, factorW*iW, iC] (NDHWC)
-    Nd4jLong indIn[10]  = {0,0,  0,0,  0,0,  0,0,  0,0};
-    Nd4jLong indOut[10] = {0,0,  0,0,  0,0,  0,0,  0,0};
+    std::vector<Nd4jLong> indIn  = {0,0,  0,0,  0,0,  0,0,  0,0};
+    std::vector<Nd4jLong> indOut = {0,0,  0,0,  0,0,  0,0,  0,0};
     const int dimID = isNCDHW ? 2 : 1;    
     const int j0 = 2*dimID;
     const int j1 = j0+1, j2 = j0+2, j3 = j0+3, j4 = j0+4, j5 = j0+5;;
@@ -1349,8 +1349,8 @@ template <typename T>
 void ConvolutionUtils<T>::upsampling2dBP(const NDArray<T>& gradO, NDArray<T>& gradI, const bool isNCHW) {
     // gradO has shape [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
     // gradI has shape [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)     
-    Nd4jLong indIn[8]  = {0,0,  0,0,  0,0,  0,0};
-    Nd4jLong indOut[8] = {0,0,  0,0,  0,0,  0,0};
+    std::vector<Nd4jLong> indIn  = {0,0,  0,0,  0,0,  0,0};
+    std::vector<Nd4jLong> indOut = {0,0,  0,0,  0,0,  0,0};
     const int dimIH = isNCHW ? 2 : 1;    
     const int factorH = gradO.sizeAt(dimIH)   / gradI.sizeAt(dimIH);
     const int factorW = gradO.sizeAt(dimIH+1) / gradI.sizeAt(dimIH+1);
@@ -1387,8 +1387,8 @@ template <typename T>
 void ConvolutionUtils<T>::upsampling3dBP(const NDArray<T>& gradO, NDArray<T>& gradI, const bool isNCDHW) {
     // input  has shape [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC) 
     // output has shape [bS, iC, factorD*iD, factorH*iH, factorW*iW ] (NCDHW) or [bS, factorD*iD, factorH*iH, factorW*iW, iC] (NDHWC)
-    Nd4jLong indIn[10]  = {0,0,  0,0,  0,0,  0,0,  0,0};
-    Nd4jLong indOut[10] = {0,0,  0,0,  0,0,  0,0,  0,0};
+    std::vector<Nd4jLong> indIn  = {0,0,  0,0,  0,0,  0,0,  0,0};
+    std::vector<Nd4jLong> indOut = {0,0,  0,0,  0,0,  0,0,  0,0};
     const int dimID = isNCDHW ? 2 : 1;
     const int factorD = gradO.sizeAt(dimID)   / gradI.sizeAt(dimID);
     const int factorH = gradO.sizeAt(dimID+1) / gradI.sizeAt(dimID+1);

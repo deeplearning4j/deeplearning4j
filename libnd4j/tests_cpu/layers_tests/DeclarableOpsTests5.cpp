@@ -1208,8 +1208,8 @@ TEST_F(DeclarableOpsTests5, Test_Moments_1) {
 //    d->printIndexedBuffer("Result is ");
 
     ASSERT_TRUE(v->isScalar());
-    ASSERT_NEAR(expMean, (*v)(0), inf);
-    ASSERT_NEAR(expDeviation, (*d)(0), inf);
+    ASSERT_NEAR(expMean, (*v)(0.), inf);
+    ASSERT_NEAR(expDeviation, (*d)(0.), inf);
 
     delete result;
 }
@@ -2377,7 +2377,7 @@ TEST_F(DeclarableOpsTests5, L2_Loss_1) {
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(output->isScalar());
-    ASSERT_EQ((*output)(0), exp);    
+    ASSERT_EQ((*output)(0.), exp);    
 
     delete results;
 }
