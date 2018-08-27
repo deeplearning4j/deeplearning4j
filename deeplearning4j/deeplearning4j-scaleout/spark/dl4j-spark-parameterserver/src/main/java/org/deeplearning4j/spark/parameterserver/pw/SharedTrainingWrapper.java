@@ -312,6 +312,7 @@ public class SharedTrainingWrapper {
                                 .accumulator(accumulator)
                                 .build();
 
+                        log.info("Configuring transport...");
                         //  pass values right away
                         ModelParameterServer.getInstance().configure(voidConfiguration, transport, false);
                         ModelParameterServer.getInstance().addUpdatesSubscriber(consumer);
@@ -323,6 +324,7 @@ public class SharedTrainingWrapper {
                     // we're saving reference to original model
                     originalModel = model;
 
+                    log.info("Starting ModelParameterServer...");
                     // after initialization finished, we're ok to actually start training
                     ModelParameterServer.getInstance().launch();
                 }
