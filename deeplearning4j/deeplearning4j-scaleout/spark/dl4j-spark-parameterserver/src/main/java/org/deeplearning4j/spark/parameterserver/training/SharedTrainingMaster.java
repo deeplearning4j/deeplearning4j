@@ -413,8 +413,12 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         // set current box as controller, if field is unset - switch to next step
         if (voidConfiguration.getControllerAddress() == null) {
             try {
-                String sparkIp = InetAddress.getByName(System.getenv("SPARK_PUBLIC_DNS")).getHostAddress();
-                voidConfiguration.setControllerAddress(sparkIp);
+                val e = System.getenv("SPARK_PUBLIC_DNS");
+                log.info("Trying {SPARK_PUBLIC_DNS}: [{}]", e);
+                if (e != null) {
+                    String sparkIp = InetAddress.getByName(e).getHostAddress();
+                    voidConfiguration.setControllerAddress(sparkIp);
+                }
             } catch (UnknownHostException e) {
             }
         }
@@ -422,7 +426,10 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         // next step - is to get ip address that matches specific network mask
         if (voidConfiguration.getControllerAddress() == null && voidConfiguration.getNetworkMask() != null) {
             NetworkOrganizer organizer = new NetworkOrganizer(voidConfiguration.getNetworkMask());
-            voidConfiguration.setControllerAddress(organizer.getMatchingAddress());
+            val s = organizer.getMatchingAddress();
+            log.info("Trying auto-detected address: [{}]", s);
+
+            voidConfiguration.setControllerAddress(s);
         }
 
         if (voidConfiguration.getControllerAddress() == null)
