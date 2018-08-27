@@ -85,8 +85,10 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
 
     REQUIRE_TRUE(limit != start, 0, "CUSTOM RANGE OP: limit and start values should be different, but got both equal to %f !", limit);
     REQUIRE_TRUE(delta != T(0), 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
+    REQUIRE_TRUE((limit - start) / delta > 0, 0, "CUSTOM RANGE OP: value of (limit-start)/delta should be positive !");
 
-        
+    helpers::range(start, delta, *output);
+
     return Status::OK();
 }
 
@@ -143,12 +145,18 @@ DECLARE_SHAPE_FN(range) {
     else
         REQUIRE_TRUE(false, 0, "CUSTOM RANGE OP: op should have inputs defined in any possible way: T_args, INT_args, or INPUT variables!");
 
+    Nd4jLong steps = (limit - start) / delta;
+
     REQUIRE_TRUE(limit != start, 0, "CUSTOM RANGE OP: limit and start values should be different, but got both equal to %f !", limit);
     REQUIRE_TRUE(delta != T(0), 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
+    REQUIRE_TRUE(steps > 0, 0, "CUSTOM RANGE OP: value of (limit-start)/delta should be positive !");
+
+    if(math::nd4j_abs<T>(start + steps * delta) < math::nd4j_abs<T>(limit))
+        ++steps;
     
     Nd4jLong* vecShapeInfo(nullptr);        
     ALLOCATE(vecShapeInfo, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);    
-    shape::shapeVector((limit - start) / delta, vecShapeInfo);
+    shape::shapeVector(steps, vecShapeInfo);
     
     return SHAPELIST(vecShapeInfo);
 }

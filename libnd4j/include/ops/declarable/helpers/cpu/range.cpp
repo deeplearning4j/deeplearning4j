@@ -35,7 +35,8 @@ void range(const T& start, const T& delta, NDArray<T>& outVector) {
 
     T* const buff = outVector.getBuffer();
 
-#pragma omp parallel for simd if(len > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+// #pragma omp parallel for simd if(len > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+#pragma omp parallel for simd schedule(guided)
     for(Nd4jLong i = 0; i < len; ++i)
     	buff[i] =  start + i * delta;
         
