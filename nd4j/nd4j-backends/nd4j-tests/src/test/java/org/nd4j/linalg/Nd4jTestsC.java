@@ -6782,11 +6782,47 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testWhere1(){
 
         INDArray arr = Nd4j.create(new double[][]{{0,1,0},{0,0,1},{0,0,1}});
-        INDArray exp = Nd4j.create(new double[][]{{0,1},{1,2},{2,2}});
+        INDArray[] exp = new INDArray[]{
+                Nd4j.trueVector(new double[]{0,1,2}),
+                Nd4j.trueVector(new double[]{1,2,2})};
 
-        INDArray act = Nd4j.where(arr, null, null);
+        INDArray[] act = Nd4j.where(arr, null, null);
 
-        assertEquals(exp, act);
+        assertArrayEquals(exp, act);
+    }
+
+    @Test
+    public void testWhere2(){
+
+        INDArray arr = Nd4j.create(3,3,3);
+        arr.putScalar(0,1,0,1.0);
+        arr.putScalar(1,2,1,1.0);
+        arr.putScalar(2,2,1,1.0);
+        INDArray[] exp = new INDArray[]{
+                Nd4j.trueVector(new double[]{0,1,2}),
+                Nd4j.trueVector(new double[]{1,2,2}),
+                Nd4j.trueVector(new double[]{0,1,1})
+        };
+
+        INDArray[] act = Nd4j.where(arr, null, null);
+
+        assertArrayEquals(exp, act);
+    }
+
+    @Test
+    public void testWhere3(){
+        INDArray arr = Nd4j.create(new double[][]{{0,1,0},{0,0,1},{0,0,1}});
+        INDArray x = Nd4j.valueArrayOf(3, 3, 1.0);
+        INDArray y = Nd4j.valueArrayOf(3, 3, 2.0);
+        INDArray exp = Nd4j.create(new double[][]{
+                {1,2,1},
+                {1,1,2},
+                {1,1,2}});
+
+        INDArray[] act = Nd4j.where(arr, x, y);
+        assertEquals(1, act.length);
+
+        assertEquals(exp, act[0]);
 
     }
 

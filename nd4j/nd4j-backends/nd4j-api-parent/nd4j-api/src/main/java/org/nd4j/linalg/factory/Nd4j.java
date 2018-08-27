@@ -5977,8 +5977,8 @@ public class Nd4j {
     /**
      * Similar to numpy.where operation.
      * Supports two modes of operation:<br>
-     * (a) condition array only is provided: returns a 2d array of the indices where "condition" values are non-zero.
-     * Specifically, out has shape [numNonZero(condition), rank(condition)]<br>
+     * (a) condition array only is provided: returns N 1d arrays of the indices where "condition" values are non-zero.
+     * Specifically, each output out has shape [numNonZero(condition)], such that in[out[0], ..., out[n-1]] is non-zero<br>
      * (b) all 3 arrays are provided: returns {@code out[i] = (condition[i] != 0 ? x[i] : y[i])}<br>
      * @param condition Condition array
      * @param x         X array. If null, y must be null also.
@@ -5986,26 +5986,31 @@ public class Nd4j {
      * @return Either the indices where condition is non-zero (if x and y are null), or values from x/y depending on
      * value of condition
      */
-    public static INDArray where(INDArray condition, INDArray x, INDArray y){
+    public static INDArray[] where(INDArray condition, INDArray x, INDArray y){
         Preconditions.checkState((x == null && y == null) || (x != null && y != null), "Both X and Y must be" +
                 "null, or neither must be null");
         INDArray out;
         DynamicCustomOp.DynamicCustomOpsBuilder op = DynamicCustomOp.builder("where_np");
+        List<long[]> outShapes;
         if(x == null){
             //First case: condition only...
-            long count = condition.neq(0).sumNumber().longValue();
-            out = Nd4j.createUninitialized(count, condition.rank());
             op.addInputs(condition);
         } else {
             if(!x.equalShapes(y) || !x.equalShapes(condition)){
                 Preconditions.throwStateEx("Shapes must be equal: condition=%s, x=%s, y=%s", condition.shape(), x.shape(), y.shape());
             }
-            out = Nd4j.createUninitialized(condition.shape());
+            op.addInputs(condition, x, y);
         }
-        op.addOutputs(out);
+        DynamicCustomOp o = op.build();
+        outShapes = Nd4j.getExecutioner().calculateOutputShape(o);
+        INDArray[] outputs = new INDArray[outShapes.size()];
+        for(int i=0; i<outputs.length; i++){
+            outputs[i] = Nd4j.createUninitialized(outShapes.get(i));
+        }
+        op.addOutputs(outputs);
 
         Nd4j.getExecutioner().exec(op.build());
-        return out;
+        return outputs;
     }
 
 
