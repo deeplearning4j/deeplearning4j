@@ -39,6 +39,7 @@ import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.enums.TransmissionStatus;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
 import org.nd4j.parameterserver.distributed.v2.transport.MessageCallable;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 
@@ -182,6 +183,8 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     protected void jointMessageHandler(DirectBuffer buffer, int offset, int length, Header header) {
         byte[] data = new byte[length];
         buffer.getBytes(offset, data);
+
+        val hr = new HandshakeRequest();
 
         // deserialize message
         val message = VoidMessage.fromBytes(data);
