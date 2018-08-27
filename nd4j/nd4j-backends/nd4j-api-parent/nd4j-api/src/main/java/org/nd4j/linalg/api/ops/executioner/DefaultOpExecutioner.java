@@ -721,6 +721,16 @@ public class DefaultOpExecutioner implements OpExecutioner {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public INDArray[] allocateOutputArrays(CustomOp op){
+        List<long[]> shapes = calculateOutputShape(op);
+        INDArray[] out = new INDArray[shapes.size()];
+        for(int i=0; i<shapes.size(); i++ ){
+            out[i] = Nd4j.create(shapes.get(i));
+        }
+        return out;
+    }
+
 
     @Override
     public void enableDebugMode(boolean reallyEnable) {

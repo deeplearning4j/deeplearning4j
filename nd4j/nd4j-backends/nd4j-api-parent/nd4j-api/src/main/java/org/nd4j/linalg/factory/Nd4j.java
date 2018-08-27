@@ -57,6 +57,7 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.shape.Diag;
 import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
+import org.nd4j.linalg.api.ops.impl.shape.Stack;
 import org.nd4j.linalg.api.ops.impl.transforms.OldReverse;
 import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
@@ -5151,6 +5152,32 @@ public class Nd4j {
         INDArray ret = INSTANCE.pullRows(source, destination, sourceDimension, indexes);
         logCreationIfNecessary(ret);
         return ret;
+    }
+
+    /**
+     * Stack a set of N SDVariables of rank X into one rank X+1 variable.
+     * If inputs have shape [a,b,c] then output has shape:<br>
+     * axis = 0: [N,a,b,c]<br>
+     * axis = 1: [a,N,b,c]<br>
+     * axis = 2: [a,b,N,c]<br>
+     * axis = 3: [a,b,c,N]<br>
+     *
+     * @param axis   Axis to stack on
+     * @param values Input variables to stack. Must have the same shape for all inputs
+     * @return Output array
+     * @see #concat(int, INDArray...)
+     */
+    public static INDArray stack(int axis, INDArray... values){
+        Preconditions.checkArgument(values != null && values.length > 0, "No inputs: %s", values);
+        Preconditions.checkState(axis >= -(values[0].rank()+1) && axis < values[0].rank()+1, "Invalid axis: must be between " +
+                "%s (inclusive) and %s (exclusive) for rank %s input, got %s", -(values[0].rank()+1), values[0].rank()+1,
+                values[0].rank(), axis);
+
+        Stack stack = new Stack(values, null, axis);
+        INDArray[] outputArrays = Nd4j.getExecutioner().allocateOutputArrays(stack);
+        stack.addOutputArgument(outputArrays);
+        Nd4j.getExecutioner().exec(stack);
+        return outputArrays[0];
     }
 
     /**

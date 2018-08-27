@@ -6683,7 +6683,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         val exp = NodeReader.readArray("mnist_00", "MatMul.0");
         val badExp = Nd4j.create(100, 10);
 
-        val op = new Mmul(arrayA, arrayB, arrayC, null);
+        Mmul op = new Mmul(arrayA, arrayB, arrayC, null);
         Nd4j.getExecutioner().exec(op);
 
         assertEquals(exp, arrayC);
@@ -6823,7 +6823,34 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(1, act.length);
 
         assertEquals(exp, act[0]);
+    }
 
+    @Test
+    public void testStack(){
+        INDArray in = Nd4j.linspace(1,12,12).reshape(3,4);
+        INDArray in2 = in.add(100);
+
+        for( int i=-3; i<3; i++ ){
+            INDArray out = Nd4j.stack(i, in, in2);
+            int[] expShape;
+            switch (i){
+                case -3:
+                case 0:
+                    expShape = new int[]{2,3,4};
+                    break;
+                case -2:
+                case 1:
+                    expShape = new int[]{3,2,4};
+                    break;
+                case -1:
+                case 2:
+                    expShape = new int[]{3,4,2};
+                    break;
+                default:
+                    throw new RuntimeException(String.valueOf(i));
+            }
+            assertArrayEquals(String.valueOf(i), expShape, out.shape());
+        }
     }
 
     ///////////////////////////////////////////////////////
