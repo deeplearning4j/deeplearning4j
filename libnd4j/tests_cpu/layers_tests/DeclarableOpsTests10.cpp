@@ -24,7 +24,7 @@
 #include <NDArray.h>
 #include <ops/ops.h>
 #include <GradCheck.h>
-
+#include <helpers/RandomLauncher.h>
 
 using namespace nd4j;
 
@@ -240,4 +240,110 @@ TEST_F(DeclarableOpsTests10, svd_test11) {
     ASSERT_TRUE(expV.isSameShape(v));
 
     delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, TruncatedNormalDistribution_Test1) {
+
+    NDArray<double> x('c', {10,10});
+    NDArray<double> z('c', {10,10});
+//    NDArray<double> expS('c', {3});
+//    NDArray<double> expU('c', {3,3});
+//    NDArray<double> expV('c', {3,3});
+    x.linspace(1);
+    NativeOps nops;
+    std::vector<Nd4jLong> buffer(50000);
+    double restParams[2] = {1., 2.};
+    random::RandomBuffer* rng = (nd4j::random::RandomBuffer *)nops.initRandom(nullptr, 123L, buffer.size(), reinterpret_cast<Nd4jPointer>(&buffer[0]));
+    //x.applyRandom<randomOps::GaussianDistribution<double>>(rng, nullptr, &z, restParams);
+
+    //x.printIndexedBuffer("Input");
+    //z.printIndexedBuffer("Output");
+    RandomLauncher<double>::fillTruncatedNormal(rng, &z, 1., 12.);
+    RandomLauncher<double>::fillGaussian(rng, &x, 1., 12.);
+    z.printIndexedBuffer("Truncated Output");
+    double mean = 0, variance = 0;
+    double meanX = 0, varianceX = 0;
+
+    for (Nd4jLong e = 0; e < z.lengthOf(); ++e) {
+        mean += z(e);
+        meanX += x(e);
+    }
+    mean /= 100.0;
+    meanX /= 100.0;
+    for (Nd4jLong e = 0; e < z.lengthOf(); ++e) {
+        variance += nd4j::math::nd4j_sqrt(nd4j::math::nd4j_pow((mean - z(e)), 2.));
+        varianceX += nd4j::math::nd4j_sqrt(nd4j::math::nd4j_pow((meanX - x(e)), 2.));
+    }
+    variance /= 100.0;
+    varianceX /= 100.0;
+    nd4j_printf("Mean: %f; Variance: %f\n", mean, variance);
+    nd4j_printf("MeanG: %f; VarianceG: %f\n", meanX, varianceX);
+    ASSERT_EQ(mean, 0.);
+    ASSERT_EQ(variance, 1.);
+/*    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *s = results->at(0);
+    NDArray<double> *u = results->at(1);
+    NDArray<double> *v = results->at(2);
+
+    ASSERT_TRUE(expS.isSameShape(s));
+    ASSERT_TRUE(expU.isSameShape(u));
+    ASSERT_TRUE(expV.isSameShape(v));
+
+    delete results;
+    */
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, TruncatedNormalDistribution_Test2) {
+
+    NDArray<float> x('c', {10,10});
+    NDArray<float> z('c', {10,10});
+//    NDArray<double> expS('c', {3});
+//    NDArray<double> expU('c', {3,3});
+//    NDArray<double> expV('c', {3,3});
+    x.linspace(1);
+    NativeOps nops;
+    std::vector<Nd4jLong> buffer(50000);
+    float restParams[2] = {1.f,2.f};
+    random::RandomBuffer* rng = (nd4j::random::RandomBuffer *)nops.initRandom(nullptr, 123L, buffer.size(), reinterpret_cast<Nd4jPointer>(&buffer[0]));
+    //x.applyRandom<randomOps::GaussianDistribution<double>>(rng, nullptr, &z, restParams);
+
+    //x.printIndexedBuffer("Input");
+    //z.printIndexedBuffer("Output");
+    RandomLauncher<float>::fillTruncatedNormal(rng, &z, 1.f, 12.f);
+    RandomLauncher<float>::fillGaussian(rng, &x, 1.f, 12.f);
+    z.printIndexedBuffer("Truncated Output");
+    float mean = 0, variance = 0;
+    float meanX = 0, varianceX = 0;
+
+    for (Nd4jLong e = 0; e < z.lengthOf(); ++e) {
+        mean += z(e);
+        meanX += x(e);
+    }
+    mean /= 100.0f;
+    meanX /= 100.0f;
+    for (Nd4jLong e = 0; e < z.lengthOf(); ++e) {
+        variance += nd4j::math::nd4j_sqrt(nd4j::math::nd4j_pow((mean - z(e)), 2.f));
+        varianceX += nd4j::math::nd4j_sqrt(nd4j::math::nd4j_pow((meanX - x(e)), 2.f));
+    }
+    variance /= 100.0f;
+    varianceX /= 100.0f;
+    nd4j_printf("Mean: %f; Variance: %f\n", mean, variance);
+    nd4j_printf("MeanG: %f; VarianceG: %f\n", meanX, varianceX);
+    ASSERT_EQ(meanX, 1.f);
+    ASSERT_EQ(varianceX, 12.f);
+/*    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *s = results->at(0);
+    NDArray<double> *u = results->at(1);
+    NDArray<double> *v = results->at(2);
+
+    ASSERT_TRUE(expS.isSameShape(s));
+    ASSERT_TRUE(expU.isSameShape(u));
+    ASSERT_TRUE(expV.isSameShape(v));
+
+    delete results;
+    */
 }
