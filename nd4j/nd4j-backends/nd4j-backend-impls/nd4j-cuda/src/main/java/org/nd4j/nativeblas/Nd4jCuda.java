@@ -6823,24 +6823,26 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         /**
         *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the subarrays to point on
-        *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
-        */
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Const @ByRef Intervals idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Const @ByRef Intervals idx);
-
-        /**
-        *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
         *  idx - intervals of indexes which define the subarrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong*") LongPointer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong*") LongPointer idx);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong*") LongBuffer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong*") LongBuffer idx);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong*") long[] idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong*") long[] idx);
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("Nd4jLong*") @StdVector LongPointer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("Nd4jLong*") @StdVector LongBuffer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("Nd4jLong*") @StdVector long[] idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+
+        /**
+        *  evaluates subarray with buffer pointing at this->_buffer and offset defined by given sequential index subArrIdx and dimensions in dimsToExclude
+        *  subArrIdx - index of current sub-array
+        *  dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-array along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5], and subArrIdx must be in range [0,7]
+        *                  if dimsToExclude is empty then idxRanges containing all zeros (means whole array) will be returned.
+        */ 
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntPointer dimsToExclude, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntPointer dimsToExclude);
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntBuffer dimsToExclude, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntBuffer dimsToExclude);
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector int[] dimsToExclude, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector int[] dimsToExclude);
 
         /**
         *  addition operator: array + other
@@ -7246,6 +7248,19 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         /**
         *  inline accessing operator for 4D array, i - height, j - width, k - depth
+        */
+
+        /**
+        *  inline modifying operator for ND array
+        *  idx - array with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
+        */ 
+        public native @ByRef @Name("operator ()") FloatPointer apply(@Cast("const Nd4jLong*") LongPointer idx);
+        public native @ByRef @Name("operator ()") FloatBuffer apply(@Cast("const Nd4jLong*") LongBuffer idx);
+        public native @ByRef @Name("operator ()") float[] apply(@Cast("const Nd4jLong*") long[] idx);
+
+        /**
+        *  inline accessing operator for ND array
+        *  idx - array with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
         */
 
 
@@ -8010,24 +8025,26 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         /**
         *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the subarrays to point on
-        *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
-        */
-        public native @ByVal @Name("operator ()") HalfNDArray apply(@Const @ByRef Intervals idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") HalfNDArray apply(@Const @ByRef Intervals idx);
-
-        /**
-        *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
         *  idx - intervals of indexes which define the subarrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
-        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("const Nd4jLong*") LongPointer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("const Nd4jLong*") LongPointer idx);
-        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("const Nd4jLong*") LongBuffer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("const Nd4jLong*") LongBuffer idx);
-        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("const Nd4jLong*") long[] idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("const Nd4jLong*") long[] idx);
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("Nd4jLong*") @StdVector LongPointer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("Nd4jLong*") @StdVector LongBuffer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("Nd4jLong*") @StdVector long[] idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+
+        /**
+        *  evaluates subarray with buffer pointing at this->_buffer and offset defined by given sequential index subArrIdx and dimensions in dimsToExclude
+        *  subArrIdx - index of current sub-array
+        *  dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-array along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5], and subArrIdx must be in range [0,7]
+        *                  if dimsToExclude is empty then idxRanges containing all zeros (means whole array) will be returned.
+        */ 
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntPointer dimsToExclude, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntPointer dimsToExclude);
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntBuffer dimsToExclude, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntBuffer dimsToExclude);
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector int[] dimsToExclude, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector int[] dimsToExclude);
 
         /**
         *  addition operator: array + other
@@ -8433,6 +8450,19 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         /**
         *  inline accessing operator for 4D array, i - height, j - width, k - depth
+        */
+
+        /**
+        *  inline modifying operator for ND array
+        *  idx - array with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
+        */ 
+        public native @Cast("float16*") @ByRef @Name("operator ()") ShortPointer apply(@Cast("const Nd4jLong*") LongPointer idx);
+        public native @Cast("float16*") @ByRef @Name("operator ()") ShortBuffer apply(@Cast("const Nd4jLong*") LongBuffer idx);
+        public native @Cast("float16*") @ByRef @Name("operator ()") short[] apply(@Cast("const Nd4jLong*") long[] idx);
+
+        /**
+        *  inline accessing operator for ND array
+        *  idx - array with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
         */
 
 
@@ -9197,24 +9227,26 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         /**
         *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the subarrays to point on
-        *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
-        */
-        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const @ByRef Intervals idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const @ByRef Intervals idx);
-
-        /**
-        *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
         *  idx - intervals of indexes which define the subarrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
-        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("const Nd4jLong*") LongPointer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("const Nd4jLong*") LongPointer idx);
-        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("const Nd4jLong*") LongBuffer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("const Nd4jLong*") LongBuffer idx);
-        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("const Nd4jLong*") long[] idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("const Nd4jLong*") long[] idx);
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("Nd4jLong*") @StdVector LongPointer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("Nd4jLong*") @StdVector LongBuffer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("Nd4jLong*") @StdVector long[] idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+
+        /**
+        *  evaluates subarray with buffer pointing at this->_buffer and offset defined by given sequential index subArrIdx and dimensions in dimsToExclude
+        *  subArrIdx - index of current sub-array
+        *  dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-array along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5], and subArrIdx must be in range [0,7]
+        *                  if dimsToExclude is empty then idxRanges containing all zeros (means whole array) will be returned.
+        */ 
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntPointer dimsToExclude, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntPointer dimsToExclude);
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntBuffer dimsToExclude, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntBuffer dimsToExclude);
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector int[] dimsToExclude, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector int[] dimsToExclude);
 
         /**
         *  addition operator: array + other
@@ -9622,6 +9654,19 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  inline accessing operator for 4D array, i - height, j - width, k - depth
         */
 
+        /**
+        *  inline modifying operator for ND array
+        *  idx - array with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
+        */ 
+        public native @ByRef @Name("operator ()") DoublePointer apply(@Cast("const Nd4jLong*") LongPointer idx);
+        public native @ByRef @Name("operator ()") DoubleBuffer apply(@Cast("const Nd4jLong*") LongBuffer idx);
+        public native @ByRef @Name("operator ()") double[] apply(@Cast("const Nd4jLong*") long[] idx);
+
+        /**
+        *  inline accessing operator for ND array
+        *  idx - array with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
+        */
+
 
         public native @Cast("bool") boolean isAttached();
 
@@ -9699,6 +9744,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 //////////////////////////////////////////////////////////////////////////
 
 
+//////////////////////////////////////////////////////////////////////////
 // accessing operator for matrix, i - absolute index
 
 
@@ -9724,6 +9770,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
 
 
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -13285,9 +13337,9 @@ public static final int PREALLOC_SIZE = 33554432;
 * @param indices the indices to iterate over
 * @return the double at the specified index
 */
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("Nd4jLong") long baseOffset,  @Cast("Nd4jLong*") LongPointer shape,  @Cast("Nd4jLong*") LongPointer stride,  @Cast("Nd4jLong*") LongPointer indices,int rank);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("Nd4jLong") long baseOffset,  @Cast("Nd4jLong*") LongBuffer shape,  @Cast("Nd4jLong*") LongBuffer stride,  @Cast("Nd4jLong*") LongBuffer indices,int rank);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("Nd4jLong") long baseOffset,  @Cast("Nd4jLong*") long[] shape,  @Cast("Nd4jLong*") long[] stride,  @Cast("Nd4jLong*") long[] indices,int rank);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("Nd4jLong") long baseOffset,  @Cast("Nd4jLong*") LongPointer shape,  @Cast("Nd4jLong*") LongPointer stride,  @Cast("const Nd4jLong*") LongPointer indices,int rank);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("Nd4jLong") long baseOffset,  @Cast("Nd4jLong*") LongBuffer shape,  @Cast("Nd4jLong*") LongBuffer stride,  @Cast("const Nd4jLong*") LongBuffer indices,int rank);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("Nd4jLong") long baseOffset,  @Cast("Nd4jLong*") long[] shape,  @Cast("Nd4jLong*") long[] stride,  @Cast("const Nd4jLong*") long[] indices,int rank);
 
     @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer createShapeInfo(@Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer stride, int rank);
     @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer createShapeInfo(@Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer stride, int rank);
