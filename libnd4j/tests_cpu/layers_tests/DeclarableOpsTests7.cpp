@@ -54,7 +54,7 @@ TEST_F(DeclarableOpsTests7, Test_CHOOSE_SCALAR_LARGE) {
 
     auto z = result->at(1);
     auto array = *z;
-    ASSERT_EQ(148,array(0));
+    ASSERT_EQ(148,array(0.));
     //ASSERT_TRUE(exp.isSameShape(z));
 
     delete result;
@@ -77,7 +77,7 @@ TEST_F(DeclarableOpsTests7, Test_CHOOSE_SCALAR_ZERO) {
 
     auto z = result->at(1);
     auto array = *z;
-    ASSERT_EQ(3,array(0));
+    ASSERT_EQ(3,array(0.));
     //ASSERT_TRUE(exp.isSameShape(z));
 
     delete result;
@@ -4019,7 +4019,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_BP_1) {
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> eps('c', {4}, {1.f, 2.f, 3.f, 4.f});
     NDArray<float> exp('c', {2, 3, 4});
-    exp(0) = eps(0);
+    exp(0.) = eps(0.);
     exp(1) = eps(1);
     exp(2) = eps(2);
     exp(3) = eps(3);
@@ -4044,7 +4044,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_BP_2) {
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> eps('c', {1, 1, 4}, {1.f, 2.f, 3.f, 4.f});
     NDArray<float> exp('c', {2, 3, 4});
-    exp(0) = eps(0);
+    exp(0.) = eps(0.);
     exp(1) = eps(1);
     exp(2) = eps(2);
     exp(3) = eps(3);
@@ -4175,7 +4175,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_BP_1) {
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> eps('c', {4}, {21.f, 22.f, 23.f, 24.f});
     NDArray<float> exp('c', {2, 3, 4});
-    exp(20) = eps(0);
+    exp(20) = eps(0.);
     exp(21) = eps(1);
     exp(22) = eps(2);
     exp(23) = eps(3);
@@ -4200,7 +4200,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_BP_2) {
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> eps('c', {1, 1, 4}, {21.f, 22.f, 23.f, 24.f});
     NDArray<float> exp('c', {2, 3, 4});
-    exp(20) = eps(0);
+    exp(20) = eps(0.);
     exp(21) = eps(1);
     exp(22) = eps(2);
     exp(23) = eps(3);

@@ -62,17 +62,17 @@ void gruCell(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* h) {
     const int nU = h0->sizeAt(1);                // number of units
     
     // gates = sigmoid(x*Wx + h0*Wh + b)
-    NDArray<T> gates = sigmoid<T>(mmul(*x, (*Wx)({{},{0,2*nU}})) + mmul(*h0, (*Wh)({{},{0,2*nU}})) + (*b)({{0,2*nU}}));       // [bS, 2*nU] + [bS, 2*nU] + [1, 2*nU] = [bS, 2*nU]    
+    NDArray<T> gates = sigmoid<T>(mmul(*x, (*Wx)({0,0, 0,2*nU})) + mmul(*h0, (*Wh)({0,0, 0,2*nU})) + (*b)({0,2*nU}));       // [bS, 2*nU] + [bS, 2*nU] + [1, 2*nU] = [bS, 2*nU]    
     
     // reset gate
-    NDArray<T> r = gates({{}, {0, nU}});                     // [bS, nU]
+    NDArray<T> r = gates({0,0, 0,nU});                     // [bS, nU]
 
     // update gate
-    NDArray<T> u = gates({{}, {nU, 2*nU}});            // [bS, nU]
+    NDArray<T> u = gates({0,0, nU,2*nU});            // [bS, nU]
 
     // ◦ means element-wise product or so called Hadamard product
     // n = activation(x*Wx + (r◦h0)*Wh + b)
-    NDArray<T> n = activation<T>(mmul(*x, (*Wx)({{},{2*nU, 3*nU}})) + mmul((*h0)*r, (*Wh)({{},{2*nU,3*nU}})) + (*b)({{2*nU,3*nU}}));     // [bS, nU]
+    NDArray<T> n = activation<T>(mmul(*x, (*Wx)({0,0, 2*nU,3*nU})) + mmul((*h0)*r, (*Wh)({0,0, 2*nU,3*nU})) + (*b)({2*nU,3*nU}));     // [bS, nU]
 
     // current cell output
     h->assign( u * (*h0) + ((T)1. - u) * n );
@@ -98,8 +98,8 @@ void gruTimeLoop(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* h) {
     // loop through time steps
     for (int t = 0; t < time; ++t) {
 
-        NDArray<T> xt = (*x)({{t,t+1}, {}, {}});
-        NDArray<T> ht = (*h)({{t,t+1}, {}, {}});
+        NDArray<T> xt = (*x)({t,t+1, 0,0, 0,0});
+        NDArray<T> ht = (*h)({t,t+1, 0,0, 0,0});
 
         helpers::gruCell<T>({&xt, &ht_1, Wx, Wh, b}, &ht);
         ht_1.assign(ht);    
@@ -132,22 +132,22 @@ void gruCellBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray
 
     // ***** feed forward step ***** //    
     // gates = sigmoid(x*Wx + h0*Wh + b)
-    NDArray<T> gates = sigmoid<T>(mmul(*x, (*Wx)({{},{0,2*nU}})) + mmul(*h0, (*Wh)({{},{0,2*nU}})) + (*b)({{0,2*nU}}));       // [bS, 2*nU] + [bS, 2*nU] + [1, 2*nU] = [bS, 2*nU]    
+    NDArray<T> gates = sigmoid<T>(mmul(*x, (*Wx)({0,0, 0,2*nU})) + mmul(*h0, (*Wh)({0,0, 0,2*nU})) + (*b)({0,2*nU}));       // [bS, 2*nU] + [bS, 2*nU] + [1, 2*nU] = [bS, 2*nU]    
     // reset gate
-    NDArray<T> r = gates({{}, {0, nU}});               // [bS, nU]
+    NDArray<T> r = gates({0,0, 0, nU});               // [bS, nU]
     // update gate
-    NDArray<T> u = gates({{}, {nU, 2*nU}});            // [bS, nU]
+    NDArray<T> u = gates({0,0, nU, 2*nU});            // [bS, nU]
     // ◦ means element-wise product or so called Hadamard product
     // n = activation(x*Wx + (r◦h0)*Wh + b)
-    NDArray<T> n = activation<T>(mmul(*x, (*Wx)({{},{2*nU, 3*nU}})) + mmul((*h0)*r, (*Wh)({{},{2*nU,3*nU}})) + (*b)({{2*nU,3*nU}}));     // [bS, nU]
+    NDArray<T> n = activation<T>(mmul(*x, (*Wx)({0,0, 2*nU,3*nU})) + mmul((*h0)*r, (*Wh)({0,0, 2*nU,3*nU})) + (*b)({2*nU,3*nU}));     // [bS, nU]
 
     // ***** back prop step ***** // 
-    NDArray<T> Wxr  = (*Wx)({{}, {0,   nU}});
-    NDArray<T> Wxu  = (*Wx)({{}, {nU,  2*nU}});
-    NDArray<T> Wxn  = (*Wx)({{}, {2*nU,3*nU}});
-    NDArray<T> Whr  = (*Wh)({{}, {0,   nU}});
-    NDArray<T> Whu  = (*Wh)({{}, {nU,  2*nU}});
-    NDArray<T> Whn  = (*Wh)({{}, {2*nU,3*nU}});
+    NDArray<T> Wxr  = (*Wx)({0,0, 0,   nU});
+    NDArray<T> Wxu  = (*Wx)({0,0, nU,  2*nU});
+    NDArray<T> Wxn  = (*Wx)({0,0, 2*nU,3*nU});
+    NDArray<T> Whr  = (*Wh)({0,0, 0,   nU});
+    NDArray<T> Whu  = (*Wh)({0,0, nU,  2*nU});
+    NDArray<T> Whn  = (*Wh)({0,0, 2*nU,3*nU});
     NDArray<T> WxrT = Wxr.transp();
     NDArray<T> WxuT = Wxu.transp();
     NDArray<T> WxnT = Wxn.transp();
@@ -157,17 +157,17 @@ void gruCellBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray
     NDArray<T> xT   = x->transp();
     NDArray<T> h0T  = h0->transp();
 
-    NDArray<T> dLdWxr = (*dLdWx)({{}, {0,     nU}});
-    NDArray<T> dLdWxu = (*dLdWx)({{}, {nU,  2*nU}});
-    NDArray<T> dLdWxn = (*dLdWx)({{}, {2*nU,3*nU}});
+    NDArray<T> dLdWxr = (*dLdWx)({0,0, 0,     nU});
+    NDArray<T> dLdWxu = (*dLdWx)({0,0, nU,  2*nU});
+    NDArray<T> dLdWxn = (*dLdWx)({0,0, 2*nU,3*nU});
 
-    NDArray<T> dLdWhr = (*dLdWh)({{}, {0,     nU}});    
-    NDArray<T> dLdWhu = (*dLdWh)({{}, {nU,  2*nU}});    
-    NDArray<T> dLdWhn = (*dLdWh)({{}, {2*nU,3*nU}});
+    NDArray<T> dLdWhr = (*dLdWh)({0,0, 0,     nU});    
+    NDArray<T> dLdWhu = (*dLdWh)({0,0, nU,  2*nU});    
+    NDArray<T> dLdWhn = (*dLdWh)({0,0, 2*nU,3*nU});
 
-    NDArray<T> dLdbr = (*dLdb)({{0,     nU}});
-    NDArray<T> dLdbu = (*dLdb)({{nU,  2*nU}});
-    NDArray<T> dLdbn = (*dLdb)({{2*nU,3*nU}});
+    NDArray<T> dLdbr = (*dLdb)({0,     nU});
+    NDArray<T> dLdbu = (*dLdb)({nU,  2*nU});
+    NDArray<T> dLdbn = (*dLdb)({2*nU,3*nU});
 
     NDArray<T> dhdu   = *h0  - n;               // [bS, nU]
     NDArray<T> dhdn   = (T)1 - u;               // [bS, nU]    

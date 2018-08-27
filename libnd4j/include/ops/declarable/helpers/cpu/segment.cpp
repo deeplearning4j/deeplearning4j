@@ -29,9 +29,9 @@ namespace helpers {
     void segmentMaxFunctor(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* output) {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
-        int idx = static_cast<int>((*indices)(0));
+        int idx = static_cast<int>((*indices)(0.));
         if (input->isVector()) {
-            T val = (*input)(0);
+            T val = (*input)(0.);
 //#pragma omp parallel for
             for (int e = 1; e < indices->lengthOf(); e++) {
                 if (idx == static_cast<int>((*indices)(e))) {
@@ -83,9 +83,9 @@ namespace helpers {
     void segmentMinFunctor(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* output) {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
-        int idx = static_cast<int>((*indices)(0));
+        int idx = static_cast<int>((*indices)(0.));
         if (input->isVector()) {
-            T val = (*input)(0);
+            T val = (*input)(0.);
 //#pragma omp parallel for
             for (int e = 1; e < indices->lengthOf(); e++) {
                 if (idx == static_cast<int>((*indices)(e))) {
@@ -135,7 +135,7 @@ namespace helpers {
     void segmentMeanFunctor(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* output) {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
-        int idx = static_cast<int>((*indices)(0));
+        int idx = static_cast<int>((*indices)(0.));
         if (input->isVector()) {
             T val = T(0.f);
             int count = 0;
@@ -196,7 +196,7 @@ namespace helpers {
     void segmentSumFunctor(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* output) {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
-        int idx = static_cast<int>((*indices)(0));
+        int idx = static_cast<int>((*indices)(0.));
         if (input->isVector()) {
             T val = T(0.f);
             int count = 0;
@@ -245,9 +245,9 @@ namespace helpers {
     void segmentProdFunctor(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* output) {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
-        int idx = static_cast<int>((*indices)(0));
+        int idx = static_cast<int>((*indices)(0.));
         if (input->isVector()) {
-            T val = (*input)(0);
+            T val = (*input)(0.);
             int count = 0;
             for (int e = 1; e < indices->lengthOf(); e++) {
                 if (idx == static_cast<int>((*indices)(e))) {
@@ -291,7 +291,7 @@ namespace helpers {
 
     template <typename T>
     bool segmentIndicesValidate(NDArray<T>* indices, T& expected, T& output) {
-            T val = (*indices)(0);
+            T val = (*indices)(0.);
             for (int e = 1; e < indices->lengthOf(); e++) {
                 output = (*indices)(e);
                 if (val > output) 
