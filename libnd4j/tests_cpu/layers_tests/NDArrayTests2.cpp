@@ -255,7 +255,7 @@ TEST_F(NDArrayTest2, mmul_test3) {
     NDArray<float> wT(x.ordering(), {1, (int)x.lengthOf()}, x.getWorkspace());                            // row-vector (transposed w)    
 
     w = x / (float)10.;         
-    w(0) = 1.;
+    w(0.) = 1.;
     wT.assign(&w);
 
     NDArray<float> result = mmul(w ,wT);
@@ -785,5 +785,5 @@ TEST_F(NDArrayTest2, allTensorsAlongDimension_test1) {
     ASSERT_TRUE(exp.isSameShape(set->at(0)));
     ASSERT_TRUE(exp.equalsTo(set->at(0)));
 
-    delete set;    
+    delete set;
 }

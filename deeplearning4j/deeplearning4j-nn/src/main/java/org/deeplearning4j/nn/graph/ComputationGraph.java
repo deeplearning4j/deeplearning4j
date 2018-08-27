@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -68,8 +69,6 @@ import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
-import org.nd4j.linalg.exception.ND4JIllegalAccessException;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.nd4j.linalg.heartbeat.reports.Environment;
@@ -130,6 +129,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     protected static final String WS_RNN_LOOP_WORKING_MEM = "WS_RNN_LOOP_WORKING_MEM";
 
+    /**
+     * Workspace for output methods that use OutputAdapter
+     */
+    protected static final String WS_OUTPUT_MEM = "WS_OUTPUT_MEM";
 
     protected final WorkspaceConfiguration WS_LAYER_WORKING_MEM_CONFIG;
 
@@ -614,20 +617,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 String inName = vertexInputNames.get(j);
                 int inputVertexIndex = allNamesReverse.get(inName);
 
-                //Output of vertex 'inputVertexIndex' is the jth input to the current vertex
-                //For input indices, we need to know which output connection of vertex 'inputVertexIndex' this represents
-                GraphVertex inputVertex = vertices[inputVertexIndex];
-                //First: get the outputs of the input vertex...
-                List<String> inputVertexOutputsTo = verticesOutputTo.get(inName);
-                int outputNumberOfInput = inputVertexOutputsTo.indexOf(vertexName);
+                //Here: we have x -> gv connection
+                //gv might have multiple inputs, not just x
+                //Need to know which input x is
+                int inputNumber = vertexInputs.get(vertexName).indexOf(inName);
 
+                if (inputNumber == -1)
+                    throw new IllegalStateException("Could not find vertex " + vertexIndex + " in the list of inputs "
+                            + "for vertex " + gv.getVertexName() + "; error in graph structure?");
 
-                if (outputNumberOfInput == -1)
-                    throw new IllegalStateException("Could not find vertex " + vertexIndex + " in the list of outputs "
-                            + "for vertex " + inputVertex + "; error in graph structure?");
-                //Overall here: the 'outputNumberOfInput'th output of vertex 'inputVertexIndex' is the jth input to the current vertex
-
-                inputIndices[j] = new VertexIndices(inputVertexIndex, outputNumberOfInput);
+                inputIndices[j] = new VertexIndices(inputVertexIndex, inputNumber);
             }
 
             gv.setInputVertices(inputIndices);
@@ -1149,6 +1148,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 solver.optimize(workspaceMgr);
 
             }
+        } else {
+            throw new IllegalStateException("Network configuration is set to backprop(false). Use the pretrain" +
+                    " and pretrainLayer methods to perform training for unsupervised layerwise training of neural networks");
         }
 
         if (featureMaskArrays != null || labelMaskArrays != null) {
@@ -1673,6 +1675,24 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public INDArray[] output(boolean train, @NonNull INDArray[] input, INDArray[] inputMasks, INDArray[] labelMasks) {
         return output(train, input, inputMasks, labelMasks, null);
+    }
+
+    /**
+     * This method uses provided OutputAdapter to return custom object built from INDArray
+     *
+     * PLEASE NOTE: This method uses dedicated Workspace for output generation to avoid redundant allocations
+     *
+     * @param inputs Input arrays to the netwonk
+     * @param inputMasks Optional input mask arrays (may be null)
+     * @param labelMasks Optional label mask arrays (may be null
+     * @param outputAdapter OutputAdapter<T> instance
+     * @param <T> T extends Object
+     * @return T instance produced by OutputAdapter
+     */
+    public synchronized <T> T output(@NonNull INDArray[] inputs, INDArray[] inputMasks, INDArray[] labelMasks, @NonNull OutputAdapter<T> outputAdapter) {
+        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, WS_OUTPUT_MEM)) {
+            return outputAdapter.apply(output(false, inputs, inputMasks, labelMasks, ws));
+        }
     }
 
     /**
@@ -4164,8 +4184,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             in = String.valueOf(((Bidirectional)bi.conf().getLayer()).getNIn());
                             out = String.valueOf(((Bidirectional)bi.conf().getLayer()).getNOut());
                         } else {
-                            in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
-                            out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
+                            try {
+                                in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
+                                out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
+                            }
+                            catch (Exception e) { // Some layers, like PReLU, are just BaseLayers (but have parameters)
+                            }
                         }
                         List<String> paraNames = currentLayer.conf().variables();
                         for (String aP : paraNames) {
@@ -4413,7 +4437,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     /**
      * Get the current learning rate, for the specified layer, from the network.
      * Note: If the layer has no learning rate (no parameters, or an updater without a learning rate) then null is returned
-     * @param layerNumber   Layer number to get the learning rate for
+     * @param layerName   Layer name
      * @return Learning rate for the specified layer, or null
      */
     public Double getLearningRate(String layerName){

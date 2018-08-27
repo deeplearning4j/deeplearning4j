@@ -28,8 +28,8 @@ DL4J currently supports the following types of recurrent neural network
 * BidirectionalGravesLSTM 
 * BaseRecurrent
 
-Java documentation for each is available, [GravesLSTM](https://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/layers/GravesLSTM.html), 
- [BidirectionalGravesLSTM](https://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/layers/GravesBidirectionalLSTM.html),  [BaseRecurrent](https://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/layers/BaseRecurrentLayer.html)
+Java documentation for each is available, [GravesLSTM](https://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/nn/conf/layers/GravesLSTM.html), 
+ [BidirectionalGravesLSTM](https://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/nn/conf/layers/GravesBidirectionalLSTM.html),  [BaseRecurrent](https://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/layers/BaseRecurrentLayer.html)
 
 #### Data for RNNs
 Consider for the moment a standard feed-forward network (a multi-layer perceptron or 'DenseLayer' in DL4J). These networks expect input and output data that is two-dimensional: that is, data with "shape" [numExamples,inputSize]. This means that the data into a feed-forward network has ‘numExamples’ rows/examples, where each row consists of ‘inputSize’ columns. A single example would have shape [1,inputSize], though in practice we generally use multiple examples for computational and optimization efficiency. Similarly, output data for a standard feed-forward network is also two dimensional, with shape [numExamples,outputSize].

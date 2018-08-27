@@ -26,9 +26,10 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * StackVertex allows for stacking of inputs so that they may be forwarded through
- * a network. This is useful for cases such as Triplet Embedding, where shared parameters
- * are not supported by the network.
+ * StackVertex allows for stacking of inputs so that they may be forwarded through a network.
+ * This is useful for cases such as Triplet Embedding, where shared parameters are not supported by the network.
+ * Note that stacking occurs along dimension 0: so if 2 inputs both have shape {@code [mb,x]}, the the output
+ * after stacking has shape {@code [2*mb,x]}. Can be used for
  *
  * @author Justin Long (crockpotveggies)
  */

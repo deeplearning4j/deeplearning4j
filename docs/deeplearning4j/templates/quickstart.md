@@ -74,7 +74,7 @@ If you are working on a Mac, you can simply enter the following into the command
 brew install maven
 ```
 
-Maven is widely used among Java developers and it's pretty much mandatory for working with DL4J. If you come from a different background, and Maven is new to you, check out [Apache's Maven overview](http://maven.apache.org/what-is-maven.html) and our [introduction to Maven for non-Java programmers](http://deeplearning4j.org/maven.html), which includes some additional troubleshooting tips. [Other build tools](../buildtools) such as Ivy and Gradle can also work, but we support Maven best.
+Maven is widely used among Java developers and it's pretty much mandatory for working with DL4J. If you come from a different background, and Maven is new to you, check out [Apache's Maven overview](http://maven.apache.org/what-is-maven.html) and our [introduction to Maven for non-Java programmers](./deeplearning4j-config-maven), which includes some additional troubleshooting tips. [Other build tools](./deeplearning4j-config-buildtools) such as Ivy and Gradle can also work, but we support Maven best.
 
 * [Paul Dubs' guide to maven](http://www.dubs.tech/guides/maven-essentials/)
 
@@ -135,7 +135,7 @@ In another window, a graph will appear, showing you how the multilayer perceptro
 
 ![mlp classifier viz](/images/guide/mlp_classifier_viz.png)
 
-Congratulations! You just trained your first neural network with Deeplearning4j. Now, why don't you try our next tutorial: [**MNIST for Beginners**](./mnist-for-beginners), where you'll learn how to classify images.
+Congratulations! You just trained your first neural network with Deeplearning4j.
 
 ## Next Steps
 
@@ -143,10 +143,10 @@ Congratulations! You just trained your first neural network with Deeplearning4j.
   * [DL4J Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) is the main channel for all things DL4J. Most people hang out here.
   * [Tuning Help](https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp) is for people just getting started with neural networks. Beginners please visit us here!
   * [Early Adopters](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters) is for those who are helping us vet and improve the next release. WARNING: This is for more experienced folks.
-2. Read the [introduction to deep neural networks](./neuralnet-overview) or [one of our detailed tutorials](./tutorials).
-3. Check out the more detailed [Comprehensive Setup Guide](./gettingstarted).
-4. Browse the [DL4J documentation](./documentation).
-5. **Python folks**: If you plan to run benchmarks on Deeplearning4j comparing it to well-known Python framework [x], please read [these instructions](https://deeplearning4j.org/benchmark) on how to optimize heap space, garbage collection and ETL on the JVM. By following them, you will see at least a *10x speedup in training time*.
+2. Read the [introduction to deep neural networks](https://skymind.ai/wiki/neural-network).
+3. Check out the more detailed [Comprehensive Setup Guide](./deeplearning4j-quickstart).
+4. Browse the [DL4J documentation](./).
+5. **Python folks**: If you plan to run benchmarks on Deeplearning4j comparing it to well-known Python framework [x], please read [these instructions](./deeplearning4j-benchmark) on how to optimize heap space, garbage collection and ETL on the JVM. By following them, you will see at least a *10x speedup in training time*.
 
 ### Additional links
 
@@ -197,9 +197,9 @@ We recommend and use Maven and Intellij. If you prefer Eclipse and dislike Maven
 
 ## DL4J Overview
 
-Deeplearning4j is a framework that lets you pick and choose with everything available from the beginning. We're not Tensorflow (a low-level numerical computing library with automatic differentiation) or Pytorch. For more details, please see [our deep learning library compsheet](https://deeplearning4j.org/compare-dl4j-torch7-pylearn). Deeplearning4j has several subprojects that make it easy-ish to build end-to-end applications.
+Deeplearning4j is a framework that lets you pick and choose with everything available from the beginning. We're not Tensorflow (a low-level numerical computing library with automatic differentiation) or Pytorch. Deeplearning4j has several subprojects that make it easy-ish to build end-to-end applications.
 
-If you'd like to deploy models to production, you might like our [model import from Keras](https://deeplearning4j.org/keras).
+If you'd like to deploy models to production, you might like our [model import from Keras](./keras-import-get-started).
 
 Deeplearning4j has several submodules. These range from a visualization UI to distributed training on Spark. For an overview of these modules, please look at the [**Deeplearning4j examples on Github**](https://github.com/deeplearning4j/dl4j-examples).
 
@@ -212,16 +212,16 @@ Keep in mind that we cannot setup Spark for you. If you want to set up distribut
 
 If you want Spark with GPUs, we recommend [Spark with Mesos](https://spark.apache.org/docs/latest/running-on-mesos.html).
 
-If you want to deploy on mobile, you can see our [Android page](http://deeplearning4j.org/android).
+If you want to deploy on mobile, you can see our [Android page](./deeplearning4j-android).
 
 We deploy optimized code for various hardware architectures natively. We use C++ based for loops just like everybody else.
 For that, please see our [C++ framework libnd4j](https://github.com/deeplearning4j/libnd4j).
 
 Deeplearning4j has two other notable components:
 
-* [Arbiter: hyperparameter optimization and model evaluation](https://github.com/deeplearning4j/Arbiter)
-* [DataVec: built-in ETL for machine-learning data pipelines](https://github.com/deeplearning4j/DataVec)
+* [Arbiter: hyperparameter optimization and model evaluation](./arbiter-overview)
+* [DataVec: built-in ETL for machine-learning data pipelines](./datavec-overview)
 
 Deeplearning4j is meant to be an end-to-end platform for building real applications, not just a tensor library with automatic differentiation. If you want a tensor library with autodiff, please see ND4J and and [samediff](https://github.com/deeplearning4j/deeplearning4j/tree/master/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff). Samediff is still in alpha, but if you want to contribute, please join our [live chat on Gitter](https://gitter.im/deeplearning4j/deeplearning4j).
 
-Lastly, if you are benchmarking Deeplearnin4j, please consider coming in to our live chat and asking for tips. Deeplearning4j has [all the knobs](http://deeplearning4j.org/native), but some may not work exactly like the Python frameworks to do. You have to build Deeplearning4j from source for some applications.
+Lastly, if you are benchmarking Deeplearnin4j, please consider coming in to our live chat and asking for tips. Deeplearning4j has [all the knobs](./deeplearning4j-config-gpu-cpu), but some may not work exactly like the Python frameworks to do. You have to build Deeplearning4j from source for some applications.

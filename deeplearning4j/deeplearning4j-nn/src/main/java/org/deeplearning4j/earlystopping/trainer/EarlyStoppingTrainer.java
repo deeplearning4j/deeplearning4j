@@ -16,6 +16,9 @@
 
 package org.deeplearning4j.earlystopping.trainer;
 
+import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
+import org.deeplearning4j.datasets.iterator.impl.SingletonDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -54,11 +57,27 @@ public class EarlyStoppingTrainer extends BaseEarlyStoppingTrainer<MultiLayerNet
 
     @Override
     protected void fit(DataSet ds) {
-        net.fit(ds);
+        if(!net.getLayerWiseConfigurations().isBackprop()){
+            if(net.getLayerWiseConfigurations().isPretrain()){
+                net.pretrain(new SingletonDataSetIterator(ds));
+            } else {
+                throw new IllegalStateException("Cannot train - network configuration has both isBackprop == false and isPretrain == false");
+            }
+        } else {
+            net.fit(ds);
+        }
     }
 
     @Override
     protected void fit(MultiDataSet mds) {
-        throw new UnsupportedOperationException();
+        if(!net.getLayerWiseConfigurations().isBackprop()){
+            if(net.getLayerWiseConfigurations().isPretrain()){
+                net.pretrain(new MultiDataSetWrapperIterator(new SingletonMultiDataSetIterator(mds)));
+            } else {
+                throw new IllegalStateException("Cannot train - network configuration has both isBackprop == false and isPretrain == false");
+            }
+        } else {
+            net.fit(mds);
+        }
     }
 }

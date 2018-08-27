@@ -6683,7 +6683,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         val exp = NodeReader.readArray("mnist_00", "MatMul.0");
         val badExp = Nd4j.create(100, 10);
 
-        val op = new Mmul(arrayA, arrayB, arrayC, null);
+        Mmul op = new Mmul(arrayA, arrayB, arrayC, null);
         Nd4j.getExecutioner().exec(op);
 
         assertEquals(exp, arrayC);
@@ -6753,6 +6753,104 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray arrInvalid = Nd4j.create(3,12);
         Nd4j.getExecutioner().exec(new BroadcastMulOp(arr1, arrInvalid, arr1, 0, 2));
         fail("Excepted exception on invalid input");
+    }
+
+    @Test
+    public void testGet(){
+        //https://github.com/deeplearning4j/deeplearning4j/issues/6133
+        INDArray m = Nd4j.linspace(0,99,100).reshape('c', 10,10);
+        INDArray exp = Nd4j.create(new double[]{5, 15, 25, 35, 45, 55, 65, 75, 85, 95}, new int[]{10,1});
+        INDArray col = m.getColumn(5);
+
+        for(int i=0; i<10; i++ ){
+            System.out.println(i + "\t" + col.slice(i));
+        }
+
+        //First element: index 5
+        //Last element: index 95
+        //91 total elements
+        assertEquals(5, m.getDouble(5), 1e-6);
+        assertEquals(95, m.getDouble(95), 1e-6);
+        assertEquals(91, col.data().length());
+
+        assertEquals(exp, col);
+        assertEquals(exp.toString(), col.toString());
+        assertArrayEquals(exp.toDoubleVector(), col.toDoubleVector(), 1e-6);
+    }
+
+    @Test
+    public void testWhere1(){
+
+        INDArray arr = Nd4j.create(new double[][]{{0,1,0},{0,0,1},{0,0,1}});
+        INDArray[] exp = new INDArray[]{
+                Nd4j.trueVector(new double[]{0,1,2}),
+                Nd4j.trueVector(new double[]{1,2,2})};
+
+        INDArray[] act = Nd4j.where(arr, null, null);
+
+        assertArrayEquals(exp, act);
+    }
+
+    @Test
+    public void testWhere2(){
+
+        INDArray arr = Nd4j.create(3,3,3);
+        arr.putScalar(0,1,0,1.0);
+        arr.putScalar(1,2,1,1.0);
+        arr.putScalar(2,2,1,1.0);
+        INDArray[] exp = new INDArray[]{
+                Nd4j.trueVector(new double[]{0,1,2}),
+                Nd4j.trueVector(new double[]{1,2,2}),
+                Nd4j.trueVector(new double[]{0,1,1})
+        };
+
+        INDArray[] act = Nd4j.where(arr, null, null);
+
+        assertArrayEquals(exp, act);
+    }
+
+    @Test
+    public void testWhere3(){
+        INDArray arr = Nd4j.create(new double[][]{{0,1,0},{0,0,1},{0,0,1}});
+        INDArray x = Nd4j.valueArrayOf(3, 3, 1.0);
+        INDArray y = Nd4j.valueArrayOf(3, 3, 2.0);
+        INDArray exp = Nd4j.create(new double[][]{
+                {1,2,1},
+                {1,1,2},
+                {1,1,2}});
+
+        INDArray[] act = Nd4j.where(arr, x, y);
+        assertEquals(1, act.length);
+
+        assertEquals(exp, act[0]);
+    }
+
+    @Test
+    public void testStack(){
+        INDArray in = Nd4j.linspace(1,12,12).reshape(3,4);
+        INDArray in2 = in.add(100);
+
+        for( int i=-3; i<3; i++ ){
+            INDArray out = Nd4j.stack(i, in, in2);
+            int[] expShape;
+            switch (i){
+                case -3:
+                case 0:
+                    expShape = new int[]{2,3,4};
+                    break;
+                case -2:
+                case 1:
+                    expShape = new int[]{3,2,4};
+                    break;
+                case -1:
+                case 2:
+                    expShape = new int[]{3,4,2};
+                    break;
+                default:
+                    throw new RuntimeException(String.valueOf(i));
+            }
+            assertArrayEquals(String.valueOf(i), expShape, out.shape());
+        }
     }
 
     ///////////////////////////////////////////////////////

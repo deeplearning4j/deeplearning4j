@@ -20,7 +20,7 @@ import lombok.val;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.DoubleIndexer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
-import org.bytedeco.javacpp.indexer.LongRawIndexer;
+import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
@@ -120,7 +120,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                 newPointer,
                 DataBuffer.Type.LONG,
                 length,
-                LongRawIndexer.create(newPointer));
+                LongIndexer.create(newPointer));
 
         dataPointer.position(0);
         dataPointer.limit(dataBufferElementSize * Shape.length(shapeBuffer));
@@ -190,7 +190,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                 newPointer,
                 DataBuffer.Type.LONG,
                 length,
-                LongRawIndexer.create(newPointer));
+                LongIndexer.create(newPointer));
 
         dataPointer.position(0);
         dataPointer.limit(dataBufferElementSize * Shape.length(shapeBuffer));

@@ -131,7 +131,7 @@ public class KerasReshape extends KerasLayer {
 
     public long[] targetShapeForDimOrder(long[] inputShape, long[] targetShape) {
         if (dimOrder == DimOrder.THEANO || dimOrder == DimOrder.NONE && kerasMajorVersion == 1) {
-            if (dimOrder == DimOrder.NONE) { // weird things happen in the past.
+            if (dimOrder == DimOrder.NONE) {
                 targetShape = new long[]{targetShape[2], targetShape[0], targetShape[1]};
             } else {
                 targetShape = new long[]{targetShape[1], targetShape[2], targetShape[0]};

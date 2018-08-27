@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -559,29 +560,32 @@ public class DefaultOpExecutioner implements OpExecutioner {
      * @param op
      */
     public static void validateDataType(DataBuffer.Type expectedType, Op op) {
-        if (op.x() != null && op.x().data().dataType() == DataBuffer.Type.COMPRESSED) {
+        if (op.x() != null && !Shape.isEmpty(op.x().shapeInfoJava()) && op.x().data().dataType() == DataBuffer.Type.COMPRESSED) {
             Nd4j.getCompressor().decompressi(op.x());
         }
 
-        if (op.y() != null && op.y().data().dataType() == DataBuffer.Type.COMPRESSED) {
+        if (op.y() != null && !Shape.isEmpty(op.y().shapeInfoJava()) && op.y().data().dataType() == DataBuffer.Type.COMPRESSED) {
             Nd4j.getCompressor().decompressi(op.y());
         }
 
-        if (op.z() != null && op.z().data().dataType() == DataBuffer.Type.COMPRESSED) {
+        if (op.z() != null && !Shape.isEmpty(op.z().shapeInfoJava()) && op.z().data().dataType() == DataBuffer.Type.COMPRESSED) {
             Nd4j.getCompressor().decompressi(op.z());
         }
 
-        if (op.x() != null && op.x().data().dataType() != expectedType
-                        && op.x().data().dataType() != DataBuffer.Type.COMPRESSED)
+        if (op.x() != null && !Shape.isEmpty(op.x().shapeInfoJava())
+                && op.x().data().dataType() != expectedType
+                && op.x().data().dataType() != DataBuffer.Type.COMPRESSED)
             throw new ND4JIllegalStateException("op.X dataType is [" + op.x().data().dataType()
                             + "] instead of expected [" + expectedType + "]");
 
-        if (op.z() != null && op.z().data().dataType() != expectedType
+        if (op.z() != null && !Shape.isEmpty(op.z().shapeInfoJava())
+                        && op.z().data().dataType() != expectedType
                         && op.z().data().dataType() != DataBuffer.Type.COMPRESSED)
             throw new ND4JIllegalStateException("op.Z dataType is [" + op.z().data().dataType()
                             + "] instead of expected [" + expectedType + "]");
 
-        if (op.y() != null && op.y().data().dataType() != expectedType)
+        if (op.y() != null && !Shape.isEmpty(op.y().shapeInfoJava())
+                && op.y().data().dataType() != expectedType)
             throw new ND4JIllegalStateException("op.Y dataType is [" + op.y().data().dataType()
                             + "] instead of expected [" + expectedType + "]");
 
@@ -715,6 +719,16 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public List<long[]> calculateOutputShape(CustomOp op) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray[] allocateOutputArrays(CustomOp op){
+        List<long[]> shapes = calculateOutputShape(op);
+        INDArray[] out = new INDArray[shapes.size()];
+        for(int i=0; i<shapes.size(); i++ ){
+            out[i] = Nd4j.create(shapes.get(i));
+        }
+        return out;
     }
 
 

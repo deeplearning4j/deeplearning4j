@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -42,6 +43,12 @@ public class Stack extends DynamicCustomOp {
     protected int axis;
 
     public Stack() {
+    }
+
+    public Stack(INDArray[] inputs, INDArray output, int axis){
+        super(null, inputs, output == null ? null : new INDArray[]{output}, null, (List<Integer>)null);
+        this.axis = axis;
+        addArgs();
     }
 
     public Stack(SameDiff sameDiff, SDVariable[] values, int axis) {

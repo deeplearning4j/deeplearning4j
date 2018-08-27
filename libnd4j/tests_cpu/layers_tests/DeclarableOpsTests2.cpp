@@ -750,7 +750,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_7) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE((*result)(0) == 60.);
+    ASSERT_TRUE((*result)(0.) == 60.);
 
     delete results;
 
@@ -775,7 +775,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_8) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE((*result)(0) == 0.);
+    ASSERT_TRUE((*result)(0.) == 0.);
 
     delete results;
 
@@ -800,7 +800,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_9) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE((*result)(0) == 60.);
+    ASSERT_TRUE((*result)(0.) == 60.);
 
     delete results;
 
@@ -825,7 +825,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_10) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE((*result)(0) == 60.);
+    ASSERT_TRUE((*result)(0.) == 60.);
 
     delete results;
 
@@ -850,7 +850,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_11) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE((*result)(0) == 1.);
+    ASSERT_TRUE((*result)(0.) == 1.);
 
     delete results;
 
@@ -875,7 +875,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_12) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE((*result)(0) == 0.);
+    ASSERT_TRUE((*result)(0.) == 0.);
 
     delete results;
 
@@ -900,7 +900,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_13) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE((*result)(0) == 1.);
+    ASSERT_TRUE((*result)(0.) == 1.);
 
     delete results;
 
@@ -927,7 +927,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_14) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE((*result)(0) == 1.);
+    ASSERT_TRUE((*result)(0.) == 1.);
 
     delete results;
 
@@ -952,7 +952,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_15) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE((*result)(0) == 2.);
+    ASSERT_TRUE((*result)(0.) == 2.);
 
     delete results;
 
@@ -968,7 +968,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_16) {
     labels.linspace(1);
     predictions.linspace(3);
     weights.assign(0.5);
-    predictions(0) = 0.;
+    predictions(0.) = 0.;
     predictions(1) = 0.;
     predictions(2) = 0.;
     predictions(3) = 0.;
@@ -981,7 +981,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_16) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 2.01667, 1e-5);
+    ASSERT_NEAR((*result)(0.), 2.01667, 1e-5);
 
     delete results;
 
@@ -997,11 +997,11 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_17) {
     labels.linspace(1);
     predictions.linspace(3);
     weights.assign(0.5);
-    predictions(0) = 0.;
+    predictions(0.) = 0.;
     predictions(1) = 0.;
     predictions(2) = 0.;
     predictions(3) = 0.;
-    labels(0) = 0.;
+    labels(0.) = 0.;
     labels(1) = 0.;
     labels(2) = 0.;
     labels(3) = 0.;
@@ -1014,7 +1014,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_17) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 1.93333, 1e-5);
+    ASSERT_NEAR((*result)(0.), 1.93333, 1e-5);
 
     delete results;
 
@@ -1030,11 +1030,11 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_18) {
     labels.linspace(1);
     predictions.linspace(3);
     weights.assign(0.5);
-    predictions(0) = 0.;
+    predictions(0.) = 0.;
     predictions(1) = 0.;
     predictions(2) = 0.;
     predictions(3) = 0.;
-    labels(0) = 0.;
+    labels(0.) = 0.;
     labels(1) = 0.;
     labels(2) = 0.;
     labels(3) = 0.;
@@ -1047,7 +1047,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_18) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 1.93333, 1e-5);
+    ASSERT_NEAR((*result)(0.), 1.93333, 1e-5);
 
     delete results;
 
@@ -1073,7 +1073,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_19) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_TRUE((*result)(0) == 1.);
+    ASSERT_TRUE((*result)(0.) == 1.);
 
     delete results;
 
@@ -1098,7 +1098,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_20) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_TRUE((*result)(0) == 1.);
+    ASSERT_TRUE((*result)(0.) == 1.);
 
     delete results;
 
@@ -1123,7 +1123,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_21) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_TRUE((*result)(0) == 1.);
+    ASSERT_TRUE((*result)(0.) == 1.);
 
     delete results;
 
@@ -1148,7 +1148,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_22) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_TRUE((*result)(0) == 0.);
+    ASSERT_TRUE((*result)(0.) == 0.);
 
     delete results;
 
@@ -1164,11 +1164,11 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_23) {
     labels.linspace(1);
     predictions.linspace(3);
     weights.assign(0.5);
-    predictions(0) = 0.;
+    predictions(0.) = 0.;
     predictions(1) = 0.;
     predictions(2) = 0.;
     predictions(3) = 0.;
-    labels(0) = 0.;
+    labels(0.) = 0.;
     labels(1) = 0.;
     labels(2) = 0.;
     labels(3) = 0.;
@@ -1185,7 +1185,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_23) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());        
-    ASSERT_NEAR((*result)(0), 0.965517, 1e-5);
+    ASSERT_NEAR((*result)(0.), 0.965517, 1e-5);
 
     delete results;
 
@@ -1314,7 +1314,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test5) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE((*result)(0) == -71.);
+    ASSERT_TRUE((*result)(0.) == -71.);
 
     delete results;
 
@@ -1339,7 +1339,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test6) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE((*result)(0) == -71.);
+    ASSERT_TRUE((*result)(0.) == -71.);
 
     delete results;
 
@@ -1364,7 +1364,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test7) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE((*result)(0) == -69.);
+    ASSERT_TRUE((*result)(0.) == -69.);
 
     delete results;
 
@@ -1389,7 +1389,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test8) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE((*result)(0) == -24.);
+    ASSERT_TRUE((*result)(0.) == -24.);
 
     delete results;
 
@@ -1414,7 +1414,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test9) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE((*result)(0) == -24.);
+    ASSERT_TRUE((*result)(0.) == -24.);
 
     delete results;
 
@@ -1430,7 +1430,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test10) {
     labels.linspace(1);
     weights.assign(0.5);
     predictions.assign(0.5);
-    weights(0) = 0.;
+    weights(0.) = 0.;
     weights(1) = 0.;
 
     nd4j::ops::cosine_distance_loss<float> op;
@@ -1441,7 +1441,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test10) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE((*result)(0) == -32.);
+    ASSERT_TRUE((*result)(0.) == -32.);
 
     delete results;
 
@@ -1541,7 +1541,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test4) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE((*result)(0) == 83.);
+    ASSERT_TRUE((*result)(0.) == 83.);
 
     delete results;
 }
@@ -1565,7 +1565,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test5) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE((*result)(0) == 83.);
+    ASSERT_TRUE((*result)(0.) == 83.);
 
     delete results;
 }
@@ -1589,7 +1589,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test6) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE((*result)(0) == 83.);
+    ASSERT_TRUE((*result)(0.) == 83.);
 
     delete results;
 }
@@ -1613,7 +1613,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test7) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 6.91667, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 6.91667, 1e-5);    
 
     delete results;
 }
@@ -1637,7 +1637,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test8) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 6.91667, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 6.91667, 1e-5);    
 
     delete results;
 }
@@ -1661,7 +1661,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test9) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 6.91667, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 6.91667, 1e-5);    
 
     delete results;
 }
@@ -1685,7 +1685,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test10) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 3.45833, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 3.45833, 1e-5);    
 
     delete results;
 }
@@ -1709,7 +1709,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test11) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 3.45833, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 3.45833, 1e-5);    
 
     delete results;
 }
@@ -1723,7 +1723,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test12) {
                                             
     logits.linspace(1);
     weights.assign(0.5);
-    weights(0) = 0.;
+    weights(0.) = 0.;
     weights(1) = 0.;
     weights(2) = 0.;
     weights(3) = 0.;
@@ -1737,7 +1737,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test12) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 3.975, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 3.975, 1e-5);    
 
     delete results;
 }
@@ -1761,7 +1761,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test13) {
     NDArray<float> *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_TRUE((*result)(0) == 0.);    
+    ASSERT_TRUE((*result)(0.) == 0.);    
 
     delete results;
 }
@@ -1860,7 +1860,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test4) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 13.44, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 13.44, 1e-5);    
 
     delete results;
 }
@@ -1884,7 +1884,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test5) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 13.44, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 13.44, 1e-5);    
 
     delete results;
 }
@@ -1908,7 +1908,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test6) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 1.12, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 1.12, 1e-5);    
 
     delete results;
 }
@@ -1932,7 +1932,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test7) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 1.12, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 1.12, 1e-5);    
 
     delete results;
 }
@@ -1947,7 +1947,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test8) {
     labels.linspace(0.1, 0.1);
     predictions.linspace(1);
     weights.assign(0.5);    
-    weights(0) = 0.;
+    weights(0.) = 0.;
     weights(1) = 0.;
     weights(2) = 0.;
     weights(3) = 0.;
@@ -1960,7 +1960,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test8) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 1.3, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 1.3, 1e-5);    
 
     delete results;
 }
@@ -1984,7 +1984,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test9) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 0.56, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 0.56, 1e-5);    
 
     delete results;
 }
@@ -2008,7 +2008,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test10) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 0.56, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 0.56, 1e-5);    
 
     delete results;
 }
@@ -2023,7 +2023,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test11) {
     labels.linspace(0.1, 0.1);
     predictions.linspace(1);
     weights.assign(0.5);    
-    weights(0) = 0.;
+    weights(0.) = 0.;
     weights(1) = 0.;
     weights(2) = 0.;
     weights(3) = 0.;
@@ -2036,7 +2036,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test11) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 0.65, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 0.65, 1e-5);    
 
     delete results;
 }
@@ -2135,7 +2135,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test4) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), -113.886429, 1e-5);    
+    ASSERT_NEAR((*result)(0.), -113.886429, 1e-5);    
 
     delete results;
 }
@@ -2159,7 +2159,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test5) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), -113.886429, 1e-5);    
+    ASSERT_NEAR((*result)(0.), -113.886429, 1e-5);    
 
     delete results;
 }
@@ -2183,7 +2183,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test6) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), -113.886429, 1e-5);    
+    ASSERT_NEAR((*result)(0.), -113.886429, 1e-5);    
 
     delete results;
 }
@@ -2207,7 +2207,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test7) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), -9.490536, 1e-5);    
+    ASSERT_NEAR((*result)(0.), -9.490536, 1e-5);    
 
     delete results;
 }
@@ -2231,7 +2231,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test8) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), -9.490536, 1e-5);    
+    ASSERT_NEAR((*result)(0.), -9.490536, 1e-5);    
 
     delete results;
 }
@@ -2255,7 +2255,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test9) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), -9.490536, 1e-5);    
+    ASSERT_NEAR((*result)(0.), -9.490536, 1e-5);    
 
     delete results;
 }
@@ -2270,7 +2270,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test10) {
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
     weights.assign(0.5);    
-    weights(0) = 0.;
+    weights(0.) = 0.;
     weights(1) = 0.;
     weights(2) = 0.;
     weights(3) = 0.;
@@ -2283,7 +2283,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test10) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), -12.443609, 1e-5);    
+    ASSERT_NEAR((*result)(0.), -12.443609, 1e-5);    
 
     delete results;
 }
@@ -2307,7 +2307,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test11) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), -4.745268, 1e-5);    
+    ASSERT_NEAR((*result)(0.), -4.745268, 1e-5);    
 
     delete results;
 }
@@ -2331,7 +2331,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test12) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), -4.745268, 1e-5);    
+    ASSERT_NEAR((*result)(0.), -4.745268, 1e-5);    
 
     delete results;
 }
@@ -2346,7 +2346,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test13) {
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
     weights.assign(0.5);    
-    weights(0) = 0.;
+    weights(0.) = 0.;
     weights(1) = 0.;
     weights(2) = 0.;
     weights(3) = 0.;
@@ -2359,7 +2359,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test13) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), -6.221805, 1e-5);    
+    ASSERT_NEAR((*result)(0.), -6.221805, 1e-5);    
 
     delete results;
 }
@@ -2383,7 +2383,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test1) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 71.5, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 71.5, 1e-5);    
 
     delete results;
 }
@@ -2407,7 +2407,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test2) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 17.875, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 17.875, 1e-5);    
 
     delete results;
 }
@@ -2431,7 +2431,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test3) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 23.833324, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 23.833324, 1e-5);    
 
     delete results;
 }
@@ -2456,7 +2456,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test4) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 5.958331, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 5.958331, 1e-5);    
 
     delete results;
 }
@@ -2480,7 +2480,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test5) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 5.958331, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 5.958331, 1e-5);    
 
     delete results;
 }
@@ -2504,7 +2504,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test6) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 17.874992, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 17.874992, 1e-5);    
 
     delete results;
 }
@@ -2528,7 +2528,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test7) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 23.833324, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 23.833324, 1e-5);    
 
     delete results;
 }
@@ -2552,7 +2552,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test8) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 71.5, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 71.5, 1e-5);    
 
     delete results;
 }
@@ -2567,7 +2567,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test9) {
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);    
-    weights(0) = 0.;
+    weights(0.) = 0.;
     weights(1) = 0.;
     weights(2) = 0.;
     weights(3) = 0.;
@@ -2580,7 +2580,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test9) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 8.125, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 8.125, 1e-5);    
 
     delete results;
 }
@@ -2671,7 +2671,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test4) {
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);    
-    weights(0) = 0.;
+    weights(0.) = 0.;
     weights(1) = 0.;
     weights(2) = 0.;
     weights(3) = 0.;
@@ -2708,7 +2708,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test5) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 612.5, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 612.5, 1e-5);    
 
     delete results;
 }
@@ -2732,7 +2732,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test6) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 612.5, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 612.5, 1e-5);    
 
     delete results;
 }
@@ -2756,7 +2756,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test7) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 612.5, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 612.5, 1e-5);    
 
     delete results;
 }
@@ -2771,7 +2771,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test8) {
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);    
-    weights(0) = 0.;
+    weights(0.) = 0.;
     weights(1) = 0.;
     weights(2) = 0.;
     weights(3) = 0.;
@@ -2784,7 +2784,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test8) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 608.75, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 608.75, 1e-5);    
 
     delete results;
 }
@@ -2808,7 +2808,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test9) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 51.041668, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 51.041668, 1e-5);    
 
     delete results;
 }
@@ -2832,7 +2832,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test10) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 51.041668, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 51.041668, 1e-5);    
 
     delete results;
 }
@@ -2856,7 +2856,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test11) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 51.041668, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 51.041668, 1e-5);    
 
     delete results;
 }
@@ -2871,7 +2871,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test12) {
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);        
-    weights(0) = 0.;
+    weights(0.) = 0.;
     weights(1) = 0.;
     weights(2) = 0.;    
 
@@ -2883,7 +2883,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test12) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 88.541664, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 88.541664, 1e-5);    
 
     delete results;
 }
@@ -2907,7 +2907,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test13) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 25.520834, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 25.520834, 1e-5);    
 
     delete results;
 }
@@ -2931,7 +2931,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test14) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 25.520834, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 25.520834, 1e-5);    
 
     delete results;
 }
@@ -2955,7 +2955,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test15) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 25.520834, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 25.520834, 1e-5);    
 
     delete results;
 }
@@ -2970,7 +2970,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test16) {
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);        
-    weights(0) = 0.;
+    weights(0.) = 0.;
     weights(1) = 0.;
     weights(2) = 0.;
 
@@ -2982,7 +2982,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test16) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 44.270832, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 44.270832, 1e-5);    
 
     delete results;
 }
@@ -3101,7 +3101,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test5) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 11.2187976837, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 11.2187976837, 1e-5);    
 
     delete results;
 }
@@ -3124,7 +3124,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test6) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 11.2187976837, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 11.2187976837, 1e-5);    
 
     delete results;
 }
@@ -3147,7 +3147,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test7) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 11.2187976837, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 11.2187976837, 1e-5);    
 
     delete results;
 }
@@ -3170,7 +3170,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test8) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 10.2187976837, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 10.2187976837, 1e-5);    
 
     delete results;
 }
@@ -3185,7 +3185,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test9) {
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
-    weights(0) = 0.;
+    weights(0.) = 0.;
     weights(1) = 0.;
     weights(2) = 0.;
 
@@ -3197,7 +3197,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test9) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 6.06840181351, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 6.06840181351, 1e-5);    
 
     delete results;
 }
@@ -3220,7 +3220,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test10) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 0.934899806976, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 0.934899806976, 1e-5);    
 
     delete results;
 }
@@ -3243,7 +3243,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test11) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 0.934899806976, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 0.934899806976, 1e-5);    
 
     delete results;
 }
@@ -3266,7 +3266,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test12) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 0.851566493511, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 0.851566493511, 1e-5);    
 
     delete results;
 }
@@ -3280,7 +3280,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test13) {
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
-    weights(0) = 0.;
+    weights(0.) = 0.;
     weights(1) = 0.;
     weights(2) = 0.;
 
@@ -3292,7 +3292,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test13) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 1.01140034199, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 1.01140034199, 1e-5);    
 
     delete results;
 }
@@ -3315,7 +3315,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test14) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 0.467449903488, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 0.467449903488, 1e-5);    
 
     delete results;
 }
@@ -3338,7 +3338,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test15) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 0.467449903488, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 0.467449903488, 1e-5);    
 
     delete results;
 }
@@ -3361,7 +3361,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test16) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 0.425783246756, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 0.425783246756, 1e-5);    
 
     delete results;
 }
@@ -3375,7 +3375,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test17) {
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
-    weights(0) = 0.;
+    weights(0.) = 0.;
     weights(1) = 0.;
     weights(2) = 0.;
 
@@ -3387,7 +3387,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test17) {
     NDArray<double> *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR((*result)(0), 0.505700170994, 1e-5);    
+    ASSERT_NEAR((*result)(0.), 0.505700170994, 1e-5);    
 
     delete results;
 }
@@ -3530,7 +3530,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test6) {
     NDArray<double> *result = results->at(0);        
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_NEAR((*result)(0), 8.55521392822, 1e-5);   
+    ASSERT_NEAR((*result)(0.), 8.55521392822, 1e-5);   
 
     delete results;
 }
@@ -3553,7 +3553,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test7) {
     NDArray<double> *result = results->at(0);        
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_NEAR((*result)(0), -6.37014198303, 1e-5);   
+    ASSERT_NEAR((*result)(0.), -6.37014198303, 1e-5);   
 
     delete results;
 }
@@ -3576,7 +3576,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test8) {
     NDArray<double> *result = results->at(0);        
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_NEAR((*result)(0), -6.37014198303, 1e-5);   
+    ASSERT_NEAR((*result)(0.), -6.37014198303, 1e-5);   
 
     delete results;
 }
@@ -3599,7 +3599,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test9) {
     NDArray<double> *result = results->at(0);        
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_NEAR((*result)(0), -6.37014198303, 1e-5);   
+    ASSERT_NEAR((*result)(0.), -6.37014198303, 1e-5);   
 
     delete results;
 }
@@ -3622,7 +3622,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test10) {
     NDArray<double> *result = results->at(0);        
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_NEAR((*result)(0), -2.12338066101, 1e-5);   
+    ASSERT_NEAR((*result)(0.), -2.12338066101, 1e-5);   
 
     delete results;
 }
@@ -3645,7 +3645,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test11) {
     NDArray<double> *result = results->at(0);        
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_NEAR((*result)(0), -1.06169033051, 1e-5);   
+    ASSERT_NEAR((*result)(0.), -1.06169033051, 1e-5);   
 
     delete results;
 }
@@ -3668,7 +3668,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test12) {
     NDArray<double> *result = results->at(0);        
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_NEAR((*result)(0), -2.18880319595, 1e-5);   
+    ASSERT_NEAR((*result)(0.), -2.18880319595, 1e-5);   
 
     delete results;
 }

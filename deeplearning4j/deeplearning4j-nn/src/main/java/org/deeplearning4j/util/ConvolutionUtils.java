@@ -72,10 +72,6 @@ public class ConvolutionUtils {
         int hIn = (int) inputData.size(2);
         int wIn = (int) inputData.size(3);
         int[] eKernel = effectiveKernelSize(kernel, dilation);
-        boolean atrous = (eKernel == kernel);
-
-        int[] inShape = new int[]{hIn, wIn};
-        validateShapes(inputData, kernel, strides, padding, convolutionMode, dilation, inShape, atrous);
 
         if (convolutionMode == ConvolutionMode.Same) {
             int hOut = strides[0] * hIn;
@@ -487,7 +483,7 @@ public class ConvolutionUtils {
         INDArray bMask = workspaceMgr.create(type, new long[]{s[0], 1, s[2], s[3]}, 'c');
         Nd4j.getExecutioner().exec(new BroadcastCopyOp(bMask, mask, bMask, 0, 1));
 
-        INDArray bMaskPermute = bMask.permute(0, 2, 3).dup('c');  //Not sure if dup is strictly necessary...
+        INDArray bMaskPermute = bMask.permute(0, 2, 3, 1).dup('c');  //Not sure if dup is strictly necessary...
 
         return workspaceMgr.leverageTo(type, bMaskPermute.reshape('c', s[0] * s[2] * s[3], 1));
     }

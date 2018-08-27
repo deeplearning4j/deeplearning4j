@@ -6822,16 +6822,16 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */
 
         /**
-        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays to point on
+        *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the subarrays to point on
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
         public native @ByVal @Name("operator ()") FloatNDArray apply(@Const @ByRef Intervals idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
         public native @ByVal @Name("operator ()") FloatNDArray apply(@Const @ByRef Intervals idx);
 
         /**
-        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
+        *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the subarrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
@@ -6958,9 +6958,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         
 
         /**
-        *  this method assigns elements of other array to the sub-array of this array defined by given intervals
+        *  this method assigns elements of other array to the subarray of this array defined by given intervals
         *  other - input array to assign elements from
-        *  idx - intervals of indexes which define the sub-array
+        *  idx - intervals of indexes which define the subarray
         */ 
         public native void assign(@Const @ByRef FloatNDArray other, @Const @ByRef Intervals idx);
 
@@ -7034,7 +7034,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native FloatResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
 
         public native FloatResultSet allExamples();
-        
+
         /**
         *  default destructor
         */ 
@@ -8009,16 +8009,16 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */
 
         /**
-        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays to point on
+        *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the subarrays to point on
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
         public native @ByVal @Name("operator ()") HalfNDArray apply(@Const @ByRef Intervals idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
         public native @ByVal @Name("operator ()") HalfNDArray apply(@Const @ByRef Intervals idx);
 
         /**
-        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
+        *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the subarrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
@@ -8145,9 +8145,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         
 
         /**
-        *  this method assigns elements of other array to the sub-array of this array defined by given intervals
+        *  this method assigns elements of other array to the subarray of this array defined by given intervals
         *  other - input array to assign elements from
-        *  idx - intervals of indexes which define the sub-array
+        *  idx - intervals of indexes which define the subarray
         */ 
         public native void assign(@Const @ByRef HalfNDArray other, @Const @ByRef Intervals idx);
 
@@ -8221,7 +8221,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native HalfResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
 
         public native HalfResultSet allExamples();
-        
+
         /**
         *  default destructor
         */ 
@@ -9196,16 +9196,16 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */
 
         /**
-        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays to point on
+        *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the subarrays to point on
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
         public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const @ByRef Intervals idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
         public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const @ByRef Intervals idx);
 
         /**
-        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
+        *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the subarrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
@@ -9332,9 +9332,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         
 
         /**
-        *  this method assigns elements of other array to the sub-array of this array defined by given intervals
+        *  this method assigns elements of other array to the subarray of this array defined by given intervals
         *  other - input array to assign elements from
-        *  idx - intervals of indexes which define the sub-array
+        *  idx - intervals of indexes which define the subarray
         */ 
         public native void assign(@Const @ByRef DoubleNDArray other, @Const @ByRef Intervals idx);
 
@@ -9408,7 +9408,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native DoubleResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
 
         public native DoubleResultSet allExamples();
-        
+
         /**
         *  default destructor
         */ 

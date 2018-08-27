@@ -34,7 +34,7 @@ namespace nd4j {
 
             T sum = input->template reduceNumber<simdOps::SquaredNorm<T>>();
             sum /= 2;
-            (*output)(0) = sum;
+            (*output)(0.) = sum;
 
             return ND4J_STATUS_OK;
         }

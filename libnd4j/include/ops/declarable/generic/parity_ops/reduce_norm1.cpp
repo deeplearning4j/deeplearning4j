@@ -74,7 +74,7 @@ namespace ops {
 
             if (epsilon->isScalar()) {
                 auto norm1Backprop = LAMBDA_T(_x, epsilon) {
-                    return (_x >= T(0.f) ?(*epsilon)(0):-(*epsilon)(0));
+                    return (_x >= T(0.f) ? (*epsilon)(0.) : -(*epsilon)(0.));
                 };
                 input->applyLambda(norm1Backprop, output);
             }

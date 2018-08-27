@@ -33,12 +33,13 @@ namespace nd4j {
 
             // axis might be dynamic (i.e. tf mode)
             if (block.width() > 1 && axis.size() == 0) {
-                NDArray<T>* axisVector = INPUT_VARIABLE(1);
-                axis.resize(axisVector->lengthOf());
+                auto axisVector = INPUT_VARIABLE(1);
                 helpers::adjustAxis(input, axisVector, axis);
 
                 input->template applyIndexReduce<simdOps::IndexMax<T>>(output, axis);
             } else {
+                helpers::adjustAxis(input->shapeInfo(), axis);
+
                 input->template applyIndexReduce<simdOps::IndexMax<T>>(output, axis);
             }
 
@@ -56,6 +57,9 @@ namespace nd4j {
                 auto y = INPUT_VARIABLE(1);
                 dims = y->template asVectorT<int>();
             }
+
+            // we're resolving negative axis here
+            helpers::adjustAxis(inputShape->at(0), dims);
 
             if (dims.size() > 1)
                 std::sort(dims.begin(), dims.end());

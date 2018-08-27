@@ -741,6 +741,23 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_6) {
     delete result;
 }
 
+TEST_F(ParityOpsTests, Test_Scatter_Add_7) {
+    NDArray<float> matrix('c', {10, 3}, {1.f,2.f,3.f,4.f,5.f,6.f,7.f,8.f,9.f,10.f,11.f,12.f,13.f,14.f,15.f,16.f,17.f,18.f,19.f,20.f,21.f,22.f,23.f,24.f,25.f,26.f,27.f,28.f,29.f,30.f});
+    NDArray<float> idc(5.f);
+    NDArray<float> updates('c', {3}, {10.f, 20.f, 30.f});
+    NDArray<float> exp('c', {10, 3}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f,11.f,12.f, 13.f,14.f,15.f, 26.f,37.f,48.f, 19.f,20.f,21.f, 22.f,23.f,24.f, 25.f,26.f,27.f, 28.f,29.f,30.f});
+
+    nd4j::ops::scatter_add<float> op;
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
 TEST_F(ParityOpsTests, scatterMax_test1) {
     NDArray<float> matrix('c', {2, 2}, {1, 2, 3, 4});
     NDArray<float> idc('c', {1}, {0});
@@ -911,3 +928,481 @@ TEST_F(ParityOpsTests, scatterMin_test4) {
 
     delete result;
 }
+
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_test1) {    
+    
+    NDArray<float> indices('c', {2, 1}, {1.f, 0.f});
+    NDArray<float> updates('c', {2, 4}, {10.f, 20.f, 30.f, 40.f, 50.f, 60.f, 70.f, 80.f});
+    NDArray<float> shape('c', {2}, {3, 4});
+    NDArray<float> exp('c', {3, 4}, {50.f, 60.f, 70.f, 80.f, 10.f, 20.f, 30.f, 40.f, 0.f,  0.f,  0.f,  0.f});
+
+    nd4j::ops::scatter_nd<float> op;
+    auto result = op.execute({&indices, &updates, &shape}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_test2) {    
+    
+    NDArray<float> indices('c', {3, 1}, {4.f, 2.f, 0.f});
+    NDArray<float> updates('c', {3, 4});
+    NDArray<float> shape('c', {2}, {5.f, 4.f});
+    NDArray<float> exp('c', {5, 4}, {9.f,10.f,11.f,12.f, 0.f, 0.f, 0.f, 0.f, 5.f, 6.f, 7.f, 8.f, 0.f, 0.f, 0.f, 0.f, 1.f, 2.f, 3.f, 4.f});
+    updates.linspace(1.f);
+
+    nd4j::ops::scatter_nd<float> op;
+    auto result = op.execute({&indices, &updates, &shape}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_test3) {    
+    
+    NDArray<float> indices('c', {2, 3, 1}, {0.f, 2.f, 7.f, 3.f, 6.f, 9.f});
+    NDArray<float> updates('c', {2,3, 3,4});
+    NDArray<float> shape('c', {3}, {10.f, 3.f, 4.f});
+    NDArray<float> exp('c', {10, 3, 4}, {1.f,  2.f,  3.f,  4., 5.f,  6.f,  7.f,  8., 9.f, 10.f, 11.f, 12., 0.f,  0.f,  0.f,  0., 0.f,  0.f,  0.f,  0., 0.f,  0.f,  0.f,  0.,
+                                        13.f, 14.f, 15.f, 16.,17.f, 18.f, 19.f, 20.,21.f, 22.f, 23.f, 24.,37.f, 38.f, 39.f, 40.,41.f, 42.f, 43.f, 44.,45.f, 46.f, 47.f, 48.,
+                                         0.f,  0.f,  0.f,  0., 0.f,  0.f,  0.f,  0., 0.f,  0.f,  0.f,  0., 0.f,  0.f,  0.f,  0., 0.f,  0.f,  0.f,  0., 0.f,  0.f,  0.f,  0.,
+                                        49.f, 50.f, 51.f, 52.,53.f, 54.f, 55.f, 56.,57.f, 58.f, 59.f, 60.,25.f, 26.f, 27.f, 28.,29.f, 30.f, 31.f, 32.,33.f, 34.f, 35.f, 36.,
+                                         0.f,  0.f,  0.f,  0., 0.f,  0.f,  0.f,  0., 0.f,  0.f,  0.f,  0.,61.f, 62.f, 63.f, 64.,65.f, 66.f, 67.f, 68.,69.f, 70.f, 71.f, 72.,});
+    updates.linspace(1.f);
+
+    nd4j::ops::scatter_nd<float> op;
+    auto result = op.execute({&indices, &updates, &shape}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_test4) {    
+        
+    NDArray<float> indices('c', {4, 1}, {4.f, 3.f, 1.f, 7.f});
+    NDArray<float> updates('c', {4}, {9.f, 10.f, 11.f, 12.f});    
+    NDArray<float> shape('c', {1}, {8.f});
+    NDArray<float> exp('c', {8}, {0.f, 11.f, 0.f, 10.f, 9.f, 0.f, 0.f, 12.f});
+    
+    nd4j::ops::scatter_nd<float> op;
+    auto result = op.execute({&indices, &updates, &shape}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_add_test1) {    
+    
+    NDArray<float> input('c', {8}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f});
+    NDArray<float> indices('c', {4, 1}, {4.f, 3.f, 1.f, 7.f});
+    NDArray<float> updates('c', {4}, {9.f, 10.f, 11.f, 12.f});    
+    NDArray<float> exp('c', {8}, {1.f, 13.f, 3.f, 14.f, 14.f, 6.f, 7.f, 20.f});
+    
+    nd4j::ops::scatter_nd_add<float> op;
+    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_add_test2) {    
+    
+    NDArray<float> input('c', {6, 4});
+    NDArray<float> indices('c', {3, 3, 2}, {0.f,0.f, 1.f,1.f, 2.f,2.f, 3.f,3.f, 4.f,0.f, 5.f,1.f, 0.f,2.f, 1.f,3.f, 2.f,0.f});
+    NDArray<float> updates('c', {3,3});
+    NDArray<float> exp('c', {6,4}, {1.f,0.f,7.f,0.f, 0.f,2.f,0.f,8.f, 9.f,0.f,3.f,0.f, 0.f,0.f,0.f,4.f, 5.f,0.f,0.f,0.f, 0.f,6.f,0.f,0.f});
+
+    input = 0.f;
+    updates.linspace(1.f);
+    
+    nd4j::ops::scatter_nd_add<float> op;
+    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+    // z->printIndexedBuffer();
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_add_test3) {
+    
+    NDArray<float> input('c', {6, 4});
+    NDArray<float> indices('c', {2, 3, 1}, {5.f, 1.f, 2.f, 3.f, 4.f, 0.f});
+    NDArray<float> updates('c', {2,3,4});
+    NDArray<float> exp('c', {6,4}, {21.f, 22.f, 23.f, 24.f, 5.f,  6.f,  7.f,  8.f, 9.f, 10.f, 11.f, 12.f,13.f, 14.f, 15.f, 16.f,17.f, 18.f, 19.f, 20.f, 1.f,  2.f,  3.f,  4.f});
+
+    input = 0.f;
+    updates.linspace(1.f);
+    
+    nd4j::ops::scatter_nd_add<float> op;
+    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_add_test4) {
+    
+    NDArray<float> input('c', {6, 4, 5});
+    NDArray<float> indices('c', {3, 3, 2}, {0.f,0.f, 1.f,1.f, 2.f,2.f, 3.f,3.f, 4.f,0.f, 5.f,1.f, 0.f,2.f, 1.f,3.f, 2.f,0.f});
+    NDArray<float> updates('c', {3,3,5});
+    NDArray<float> exp('c', {6,4,5}, {1.f,  2.f,  3.f,  4.f,  5.f, 0.f,  0.f,  0.f,  0.f,  0.f,31.f, 32.f, 33.f, 34.f, 35.f, 0.f,  0.f,  0.f,  0.f,  0.f,
+                                      0.f,  0.f,  0.f,  0.f,  0.f, 6.f,  7.f,  8.f,  9.f, 10.f, 0.f,  0.f,  0.f,  0.f,  0.f,36.f, 37.f, 38.f, 39.f, 40.f,
+                                     41.f, 42.f, 43.f, 44.f, 45.f, 0.f,  0.f,  0.f,  0.f,  0.f,11.f, 12.f, 13.f, 14.f, 15.f, 0.f,  0.f,  0.f,  0.f,  0.f,
+                                      0.f,  0.f,  0.f,  0.f,  0.f, 0.f,  0.f,  0.f,  0.f,  0.f, 0.f,  0.f,  0.f,  0.f,  0.f,16.f, 17.f, 18.f, 19.f, 20.f,
+                                     21.f, 22.f, 23.f, 24.f, 25.f, 0.f,  0.f,  0.f,  0.f,  0.f, 0.f,  0.f,  0.f,  0.f,  0.f, 0.f,  0.f,  0.f,  0.f,  0.f,
+                                      0.f,  0.f,  0.f,  0.f,  0.f,26.f, 27.f, 28.f, 29.f, 30.f, 0.f,  0.f,  0.f,  0.f,  0.f, 0.f,  0.f,  0.f,  0.f,  0.f});
+    input = 0.f;
+    updates.linspace(1.f);
+    
+    nd4j::ops::scatter_nd_add<float> op;
+    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_add_test5) {
+    
+    NDArray<float> input('c', {6,5,4,3,2});
+    NDArray<float> indices('c', {2,2,3}, {0.f,0.f,0.f, 1.f,1.f,1.f, 2.f,2.f,2.f, 3.f,3.f,3.f});
+    NDArray<float> updates('c', {2,2,3,2});
+    NDArray<float> exp('c', {6,5,4,3,2}, { 1.f,  2.f, 3.f,  4.f, 5.f,  6.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 7.f,  8.f, 9.f, 10.f,11.f, 12.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,13.f, 14.f,15.f, 16.f,17.f, 18.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,19.f, 20.f,21.f, 22.f,23.f, 24.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f});
+    input = 0.f;
+    updates.linspace(1.f);
+    
+    nd4j::ops::scatter_nd_add<float> op;
+    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_sub_test1) {    
+    
+    NDArray<float> input('c', {8}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f});
+    NDArray<float> indices('c', {4, 1}, {4.f, 3.f, 1.f, 7.f});
+    NDArray<float> updates('c', {4}, {9.f, 10.f, 11.f, 12.f});    
+    NDArray<float> exp('c', {8}, {1.f, -9.f,  3.f, -6.f, -4.f,  6.f,  7.f, -4.f});
+    
+    nd4j::ops::scatter_nd_sub<float> op;
+    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_sub_test2) {    
+    
+    NDArray<float> input('c', {6, 4});
+    NDArray<float> indices('c', {3, 3, 2}, {0.f,0.f, 1.f,1.f, 2.f,2.f, 3.f,3.f, 4.f,0.f, 5.f,1.f, 0.f,2.f, 1.f,3.f, 2.f,0.f});
+    NDArray<float> updates('c', {3,3});
+    NDArray<float> exp('c', {6,4}, {-1.f,0.f,-7.f,0.f, 0.f,-2.f,0.f,-8.f, -9.f,0.f,-3.f,0.f, 0.f,0.f,0.f,-4.f, -5.f,0.f,0.f,0.f, 0.f,-6.f,0.f,0.f});
+
+    input = 0.f;
+    updates.linspace(1.f);
+    
+    nd4j::ops::scatter_nd_sub<float> op;
+    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+    // z->printIndexedBuffer();
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_sub_test3) {
+    
+    NDArray<float> input('c', {6, 4});
+    NDArray<float> indices('c', {2, 3, 1}, {5.f, 1.f, 2.f, 3.f,4.f, 0.f});
+    NDArray<float> updates('c', {2,3,4});
+    NDArray<float> exp('c', {6,4}, {-21.f,-22.f,-23.f,-24., -5.f, -6.f, -7.f, -8., -9.f,-10.f,-11.f,-12., -13.f,-14.f,-15.f,-16., -17.f,-18.f,-19.f,-20., -1.f, -2.f, -3.f, -4.f});
+
+    input = 0.f;
+    updates.linspace(1.f);
+    
+    nd4j::ops::scatter_nd_sub<float> op;
+    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_sub_test4) {
+    
+    NDArray<float> input('c', {6, 4, 5});
+    NDArray<float> indices('c', {3, 3, 2}, {0.f,0.f, 1.f,1.f, 2.f,2.f, 3.f,3.f, 4.f,0.f, 5.f,1.f, 0.f,2.f, 1.f,3.f, 2.f,0.f});
+    NDArray<float> updates('c', {3,3,5});
+    NDArray<float> exp('c', {6,4,5}, {-1.f,  -2.f,  -3.f,  -4.f,  -5.f, 0.f,  0.f,  0.f,  0.f,  0.f,-31.f, -32.f, -33.f, -34.f, -35.f, 0.f,  0.f,  0.f,  0.f,  0.f,
+                                      0.f,  0.f,  0.f,  0.f,  0.f, -6.f,  -7.f,  -8.f,  -9.f, -10.f, 0.f,  0.f,  0.f,  0.f,  0.f,-36.f, -37.f, -38.f, -39.f, -40.f,
+                                     -41.f, -42.f, -43.f, -44.f, -45.f, 0.f,  0.f,  0.f,  0.f,  0.f,-11.f, -12.f, -13.f, -14.f, -15.f, 0.f,  0.f,  0.f,  0.f,  0.f,
+                                      0.f,  0.f,  0.f,  0.f,  0.f, 0.f,  0.f,  0.f,  0.f,  0.f, 0.f,  0.f,  0.f,  0.f,  0.f,-16.f, -17.f, -18.f, -19.f, -20.f,
+                                     -21.f, -22.f, -23.f, -24.f, -25.f, 0.f,  0.f,  0.f,  0.f,  0.f, 0.f,  0.f,  0.f,  0.f,  0.f, 0.f,  0.f,  0.f,  0.f,  0.f,
+                                      0.f,  0.f,  0.f,  0.f,  0.f,-26.f, -27.f, -28.f, -29.f, -30.f, 0.f,  0.f,  0.f,  0.f,  0.f, 0.f,  0.f,  0.f,  0.f,  0.f});
+    input = 0.f;
+    updates.linspace(1.f);
+    
+    nd4j::ops::scatter_nd_sub<float> op;
+    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_sub_test5) {
+    
+    NDArray<float> input('c', {6,5,4,3,2});
+    NDArray<float> indices('c', {2,2,3}, {0.f,0.f,0.f, 1.f,1.f,1.f, 2.f,2.f,2.f, 3.f,3.f,3.f});
+    NDArray<float> updates('c', {2,2,3,2});
+    NDArray<float> exp('c', {6,5,4,3,2}, { -1.f,  -2.f, -3.f,  -4.f, -5.f,  -6.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, -7.f,  -8.f, -9.f, -10.f,-11.f, -12.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,-13.f, -14.f,-15.f, -16.f,-17.f, -18.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,-19.f, -20.f,-21.f, -22.f,-23.f,-24.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f,
+0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f, 0.f,  0.f});
+    input = 0.f;
+    updates.linspace(1.f);
+    
+    nd4j::ops::scatter_nd_sub<float> op;
+    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_update_test1) {    
+    
+    NDArray<float> input('c', {8}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f});
+    NDArray<float> indices('c', {4, 1}, {4.f, 3.f, 1.f, 7.f});
+    NDArray<float> updates('c', {4}, {9.f, 10.f, 11.f, 12.f});    
+    NDArray<float> exp('c', {8}, {1.f, 11.f, 3.f, 10.f, 9.f, 6.f, 7.f, 12.f});
+    
+    nd4j::ops::scatter_nd_update<float> op;
+    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_update_test2) {    
+    
+    NDArray<float> input('c', {6, 4});
+    NDArray<float> indices('c', {3, 3, 2}, {0.f,0.f, 1.f,1.f, 2.f,2.f, 3.f,3.f, 4.f,0.f, 5.f,1.f, 0.f,2.f, 1.f,3.f, 2.f,0.f});
+    NDArray<float> updates('c', {3,3});
+    NDArray<float> exp('c', {6,4}, {1.f,-1.f,7.f,-1.f, -1.f,2.f,-1.f,8.f, 9.f,-1.f,3.f,-1.f, -1.f,-1.f,-1.f,4.f, 5.f,-1.f,-1.f,-1.f, -1.f,6.f,-1.f,-1.f});
+
+    input = -1.f;
+    updates.linspace(1.f);
+    
+    nd4j::ops::scatter_nd_update<float> op;
+    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+    // z->printIndexedBuffer();
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_update_test3) {
+    
+    NDArray<float> input('c', {6, 4});
+    NDArray<float> indices('c', {2, 3, 1}, {5.f, 1.f, 2.f, 3.f, 4.f, 0.f});
+    NDArray<float> updates('c', {2,3,4});
+    NDArray<float> exp('c', {6,4}, {21.f, 22.f, 23.f, 24.f, 5.f,  6.f,  7.f,  8.f, 9.f, 10.f, 11.f, 12.f,13.f, 14.f, 15.f, 16.f,17.f, 18.f, 19.f, 20.f, 1.f,  2.f,  3.f,  4.f,});
+
+    input = -1.f;
+    updates.linspace(1.f);
+    
+    nd4j::ops::scatter_nd_update<float> op;
+    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);     
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_update_test4) {
+    
+    NDArray<float> input('c', {6, 4, 5});
+    NDArray<float> indices('c', {3, 3, 2}, {0.f,0.f, 1.f,1.f, 2.f,2.f, 3.f,3.f, 4.f,0.f, 5.f,1.f, 0.f,2.f, 1.f,3.f, 2.f,0.f});
+    NDArray<float> updates('c', {3,3,5});
+    NDArray<float> exp('c', {6,4,5}, {1.f,  2.f,  3.f,  4.f,  5.f, -1.f,  -1.f,  -1.f,  -1.f,  -1.f,31.f, 32.f, 33.f, 34.f, 35.f, -1.f,  -1.f,  -1.f,  -1.f,  -1.f,
+                                      -1.f,  -1.f,  -1.f,  -1.f,  -1.f, 6.f,  7.f,  8.f,  9.f, 10.f, -1.f,  -1.f,  -1.f,  -1.f,  -1.f,36.f, 37.f, 38.f, 39.f, 40.f,
+                                     41.f, 42.f, 43.f, 44.f, 45.f, -1.f,  -1.f,  -1.f,  -1.f,  -1.f,11.f, 12.f, 13.f, 14.f, 15.f, -1.f,  -1.f,  -1.f,  -1.f,  -1.f,
+                                      -1.f,  -1.f,  -1.f,  -1.f,  -1.f, -1.f,  -1.f,  -1.f,  -1.f,  -1.f, -1.f,  -1.f,  -1.f,  -1.f,  -1.f,16.f, 17.f, 18.f, 19.f, 20.f,
+                                     21.f, 22.f, 23.f, 24.f, 25.f, -1.f,  -1.f,  -1.f,  -1.f,  -1.f, -1.f,  -1.f,  -1.f,  -1.f,  -1.f, -1.f,  -1.f,  -1.f,  -1.f,  -1.f,
+                                      -1.f,  -1.f,  -1.f,  -1.f,  -1.f,26.f, 27.f, 28.f, 29.f, 30.f, -1.f,  -1.f,  -1.f,  -1.f,  -1.f, -1.f,  -1.f,  -1.f,  -1.f,  -1.f});
+    input = -1.f;
+    updates.linspace(1.f);
+    
+    nd4j::ops::scatter_nd_update<float> op;
+    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_update_test5) {
+    
+    NDArray<float> input('c', {6,5,4,3,2});
+    NDArray<float> indices('c', {2,2,3}, {0.f,0.f,0.f, 1.f,1.f,1.f, 2.f,2.f,2.f, 3.f,3.f,3.f});
+    NDArray<float> updates('c', {2,2,3,2});
+    NDArray<float> exp('c', {6,5,4,3,2}, { 1.f,  2.f, 3.f,  4.f, 5.f,  6.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f,
+-1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f,
+-1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f,
+-1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, 7.f,  8.f, 9.f, 10.f,11.f, 12.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f,
+-1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f,
+-1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f,
+-1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f,13.f, 14.f,15.f, 16.f,17.f, 18.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f,
+-1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f,
+-1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f,
+-1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f,19.f, 20.f,21.f, 22.f,23.f, 24.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f,
+-1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f,
+-1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f,
+-1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f,
+-1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f,
+-1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f, -1.f,  -1.f});
+    input = -1.f;
+    updates.linspace(1.f);
+    
+    nd4j::ops::scatter_nd_update<float> op;
+    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+

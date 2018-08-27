@@ -135,9 +135,10 @@ namespace nd4j {
         *  evaluate indexes ranges that define sub-array of array having shape=shapeInfo
         *  subArrIdx - index of current sub-array
         *  shapeInfo - shapeInfo of array for which to evaluate sub-arrays 
-        *  dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-arrays along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5]
+        *  dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-arrays along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5],
+        *                  if dimsToExclude is empty then idxRanges containing all zeros (means whole array) will be returned.
         *  idxRanges - where to put result, the length of idxRanges must be equal to 2*shapeInfo[0]
-        */
+        */ 
         static void evalIdxRangesForSubArr(const Nd4jLong subArrIdx,  const Nd4jLong* shapeInfo, const std::vector<int>& dimsToExclude, Nd4jLong* idxRanges);
 
         /**
@@ -145,6 +146,13 @@ namespace nd4j {
         *   memory allocation for shapeInfo is on given workspace
         */
         static Nd4jLong* createShapeInfo(const char order, const std::vector<Nd4jLong> shapeOnly, memory::Workspace* workspace);
+
+        /**
+        *   return shape without unities, for example if shape is [1,2,1,3] then [2,3] will be returned
+        *   if unities are not present in given shapeInfo then exactly identical shape will be returned, for example [2,3] -> [2,3]
+        *   edge case: if given shape is [1,1,1,...,1] (all dims are unities) then output will be [1]
+        */
+        static std::vector<Nd4jLong> evalDimsWithoutUnities(const Nd4jLong* shapeInfo);
 
         /**
         *  method returns false if permut == {0,1,2,...permut.size()-1} - in that case permutation is unnecessary

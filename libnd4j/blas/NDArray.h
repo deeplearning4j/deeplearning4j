@@ -517,7 +517,7 @@ namespace nd4j {
         *  target - where to store result
         *  checkTargetShape - if true check whether target shape is suitable for broadcasting
         *  extraParams - extra parameters for operation
-        */                       
+        */
         template <typename OpName>
         void applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target, const bool checkTargetShape = true, T *extraArgs = nullptr) const;
 
@@ -815,19 +815,20 @@ namespace nd4j {
         void varianceAlongDimension(const NDArray<T>* target, const bool biasCorrected, const std::initializer_list<int>& dimensions);
 
         /**
-        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays to point on
-        *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
-        */
-        NDArray<T> operator()(const Intervals& idx, bool keepUnitiesInShape = false)  const;
-
-        /**
-        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
+        *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the subarrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
-        NDArray<T> operator()(const Nd4jLong* idx, bool keepUnitiesInShape = false)  const;
+        NDArray<T> operator()(const std::vector<Nd4jLong>& idx, bool keepUnitiesInShape = false)  const;
+
+        /**
+        *  evaluates subarray with buffer pointing at this->_buffer and offset defined by given sequential index subArrIdx and dimensions in dimsToExclude
+        *  subArrIdx - index of current sub-array
+        *  dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-array along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5], and subArrIdx must be in range [0,7]
+        *                  if dimsToExclude is empty then idxRanges containing all zeros (means whole array) will be returned.
+        */ 
+        NDArray<T> operator()(const Nd4jLong subArrIdx, const std::vector<int>& dimsToExclude, bool keepUnitiesInShape = false)  const;
 
         /**
         *  addition operator: array + other
@@ -945,9 +946,9 @@ namespace nd4j {
         friend NDArray<T> mmul<>(const NDArray<T>& left, const NDArray<T>& right);
 
         /**
-        *  this method assigns elements of other array to the sub-array of this array defined by given intervals
+        *  this method assigns elements of other array to the subarray of this array defined by given intervals
         *  other - input array to assign elements from
-        *  idx - intervals of indexes which define the sub-array
+        *  idx - intervals of indexes which define the subarray
         */ 
         void assign(const NDArray<T>& other, const Intervals& idx);
 
@@ -1017,13 +1018,13 @@ namespace nd4j {
         ResultSet<T>* allTensorsAlongDimension(const std::initializer_list<int>& dimensions) const;
 
         ResultSet<T>* allExamples()const ;        
-        
+
         template <typename OpName>
         void saveResultOfBroadcast(const NDArray<T>& x, const NDArray<T>& y, const bool checkThisShape = false);
-        
+
         /**
         *  default destructor
-        */        
+        */
         ~NDArray() noexcept; 
 
         /**
@@ -1235,6 +1236,20 @@ namespace nd4j {
         */
         FORCEINLINE T operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) const;
 
+        /**
+        *  inline modifying operator for ND array
+        *  idx - array with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
+        */ 
+        FORCEINLINE T& operator()(const Nd4jLong* idx);
+
+        /**
+        *  inline accessing operator for ND array
+        *  idx - array with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
+        */
+        FORCEINLINE T operator()(const Nd4jLong* idx) const;
+
+
+
         template <typename T2>
         FORCEINLINE std::vector<T2> asVectorT();
 
@@ -1439,12 +1454,13 @@ template<typename T>
     return shape::isScalar(this->_shapeInfo);
 }
 
+//////////////////////////////////////////////////////////////////////////
 // accessing operator for matrix, i - absolute index
 template<typename T>
- T NDArray<T>::operator()(const Nd4jLong i) const {
+T NDArray<T>::operator()(const Nd4jLong i) const {
 
     if (i >= shape::length(_shapeInfo))
-            throw std::invalid_argument("NDArray::operator(i): dinput index is out of array length !");
+            throw std::invalid_argument("NDArray::operator(i): input index is out of array length !");
 
     auto ews   = shape::elementWiseStride(_shapeInfo);
     char order = ordering();   
@@ -1464,7 +1480,7 @@ template<typename T>
 //////////////////////////////////////////////////////////////////////////
 // modifying operator for matrix, i - absolute index
 template<typename T>
- T& NDArray<T>::operator()(const Nd4jLong i) {
+T& NDArray<T>::operator()(const Nd4jLong i) {
 
     if (i >= shape::length(_shapeInfo))
             throw std::invalid_argument("NDArray::operator(i): input index is out of array length !");
@@ -1556,6 +1572,28 @@ template<typename T>
     Nd4jLong coords[4] = {t, u, v, w};
     auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
     return _buffer[xOffset];
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+T NDArray<T>::operator()(const Nd4jLong* idx) const {
+
+    for(int i = 0; i < rankOf(); ++i)    
+        if (idx[i] >= sizeAt(i))
+            throw std::invalid_argument("NDArray::operator(const Nd4jLong* idx): input index is out of dimension length !");
+    
+    return _buffer[shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf())];
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+T& NDArray<T>::operator()(const Nd4jLong* idx) {
+
+    for(int i = 0; i < rankOf(); ++i)    
+        if (idx[i] >= sizeAt(i))
+            throw std::invalid_argument("NDArray::operator(const Nd4jLong* idx): input index is out of dimension length !");
+
+    return _buffer[shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf())];
 }
 
 //////////////////////////////////////////////////////////////////////////
