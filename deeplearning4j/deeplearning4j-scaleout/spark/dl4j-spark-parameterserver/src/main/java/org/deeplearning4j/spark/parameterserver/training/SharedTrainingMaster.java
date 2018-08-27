@@ -62,6 +62,9 @@ import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.enums.TransportType;
 import org.nd4j.parameterserver.distributed.util.NetworkOrganizer;
 import org.nd4j.parameterserver.distributed.v2.ModelParameterServer;
+import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
+import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeResponse;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.AeronUdpTransport;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
@@ -445,6 +448,12 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         voidConfiguration.setShardAddresses(voidConfiguration.getControllerAddress());
         voidConfiguration.setNumberOfShards(1);
 
+        {
+            log.info("Initializing messages lol");
+            val hreq = new HandshakeRequest();
+            val hres = new HandshakeResponse();
+            val gm = new GradientsUpdateMessage();
+        }
 
         if (network != null)
             network.getNetwork().init();
