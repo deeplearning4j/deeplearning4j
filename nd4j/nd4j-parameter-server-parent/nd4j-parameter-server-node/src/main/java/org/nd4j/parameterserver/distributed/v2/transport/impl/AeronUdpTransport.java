@@ -184,8 +184,6 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         byte[] data = new byte[length];
         buffer.getBytes(offset, data);
 
-        val hr = new HandshakeRequest();
-
         // deserialize message
         val message = VoidMessage.fromBytes(data);
 
@@ -322,7 +320,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     }
 
     @Override
-    public synchronized void onMeshUpdate(MeshOrganizer mesh) {
+    public  void onMeshUpdate(MeshOrganizer mesh) {
         mesh.flatNodes().forEach(n -> addConnection(n.getId()));
 
         super.onMeshUpdate(mesh);
