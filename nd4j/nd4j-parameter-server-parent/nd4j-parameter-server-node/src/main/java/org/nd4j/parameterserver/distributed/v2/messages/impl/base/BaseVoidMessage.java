@@ -17,11 +17,13 @@
 package org.nd4j.parameterserver.distributed.v2.messages.impl.base;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.nd4j.linalg.util.SerializationUtils;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 
+@NoArgsConstructor
 public abstract class BaseVoidMessage implements VoidMessage {
     /**
      * Unique messageId used to distringuish chunks from each other

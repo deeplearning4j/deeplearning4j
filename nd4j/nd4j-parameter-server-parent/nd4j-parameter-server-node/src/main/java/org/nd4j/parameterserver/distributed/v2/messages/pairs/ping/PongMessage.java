@@ -16,6 +16,7 @@
 
 package org.nd4j.parameterserver.distributed.v2.messages.pairs.ping;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseRequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseResponseMessage;
 
@@ -24,6 +25,7 @@ import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseResponseMe
  *
  * @author raver119@gmail.com
  */
+@NoArgsConstructor
 public class PongMessage extends BaseResponseMessage {
     // TODO: add some telemetry here
 }

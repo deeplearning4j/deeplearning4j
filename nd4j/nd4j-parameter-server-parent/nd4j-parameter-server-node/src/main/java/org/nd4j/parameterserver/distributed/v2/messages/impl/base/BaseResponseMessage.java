@@ -17,9 +17,11 @@
 package org.nd4j.parameterserver.distributed.v2.messages.impl.base;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.nd4j.parameterserver.distributed.v2.messages.ResponseMessage;
 
+@NoArgsConstructor
 public class BaseResponseMessage extends BaseVoidMessage implements ResponseMessage {
 
     @Getter

@@ -16,8 +16,10 @@
 
 package org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseRequestMessage;
 
+@NoArgsConstructor
 public class HandshakeRequest extends BaseRequestMessage {
 
 }
