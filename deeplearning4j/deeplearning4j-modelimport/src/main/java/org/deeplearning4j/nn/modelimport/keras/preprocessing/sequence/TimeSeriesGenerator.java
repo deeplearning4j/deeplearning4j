@@ -64,7 +64,7 @@ public class TimeSeriesGenerator {
     private boolean reverse;
     private int batchSize;
 
-    // TODO: pad_sequences, make_sampling_table, skipgrams util?
+    // TODO: add pad_sequences, make_sampling_table, skipgrams utils
 
     public static TimeSeriesGenerator fromJson(String jsonFileName)
             throws IOException, InvalidKerasConfigurationException {
@@ -109,10 +109,10 @@ public class TimeSeriesGenerator {
 
         return gen;
     }
+
     public TimeSeriesGenerator(INDArray data, INDArray targets, int length, int samplingRate, int stride,
                                Integer startIndex, Integer endIndex, boolean shuffle, boolean reverse,
                                int batchSize) throws InvalidKerasConfigurationException {
-
 
         this.data = data;
         this.targets = targets;
