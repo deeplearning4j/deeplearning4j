@@ -109,7 +109,7 @@ public class MeshOrganizer implements Serializable {
      */
     public MeshOrganizer clone() {
         val b = SerializationUtils.toByteArray(this);
-        return org.apache.commons.lang3.SerializationUtils.deserialize(b);
+        return SerializationUtils.fromByteArray(b);
     }
 
     /**

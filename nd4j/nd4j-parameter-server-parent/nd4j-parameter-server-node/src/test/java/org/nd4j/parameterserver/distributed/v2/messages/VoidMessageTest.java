@@ -18,8 +18,8 @@ package org.nd4j.parameterserver.distributed.v2.messages;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.lang3.SerializationUtils;
 import org.junit.Test;
+import org.nd4j.linalg.util.SerializationUtils;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
 
 import static org.junit.Assert.*;
@@ -31,7 +31,7 @@ public class VoidMessageTest {
         val req = new HandshakeRequest();
         req.setOriginatorId("1234");
 
-        val bytes = SerializationUtils.serialize(req);
+        val bytes = SerializationUtils.toByteArray(req);
 
         VoidMessage res = SerializationUtils.deserialize(bytes);
 
@@ -43,7 +43,7 @@ public class VoidMessageTest {
         val req = new HandshakeRequest();
         req.setOriginatorId("1234");
 
-        val bytes = SerializationUtils.serialize(req);
+        val bytes = SerializationUtils.toByteArray(req);
 
         VoidMessage res = VoidMessage.fromBytes(bytes);
 

@@ -20,7 +20,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
-import org.apache.commons.lang3.SerializationUtils;
+import org.nd4j.linalg.util.SerializationUtils;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 

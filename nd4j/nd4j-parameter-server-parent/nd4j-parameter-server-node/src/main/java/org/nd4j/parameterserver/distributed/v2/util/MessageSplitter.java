@@ -18,9 +18,9 @@ package org.nd4j.parameterserver.distributed.v2.util;
 
 import lombok.NonNull;
 import lombok.val;
-import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.primitives.AtomicBoolean;
+import org.nd4j.linalg.util.SerializationUtils;
 import org.nd4j.parameterserver.distributed.v2.chunks.ChunksTracker;
 import org.nd4j.parameterserver.distributed.v2.chunks.impl.FileChunksTracker;
 import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;

@@ -17,8 +17,8 @@
 package org.nd4j.linalg.primitives;
 
 import lombok.val;
-import org.apache.commons.lang3.SerializationUtils;
 import org.junit.Test;
+import org.nd4j.linalg.util.SerializationUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

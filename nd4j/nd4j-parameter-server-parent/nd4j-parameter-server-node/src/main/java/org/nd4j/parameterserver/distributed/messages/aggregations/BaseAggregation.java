@@ -21,10 +21,10 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.SerializationUtils;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
 
@@ -124,7 +124,7 @@ public abstract class BaseAggregation extends BaseVoidMessage implements VoidAgg
 
     @Override
     public byte[] asBytes() {
-        return SerializationUtils.serialize(this);
+        return SerializationUtils.toByteArray(this);
     }
 
     @Override

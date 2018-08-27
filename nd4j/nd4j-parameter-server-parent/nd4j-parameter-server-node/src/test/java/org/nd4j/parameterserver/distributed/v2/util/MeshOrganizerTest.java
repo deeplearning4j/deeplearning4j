@@ -18,8 +18,8 @@ package org.nd4j.parameterserver.distributed.v2.util;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.lang3.SerializationUtils;
 import org.junit.Test;
+import org.nd4j.linalg.util.SerializationUtils;
 import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
 
 import java.io.ByteArrayInputStream;
