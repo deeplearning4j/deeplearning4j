@@ -381,9 +381,11 @@ public abstract  class BaseTransport  implements Transport {
                 // we update only if new mesh is older that existing one
                 if (v1 < v2) {
                     mesh.set(newMesh);
-                    onMeshUpdate(newMesh);
                 }
             }
+
+            // should be out of locked block
+            onMeshUpdate(newMesh);
         } else {
             if (message instanceof RequestMessage) {
                 val name = message.getClass().getCanonicalName();
