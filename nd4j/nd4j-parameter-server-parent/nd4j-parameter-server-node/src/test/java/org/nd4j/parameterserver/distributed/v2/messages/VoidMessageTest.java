@@ -37,4 +37,16 @@ public class VoidMessageTest {
 
         assertEquals(req.getOriginatorId(), res.getOriginatorId());
     }
+
+    @Test
+    public void testHandshakeSerialization_2() throws Exception {
+        val req = new HandshakeRequest();
+        req.setOriginatorId("1234");
+
+        val bytes = SerializationUtils.serialize(req);
+
+        VoidMessage res = VoidMessage.fromBytes(bytes);
+
+        assertEquals(req.getOriginatorId(), res.getOriginatorId());
+    }
 }
