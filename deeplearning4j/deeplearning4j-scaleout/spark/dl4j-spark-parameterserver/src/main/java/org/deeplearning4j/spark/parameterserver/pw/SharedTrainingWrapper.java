@@ -296,9 +296,11 @@ public class SharedTrainingWrapper {
                         log.warn("Can't get IP address to start VoidParameterServer client. Using localhost instead");
                     }
 
+                    log.info("Checking for ModelParameterServer existence");
 
                     // if we're running in spark localhost mode - we don't want double initialization
                     if (!ModelParameterServer.getInstance().isInitialized()) {
+                        log.info("Initializing transport...");
                         // FIXME: implement support for Custom transport implementation
                         val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP ? new AeronUdpTransport(localIP, voidConfiguration.getUnicastPort(), voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort(), voidConfiguration) :  null;
 
