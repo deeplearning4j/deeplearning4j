@@ -255,7 +255,7 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                 boolean epochTerminate = false;
                 EpochTerminationCondition termReason = null;
                 for (EpochTerminationCondition c : esConfig.getEpochTerminationConditions()) {
-                    if (c.terminate(epochCount, score)) {
+                    if (c.terminate(epochCount, score, esConfig.getScoreCalculator().minimizeScore())) {
                         epochTerminate = true;
                         termReason = c;
                         wrapper.stopFit();

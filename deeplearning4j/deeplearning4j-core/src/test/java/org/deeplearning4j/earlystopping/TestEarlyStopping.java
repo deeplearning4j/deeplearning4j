@@ -19,13 +19,16 @@ package org.deeplearning4j.earlystopping;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.SingletonDataSetIterator;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
+import org.deeplearning4j.earlystopping.saver.LocalFileModelSaver;
 import org.deeplearning4j.earlystopping.scorecalc.*;
 import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.MaxScoreIterationTerminationCondition;
@@ -38,12 +41,10 @@ import org.deeplearning4j.eval.ROCBinary;
 import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.AutoEncoder;
-import org.deeplearning4j.nn.conf.layers.BaseLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.variational.BernoulliReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -52,19 +53,23 @@ import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.optimize.solvers.BaseOptimizer;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Sin;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -72,6 +77,9 @@ import static org.junit.Assert.*;
 
 @Slf4j
 public class TestEarlyStopping extends BaseDL4JTest {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
     public void testEarlyStoppingIris() {
@@ -821,5 +829,74 @@ public class TestEarlyStopping extends BaseDL4JTest {
             iterCount++;
         }
 
+    }
+
+    @Test
+    public void testEarlyStoppingMaximizeScore() throws Exception {
+        Nd4j.getRandom().setSeed(12345);
+
+        int outputs = 2;
+
+        DataSet ds = new DataSet(
+                Nd4j.rand(new int[]{3, 10, 50}),
+                TestUtils.randomOneHotTimeSeries(3, outputs, 50, 12345));
+        DataSetIterator train = new ExistingDataSetIterator(
+                Arrays.asList(ds, ds, ds, ds, ds, ds, ds, ds, ds, ds));
+        DataSetIterator test = new SingletonDataSetIterator(ds);
+
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(123)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Adam(0.1))
+                .activation(Activation.ELU)
+                .l2(1e-5)
+                .gradientNormalization(GradientNormalization
+                        .ClipElementWiseAbsoluteValue)
+                .gradientNormalizationThreshold(1.0)
+                .list()
+                .layer(0, new LSTM.Builder()
+                        .nIn(10)
+                        .nOut(10)
+                        .activation(Activation.TANH)
+                        .gateActivationFunction(Activation.SIGMOID)
+                        .dropOut(0.5)
+                        .build())
+                .layer(1, new RnnOutputLayer.Builder()
+                        .nIn(10)
+                        .nOut(outputs)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT)
+                        .build())
+                .pretrain(false).backprop(true).build();
+
+        File f = testDir.newFolder();
+        EarlyStoppingModelSaver<MultiLayerNetwork> saver = new LocalFileModelSaver(f.getAbsolutePath());
+        EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
+                new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                        .epochTerminationConditions(
+                                new MaxEpochsTerminationCondition(10),
+                                new ScoreImprovementEpochTerminationCondition(1))
+                        .iterationTerminationConditions(
+                                new MaxTimeIterationTerminationCondition(10, TimeUnit.MINUTES))
+                        .scoreCalculator(new ClassificationScoreCalculator(Evaluation.Metric.F1, test))
+                        .modelSaver(saver)
+                        .saveLastModel(true)
+                        .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        EarlyStoppingTrainer t = new EarlyStoppingTrainer(esConf, net, train);
+        EarlyStoppingResult<MultiLayerNetwork> result = t.fit();
+
+        Map<Integer,Double> map = result.getScoreVsEpoch();
+        for( int i=1; i<map.size(); i++ ){
+            if(i == map.size() - 1){
+                assertTrue(map.get(i) <+ map.get(i-1));
+            } else {
+                assertTrue(map.get(i) > map.get(i-1));
+            }
+        }
     }
 }

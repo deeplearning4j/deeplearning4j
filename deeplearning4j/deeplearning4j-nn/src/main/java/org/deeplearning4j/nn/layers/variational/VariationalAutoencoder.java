@@ -155,10 +155,10 @@ public class VariationalAutoencoder implements Layer {
         return score;
     }
 
-    protected INDArray getParamWithNoise(String param, boolean training, LayerWorkspaceMgr workspaceMgr){
+    protected INDArray  getParamWithNoise(String param, boolean training, LayerWorkspaceMgr workspaceMgr){
         INDArray p;
         if(layerConf().getWeightNoise() != null){
-            if(training && weightNoiseParams.size() > 0 ){
+            if(training && weightNoiseParams.size() > 0 && weightNoiseParams.containsKey(param) ){
                 //Re-use these weights for both forward pass and backprop - don't want to use 2 different params here
                 //These should be cleared during  backprop
                 return weightNoiseParams.get(param);

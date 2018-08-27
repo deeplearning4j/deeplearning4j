@@ -19,10 +19,13 @@ package org.deeplearning4j.nn.layers.variational;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.dropout.GaussianNoise;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.*;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.nn.conf.weightnoise.WeightNoise;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -31,6 +34,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
+import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.Sgd;
@@ -448,5 +452,36 @@ public class TestVAE extends BaseDL4JTest {
                 }
             }
         }
+    }
+
+
+    @Test
+    public void testVaeWeightNoise(){
+
+        for(boolean ws : new boolean[]{false, true}) {
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .seed(12345L)
+                    .trainingWorkspaceMode(ws ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
+                    .inferenceWorkspaceMode(ws ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
+                    .weightNoise(new WeightNoise(new org.deeplearning4j.nn.conf.distribution.NormalDistribution(0.1, 0.3)))
+                    .list().layer(0,
+                            new VariationalAutoencoder.Builder().nIn(10).nOut(3)
+                                    .encoderLayerSizes(5).decoderLayerSizes(6)
+                                    .pzxActivationFunction(Activation.TANH)
+                                    .reconstructionDistribution(new GaussianReconstructionDistribution())
+                                    .activation(new ActivationTanH())
+                                    .build())
+                    .pretrain(true).backprop(false).build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            INDArray arr = Nd4j.rand(3, 10);
+            net.pretrainLayer(0, arr);
+
+        }
+
+
     }
 }

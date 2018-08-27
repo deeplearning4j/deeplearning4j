@@ -245,7 +245,7 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                 boolean epochTerminate = false;
                 EpochTerminationCondition termReason = null;
                 for (EpochTerminationCondition c : esConfig.getEpochTerminationConditions()) {
-                    if (c.terminate(epochCount, score)) {
+                    if (c.terminate(epochCount, score, esConfig.getScoreCalculator().minimizeScore())) {
                         epochTerminate = true;
                         termReason = c;
                         break;
