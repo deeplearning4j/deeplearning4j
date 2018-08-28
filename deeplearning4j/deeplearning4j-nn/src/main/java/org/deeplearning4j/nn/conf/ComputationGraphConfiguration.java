@@ -652,7 +652,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         /**
          * Whether to do back prop (standard supervised learning) or not
          *
-         * DEPRECATED: doesn't affect training any more. Use {@link org.deeplearning4j.nn.graph.ComputationGraph#fit(MultiDataSet)} when training for backprop.
+         * @deprecated doesn't affect training any more. Use {@link org.deeplearning4j.nn.graph.ComputationGraph#fit(MultiDataSet)} when training for backprop.
          *
          * @param backprop whether to do back prop or not
          */
@@ -665,7 +665,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         /**
          * Whether to do layerwise pre training or not
          *
-         * DEPRECATED: doesn't affect training any more. Use {@link org.deeplearning4j.nn.graph.ComputationGraph#pretrain(MultiDataSetIterator)} when training for layerwise pretraining.
+         * @deprecated doesn't affect training any more. Use {@link org.deeplearning4j.nn.graph.ComputationGraph#pretrain(MultiDataSetIterator)} when training for layerwise pretraining.
          *
          * @param pretrain whether to do pre train or not
          */

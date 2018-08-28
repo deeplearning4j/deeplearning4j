@@ -421,11 +421,12 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         /**
          * Whether to do back prop or not
          *
-         * DEPRECATED: doesn't affect training any more. Use {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork#fit(DataSetIterator)} when training for backprop.
+         * @deprecated doesn't affect training any more. Use {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork#fit(DataSetIterator)} when training for backprop.
          *
          * @param backprop whether to do back prop or not
          * @return
          */
+        @Deprecated
         public Builder backprop(boolean backprop) {
             this.backprop = backprop;
             return this;
@@ -511,11 +512,12 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         /**
          * Whether to do pre train or not
          *
-         * DEPRECATED: doesn't affect training any more. Use {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork#pretrain(DataSetIterator)} when training for layerwise pretraining.
+         * @deprecated doesn't affect training any more. Use {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork#pretrain(DataSetIterator)} when training for layerwise pretraining.
          *
          * @param pretrain whether to do pre train or not
          * @return builder pattern
          */
+        @Deprecated
         public Builder pretrain(boolean pretrain) {
             this.pretrain = pretrain;
             return this;
