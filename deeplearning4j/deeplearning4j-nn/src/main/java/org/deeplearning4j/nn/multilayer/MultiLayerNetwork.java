@@ -2153,6 +2153,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 //TODO CACHE WORKSPACE, IF USED???
                 solver.optimize(workspaceMgr);
             }
+        } else {
+            throw new IllegalStateException("Network configuration is set to backprop(false). Use the pretrain" +
+                    " and pretrainLayer methods to perform training for unsupervised layerwise training of neural networks");
         }
 
         clearLayerMaskArrays();

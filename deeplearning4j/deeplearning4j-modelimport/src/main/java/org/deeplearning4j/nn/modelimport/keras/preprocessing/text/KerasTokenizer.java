@@ -36,6 +36,8 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils.pars
 @Data
 public class KerasTokenizer {
 
+    // TODO: might want to recreate "one_hot" util for tokenizer
+
     private static final String DEFAULT_FILTER = "!\"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n";
     private static final String DEFAULT_SPLIT = " ";
 

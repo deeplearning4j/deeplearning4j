@@ -31,16 +31,16 @@ public class BestScoreEpochTerminationCondition implements EpochTerminationCondi
     @JsonProperty
     private final double bestExpectedScore;
 
-    @JsonProperty
-    private boolean lesserBetter = true;
-
     public BestScoreEpochTerminationCondition(double bestExpectedScore) {
         this.bestExpectedScore = bestExpectedScore;
     }
 
+    /**
+     * @deprecated "lessBetter" argument no longer used
+     */
+    @Deprecated
     public BestScoreEpochTerminationCondition(double bestExpectedScore, boolean lesserBetter) {
         this(bestExpectedScore);
-        this.lesserBetter = lesserBetter;
     }
 
     @Override
@@ -49,8 +49,8 @@ public class BestScoreEpochTerminationCondition implements EpochTerminationCondi
     }
 
     @Override
-    public boolean terminate(int epochNum, double score) {
-        if (lesserBetter) {
+    public boolean terminate(int epochNum, double score, boolean minimize) {
+        if (minimize) {
             return score < bestExpectedScore;
         } else {
             return bestExpectedScore < score;

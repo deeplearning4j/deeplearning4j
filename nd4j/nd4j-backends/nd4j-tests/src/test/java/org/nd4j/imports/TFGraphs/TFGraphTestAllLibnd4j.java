@@ -75,6 +75,8 @@ public class TFGraphTestAllLibnd4j {
             "reductions/prod.*",
             "reductions/sum.*",
             "reductions/moments.*",
+            "multiple_outs_a",
+            "multiple_outs_b"
 
     };
 
