@@ -43,10 +43,9 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
 public abstract class LayerSpace<L extends Layer> extends AbstractParameterSpace<L> {
-    protected ParameterSpace<Double> dropOut;
+    protected ParameterSpace<IDropout> dropOut;
     protected int numParameters;
 
-    @SuppressWarnings("unchecked")
     protected LayerSpace(Builder builder) {
         this.dropOut = builder.dropOut;
     }

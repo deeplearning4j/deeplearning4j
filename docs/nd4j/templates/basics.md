@@ -11,10 +11,11 @@ weight: 1
 
 The basic operations of linear algebra are matrix creation, addition and multiplication. This guide will show you how to perform those operations with ND4J, as well as various advanced transforms.
 
-* [Matrix Operations](../matrixwise.html)
-* [Reshape/Transpose Matrices](../reshapetranspose.html)
-* [Functions](../functions.html)
-* [Swapping CPUs for GPUs](../gpu_native_backends.html)
+* [Syntax](./nd4j-syntax)
+* [Elementwise](./nd4j-elementwise)
+* [Reshape/Transpose Matrices](./nd4j-matrix-manipulation)
+* [Tensor](./nd4j-tensor)
+* [Swapping CPUs for GPUs](./deeplearning4j-config-gpu-cpu)
 
 The Java code below will create a simple 2 x 2 matrix, populate it with integers, and place it in the nd-array variable nd:
 ```java

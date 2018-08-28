@@ -111,6 +111,10 @@ public class Shape {
         if(shape == null)
             return true;
         else {
+            if(shape.length == 1 && shape[0] == Long.MIN_VALUE){
+                //Temporary sentinel for empty array
+                return false;
+            }
             for(int i = 0; i < shape.length; i++) {
                 if(shape[i] < 0)
                     return true;

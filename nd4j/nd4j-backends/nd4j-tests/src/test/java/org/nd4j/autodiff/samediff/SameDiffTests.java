@@ -291,6 +291,7 @@ public class SameDiffTests {
         SDVariable y = sameDiff.var("y", arr);
         SDVariable result = sameDiff.mmul(x, y);
         SDVariable otherResult = result.add(result);
+        sameDiff.exec();
         assertArrayEquals(new long[]{2, 2}, result.getShape());
     }
 
@@ -1053,6 +1054,7 @@ public class SameDiffTests {
         val input1 = sd.var("input", matrix);
         val input2 = sd.var("input2", vector);
         val output = sd.mmul("output", input1, input2, MMulTranspose.builder().transposeA(true).transposeB(false).build());
+        sd.exec();
         assertArrayEquals(new long[]{3, 1}, output.getShape());
         val result = sd.exec();
     }

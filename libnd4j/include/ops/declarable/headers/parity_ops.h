@@ -243,6 +243,39 @@ namespace nd4j {
         #endif
 
         /**
+         * This operation scatter "updates" elements into input array along given "indices"
+         * Expected arguments:   
+         * input: array to be updated      
+         * indices: array containing elements/slices indexes of input array to put "updates" elements into
+         * updates: array containing elements to be inserted into input array
+         */
+        #if NOT_EXCLUDED(OP_scatter_nd_update)
+        DECLARE_OP(scatter_nd_update, 3, 1, true);
+        #endif
+
+        /**
+         * This operation adds "updates" elements to input array along given "indices"
+         * Expected arguments:
+         * input: array to be updated
+         * indices: array containing elements/slices indexes of input array to add "updates" elements to
+         * updates: array containing elements to be interfered with input 
+         */
+        #if NOT_EXCLUDED(OP_scatter_add)
+        DECLARE_OP(scatter_nd_add, 3, 1, true);
+        #endif
+
+        /**
+         * This operation subtract "updates" elements from input array along given "indices"
+         * Expected arguments:
+         * input: array to be updated
+         * indices: array containing elements/slices indexes of input array to subtract "updates" elements from
+         * updates: array containing elements to be interfered with input 
+         */
+        #if NOT_EXCLUDED(OP_scatter_sub)
+        DECLARE_OP(scatter_nd_sub, 3, 1, true);
+        #endif
+
+        /**
          * This operation takes input's shape, and returns new NDArray filled with specified value
          * Expected arguments:
          * input: N-dimensional array
