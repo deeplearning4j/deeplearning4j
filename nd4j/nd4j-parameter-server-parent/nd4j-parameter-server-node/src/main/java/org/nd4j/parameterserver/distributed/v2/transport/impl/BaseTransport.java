@@ -22,7 +22,9 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.nd4j.linalg.primitives.Atomic;
+import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
@@ -32,6 +34,8 @@ import org.nd4j.parameterserver.distributed.v2.messages.*;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.MeshUpdateMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeResponse;
+import org.nd4j.parameterserver.distributed.v2.messages.pairs.ping.PingMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.pairs.ping.PongMessage;
 import org.nd4j.parameterserver.distributed.v2.transport.RestartCallback;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
@@ -46,6 +50,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  *
@@ -443,6 +449,38 @@ public abstract  class BaseTransport  implements Transport {
         return (T) r;
     }
 
+
+    @Override
+    public <T extends ResponseMessage> T sendMessageBlocking(@NonNull RequestMessage message, @NonNull String id, long timeWait, @NonNull TimeUnit timeUnit) throws InterruptedException {
+        if (message.getRequestId() == null)
+            message.setRequestId(java.util.UUID.randomUUID().toString());
+
+        // we send message to the node first
+        sendMessage(message, id);
+
+        val sleepMs = TimeUnit.MILLISECONDS.convert(timeWait, timeUnit);
+        val startTime = System.currentTimeMillis();
+
+        // and then we just block until we get response
+        ResponseMessage r = null;
+        while ((r = replies.get(message.getRequestId())) == null) {
+            val currTime = System.currentTimeMillis();
+
+            if (currTime - startTime > sleepMs)
+                break;
+
+            LockSupport.parkNanos(5000);
+        }
+
+
+
+        // remove response from holder
+        replies.remove(message.getRequestId());
+
+        //and return reply back
+        return (T) r;
+    }
+
     @Override
     public void setRestartCallback(RestartCallback callback) {
         this.restartCallback = callback;
@@ -478,6 +516,51 @@ public abstract  class BaseTransport  implements Transport {
         public void subscribe(Subscriber<? super T> subscriber) {
             // we're just maintaining list of
             subscribers.add(subscriber);
+        }
+    }
+
+
+    protected static class HeartbeatThread extends Thread implements Runnable {
+        protected final long delay;
+        protected final Atomic<MeshOrganizer> mesh;
+        protected final Transport transport;
+
+        protected HeartbeatThread(long delayMilliseconds, @NonNull Transport transport, @NonNull Atomic<MeshOrganizer> mesh) {
+            this.delay = delayMilliseconds;
+            this.mesh = mesh;
+            this.transport = transport;
+        }
+
+        @Override
+        public void run() {
+            try {
+                while (true) {
+                    Thread.sleep(delay);
+                    val remapped = new AtomicBoolean(false);
+
+                    val nodes = mesh.get().flatNodes();
+                    for (val n : nodes) {
+                        PongMessage m = transport.sendMessageBlocking(new PingMessage(), n.getId(), 100, TimeUnit.MILLISECONDS);
+
+                        // if we're not getting response in reasonable time - we're considering this node as failed
+                        if (m == null) {
+                            mesh.get().remapNode(n);
+                            mesh.get().markNodeOffline(n);
+                            remapped.set(true);
+                        }
+                    }
+
+                    if (remapped.get()) {
+                        try {
+                            transport.propagateMessage(new MeshUpdateMessage(mesh.get()), PropagationMode.ONLY_DOWN);
+                        } catch (IOException e) {
+                            // hm.
+                        }
+                    }
+                }
+            } catch (InterruptedException e) {
+                //
+            }
         }
     }
 }

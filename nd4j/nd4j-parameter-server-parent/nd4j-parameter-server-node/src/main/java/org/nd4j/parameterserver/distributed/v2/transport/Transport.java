@@ -26,6 +26,7 @@ import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 import org.reactivestreams.Publisher;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 public interface Transport {
 
@@ -91,6 +92,16 @@ public interface Transport {
      * @return
      */
     <T extends ResponseMessage> T sendMessageBlocking(RequestMessage message, String id) throws InterruptedException;
+
+    /**
+     * This method will send message to specified node, and will return its response
+     *
+     * @param message
+     * @param id
+     * @param <T>
+     * @return
+     */
+    <T extends ResponseMessage> T sendMessageBlocking(RequestMessage message, String id, long waitTime, TimeUnit timeUnit) throws InterruptedException;
 
     /**
      * This method will be invoked for all incoming messages
