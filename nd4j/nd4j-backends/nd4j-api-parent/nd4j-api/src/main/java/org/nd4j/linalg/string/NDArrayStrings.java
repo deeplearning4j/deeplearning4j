@@ -38,6 +38,8 @@ import java.text.DecimalFormat;
  */
 public class NDArrayStrings {
 
+    public static final String EMPTY_ARRAY_STR = "[]";
+
     /**
      * The default number of elements for printing INDArrays (via NDArrayStrings or INDArray.toString)
      */
@@ -129,6 +131,8 @@ public class NDArrayStrings {
      * @return the formatted array
      */
     public String format(INDArray arr, boolean summarize) {
+        if(arr.isEmpty())
+            return EMPTY_ARRAY_STR;
         this.scientificFormat = "0.";
         int addPrecision = this.precision;
         while (addPrecision > 0) {
