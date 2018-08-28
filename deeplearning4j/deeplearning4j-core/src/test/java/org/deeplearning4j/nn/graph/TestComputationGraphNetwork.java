@@ -606,7 +606,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         net.setListeners(new ScoreIterationListener(1));
 
         DataSetIterator iter = new IrisDataSetIterator(10, 150);
-        net.fit(iter);
+        net.pretrain(iter);
     }
 
     @Test

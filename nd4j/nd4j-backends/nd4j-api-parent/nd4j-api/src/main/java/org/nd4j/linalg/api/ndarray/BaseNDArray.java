@@ -26,6 +26,7 @@ import lombok.val;
 import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.graph.ByteOrder;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
@@ -1116,7 +1117,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (sliceIdx == 0 && length == NDArrayMath.lengthPerSlice(ret2)) {
             // FIXME: LONG
             ret2 = ret2.slice((int) offset);
-            if (dimension.length == 1 && ret2.isRowVector())
+            if (dimension.length == 1 && ret2.isRowVectorOrScalar())
                 return ret2;
             return ret2.permutei(finalPermuteDims);
         }
@@ -1126,7 +1127,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             // FIXME: LONG
             ret2 = ret2.slice((int) offset);
-            if (dimension.length == 1 && ret2.isRowVector())
+            if (dimension.length == 1 && ret2.isRowVectorOrScalar())
                 return ret2;
             return ret2.permutei(finalPermuteDims);
         }
@@ -1137,7 +1138,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             ret2 = ret2.slice(sliceIdx);
         }
 
-        if (dimension.length == 1 && ret2.isRowVector())
+        if (dimension.length == 1 && ret2.isRowVectorOrScalar())
             return ret2;
 
         return ret2.permutei(finalPermuteDims);
@@ -1153,7 +1154,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public long vectorsAlongDimension(int dimension) {
-        if (dimension == 0 && isVector() || isRowVector())
+        if (dimension == 0 && isVector() || isRowVectorOrScalar())
             return 1;
         if (size(dimension) == 1 && !isVector()) {
             for (int i = dimension; i < rank(); i++) {
@@ -1163,7 +1164,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             return length();
 
-        } else if (size(0) == 1 && !isVector()) {
+        } else if (size(0) == 1 && !isVectorOrScalar()) {
             int realDimension = rank() - getLeadingOnes();
             long length = length();
             if (length / size(realDimension) >= Integer.MAX_VALUE)
@@ -5486,8 +5487,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     newShape[count++] = drop.get(dropIdx++);
             }
 
-
-            INDArray ret = permute(newShape);
+            INDArray ret;   //TODO is this correct? This was old behaviour before adding permute input check
+            if(newShape.length == this.rank()){
+                ret = permute(newShape);
+            } else {
+                ret = dup();
+            }
             List<Long> newDims = new ArrayList<>();
             long[] shape = Arrays.copyOfRange(ret.shape(), 0, shuffle.length);
             for (int i = 0; i < shape.length; i++) {
@@ -5517,11 +5522,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray permute(int... rearrange) {
+        Preconditions.checkArgument(rearrange.length == rank(), "Incorrect number of arguments for permute function:" +
+                " got arguments %s for rank %s array. Number of arguments must equal array rank", rearrange, rank());
         Nd4j.getCompressor().autoDecompress(this);
-
-
-        if (rearrange.length != rank())
-            return dup();
         boolean alreadyInOrder = true;
         //IntBuffer shapeInfo = shapeInfo();
         int rank = jvmShapeInfo.rank;
@@ -5555,6 +5558,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray permutei(int... rearrange) {
+        Preconditions.checkArgument(rearrange.length == rank(), "Incorrect number of arguments for permute function:" +
+                " got arguments %s for rank %s array. Number of arguments must equal array rank", rearrange, rank());
         boolean alreadyInOrder = true;
         val shapeInfo = shapeInfo();
         int rank = jvmShapeInfo.rank;
