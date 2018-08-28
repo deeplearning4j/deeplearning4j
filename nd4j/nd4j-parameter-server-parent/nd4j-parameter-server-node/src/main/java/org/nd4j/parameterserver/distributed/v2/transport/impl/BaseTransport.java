@@ -289,7 +289,15 @@ public abstract  class BaseTransport  implements Transport {
         /**
          * TODO: we need better isolation here
          */
-        if (message instanceof VoidChunk) {
+        if (message instanceof PingMessage) {
+
+            val msg = new PongMessage();
+            msg.setRequestId(((PingMessage) message).getRequestId());
+            sendMessage(msg, message.getOriginatorId());
+        } if (message instanceof PongMessage) {
+
+            // do nothing
+        }  else if (message instanceof VoidChunk) {
             // we merge chunks to get full INDArrayMessage
             Optional<INDArrayMessage> opt = MessageSplitter.getInstance().merge((VoidChunk) message);
 
