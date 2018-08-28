@@ -32,10 +32,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.*;
 
 /**
  * This class is an in-memory implementation of Transport interface, written for tests
@@ -132,7 +129,7 @@ public class DummyTransport extends BaseTransport {
      */
     public static class Connector {
         private Map<String, Transport> transports = new ConcurrentHashMap<>();
-        private ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactory() {
+        private ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactory() {
             @Override
             public Thread newThread(@NotNull Runnable r) {
                 val t = Executors.defaultThreadFactory().newThread(r);
@@ -144,6 +141,12 @@ public class DummyTransport extends BaseTransport {
         public void register(Transport... transports) {
             for (val transport:transports)
                 this.transports.putIfAbsent(transport.id(), transport);
+        }
+
+        public void blockUntilFinished() throws InterruptedException {
+           while (executorService.getActiveCount() > 0) {
+               Thread.sleep(500);
+           }
         }
 
         public void transferMessage(@NonNull VoidMessage message, @NonNull String senderId, @NonNull String targetId) {

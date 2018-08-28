@@ -45,7 +45,7 @@ public class MeshOrganizer implements Serializable {
     private MeshBuildMode buildMode = MeshBuildMode.MESH;
 
     // this value determines max number of direct downstream connections for any given node (affects root node as well)
-    public static final int MAX_DOWNSTREAMS = 2;
+    public static final int MAX_DOWNSTREAMS = 6;
 
     // max distance from root
     public static final int MAX_DEPTH = 5;

@@ -419,7 +419,7 @@ public abstract  class BaseTransport  implements Transport {
                 val name = message.getClass().getCanonicalName();
                 val consumer = consumers.get(name);
                 if (consumer == null)
-                    throw new ND4JIllegalStateException("Unknown message received: [" + message.getClass().getCanonicalName() + "]");
+                    throw new ND4JIllegalStateException("Not supported  RequestMessage received: [" + message.getClass().getCanonicalName() + "]");
             } else
                 throw new ND4JIllegalStateException("Unknown message received: [" + message.getClass().getCanonicalName() + "]");
         }

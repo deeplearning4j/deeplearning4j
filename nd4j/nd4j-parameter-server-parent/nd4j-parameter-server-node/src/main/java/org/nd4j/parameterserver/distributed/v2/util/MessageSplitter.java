@@ -186,6 +186,8 @@ public class MessageSplitter {
                 if (tracker instanceof InmemoryChunksTracker)
                     memoryUse.addAndGet(-chunk.getTotalSize());
 
+                //trackers.remove(chunk.getOriginalId());
+
                 tracker.release();
             }
         } else

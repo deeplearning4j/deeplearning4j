@@ -113,6 +113,7 @@ public class FileChunksTracker<T extends VoidMessage> implements ChunksTracker<T
         try (val fis = new FileInputStream(holder); val bis = new BufferedInputStream(fis)) {
             return SerializationUtils.deserialize(bis);
         } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }

@@ -56,4 +56,28 @@ public class FileChunksTrackerTest {
 
         assertEquals(array, restored);
     }
+
+    @Test
+    public void testDoubleSpending_1() throws Exception {
+        val array = Nd4j.linspace(1, 100000, 100000).reshape(-1, 1000);
+        val splitter = MessageSplitter.getInstance();
+
+        val message = new GradientsUpdateMessage("123", array);
+        val messages = new ArrayList<VoidChunk>(splitter.split(message, 16384));
+
+        val tracker = new FileChunksTracker<GradientsUpdateMessage>(messages.get(0));
+
+        assertFalse(tracker.isComplete());
+
+        for (val m:messages)
+            tracker.append(m);
+
+        assertTrue(tracker.isComplete());
+
+        val des = tracker.getMessage();
+        assertNotNull(des);
+
+        for (val m:messages)
+            tracker.append(m);
+    }
 }
