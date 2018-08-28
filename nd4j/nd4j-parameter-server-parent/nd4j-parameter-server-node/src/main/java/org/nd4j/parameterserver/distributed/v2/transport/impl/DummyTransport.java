@@ -24,6 +24,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
 import org.nd4j.parameterserver.distributed.v2.transport.MessageCallable;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
@@ -144,13 +145,21 @@ public class DummyTransport extends BaseTransport {
         }
 
         public void blockUntilFinished() throws InterruptedException {
-           while (executorService.getActiveCount() > 0 && executorService.getQueue().size() > 0) {
-               Thread.sleep(500);
-           }
+            val timeStart = System.currentTimeMillis();
+            while (executorService.getActiveCount() > 0 && executorService.getQueue().size() > 0) {
+                Thread.sleep(500);
+            }
+            val timeStop = System.currentTimeMillis();
+
+            if (timeStop - timeStart < 500)
+                Thread.sleep(500);
         }
 
         public void transferMessage(@NonNull VoidMessage message, @NonNull String senderId, @NonNull String targetId) {
-            //log.info("Trying to send message [{}] from [{}] to [{}]", message.getClass().getSimpleName(), senderId, targetId);
+
+            //if (message instanceof GradientsUpdateMessage)
+            //    log.info("Trying to send message [{}] from [{}] to [{}]", message.getClass().getSimpleName(), senderId, targetId);
+
             val target = transports.get(targetId);
             if (target == null)
                 throw new ND4JIllegalStateException("Unknown target specified");

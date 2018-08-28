@@ -140,7 +140,7 @@ public class DelayedModelParameterServerTest {
 
             clientServer.launch();
 
-            log.info("Server [{}] started...", e);
+            //log.info("Server [{}] started...", e);
         }
         connector.blockUntilFinished();
 
@@ -222,7 +222,7 @@ public class DelayedModelParameterServerTest {
             connector.register(clientTransport);
 
             clientServer.launch();
-            log.info("Client [{}] started", e );
+            //log.info("Client [{}] started", e );
         }
 
         Thread.sleep(100);
@@ -312,11 +312,22 @@ public class DelayedModelParameterServerTest {
         });
         connector.register(rootTransport);
 
+        val counters = new AtomicInteger[16];
         val servers = new ArrayList<ModelParameterServer>();
         val transports = new ArrayList<DummyTransport>();
         for (int e = 0; e < 16; e++) {
             val clientTransport = new DelayedDummyTransport(java.util.UUID.randomUUID().toString(), connector, rootId, config);
             val clientServer = new ModelParameterServer(config, clientTransport, false);
+
+            val f = e;
+            counters[f] = new AtomicInteger(0);
+            clientServer.addUpdatesSubscriber(new AbstractSubscriber<INDArray>() {
+                @Override
+                public void onNext(INDArray array) {
+                    assertNotNull(array);
+                    counters[f].incrementAndGet();
+                }
+            });
 
             servers.add(clientServer);
             transports.add(clientTransport);
@@ -324,12 +335,17 @@ public class DelayedModelParameterServerTest {
             connector.register(clientTransport);
 
             clientServer.launch();
-            log.info("Client [{}] started", e );
+            //log.info("Client [{}] started", e );
         }
 
 
+        val deductions = new int[servers.size()];
         for (int e = 0; e < numMessages; e++) {
-            val server = servers.get(RandomUtils.nextInt(0, servers.size()));
+            val f = RandomUtils.nextInt(0, servers.size());
+            val server = servers.get(f);
+
+            // later we'll reduce this number from expected number of updates
+            deductions[f]++;
 
             server.sendUpdate(Nd4j.create(5).assign(e));
             sum.addAndGet(e);
@@ -337,8 +353,14 @@ public class DelayedModelParameterServerTest {
 
         connector.blockUntilFinished();
 
-        assertEquals(numMessages, rootCount.get());
         // checking if master node got all updates we've sent
+        assertEquals(numMessages, rootCount.get());
         assertEquals(sum.get(), rootSum.get());
+
+        // now we're checking all nodes, they should get numMessages - messages that were sent through them
+        for (int e = 0; e < servers.size(); e++) {
+            val server = servers.get(e);
+            assertEquals("Failed at node: [" + e + "]", numMessages - deductions[e], counters[e].get());
+        }
     }
 }
