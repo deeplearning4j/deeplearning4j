@@ -2004,9 +2004,10 @@ TEST_F(DeclarableOpsTests1, TestReductionShape1) {
     auto shapes = testop.calculateOutputShape(inshape, *block);
 
     ASSERT_EQ(1,shapes->size());
-    ASSERT_EQ(2,shapes->at(0)[0]);
-    ASSERT_EQ(1,shapes->at(0)[1]);
+    ASSERT_EQ(0,shapes->at(0)[0]);
+    ASSERT_EQ(0,shapes->at(0)[1]);
     ASSERT_EQ(1,shapes->at(0)[2]);
+    ASSERT_EQ(99,shapes->at(0)[3]);
 
     delete[] inP;
     shapes->destroy();
@@ -2027,8 +2028,6 @@ TEST_F(DeclarableOpsTests1, TestReductionShape2) {
     Context<float>* block = new Context<float>(1, variableSpace, false);  // not-in-place
     block->fillInputs({-1});
 
-    // kernel params
-    //block->getIArguments()->push_back(4);
     block->getIArguments()->push_back(1);
     block->getIArguments()->push_back(2);
     block->getIArguments()->push_back(3);
@@ -2040,9 +2039,45 @@ TEST_F(DeclarableOpsTests1, TestReductionShape2) {
     auto shapes = testop.calculateOutputShape(inshapes, *block);
 
     ASSERT_EQ(1,shapes->size());
-    ASSERT_EQ(2,shapes->at(0)[0]);
+    ASSERT_EQ(1,shapes->at(0)[0]);
+    ASSERT_EQ(4,shapes->at(0)[1]);
+    
+    shapes->destroy();
+    delete variableSpace;
+    delete block;
+    delete shapes;
+    delete inshapes;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, TestReductionShape3) {
+    auto input = new NDArray<float>('c', {4, 5, 5, 10, 10});
+
+    VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, input);
+
+    Context<float>* block = new Context<float>(1, variableSpace, false);  // not-in-place
+    block->fillInputs({-1});
+
+    // kernel params
+    block->getTArguments()->push_back(1.f); // keepDims = true
+    block->getIArguments()->push_back(1);
+    block->getIArguments()->push_back(2);
+    block->getIArguments()->push_back(3);
+    block->getIArguments()->push_back(4);
+
+    nd4j::ops::testreduction<float> testop;
+
+    auto inshapes = new ShapeList(input->getShapeInfo());
+    auto shapes = testop.calculateOutputShape(inshapes, *block);
+
+    ASSERT_EQ(1,shapes->size());
+    ASSERT_EQ(5,shapes->at(0)[0]);
     ASSERT_EQ(4,shapes->at(0)[1]);
     ASSERT_EQ(1,shapes->at(0)[2]);
+    ASSERT_EQ(1,shapes->at(0)[3]);
+    ASSERT_EQ(1,shapes->at(0)[4]);
+    ASSERT_EQ(1,shapes->at(0)[5]);
 
     shapes->destroy();
     delete variableSpace;
@@ -2050,6 +2085,7 @@ TEST_F(DeclarableOpsTests1, TestReductionShape2) {
     delete shapes;
     delete inshapes;
 }
+
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, TestCustomShape1) {

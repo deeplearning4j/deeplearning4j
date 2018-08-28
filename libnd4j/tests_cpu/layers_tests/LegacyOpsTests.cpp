@@ -182,7 +182,7 @@ TEST_F(LegacyOpsTests, ReduceTests_2) {
 
     ASSERT_EQ(1, result->size());
 
-    auto z = result->at(0);
+    auto z = result->at(0);    
 
     auto exp = x.template reduceAlongDimension<simdOps::Sum<float>>({1});
 

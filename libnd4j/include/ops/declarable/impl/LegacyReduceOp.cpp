@@ -150,45 +150,17 @@ namespace nd4j {
         */
         template <typename T>
         ShapeList *LegacyReduceOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
-            auto inShape = inputShape->at(0);
+            
+            Nd4jLong* inShapeInfo = inputShape->at(0);
+            
+            const int minNumTArgs     = this->getOpDescriptor()->getNumberOfTArgs();
+            const int currentNumTArgs = block.getTArguments()->size();
+            
+            const bool keepDims = currentNumTArgs > minNumTArgs ? static_cast<bool>(T_ARG(currentNumTArgs - 1)) : false;
 
-            Nd4jLong *newShape;
+            Nd4jLong* outShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inShapeInfo), *block.getIArguments(), inShapeInfo, keepDims, false, block.workspace());            
 
-            bool allAxes = false;
-
-            if (block.getIArguments()->size() == shape::rank(inShape))
-                allAxes = true;
-
-            if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
-                if (block.getIArguments()->size() > 0 && block.getIArguments()->at(0) == 1) {
-                    // in this case we just return legacy scalar
-                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
-                    newShape[0] = 2;
-                    newShape[1] = 1;
-                    newShape[2] = 1;
-                    newShape[3] = 1;
-                    newShape[4] = 1;
-                    newShape[5] = 0;
-                    newShape[6] = 1;
-                    newShape[7] = 99;
-                } else {
-                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), Nd4jLong);
-                    newShape[0] = 0;
-                    newShape[1] = 0;
-                    newShape[2] = 1;
-                    newShape[3] = 99;
-                }
-            } else {
-                // in this case we're building proper shape for reduction
-                auto array = new NDArray<T>(nullptr, inShape, block.getWorkspace());
-                array->triggerAllocationFlag(false, false);
-
-                newShape = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inShape), *block.getIArguments(), *array, false, false, block.workspace());
-
-                delete array;
-            }
-
-            return SHAPELIST(newShape);
+            return SHAPELIST(outShapeInfo);
         }
 
 

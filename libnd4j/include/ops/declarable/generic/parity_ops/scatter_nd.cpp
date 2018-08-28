@@ -41,7 +41,7 @@ CUSTOM_OP_IMPL(scatter_nd, 3, 1, false, 0, 0) {
     const Nd4jLong shapeLen  = shape->lengthOf();
     
     REQUIRE_TRUE(shapeRank == 1, 0, "SCATTER_ND OP: the rank of shape array must be 1, but got %i instead !", shapeRank);
-    REQUIRE_TRUE(indices->sizeAt(-1) <= shapeRank, 0, "SCATTER_ND OP: last dimension of indices array must be <= rank of shape array, but got %i and %i correspondingly !", indices->sizeAt(-1), shapeRank);    
+    REQUIRE_TRUE(indices->sizeAt(-1) <= shapeLen, 0, "SCATTER_ND OP: last dimension of indices array must be <= length of shape array, but got %i and %i correspondingly !", indices->sizeAt(-1), shapeLen);
     REQUIRE_TRUE(updRank == (indRank + shapeLen - 2), 0, "SCATTER_ND OP: the equality updates_rank = (indices_rank + shape_length - 2) must be true for input arrays, but got instead: updates_rank = %i, indices_rank = %i, shape_length = %i !", updRank, indRank, shapeLen);
 
     std::vector<T> outShapeT = shape->getBufferAsVector();
@@ -63,7 +63,7 @@ CUSTOM_OP_IMPL(scatter_nd, 3, 1, false, 0, 0) {
     return Status::OK();
 }
 
-////////////////////////////////////////////////////////////////////////7
+////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(scatter_nd) {
 
     NDArray<T>* shape = INPUT_VARIABLE(2);

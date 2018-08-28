@@ -38,40 +38,17 @@ namespace nd4j {
 
         template <typename T>
         nd4j::ShapeList* DeclarableReductionOp<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block)  {
-           // int numDims = INT_ARG(0);
-            std::vector<int> dims;
-            for (int e = 0; e < block.getIArguments()->size(); e++)
-                dims.push_back(INT_ARG(e));
+            
+            Nd4jLong* inShapeInfo = inputShape->at(0);
 
-            if (dims.size() > 1)
-                std::sort(dims.begin(), dims.end());
+            const int minNumTArgs     = this->getOpDescriptor()->getNumberOfTArgs();
+            const int currentNumTArgs = block.getTArguments()->size();
+            
+            const bool keepDims = currentNumTArgs > minNumTArgs ? static_cast<bool>(T_ARG(currentNumTArgs - 1)) : false;
 
-            // special case - output is scalar
-            if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == MAX_INT)) {
-                Nd4jLong* newShape;
-                ALLOCATE(newShape, block.getWorkspace(), 8, Nd4jLong);
+            Nd4jLong* outShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inShapeInfo), *block.getIArguments(), inShapeInfo, keepDims, false, block.workspace());            
 
-                newShape[0] = 2;
-                newShape[1] = 1;
-                newShape[2] = 1;
-                newShape[3] = 1;
-                newShape[4] = 1;
-                newShape[5] = 0;
-                newShape[6] = 1;
-                newShape[7] = 99;
-
-                return SHAPELIST(newShape);
-            }
-
-            shape::TAD tad(inputShape->at(0), dims.data(), dims.size());
-            tad.createTadOnlyShapeInfo();
-
-            Nd4jLong tadLength = shape::tadLength(inputShape->at(0), dims.data(), dims.size());
-            Nd4jLong numTads = shape::length(inputShape->at(0)) /  tadLength;
-
-            auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', dims, inputShape->at(0), false, true, block.getWorkspace());
-
-            return SHAPELIST(newShape);
+            return SHAPELIST(outShapeInfo);
         }
 
         template class ND4J_EXPORT DeclarableReductionOp<float>;

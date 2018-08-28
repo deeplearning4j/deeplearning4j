@@ -26,6 +26,7 @@
 
 #include <cstring>
 #include <cstdio>
+#include <climits>
 #include "../dll.h"
 #include "../nd4jmalloc.h"
 #include "../templatemath.h"
@@ -4066,9 +4067,8 @@ template <typename T>
         if(dimSize > rank)
             throw std::runtime_error("shape::checkDimensions method: number of input dimensions is too big ( > rank of array)!");
         // check if min dimension is still negative and whether max dimension is bigger then rank-1
-        if(dimensions[0] < 0 || dimensions.back() > (rank-1))
-            throw std::runtime_error("shape::checkDimensions method: the negative dimension is still present in input array after transform or the too big dimension is present ( > rank of array) !");
-
+        if(dimensions[0] < 0 || (dimensions.back() > (rank-1) && dimensions.back() != INT_MAX))
+            throw std::runtime_error("shape::checkDimensions method: the negative dimension is still present in input array after transform or too big dimension is present ( > rank of array) !");
     }
 
 
