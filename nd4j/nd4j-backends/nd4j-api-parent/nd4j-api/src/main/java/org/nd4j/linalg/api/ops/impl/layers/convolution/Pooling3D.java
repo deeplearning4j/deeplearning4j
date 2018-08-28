@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -25,6 +26,9 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -98,7 +102,9 @@ public class Pooling3D extends DynamicCustomOp {
         return config.toProperties();
     }
 
-    private void addArgs() {
+    protected void addArgs() {
+        if(this.iArguments == null)
+            this.iArguments = new ArrayList<>();
         addIArgument(config.getKD());
         addIArgument(config.getKW());
         addIArgument(config.getKH());
@@ -147,6 +153,63 @@ public class Pooling3D extends DynamicCustomOp {
             case MAX: return "max";
             default: throw new IllegalStateException("No pooling type found.");
         }
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        val aStrides = nodeDef.getAttrOrThrow("strides");
+        List<Long> tfStrides = aStrides.getList().getIList();
+        val aKernels = nodeDef.getAttrOrThrow("ksize");
+        List<Long> tfKernels = aKernels.getList().getIList();
+        val aPadding = nodeDef.getAttrOrThrow("padding");
+        List<Long> tfPadding = aPadding.getList().getIList();
+
+        String paddingMode = aPadding.getS().toStringUtf8().replaceAll("\"", "");
+
+        boolean isSameMode = paddingMode.equalsIgnoreCase("SAME");
+
+        String data_format = "ndhwc";
+        if (nodeDef.containsAttr("data_format")) {
+            val attr = nodeDef.getAttrOrThrow("data_format");
+
+            data_format = attr.getS().toStringUtf8().toLowerCase();
+        }
+
+        //Order: depth, height, width
+        //TF doesn't have dilation, it seems?
+        int[] strides = new int[3];
+        int[] padding = new int[3];
+        int[] kernel = new int[3];
+        for( int i=0; i<3; i++ ) {
+            //TF values here have 5 values: minibatch and Channels at positions 0 and 4, which are almost always 1
+            strides[i] = tfStrides.get(i+1).intValue();
+            if(tfPadding != null && tfPadding.size() > 0) {
+                //Empty for SAME mode
+                padding[i] = tfPadding.get(i + 1).intValue();
+            }
+            kernel[i] = tfKernels.get(i+1).intValue();
+        }
+
+        Pooling3DType type;
+        String name = nodeDef.getOp().toLowerCase();
+        if(name.startsWith("max")){
+            type = Pooling3DType.MAX;
+        } else if(name.startsWith("av")){
+            type = Pooling3DType.AVG;
+        } else {
+            throw new IllegalStateException("Unknown or not supported pooling type: " + name);
+        }
+
+        Pooling3DConfig conf = Pooling3DConfig.builder()
+                .sD(strides[0]).sH(strides[1]).sW(strides[2])
+                .pD(padding[0]).pH(padding[1]).pW(padding[2])
+                .kD(kernel[0]).kH(kernel[1]).kD(kernel[2])
+                .type(type)
+                .ceilingMode(isSameMode)
+                .isNCDHW(data_format.equalsIgnoreCase("ncdhw"))
+                .build();
+        this.config = conf;
+        addArgs();
     }
 
     @Override

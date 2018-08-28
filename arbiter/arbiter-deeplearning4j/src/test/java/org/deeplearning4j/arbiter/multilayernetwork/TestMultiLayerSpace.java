@@ -641,4 +641,61 @@ public class TestMultiLayerSpace {
             return DataSetIterator.class;
         }
     }
+
+
+    @Test
+    public void testDropout(){
+
+        MultiLayerSpace mls = new MultiLayerSpace.Builder().updater(new Sgd(0.005)).seed(12345)
+                .addLayer(new ConvolutionLayerSpace.Builder().nOut(2)
+                        .dropOut(new ContinuousParameterSpace(0.4,0.6))
+                        .build())
+                .addLayer(new GlobalPoolingLayerSpace.Builder().dropOut(new ContinuousParameterSpace(0.4,0.6)).build())
+                .addLayer(new OutputLayerSpace.Builder().nIn(10).nOut(5).build())
+                .setInputType(InputType.convolutional(28, 28, 1))
+                .backprop(true).pretrain(false).build();
+
+        int nParams = mls.numParameters();
+        List<ParameterSpace> l = LeafUtils.getUniqueObjects(mls.collectLeaves());
+        int x=0;
+        for( ParameterSpace p : l){
+            int n = p.numParameters();
+            int[] arr = new int[n];
+            for(int i=0; i<arr.length; i++ ){
+                arr[i] = x++;
+            }
+            p.setIndices(arr);
+        }
+
+
+        MultiLayerConfiguration conf = mls.getValue(new double[nParams]).getMultiLayerConfiguration();
+    }
+
+    @Test
+    public void testDropout2(){
+
+        MultiLayerSpace mls = new MultiLayerSpace.Builder().updater(new Sgd(0.005)).seed(12345)
+                .addLayer(new ConvolutionLayerSpace.Builder().nOut(2)
+                        .dropOut(new ContinuousParameterSpace(0.4,0.6))
+                        .build())
+                .addLayer(new DropoutLayerSpace.Builder().dropOut(new ContinuousParameterSpace(0.4,0.6)).build())
+                .addLayer(new OutputLayerSpace.Builder().nIn(10).nOut(5).build())
+                .setInputType(InputType.convolutional(28, 28, 1))
+                .backprop(true).pretrain(false).build();
+
+        int nParams = mls.numParameters();
+        List<ParameterSpace> l = LeafUtils.getUniqueObjects(mls.collectLeaves());
+        int x=0;
+        for( ParameterSpace p : l){
+            int n = p.numParameters();
+            int[] arr = new int[n];
+            for(int i=0; i<arr.length; i++ ){
+                arr[i] = x++;
+            }
+            p.setIndices(arr);
+        }
+
+
+        MultiLayerConfiguration conf = mls.getValue(new double[nParams]).getMultiLayerConfiguration();
+    }
 }

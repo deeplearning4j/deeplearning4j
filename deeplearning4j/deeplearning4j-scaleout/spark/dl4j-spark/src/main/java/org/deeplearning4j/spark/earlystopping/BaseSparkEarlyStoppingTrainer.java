@@ -199,7 +199,7 @@ public abstract class BaseSparkEarlyStoppingTrainer<T extends Model> implements 
                 boolean epochTerminate = false;
                 EpochTerminationCondition termReason = null;
                 for (EpochTerminationCondition c : esConfig.getEpochTerminationConditions()) {
-                    if (c.terminate(epochCount, score)) {
+                    if (c.terminate(epochCount, score, esConfig.getScoreCalculator().minimizeScore())) {
                         epochTerminate = true;
                         termReason = c;
                         break;

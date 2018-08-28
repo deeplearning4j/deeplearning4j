@@ -62,14 +62,14 @@ void sruCell(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T
     NDArray<T> z = mmul(*x, *w);               //  [bS x 3*inSize]    
 
     // forget gate = sigmoid(x*Wf + bf)
-    NDArray<T> f = sigmoid<T>(z({{},{inSize,   2*inSize}}) + (*b)({{0, inSize}}));
+    NDArray<T> f = sigmoid<T>(z({0,0, inSize,   2*inSize}) + (*b)({0, inSize}));
     
     // reset gate = sigmoid(x*Wr + br)
-    NDArray<T> r = sigmoid<T>(z({{},{2*inSize, 3*inSize}}) + (*b)({{inSize, 2*inSize}}));
+    NDArray<T> r = sigmoid<T>(z({0,0, 2*inSize, 3*inSize}) + (*b)({inSize, 2*inSize}));
 
     // ◦ means element-wise product or so called Hadamard product
     // current sell state = f◦c0 + (1 - f)◦(x*Wc)
-    c->assign( f*(*c0) + ((T)1. - f) * z({{},{0, inSize}}) );
+    c->assign( f*(*c0) + ((T)1. - f) * z({0,0 ,0, inSize}) );
     // *c = f*(*c0 - z({},{0, inSize})) + z({{},{0, inSize}});
 
     // current cell output = r◦activation(c) + (1 - r)◦x
@@ -170,9 +170,9 @@ void sruTimeLoop(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArr
     // loop through time steps
     for (int t = 0; t < time; ++t) {
 
-        NDArray<T> xt = (*x)({{}, {}, {t,t+1}});
-        NDArray<T> ht = (*h)({{}, {}, {t,t+1}});
-        NDArray<T> ct = (*c)({{}, {}, {t,t+1}});
+        NDArray<T> xt = (*x)({0,0, 0,0, t,t+1});
+        NDArray<T> ht = (*h)({0,0, 0,0, t,t+1});
+        NDArray<T> ct = (*c)({0,0, 0,0, t,t+1});
 
         helpers::sruCell<T>({&xt, &ct_1, w, b},  {&ht, &ct});        
         ct_1.assign(ct);

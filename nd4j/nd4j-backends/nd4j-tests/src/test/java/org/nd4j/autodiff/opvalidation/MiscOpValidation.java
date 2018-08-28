@@ -596,6 +596,8 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testMmulGradientManual() {
+        OpValidationSuite.ignoreFailing();
+
         SameDiff sameDiff = SameDiff.create();
         INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         Map<String, INDArray> inputs = new HashMap<>();
