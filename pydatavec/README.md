@@ -14,25 +14,6 @@ Switch to datavec directory:
 cd deeplearning4j/datavec
 ```
 
-Add shade plug-in to datavec's `pom.xml`:
-
-```xml
-<plugin>
-<groupId>org.apache.maven.plugins</groupId>
-<artifactId>maven-shade-plugin</artifactId>
-<version>3.1.1</version>
-<configuration>
-</configuration>
-<executions>
-<execution>
-<phase>package</phase>
-<goals>
-<goal>shade</goal>
-</goals>
-</execution>
-</executions>
-</plugin>
-```
 
 Build datavec:
 
@@ -40,20 +21,22 @@ Build datavec:
 mvn clean install -D skipTests
 ```
 
-Find `datavec-api-1.0.0-SNAPSHOT.jar` in `/deeplearning4j/datavec/datavec-api/target`
+Build datavec uberjar:
+```bash
+cd datavec-uberjar
+mvn clean -P uberjar install -D skipTests
+```
+
+You will find the uberjar `datavec-uberjar-1.0.0-SNAPSHOT.jar` at `deeplearning4j/datavec/datavec-uberjar/target`
 
 set `DATAVEC_CLASS_PATH` to the parent directory of this file.
 
 This would look something like
 ```bash
-export DATAVEC_CLASS_PATH=.../deeplearning4j/datavec/datavec-api/target
+export DATAVEC_CLASS_PATH=.../deeplearning4j/datavec/datavec-uberjar/target
 ```
 
-Clone pydatavec:
 
-```bash
-git clone https://www.github.com/deeplearning4j/pydatavec.git
-```
 
 Install pydatavec:
 
