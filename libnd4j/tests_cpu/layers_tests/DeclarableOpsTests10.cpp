@@ -384,3 +384,64 @@ TEST_F(DeclarableOpsTests10, atan2_test6) {
 
     delete result;
 }
+
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, range_test10) {
+    
+    NDArray<double> limit('c', {1, 3, 4});
+    limit = 5.;
+    NDArray<double> exp('c', {5}, {0.,1.,2.,3.,4.});
+
+    nd4j::ops::range<double> op;
+    auto result = op.execute({&limit}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, range_test11) {
+    
+    NDArray<double> limit('c', {1, 3, 4});
+    NDArray<double> start('c', {2, 4});
+    limit = 5.;
+    start = 0.5;
+    NDArray<double> exp('c', {5}, {0.5,1.5,2.5,3.5,4.5});
+
+    nd4j::ops::range<double> op;
+    auto result = op.execute({&start, &limit}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, range_test12) {
+    
+    NDArray<double> exp('c', {9}, {0.5, 1. , 1.5, 2. , 2.5, 3. , 3.5, 4. , 4.5});
+
+    nd4j::ops::range<double> op;
+    auto result = op.execute({}, {0.5, 5, 0.5}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}

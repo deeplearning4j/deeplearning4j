@@ -118,7 +118,7 @@ HHsequence<T> BiDiagonalUp<T>::makeHHsequence(const char type) const {
     	result._diagSize = diagUpSize;
     	result._shift  = 1;
 
-    	return result;	
+    	return result;
     }
 }
 
