@@ -122,7 +122,7 @@ public class MnistFetcherTest extends BaseDL4JTest {
             examples3 += iter3.next().numExamples();
         }
         assertEquals(100, examples3);
-        assertEquals((int)Math.ceil(100/19), itCount3);
+        assertEquals((int)Math.ceil(100/19.0), itCount3);
 
         MnistDataSetIterator iter4 = new MnistDataSetIterator(32, true, 12345);
         int count4 = 0;
