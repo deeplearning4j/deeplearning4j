@@ -331,6 +331,7 @@ public abstract  class BaseTransport  implements Transport {
                 propagateMessage(new MeshUpdateMessage(mesh.get()), PropagationMode.ONLY_DOWN);
             } catch (Exception e) {
                 log.error("Wasn't able to propagate message from [{}]", id());
+                e.printStackTrace();
                 throw new RuntimeException(e);
             }
         } else if (message instanceof HandshakeResponse) {

@@ -112,6 +112,7 @@ public class DelayedModelParameterServerTest {
 
             log.info("Server [{}] started...", e);
         }
+        Thread.sleep(150);
 
         // 259 == 256 + A+B+R
         assertEquals(servers.size() + 3, rootTransport.getMesh().totalNodes());

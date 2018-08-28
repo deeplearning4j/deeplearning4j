@@ -45,14 +45,16 @@ public class DelayedDummyTransport extends DummyTransport {
 
     @Override
     public void sendMessage(@NonNull VoidMessage message, @NonNull String id) {
-        if (message.getOriginatorId() == null)
-            message.setOriginatorId(this.id());
-
         val bos = new ByteArrayOutputStream();
-        SerializationUtils.serialize(message, bos);
+        synchronized (this) {
+            SerializationUtils.serialize(message, bos);
+        }
 
         val bis = new ByteArrayInputStream(bos.toByteArray());
         final VoidMessage msg = SerializationUtils.deserialize(bis);
+
+        if (msg.getOriginatorId() == null)
+            msg.setOriginatorId(this.id());
 
         //super.sendMessage(message, id);
         connector.executorService().submit(new Runnable() {

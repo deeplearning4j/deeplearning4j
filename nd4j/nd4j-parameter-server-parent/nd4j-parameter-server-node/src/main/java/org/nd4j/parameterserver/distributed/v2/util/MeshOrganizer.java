@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -361,7 +362,7 @@ public class MeshOrganizer implements Serializable {
 
         @Getter(AccessLevel.NONE)
         @Setter(AccessLevel.NONE)
-        private final List<Node> downstream = new ArrayList<>();
+        private final List<Node> downstream = new CopyOnWriteArrayList<>();
 
         private AtomicInteger position = new AtomicInteger(0);
 
