@@ -82,45 +82,46 @@ public class TFGraphTestAllSameDiff {
             "confusion/.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6180
             "identity_n.*",
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6189
-            "matmul/rank4.*",
-            "matmul/rank5.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6182
             "zeta.*",
 
-            //Not sure what's up here yet:
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6255
+            "losses/sparse_softmax.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6225
             "svd/rank2_3,3_noFull_uv",
 
-            //Temporarily disable these to merge TF resources before ND4J/SameDiff PR https://github.com/deeplearning4j/dl4j-test-resources/pull/156
-            "bincount.*",
-            "sufficient_statistics.*",
-            "scatter_nd.*",
-            "histogram.*",
-            "rint.*",
-            "sequence_mask.*",
-            "slogdet.*",
-            "log_determinant.*",
-            "eye.*",
-            "meshgrid.*",
-            "alpha_dropout.*",
-            "layers_dropout.*",
-            "lrn.*",
-            "l2_normalize.*",
-            "embedding_lookup.*",
-            "batchnorm.*",
-            "sepconv1d_layers.*",
-            "sepconv2d_layers.*",
-            "avg_pooling3d.*",
-            "max_pooling3d.*",
-            "cnn3d_layers.*",
-            "conv2d_transpose.*",
-            "cnn2d.*",
-            "flatten.*",
-            "dense.*",
-            "cnn1d.*",
-            "avg_pooling1d.*",
-            "max_pooling1d.*",
-            "losses.*"
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6281
+            "log_determinant/.*",
+            "slogdet/.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6285
+            "histogram_fixed_width/.*",
+
+            //TODO need unsorted segment sum - then need to change libnd4j impl slightly (need to know format first)
+            "bincount/.*",
+
+            //Crashing?
+            "batchnorm/.*",
+
+            //Not sure what's up here - "DEPTHWISECONV2D OP: wrong shape of weights array, expected is [-1, -1, 2, 2], but got [1, 2, 2, 2] instead !"
+            "sepconv1d_layers/.*",
+
+            //Overlapping indices in the test case, need to fix
+            "scatter_nd_update/.*",
+
+            //scatter_nd: one minor validation issue mentioned tu Yurii (should validate vs. shape array length, not rank)
+            "scatter_nd/.*",
+
+            //SpaceToBatch - import issue? "SpaceToBatch: blocks supposed to be vector, but got 1D instead"
+            "cnn1d_layers/channels_last_b1_k2_s1_d2_SAME",
+
+            //Need to look into this more: "vector::_M_range_check: __n (which is 0) >= this->size() (which is 0)
+            "embedding_lookup/.*",
+
+            //Not sure why these are failing yet
+            "lrn/dr3.*",
+            "lrn/dr5.*"
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 

@@ -14,53 +14,46 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.scatter;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
+
 
 /**
- * Identity function
- *
- * @author Adam Gibson
+ * Scatter ND add operation
+ * @author Alex Black
  */
-public class Identity extends BaseDynamicTransformOp {
+public class ScatterNdUpdate extends DynamicCustomOp {
 
-    public Identity(SameDiff sd, SDVariable input){
-        super(sd, new SDVariable[]{input}, false);
+    public ScatterNdUpdate(SameDiff sameDiff, SDVariable ref, SDVariable indices, SDVariable updates) {
+        super(null, sameDiff, new SDVariable[]{ref, indices, updates}, false);
     }
 
-    public Identity(){ }
+    public ScatterNdUpdate(){}
 
     @Override
     public String opName() {
-        return "identity";
+        return "scatter_nd_update";
     }
 
     @Override
     public String onnxName() {
-        return "Constant";
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 
     @Override
     public String tensorflowName() {
-        return "Identity";
+        return "ScatterNdUpdate";
     }
 
     @Override
-    public String[] tensorflowNames() {
-        return new String[]{"Identity"};
-    }
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        //TODO can we skip the identity here?
-        return Collections.singletonList(sameDiff.identity(i_v.get(0)));
+    public List<SDVariable> doDiff(List<SDVariable> gradOut){
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
 }
