@@ -117,7 +117,7 @@ public class UpdatesConsumer implements Subscriber<INDArray> {
                         stepFunction.step(params, updates);
                         Nd4j.getExecutioner().commit();
 
-                        log.info("Applying updates. Current ratio: [{}]", (double) sparseCounter.get() / denseCounter.get());
+                        log.info("Applying updates. Current ratio: [{}]; Sparse: [{}]; Dense: [{}]; Mean: [{}]", (double) sparseCounter.get() / denseCounter.get(), sparseCounter.get(), denseCounter.get(), updates.meanNumber().doubleValue());
 
                         // once accumulated updates are applied - reset storage, and wait for other messsages
                         Nd4j.getMemoryManager().memset(updates);
