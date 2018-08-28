@@ -94,3 +94,7 @@ RemoveWhiteSpaceTransform = autoclass('org.datavec.api.transform.transform.strin
 ReplaceEmptyStringTransform = autoclass('org.datavec.api.transform.transform.string.ReplaceEmptyStringTransform')
 ReplaceStringTransform = autoclass('org.datavec.api.transform.transform.string.ReplaceStringTransform')
 StringMapTransform = autoclass('org.datavec.api.transform.transform.string.StringMapTransform')
+
+
+ReducerBuilder = autoclass('org.datavec.api.transform.reduce.Reducer$Builder')
+ReduceOp = autoclass('org.datavec.api.transform.ReduceOp')

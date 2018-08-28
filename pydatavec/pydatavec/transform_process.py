@@ -22,11 +22,16 @@ from .schema import Schema
 def _dq(x):
     return "\"" + x.replace("\"", "\\\"") + "\""
 
-def _to_camel(x):
+def _to_camel(x, first_upper=False):
     tokens = x.split('_')
-    y=tokens[0]
-    for t in tokens[1:]:
-        y += t[0].upper() + t[1:]
+    if first_upper:
+        y = ''
+        for t in tokens:
+            y += t[0].upper() + t[1:]
+    else:
+        y=tokens[0]
+        for t in tokens[1:]:
+            y += t[0].upper() + t[1:]
     return y
 
 
@@ -194,6 +199,93 @@ class TransformProcess(object):
             raise Exception('Can not apply replace_string transform to column {} because it is not a string column'.format(column))
         self.add_step('exec', 'transform(StringMapTransform({}, _dict_to_jmap({}, JMap)))'.format(_dq(column), str(mapping)))
 
+    def one_hot(self, column):
+        if self.final_schema.columns[column][0] != 'categorical':
+            raise Exception('Can not apply one_hot transform to column {} because it is not a categorical column'.format(column))
+        categories = self.final_schema.columns[column][2:]
+        new_col_names = [column + '[{}]'.format(cat) for cat in categories]
+        new_schema = OrderedDict()
+        for k in self.final_schema.columns:
+            if k == column:
+                for c in new_col_names:
+                    new_schema[c] = ['integer']
+            else:
+                new_schema[k] = self.final_schema.columns[k]
+        self.final_schema.columns = new_schema
+        self.add_step('categoricalToOneHot', column)
+
+    def reduce(self, key, *args, **kwargs):
+        # possible signatures:
+        # tp.reduce(column_name, default_redcution)  # example: tp.reduce('person', 'sum')  # sums all columns
+        # tp.reduce(column, {'amount' : 'sum', 'hours' : 'mean'}) # Explicit reduction for each columns
+        # tp.reduce(column, 'sum', {'hours' : 'mean'}) # Explicit reduction for some columns, default reduction for others
+        # tp.reduce(column, 'sum', 'hours'='mean')  # kwargs instead of dict
+        if type(key) is str:
+            key = [key]
+        else:
+            key = list(key)
+        non_key_columns = [x for x in self.final_schema.columns if x not in key]
+        col_2_reduction = {}
+        if args:
+            if type(args[0]) is dict:
+                default = None
+                col_2_reduction = args[0]
+            else:
+                default = args[0]
+                if len(args) > 1:
+                    assert type(args[1]) == dict, 'Expected dict'
+                    col_2_reduction = args[1]
+                else:
+                    col_2_reduction = kwargs
+        else:
+            default = None
+            col_2_reduction = kwargs
+        reductions = ['min', 'max', 'sum', 'prod', 'mean', 'std', 'uncorrected_std', 
+        'var', 'pop_var', 'count', 'range', 'count_unique','first', 'last', 
+        'append', 'prepend']
+        if default is None:
+            for k in non_key_columns:
+                assert k in col_2_reduction, "Reduction not specified for column {}.".format(k)
+        else:
+            assert default in reductions, "Invalid default reduction {}. Valid redcutions are {}.".format(default, reductions)
+        for k, v in col_2_reduction.items():
+            assert v in reductions, "Invalid redcution {} specified for column {}. Valid reductions are {}.".format(v, k, reductions)
+        reduction_to_function = {'std': 'stddevColumns', 'uncorrected_std' : 'uncorrectedStdevColumns', 'var' : 'variance',
+        'pop_var': 'populationVariance', 'first': 'takeFirstColumns', 'last': 'takeLastColumns', 'max' : 'maxColumn'}
+        if default is None:
+            default = col_2_reduction[col_2_reduction.keys()[0]]
+        reduction_to_op = {'std' : 'Stdev', 'uncorrected_std': 'UncorrectedStdDev', 'var': 'Variance', 'pop_var': 'PopulationVariance', 
+        'first' : 'TakeFirst', 'last': 'TakeLast'}
+        default_op = reduction_to_op.get(default, _to_camel(default, True))
+        col_2_function = {}
+        for k, v in col_2_reduction.items():
+            f = reduction_to_function.get(v, _to_camel(v) + 'Columns')
+            col_2_function[k] = f
+        code = 'reduce(ReducerBuilder(ReduceOp.{}).keyColumns({})'.format(default_op, ','.join([_dq(k) for k in key]))
+        for c, f in col_2_function.items():
+            code += ".{}({})".format(f, _dq(c))
+        code += '.build())'
+        self.add_step('exec', code)
+        reduction_to_type = {}
+        for r in ['mean', 'std', 'var', 'pop_var', 'uncorrected_std']:
+            reduction_to_type[r] = 'double'
+        for r in ['append', 'prepend']:
+            reduction_to_type[r] = 'string'
+        for r in ['count', 'count_unique']:
+            reduction_to_type[r] = 'long'
+        new_schema = OrderedDict()
+        for k, v in self.final_schema.columns.items():
+            if k in key:
+                new_schema[k] = v
+            else:
+                reduction = col_2_reduction.get(k, default)
+                old_type = v[0]
+                op = reduction_to_op.get(reduction, _to_camel(default, True))
+                new_name = op.lower() + '(' + k + ')'
+                new_type = reduction_to_type.get(reduction, old_type)
+                new_schema[k] = [new_type, new_name]
+        self.final_schema.columns = new_schema
+                
     def serialize(self):
         config = {'steps' : self.steps, 'schema' : self.schema.serialize()}
         return config
@@ -232,6 +324,8 @@ class TransformProcess(object):
         from .java_classes import StringMapTransform
         from .java_classes import JMap
         from .java_classes import Arrays
+        from .java_classes import ReducerBuilder
+        from .java_classes import ReduceOp
 
 
         jschema = self.schema.to_java()
