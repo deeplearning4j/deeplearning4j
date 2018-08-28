@@ -25,7 +25,6 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
-import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.factory.Nd4j;
@@ -389,7 +388,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected List<NeuralNetConfiguration> confs = new ArrayList<>();
         protected double dampingFactor = 100;
         protected Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
+        @Deprecated
         protected boolean pretrain = false;
+        @Deprecated
         protected boolean backprop = true;
         protected BackpropType backpropType = BackpropType.Standard;
         protected int tbpttFwdLength = DEFAULT_TBPTT_LENGTH;
@@ -419,6 +420,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
         /**
          * Whether to do back prop or not
+         *
+         * DEPRECATED: doesn't affect training any more. Use {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork#fit(DataSetIterator)} when training for backprop.
+         *
          * @param backprop whether to do back prop or not
          * @return
          */
@@ -506,6 +510,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
         /**
          * Whether to do pre train or not
+         *
+         * DEPRECATED: doesn't affect training any more. Use {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork#pretrain(DataSetIterator)} when training for layerwise pretraining.
+         *
          * @param pretrain whether to do pre train or not
          * @return builder pattern
          */

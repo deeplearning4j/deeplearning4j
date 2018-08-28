@@ -28,10 +28,11 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffVertex;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
-import org.deeplearning4j.nn.layers.samediff.SameDiffGraphVertex;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -597,7 +598,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         protected List<InputType> networkInputTypes = new ArrayList<>();
         protected List<String> networkOutputs = new ArrayList<>();
 
+        @Deprecated
         protected boolean pretrain = false;
+        @Deprecated
         protected boolean backprop = true;
         protected BackpropType backpropType = BackpropType.Standard;
         protected int tbpttFwdLength = DEFAULT_TBPTT_LENGTH;
@@ -649,8 +652,11 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         /**
          * Whether to do back prop (standard supervised learning) or not
          *
+         * DEPRECATED: doesn't affect training any more. Use {@link org.deeplearning4j.nn.graph.ComputationGraph#fit(MultiDataSet)} when training for backprop.
+         *
          * @param backprop whether to do back prop or not
          */
+        @Deprecated
         public GraphBuilder backprop(boolean backprop) {
             this.backprop = backprop;
             return this;
@@ -659,8 +665,11 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         /**
          * Whether to do layerwise pre training or not
          *
+         * DEPRECATED: doesn't affect training any more. Use {@link org.deeplearning4j.nn.graph.ComputationGraph#pretrain(MultiDataSetIterator)} when training for layerwise pretraining.
+         *
          * @param pretrain whether to do pre train or not
          */
+        @Deprecated
         public GraphBuilder pretrain(boolean pretrain) {
             this.pretrain = pretrain;
             return this;
