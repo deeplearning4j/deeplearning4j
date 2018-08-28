@@ -144,7 +144,7 @@ public class DummyTransport extends BaseTransport {
         }
 
         public void blockUntilFinished() throws InterruptedException {
-           while (executorService.getActiveCount() > 0) {
+           while (executorService.getActiveCount() > 0 && executorService.getQueue().size() > 0) {
                Thread.sleep(500);
            }
         }

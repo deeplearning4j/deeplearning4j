@@ -193,4 +193,9 @@ public class MessageSplitter {
         } else
             return Optional.empty();
     }
+
+    public void reset() {
+        memoryUse.set(0);
+        trackers.clear();
+    }
 }

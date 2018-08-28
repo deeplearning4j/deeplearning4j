@@ -20,6 +20,8 @@ import io.reactivex.functions.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -35,6 +37,7 @@ import org.nd4j.parameterserver.distributed.v2.transport.MessageCallable;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.DelayedDummyTransport;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.DummyTransport;
 import org.nd4j.parameterserver.distributed.v2.util.AbstractSubscriber;
+import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
 
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,6 +49,16 @@ import static org.junit.Assert.assertTrue;
 @Slf4j
 public class DelayedModelParameterServerTest {
     private static final String rootId = "ROOT_NODE";
+
+    @Before
+    public void setUp() throws Exception {
+        MessageSplitter.getInstance().reset();
+    }
+
+    @After
+    public void setDown() throws Exception {
+        MessageSplitter.getInstance().reset();
+    }
 
     @Test(timeout = 20000L)
     public void testBasicInitialization_1() throws Exception {
@@ -98,12 +111,13 @@ public class DelayedModelParameterServerTest {
 
     @Test
     public void testUpdatesPropagation_1() throws Exception {
+        val conf = VoidConfiguration.builder().meshBuildMode(MeshBuildMode.PLAIN).build();
         val array = Nd4j.ones(10, 10);
 
         val connector = new DummyTransport.Connector();
-        val rootTransport = new DelayedDummyTransport(rootId, connector);
-        val clientTransportA = new DelayedDummyTransport("412334", connector, rootId);
-        val clientTransportB = new DelayedDummyTransport("123441", connector, rootId);
+        val rootTransport = new DelayedDummyTransport(rootId, connector, rootId, conf);
+        val clientTransportA = new DelayedDummyTransport("412334", connector, rootId, conf);
+        val clientTransportB = new DelayedDummyTransport("123441", connector, rootId, conf);
 
         connector.register(rootTransport, clientTransportA, clientTransportB);
 
@@ -116,8 +130,8 @@ public class DelayedModelParameterServerTest {
 
         val servers = new ArrayList<ModelParameterServer>();
         val transports = new ArrayList<DelayedDummyTransport>();
-        for (int e = 0; e < 256; e++) {
-            val clientTransport = new DelayedDummyTransport(String.valueOf(e), connector, rootId);
+        for (int e = 0; e < 128; e++) {
+            val clientTransport = new DelayedDummyTransport(String.valueOf(e), connector, rootId, conf);
             val clientServer = new ModelParameterServer(clientTransport, false);
 
             connector.register(clientTransport);
@@ -128,14 +142,14 @@ public class DelayedModelParameterServerTest {
 
             log.info("Server [{}] started...", e);
         }
-        Thread.sleep(150);
+        connector.blockUntilFinished();
 
         // 259 == 256 + A+B+R
         assertEquals(servers.size() + 3, rootTransport.getMesh().totalNodes());
 
         clientServerA.sendUpdate(array);
 
-        Thread.sleep(150);
+        connector.blockUntilFinished();
 
         val updatesR = rootServer.getUpdates();
         val updatesA = clientServerA.getUpdates();
@@ -183,11 +197,24 @@ public class DelayedModelParameterServerTest {
 
         connector.register(rootTransport);
 
+        val counters = new AtomicInteger[128];
         val servers = new ArrayList<ModelParameterServer>();
         val transports = new ArrayList<DummyTransport>();
         for (int e = 0; e < 128; e++) {
             val clientTransport = new DelayedDummyTransport(java.util.UUID.randomUUID().toString(), connector, rootId, config);
             val clientServer = new ModelParameterServer(config, clientTransport, false);
+
+            counters[e] = new AtomicInteger(0);
+
+            val f = e;
+
+            clientServer.addUpdatesSubscriber(new AbstractSubscriber<INDArray>() {
+                @Override
+                public void onNext(INDArray array) {
+                    assertNotNull(array);
+                    counters[f].incrementAndGet();
+                }
+            });
 
             servers.add(clientServer);
             transports.add(clientTransport);
@@ -250,6 +277,13 @@ public class DelayedModelParameterServerTest {
         serv.sendUpdate(Nd4j.linspace(1, 10, 100).reshape(10, 10));
 
         connector.blockUntilFinished();
+
+        for (int e = 0; e < 128; e++) {
+            // we're skipping node 23 since it was reconnected, and has different MPS instance
+            // and node 96, since it sends update
+            if (e != 23 && e != 96)
+                assertEquals("Failed at node: [" + e + "]", 1, counters[e].get());
+        }
 
         assertTrue(updatedModel.get());
         assertTrue(updatedUpdater.get());
