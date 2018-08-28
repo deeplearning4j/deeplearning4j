@@ -21,6 +21,7 @@ import io.reactivex.functions.Consumer;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.nd4j.linalg.primitives.Atomic;
@@ -48,9 +49,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -89,6 +88,15 @@ public abstract  class BaseTransport  implements Transport {
     protected final VoidConfiguration voidConfiguration;
 
     protected final MeshBuildMode meshBuildMode = MeshBuildMode.MESH;
+
+    protected final ExecutorService executorService = Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors() / 2), new ThreadFactory() {
+        @Override
+        public Thread newThread(@NotNull Runnable r) {
+            val t = Executors.defaultThreadFactory().newThread(r);
+            t.setDaemon(true);
+            return t;
+        }
+    });
 
     protected BaseTransport() {
         this(java.util.UUID.randomUUID().toString());
@@ -169,12 +177,17 @@ public abstract  class BaseTransport  implements Transport {
 
         masterMode = true;
         mesh.get().getRootNode().setId(this.id());
+
+        // launching heartbeat thread, that will monitor offline nodes
+        executorService.submit(new HeartbeatThread(120000, this, mesh));
+
         this.launch();
     }
 
     @Override
     public synchronized void shutdown() {
-        // probably will be nothing useful in this implementation
+        // shuttng down
+        executorService.shutdown();
     }
 
     @Override
@@ -540,6 +553,10 @@ public abstract  class BaseTransport  implements Transport {
 
                     val nodes = mesh.get().flatNodes();
                     for (val n : nodes) {
+                        // we're skipping own node
+                        if (transport.id().equals(n.getId()))
+                            continue;
+
                         PongMessage m = transport.sendMessageBlocking(new PingMessage(), n.getId(), 100, TimeUnit.MILLISECONDS);
 
                         // if we're not getting response in reasonable time - we're considering this node as failed
