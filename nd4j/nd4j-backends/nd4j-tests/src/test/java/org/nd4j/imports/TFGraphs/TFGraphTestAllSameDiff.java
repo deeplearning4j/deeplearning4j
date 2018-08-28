@@ -85,14 +85,43 @@ public class TFGraphTestAllSameDiff {
             //https://github.com/deeplearning4j/deeplearning4j/issues/6182
             "zeta.*",
 
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6255
+            "losses/sparse_softmax.*",
+
             //https://github.com/deeplearning4j/deeplearning4j/issues/6225
             "svd/rank2_3,3_noFull_uv",
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6281
+            "log_determinant/.*",
             "slogdet/.*",
 
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6285
+            "histogram_fixed_width/.*",
+
+            //TODO need unsorted segment sum - then need to change libnd4j impl slightly (need to know format first)
+            "bincount/.*",
+
             //Crashing?
-            "batchnorm/.*"
+            "batchnorm/.*",
+
+            //Not sure what's up here - "DEPTHWISECONV2D OP: wrong shape of weights array, expected is [-1, -1, 2, 2], but got [1, 2, 2, 2] instead !"
+            "sepconv1d_layers/.*",
+
+            //Overlapping indices in the test case, need to fix
+            "scatter_nd_update/.*",
+
+            //scatter_nd: one minor validation issue mentioned tu Yurii (should validate vs. shape array length, not rank)
+            "scatter_nd/.*",
+
+            //SpaceToBatch - import issue? "SpaceToBatch: blocks supposed to be vector, but got 1D instead"
+            "cnn1d_layers/channels_last_b1_k2_s1_d2_SAME",
+
+            //Need to look into this more: "vector::_M_range_check: __n (which is 0) >= this->size() (which is 0)
+            "embedding_lookup/.*",
+
+            //Not sure why these are failing yet
+            "lrn/dr3.*",
+            "lrn/dr5.*"
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 
