@@ -20,6 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.DummyTransport;
 
 import java.util.ArrayList;
@@ -102,19 +104,20 @@ public class ModelParameterServerTest {
 
     @Test //(timeout = 10000L)
     public void testReconnectPropagation_1() throws Exception {
+        val config = VoidConfiguration.builder().meshBuildMode(MeshBuildMode.MESH).build();
         val connector = new DummyTransport.Connector();
-        val rootTransport = new DummyTransport(rootId, connector);
+        val rootTransport = new DummyTransport(rootId, connector, rootId, config);
 
         connector.register(rootTransport);
 
-        val rootServer = new ModelParameterServer(rootTransport, true);
+        val rootServer = new ModelParameterServer(config, rootTransport, true);
         rootServer.launch();
 
         val servers = new ArrayList<ModelParameterServer>();
         val transports = new ArrayList<DummyTransport>();
         for (int e = 0; e < 2048; e++) {
-            val clientTransport = new DummyTransport(java.util.UUID.randomUUID().toString(), connector, rootId);
-            val clientServer = new ModelParameterServer(clientTransport, false);
+            val clientTransport = new DummyTransport(java.util.UUID.randomUUID().toString(), connector, rootId, config);
+            val clientServer = new ModelParameterServer(config, clientTransport, false);
 
             servers.add(clientServer);
             transports.add(clientTransport);

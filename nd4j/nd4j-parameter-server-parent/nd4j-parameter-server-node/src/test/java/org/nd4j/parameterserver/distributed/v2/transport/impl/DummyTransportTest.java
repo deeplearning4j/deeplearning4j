@@ -27,6 +27,7 @@ import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.Handshak
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeResponse;
 import org.nd4j.parameterserver.distributed.v2.transport.MessageCallable;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
@@ -183,10 +184,12 @@ public class DummyTransportTest {
         val upstream = originalMeshZ.getUpstreamForNode("zeta");
 
 
+        val restarted = new AtomicBoolean(false);
         val f = new MessageCallable<HandshakeResponse>() {
             @Override
             public void apply(HandshakeResponse message) {
                 assertTrue(message.isRestart());
+                restarted.set(true);
             }
         };
         transportZ.addPrecursor(HandshakeResponse.class, f);
@@ -198,6 +201,6 @@ public class DummyTransportTest {
         val newUpstream = newMesh.getUpstreamForNode("zeta");
 
         assertNotEquals(version, newMesh.getVersion());
-        assertNotEquals(upstream.getId(), newUpstream.getId());
+        assertTrue(restarted.get());
     }
 }
