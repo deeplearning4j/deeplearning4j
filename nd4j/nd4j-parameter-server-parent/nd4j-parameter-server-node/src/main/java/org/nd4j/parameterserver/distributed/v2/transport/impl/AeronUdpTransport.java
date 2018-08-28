@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static java.lang.System.setProperty;
 
@@ -81,6 +82,9 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
     // this is intermediate buffer for incoming messages
     protected BlockingQueue<VoidMessage> messageQueue = new LinkedTransferQueue<>();
+
+    // this lock is used for aeron publications
+    protected ReentrantLock aeronLock = new ReentrantLock();
 
     public AeronUdpTransport(@NonNull String ownIp, @NonNull String rootIp, @NonNull VoidConfiguration configuration) {
         this(ownIp, configuration.getUnicastPort(), rootIp, configuration.getUnicastPort(), configuration);
@@ -200,22 +204,28 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         }
     }
 
-    protected synchronized void addConnection(@NonNull String ipAndPort) {
-        if (remoteConnections.containsKey(ipAndPort))
-            return;
+    protected void addConnection(@NonNull String ipAndPort) {
+        try {
+            aeronLock.lock();
 
-        val v = aeron.addPublication(ipAndPort, voidConfiguration.getStreamId());
+            if (remoteConnections.containsKey(ipAndPort))
+                return;
 
-        val hash = HashUtil.getLongHash(ipAndPort);
+            val v = aeron.addPublication(ipAndPort, voidConfiguration.getStreamId());
 
-        val rc = RemoteConnection.builder()
-                .ip(ipAndPort)
-                .port(voidConfiguration.getUnicastPort())
-                .longHash(hash)
-                .publication(v)
-                .build();
+            val hash = HashUtil.getLongHash(ipAndPort);
 
-        remoteConnections.put(ipAndPort, rc);
+            val rc = RemoteConnection.builder()
+                    .ip(ipAndPort)
+                    .port(voidConfiguration.getUnicastPort())
+                    .longHash(hash)
+                    .publication(v)
+                    .build();
+
+            remoteConnections.put(ipAndPort, rc);
+        } finally {
+            aeronLock.unlock();
+        }
     }
 
     @Override
