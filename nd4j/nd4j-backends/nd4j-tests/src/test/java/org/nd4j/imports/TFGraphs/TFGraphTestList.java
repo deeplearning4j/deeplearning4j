@@ -17,6 +17,7 @@
 package org.nd4j.imports.TFGraphs;
 
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -39,6 +40,7 @@ import java.util.Map;
  * <p>
  */
 @RunWith(Parameterized.class)
+@Ignore
 public class TFGraphTestList {
     public static String[] modelNames = new String[]{
 //            "bincount/rank0",
@@ -47,7 +49,7 @@ public class TFGraphTestList {
 //            "bincount/rank1_min10",
 //            "bincount/rank1_max5",
 //            "bincount/rank1_minmax_weights",
-            "scatter_nd/rank2shape_2indices",
+//            "scatter_nd/rank2shape_2indices",
             /*"add_n",
             "ae",
             "ae_00",
