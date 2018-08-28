@@ -19,10 +19,15 @@ package org.nd4j.parameterserver.distributed.v2;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
+import org.nd4j.parameterserver.distributed.v2.transport.impl.DelayedDummyTransport;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.DummyTransport;
+import org.nd4j.parameterserver.distributed.v2.util.AbstractSubscriber;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 
 import java.util.ArrayList;
 
@@ -102,7 +107,7 @@ public class ModelParameterServerTest {
         assertEquals(0, updatesA.size());
     }
 
-    @Test //(timeout = 10000L)
+    @Test (timeout = 30000L)
     public void testReconnectPropagation_1() throws Exception {
         val config = VoidConfiguration.builder().meshBuildMode(MeshBuildMode.MESH).build();
         val connector = new DummyTransport.Connector();
