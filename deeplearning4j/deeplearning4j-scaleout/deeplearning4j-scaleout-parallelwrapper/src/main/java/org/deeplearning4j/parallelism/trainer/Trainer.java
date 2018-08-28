@@ -18,6 +18,7 @@ package org.deeplearning4j.parallelism.trainer;
 
 import lombok.NonNull;
 import org.deeplearning4j.nn.api.Model;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
@@ -40,6 +41,18 @@ public interface Trainer extends Runnable {
      * @param dataSet the data set to train on
      */
     void feedDataSet(@NonNull DataSet dataSet, long etlTime);
+
+    /**
+     * This method updates replicated model params
+     * @param params
+     */
+    void updateModelParams(INDArray params);
+
+    /**
+     * This method updates updater params of the replicated model
+     * @param params
+     */
+    void updateUpdaterParams(INDArray params);
 
     /**
      * THe current model for the trainer
