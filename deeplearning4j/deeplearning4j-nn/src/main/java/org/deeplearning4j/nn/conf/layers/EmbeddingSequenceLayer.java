@@ -32,11 +32,14 @@ import java.util.Map;
 
 /**
  * Embedding layer for sequences: feed-forward layer that expects fixed-length number (inputLength) of integers/indices
- * per example as input, ranged from 0 to numClasses - 1. This input thus has shape [numExamples, inputLength].
- * The output of this layer is 3D, namely of shape [numExamples, nOut, inputLength].
+ * per example as input, ranged from 0 to numClasses - 1. This input thus has shape [numExamples, inputLength] or
+ * shape [numExamples, 1, inputLength].<br>
+ * The output of this layer is 3D (sequence/time series), namely of shape [numExamples, nOut, inputLength].
  * <b>Note</b>: can only be used as the first layer for a network<br>
  * <b>Note 2</b>: For a given example index i, the output is activationFunction(weights.getRow(i) + bias), hence the
- * weight rows can be considered a vector/embedding of each index.
+ * weight rows can be considered a vector/embedding of each index.<br>
+ * Note also that embedding layer has an activation function (set to IDENTITY to disable) and optional bias (which is
+ * disabled by default)
  *
  * @author Max Pumperla
  */

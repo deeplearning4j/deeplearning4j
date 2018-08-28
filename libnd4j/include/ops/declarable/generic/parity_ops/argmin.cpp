@@ -26,32 +26,61 @@
 
 namespace nd4j {
     namespace ops {
-        REDUCTION_OP_IMPL(argmin, 1, 1, false, 0, -2) {
+        CUSTOM_OP_IMPL(argmin, 1, 1, false, 0, -2) {
             auto input = INPUT_VARIABLE(0);
             auto axis = *block.getIArguments();
 
+            auto output = OUTPUT_VARIABLE(0);
+
             // axis might be dynamic (i.e. tf mode)
             if (block.width() > 1 && axis.size() == 0) {
-                auto vector = INPUT_VARIABLE(1);
-                axis.resize(vector->lengthOf());
-                helpers::adjustAxis(input, vector, axis);
-
-                auto shape = ShapeUtils<T>::evalReduceShapeInfo(input->ordering(), axis, *input, false);
-                auto output = new NDArray<T>(shape, false, block.getWorkspace());
+                auto axisVector = INPUT_VARIABLE(1);
+                helpers::adjustAxis(input, axisVector, axis);
 
                 input->template applyIndexReduce<simdOps::IndexMin<T>>(output, axis);
-
-                OVERWRITE_RESULT(output);
-                RELEASE(shape, input->getWorkspace());
             } else {
-                auto output = OUTPUT_VARIABLE(0);
+                helpers::adjustAxis(input->shapeInfo(), axis);
 
                 input->template applyIndexReduce<simdOps::IndexMin<T>>(output, axis);
-                STORE_RESULT(output);
             }
+
+            STORE_RESULT(output);
 
             return ND4J_STATUS_OK;
         }
+
+        DECLARE_SHAPE_FN(argmin) {
+            std::vector<int> dims;
+
+            if (block.width() == 1) {
+                dims = *block.getIArguments();
+            } else {
+                auto y = INPUT_VARIABLE(1);
+                dims = y->template asVectorT<int>();
+            }
+
+            // we're resolving negative axis here
+            helpers::adjustAxis(inputShape->at(0), dims);
+
+            if (dims.size() > 1)
+                std::sort(dims.begin(), dims.end());
+
+            // special case - output is scalar
+            if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == MAX_INT)) {
+                return SHAPELIST(ShapeUtils<T>::createScalarShapeInfo(block.workspace()));
+            }
+
+            shape::TAD tad(inputShape->at(0), dims.data(), dims.size());
+            tad.createTadOnlyShapeInfo();
+
+            Nd4jLong tadLength = shape::tadLength(inputShape->at(0), dims.data(), dims.size());
+            Nd4jLong numTads = shape::length(inputShape->at(0)) /  tadLength;
+
+            auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', dims, inputShape->at(0), false, false, block.getWorkspace());
+
+            return SHAPELIST(newShape);
+        }
+
     }
 }
 

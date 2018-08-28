@@ -14,23 +14,37 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.datasets.iterator;
+package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.deeplearning4j.datasets.iterator.impl.MovingWindowDataSetFetcher;
-import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-/**
- *
- * DataSetIterator for moving window (rotating matrices)
- *
- * @author Adam Gibson
- */
-public class MovingWindowBaseDataSetIterator extends BaseDatasetIterator {
-    public MovingWindowBaseDataSetIterator(int batch, int numExamples, DataSet data, int windowRows,
-                    int windowColumns) {
-        super(batch, numExamples, new MovingWindowDataSetFetcher(data, windowRows, windowColumns));
+import java.util.Arrays;
+import java.util.List;
+
+public class LogicalXor extends DynamicCustomOp {
+
+    public LogicalXor(){ }
+
+    public LogicalXor(SameDiff sd, SDVariable in1, SDVariable in2){
+        super(null, sd, new SDVariable[]{in1, in2});
+    }
+
+    @Override
+    public String opName(){
+        return "boolean_xor";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "LogicalXor";
     }
 
 
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        return Arrays.asList( sameDiff.zerosLike(larg()), sameDiff.zerosLike(rarg()));
+    }
 
 }

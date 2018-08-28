@@ -26,12 +26,12 @@ Add the following to your pom.xml to include Arbiter in your project where ${arb
 <dependency>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>arbiter-deeplearning4j</artifactId>
-    <version>{{site.versionString}}</version>
+    <version>{{page.version}}</version>
 </dependency>
 <dependency>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>arbiter-ui_2.11</artifactId>
-    <version>{{site.versionString}}</version>
+    <version>{{page.version}}</version>
 </dependency>
 ```
 

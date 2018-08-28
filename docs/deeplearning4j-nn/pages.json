@@ -7,7 +7,15 @@
   "pages": [
     {
       "page": "evaluation.md",
-      "class": []
+      "module": [
+        "/deeplearning4j-nn/src/main/java/org/deeplearning4j/eval/"
+      ]
+    },
+    {
+      "page": "model-persistence.md",
+      "class": [
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/util/ModelSerializer.java"
+      ]
     },
     {
       "page": "visualization.md",
@@ -16,6 +24,29 @@
     {
       "page": "tsne-visualization.md",
       "class": []
+    },
+    {
+      "page": "transfer-learning.md",
+      "module": [
+        "/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/transferlearning/"
+      ]
+    },
+    {
+      "page": "listeners.md",
+      "module": [
+        "/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/listeners/"
+      ]
+    },
+    {
+      "page": "iterators.md",
+      "module": [
+        "/deeplearning4j-data/deeplearning4j-datasets/src/main/java/org/deeplearning4j/datasets/iterator/impl/",
+        "/deeplearning4j-data/deeplearning4j-datavec-iterators/src/main/java/org/deeplearning4j/datasets/datavec/",
+        "/deeplearning4j-data/deeplearning4j-utility-iterators/src/main/java/org/deeplearning4j/datasets/iterator/"
+      ],
+      "class": [
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/datasets/iterator/impl/MultiDataSetIteratorAdapter.java"
+      ]
     },
     {
       "page": "computationgraph.md",

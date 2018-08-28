@@ -37,13 +37,18 @@ import java.util.Map;
  * Space to channels utility layer configuration for convolutional input types.
  * <p>
  * This operation takes 4D array in, in either NCHW or NHWC format, and moves data from spatial dimensions (HW)
- * to channels (C) for given blockSize
+ * to channels (C) for given blockSize.<br>
+ * The idea is that blocks of the input of size [blockSize,blockSize] are moved from the spatial dimension
+ * to the depth dimension.<br>
+ * Thus, for NCHW input format, input shape {@code [mb, inChannels, H, W]}, output has shape {@code [mb, inChannels * blockSize * blockSize, H/blockSize, W/blockSize]}
  * <p></p>
  * Example:
+ * <pre>
  * blockSize = 4
  * dataFormat = "NCHW"
  * input shape =  [128, 16, 16, 3]
  * output shape = [128, 16/4, 16/4, 3*4*4]
+ * </pre>
  *
  *
  * @author Max Pumperla
@@ -156,20 +161,33 @@ public class SpaceToDepthLayer extends NoParamLayer {
         protected int blockSize;
         protected DataFormat dataFormat = DataFormat.NCHW;
 
+        /**
+         * @param blockSize Block size
+         */
         public Builder(int blockSize) {
             this.blockSize = blockSize;
         }
 
+        /**
+         * @param blockSize  Block size
+         * @param dataFormat Data format for input activations. Note DL4J uses NCHW in most cases
+         */
         public Builder(int blockSize, DataFormat dataFormat) {
             this.blockSize = blockSize;
             this.dataFormat = dataFormat;
         }
 
+        /**
+         * @param blockSize Block size
+         */
         public T blocks(int blockSize) {
             this.blockSize = blockSize;
             return (T) this;
         }
 
+        /**
+         * @param dataFormat Data format for input activations. Note DL4J uses NCHW in most cases
+         */
         public T dataFormat(DataFormat dataFormat) {
             this.dataFormat = dataFormat;
             return (T) this;

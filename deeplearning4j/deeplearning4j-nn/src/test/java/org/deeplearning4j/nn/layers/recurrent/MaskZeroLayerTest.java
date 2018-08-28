@@ -62,7 +62,9 @@ public class MaskZeroLayerTest {
           params.putScalar(i, 1.0);
       }
       Layer lstm = underlying.instantiate(conf, Collections.<TrainingListener>emptyList(), 0, params, false);
-      MaskZeroLayer l = new MaskZeroLayer(lstm);
+      double maskingValue = 0.0;
+
+      MaskZeroLayer l = new MaskZeroLayer(lstm, maskingValue);
       INDArray input = Nd4j.create( Arrays.asList(ex1, ex2), new int[] {2, 2, 3});
       //WHEN
       INDArray out = l.activate(input, true, LayerWorkspaceMgr.noWorkspaces());
