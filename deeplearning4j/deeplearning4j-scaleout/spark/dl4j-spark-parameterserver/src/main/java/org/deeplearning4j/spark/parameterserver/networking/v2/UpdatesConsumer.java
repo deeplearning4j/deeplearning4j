@@ -115,6 +115,9 @@ public class UpdatesConsumer implements Subscriber<INDArray> {
                     // we apply updates every X iterations, and we don't really need X to be small here
                     if (updatesCount.incrementAndGet() > 0) {
                         stepFunction.step(params, updates);
+                        Nd4j.getExecutioner().commit();
+
+                        log.info("Applying updates. Current ratio: [{}]", (double) sparseCounter.get() / denseCounter.get());
 
                         // once accumulated updates are applied - reset storage, and wait for other messsages
                         Nd4j.getMemoryManager().memset(updates);
