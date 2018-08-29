@@ -276,13 +276,20 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             return;
         }
 
+        // serialize out of locks
+        val b = message.asUnsafeBuffer();
+
         val conn = remoteConnections.get(id);
         if (conn == null)
             throw new ND4JIllegalStateException("Unknown target ID specified: [" + id + "]");
 
         // serialize & send message right away
-        TransmissionStatus status;
-        while ((status= TransmissionStatus.fromLong(conn.getPublication().offer(message.asUnsafeBuffer()))) != TransmissionStatus.OK) {
+        TransmissionStatus status = TransmissionStatus.UNKNOWN;
+        while (status != TransmissionStatus.OK) {
+            synchronized (conn.locker) {
+                status = TransmissionStatus.fromLong(conn.getPublication().offer(b));
+            }
+
             // if response != OK we must do something with response
             switch (status) {
                 case MAX_POSITION_EXCEEDED:

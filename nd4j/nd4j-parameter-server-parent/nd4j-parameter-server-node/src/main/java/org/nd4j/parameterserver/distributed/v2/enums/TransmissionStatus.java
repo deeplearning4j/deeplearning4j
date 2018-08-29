@@ -24,6 +24,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
  * @author raver119@gmail.com
  */
 public enum TransmissionStatus {
+    UNKNOWN,
     OK,
     NOT_CONNECTED,
     BACK_PRESSURED,
