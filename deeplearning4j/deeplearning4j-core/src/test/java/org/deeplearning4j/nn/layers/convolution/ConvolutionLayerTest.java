@@ -381,6 +381,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
         MultiLayerNetwork model2 = getCNNMLNConfig(true, false);
         model2.fit(mnistIter);
 
+        mnistIter.reset();
         DataSet test = mnistIter.next();
 
         Evaluation eval = new Evaluation();
