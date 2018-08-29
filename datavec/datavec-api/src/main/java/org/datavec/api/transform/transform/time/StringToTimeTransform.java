@@ -41,7 +41,7 @@ import java.util.regex.Pattern;
 /**
  * Convert a String column to a time column by parsing the date/time String, using a JodaTime.
  * <p>
- * Time format is specified as per http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html
+ * Time format is specified as per <a href="http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html">http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html</a>
  *
  * @author Alex Black
  */
@@ -87,7 +87,7 @@ public class StringToTimeTransform extends BaseColumnTransform {
 
     /**
      * @param columnName Name of the String column
-     * @param timeFormat Time format, as per http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html
+     * @param timeFormat Time format, as per <a href="http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html">http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html</a>
      * @param timeZone   Timezone for time parsing
      */
     public StringToTimeTransform(String columnName, String timeFormat, TimeZone timeZone) {
@@ -112,7 +112,7 @@ public class StringToTimeTransform extends BaseColumnTransform {
 
     /**
      * @param columnName Name of the String column
-     * @param timeFormat Time format, as per http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html
+     * @param timeFormat Time format, as per <a href="http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html">http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html</a>
      * @param timeZone   Timezone for time parsing
      */
     public StringToTimeTransform(String columnName, String timeFormat, DateTimeZone timeZone) {
@@ -121,7 +121,7 @@ public class StringToTimeTransform extends BaseColumnTransform {
 
     /**
      * @param columnName   Name of the String column
-     * @param timeFormat   Time format, as per http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html
+     * @param timeFormat   Time format, as per <a href="http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html">http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html</a>
      * @param timeZone     Timezone for time parsing
      * @param minValidTime Min valid time (epoch millisecond format). If null: no restriction in min valid time
      * @param maxValidTime Max valid time (epoch millisecond format). If null: no restriction in max valid time
@@ -134,7 +134,7 @@ public class StringToTimeTransform extends BaseColumnTransform {
 
     /**
      * @param columnName   Name of the String column
-     * @param timeFormat   Time format, as per http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html
+     * @param timeFormat   Time format, as per <a href="http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html">http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html</a>
      * @param timeZone     Timezone for time parsing
      * @param minValidTime Min valid time (epoch millisecond format). If null: no restriction in min valid time
      * @param maxValidTime Max valid time (epoch millisecond format). If null: no restriction in max valid time

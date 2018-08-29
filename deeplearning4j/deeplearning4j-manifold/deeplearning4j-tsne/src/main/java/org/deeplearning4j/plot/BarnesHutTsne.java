@@ -62,7 +62,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sign;
 /**
  * Barnes hut algorithm for TSNE, uses a dual tree approximation approach.
  * Work based on:
- * http://lvdmaaten.github.io/tsne/
+ * <a href="http://lvdmaaten.github.io/tsne/">http://lvdmaaten.github.io/tsne/</a>
  * For hight dimensions, it's recommended to reduce the dimension up to 50 using another method (PCA or other)
  * @author Adam Gibson
  */

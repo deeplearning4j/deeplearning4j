@@ -42,19 +42,19 @@ import java.util.Arrays;
  *
  * _Entropy based nearest neighbor search in high dimensions_
  * R Panigrahy - SIAM 2006
- * https://arxiv.org/pdf/cs/0510019.pdf
+ * <a href="https://arxiv.org/pdf/cs/0510019.pdf">https://arxiv.org/pdf/cs/0510019.pdf</a>
  *
  * To read more about LSH, in particular for the Cosine distance, see
  * chapter 3 of :
  * _Mining Massive Datasets_, Anand Rajaraman and Jeffrey Ullman
- * http://www.mmds.org/
+ * <a href="http://www.mmds.org/">http://www.mmds.org/</a>
  *
  * The original development of LSH for the cosine distance is from
  * Similarity estimation techniques from rounding algorithms
  * MS Charikar - STOCS, 2002
  *
  * Note for high-precision or distributed settings, you should not
- * use this and rather extend this to layered LSH ( https://arxiv.org/abs/1210.7057 )
+ * use this and rather extend this to layered LSH ( <a href="https://arxiv.org/abs/1210.7057">https://arxiv.org/abs/1210.7057</a> )
  *
  */
 public class RandomProjectionLSH implements LSH {

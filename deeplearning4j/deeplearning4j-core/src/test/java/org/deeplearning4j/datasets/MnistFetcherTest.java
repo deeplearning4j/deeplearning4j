@@ -35,6 +35,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import java.io.File;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -86,5 +87,49 @@ public class MnistFetcherTest extends BaseDL4JTest {
         File mnistDir = mnistFetcher.downloadAndUntar();
 
         assertTrue(mnistDir.isDirectory());
+    }
+
+    @Test
+    public void testMnistSubset() throws Exception {
+        final int numExamples = 100;
+
+        MnistDataSetIterator iter1 = new MnistDataSetIterator(10, numExamples, false, true, true, 123);
+        int examples1 = 0;
+        int itCount1 = 0;
+        while (iter1.hasNext()) {
+            itCount1++;
+            examples1 += iter1.next().numExamples();
+        }
+        assertEquals(10, itCount1);
+        assertEquals(100, examples1);
+
+        MnistDataSetIterator iter2 = new MnistDataSetIterator(10, numExamples, false, true, true, 123);
+        int examples2 = 0;
+        int itCount2 = 0;
+        for (int i = 0; i < 10; i++) {
+            itCount2++;
+            examples2 += iter2.next().numExamples();
+        }
+        assertFalse(iter2.hasNext());
+        assertEquals(10, itCount2);
+        assertEquals(100, examples2);
+
+        MnistDataSetIterator iter3 = new MnistDataSetIterator(19, numExamples, false, true, true, 123);
+        int examples3 = 0;
+        int itCount3 = 0;
+        while (iter3.hasNext()) {
+            itCount3++;
+            examples3 += iter3.next().numExamples();
+        }
+        assertEquals(100, examples3);
+        assertEquals((int)Math.ceil(100/19.0), itCount3);
+
+        MnistDataSetIterator iter4 = new MnistDataSetIterator(32, true, 12345);
+        int count4 = 0;
+        while(iter4.hasNext()){
+            count4 += iter4.next().numExamples();
+        }
+        assertEquals(60000, count4);
+
     }
 }
