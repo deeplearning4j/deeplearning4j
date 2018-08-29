@@ -86,12 +86,12 @@ namespace nd4j {
                 // trying to get graph by id
                 auto graph = GraphHolder::getInstance()->cloneGraph<float>(request->id());
                 if (graph == nullptr)
-                    return grpc::Status::INVALID_ARGUMENT;
+                    return grpc::Status::CANCELLED;
 
                 // provide results here
                 auto response_offset = GraphExecutioner<float>::execute(graph, mb_, request);
                 if (response_offset == 0)
-                    return grpc::Status::UNKNOWN;
+                    return grpc::Status::CANCELLED;
 
                 mb_.Finish(response_offset);
                 *response_msg = mb_.ReleaseMessage<FlatResult>();
