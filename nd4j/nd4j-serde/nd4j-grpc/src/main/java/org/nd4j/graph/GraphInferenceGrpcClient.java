@@ -28,6 +28,7 @@ import org.nd4j.autodiff.execution.input.Operands;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.graph.grpc.GraphInferenceServerGrpc;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -100,7 +101,9 @@ public class GraphInferenceGrpcClient {
      */
     public void registerGraph(long graphId, @NonNull SameDiff graph, ExecutorConfiguration configuration) {
         val g = graph.asFlatGraph(graphId, configuration);
-        blockingStub.registerGraph(g);
+        val v = blockingStub.registerGraph(g);
+        if (v.status() != 0)
+            throw new ND4JIllegalStateException("registerGraph() gRPC call failed");
     }
 
     /**
@@ -139,7 +142,7 @@ public class GraphInferenceGrpcClient {
             val array = input.getSecond();
 
             val idPair = IntPair.createIntPair(builder, id.getId(), id.getIndex());
-            val nameOff = builder.createString(id.getName());
+            val nameOff = id.getName() != null ? builder.createString(id.getName()) : 0;
 
             val arrOff = array.toFlatArray(builder);
             val varOff = FlatVariable.createFlatVariable(builder, idPair, nameOff, 0, arrOff, 0);
@@ -153,19 +156,18 @@ public class GraphInferenceGrpcClient {
 
         val req = FlatInferenceRequest.getRootAsFlatInferenceRequest(builder.dataBuffer());
 
-        val flatresults = blockingStub.inferenceRequest(req);
+        val fr = blockingStub.inferenceRequest(req);
 
         val res = new Operands();
-        while (flatresults.hasNext()) {
-            val fr = flatresults.next();
 
             for (int e = 0; e < fr.variablesLength(); e++) {
                 val v = fr.variables(e);
 
                 val array = Nd4j.createFromFlatArray(v.ndarray());
+                res.addArgument(v.name(), array);
+                res.addArgument(v.id().first(), v.id().second(), array);
                 res.addArgument(v.name(), v.id().first(), v.id().second(), array);
             }
-        }
 
         return res;
     }
@@ -196,6 +198,8 @@ public class GraphInferenceGrpcClient {
 
         val req = FlatDropRequest.getRootAsFlatDropRequest(builder.dataBuffer());
 
-        blockingStub.forgetGraph(req);
+        val v = blockingStub.forgetGraph(req);
+        if (v.status() != 0)
+            throw new ND4JIllegalStateException("registerGraph() gRPC call failed");
     }
 }
