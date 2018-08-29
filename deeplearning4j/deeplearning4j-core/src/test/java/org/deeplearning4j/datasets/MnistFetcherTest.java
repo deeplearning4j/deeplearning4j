@@ -33,6 +33,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -130,6 +132,47 @@ public class MnistFetcherTest extends BaseDL4JTest {
             count4 += iter4.next().numExamples();
         }
         assertEquals(60000, count4);
+    }
 
+    @Test
+    public void testSubsetRepeatability() throws Exception {
+
+        DataSetIterator it = new MnistDataSetIterator(1, 1, false, false, true, 0);
+        DataSet d1 = it.next();
+        for( int i=0; i<10; i++ ) {
+            it.reset();
+            DataSet d2 = it.next();
+            assertEquals(d1.get(0).getFeatures(), d2.get(0).getFeatures());
+        }
+
+        //Check larger number:
+        it = new MnistDataSetIterator(8, 32, false, false, true, 12345);
+        Set<String> featureLabelSet = new HashSet<>();
+        while(it.hasNext()){
+            DataSet ds = it.next();
+            INDArray f = ds.getFeatures();
+            INDArray l = ds.getLabels();
+
+            for( int i=0; i<f.size(0); i++ ){
+                featureLabelSet.add(f.getRow(i).toString() + "\t" + l.getRow(i).toString());
+            }
+        }
+
+        assertEquals(32, featureLabelSet.size());
+
+        for( int i=0; i<3; i++ ){
+            it.reset();
+            Set<String> flSet2 = new HashSet<>();
+            while(it.hasNext()){
+                DataSet ds = it.next();
+                INDArray f = ds.getFeatures();
+                INDArray l = ds.getLabels();
+
+                for( int j=0; j<f.size(0); j++ ){
+                    flSet2.add(f.getRow(j).toString() + "\t" + l.getRow(j).toString());
+                }
+            }
+            assertEquals(featureLabelSet, flSet2);
+        }
     }
 }
