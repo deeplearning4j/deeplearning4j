@@ -187,7 +187,7 @@ public final class GraphInferenceServerGrpc {
         if ((getInferenceRequestMethod = GraphInferenceServerGrpc.getInferenceRequestMethod) == null) {
           GraphInferenceServerGrpc.getInferenceRequestMethod = getInferenceRequestMethod = 
               io.grpc.MethodDescriptor.<nd4j.graph.FlatInferenceRequest, nd4j.graph.FlatResult>newBuilder()
-              .setType(io.grpc.MethodDescriptor.MethodType.SERVER_STREAMING)
+              .setType(io.grpc.MethodDescriptor.MethodType.UNARY)
               .setFullMethodName(generateFullMethodName(
                   "nd4j.graph.GraphInferenceServer", "InferenceRequest"))
               .setSampledToLocalTracing(true)
@@ -269,7 +269,7 @@ public final class GraphInferenceServerGrpc {
                   this, METHODID_FORGET_GRAPH)))
           .addMethod(
             getInferenceRequestMethod(),
-            asyncServerStreamingCall(
+            asyncUnaryCall(
               new MethodHandlers<
                 nd4j.graph.FlatInferenceRequest,
                 nd4j.graph.FlatResult>(
@@ -316,7 +316,7 @@ public final class GraphInferenceServerGrpc {
      */
     public     void inferenceRequest(nd4j.graph.FlatInferenceRequest request,
         io.grpc.stub.StreamObserver<nd4j.graph.FlatResult> responseObserver)     {
-      asyncServerStreamingCall(
+      asyncUnaryCall(
           getChannel().newCall(getInferenceRequestMethod(), getCallOptions()), request, responseObserver);
     }
   }
@@ -355,9 +355,8 @@ public final class GraphInferenceServerGrpc {
     
     /**
      */
-    public     java.util.Iterator<nd4j.graph.FlatResult> inferenceRequest(
-        nd4j.graph.FlatInferenceRequest request)     {
-      return blockingServerStreamingCall(
+    public     nd4j.graph.FlatResult inferenceRequest(nd4j.graph.FlatInferenceRequest request)     {
+      return blockingUnaryCall(
           getChannel(), getInferenceRequestMethod(), getCallOptions(), request);
     }
   }
@@ -394,6 +393,14 @@ public final class GraphInferenceServerGrpc {
         nd4j.graph.FlatDropRequest request)     {
       return futureUnaryCall(
           getChannel().newCall(getForgetGraphMethod(), getCallOptions()), request);
+    }
+    
+    /**
+     */
+    public     com.google.common.util.concurrent.ListenableFuture<nd4j.graph.FlatResult> inferenceRequest(
+        nd4j.graph.FlatInferenceRequest request)     {
+      return futureUnaryCall(
+          getChannel().newCall(getInferenceRequestMethod(), getCallOptions()), request);
     }
   }
   
