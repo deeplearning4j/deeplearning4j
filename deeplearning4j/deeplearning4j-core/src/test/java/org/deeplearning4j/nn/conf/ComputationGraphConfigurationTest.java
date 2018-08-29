@@ -22,6 +22,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
@@ -45,6 +46,7 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class ComputationGraphConfigurationTest extends BaseDL4JTest {
@@ -275,7 +277,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
         graph.init();
     }
 
-        @Test
+    @Test
     public void testBidirectionalGraphSummary() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
                 .addLayer("bidirectional",
@@ -337,6 +339,55 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
         @Override
         public MemoryReport getMemoryReport(InputType... inputTypes) {
             throw new UnsupportedOperationException();
+        }
+    }
+
+
+    @Test
+    public void testInvalidOutputLayer(){
+        /*
+        Test case (invalid configs)
+        1. nOut=1 + softmax
+        2. mcxent + tanh
+        3. xent + softmax
+        4. xent + relu
+        5. mcxent + sigmoid
+         */
+
+        LossFunctions.LossFunction[] lf = new LossFunctions.LossFunction[]{
+                LossFunctions.LossFunction.MCXENT, LossFunctions.LossFunction.MCXENT, LossFunctions.LossFunction.XENT,
+                LossFunctions.LossFunction.XENT, LossFunctions.LossFunction.MCXENT};
+        int[] nOut = new int[]{1, 3, 3, 3, 3};
+        Activation[] activations = new Activation[]{Activation.SOFTMAX, Activation.TANH, Activation.SOFTMAX, Activation.RELU, Activation.SIGMOID};
+        for( int i=0; i<lf.length; i++ ){
+            for(boolean lossLayer : new boolean[]{false, true}) {
+                for (boolean validate : new boolean[]{true, false}) {
+                    String s = "nOut=" + nOut[i] + ",lossFn=" + lf[i] + ",lossLayer=" + lossLayer + ",validate=" + validate;
+                    if(nOut[i] == 1 && lossLayer)
+                        continue;   //nOuts are not availabel in loss layer, can't expect it to detect this case
+                    try {
+                        new NeuralNetConfiguration.Builder()
+                                .graphBuilder()
+                                .addInputs("in")
+                                .layer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
+                                .layer("1",
+                                        !lossLayer ? new OutputLayer.Builder().nIn(10).nOut(nOut[i]).activation(activations[i]).lossFunction(lf[i]).build()
+                                                : new LossLayer.Builder().activation(activations[i]).lossFunction(lf[i]).build(), "0")
+                                .setOutputs("1")
+                                .validateOutputConfig(validate)
+                                .build();
+                        if (validate) {
+                            fail("Expected exception: " + s);
+                        }
+                    } catch (DL4JInvalidConfigException e) {
+                        if (validate) {
+                            assertTrue(s, e.getMessage().toLowerCase().contains("invalid output"));
+                        } else {
+                            fail("Validation should not be enabled");
+                        }
+                    }
+                }
+            }
         }
     }
 }

@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
+import org.deeplearning4j.util.OutputLayerUtil;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.factory.Nd4j;
@@ -400,6 +401,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.ENABLED;
         protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.ENABLED;
         protected CacheMode cacheMode = CacheMode.NONE;
+        protected boolean validateOutputConfig = true;
 
         /**
          * Specify the processors.
@@ -533,6 +535,22 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        /**
+         * Enabled by default. If enabled, the output layer configuration will be validated, to throw an exception on
+         * likely invalid outputs - such as softmax + nOut=1, or LossMCXENT + Tanh.<br>
+         * If disabled (false) no output layer validation will be performed.<br>
+         * Disabling this validation is not recommended, as the configurations that fail validation usually will
+         * not be able to learn correctly. However, the option to disable this validation is provided for advanced users
+         * when creating non-standard architectures.
+         *
+         * @param validate If true: validate output layer configuration. False: don't validate
+         */
+        public Builder validateOutputConfig(boolean validate) {
+            this.validateOutputConfig = validate;
+            return this;
+        }
+
+
         public MultiLayerConfiguration build() {
             //Validate BackpropType setting
             if((tbpttBackLength != DEFAULT_TBPTT_LENGTH || tbpttFwdLength != DEFAULT_TBPTT_LENGTH) && backpropType != BackpropType.TruncatedBPTT){
@@ -616,6 +634,16 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.cacheMode = cacheMode;
 
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
+
+            //Validate output layer configuration
+            if(validateOutputConfig) {
+                //Validate output layer configurations...
+                for(NeuralNetConfiguration n : conf.getConfs()){
+                    Layer l = n.getLayer();
+                    OutputLayerUtil.validateOutputLayer(l.getLayerName(), l); //No-op for non output/loss layers
+                }
+            }
+
             return conf;
 
         }

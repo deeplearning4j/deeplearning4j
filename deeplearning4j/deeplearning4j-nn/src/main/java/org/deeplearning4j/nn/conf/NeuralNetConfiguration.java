@@ -272,7 +272,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                             .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                             .tBPTTBackwardLength(tbpttBackLength).setInputType(this.inputType)
                             .trainingWorkspaceMode(wsmTrain).cacheMode(globalConfig.cacheMode)
-                            .inferenceWorkspaceMode(wsmTest).confs(list).build();
+                            .inferenceWorkspaceMode(wsmTest).confs(list).validateOutputConfig(validateOutputConfig).build();
         }
 
         /** Helper class for setting input types */

@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.conf;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -394,4 +395,49 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
         assertEquals(1e-2, ((Adam)l3.getUpdaterByParam("W")).getLearningRate(), 1e-6);
     }
 
+
+    @Test
+    public void testInvalidOutputLayer(){
+        /*
+        Test case (invalid configs)
+        1. nOut=1 + softmax
+        2. mcxent + tanh
+        3. xent + softmax
+        4. xent + relu
+        5. mcxent + sigmoid
+         */
+
+        LossFunctions.LossFunction[] lf = new LossFunctions.LossFunction[]{
+                LossFunctions.LossFunction.MCXENT, LossFunctions.LossFunction.MCXENT, LossFunctions.LossFunction.XENT,
+                LossFunctions.LossFunction.XENT, LossFunctions.LossFunction.MCXENT};
+        int[] nOut = new int[]{1, 3, 3, 3, 3};
+        Activation[] activations = new Activation[]{Activation.SOFTMAX, Activation.TANH, Activation.SOFTMAX, Activation.RELU, Activation.SIGMOID};
+        for( int i=0; i<lf.length; i++ ){
+            for(boolean lossLayer : new boolean[]{false, true}) {
+                for (boolean validate : new boolean[]{true, false}) {
+                    String s = "nOut=" + nOut[i] + ",lossFn=" + lf[i] + ",lossLayer=" + lossLayer + ",validate=" + validate;
+                    if(nOut[i] == 1 && lossLayer)
+                        continue;   //nOuts are not availabel in loss layer, can't expect it to detect this case
+                    try {
+                        new NeuralNetConfiguration.Builder()
+                                .list()
+                                .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
+                                .layer(!lossLayer ? new OutputLayer.Builder().nIn(10).nOut(nOut[i]).activation(activations[i]).lossFunction(lf[i]).build()
+                                                : new LossLayer.Builder().activation(activations[i]).lossFunction(lf[i]).build())
+                                .validateOutputConfig(validate)
+                                .build();
+                        if (validate) {
+                            fail("Expected exception: " + s);
+                        }
+                    } catch (DL4JInvalidConfigException e) {
+                        if (validate) {
+                            assertTrue(s, e.getMessage().toLowerCase().contains("invalid output"));
+                        } else {
+                            fail("Validation should not be enabled");
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
