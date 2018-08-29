@@ -14,7 +14,7 @@ ENV PROTOBUF_HOME /opt/protobuf
 
 RUN git clone https://github.com/grpc/grpc && cd grpc && git submodule update --init && make -j 4 && make install
 
-RUN git clone https://github.com/deeplearning4j/deeplearning4j && cd deeplearning4j && \
+RUN git clone https://github.com/deeplearning4j/deeplearning4j && cd deeplearning4j &&  \
     git checkout r119_twenty_percents && \
     cd libnd4j/server && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release && make -j 7
 

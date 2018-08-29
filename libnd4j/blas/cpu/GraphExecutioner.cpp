@@ -867,7 +867,7 @@ flatbuffers::Offset<FlatResult> GraphExecutioner<T>::execute(Graph<T> *graph, fl
         }
     }
 
-    if (Environment::getInstance()->isDebugAndVerbose())
+    //if (Environment::getInstance()->isDebugAndVerbose())
         graph->printOut();
 
     GraphExecutioner<T>::execute(graph);

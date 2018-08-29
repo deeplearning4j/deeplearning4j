@@ -78,6 +78,7 @@ namespace nd4j {
                 // trying to get graph by id
                 auto graph = GraphHolder::getInstance()->cloneGraph<float>(request->id());
 
+                graph->printOut();
                 nd4j_printf("Inference %i\n", 1);
 
                 // provide results here
