@@ -151,8 +151,8 @@ public class DummyTransport extends BaseTransport {
             }
             val timeStop = System.currentTimeMillis();
 
-            if (timeStop - timeStart < 500)
-                Thread.sleep(500);
+            if (timeStop - timeStart < 700)
+                Thread.sleep(700);
         }
 
         public void transferMessage(@NonNull VoidMessage message, @NonNull String senderId, @NonNull String targetId) {
