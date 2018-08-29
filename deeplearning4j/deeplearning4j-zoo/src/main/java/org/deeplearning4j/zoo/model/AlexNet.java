@@ -43,10 +43,10 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  *
  * Dl4j's AlexNet model interpretation based on the original paper ImageNet Classification with Deep Convolutional Neural Networks
  * and the imagenetExample code referenced.
- *
- * References:
- * http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf
- * https://github.com/BVLC/caffe/blob/master/models/bvlc_alexnet/train_val.prototxt
+ *<br>
+ * References:<br>
+ * <a href="http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf">http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf</a>
+ * <a href="https://github.com/BVLC/caffe/blob/master/models/bvlc_alexnet/train_val.prototxt">https://github.com/BVLC/caffe/blob/master/models/bvlc_alexnet/train_val.prototxt</a>
  *
  * Model is built in dl4j based on available functionality and notes indicate where there are gaps waiting for enhancements.
  *

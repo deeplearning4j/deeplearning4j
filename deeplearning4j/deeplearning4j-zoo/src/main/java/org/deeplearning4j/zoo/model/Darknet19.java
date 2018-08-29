@@ -39,16 +39,17 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import static org.deeplearning4j.zoo.model.helper.DarknetHelper.addLayers;
 
 /**
- * Darknet19
- *  Reference: https://arxiv.org/pdf/1612.08242.pdf
- *
- * <p>ImageNet weights for this model are available and have been converted from https://pjreddie.com/darknet/imagenet/
+ * Darknet19<br>
+ *  Reference: <a href="https://arxiv.org/pdf/1612.08242.pdf">https://arxiv.org/pdf/1612.08242.pdf</a>
+ * <br>
+ * <p>ImageNet weights for this model are available and have been converted from <a href="https://pjreddie.com/darknet/imagenet/">https://pjreddie.com/darknet/imagenet/</a>
  * using https://github.com/allanzelener/YAD2K .</p>
  *
  * There are 2 pretrained models, one for 224x224 images and one fine-tuned for 448x448 images.
  * Call setInputShape() with either {3, 224, 224} or {3, 448, 448} before initialization.
  * The channels of the input images need to be in RGB order (not BGR), with values normalized within [0, 1].
- * The output labels are as per https://github.com/pjreddie/darknet/blob/master/data/imagenet.shortnames.list .
+ * The output labels are as per <a href="https://github.com/pjreddie/darknet/blob/master/data/imagenet.shortnames.list">
+ *     https://github.com/pjreddie/darknet/blob/master/data/imagenet.shortnames.list</a> .
  *
  * @author saudet
  */
