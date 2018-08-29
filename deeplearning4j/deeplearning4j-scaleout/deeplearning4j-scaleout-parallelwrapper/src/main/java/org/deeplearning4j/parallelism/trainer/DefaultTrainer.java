@@ -246,7 +246,13 @@ public class DefaultTrainer extends Thread implements Trainer {
         }
 
         // let's imagine iteration time is 300ms
-        LockSupport.parkNanos(500000000);
+        //LockSupport.parkNanos(500000000);
+        try {
+            Thread.sleep(1000);
+            log.info("Slept well");
+        } catch (Exception e) {
+            //
+        }
     }
 
     protected void fit(MultiDataSet dataSet) {
@@ -261,7 +267,13 @@ public class DefaultTrainer extends Thread implements Trainer {
         modelLock.readLock().unlock();
 
         // let's imagine iteration time is 300ms
-        LockSupport.parkNanos(500000000);
+        //LockSupport.parkNanos(500000000);
+        try {
+            Thread.sleep(1000);
+            log.info("Slept well");
+        } catch (Exception e) {
+            //
+        }
     }
 
     /**

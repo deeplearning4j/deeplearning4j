@@ -121,7 +121,7 @@ public class DummyTransport extends BaseTransport {
             if (precursor != null)
                 precursor.apply(message);
 
-            super.processMessage(message);
+            super.internalProcessMessage(message);
         }
     }
 

@@ -113,7 +113,7 @@ public class ModelParameterServerTest {
         assertEquals(0, updatesA.size());
     }
 
-    @Test (timeout = 30000L)
+    @Test// (timeout = 30000L)
     public void testReconnectPropagation_1() throws Exception {
         val config = VoidConfiguration.builder().meshBuildMode(MeshBuildMode.MESH).build();
         val connector = new DummyTransport.Connector();
