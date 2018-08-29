@@ -40,9 +40,12 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 /**
  * U-Net
  *
- * An implementation of U-Net, a deep learning network for image segmentation in Deeplearning4j. The u-net is convolutional network architecture for fast and precise segmentation of images. Up to now it has outperformed the prior best method (a sliding-window convolutional network) on the ISBI challenge for segmentation of neuronal structures in electron microscopic stacks.
+ * An implementation of U-Net, a deep learning network for image segmentation in Deeplearning4j.
+ * The u-net is convolutional network architecture for fast and precise segmentation of images.
+ * Up to now it has outperformed the prior best method (a sliding-window convolutional network) on the ISBI challenge for
+ * segmentation of neuronal structures in electron microscopic stacks.
  *
- * <p>Paper: https://arxiv.org/abs/1505.04597</p>
+ * <p>Paper: <a href="https://arxiv.org/abs/1505.04597">https://arxiv.org/abs/1505.04597</a></p>
  * <p>Weights are available for image segmentation trained on a synthetic dataset</p>
  *
  * @author Justin Long (crockpotveggies)

@@ -40,9 +40,11 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  * LSTM designed for text generation. Can be trained on a corpus of text. For this model, numClasses is
  * used to input {@code totalUniqueCharacters} for the LSTM input layer.
  *
- * Architecture follows this implementation: https://github.com/fchollet/keras/blob/master/examples/lstm_text_generation.py
+ * Architecture follows this implementation: <a href="https://github.com/fchollet/keras/blob/master/examples/lstm_text_generation.py">
+ *     https://github.com/fchollet/keras/blob/master/examples/lstm_text_generation.py</a>
  *
- * <p>Walt Whitman weights are available for generating text from his works, adapted from https://github.com/craigomac/InfiniteMonkeys.</p>
+ * <p>Walt Whitman weights are available for generating text from his works, adapted from <a href="https://github.com/craigomac/InfiniteMonkeys">
+ *     https://github.com/craigomac/InfiniteMonkeys</a>.</p>
  *
  * @author Justin Long (crockpotveggies)
  */

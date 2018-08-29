@@ -41,11 +41,11 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
  * LeNet was an early promising achiever on the ImageNet dataset.
- * References:
- * - http://yann.lecun.com/exdb/publis/pdf/lecun-98.pdf
- * - https://github.com/BVLC/caffe/blob/master/examples/mnist/lenet.prototxt
+ * References:<br>
+ * - <a href="http://yann.lecun.com/exdb/publis/pdf/lecun-98.pdf">http://yann.lecun.com/exdb/publis/pdf/lecun-98.pdf</a><br>
+ * - <a href="https://github.com/BVLC/caffe/blob/master/examples/mnist/lenet.prototxt">https://github.com/BVLC/caffe/blob/master/examples/mnist/lenet.prototxt</a><br>
  *
- * <p>MNIST weights for this model are available and have been converted from https://github.com/f00-/mnist-lenet-keras.</p>
+ * <p>MNIST weights for this model are available and have been converted from <a href="https://github.com/f00-/mnist-lenet-keras">https://github.com/f00-/mnist-lenet-keras</a>.</p>
  *
  * @author kepricon
  * @author Justin Long (crockpotveggies)

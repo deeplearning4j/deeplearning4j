@@ -36,7 +36,7 @@ import org.nd4j.linalg.learning.config.IUpdater;
 
 /**
  * A simple convolutional network for generic image classification.
- * Reference: https://github.com/oarriaga/face_classification/
+ * Reference: <a href="https://github.com/oarriaga/face_classification/">https://github.com/oarriaga/face_classification/</a>
  *
  * @author Justin Long (crockpotveggies)
  */

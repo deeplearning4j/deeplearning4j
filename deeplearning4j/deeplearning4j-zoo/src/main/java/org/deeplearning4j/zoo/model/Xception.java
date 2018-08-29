@@ -42,10 +42,12 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 /**
  * U-Net
  *
- * An implementation of Xception in Deeplearning4j. A novel deep convolutional neural network architecture inspired by Inception, where Inception modules have been replaced with depthwise separable convolutions.
+ * An implementation of Xception in Deeplearning4j. A novel deep convolutional neural network architecture inspired by
+ * Inception, where Inception modules have been replaced with depthwise separable convolutions.
  *
- * <p>Paper: https://arxiv.org/abs/1610.02357</p>
- * <p>ImageNet weights for this model are available and have been converted from https://keras.io/applications/.</p>
+ * <p>Paper: <a href="https://arxiv.org/abs/1610.02357">https://arxiv.org/abs/1610.02357</a></p>
+ * <p>ImageNet weights for this model are available and have been converted from <a href="https://keras.io/applications/">
+ *     https://keras.io/applications/</a>.</p>
  *
  * @author Justin Long (crockpotveggies)
  *

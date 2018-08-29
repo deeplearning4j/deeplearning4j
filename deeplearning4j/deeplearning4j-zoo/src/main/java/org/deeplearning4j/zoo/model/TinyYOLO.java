@@ -44,10 +44,10 @@ import static org.deeplearning4j.zoo.model.helper.DarknetHelper.addLayers;
 
 /**
  * Tiny YOLO
- *  Reference: https://arxiv.org/pdf/1612.08242.pdf
+ *  Reference: <a href="https://arxiv.org/pdf/1612.08242.pdf">https://arxiv.org/pdf/1612.08242.pdf</a>
  *
  * <p>ImageNet+VOC weights for this model are available and have been converted from https://pjreddie.com/darknet/yolo/
- * using https://github.com/allanzelener/YAD2K and the following code.</p>
+ * using <a href="https://github.com/allanzelener/YAD2K">https://github.com/allanzelener/YAD2K</a> and the following code.</p>
  *
  * <pre>{@code
  *     String filename = "tiny-yolo-voc.h5";

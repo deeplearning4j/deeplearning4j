@@ -42,8 +42,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 /**
  * Residual networks for deep learning.
  *
- * <p>Paperp: https://arxiv.org/abs/1512.03385</p>
- * <p>ImageNet weights for this model are available and have been converted from https://keras.io/applications/.</p>
+ * <p>Paper: <a href="https://arxiv.org/abs/1512.03385">https://arxiv.org/abs/1512.03385</a></p>
+ * <p>ImageNet weights for this model are available and have been converted from <a href="https://keras.io/applications/"></a>https://keras.io/applications/</a>.</p>
  *
  * @author Justin Long (crockpotveggies)
  */

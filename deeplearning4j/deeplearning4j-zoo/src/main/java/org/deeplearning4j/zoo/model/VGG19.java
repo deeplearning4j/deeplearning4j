@@ -40,10 +40,11 @@ import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
- * VGG-19, from Very Deep Convolutional Networks for Large-Scale Image Recognition
- * https://arxiv.org/abs/1409.1556)
- *
- * <p>ImageNet weights for this model are available and have been converted from https://github.com/fchollet/keras/tree/1.1.2/keras/applications.</p>
+ * VGG-19, from Very Deep Convolutional Networks for Large-Scale Image Recognition<br>
+ * <a href="https://arxiv.org/abs/1409.1556">https://arxiv.org/abs/1409.1556</a>
+ * <br>
+ * <p>ImageNet weights for this model are available and have been converted from <a href="https://github.com/fchollet/keras/tree/1.1.2/keras/applications">
+ *     https://github.com/fchollet/keras/tree/1.1.2/keras/applications</a>.</p>
  *
  * @author Justin Long (crockpotveggies)
  */
