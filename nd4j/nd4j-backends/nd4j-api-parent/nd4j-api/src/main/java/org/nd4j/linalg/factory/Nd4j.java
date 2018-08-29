@@ -2192,7 +2192,6 @@ public class Nd4j {
 
 
         }
-
         ret = Nd4j.create(data2.size(), numColumns);
         for (int i = 0; i < data2.size(); i++)
             ret.putRow(i, Nd4j.create(Nd4j.createBuffer(data2.get(i))));

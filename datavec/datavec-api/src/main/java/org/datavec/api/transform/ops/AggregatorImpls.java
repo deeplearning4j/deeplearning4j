@@ -345,7 +345,7 @@ public class AggregatorImpls {
      * This class offers an aggregable reduce operation for the unbiased standard deviation, i.e. the estimator
      * of the square root of the arithmetic mean of squared differences to the mean, corrected with Bessel's correction.
      *
-     * See https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation
+     * See <a href="https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation">https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation</a>
      * This is computed with Welford's method for increased numerical stability & aggregability.
      */
     public static class AggregableStdDev<T extends Number> implements IAggregableReduceOp<T, Writable> {
@@ -400,7 +400,7 @@ public class AggregatorImpls {
      * This class offers an aggregable reduce operation for the biased standard deviation, i.e. the estimator
      * of the square root of the arithmetic mean of squared differences to the mean.
      *
-     * See https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation
+     * See <a href="https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation">https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation</a>
      * This is computed with Welford's method for increased numerical stability & aggregability.
      */
     public static class AggregableUncorrectedStdDev<T extends Number> extends AggregableStdDev<T> {
@@ -416,7 +416,7 @@ public class AggregatorImpls {
      * This class offers an aggregable reduce operation for the unbiased variance, i.e. the estimator
      * of the arithmetic mean of squared differences to the mean, corrected with Bessel's correction.
      *
-     * See https://en.wikipedia.org/wiki/Variance#Population_variance_and_sample_variance
+     * See <a href="https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation">https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation</a>
      * This is computed with Welford's method for increased numerical stability & aggregability.
      */
     public static class AggregableVariance<T extends Number> implements IAggregableReduceOp<T, Writable> {
@@ -472,7 +472,7 @@ public class AggregatorImpls {
      * This class offers an aggregable reduce operation for the population variance, i.e. the uncorrected estimator
      * of the arithmetic mean of squared differences to the mean.
      *
-     * See https://en.wikipedia.org/wiki/Variance#Population_variance_and_sample_variance
+     * See <a href="https://en.wikipedia.org/wiki/Variance#Population_variance_and_sample_variance">https://en.wikipedia.org/wiki/Variance#Population_variance_and_sample_variance</a>
      * This is computed with Welford's method for increased numerical stability & aggregability.
      */
     public static class AggregablePopulationVariance<T extends Number> extends AggregableVariance<T> {

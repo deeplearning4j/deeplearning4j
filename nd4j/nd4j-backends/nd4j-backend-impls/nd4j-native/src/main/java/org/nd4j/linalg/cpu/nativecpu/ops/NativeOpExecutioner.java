@@ -1690,7 +1690,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         cnt= 0;
         for (val out: outputArgs) {
-            outputBuffers.put(cnt, out.data().addressPointer());
+            if(out.isEmpty()){
+                outputBuffers.put(cnt, null);
+            } else {
+                outputBuffers.put(cnt, out.data().addressPointer());
+            }
             outputShapes.put(cnt++, out.shapeInfoDataBuffer().addressPointer());
         }
 
