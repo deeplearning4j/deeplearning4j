@@ -29,10 +29,16 @@
 namespace nd4j {
     namespace graph {
             grpc::Status GraphInferenceServerImpl::RegisterGraph( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatGraph> *request_msg, flatbuffers::grpc::Message<FlatResponse> *response_msg) {
+                nd4j_printf("Starting %i\n", 0);
+
                 auto flat_graph = request_msg->GetRoot();
-                
+
+                nd4j_printf("Starting %i\n", 1);
+
                 // building our graph
                 auto graph = new Graph<float>(flat_graph);
+
+                nd4j_printf("Starting %i\n", 2);
                 
                 // single data type for now
                 GraphHolder::getInstance()->registerGraph<float>(flat_graph->id(), graph);
