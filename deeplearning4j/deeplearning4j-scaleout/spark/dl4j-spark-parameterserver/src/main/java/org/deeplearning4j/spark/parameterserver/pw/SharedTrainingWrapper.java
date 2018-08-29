@@ -312,6 +312,8 @@ public class SharedTrainingWrapper {
                                 .accumulator(accumulator)
                                 .build();
 
+                        accumulator.setExternalSource(consumer.getUpdatesQueue());
+
                         log.info("Configuring transport...");
                         //  pass values right away
                         ModelParameterServer.getInstance().configure(voidConfiguration, transport, false);

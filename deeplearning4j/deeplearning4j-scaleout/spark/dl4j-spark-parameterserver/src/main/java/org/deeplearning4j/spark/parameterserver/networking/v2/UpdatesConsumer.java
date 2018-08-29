@@ -32,6 +32,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -81,6 +82,10 @@ public class UpdatesConsumer implements Subscriber<INDArray> {
      */
     public boolean isBypassMod() {
         return bypassMode.get();
+    }
+
+    public Queue<INDArray> getUpdatesQueue() {
+        return updatesBuffer;
     }
 
     @Override
