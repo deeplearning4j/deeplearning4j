@@ -29,7 +29,7 @@ import java.util.*;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils.parseJsonString;
 
 /**
- * Java port of Keras' text tokenizer, see https://keras.io/preprocessing/text/ for more information.
+ * Java port of Keras' text tokenizer, see <a href="https://keras.io/preprocessing/text/">https://keras.io/preprocessing/text/</a> for more information.
  *
  * @author Max Pumperla
  */
