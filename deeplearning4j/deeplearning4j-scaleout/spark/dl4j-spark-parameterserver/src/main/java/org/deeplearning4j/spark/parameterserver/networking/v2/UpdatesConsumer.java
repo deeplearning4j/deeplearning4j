@@ -84,7 +84,7 @@ public class UpdatesConsumer implements Subscriber<INDArray> {
         return bypassMode.get();
     }
 
-    public Queue<INDArray> getUpdatesQueue() {
+    public BlockingQueue<INDArray> getUpdatesQueue() {
         return updatesBuffer;
     }
 
@@ -99,6 +99,7 @@ public class UpdatesConsumer implements Subscriber<INDArray> {
                     log.info("Putting update to the queue, current size: [{}]", updatesBuffer.size());
                     updatesBuffer.put(array);
                 } catch (Exception e) {
+                    e.printStackTrace();
                     throw new RuntimeException(e);
                 }
             } else if (params != null && stepFunction != null) {
