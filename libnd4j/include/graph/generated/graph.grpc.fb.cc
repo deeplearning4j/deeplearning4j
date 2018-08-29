@@ -19,6 +19,7 @@ namespace graph {
 static const char* GraphInferenceServer_method_names[] = {
   "/nd4j.graph.GraphInferenceServer/RegisterGraph",
   "/nd4j.graph.GraphInferenceServer/ForgetGraph",
+  "/nd4j.graph.GraphInferenceServer/ReplaceGraph",
   "/nd4j.graph.GraphInferenceServer/InferenceRequest",
 };
 
@@ -30,7 +31,8 @@ std::unique_ptr< GraphInferenceServer::Stub> GraphInferenceServer::NewStub(const
 GraphInferenceServer::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel)
   : channel_(channel)  , rpcmethod_RegisterGraph_(GraphInferenceServer_method_names[0], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_ForgetGraph_(GraphInferenceServer_method_names[1], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_InferenceRequest_(GraphInferenceServer_method_names[2], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_ReplaceGraph_(GraphInferenceServer_method_names[2], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_InferenceRequest_(GraphInferenceServer_method_names[3], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
   
 ::grpc::Status GraphInferenceServer::Stub::RegisterGraph(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatGraph>& request, flatbuffers::grpc::Message<FlatResponse>* response) {
@@ -55,6 +57,18 @@ GraphInferenceServer::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface
 
 ::grpc::ClientAsyncResponseReader< flatbuffers::grpc::Message<FlatResponse>>* GraphInferenceServer::Stub::PrepareAsyncForgetGraphRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatDropRequest>& request, ::grpc::CompletionQueue* cq) {
   return ::grpc::internal::ClientAsyncResponseReaderFactory< flatbuffers::grpc::Message<FlatResponse>>::Create(channel_.get(), cq, rpcmethod_ForgetGraph_, context, request, false);
+}
+
+::grpc::Status GraphInferenceServer::Stub::ReplaceGraph(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatGraph>& request, flatbuffers::grpc::Message<FlatResponse>* response) {
+  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_ReplaceGraph_, context, request, response);
+}
+
+::grpc::ClientAsyncResponseReader< flatbuffers::grpc::Message<FlatResponse>>* GraphInferenceServer::Stub::AsyncReplaceGraphRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatGraph>& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderFactory< flatbuffers::grpc::Message<FlatResponse>>::Create(channel_.get(), cq, rpcmethod_ReplaceGraph_, context, request, true);
+}
+
+::grpc::ClientAsyncResponseReader< flatbuffers::grpc::Message<FlatResponse>>* GraphInferenceServer::Stub::PrepareAsyncReplaceGraphRaw(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatGraph>& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderFactory< flatbuffers::grpc::Message<FlatResponse>>::Create(channel_.get(), cq, rpcmethod_ReplaceGraph_, context, request, false);
 }
 
 ::grpc::Status GraphInferenceServer::Stub::InferenceRequest(::grpc::ClientContext* context, const flatbuffers::grpc::Message<FlatInferenceRequest>& request, flatbuffers::grpc::Message<FlatResult>* response) {
@@ -83,6 +97,11 @@ GraphInferenceServer::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       GraphInferenceServer_method_names[2],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< GraphInferenceServer::Service, flatbuffers::grpc::Message<FlatGraph>, flatbuffers::grpc::Message<FlatResponse>>(
+          std::mem_fn(&GraphInferenceServer::Service::ReplaceGraph), this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      GraphInferenceServer_method_names[3],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< GraphInferenceServer::Service, flatbuffers::grpc::Message<FlatInferenceRequest>, flatbuffers::grpc::Message<FlatResult>>(
           std::mem_fn(&GraphInferenceServer::Service::InferenceRequest), this)));
 }
@@ -98,6 +117,13 @@ GraphInferenceServer::Service::~Service() {
 }
 
 ::grpc::Status GraphInferenceServer::Service::ForgetGraph(::grpc::ServerContext* context, const flatbuffers::grpc::Message<FlatDropRequest>* request, flatbuffers::grpc::Message<FlatResponse>* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status GraphInferenceServer::Service::ReplaceGraph(::grpc::ServerContext* context, const flatbuffers::grpc::Message<FlatGraph>* request, flatbuffers::grpc::Message<FlatResponse>* response) {
   (void) context;
   (void) request;
   (void) response;

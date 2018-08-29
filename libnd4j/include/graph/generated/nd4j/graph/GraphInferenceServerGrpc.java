@@ -143,6 +143,39 @@ public final class GraphInferenceServerGrpc {
   }
   
   @io.grpc.ExperimentalApi("https://github.com/grpc/grpc-java/issues/1901")
+  @java.lang.Deprecated // Use {@link #getReplaceGraphMethod()} instead. 
+  public static final io.grpc.MethodDescriptor<nd4j.graph.FlatGraph,
+      nd4j.graph.FlatResponse> METHOD_REPLACE_GRAPH = getReplaceGraphMethod();
+  
+  private static volatile io.grpc.MethodDescriptor<nd4j.graph.FlatGraph,
+      nd4j.graph.FlatResponse> getReplaceGraphMethod;
+  
+  @io.grpc.ExperimentalApi("https://github.com/grpc/grpc-java/issues/1901")
+  public static io.grpc.MethodDescriptor<nd4j.graph.FlatGraph,
+      nd4j.graph.FlatResponse> getReplaceGraphMethod() {
+    io.grpc.MethodDescriptor<nd4j.graph.FlatGraph, nd4j.graph.FlatResponse> getReplaceGraphMethod;
+    if ((getReplaceGraphMethod = GraphInferenceServerGrpc.getReplaceGraphMethod) == null) {
+      synchronized (GraphInferenceServerGrpc.class) {
+        if ((getReplaceGraphMethod = GraphInferenceServerGrpc.getReplaceGraphMethod) == null) {
+          GraphInferenceServerGrpc.getReplaceGraphMethod = getReplaceGraphMethod = 
+              io.grpc.MethodDescriptor.<nd4j.graph.FlatGraph, nd4j.graph.FlatResponse>newBuilder()
+              .setType(io.grpc.MethodDescriptor.MethodType.UNARY)
+              .setFullMethodName(generateFullMethodName(
+                  "nd4j.graph.GraphInferenceServer", "ReplaceGraph"))
+              .setSampledToLocalTracing(true)
+              .setRequestMarshaller(FlatbuffersUtils.marshaller(
+                  nd4j.graph.FlatGraph.class, getExtractorOfFlatGraph()))
+              .setResponseMarshaller(FlatbuffersUtils.marshaller(
+                  nd4j.graph.FlatResponse.class, getExtractorOfFlatResponse()))
+                  .setSchemaDescriptor(null)
+                  .build();
+          }
+        }
+     }
+     return getReplaceGraphMethod;
+  }
+  
+  @io.grpc.ExperimentalApi("https://github.com/grpc/grpc-java/issues/1901")
   @java.lang.Deprecated // Use {@link #getInferenceRequestMethod()} instead. 
   public static final io.grpc.MethodDescriptor<nd4j.graph.FlatInferenceRequest,
       nd4j.graph.FlatResult> METHOD_INFERENCE_REQUEST = getInferenceRequestMethod();
@@ -246,6 +279,13 @@ public final class GraphInferenceServerGrpc {
     
     /**
      */
+    public     void replaceGraph(nd4j.graph.FlatGraph request,
+        io.grpc.stub.StreamObserver<nd4j.graph.FlatResponse> responseObserver)     {
+      asyncUnimplementedUnaryCall(getReplaceGraphMethod(), responseObserver);
+    }
+    
+    /**
+     */
     public     void inferenceRequest(nd4j.graph.FlatInferenceRequest request,
         io.grpc.stub.StreamObserver<nd4j.graph.FlatResult> responseObserver)     {
       asyncUnimplementedUnaryCall(getInferenceRequestMethod(), responseObserver);
@@ -267,6 +307,13 @@ public final class GraphInferenceServerGrpc {
                 nd4j.graph.FlatDropRequest,
                 nd4j.graph.FlatResponse>(
                   this, METHODID_FORGET_GRAPH)))
+          .addMethod(
+            getReplaceGraphMethod(),
+            asyncUnaryCall(
+              new MethodHandlers<
+                nd4j.graph.FlatGraph,
+                nd4j.graph.FlatResponse>(
+                  this, METHODID_REPLACE_GRAPH)))
           .addMethod(
             getInferenceRequestMethod(),
             asyncUnaryCall(
@@ -314,6 +361,14 @@ public final class GraphInferenceServerGrpc {
     
     /**
      */
+    public     void replaceGraph(nd4j.graph.FlatGraph request,
+        io.grpc.stub.StreamObserver<nd4j.graph.FlatResponse> responseObserver)     {
+      asyncUnaryCall(
+          getChannel().newCall(getReplaceGraphMethod(), getCallOptions()), request, responseObserver);
+    }
+    
+    /**
+     */
     public     void inferenceRequest(nd4j.graph.FlatInferenceRequest request,
         io.grpc.stub.StreamObserver<nd4j.graph.FlatResult> responseObserver)     {
       asyncUnaryCall(
@@ -351,6 +406,13 @@ public final class GraphInferenceServerGrpc {
     public     nd4j.graph.FlatResponse forgetGraph(nd4j.graph.FlatDropRequest request)     {
       return blockingUnaryCall(
           getChannel(), getForgetGraphMethod(), getCallOptions(), request);
+    }
+    
+    /**
+     */
+    public     nd4j.graph.FlatResponse replaceGraph(nd4j.graph.FlatGraph request)     {
+      return blockingUnaryCall(
+          getChannel(), getReplaceGraphMethod(), getCallOptions(), request);
     }
     
     /**
@@ -397,6 +459,14 @@ public final class GraphInferenceServerGrpc {
     
     /**
      */
+    public     com.google.common.util.concurrent.ListenableFuture<nd4j.graph.FlatResponse> replaceGraph(
+        nd4j.graph.FlatGraph request)     {
+      return futureUnaryCall(
+          getChannel().newCall(getReplaceGraphMethod(), getCallOptions()), request);
+    }
+    
+    /**
+     */
     public     com.google.common.util.concurrent.ListenableFuture<nd4j.graph.FlatResult> inferenceRequest(
         nd4j.graph.FlatInferenceRequest request)     {
       return futureUnaryCall(
@@ -406,7 +476,8 @@ public final class GraphInferenceServerGrpc {
   
   private static final int METHODID_REGISTER_GRAPH = 0;
   private static final int METHODID_FORGET_GRAPH = 1;
-  private static final int METHODID_INFERENCE_REQUEST = 2;
+  private static final int METHODID_REPLACE_GRAPH = 2;
+  private static final int METHODID_INFERENCE_REQUEST = 3;
   
   private static final class MethodHandlers<Req, Resp> implements
       io.grpc.stub.ServerCalls.UnaryMethod<Req, Resp>,
@@ -431,6 +502,10 @@ public final class GraphInferenceServerGrpc {
           break;
         case METHODID_FORGET_GRAPH:
           serviceImpl.forgetGraph((nd4j.graph.FlatDropRequest) request,
+              (io.grpc.stub.StreamObserver<nd4j.graph.FlatResponse>) responseObserver);
+          break;
+        case METHODID_REPLACE_GRAPH:
+          serviceImpl.replaceGraph((nd4j.graph.FlatGraph) request,
               (io.grpc.stub.StreamObserver<nd4j.graph.FlatResponse>) responseObserver);
           break;
         case METHODID_INFERENCE_REQUEST:
@@ -465,6 +540,7 @@ public final class GraphInferenceServerGrpc {
               .setSchemaDescriptor(null)              
               .addMethod(getRegisterGraphMethod())              
               .addMethod(getForgetGraphMethod())              
+              .addMethod(getReplaceGraphMethod())              
               .addMethod(getInferenceRequestMethod())              
               .build();
         }
