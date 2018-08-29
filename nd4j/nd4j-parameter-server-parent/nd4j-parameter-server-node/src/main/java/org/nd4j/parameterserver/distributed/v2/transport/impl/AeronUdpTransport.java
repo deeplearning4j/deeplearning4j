@@ -28,6 +28,7 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.SleepingIdleStrategy;
 import org.jetbrains.annotations.NotNull;
@@ -86,6 +87,8 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     // this lock is used for aeron publications
     protected ReentrantLock aeronLock = new ReentrantLock();
 
+    protected final AtomicBoolean shutdownFlag = new AtomicBoolean(false);
+
     public AeronUdpTransport(@NonNull String ownIp, @NonNull String rootIp, @NonNull VoidConfiguration configuration) {
         this(ownIp, configuration.getUnicastPort(), rootIp, configuration.getUnicastPort(), configuration);
     }
@@ -123,6 +126,11 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         driver = MediaDriver.launchEmbedded();
         context.aeronDirectoryName(driver.aeronDirectoryName());
         aeron = Aeron.connect(context);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            this.shutdown();
+        }));
+
     }
 
     // this executor service han
@@ -331,9 +339,11 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
     @Override
     public void shutdown() {
-        shutdownSilent();
+        if (shutdownFlag.compareAndSet(false, true)) {
+            shutdownSilent();
 
-        super.shutdown();
+            super.shutdown();
+        }
     }
 
     @Override
