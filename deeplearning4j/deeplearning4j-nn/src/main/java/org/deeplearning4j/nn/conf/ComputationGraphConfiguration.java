@@ -954,7 +954,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          *
          * @param validate If true: validate output layer configuration. False: don't validate
          */
-        public GraphBuilder validateOutputConfig(boolean validate) {
+        public GraphBuilder validateOutputLayerConfig(boolean validate) {
             this.validateOutputConfig = validate;
             return this;
         }

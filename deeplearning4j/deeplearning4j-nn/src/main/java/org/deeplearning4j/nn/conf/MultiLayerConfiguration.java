@@ -545,7 +545,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          *
          * @param validate If true: validate output layer configuration. False: don't validate
          */
-        public Builder validateOutputConfig(boolean validate) {
+        public Builder validateOutputLayerConfig(boolean validate) {
             this.validateOutputConfig = validate;
             return this;
         }

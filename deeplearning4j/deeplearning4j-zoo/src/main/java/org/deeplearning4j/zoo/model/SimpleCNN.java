@@ -134,7 +134,7 @@ public class SimpleCNN extends ZooModel {
 
                                         .setInputType(InputType.convolutional(inputShape[2], inputShape[1],
                                                         inputShape[0]))
-                                        .backprop(true).pretrain(false).build();
+                                        .build();
 
         return conf;
     }

@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -161,7 +162,8 @@ public class RegressionEvalTest extends BaseDL4JTest {
 
         //Basic sanity check
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.ZERO).list()
-                        .layer(0, new OutputLayer.Builder().activation(Activation.TANH).nIn(10).nOut(5).build())
+                        .layer(0, new OutputLayer.Builder().activation(Activation.TANH)
+                                .lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(5).build())
                         .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -183,6 +185,7 @@ public class RegressionEvalTest extends BaseDL4JTest {
         ComputationGraphConfiguration graphConf =
                         new NeuralNetConfiguration.Builder().weightInit(WeightInit.ZERO).graphBuilder()
                                         .addInputs("in").addLayer("0", new OutputLayer.Builder()
+                                                        .lossFunction(LossFunctions.LossFunction.MSE)
                                                         .activation(Activation.TANH).nIn(10).nOut(5).build(), "in")
                                         .setOutputs("0").build();
 

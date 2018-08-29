@@ -81,7 +81,7 @@ public class ActivationLayerTest extends BaseDL4JTest {
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER)
                                                         .activation(Activation.SOFTMAX).nIn(10).nOut(10).build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -99,7 +99,7 @@ public class ActivationLayerTest extends BaseDL4JTest {
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nIn(10).nOut(10)
                                         .build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         MultiLayerNetwork network2 = new MultiLayerNetwork(conf2);
         network2.init();
@@ -151,7 +151,7 @@ public class ActivationLayerTest extends BaseDL4JTest {
                                         LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                                                         .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
                                                         .build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -171,7 +171,7 @@ public class ActivationLayerTest extends BaseDL4JTest {
                                         LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                                                         .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
                                                         .build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         MultiLayerNetwork network2 = new MultiLayerNetwork(conf2);
         network2.init();
@@ -212,7 +212,7 @@ public class ActivationLayerTest extends BaseDL4JTest {
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER)
                                                         .activation(Activation.SOFTMAX).nOut(10).build())
-                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
+                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -232,7 +232,7 @@ public class ActivationLayerTest extends BaseDL4JTest {
                                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
                                                         .nOut(10).build())
-                                        .backprop(true).pretrain(false)
+
                                         .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
         MultiLayerNetwork network2 = new MultiLayerNetwork(conf2);

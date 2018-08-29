@@ -94,7 +94,7 @@ public class InceptionResNetV1 extends ZooModel {
                                                         .activation(Activation.SOFTMAX).alpha(0.9).lambda(1e-4)
                                                         .nIn(embeddingSize).nOut(numClasses).build(),
                                         "embeddings")
-                        .setOutputs("outputLayer").backprop(true).pretrain(false);
+                        .setOutputs("outputLayer");
 
         ComputationGraphConfiguration conf = graph.build();
         ComputationGraph model = new ComputationGraph(conf);

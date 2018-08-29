@@ -90,7 +90,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                             .weightInit(WeightInit.XAVIER).seed(12345L).list()
                             .layer(0, new ConvolutionLayer.Builder(1, 1).nOut(6).activation(afn).build())
                             .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3).build())
-                            .setInputType(InputType.convolutionalFlat(1, 4, 1)).pretrain(false).backprop(true);
+                            .setInputType(InputType.convolutionalFlat(1, 4, 1));
 
                     MultiLayerConfiguration conf = builder.build();
 
@@ -178,7 +178,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                                         .updater(new NoOp()).build())
                                 .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3)
                                         .weightInit(WeightInit.XAVIER).updater(new NoOp()).build())
-                                .pretrain(false).backprop(true)
+
                                 .setInputType(InputType.convolutionalFlat(1, 4, 1));
 
                         MultiLayerConfiguration conf = builder.build();

@@ -115,8 +115,8 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
                                                     .activation(afn).build())
                                     .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                                     .activation(Activation.SOFTMAX).nOut(nOut).build())
-                                    .setInputType(InputType.convolutional(height, width, inputDepth)).pretrain(false)
-                                    .backprop(true);
+                                    .setInputType(InputType.convolutional(height, width, inputDepth))
+                                    ;
 
                     MultiLayerConfiguration conf = builder.build();
 
@@ -210,8 +210,8 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
                                 .activation(Activation.TANH).build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                 .activation(Activation.SOFTMAX).nOut(nOut).build())
-                        .setInputType(InputType.convolutional(height, width, inputDepth)).pretrain(false)
-                        .backprop(true);
+                        .setInputType(InputType.convolutional(height, width, inputDepth))
+                        ;
 
                 MultiLayerConfiguration conf = builder.build();
 
@@ -270,7 +270,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
                         .layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build())
                         .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(nOut).build())
-                        .setInputType(InputType.convolutional(hw, hw, depth)).pretrain(false).backprop(true);
+                        .setInputType(InputType.convolutional(hw, hw, depth));
 
         MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
         mln.init();
@@ -323,7 +323,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
                         .layer(1, new LocalResponseNormalization.Builder().build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(nOut).build())
-                        .setInputType(InputType.convolutional(hw, hw, depth)).pretrain(false).backprop(true);
+                        .setInputType(InputType.convolutional(hw, hw, depth));
 
         MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
         mln.init();
@@ -381,7 +381,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
                                         .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
                         .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
-                        .pretrain(false).backprop(true);
+                        ;
 
         MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
         mln.init();
@@ -438,7 +438,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
                                         .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
                         .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
-                        .pretrain(false).backprop(true);
+                        ;
 
         MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
         mln.init();

@@ -35,7 +35,6 @@ import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
-import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyGraphVertexDeserializer;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyLayerDeserializer;
@@ -167,12 +166,13 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             this(globalConfig, new HashMap<Integer, Builder>());
         }
 
+        @Deprecated
         public ListBuilder backprop(boolean backprop) {
             this.backprop = backprop;
-
             return this;
         }
 
+        @Deprecated
         public ListBuilder pretrain(boolean pretrain) {
             this.pretrain = pretrain;
             return this;
@@ -272,7 +272,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                             .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                             .tBPTTBackwardLength(tbpttBackLength).setInputType(this.inputType)
                             .trainingWorkspaceMode(wsmTrain).cacheMode(globalConfig.cacheMode)
-                            .inferenceWorkspaceMode(wsmTest).confs(list).validateOutputConfig(validateOutputConfig).build();
+                            .inferenceWorkspaceMode(wsmTest).confs(list).validateOutputLayerConfig(validateOutputConfig).build();
         }
 
         /** Helper class for setting input types */

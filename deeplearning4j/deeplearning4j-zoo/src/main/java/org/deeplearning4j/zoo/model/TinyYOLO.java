@@ -176,7 +176,7 @@ public class TinyYOLO extends ZooModel {
                                 .boundingBoxPriors(priors)
                                 .build(),
                         "convolution2d_" + layerNumber)
-                .setOutputs("outputs").backprop(true).pretrain(false);
+                .setOutputs("outputs");
 
         return graphBuilder.build();
     }

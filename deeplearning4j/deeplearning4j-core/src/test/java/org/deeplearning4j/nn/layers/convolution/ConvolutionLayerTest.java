@@ -84,7 +84,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
                                         .dropOut(0.5).build())
                         .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS) //output layer
                                         .nOut(10).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build())
-                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).backprop(true).pretrain(false);
+                        .setInputType(InputType.convolutionalFlat(28, 28, 1));
 
         DataSetIterator iter = new MnistDataSetIterator(10, 10);
         MultiLayerConfiguration conf = builder.build();
@@ -121,7 +121,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
                                         .layer(2, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER)
                                                         .activation(Activation.SOFTMAX).build())
                                         .setInputType(InputType.convolutionalFlat(imageHeight, imageWidth, nChannels))
-                                        .backprop(true).pretrain(false);
+                                        ;
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
@@ -157,7 +157,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
                                         .layer(1, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER)
                                                         .activation(Activation.SOFTMAX).build())
                                         .setInputType(InputType.convolutionalFlat(imageHeight, imageWidth, nChannels))
-                                        .backprop(true).pretrain(false);
+                                        ;
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
@@ -191,7 +191,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
                                                         .weightInit(WeightInit.XAVIER).build())
                                         .layer(1, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER)
                                                         .activation(Activation.SOFTMAX).build())
-                                        .backprop(true).pretrain(false)
+
                                         .setInputType(InputType.convolutional(imageHeight, imageWidth, nChannels));
 
         MultiLayerConfiguration conf = builder.build();
@@ -673,7 +673,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
                 .layer(new Convolution1DLayer.Builder().nOut(3).kernelSize(2).activation(Activation.TANH).build())
                 .layer(new Subsampling1DLayer.Builder().kernelSize(2).stride(2).build())
                 .layer(new Upsampling1D.Builder().size(2).build())
-                .layer(new RnnOutputLayer.Builder().nOut(7).build())
+                .layer(new RnnOutputLayer.Builder().nOut(7).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.recurrent(10))
                 .build();
 

@@ -238,8 +238,8 @@ public class Xception extends ZooModel {
                         .activation(Activation.SOFTMAX).build(), "avg_pool")
 
                 .setOutputs("predictions")
-                .backprop(true)
-                .pretrain(false);
+
+                ;
 
         return graph;
     }

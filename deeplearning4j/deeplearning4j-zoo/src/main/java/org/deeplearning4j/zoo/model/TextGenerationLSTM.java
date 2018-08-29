@@ -94,7 +94,7 @@ public class TextGenerationLSTM extends ZooModel {
                                         .activation(Activation.SOFTMAX) //MCXENT + softmax for classification
                                         .nOut(totalUniqueCharacters).build())
                         .backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(50).tBPTTBackwardLength(50)
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         return conf;
     }

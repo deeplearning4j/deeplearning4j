@@ -218,7 +218,7 @@ public class UNet extends ZooModel {
                         .activation(Activation.SIGMOID).build(), "conv9-3")
                 .addLayer("output", new CnnLossLayer.Builder(LossFunctions.LossFunction.MCXENT).build(), "conv10")
 
-                .setOutputs("output").backprop(true).pretrain(false);
+                .setOutputs("output");
 
         return graph;
     }

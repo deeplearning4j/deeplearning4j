@@ -346,7 +346,7 @@ public class FaceNetNN4Small2 extends ZooModel {
                                         .activation(Activation.SOFTMAX).nOut(numClasses).lambda(1e-4).alpha(0.9)
                                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).build(),
                                         "embeddings")
-                        .setOutputs("lossLayer").backprop(true).pretrain(false)
+                        .setOutputs("lossLayer")
                         .setInputTypes(InputType.convolutional(inputShape[2], inputShape[1], inputShape[0]));
 
         return graph.build();

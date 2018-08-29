@@ -154,7 +154,7 @@ public class Darknet19 extends ZooModel {
                         .build(), "globalpooling")
                 .addLayer("loss", new LossLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .build(), "softmax")
-                .setOutputs("loss").backprop(true).pretrain(false);
+                .setOutputs("loss");
 
         return graphBuilder.build();
     }

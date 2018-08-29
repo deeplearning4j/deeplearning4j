@@ -171,8 +171,8 @@ public class AlexNet extends ZooModel {
                         .weightInit(WeightInit.DISTRIBUTION).dist(new GaussianDistribution(0, 0.005))
                         .biasInit(0.1)
                         .build())
-                .backprop(true)
-                .pretrain(false)
+
+
                 .setInputType(InputType.convolutional(inputShape[2], inputShape[1], inputShape[0]))
                 .build();
 

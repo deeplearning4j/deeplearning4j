@@ -64,7 +64,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
                         new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                                 .activation(Activation.SOFTMAX).nIn(5).nOut(3).build(),
                         "firstLayer")
-                .setOutputs("outputLayer").pretrain(false).backprop(true).build();
+                .setOutputs("outputLayer").build();
 
         String json = conf.toJson();
         ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);
@@ -93,13 +93,13 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
                                 "cnn1", "cnn2")
                         .addLayer("dnn1", new DenseLayer.Builder().nOut(7).build(), "max1")
                         .addLayer("max2", new SubsamplingLayer.Builder().build(), "max1")
-                        .addLayer("output", new OutputLayer.Builder().nIn(7).nOut(10).build(), "dnn1",
+                        .addLayer("output", new OutputLayer.Builder().nIn(7).nOut(10).activation(Activation.SOFTMAX).build(), "dnn1",
                                 "max2")
                         .setOutputs("output")
                         .inputPreProcessor("cnn1", new FeedForwardToCnnPreProcessor(32, 32, 3))
                         .inputPreProcessor("cnn2", new FeedForwardToCnnPreProcessor(32, 32, 3))
                         .inputPreProcessor("dnn1", new CnnToFeedForwardPreProcessor(8, 8, 5))
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         String json = conf.toJson();
         ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);
@@ -129,7 +129,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
                         .addLayer("dense2", new DenseLayer.Builder().nIn(20).nOut(5).build(), "subset1")
                         .addVertex("add", new ElementWiseVertex(ElementWiseVertex.Op.Add), "dense1",
                                 "dense2")
-                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "add")
+                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).lossFunction(LossFunctions.LossFunction.MSE).build(), "add")
                         .setOutputs("out").build();
 
         String json = conf.toJson();
@@ -197,7 +197,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
                     .addLayer("dense1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "input1", "dense3")
                     .addLayer("dense2", new DenseLayer.Builder().nIn(2).nOut(2).build(), "dense1")
                     .addLayer("dense3", new DenseLayer.Builder().nIn(2).nOut(2).build(), "dense2")
-                    .addLayer("out", new OutputLayer.Builder().nIn(2).nOut(2).build(), "dense1")
+                    .addLayer("out", new OutputLayer.Builder().nIn(2).nOut(2).lossFunction(LossFunctions.LossFunction.MSE).build(), "dense1")
                     .setOutputs("out").build();
             //Cycle detection happens in ComputationGraph.init()
             ComputationGraph graph = new ComputationGraph(conf);
@@ -245,6 +245,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
                 .addLayer("out1", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
                 .addLayer("out2", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
                 .addLayer("out3", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
+                .validateOutputLayerConfig(false)
                 .setOutputs("out1", "out2", "out3").build();
 
         ComputationGraphConfiguration cloned = conf.clone();
@@ -374,7 +375,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
                                         !lossLayer ? new OutputLayer.Builder().nIn(10).nOut(nOut[i]).activation(activations[i]).lossFunction(lf[i]).build()
                                                 : new LossLayer.Builder().activation(activations[i]).lossFunction(lf[i]).build(), "0")
                                 .setOutputs("1")
-                                .validateOutputConfig(validate)
+                                .validateOutputLayerConfig(validate)
                                 .build();
                         if (validate) {
                             fail("Expected exception: " + s);

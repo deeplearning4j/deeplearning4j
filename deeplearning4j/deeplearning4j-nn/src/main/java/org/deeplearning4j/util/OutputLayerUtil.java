@@ -2,6 +2,7 @@ package org.deeplearning4j.util;
 
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
@@ -40,8 +41,8 @@ public class OutputLayerUtil {
         OUTSIDE_ZERO_ONE_RANGE.add(ActivationThresholdedReLU.class);
     }
 
-    private static final String COMMON_MSG = "This configuration validation check can be disabled for MultiLayerConfiguration" +
-            " and ComputationGraphConfiguration using validateOutputConfig(false), however this is not recommended.";
+    private static final String COMMON_MSG = "\nThis configuration validation check can be disabled for MultiLayerConfiguration" +
+            " and ComputationGraphConfiguration using validateOutputLayerConfig(false), however this is not recommended.";
 
 
     /**
@@ -57,7 +58,7 @@ public class OutputLayerUtil {
         ILossFunction loss;
         long nOut;
         boolean isLossLayer = false;
-        if (layer instanceof BaseOutputLayer) {
+        if (layer instanceof BaseOutputLayer && !(layer instanceof OCNNOutputLayer)) {
             activation = ((BaseOutputLayer) layer).getActivationFn();
             loss = ((BaseOutputLayer) layer).getLossFn();
             nOut = ((BaseOutputLayer) layer).getNOut();
@@ -126,6 +127,7 @@ public class OutputLayerUtil {
     }
 
     public static boolean lossFunctionExpectsProbability(ILossFunction lf) {
+        //Note LossNegativeLogLikelihood extends LossMCXENT
         return lf instanceof LossMCXENT || lf instanceof LossBinaryXENT;
     }
 

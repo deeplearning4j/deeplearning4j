@@ -235,7 +235,7 @@ public class ResNet50 extends ZooModel {
                                         new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                                         .nOut(numClasses).activation(Activation.SOFTMAX).build(),
                                         "avgpool")
-                        .setOutputs("output").backprop(true).pretrain(false);
+                        .setOutputs("output");
 
         return graph;
     }

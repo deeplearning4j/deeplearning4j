@@ -91,7 +91,7 @@ public class MnistFetcherTest extends BaseDL4JTest {
         assertTrue(mnistDir.isDirectory());
     }
 
-    @Test
+//    @Test
     public void testMnistSubset() throws Exception {
         final int numExamples = 100;
 

@@ -109,7 +109,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                                         LossFunctions.LossFunction.MCXENT).nIn(100).nOut(3)
                                                         .activation(Activation.SOFTMAX).weightInit(WeightInit.XAVIER)
                                                         .build())
-                        .backprop(true).build();
+                        .build();
 
 
 
@@ -277,7 +277,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(3).nOut(nOut)
                                                         .activation(Activation.SOFTMAX).build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, conf,
                         new ParameterAveragingTrainingMaster(true, numExecutors(), 1, 10, 1, 0));
@@ -362,7 +362,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(50).nOut(10)
                                                         .activation(Activation.SOFTMAX).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, conf,
                         new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
@@ -423,7 +423,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(50).nOut(10)
                                                         .activation(Activation.SOFTMAX).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, conf,
                         new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
@@ -489,7 +489,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(50).nOut(10)
                                                         .activation(Activation.SOFTMAX).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, conf,
                         new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
@@ -575,7 +575,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                                         LossFunctions.LossFunction.MCXENT).nIn(50).nOut(10)
                                                         .activation(Activation.SOFTMAX).build(),
                                         "0")
-                        .setOutputs("1").pretrain(false).backprop(true).build();
+                        .setOutputs("1").build();
 
         SparkComputationGraph sparkNet = new SparkComputationGraph(sc, conf,
                         new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
@@ -641,7 +641,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(4).nOut(3).activation(Activation.SOFTMAX)
                                                         .build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         Nd4j.getRandom().setSeed(12345);
         MultiLayerNetwork n1 = new MultiLayerNetwork(conf);
@@ -719,7 +719,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(50).nOut(10)
                                                         .activation(Activation.SOFTMAX).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         for (int avgFreq : new int[] {1, 5, 10}) {
             System.out.println("--- Avg freq " + avgFreq + " ---");
@@ -767,7 +767,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                                         LossFunctions.LossFunction.MCXENT).nIn(50).nOut(10)
                                                         .activation(Activation.SOFTMAX).build(),
                                         "0")
-                        .pretrain(false).backprop(true).setOutputs("1").build();
+                        .setOutputs("1").build();
 
         for (int avgFreq : new int[] {1, 5, 10}) {
             System.out.println("--- Avg freq " + avgFreq + " ---");

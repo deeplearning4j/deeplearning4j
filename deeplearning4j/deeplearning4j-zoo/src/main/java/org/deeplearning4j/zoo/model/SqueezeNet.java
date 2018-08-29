@@ -147,8 +147,8 @@ public class SqueezeNet extends ZooModel {
                 .addLayer("loss", new LossLayer.Builder(LossFunctions.LossFunction.MCXENT).build(), "softmax")
 
                 .setOutputs("loss")
-                .backprop(true)
-                .pretrain(false);
+
+                ;
 
         return graph;
     }

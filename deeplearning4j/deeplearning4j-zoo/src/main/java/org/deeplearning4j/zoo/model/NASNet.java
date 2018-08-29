@@ -197,8 +197,8 @@ public class NASNet extends ZooModel {
                     .activation(Activation.SOFTMAX).build(), "avg_pool")
 
                 .setOutputs("output")
-                .backprop(true)
-                .pretrain(false);
+
+                ;
 
         return graph;
     }
