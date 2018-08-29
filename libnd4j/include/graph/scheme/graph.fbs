@@ -27,7 +27,7 @@ table FlatResponse {
 rpc_service GraphInferenceServer {
     RegisterGraph(FlatGraph):FlatResponse;
     ForgetGraph(FlatDropRequest):FlatResponse;
-    InferenceRequest(FlatInferenceRequest):FlatResult (streaming: "server");
+    InferenceRequest(FlatInferenceRequest):FlatResult;
 }
 
 root_type FlatGraph;
