@@ -126,7 +126,7 @@ public class ModelParameterServerTest {
 
         val servers = new ArrayList<ModelParameterServer>();
         val transports = new ArrayList<DummyTransport>();
-        for (int e = 0; e < 2048; e++) {
+        for (int e = 0; e < 128; e++) {
             val clientTransport = new DummyTransport(java.util.UUID.randomUUID().toString(), connector, rootId, config);
             val clientServer = new ModelParameterServer(config, clientTransport, false);
 
@@ -142,7 +142,7 @@ public class ModelParameterServerTest {
         // at this point we should have 2048 nodes within
         val rootMesh = rootTransport.getMesh();
         val originalVersion = rootMesh.getVersion();
-        assertEquals(2048, rootMesh.getVersion());
+        assertEquals(128, rootMesh.getVersion());
 
         // all mesh structures should be equal
         for (val t:transports)
