@@ -3750,6 +3750,15 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd
     }
 }
 
+int NativeOps::decompressParallel(Nd4jPointer* arrays, int arrayCount, Nd4jPointer output) {
+
+#pragma omp parallel for
+    for (int k = 0; k < arrayCount; k++) {
+        convertTypes(nullptr, ND4J_THRESHOLD, arrays[k], 0, ND4J_FLOAT32, output);
+    }
+    return ND4J_STATUS_OK;
+}
+
 
 template void flattenGeneric<float16>(Nd4jPointer*, int, char, float16*, Nd4jLong*, float16*, Nd4jLong*);
 template void flattenGeneric<float>(Nd4jPointer*, int, char, float*, Nd4jLong*, float*, Nd4jLong*);

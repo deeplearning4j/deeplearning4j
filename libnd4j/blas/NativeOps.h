@@ -3122,8 +3122,44 @@ public:
 
     void decodeThresholdHalf(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, float16 *dz);
 
+    /* parallel versions of encode/decode routines mentioned above */
+    Nd4jLong encodeBitmapFloatParallel(Nd4jPointer *extraPointers, float *dx, Nd4jLong N, int *dz, float threshold);
+
+    Nd4jLong encodeBitmapDoubleParallel(Nd4jPointer *extraPointers, double *dx, Nd4jLong N, int *dz, float threshold);
+
+    Nd4jLong encodeBitmapHalfParallel(Nd4jPointer *extraPointers, float16 *dx, Nd4jLong N, int *dz, float threshold);
+
+    void decodeBitmapFloatParallel(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, float *dz);
+
+    void decodeBitmapDoubleParallel(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, double *dz);
+
+    void decodeBitmapHalfParallel(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, float16 *dz);
 
 
+    void encodeThresholdP1DoubleParallel(Nd4jPointer *extraPointers, double *dx, Nd4jLong N, int *dz, float threshold);
+
+    void encodeThresholdP1HalfParallel(Nd4jPointer *extraPointers, float16 *dx, Nd4jLong N, int *dz, float threshold);
+
+    void encodeThresholdP1FloatParallel(Nd4jPointer *extraPointers, float *dx, Nd4jLong N, int *dz, float threshold);
+
+
+    void encodeThresholdP2IntParallel(Nd4jPointer *extraPointers, int *dx, Nd4jLong N, int *dz);
+
+
+    void encodeThresholdP3FloatParallel(Nd4jPointer *extraPointers, float *dx, int *offsets, Nd4jLong N, int *dz);
+
+    void encodeThresholdP3DoubleParallel(Nd4jPointer *extraPointers, double *dx, int *offsets, Nd4jLong N, int *dz);
+
+    void encodeThresholdP3HalfParallel(Nd4jPointer *extraPointers, float16 *dx, int *offsets, Nd4jLong N, int *dz);
+
+
+    void decodeThresholdFloatParallel(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, float *dz);
+
+    void decodeThresholdDoubleParallel(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, double *dz);
+
+    void decodeThresholdHalfParallel(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, float16 *dz);
+
+    /* ----------------------------------------------------------- */
     void sortFloat(Nd4jPointer *extraPointers, float *x, Nd4jLong *xShapeInfo, bool descending);
 
     void sortDouble(Nd4jPointer *extraPointers, double *x, Nd4jLong *xShapeInfo, bool descending);
@@ -3219,7 +3255,7 @@ public:
     Nd4jStatus execCustomOpWithScopeDouble(Nd4jPointer *extraPointers, Nd4jPointer state, Nd4jLong opHash, Nd4jLong *scopes, int numScopes, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int numInputs, Nd4jPointer *outputBuffers, Nd4jPointer *outputShapes, int numOutputs);
 
 
-
+    int decompressParallel(Nd4jPointer* arrays, int arrayCount, Nd4jPointer output);
 
 };
 

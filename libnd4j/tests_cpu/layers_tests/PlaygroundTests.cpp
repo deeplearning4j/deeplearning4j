@@ -555,9 +555,9 @@ TEST_F(PlaygroundTests, loop_test_1) {
     int span = (int) (array->lengthOf() / 6) + 8;
 
     NativeOps ops;
-
-    auto t = new int[1000000];
-
+    int const N = 1000000;
+    auto t = new int[N];
+    memset(t, '\0', N * sizeof(int));
 
 
 
@@ -615,6 +615,105 @@ TEST_F(PlaygroundTests, loop_test_1) {
 
     delete result;
     delete[] t;
+}
+
+TEST_F(PlaygroundTests, loop_test_2) {
+
+    NDArray<float> f('c', {2}, {50, 20});
+    nd4j::ops::randomuniform<float> op;
+    int* poolX[10];
+    auto result = op.execute({&f}, {-1.0f, 1.0f}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+    auto array = result->at(0);
+
+    auto buffer = array->buffer();
+    int cnt = 0;
+    int iterations = 10;
+
+    //nd4j_printf("Array length: %lld\n", array->lengthOf());
+
+    int length = (int) array->lengthOf();
+    int span = (int) (array->lengthOf() / 6) + 8;
+
+    NativeOps ops;
+
+    //int t[10000];
+    int const N = 10000;
+    int** t = new int*[10];
+    for (int k = 0; k < 10; k++) {
+        t[k] = new int[N];
+        memset(t[k], '\0', N * sizeof(int));
+    }
+
+    FloatBits fb;
+    float threshold = 0.99f;
+    fb.f_ = threshold;
+
+    //nd4j_printf("number of elements: [%i]\n", le);
+
+    long permTime = 0;
+
+    for (int x = 0; x < iterations; x++) {
+        int le = ops.estimateThresholdFloat(nullptr, reinterpret_cast<void *>(array->buffer()), static_cast<int>(array->lengthOf()), threshold);
+
+        t[x][0] = le;
+        t[x][1] = length;
+        t[x][2] = fb.i_;
+
+        auto permStart = std::chrono::system_clock::now();
+        ops.estimateThresholdFloat(nullptr, reinterpret_cast<void *>(array->buffer()), static_cast<int>(array->lengthOf()), threshold);
+
+        TypeCast::convertToThreshold<float>(nullptr, buffer, array->lengthOf(), t[x]);
+
+        /*
+#pragma omp parallel reduction(+:cnt)
+        {
+            int tid = omp_get_thread_num();
+            int start = span * tid;
+            int stop = span * (tid + 1);
+            if (stop > length)
+                stop = length;
+
+#pragma omp simd
+            for (int e = start; e < stop; e++) {
+                auto v = fabsf(buffer[e]);
+                if (v >= 0.995f)
+                    cnt++;
+            }
+        }
+         */
+/*
+#pragma omp parallel for simd reduction(+:cnt)
+        for (int e = 0; e < length; e++) {
+            auto v = fabsf(buffer[e]);
+            if (v >= 0.995f)
+                cnt++;
+        }
+        */
+
+        auto permEnd = std::chrono::system_clock::now();
+        permTime += std::chrono::duration_cast<std::chrono::microseconds> (permEnd - permStart).count();
+    }
+    std::vector<int> nonZero;
+    for (int i = 0; i < N; ++i) {
+        if (t[0][i] != 0)
+            nonZero.push_back(t[0][i]);
+    }
+    for (auto v: nonZero){
+        nd4j_printf("%i, ", v);
+    }
+    nd4j_printf("\nPermuted time: %lld us; Counter: %i;\n", permTime / iterations, cnt);
+    nd4j_printf("Total non-zero elems are %i.\n", nonZero.size());
+
+    delete result;
+    for (int k = 0; k < 10; k++) {
+        delete [] t[k];
+    }
+    //NativeOps ops;
+    ops.decompressParallel((Nd4jPointer *)t, 10, f.getBuffer());
+    nd4j_printf("All done.\n", "");
+    delete[] t;
+    ASSERT_TRUE(false);
 }
 
 //////////////////////////////////////////////////////////////////////
