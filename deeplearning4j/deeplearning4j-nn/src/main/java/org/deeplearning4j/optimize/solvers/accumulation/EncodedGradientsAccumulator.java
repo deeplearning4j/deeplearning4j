@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.AtomicThrowable;
 
 import java.util.ArrayList;
@@ -473,6 +474,9 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
             // accumulate gradients updates in residental array
             accumulator.get().addi(array);
+
+            // getting statistics
+            log.info("Residual: {amean: {}; amax: {}; 50%: {}; 95%: {};}", array.ameanNumber().doubleValue(), array.amaxNumber().doubleValue(), Transforms.abs(array, true).percentileNumber(50).doubleValue(), Transforms.abs(array, true).percentileNumber(90).doubleValue());
 
             if (isDebug)
                 log.info("thread {} locking at Register", Thread.currentThread().getId());
