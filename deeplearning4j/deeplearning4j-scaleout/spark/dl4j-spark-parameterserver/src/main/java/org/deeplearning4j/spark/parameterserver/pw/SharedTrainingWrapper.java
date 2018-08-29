@@ -340,7 +340,7 @@ public class SharedTrainingWrapper {
 
                 // we're launching PW only if number of workers is more then 1
                 if (numWorkers > 1) {
-                    //log.debug("Params at PW: {}", originalModel.params().meanNumber().doubleValue());
+                    log.info("Params at PW:  {mean: [{}]; stdev: [{}]}", originalModel.params().meanNumber().doubleValue(), originalModel.params().stdNumber().doubleValue());
 
                     wrapper = new ParallelWrapper.Builder<>(originalModel)
                                     .workers(numWorkers)
