@@ -29,21 +29,13 @@
 namespace nd4j {
     namespace graph {
             grpc::Status GraphInferenceServerImpl::RegisterGraph( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatGraph> *request_msg, flatbuffers::grpc::Message<FlatResponse> *response_msg) {
-                nd4j_printf("Register %i\n", 0);
-
                 auto flat_graph = request_msg->GetRoot();
-
-                nd4j_printf("Register %i\n", 1);
 
                 // building our graph
                 auto graph = new Graph<float>(flat_graph);
 
-                nd4j_printf("Register %i\n", 2);
-                
                 // single data type for now
                 GraphHolder::getInstance()->registerGraph<float>(flat_graph->id(), graph);
-
-                nd4j_printf("Register %i\n", 3);
 
                 // sending out OK response
                 auto response_offset = CreateFlatResponse(mb_, 0);
@@ -73,18 +65,15 @@ namespace nd4j {
             grpc::Status GraphInferenceServerImpl::InferenceRequest( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatInferenceRequest> *request_msg, flatbuffers::grpc::Message<FlatResult> *response_msg) {
                 auto request = request_msg->GetRoot();
 
-                nd4j_printf("Inference %i\n", 0);
-
                 // trying to get graph by id
                 auto graph = GraphHolder::getInstance()->cloneGraph<float>(request->id());
-
-                graph->printOut();
-                nd4j_printf("Inference %i\n", 1);
+                if (graph == nullptr)
+                    return grpc::Status::INVALID_ARGUMENT;
 
                 // provide results here
                 auto response_offset = GraphExecutioner<float>::execute(graph, mb_, request);
-
-                nd4j_printf("Inference %i\n", 2);
+                if (response_offset == 0)
+                    return grpc::Status::UNKNOWN;
 
                 mb_.Finish(response_offset);
                 *response_msg = mb_.ReleaseMessage<FlatResult>();

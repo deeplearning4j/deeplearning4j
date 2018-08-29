@@ -867,10 +867,12 @@ flatbuffers::Offset<FlatResult> GraphExecutioner<T>::execute(Graph<T> *graph, fl
         }
     }
 
-    //if (Environment::getInstance()->isDebugAndVerbose())
+    if (Environment::getInstance()->isDebugAndVerbose())
         graph->printOut();
 
-    GraphExecutioner<T>::execute(graph);
+    auto status = GraphExecutioner<T>::execute(graph);
+    if (status != nd4j::Status::OK())
+        return 0;
 
     auto outputs = graph->fetchOutputs();
 
