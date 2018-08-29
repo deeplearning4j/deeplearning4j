@@ -57,8 +57,8 @@ public class BiasAdd extends DynamicCustomOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "BiasAdd";
+    public String[] tensorflowNames() {
+        return new String[]{"BiasAdd","BiasAddV1"};
     }
 
     @Override

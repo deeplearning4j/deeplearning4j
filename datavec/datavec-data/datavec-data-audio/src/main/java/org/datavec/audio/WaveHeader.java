@@ -21,7 +21,7 @@ import java.io.InputStream;
 
 /**
  * WAV File Specification
- * https://ccrma.stanford.edu/courses/422/projects/WaveFormat/
+ * <a href="https://ccrma.stanford.edu/courses/422/projects/WaveFormat/">https://ccrma.stanford.edu/courses/422/projects/WaveFormat/</a>
  * 
  * @author Jacquet Wong
  */

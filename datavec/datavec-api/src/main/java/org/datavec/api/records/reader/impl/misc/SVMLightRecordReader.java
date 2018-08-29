@@ -56,10 +56,10 @@ import java.util.NoSuchElementException;
  *
  * Like scikit-learn, we support both zero-based and one-based indexing.
  *
- * Further details on the format can be found at
- * - http://svmlight.joachims.org/
- * - http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multilabel.html
- * - http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_svmlight_file.html
+ * Further details on the format can be found at<br>
+ * - <a href="http://svmlight.joachims.org/">http://svmlight.joachims.org/</a><br>
+ * - <a href="http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multilabel.html">http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multilabel.html</a><br>
+ * - <a href="http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_svmlight_file.html">http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_svmlight_file.html</a>
  *
  * @author Adam Gibson     (original)
  * @author Josh Patterson
