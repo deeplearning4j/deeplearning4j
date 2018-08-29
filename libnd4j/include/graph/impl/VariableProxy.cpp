@@ -170,8 +170,16 @@ namespace nd4j {
 
         template <typename T>
         void VariableProxy<T>::replaceVariable(Variable<T> *variable) {
-            // if proxy has variable - that's one story
-            _current->replaceVariable(variable);
+            if (variable->getName() != nullptr && !variable->getName()->empty()) {
+                // if variable has name defined - we should resolve it via backing var space
+                if (_backed->hasVariable(variable->getName())) {
+                    auto origVar = _backed->getVariable(variable->getName());
+                    variable->setId(origVar->id(), origVar->index());
+                    _current->replaceVariable(variable);
+                } else
+                    _current->replaceVariable(variable);
+            } else // if proxy has variable - that's one story
+                _current->replaceVariable(variable);
         }
 
         template <typename T>
