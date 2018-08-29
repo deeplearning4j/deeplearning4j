@@ -475,9 +475,6 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
             // accumulate gradients updates in residental array
             accumulator.get().addi(array);
 
-            // getting statistics
-            log.info("Residual: {amean: {}; amax: {}; 50%: {}; 95%: {};}", array.ameanNumber().doubleValue(), array.amaxNumber().doubleValue(), Transforms.abs(array, true).percentileNumber(50).doubleValue(), Transforms.abs(array, true).percentileNumber(90).doubleValue());
-
             if (isDebug)
                 log.info("thread {} locking at Register", Thread.currentThread().getId());
 

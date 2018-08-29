@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.NDArrayCompressor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -128,6 +129,10 @@ public class EncodingHandler implements MessageHandler {
     }
 
     public INDArray encodeUpdates(INDArray updates) {
+        // getting statistics
+        log.info("Residual: {amean: {}; amax: {}; 50%: {}; 95%: {};}; Current Threshold: [{}]", updates.ameanNumber().doubleValue(), updates.amaxNumber().doubleValue(), Transforms.abs(updates, true).percentileNumber(50).doubleValue(), Transforms.abs(updates, true).percentileNumber(90).doubleValue(), currentThreshold.get());
+
+
         // special op should be called here for encoding
         if (bitmapMode.get() == null) {
             bitmapMode.set(new AtomicBoolean(true));
