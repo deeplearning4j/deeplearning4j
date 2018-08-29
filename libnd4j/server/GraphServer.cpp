@@ -46,6 +46,24 @@ namespace nd4j {
                 return grpc::Status::OK;
             }
 
+            grpc::Status GraphInferenceServerImpl::ReplaceGraph( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatGraph> *request_msg, flatbuffers::grpc::Message<FlatResponse> *response_msg) {
+                auto flat_graph = request_msg->GetRoot();
+
+                // building our graph
+                auto graph = new Graph<float>(flat_graph);
+
+                // single data type for now
+                // replace graph
+
+                // sending out OK response
+                auto response_offset = CreateFlatResponse(mb_, 0);
+                mb_.Finish(response_offset);
+                *response_msg = mb_.ReleaseMessage<FlatResponse>();
+                assert(response_msg->Verify());
+
+                return grpc::Status::OK;
+            }
+
             grpc::Status GraphInferenceServerImpl::ForgetGraph( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatDropRequest> *request_msg, flatbuffers::grpc::Message<FlatResponse> *response_msg) {
                 // getting drop request
                 auto request = request_msg->GetRoot();
