@@ -93,7 +93,10 @@ public abstract  class BaseTransport  implements Transport {
     // exactly what name says
     protected final AtomicInteger numerOfNodes = new AtomicInteger(0);
 
-    protected final ExecutorService executorService = Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors() / 2), new ThreadFactory() {
+    // this queue handles all incoming messages
+    protected final TransferQueue<VoidMessage> messageQueue = new LinkedTransferQueue<>();
+
+    protected final ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors()), new ThreadFactory() {
         @Override
         public Thread newThread(@NotNull Runnable r) {
             val t = Executors.defaultThreadFactory().newThread(r);
@@ -148,7 +151,28 @@ public abstract  class BaseTransport  implements Transport {
 
     @Override
     public synchronized void launch() {
-        // first of all we introduce ourselves to master
+        // master mode assumes heartbeat thread, so we'll need one more thread to run there
+        int lim = masterMode ? 1 : 0;
+        // we're launching threads for messages processing
+        for (int e = 0; e< executorService.getMaximumPoolSize() - lim; e++) {
+            executorService.submit(new Runnable() {
+                @Override
+                public void run() {
+                    while (true) {
+                        try {
+                            val message = messageQueue.take();
+                            if (message != null)
+                                internalProcessMessage(message);
+                        } catch (InterruptedException e) {
+                            break;
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            });
+        }
+
 
         // this flow gets converted to VoidChunks and sent to upstream and downstreams
         val d = Flowable.fromPublisher(outgoingFlow).subscribe(voidMessage -> {
@@ -164,7 +188,7 @@ public abstract  class BaseTransport  implements Transport {
             propagateMessage(voidMessage, PropagationMode.BOTH_WAYS);
         });
 
-        // now we're going for Handshake
+        // now we're going for Handshake with master
         if (!masterMode) {
             try {
                 sendMessageBlocking(new HandshakeRequest(), rootId);
@@ -288,8 +312,7 @@ public abstract  class BaseTransport  implements Transport {
         }
     }
 
-    @Override
-    public void processMessage(VoidMessage message) {
+    protected void internalProcessMessage(VoidMessage message) {
         /**
          * TODO: we need better isolation here
          */
@@ -381,7 +404,7 @@ public abstract  class BaseTransport  implements Transport {
                     mesh.set(newMesh);
             }
 
-                // optionally calling out callback, which will happen approximately 100% of time
+            // optionally calling out callback, which will happen approximately 100% of time
             if (response.isRestart()) {
                 if (restartCallback != null)
                     restartCallback.call(response);
@@ -394,7 +417,7 @@ public abstract  class BaseTransport  implements Transport {
             val reply = (ResponseMessage) message;
             replies.putIfAbsent(reply.getRequestId(), reply);
 
-         // this is default handler for message pairs
+            // this is default handler for message pairs
         } else if (message instanceof ResponseMessage) {
             // in this case we store message to the map, to be fetched later
             val reply = (ResponseMessage) message;
@@ -450,6 +473,15 @@ public abstract  class BaseTransport  implements Transport {
                     throw new RuntimeException(e);
                 }
             }
+        }
+    }
+
+    @Override
+    public void processMessage(VoidMessage message) {
+        try {
+            messageQueue.transfer(message);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
