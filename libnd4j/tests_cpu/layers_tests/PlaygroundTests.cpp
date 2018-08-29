@@ -706,12 +706,14 @@ TEST_F(PlaygroundTests, loop_test_2) {
     nd4j_printf("Total non-zero elems are %i.\n", nonZero.size());
 
     delete result;
-    for (int k = 0; k < 10; k++) {
-        delete [] t[k];
-    }
+
     //NativeOps ops;
     ops.decompressParallel((Nd4jPointer *)t, 10, f.getBuffer());
     nd4j_printf("All done.\n", "");
+
+    for (int k = 0; k < 10; k++) {
+        delete [] t[k];
+    }
     delete[] t;
     ASSERT_TRUE(false);
 }
