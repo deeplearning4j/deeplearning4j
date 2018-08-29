@@ -127,6 +127,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     protected transient Transport transport;
     protected transient SilentTrainingDriver trainingDriver;
 
+    protected transient UpdatesConsumer updatesConsumer;
+
     protected boolean setupDone;
 
     protected SharedTrainingMaster() {
@@ -483,7 +485,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
             val params = network != null ? network.getNetwork().params() : graph.getNetwork().params();
 
-            val updatesConsumer = UpdatesConsumer.builder()
+            updatesConsumer = UpdatesConsumer.builder()
                     .params(params)
                     .updates(Nd4j.create(params.shape(), params.ordering()))
                     .stepFunction(network != null ? network.getNetwork().getOptimizer().getStepFunction() : graph.getNetwork().getOptimizer().getStepFunction())
@@ -518,6 +520,10 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (trainingDriver != null) {
             trainingDriver.finishTraining(0L, 0L);
         }
+
+        // the same, but v2 impl
+        if (updatesConsumer != null)
+            updatesConsumer.flush();
     }
 
     @Override

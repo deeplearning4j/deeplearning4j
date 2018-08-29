@@ -134,4 +134,10 @@ public interface Transport {
      * @param mesh
      */
     void onMeshUpdate(MeshOrganizer mesh);
+
+    /**
+     * This method returns total number of nodes known to this Transport
+     * @return
+     */
+    int totalNumberOfNodes();
 }

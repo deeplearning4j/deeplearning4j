@@ -113,19 +113,27 @@ public class UpdatesConsumer implements Subscriber<INDArray> {
                     hasSomething.set(true);
 
                     // we apply updates every X iterations, and we don't really need X to be small here
-                    if (updatesCount.incrementAndGet() > 0) {
-                        stepFunction.step(params, updates);
-                        Nd4j.getExecutioner().commit();
-
-                        log.info("Applying updates. Current ratio: [{}]; Sparse: [{}]; Dense: [{}]; Mean: [{}]", (double) sparseCounter.get() / denseCounter.get(), sparseCounter.get(), denseCounter.get(), updates.meanNumber().doubleValue());
-
-                        // once accumulated updates are applied - reset storage, and wait for other messsages
-                        Nd4j.getMemoryManager().memset(updates);
-                        hasSomething.set(false);
+                    if (updatesCount.incrementAndGet() % 32 == 0) {
+                        flush();
                     }
                 }
             } else
                 throw new ND4JIllegalStateException("Accumulator & StepFunction is null at the same time");
+        }
+    }
+
+    public void flush() {
+        synchronized (this) {
+            if (params != null && updates != null && hasSomething.get()) {
+                stepFunction.step(params, updates);
+                Nd4j.getExecutioner().commit();
+
+                log.info("Applying updates. Current ratio: [{}]; Sparse: [{}]; Dense: [{}]; Mean: [{}]", (double) sparseCounter.get() / denseCounter.get(), sparseCounter.get(), denseCounter.get(), updates.meanNumber().doubleValue());
+
+                // once accumulated updates are applied - reset storage, and wait for other messsages
+                Nd4j.getMemoryManager().memset(updates);
+                hasSomething.set(false);
+            }
         }
     }
 

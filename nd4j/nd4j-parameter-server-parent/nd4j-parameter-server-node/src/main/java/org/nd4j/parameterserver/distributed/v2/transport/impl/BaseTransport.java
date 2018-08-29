@@ -50,6 +50,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -88,6 +89,9 @@ public abstract  class BaseTransport  implements Transport {
     protected final VoidConfiguration voidConfiguration;
 
     protected final MeshBuildMode meshBuildMode = MeshBuildMode.MESH;
+
+    // exactly what name says
+    protected final AtomicInteger numerOfNodes = new AtomicInteger(0);
 
     protected final ExecutorService executorService = Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors() / 2), new ThreadFactory() {
         @Override
@@ -517,7 +521,8 @@ public abstract  class BaseTransport  implements Transport {
 
     @Override
     public void onMeshUpdate(MeshOrganizer mesh) {
-        // no-op
+        // FIXME: (int) is bad here
+        numerOfNodes.set((int) mesh.totalNodes());
     }
 
     /**
@@ -587,5 +592,10 @@ public abstract  class BaseTransport  implements Transport {
                 //
             }
         }
+    }
+
+    @Override
+    public int totalNumberOfNodes() {
+        return numerOfNodes.get();
     }
 }
