@@ -195,6 +195,24 @@ public class MeshOrganizer implements Serializable {
     /**
      * This method reconnects given node to another node
      */
+    public void remapNodeAndDownstreams(@NonNull String ip) {
+        remapNodeAndDownstreams(getNodeById(ip));
+    }
+
+    /**
+     * This method remaps node and its downstreams somewhere
+     * @param node
+     */
+    public synchronized void remapNodeAndDownstreams(@NonNull Node node) {
+        node.setUpstreamNode(this.rootNode);
+
+        for (val n: node.getDownstreamNodes())
+            this.remapNode(n);
+    }
+
+    /**
+     * This method reconnects given node to another node
+     */
     public synchronized void remapNode(@NonNull Node node) {
         version++;
 
@@ -387,6 +405,9 @@ public class MeshOrganizer implements Serializable {
             this.status.set(status);
         }
 
+
+
+
         /**
          * This method return candidate for new connection
          *
@@ -551,6 +572,23 @@ public class MeshOrganizer implements Serializable {
         @Override
         public int hashCode() {
             return Objects.hash(upstream == null ? "root" : upstream.getId(), rootNode, id, port, downstream, status);
+        }
+
+        @Override
+        public String toString() {
+            val builder = new StringBuilder();
+            if (downstream == null || downstream.size() == 0)
+                builder.append("none");
+            else {
+                for (val n: downstream) {
+                    builder.append("[").append(n.getId()).append("], ");
+                }
+            }
+            // downstreams: [" + builder.toString() +"]; ]
+            // upstreamId: [" + upstreamId + "];
+            val strId = id == null ? "null" : id;
+            val upstreamId = upstream == null ? "none" : upstream.getId();
+            return "[ Id: ["+ strId +"]; ]";
         }
 
         /**

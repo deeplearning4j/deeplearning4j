@@ -180,6 +180,50 @@ public class MeshOrganizerTest {
         assertEquals(mesh, clone2);
     }
 
+    @Test
+    public void testRemap_3() throws Exception {
+        val mesh = new MeshOrganizer(MeshBuildMode.MESH);
+        mesh.getRootNode().setId("ROOT_NODE");
+        val nodes = new ArrayList<MeshOrganizer.Node>();
+
+        for (int e = 0; e < 512; e++) {
+            val node = mesh.addNode(String.valueOf(e));
+            nodes.add(node);
+        }
+
+        val node = nodes.get(8);
+        assertNotNull(node.getUpstreamNode());
+        assertEquals(MeshOrganizer.MAX_DOWNSTREAMS, node.getDownstreamNodes().size());
+
+        log.info("Node ID: {}; Upstream ID: {}; Downstreams: {}", node.getId(), node.getUpstreamNode().getId(), node.getDownstreamNodes());
+
+        // saving current downstream IDs for later check
+        val ids = new ArrayList<String>();
+        node.getDownstreamNodes().forEach(n  -> ids.add(n.getId()));
+
+
+        // reconnecting
+        mesh.remapNodeAndDownstreams(node);
+
+        // failed node gets connected to the root node
+        assertEquals(mesh.getRootNode(), node.getUpstreamNode());
+
+        // and its downstreams are remapped across the mesh
+        log.info("Node ID: {}; Upstream ID: {}; Downstreams: {}", node.getId(), node.getUpstreamNode().getId(), node.getDownstreamNodes());
+        assertEquals(0, node.getDownstreamNodes().size());
+
+        // we're making sure downstream nodes were properly updated
+        for (val i:ids) {
+            val n = mesh.getNodeById(i);
+            assertNotNull(n);
+            // ensuring upstream was properly changed
+            assertNotEquals(node.getId(), n.getUpstreamNode().getId());
+
+            // ensuring new upstream is aware of new downstream
+            assertTrue(n.getUpstreamNode().getDownstreamNodes().contains(n));
+        }
+    }
+
 
     @Test
     public void testEquality_1() throws Exception {

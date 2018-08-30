@@ -378,20 +378,7 @@ public abstract  class BaseTransport  implements Transport {
 
             synchronized (mesh) {
                 if (mesh.get().isKnownNode(message.getOriginatorId())) {
-                    // first we add new node to the mesh
-                    val nodeToRemap = mesh.get().getNodeById(message.getOriginatorId());
-                    val nodesToRemap = new ArrayList<MeshOrganizer.Node>();
-
-                    // we're remapping node, and its downstreams
-                    nodesToRemap.add(nodeToRemap);
-                    nodesToRemap.addAll(nodeToRemap.getDownstreamNodes());
-
-                    for (val n : nodesToRemap)
-                        mesh.get().remapNode(n);
-
-                    // we don't want remapped node to have any downstreams
-                    nodeToRemap.truncateDownstreams();
-
+                    mesh.get().remapNodeAndDownstreams(message.getOriginatorId());
                     // we say that this model has restarted
                     response.setRestart(true);
                 } else {
