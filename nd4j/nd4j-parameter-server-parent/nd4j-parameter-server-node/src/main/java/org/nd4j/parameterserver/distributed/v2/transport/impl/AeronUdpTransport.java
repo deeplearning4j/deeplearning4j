@@ -276,7 +276,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
     @Override
     public boolean isConnected() {
-        if (connectedFlag.get())
+        if (connectedFlag.get() || masterMode)
             return true;
 
         // node supposed to be connected if rootNode is connected and downstreams + upstream + downstreams are connected
