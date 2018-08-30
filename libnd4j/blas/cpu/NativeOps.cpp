@@ -3767,12 +3767,12 @@ template <typename T> int decompressParallelGeneric(Nd4jPointer* arrays, int arr
         float threshold = fb.f_;
         int flimit = limit + 4;
         int threadID = omp_get_thread_num();
-#pragma omp parallel for schedule(guided)
+//#pragma omp parallel for schedule(guided)
         for (int e = 4; e < flimit; e++) {
             int el = x[e];
-            int ael = nd4j::math::nd4j_abs<int>(el);
+            int ael = nd4j::math::nd4j_abs<int>(el) - 1;
             if ((ael < 1 + threadID * localPart) && (ael > localPart * (1 + threadID))) continue;
-            ael -= 1;
+            //ael -= 1;
             z[ael] += el > 0 ? threshold : -threshold;
         }    //arrays
     }
