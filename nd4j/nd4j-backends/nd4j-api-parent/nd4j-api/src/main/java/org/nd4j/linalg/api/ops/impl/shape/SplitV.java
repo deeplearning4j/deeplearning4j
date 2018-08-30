@@ -55,10 +55,9 @@ public class SplitV extends DynamicCustomOp {
             addIArgument(splitDim.getInt(0));
         }
 
-        //numSplits is sometimes available for import, but libnd4j op doesn't used/need it for execution
-        //val numSplits = (int) attributesForNode.get("num_split").getI();
-        //this.numSplit = numSplits;
-        //addIArgument(numSplits);
+        val numSplits = (int) attributesForNode.get("num_split").getI();
+        this.numSplit = numSplits;
+        //addIArgument(numSplits);  //libnd4j op doesn't used/need it for execution
     }
 
     @Override

@@ -123,6 +123,8 @@ public class TFGraphTestAllSameDiff {
             "split/.*num.*axis-1",
             "split/.*num.*axis-2",
 
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6315
+            "nth_element/.*",
 
             //Not sure why these are failing yet
             "lrn/dr3.*",
