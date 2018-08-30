@@ -6826,6 +6826,31 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testWhereEmpty(){
+        INDArray inArray = Nd4j.zeros(2, 3);
+        inArray.putScalar(0, 0, 10.0f);
+        inArray.putScalar(1, 2, 10.0f);
+
+        INDArray mask1 = inArray.match(1, Conditions.greaterThanOrEqual(1));
+
+        assertEquals(1, mask1.maxNumber().intValue()); // ! Not Empty Match
+
+        INDArray[] matchIndexes = Nd4j.where(mask1, null, null);
+
+        assertArrayEquals(new int[] {0, 1}, matchIndexes[0].toIntVector());
+        assertArrayEquals(new int[] {0, 2}, matchIndexes[1].toIntVector());
+
+        INDArray mask2 = inArray.match(1, Conditions.greaterThanOrEqual(11));
+
+        assertEquals(0, mask2.maxNumber().intValue());
+
+        INDArray[] matchIndexes2 = Nd4j.where(mask2, null, null);
+        for( int i=0; i<matchIndexes2.length; i++ ){
+            assertTrue(matchIndexes2[i].isEmpty());
+        }
+    }
+
+    @Test
     public void testStack(){
         INDArray in = Nd4j.linspace(1,12,12).reshape(3,4);
         INDArray in2 = in.add(100);
