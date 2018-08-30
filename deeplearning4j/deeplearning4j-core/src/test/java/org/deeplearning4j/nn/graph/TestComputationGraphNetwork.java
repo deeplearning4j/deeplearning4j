@@ -87,7 +87,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
                 .addInputs("input")
                 .addLayer("firstLayer", new DenseLayer.Builder().nIn(4).nOut(5).build(), "input")
-                .addLayer("outputLayer", new OutputLayer.Builder().nIn(5).nOut(3).build(), "firstLayer")
+                .addLayer("outputLayer", new OutputLayer.Builder().nIn(5).nOut(3).activation(Activation.SOFTMAX).build(), "firstLayer")
                 .setOutputs("outputLayer").build();
     }
 
@@ -95,7 +95,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         return new NeuralNetConfiguration.Builder().seed(12345)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(5).build())
-                .layer(1, new OutputLayer.Builder().nIn(5).nOut(3).build()).build();
+                .layer(1, new OutputLayer.Builder().nIn(5).nOut(3).activation(Activation.SOFTMAX).build()).build();
     }
 
     private static int getNumParams() {
@@ -314,10 +314,10 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .updater(new Sgd(0.1))
                 .graphBuilder().addInputs("in")
                 .addLayer("dense", new DenseLayer.Builder().nIn(4).nOut(2).build(), "in").addLayer("out",
-                        new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3)
+                        new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(2).nOut(3)
                                 .build(),
                         "dense")
-                .setOutputs("out").pretrain(false).backprop(true).build();
+                .setOutputs("out").build();
 
         ComputationGraph cg = new ComputationGraph(config);
         cg.init();
@@ -382,7 +382,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         ComputationGraphConfiguration conf1 = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
                 .setInputTypes(InputType.feedForward(5))
                 .addLayer("rnn", new GravesLSTM.Builder().nOut(5).build(), "in")
-                .addLayer("out", new RnnOutputLayer.Builder().nOut(5).build(), "rnn").setOutputs("out").build();
+                .addLayer("out", new RnnOutputLayer.Builder().nOut(5).activation(Activation.SOFTMAX).build(), "rnn").setOutputs("out").build();
 
         assertEquals(5, ((FeedForwardLayer) ((LayerVertex) conf1.getVertices().get("rnn")).getLayerConf().getLayer())
                 .getNIn());
@@ -398,7 +398,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
                 .setInputTypes(InputType.recurrent(5))
                 .addLayer("ff", new DenseLayer.Builder().nOut(5).build(), "in")
-                .addLayer("out", new RnnOutputLayer.Builder().nOut(5).build(), "ff").setOutputs("out").build();
+                .addLayer("out", new RnnOutputLayer.Builder().nOut(5).activation(Activation.SOFTMAX).build(), "ff")
+                .setOutputs("out").build();
 
         assertEquals(5, ((FeedForwardLayer) ((LayerVertex) conf2.getVertices().get("ff")).getLayerConf().getLayer())
                 .getNIn());
@@ -420,7 +421,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                                 .build(),
                         "cnn") //(14-2+0)/2+1=7
                 .addLayer("dense", new DenseLayer.Builder().nOut(10).build(), "pool")
-                .addLayer("out", new OutputLayer.Builder().nIn(10).nOut(5).build(), "dense").setOutputs("out")
+                .addLayer("out", new OutputLayer.Builder().nIn(10).nOut(5).activation(Activation.SOFTMAX).build(), "dense").setOutputs("out")
                 .build();
         //Check preprocessors:
         lv1 = (LayerVertex) conf3.getVertices().get("cnn");
@@ -452,7 +453,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                         .addLayer("dense", new DenseLayer.Builder().nOut(10).build(), "pool")
                         .addLayer("dense2", new DenseLayer.Builder().nOut(10).build(), "inRNN")
                         .addVertex("merge", new MergeVertex(), "dense", "dense2")
-                        .addLayer("out", new RnnOutputLayer.Builder().nOut(5).build(), "merge")
+                        .addLayer("out", new RnnOutputLayer.Builder().nOut(5).activation(Activation.SOFTMAX).build(), "merge")
                         .setOutputs("out").build();
 
         //Check preprocessors:
@@ -495,8 +496,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                                 new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
                                         .kernelSize(2, 2).build(),
                                 "cnn_1", "cnn_2")
-                        .addLayer("output", new OutputLayer.Builder().nOut(10).build(), "max_1") //.nIn(7 * 7 * 6)
-                        .setOutputs("output").pretrain(false).backprop(true).build();
+                        .addLayer("output", new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build(), "max_1") //.nIn(7 * 7 * 6)
+                        .setOutputs("output").build();
         lv1 = (LayerVertex) conf5.getVertices().get("cnn_1");
         assertNull(lv1.getPreProcessor()); //Expect no preprocessor: cnn data -> cnn layer
 
@@ -546,8 +547,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
                 .addInputs("input")
                 .addLayer("first_layer", new DenseLayer.Builder().nIn(4).nOut(5).build(), "input")
-                .addLayer("output_layer", new OutputLayer.Builder().nIn(5).nOut(3).build(), "first_layer")
-                .setOutputs("output_layer").pretrain(false).backprop(true).build();
+                .addLayer("output_layer", new OutputLayer.Builder().nIn(5).nOut(3).activation(Activation.SOFTMAX).build(), "first_layer")
+                .setOutputs("output_layer").build();
 
         ComputationGraph net = new ComputationGraph(conf);
         net.init();
@@ -690,7 +691,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                     .addLayer("l0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
                     .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10)
                             .nOut(10).build(), "l0")
-                    .setOutputs("out").pretrain(false).backprop(true).build();
+                    .setOutputs("out").build();
             ComputationGraph s = new ComputationGraph(standard);
             s.init();
 
@@ -700,7 +701,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                     .trainingWorkspaceMode(ws).inferenceWorkspaceMode(ws)
                     .seed(12345).graphBuilder().addInputs("in")
                     .addLayer("l0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in").setOutputs("l0")
-                    .pretrain(false).backprop(true).build();
+                    .build();
 
             ComputationGraph e = new ComputationGraph(external);
             e.init();
@@ -827,8 +828,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
                 .addInputs("input").addLayer("first", new DenseLayer.Builder().nIn(4).nOut(5).build(), "input")
-                .addLayer("output", new OutputLayer.Builder().nIn(5).nOut(3).build(), "first")
-                .setOutputs("output").pretrain(false).backprop(true).build();
+                .addLayer("output", new OutputLayer.Builder().nIn(5).nOut(3).activation(Activation.SOFTMAX).build(), "first")
+                .setOutputs("output").build();
 
         ComputationGraph net = new ComputationGraph(conf);
         net.init();
@@ -866,8 +867,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                         new ConvolutionLayer.Builder().kernelSize(2, 2).padding(0, 0).stride(1, 1)
                                 .build(),
                         "in")
-                .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "layer").setOutputs("out")
-                .pretrain(false).backprop(true).build();
+                .addLayer("out", new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build(), "layer").setOutputs("out")
+                .build();
 
         LayerVertex lv = (LayerVertex) conf.getVertices().get("layer");
         FeedForwardLayer l = ((FeedForwardLayer) (lv).getLayerConf().getLayer());
@@ -883,8 +884,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                         new ConvolutionLayer.Builder().kernelSize(2, 2).padding(0, 0).stride(1, 1)
                                 .build(),
                         "in")
-                .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "layer").setOutputs("out")
-                .pretrain(false).backprop(true).build();
+                .addLayer("out", new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build(), "layer").setOutputs("out")
+                .build();
 
         lv = (LayerVertex) conf.getVertices().get("layer");
         l = ((FeedForwardLayer) (lv).getLayerConf().getLayer());
@@ -907,8 +908,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                         new ConvolutionLayer.Builder().kernelSize(2, 2).padding(0, 0).stride(1, 1)
                                 .build(),
                         "l0")
-                .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "layer").setOutputs("out")
-                .pretrain(false).backprop(true).build();
+                .addLayer("out", new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build(), "layer").setOutputs("out")
+                .build();
 
         //Check subsampling layer:
         lv = (LayerVertex) conf.getVertices().get("l0");
@@ -969,9 +970,9 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                     new NeuralNetConfiguration.Builder().optimizationAlgo(oa).graphBuilder()
                             .addInputs("input")
                             .addLayer("first", new DenseLayer.Builder().nIn(4).nOut(5).build(), "input")
-                            .addLayer("output", new OutputLayer.Builder().nIn(5).nOut(3).build(),
+                            .addLayer("output", new OutputLayer.Builder().nIn(5).nOut(3).activation(Activation.SOFTMAX).build(),
                                     "first")
-                            .setOutputs("output").pretrain(false).backprop(true).build();
+                            .setOutputs("output").build();
 
             ComputationGraph net = new ComputationGraph(conf);
             net.init();
@@ -992,7 +993,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                                 LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3)
                                 .build(),
                         "0")
-                .setOutputs("1").backprop(true).pretrain(false).build();
+                .setOutputs("1").build();
 
 
         ComputationGraph network = new ComputationGraph(conf);
@@ -1063,7 +1064,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).build(), "in")
                 .addLayer("1", new DenseLayer.Builder().nIn(5).nOut(5).build(), "in")
                 .addVertex("merge", new MergeVertex(), "0", "1")
-                .addLayer("out", new OutputLayer.Builder().nIn(10).nOut(5).build(), "merge").setOutputs("out")
+                .addLayer("out", new OutputLayer.Builder().nIn(10).nOut(5).activation(Activation.SOFTMAX).build(), "merge").setOutputs("out")
                 .build();
 
         ComputationGraph cg = new ComputationGraph(c);
@@ -1088,7 +1089,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         //Users generally shouldn't do this, but multiple setOutputs calls should *replace* not *add* outputs
 
         ComputationGraphConfiguration c = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
-                .addLayer("out", new OutputLayer.Builder().nIn(10).nOut(5).build(), "in").setOutputs("out")
+                .addLayer("out", new OutputLayer.Builder().nIn(10).nOut(5).activation(Activation.SOFTMAX).build(), "in").setOutputs("out")
                 .setOutputs("out").build();
 
         List<String> l = c.getNetworkOutputs();
@@ -1105,7 +1106,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                             new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(1).nOut(1)
                                     .activation(Activation.SIGMOID).build(),
                             "input1")
-                    .setOutputs("output").pretrain(false).backprop(true).backpropType(BackpropType.Standard)
+                    .setOutputs("output").backpropType(BackpropType.Standard)
                     .build();
         }
     }
@@ -1228,7 +1229,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("in")
-                .addLayer("out", new OutputLayer.Builder().nIn(4).nOut(3).build(), "in")
+                .addLayer("out", new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX).build(), "in")
                 .setOutputs("out")
                 .build();
 
@@ -1292,8 +1293,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                         .setOutputs("layer5")
                         .inputPreProcessor("layer0", new RnnToCnnPreProcessor(V_HEIGHT, V_WIDTH, 3))
                         .inputPreProcessor("layer3", new CnnToFeedForwardPreProcessor(7, 7, 10))
-                        .inputPreProcessor("layer4", new FeedForwardToRnnPreProcessor()).pretrain(false)
-                        .backprop(true).backpropType(BackpropType.TruncatedBPTT)
+                        .inputPreProcessor("layer4", new FeedForwardToRnnPreProcessor())
+                        .backpropType(BackpropType.TruncatedBPTT)
                         .tBPTTForwardLength(V_NFRAMES / 5).tBPTTBackwardLength(V_NFRAMES / 5).build();
         ComputationGraph modelExpectedArch = new ComputationGraph(confForArchitecture);
         modelExpectedArch.init();
@@ -1314,7 +1315,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .addLayer("0", new ConvolutionLayer.Builder().kernelSize(2,2).stride(1,1).nIn(1).nOut(1).build(), "in")
                 .addLayer("1", new SubsamplingLayer.Builder().kernelSize(2,2).stride(1,1).build(), "0")
                 .addLayer("2", new DenseLayer.Builder().nOut(10).build(), "1")
-                .addLayer("3", new OutputLayer.Builder().nOut(10).build(), "2")
+                .addLayer("3", new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build(), "2")
                 .setOutputs("3")
                 .setInputTypes(InputType.convolutional(28,28,1))
                 .build();
@@ -1381,7 +1382,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .layer("0", new ConvolutionLayer.Builder().kernelSize(2,2).nOut(6).build(), "in")
                 .layer("1", new SubsamplingLayer.Builder().kernelSize(2,2).build(), "0")
                 .layer("2", new DenseLayer.Builder().nOut(30).build(), "1")
-                .layer("3", new OutputLayer.Builder().nOut(13).build(), "2")
+                .layer("3", new OutputLayer.Builder().nOut(13).activation(Activation.SOFTMAX).build(), "2")
                 .setOutputs("3")
                 .setInputTypes(InputType.convolutional(28,28,3))
                 .build();
@@ -1463,6 +1464,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .addVertex(scaleName, new ScaleVertex(scaleFactor), inputName)
                 .addLayer(outputName, new OutputLayer.Builder()
                         .activation(new ActivationIdentity())
+                        .lossFunction(LossFunctions.LossFunction.MSE)
                         .nOut(input.length())
                         .biasInit(0)
                         .build(), scaleName)
@@ -1498,7 +1500,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .seed(12345)
                 .graphBuilder()
                 .addInputs("in")
-                .layer("layer", new OutputLayer.Builder().nIn(4).nOut(3).build(), "in")
+                .layer("layer", new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX).build(), "in")
                 .setOutputs("layer")
                 .build();
         ComputationGraph cg = new ComputationGraph(conf);
@@ -1563,8 +1565,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .addLayer("l3", new DenseLayer.Builder().nIn(10).nOut(10).build(), "l0")
                 .addLayer("l4", new DenseLayer.Builder().nIn(10).nOut(10).build(), "l1")
                 .addLayer("l5", new DenseLayer.Builder().nIn(10).nOut(10).build(), "l2")
-                .addLayer("l6", new OutputLayer.Builder().nIn(20).nOut(10).build(), "l3", "l5")
-                .addLayer("l7", new OutputLayer.Builder().nIn(10).nOut(10).build(), "l4")
+                .addLayer("l6", new OutputLayer.Builder().nIn(20).nOut(10).activation(Activation.SOFTMAX).build(), "l3", "l5")
+                .addLayer("l7", new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build(), "l4")
                 .setOutputs("l6", "l7")
                 .build();
 
@@ -1659,9 +1661,9 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .addInputs("in")
                 .layer("0", new VariationalAutoencoder.Builder()
                         .nIn(10).nOut(10).encoderLayerSizes(10).decoderLayerSizes(10).build(), "in")
-                .layer("1", new OutputLayer.Builder().nIn(10).nOut(10).build(), "0")
+                .layer("1", new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build(), "0")
                 .setOutputs("1")
-                .pretrain(true).backprop(true)
+                .pretrain(true)
                 .build();
 
         ComputationGraph net = new ComputationGraph(conf);

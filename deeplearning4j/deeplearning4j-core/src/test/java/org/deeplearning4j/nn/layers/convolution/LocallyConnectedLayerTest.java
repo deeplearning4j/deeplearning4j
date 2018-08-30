@@ -66,7 +66,7 @@ public class LocallyConnectedLayerTest extends BaseDL4JTest {
                                                         .build())
                         .layer(new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS) //output layer
                                         .nOut(10).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build())
-                        .setInputType(InputType.convolutionalFlat(28, 28, 3)).backprop(true).pretrain(false);
+                        .setInputType(InputType.convolutionalFlat(28, 28, 3));
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
@@ -93,7 +93,7 @@ public class LocallyConnectedLayerTest extends BaseDL4JTest {
                         .build())
                 .layer(new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS) //output layer
                         .nOut(10).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build())
-                .setInputType(InputType.recurrent(3,  28)).backprop(true).pretrain(false);
+                .setInputType(InputType.recurrent(3,  28));
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);

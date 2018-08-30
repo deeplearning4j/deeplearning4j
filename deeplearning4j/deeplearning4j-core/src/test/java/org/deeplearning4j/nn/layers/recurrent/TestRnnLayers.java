@@ -34,6 +34,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
@@ -57,7 +58,7 @@ public class TestRnnLayers extends BaseDL4JTest {
                 .list()
                 .layer(new SimpleRnn.Builder().nIn(nIn).nOut(3).build())
                 .layer(new LSTM.Builder().nIn(3).nOut(5).build())
-                .layer(new RnnOutputLayer.Builder().nOut(nOut).build())
+                .layer(new RnnOutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX).build())
                 .build();
 
 
@@ -131,21 +132,21 @@ public class TestRnnLayers extends BaseDL4JTest {
                     .seed(12345)
                     .list()
                     .layer(layer)
-                    .layer(new RnnOutputLayer.Builder().activation(Activation.TANH).nIn(10).nOut(10).build())
+                    .layer(new RnnOutputLayer.Builder().activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).build())
                     .build();
 
             MultiLayerConfiguration confD = new NeuralNetConfiguration.Builder()
                     .seed(12345)
                     .list()
                     .layer(layerD)
-                    .layer(new RnnOutputLayer.Builder().activation(Activation.TANH).nIn(10).nOut(10).build())
+                    .layer(new RnnOutputLayer.Builder().activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).build())
                     .build();
 
             MultiLayerConfiguration confD2 = new NeuralNetConfiguration.Builder()
                     .seed(12345)
                     .list()
                     .layer(layerD2)
-                    .layer(new RnnOutputLayer.Builder().activation(Activation.TANH).nIn(10).nOut(10).build())
+                    .layer(new RnnOutputLayer.Builder().activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).build())
                     .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);

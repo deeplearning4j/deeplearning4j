@@ -50,8 +50,8 @@ import static org.deeplearning4j.zoo.model.helper.NASNetHelper.reductionA;
  *
  * <p>This implementation uses 1056 penultimate filters and an input shape of (3, 224, 224). You can change this.</p>
  *
- * <p>Paper: https://arxiv.org/abs/1707.07012</p>
- * <p>ImageNet weights for this model are available and have been converted from https://keras.io/applications/.</p>
+ * <p>Paper: <a href="https://arxiv.org/abs/1707.07012">https://arxiv.org/abs/1707.07012</a></p>
+ * <p>ImageNet weights for this model are available and have been converted from <a href="https://keras.io/applications/">https://keras.io/applications/</a>.</p>
  *
  * @note If using the IMAGENETLARGE weights, the input shape is (3, 331, 331).
  * @author Justin Long (crockpotveggies)
@@ -197,8 +197,8 @@ public class NASNet extends ZooModel {
                     .activation(Activation.SOFTMAX).build(), "avg_pool")
 
                 .setOutputs("output")
-                .backprop(true)
-                .pretrain(false);
+
+                ;
 
         return graph;
     }

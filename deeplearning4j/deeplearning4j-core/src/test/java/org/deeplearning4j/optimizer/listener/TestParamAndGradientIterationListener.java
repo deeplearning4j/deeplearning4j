@@ -54,7 +54,7 @@ public class TestParamAndGradientIterationListener extends BaseDL4JTest {
                         .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(30).nOut(3).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
