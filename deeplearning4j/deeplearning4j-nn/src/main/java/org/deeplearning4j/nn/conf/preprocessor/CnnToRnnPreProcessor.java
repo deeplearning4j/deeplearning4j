@@ -143,7 +143,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
         if (maskArray == null) {
             return new Pair<>(maskArray, currentMaskState);
         } else {
-            //Need to reshape mask array from [minibatch*timeSeriesLength, 1] to [minibatch,timeSeriesLength]
+            //Need to reshape mask array from [minibatch*timeSeriesLength, 1, 1, 1] to [minibatch,timeSeriesLength]
             return new Pair<>(TimeSeriesUtils.reshapeCnnMaskToTimeSeriesMask(maskArray, minibatchSize),currentMaskState);
         }
     }
