@@ -23,6 +23,11 @@
    </parent>
    <modelVersion>4.0.0</modelVersion>
    <artifactId>datavec-uberjar</artifactId>
+
+   <properties>
+      <datavec.spark.version>1.0.0_spark_1-SNAPSHOT</datavec.spark.version>
+   </properties>
+
    <build>
       <plugins>
          <plugin>
@@ -161,14 +166,14 @@
             </dependency>
             <dependency>
                <groupId>org.datavec</groupId>
-               <artifactId>datavec-spark</artifactId>
-               <version>${project.version}</version>
+               <artifactId>datavec-spark_2.10</artifactId>
+               <version>${datavec.spark.version}</version>
             </dependency>
-            <dependency>
-               <groupId>org.datavec</groupId>
-               <artifactId>datavec-spark-inference-parent</artifactId>
-               <version>${project.version}</version>
-            </dependency>
+            <!--<dependency>-->
+               <!--<groupId>org.datavec</groupId>-->
+               <!--<artifactId>datavec-spark-inference-parent</artifactId>-->
+               <!--<version>${project.version}</version>-->
+            <!--</dependency>-->
          </dependencies>
       </profile>
       <profile>
