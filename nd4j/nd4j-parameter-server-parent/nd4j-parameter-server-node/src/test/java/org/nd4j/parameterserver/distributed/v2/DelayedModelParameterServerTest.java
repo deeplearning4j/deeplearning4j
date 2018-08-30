@@ -363,4 +363,79 @@ public class DelayedModelParameterServerTest {
             assertEquals("Failed at node: [" + e + "]", numMessages - deductions[e], counters[e].get());
         }
     }
+
+
+    @Test
+    public void testMeshConsistency_2() throws Exception {
+        Nd4j.create(1);
+        final int numMessages = 500;
+        val rootCount = new AtomicInteger(0);
+        val rootSum = new AtomicInteger(0);
+        val counter = new AtomicInteger(0);
+        val sum = new AtomicInteger(0);
+        val config = VoidConfiguration.builder().meshBuildMode(MeshBuildMode.MESH).build();
+        val connector = new DummyTransport.Connector();
+        val rootTransport = new DelayedDummyTransport(rootId, connector, rootId, config);
+
+        rootTransport.addPrecursor(GradientsUpdateMessage.class, new MessageCallable<GradientsUpdateMessage>() {
+            @Override
+            public void apply(GradientsUpdateMessage message) {
+                val array = message.getPayload();
+                rootSum.addAndGet(array.meanNumber().intValue());
+                rootCount.incrementAndGet();
+            }
+        });
+        connector.register(rootTransport);
+
+        val counters = new AtomicInteger[16];
+        val servers = new ArrayList<ModelParameterServer>();
+        val transports = new ArrayList<DummyTransport>();
+        for (int e = 0; e < 16; e++) {
+            val clientTransport = new DelayedDummyTransport(java.util.UUID.randomUUID().toString(), connector, rootId, config);
+            val clientServer = new ModelParameterServer(config, clientTransport, false);
+
+            val f = e;
+            counters[f] = new AtomicInteger(0);
+            clientServer.addUpdatesSubscriber(new AbstractSubscriber<INDArray>() {
+                @Override
+                public void onNext(INDArray array) {
+                    assertNotNull(array);
+                    counters[f].incrementAndGet();
+                }
+            });
+
+            servers.add(clientServer);
+            transports.add(clientTransport);
+
+            connector.register(clientTransport);
+
+            clientServer.launch();
+            //log.info("Client [{}] started", e );
+        }
+
+
+        val deductions = new int[servers.size()];
+        for (int e = 0; e < numMessages; e++) {
+            val f = RandomUtils.nextInt(0, servers.size());
+            val server = servers.get(f);
+
+            // later we'll reduce this number from expected number of updates
+            deductions[f]++;
+
+            server.sendUpdate(Nd4j.create(5).assign(e));
+            sum.addAndGet(e);
+        }
+
+        connector.blockUntilFinished();
+
+        // checking if master node got all updates we've sent
+        assertEquals(numMessages, rootCount.get());
+        assertEquals(sum.get(), rootSum.get());
+
+        // now we're checking all nodes, they should get numMessages - messages that were sent through them
+        for (int e = 0; e < servers.size(); e++) {
+            val server = servers.get(e);
+            assertEquals("Failed at node: [" + e + "]", numMessages - deductions[e], counters[e].get());
+        }
+    }
 }
