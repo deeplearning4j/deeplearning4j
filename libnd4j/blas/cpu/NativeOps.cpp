@@ -3752,7 +3752,7 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd
 
 int NativeOps::decompressParallel(Nd4jPointer* arrays, int arrayCount, Nd4jPointer output) {
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(guided) default(shared)
     for (int k = 0; k < arrayCount; k++) {
         nd4j::TypeCast::convertFromThreshold<float>(nullptr, arrays[k], 0, output);
     }

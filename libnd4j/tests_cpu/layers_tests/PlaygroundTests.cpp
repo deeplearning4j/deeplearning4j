@@ -731,18 +731,18 @@ TEST_F(PlaygroundTests, loop_test_2) {
         delete [] t[k];
     }
     delete[] t;
-    ASSERT_TRUE(false);
+   // ASSERT_TRUE(false);
 }
 
 TEST_F(PlaygroundTests, loop_test_3) {
 
     NDArray<float> f('c', {2}, {50, 20});
     nd4j::ops::randomuniform<float> op;
-    int* poolX[10];
+    int *poolX[10];
     auto result = op.execute({&f}, {-1.0f, 1.0f}, {});
     ASSERT_EQ(Status::OK(), result->status());
     auto array = result->at(0);
-
+    array->printIndexedBuffer("Uniform output");
     auto buffer = array->buffer();
     int cnt = 0;
     int iterations = 10;
@@ -750,13 +750,13 @@ TEST_F(PlaygroundTests, loop_test_3) {
     //nd4j_printf("Array length: %lld\n", array->lengthOf());
 
     int length = (int) array->lengthOf();
-    int span = (int) (array->lengthOf() / 6) + 8;
+    int span = (int) (length / 6) + 8;
 
     NativeOps ops;
 
     //int t[10000];
-    int const N = 10000;
-    int** t = new int*[iterations];
+    int const N = 50 * 20 + 24;//10000;
+    int **t = new int *[iterations];
     for (int k = 0; k < iterations; k++) {
         t[k] = new int[N];
         memset(t[k], '\0', N * sizeof(int));
@@ -769,19 +769,23 @@ TEST_F(PlaygroundTests, loop_test_3) {
     //nd4j_printf("number of elements: [%i]\n", le);
 
     long permTime = 0;
+    int le; // = ops.estimateThresholdFloat(nullptr, reinterpret_cast<void *>(buffer),
+            //                            length, threshold);
 
     for (int x = 0; x < iterations; x++) {
-        int le = ops.estimateThresholdFloat(nullptr, reinterpret_cast<void *>(array->buffer()), static_cast<int>(array->lengthOf()), threshold);
+
+        auto res = op.execute({&f}, {-1.0f, 1.0f}, {});
+        auto arr = res->at(0);
+        length = arr->lengthOf();
+        auto permStart = std::chrono::system_clock::now();
+        le = ops.estimateThresholdFloat(nullptr, reinterpret_cast<void *>(arr->buffer()), static_cast<int>(array->lengthOf()), threshold);
 
         t[x][0] = le;
         t[x][1] = length;
         t[x][2] = fb.i_;
 
-        auto permStart = std::chrono::system_clock::now();
-        //ops.estimateThresholdFloat(nullptr, reinterpret_cast<void *>(array->buffer()), static_cast<int>(array->lengthOf()), threshold);
-
-        TypeCast::convertToThreshold<float>(nullptr, buffer, array->lengthOf(), t[x]);
-
+        TypeCast::convertToThreshold<float>(nullptr, arr->buffer(), length, t[x]);
+//        delete res;
         /*
 #pragma omp parallel reduction(+:cnt)
         {
@@ -807,24 +811,35 @@ TEST_F(PlaygroundTests, loop_test_3) {
                 cnt++;
         }
         */
-
+        delete res;
         auto permEnd = std::chrono::system_clock::now();
-        permTime += std::chrono::duration_cast<std::chrono::microseconds> (permEnd - permStart).count();
+        permTime += std::chrono::duration_cast<std::chrono::microseconds>(permEnd - permStart).count();
     }
-    std::vector<int> nonZero;
-    for (int i = 0; i < N; ++i) {
-        if (t[0][i] != 0)
-            nonZero.push_back(t[0][i]);
-    }
-    for (auto v: nonZero){
-        nd4j_printf("%i, ", v);
-    }
-    nd4j_printf("\nPermuted time: %lld us; Counter: %i;\n", permTime / iterations, cnt);
-    nd4j_printf("Total non-zero elems are %i.\n", nonZero.size());
 
+    nd4j_printf("\nPermuted time: %lld us; Counter: %i;\n", permTime / iterations, cnt);
+    for (int k = 0; k < iterations; ++k) {
+        for (int j = 0; j < t[k][0]; ++j) {
+            nd4j_printf("%i, ", t[k][j + 3]);
+        }
+        nd4j_printf("\n", "");
+    }
+/*
+    for (int k = 0; k < iterations; ++k) {
+        std::vector<int> nonZero;
+        for (int i = 0; i < N; ++i) {
+            if (t[k][i] != 0)
+                nonZero.push_back(t[k][i]);
+        }
+        for (auto v: nonZero) {
+            nd4j_printf("%i, ", v);
+        }
+        nd4j_printf("\nTotal non-zero elems are %i.\n", nonZero.size());
+
+    }
+    */
     auto testStart = std::chrono::system_clock::now();
     //NativeOps ops;
-    ops.decompressParallel((Nd4jPointer*)t, iterations, array->getBuffer());
+    ops.decompressParallel((Nd4jPointer*)t, iterations, array->buffer());
     auto testEnd = std::chrono::system_clock::now();
     permTime = std::chrono::duration_cast<std::chrono::microseconds> (testEnd - testStart).count();
 
@@ -832,7 +847,7 @@ TEST_F(PlaygroundTests, loop_test_3) {
     NDArray<float> pRes(*array);
     testStart = std::chrono::system_clock::now();
     for (int e = 0; e < iterations; e++)
-        TypeCast::convertFromThreshold<float>(nullptr, t[e], array->lengthOf(), array->getBuffer());
+        TypeCast::convertFromThreshold<float>(nullptr, t[e], length, pRes.buffer());
     //NativeOps ops;
 
     testEnd = std::chrono::system_clock::now();
@@ -841,11 +856,13 @@ TEST_F(PlaygroundTests, loop_test_3) {
     nd4j_printf("\nLinear time: %lld us\n", permTime);
 
     //ops.decompressParallel((Nd4jPointer *)t, 10, array->getBuffer());
+    array->printIndexedBuffer("Output parallel");
+    pRes.printIndexedBuffer("Output linear  ");
     ASSERT_TRUE(pRes.equalsTo(array));
     nd4j_printf("All done.\n", "");
 
     delete result;
-    for (int k = 0; k < 10; k++) {
+    for (int k = 0; k < iterations; k++) {
         delete [] t[k];
     }
     delete[] t;
