@@ -3754,7 +3754,7 @@ int NativeOps::decompressParallel(Nd4jPointer* arrays, int arrayCount, Nd4jPoint
 
 #pragma omp parallel for
     for (int k = 0; k < arrayCount; k++) {
-        convertTypes(nullptr, ND4J_THRESHOLD, arrays[k], 0, ND4J_FLOAT32, output);
+        nd4j::TypeCast::convertFromThreshold<float>(nullptr, arrays[k], 0, output);
     }
     return ND4J_STATUS_OK;
 }
