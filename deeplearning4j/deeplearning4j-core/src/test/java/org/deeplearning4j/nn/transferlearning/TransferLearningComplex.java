@@ -60,7 +60,9 @@ public class TransferLearningComplex extends BaseDL4JTest {
                         .addLayer("B", new DenseLayer.Builder().nIn(9).nOut(8).build(), "A")
                         .addLayer("C", new DenseLayer.Builder().nIn(7).nOut(6).build(), "in2")
                         .addLayer("D", new DenseLayer.Builder().nIn(8 + 7).nOut(5).build(), "B", "C")
-                        .addLayer("out", new OutputLayer.Builder().nIn(5).nOut(4).build(), "D").setOutputs("out")
+                        .addLayer("out", new OutputLayer.Builder().nIn(5).nOut(4).build(), "D")
+                        .setOutputs("out")
+                        .validateOutputLayerConfig(false)
                         .build();
 
         ComputationGraph graph = new ComputationGraph(conf);
@@ -78,7 +80,7 @@ public class TransferLearningComplex extends BaseDL4JTest {
         ComputationGraph graph2 =
                         new TransferLearning.GraphBuilder(graph)
                                         .fineTuneConfiguration(new FineTuneConfiguration.Builder().updater(new Adam(2e-2)).build())
-                                        .setFeatureExtractor("C").build();
+                                        .setFeatureExtractor("C").validateOutputLayerConfig(false).build();
 
         boolean cFound = false;
         Layer[] layers = graph2.getLayers();

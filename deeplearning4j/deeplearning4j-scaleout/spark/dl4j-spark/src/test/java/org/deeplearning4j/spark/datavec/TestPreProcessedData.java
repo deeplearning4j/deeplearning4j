@@ -85,7 +85,7 @@ public class TestPreProcessedData extends BaseSparkTest {
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(3).nOut(3).activation(Activation.SOFTMAX)
                                                         .build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, conf,
                         new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
@@ -133,7 +133,7 @@ public class TestPreProcessedData extends BaseSparkTest {
                                         LossFunctions.LossFunction.MCXENT).nIn(3).nOut(3).activation(Activation.SOFTMAX)
                                                         .build(),
                                         "0")
-                        .setOutputs("1").pretrain(false).backprop(true).build();
+                        .setOutputs("1").build();
 
         SparkComputationGraph sparkNet = new SparkComputationGraph(sc, conf,
                         new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
@@ -183,7 +183,7 @@ public class TestPreProcessedData extends BaseSparkTest {
                                         LossFunctions.LossFunction.MCXENT).nIn(3).nOut(3).activation(Activation.SOFTMAX)
                                                         .build(),
                                         "0")
-                        .setOutputs("1").pretrain(false).backprop(true).build();
+                        .setOutputs("1").build();
 
         SparkComputationGraph sparkNet = new SparkComputationGraph(sc, conf,
                         new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)

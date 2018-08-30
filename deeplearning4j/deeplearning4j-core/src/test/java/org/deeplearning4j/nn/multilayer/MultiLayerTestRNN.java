@@ -410,7 +410,7 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
                                         .nIn(8).nOut(nOut).activation(Activation.SOFTMAX)
                                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.5))
                                         .build())
-                        .backprop(true).build();
+                        .build();
         assertEquals(BackpropType.Standard, conf.getBackpropType());
 
         MultiLayerConfiguration confTBPTT = new NeuralNetConfiguration.Builder().seed(12345)
@@ -429,7 +429,7 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
                                         .nIn(8).nOut(nOut).activation(Activation.SOFTMAX)
                                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.5))
                                         .build())
-                        .backprop(true).backpropType(BackpropType.TruncatedBPTT).tBPTTBackwardLength(timeSeriesLength)
+                        .backpropType(BackpropType.TruncatedBPTT).tBPTTBackwardLength(timeSeriesLength)
                         .tBPTTForwardLength(timeSeriesLength).build();
 
         Nd4j.getRandom().setSeed(12345);
@@ -603,7 +603,7 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
                                         .nIn(8).nOut(nOut).activation(Activation.SOFTMAX)
                                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.5))
                                         .build())
-                        .pretrain(false).backprop(true).backpropType(BackpropType.TruncatedBPTT)
+                        .backpropType(BackpropType.TruncatedBPTT)
                         .tBPTTBackwardLength(timeSeriesLength).tBPTTForwardLength(timeSeriesLength).build();
 
         Nd4j.getRandom().setSeed(12345);
@@ -640,7 +640,7 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
                                         .nIn(8).nOut(nOut).activation(Activation.SOFTMAX)
                                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.5))
                                         .build())
-                        .pretrain(false).backprop(true).backpropType(BackpropType.TruncatedBPTT)
+                        .backpropType(BackpropType.TruncatedBPTT)
                         .tBPTTBackwardLength(tbpttLength).tBPTTForwardLength(tbpttLength).build();
 
         Nd4j.getRandom().setSeed(12345);
@@ -671,8 +671,8 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
                                                         .nOut(10).activation(Activation.TANH).build())
                                         .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                                         .activation(Activation.SOFTMAX).nIn(10).nOut(10).build())
-                                        .inputPreProcessor(0, new FeedForwardToRnnPreProcessor()).pretrain(false)
-                                        .backprop(true).build();
+                                        .inputPreProcessor(0, new FeedForwardToRnnPreProcessor())
+                                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -693,8 +693,8 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
                                         .activation(Activation.TANH).build(), "0")
                         .addLayer("2", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(10).nOut(10).build(), "1")
-                        .setOutputs("2").inputPreProcessor("0", new FeedForwardToRnnPreProcessor()).pretrain(false)
-                        .backprop(true).build();
+                        .setOutputs("2").inputPreProcessor("0", new FeedForwardToRnnPreProcessor())
+                        .build();
 
         ComputationGraph net = new ComputationGraph(conf);
         net.init();
@@ -722,7 +722,7 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
                                         .activation(Activation.TANH).build())
                         .layer(2, new RnnOutputLayer.Builder(LossFunction.MSE).nIn(8).nOut(nOut)
                                         .activation(Activation.IDENTITY).build())
-                        .pretrain(false).backprop(true).backpropType(BackpropType.TruncatedBPTT)
+                        .backpropType(BackpropType.TruncatedBPTT)
                         .tBPTTBackwardLength(tbpttLength).tBPTTForwardLength(tbpttLength).build();
 
         Nd4j.getRandom().setSeed(12345);

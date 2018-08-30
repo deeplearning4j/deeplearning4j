@@ -33,7 +33,7 @@ import java.util.*;
 
 /**LSTM Parameter initializer, for LSTM based on
  * Graves: Supervised Sequence Labelling with Recurrent Neural Networks
- * http://www.cs.toronto.edu/~graves/phd.pdf
+ * <a href="http://www.cs.toronto.edu/~graves/phd.pdf">http://www.cs.toronto.edu/~graves/phd.pdf</a>
  */
 public class GravesLSTMParamInitializer implements ParamInitializer {
 

@@ -246,8 +246,9 @@
                         <rule>DuplicateDep</rule>
                         <rule>RedundantDepVersion</rule>
                         <rule>RedundantPluginVersion</rule>
+                        <!-- Rules incompatible with Java 9
                         <rule>VersionProp</rule>
-                        <rule>DotVersionProperty</rule>
+                        <rule>DotVersionProperty</rule> -->
                     </onlyRunRules>
                     <xmlOutputFile>${project.build.directory}/maven-lint-result.xml</xmlOutputFile>
                 </configuration>

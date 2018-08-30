@@ -150,7 +150,7 @@ public class ShiftVertexTest extends BaseDL4JTest {
                                         new OutputLayer.Builder().nIn(input.columns()).nOut(target.columns())
                                                         .activation(a2).lossFunction(LossFunction.MSE).build(),
                                         "shiftvertex")
-                        .setOutputs("output").backprop(true).build();
+                        .setOutputs("output").build();
         ComputationGraph cg = new ComputationGraph(cgc);
         cg.init();
         cg.setInput(0, input);

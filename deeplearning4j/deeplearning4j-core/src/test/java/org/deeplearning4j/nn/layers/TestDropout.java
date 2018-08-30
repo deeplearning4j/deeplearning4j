@@ -57,7 +57,7 @@ public class TestDropout extends BaseDL4JTest {
                         .layer(0, new OutputLayer.Builder().activation(Activation.IDENTITY)
                                         .lossFunction(LossFunctions.LossFunction.MSE).nIn(nIn).nOut(nOut)
                                         .weightInit(WeightInit.XAVIER).build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
