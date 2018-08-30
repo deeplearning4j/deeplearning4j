@@ -168,14 +168,14 @@ public final class ModelParameterServer {
             public void call(HandshakeResponse response) {
                 // upon restart command we'll request current parameters from the current upstream (without any propagation
                 try {
-                    // TODO: do something with parameters. i.e. propagate them to the model? :)
-
-                    ModelParametersMessage modelParams = transport.sendMessageBlocking(new ModelParametersRequest(), transport.getUpstreamId());
+                    val msg = new ModelParametersRequest();
+                    val rootId = transport.getRootId();
+                    ModelParametersMessage modelParams = transport.sendMessageBlocking(msg, rootId);
                     val mParams = modelParams.getPayload();
                     modelParamsSubsribers.forEach(s -> s.onNext(mParams));
 
                     // updater parameters are optional, it's possible to have models without updater parameters (i.e. SGD)
-                    UpdaterParametersMessage updaterParams = transport.sendMessageBlocking(new UpdaterParametersRequest(), transport.getUpstreamId());
+                    UpdaterParametersMessage updaterParams = transport.sendMessageBlocking(new UpdaterParametersRequest(), rootId);
                     val uParams = updaterParams.getPayload();
                     updaterParamsSubscribers.forEach(s -> s.onNext(uParams));
                 } catch (Exception e) {

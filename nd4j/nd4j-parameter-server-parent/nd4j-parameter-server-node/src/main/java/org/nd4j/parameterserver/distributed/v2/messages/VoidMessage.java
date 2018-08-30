@@ -29,6 +29,11 @@ public interface VoidMessage extends Serializable {
     String getMessageId();
 
     /**
+     * This message allows to set messageId
+     */
+    //void setMessageId();
+
+    /**
      * This method returns Id of originator
      * @return
      */

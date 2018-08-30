@@ -140,4 +140,11 @@ public interface Transport {
      * @return
      */
     int totalNumberOfNodes();
+
+
+    /**
+     * This method returns ID of the root node
+     * @return
+     */
+    String getRootId();
 }

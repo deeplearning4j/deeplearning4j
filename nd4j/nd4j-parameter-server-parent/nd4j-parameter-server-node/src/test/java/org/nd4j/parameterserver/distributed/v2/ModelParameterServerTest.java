@@ -38,6 +38,7 @@ import org.reactivestreams.Subscription;
 
 import java.util.ArrayList;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
@@ -285,10 +286,12 @@ public class ModelParameterServerTest {
         val config = VoidConfiguration.builder().meshBuildMode(MeshBuildMode.MESH).build();
         val connector = new DummyTransport.Connector();
         val rootTransport = new DummyTransport(rootId, connector, rootId, config);
+        val rootServer = new ModelParameterServer(config, rootTransport, true);
+        val rootUpdatesCounter = new AtomicInteger(0);
         rootTransport.addRequestConsumer(ModelParametersRequest.class, new Consumer<ModelParametersRequest>() {
             @Override
             public void accept(ModelParametersRequest modelParametersRequest) throws Exception {
-                val msg = new ModelParametersMessage("123", Nd4j.create(10));
+                val msg = new ModelParametersMessage(java.util.UUID.randomUUID().toString(), Nd4j.create(10));
                 msg.setRequestId(modelParametersRequest.getRequestId());
                 rootTransport.sendMessage(msg, modelParametersRequest.getOriginatorId());
             }
@@ -297,22 +300,31 @@ public class ModelParameterServerTest {
         rootTransport.addRequestConsumer(UpdaterParametersRequest.class, new Consumer<UpdaterParametersRequest>() {
             @Override
             public void accept(UpdaterParametersRequest updatersParametersRequest) throws Exception {
-                val msg = new UpdaterParametersMessage("123", Nd4j.create(10));
+                val msg = new UpdaterParametersMessage(java.util.UUID.randomUUID().toString(), Nd4j.create(10));
                 msg.setRequestId(updatersParametersRequest.getRequestId());
                 rootTransport.sendMessage(msg, updatersParametersRequest.getOriginatorId());
             }
         });
 
+        rootServer.addUpdatesSubscriber(new AbstractSubscriber<INDArray>() {
+            @Override
+            public void onNext(INDArray array) {
+                assertNotNull(array);
+                rootUpdatesCounter.incrementAndGet();
+            }
+        });
+        connector.register(rootTransport);
+        rootServer.launch();
+
         val updatedModel = new AtomicBoolean(false);
         val updatedUpdater = new AtomicBoolean(false);
         val gotGradients = new AtomicBoolean(false);
 
-        connector.register(rootTransport);
 
         val servers = new ArrayList<ModelParameterServer>();
         val transports = new ArrayList<DummyTransport>();
-        for (int e = 0; e < 128; e++) {
-            val clientTransport = new DummyTransport(java.util.UUID.randomUUID().toString(), connector, rootId, config);
+        for (int e = 0; e < 32; e++) {
+            val clientTransport = new DummyTransport(String.valueOf(e), connector, rootId, config);
             val clientServer = new ModelParameterServer(config, clientTransport, false);
 
             servers.add(clientServer);
@@ -374,16 +386,16 @@ public class ModelParameterServerTest {
         log.info("New upstream: {}", clientTransport.getMesh().getRootNode().getId());
 
         // getting any server
-        val serv = servers.get(96);
+        val serv = servers.get(27);
         serv.sendUpdate(Nd4j.linspace(1, 10, 100).reshape(10, 10));
 
         connector.blockUntilFinished();
 
         int failedCnt = 0;
-        for (int e = 0; e < 128; e++) {
+        for (int e = 0; e < 32; e++) {
             // we're skipping node 23 since it was reconnected, and has different MPS instance
             // and node 96, since it sends update
-            if (e != 23 && e != 96)
+            if (e != 23 && e != 27)
                 if (servers.get(e).getUpdates().size() == 0)
                     failedCnt++;
         }
@@ -403,6 +415,7 @@ public class ModelParameterServerTest {
         val connector = new DummyTransport.Connector();
         val rootTransport = new DummyTransport(rootId, connector, rootId, config);
         val rootServer = new ModelParameterServer(config, rootTransport, true);
+        val rootUpdatesCounter = new AtomicInteger(0);
         rootTransport.addRequestConsumer(ModelParametersRequest.class, new Consumer<ModelParametersRequest>() {
             @Override
             public void accept(ModelParametersRequest modelParametersRequest) throws Exception {
@@ -421,7 +434,15 @@ public class ModelParameterServerTest {
             }
         });
 
+        rootServer.addUpdatesSubscriber(new AbstractSubscriber<INDArray>() {
+            @Override
+            public void onNext(INDArray array) {
+                assertNotNull(array);
+                rootUpdatesCounter.incrementAndGet();
+            }
+        });
         connector.register(rootTransport);
+        rootServer.launch();
 
         val servers = new ArrayList<ModelParameterServer>();
         val transports = new ArrayList<DummyTransport>();
@@ -470,6 +491,10 @@ public class ModelParameterServerTest {
             t.setMesh(mesh);
         }
 
+        val middleTransport = transports.get(3);
+        log.info("Upstream ID: [{}]", middleTransport.getUpstreamId());
+
+
         val middleServer = servers.get(3);
         val update = Nd4j.create(10,10);
         middleServer.sendUpdate(update);
@@ -490,6 +515,6 @@ public class ModelParameterServerTest {
         assertEquals(0, failCnt);
 
         // now we're checking if root server got update
-        assertEquals(1, rootServer.getUpdates().size());
+        assertEquals(1, rootUpdatesCounter.get());
     }
 }

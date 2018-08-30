@@ -84,6 +84,9 @@ public class DummyTransport extends BaseTransport {
         if (message.getOriginatorId() == null)
             message.setOriginatorId(this.id());
 
+        //if (message.getMessageId() == null)
+
+
         // TODO: get rid of UUID!!!11
         if (message instanceof RequestMessage) {
             if (((RequestMessage) message).getRequestId() == null)

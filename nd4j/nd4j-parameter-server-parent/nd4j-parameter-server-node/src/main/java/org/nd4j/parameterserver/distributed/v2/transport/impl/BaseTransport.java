@@ -23,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Optional;
@@ -32,11 +31,13 @@ import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
 import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;
 import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
 import org.nd4j.parameterserver.distributed.v2.messages.*;
+import org.nd4j.parameterserver.distributed.v2.messages.history.HashHistoryHolder;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.MeshUpdateMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeResponse;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.ping.PingMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.ping.PongMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.MessagesHistoryHolder;
 import org.nd4j.parameterserver.distributed.v2.transport.RestartCallback;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
@@ -98,6 +99,9 @@ public abstract  class BaseTransport  implements Transport {
 
     // MessageSplitter instance that'll be used in this transport
     protected MessageSplitter splitter;
+
+    // we're keeping Ids of last 2k INDArrayMessages, just to avoid double spending/retransmission
+    protected MessagesHistoryHolder<String> historyHolder = new HashHistoryHolder<String>(2048);
 
     protected final ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors()), new ThreadFactory() {
         @Override
@@ -273,6 +277,14 @@ public abstract  class BaseTransport  implements Transport {
     }
 
     protected void propagateBroadcastableMessage(@NonNull BroadcastableMessage voidMessage, PropagationMode mode) {
+        // we never broadcast MeshUpdates, master will send everyone copy anyway
+        if (voidMessage instanceof MeshUpdateMessage)
+           return;
+
+        // if this message is already a known one - just skip it
+        if (historyHolder.storeIfUnknownMessageId(voidMessage.getMessageId()))
+            return;
+
         val node = mesh.get().getNodeById(id);
 
         if (voidMessage.getOriginatorId() != null && id != null && voidMessage.getOriginatorId().equals(id))
@@ -282,27 +294,33 @@ public abstract  class BaseTransport  implements Transport {
         val upstream = node.getUpstreamNode();
         val downstreams = node.getDownstreamNodes();
 
+        val ownId = id();
+        val upstreamId = node.isRootNode() ? null : upstream.getId();
+        val originatorId = voidMessage.getOriginatorId();
+        val relayId = voidMessage.getRelayId();
+        voidMessage.setRelayId(id());
+
         // we never propagate upstream if we're on root node
         // we never send to the latest node
         // we never send to the original node
-        if (!node.isRootNode() && (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_UP == mode) && !isLoopedNode(upstream, voidMessage)) {
-            voidMessage.setRelayId(id());
-            sendMessage(voidMessage, upstream.getId());
+        if (!node.isRootNode() && (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_UP == mode) && !isLoopedNode(upstream, originatorId, relayId)) {
+            if (!isLoopedNode(upstream, originatorId, relayId)) {
+                sendMessage(voidMessage, upstreamId);
+            }
         }
 
         // now we're sending message down
         if (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_DOWN == mode) {
-            voidMessage.setRelayId(id());
             downstreams.forEach(n -> {
-                if (!isLoopedNode(n, voidMessage))
+                if (!isLoopedNode(n, originatorId, relayId)) {
                     sendMessage(voidMessage, n.getId());
+                }
             });
         }
     }
 
-    protected boolean isLoopedNode(@NonNull MeshOrganizer.Node node, @NonNull BroadcastableMessage message) {
-        return node.getId().equals(message.getOriginatorId())
-                || node.getId().equals(message.getRelayId());
+    protected boolean isLoopedNode(@NonNull MeshOrganizer.Node node, @NonNull String originatorId, @NonNull String relayId) {
+        return node.getId().equals(originatorId) || node.getId().equals(relayId);
     }
 
     /**
@@ -338,9 +356,11 @@ public abstract  class BaseTransport  implements Transport {
                 this.processMessage(opt.get());
         } else if (message instanceof INDArrayMessage) {
             // just forward message, but ONLY if it's not a Response message, since it's probably processed separately
-            if (!(message instanceof ResponseMessage))
-                forwardToParameterServer((INDArrayMessage) message);
-            else {
+            if (!(message instanceof ResponseMessage)) {
+                if (!historyHolder.isKnownMessageId(message.getMessageId())) {// we're not applying the same message twice
+                    forwardToParameterServer((INDArrayMessage) message);
+                }
+            } else {
                 // in this case we store message to the map, to be fetched later
                 val reply = (ResponseMessage) message;
                 replies.putIfAbsent(reply.getRequestId(), reply);
@@ -387,7 +407,7 @@ public abstract  class BaseTransport  implements Transport {
 
             // update all other nodes with new mesh
             try {
-                propagateMessage(new MeshUpdateMessage(mesh.get()), PropagationMode.ONLY_DOWN);
+                propagateMessageDirect(new MeshUpdateMessage(mesh.get()));
             } catch (Exception e) {
                 log.error("Wasn't able to propagate message from [{}]", id());
                 e.printStackTrace();
@@ -460,7 +480,7 @@ public abstract  class BaseTransport  implements Transport {
         if (message instanceof BroadcastableMessage) {
             // here we should propagate message down
             try {
-                propagateBroadcastableMessage((BroadcastableMessage) message, PropagationMode.ONLY_DOWN);
+                propagateBroadcastableMessage((BroadcastableMessage) message, PropagationMode.BOTH_WAYS);
             } catch (Exception e) {
                 log.error("Wasn't able to propagate message from [{}]", id());
                 throw new RuntimeException(e);
@@ -478,6 +498,16 @@ public abstract  class BaseTransport  implements Transport {
                     throw new RuntimeException(e);
                 }
             }
+        }
+    }
+
+    public void propagateMessageDirect(@NonNull BroadcastableMessage message) {
+        synchronized (mesh) {
+            val nodes = mesh.get().flatNodes();
+            nodes.stream().forEach(n -> {
+                if (!n.isRootNode())
+                    sendMessage(message, n.getId());
+            });
         }
     }
 
@@ -629,6 +659,11 @@ public abstract  class BaseTransport  implements Transport {
                 //
             }
         }
+    }
+
+    @Override
+    public String getRootId() {
+        return rootId;
     }
 
     @Override

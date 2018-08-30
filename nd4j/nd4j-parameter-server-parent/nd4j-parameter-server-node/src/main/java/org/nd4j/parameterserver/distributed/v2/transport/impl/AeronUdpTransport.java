@@ -43,6 +43,7 @@ import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
 import org.nd4j.parameterserver.distributed.v2.transport.MessageCallable;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
+import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -119,6 +120,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             System.setProperty(ND4JSystemProperties.AERON_TERM_BUFFER_PROP, String.valueOf(DEFAULT_TERM_BUFFER_PROP));
         }
 
+        splitter = MessageSplitter.getInstance();
 
         context = new Aeron.Context().driverTimeoutMs(30000)
                 .keepAliveInterval(100000000);

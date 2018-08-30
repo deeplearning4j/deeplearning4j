@@ -148,7 +148,9 @@ public class DummyTransportTest {
 
         val array = Nd4j.ones(10, 10);
 
-        transportB.propagateMessage(new GradientsUpdateMessage("message", array), PropagationMode.BOTH_WAYS);
+        val msg = new GradientsUpdateMessage("message", array);
+        msg.setOriginatorId("beta");
+        transportB.propagateMessage(msg, PropagationMode.BOTH_WAYS);
 
         // we expect that each of the nodes gets this message
         assertEquals(400, counter.get());
