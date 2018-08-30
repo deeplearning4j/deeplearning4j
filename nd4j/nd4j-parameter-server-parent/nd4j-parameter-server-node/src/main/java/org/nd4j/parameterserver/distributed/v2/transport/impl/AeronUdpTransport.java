@@ -216,6 +216,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
     protected void addConnection(@NonNull String ipAndPort) {
         try {
+            log.info("Adding UDP connection: [{}]", ipAndPort);
             aeronLock.lock();
 
             if (remoteConnections.containsKey(ipAndPort))
