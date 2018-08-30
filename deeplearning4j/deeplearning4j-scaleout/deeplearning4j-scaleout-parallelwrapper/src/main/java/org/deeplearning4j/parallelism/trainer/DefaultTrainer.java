@@ -244,15 +244,6 @@ public class DefaultTrainer extends Thread implements Trainer {
                 ((ComputationGraph) replicatedModel).fit(dataSet);
             modelLock.readLock().unlock();
         }
-
-        // let's imagine iteration time is 300ms
-        //LockSupport.parkNanos(500000000);
-        try {
-            Thread.sleep(1000);
-            log.info("Slept well");
-        } catch (Exception e) {
-            //
-        }
     }
 
     protected void fit(MultiDataSet dataSet) {
@@ -265,15 +256,6 @@ public class DefaultTrainer extends Thread implements Trainer {
         modelLock.readLock().lock();
             ((ComputationGraph) replicatedModel).fit(dataSet);
         modelLock.readLock().unlock();
-
-        // let's imagine iteration time is 300ms
-        //LockSupport.parkNanos(500000000);
-        try {
-            Thread.sleep(1000);
-            log.info("Slept well");
-        } catch (Exception e) {
-            //
-        }
     }
 
     /**
