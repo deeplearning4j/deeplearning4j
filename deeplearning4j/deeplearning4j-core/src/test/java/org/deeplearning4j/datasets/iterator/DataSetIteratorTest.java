@@ -175,8 +175,8 @@ public class DataSetIteratorTest extends BaseDL4JTest {
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
                                         .build())
-                        .setInputType(InputType.convolutionalFlat(numRows, numColumns, numChannels)).backprop(true)
-                        .pretrain(false);
+                        .setInputType(InputType.convolutionalFlat(numRows, numColumns, numChannels))
+                        ;
 
         MultiLayerNetwork model = new MultiLayerNetwork(builder.build());
         model.init();
@@ -238,7 +238,7 @@ public class DataSetIteratorTest extends BaseDL4JTest {
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
                                         .build())
-                        .backprop(true).pretrain(false)
+
                         .setInputType(InputType.convolutionalFlat(height, width, channels));
 
         MultiLayerNetwork model = new MultiLayerNetwork(builder.build());

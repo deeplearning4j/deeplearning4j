@@ -641,7 +641,7 @@ public class EvalTest extends BaseDL4JTest {
                         .list()
                         .layer(0, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -1075,7 +1075,8 @@ public class EvalTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(123)
                 .list()
                 .layer(0, new LSTM.Builder().activation(Activation.TANH).nIn(3).nOut(3).build())
-                .layer(1, new RnnOutputLayer.Builder().activation(Activation.IDENTITY).nIn(3).nOut(1).build())
+                .layer(1, new RnnOutputLayer.Builder().activation(Activation.SIGMOID).lossFunction(LossFunctions.LossFunction.XENT)
+                        .nIn(3).nOut(1).build())
                 .backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(10).tBPTTBackwardLength(10)
                 .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

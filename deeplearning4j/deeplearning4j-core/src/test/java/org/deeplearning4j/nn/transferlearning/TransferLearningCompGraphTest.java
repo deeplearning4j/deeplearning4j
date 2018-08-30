@@ -294,7 +294,7 @@ public class TransferLearningCompGraphTest extends BaseDL4JTest {
                                                         .activation(Activation.SOFTMAX)
                                                         .build(),
                                                 "layer5")
-                                        .setOutputs("layer6").backprop(true).pretrain(false).build());
+                                        .setOutputs("layer6").build());
         modelToFineTune.init();
 
         //this will override the learning configuration set in the model
@@ -372,7 +372,7 @@ public class TransferLearningCompGraphTest extends BaseDL4JTest {
                                                 .activation(Activation.SOFTMAX)
                                                 .build(),
                                         "layer7")
-                                .setOutputs("layer8").backprop(true).pretrain(false).build());
+                                .setOutputs("layer8").build());
         modelExpectedArch.init();
         modelExpectedArch.getVertex("layer0").setLayerAsFrozen();
         modelExpectedArch.getVertex("layer1").setLayerAsFrozen();

@@ -367,7 +367,8 @@ Nd4jLong* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>&
         for(int i=0; i<rank; ++i) {
             isAbsent = true;
             for(int j=0; j<size; ++j) {
-                if(i == dimensions[j]) {
+                int dim = dimensions[j] >= 0 ? dimensions[j] : dimensions[j] + rank;
+                if(i == dim) {
                     isAbsent = false;
                     break;
                 }

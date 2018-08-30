@@ -446,7 +446,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new AdaGrad(0.1))
                         .l2(0.001)
-                        .seed(12345).list().pretrain(false)
+                        .seed(12345).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
                                         .activation(Activation.TANH).nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new UniformDistribution(-0.05, 0.05)).build())
@@ -454,9 +454,9 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
                                         .activation(Activation.TANH).nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new UniformDistribution(-0.05, 0.05)).build())
                         .layer(2, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder()
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(2)
-                                        .activation(Activation.TANH).build())
-                        .backprop(true).build();
+                                        .activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT)
+                                        .nIn(2).nOut(2).build())
+                        .build();
 
 
         final String json1 = conf1.toJson();

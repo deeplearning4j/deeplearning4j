@@ -34,7 +34,7 @@ import java.util.Map;
 /**
  * Parameter initializer for the Variational Autoencoder model.
  *
- * See: Kingma & Welling, 2013: Auto-Encoding Variational Bayes - https://arxiv.org/abs/1312.6114
+ * See: Kingma & Welling, 2013: Auto-Encoding Variational Bayes - <a href="https://arxiv.org/abs/1312.6114">https://arxiv.org/abs/1312.6114</a>
  *
  * @author Alex Black
  */

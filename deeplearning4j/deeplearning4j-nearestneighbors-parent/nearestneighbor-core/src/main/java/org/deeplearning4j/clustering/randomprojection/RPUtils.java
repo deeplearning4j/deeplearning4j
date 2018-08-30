@@ -32,9 +32,7 @@ import org.nd4j.linalg.primitives.Pair;
 import java.util.*;
 
 /**
- * A port of:
- * https://github.com/lyst/rpforest
- * to nd4j
+ * A port of: <a href="https://github.com/lyst/rpforest">https://github.com/lyst/rpforest</a> to nd4j
  *
  * @author
  */

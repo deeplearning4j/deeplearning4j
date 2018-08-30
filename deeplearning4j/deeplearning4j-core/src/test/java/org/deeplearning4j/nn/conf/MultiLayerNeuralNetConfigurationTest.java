@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.conf;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -105,7 +106,7 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
                         .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
                                         .build())
-                        .backprop(true).pretrain(false)
+
                         .setInputType(InputType.convolutional(numRows, numColumns, nChannels));
 
         MultiLayerConfiguration conf = builder.build();
@@ -136,7 +137,7 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
                 .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
                         .build())
-                .backprop(true).pretrain(false)
+
                 .setInputType(InputType.convolutional(numRows, numColumns, nChannels));
 
         MultiLayerConfiguration conf = builder.build();
@@ -153,7 +154,7 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
                         .layer(1, new GlobalPoolingLayer.Builder().poolingType(PoolingType.PNORM).pnorm(3).build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(3).build())
-                        .pretrain(false).backprop(true).setInputType(InputType.convolutional(32, 32, 1)).build();
+                        .setInputType(InputType.convolutional(32, 32, 1)).build();
 
         String str = conf.toJson();
         MultiLayerConfiguration fromJson = conf.fromJson(str);
@@ -195,7 +196,7 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
     @Test
     public void testClone() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list().layer(0, new DenseLayer.Builder().build())
-                        .layer(1, new OutputLayer.Builder().build())
+                        .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).build())
                         .inputPreProcessor(1, new CnnToFeedForwardPreProcessor()).build();
 
         MultiLayerConfiguration conf2 = conf.clone();
@@ -254,7 +255,7 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).build())
                         .layer(1, new OutputLayer.Builder().nIn(2).nOut(1).weightInit(WeightInit.DISTRIBUTION)
-                                        .dist(new NormalDistribution(0, 1)).build())
+                                        .dist(new NormalDistribution(0, 1)).lossFunction(LossFunctions.LossFunction.MSE).build())
                         .build();
         return conf;
     }
@@ -263,8 +264,8 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
     public void testInvalidConfig() {
 
         try {
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).list().pretrain(false)
-                            .backprop(true).build();
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).list()
+                            .build();
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
             fail("No exception thrown for invalid configuration");
@@ -279,7 +280,7 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
         try {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).list()
                             .layer(1, new DenseLayer.Builder().nIn(3).nOut(4).build())
-                            .layer(2, new OutputLayer.Builder().nIn(4).nOut(5).build()).pretrain(false).backprop(true)
+                            .layer(2, new OutputLayer.Builder().nIn(4).nOut(5).build())
                             .build();
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -295,7 +296,7 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
         try {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).list()
                             .layer(0, new DenseLayer.Builder().nIn(3).nOut(4).build())
-                            .layer(2, new OutputLayer.Builder().nIn(4).nOut(5).build()).pretrain(false).backprop(true)
+                            .layer(2, new OutputLayer.Builder().nIn(4).nOut(5).build())
                             .build();
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -314,7 +315,7 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).list()
                         .layer(0, new DenseLayer.Builder().nIn(3).nOut(4).build())
-                        .layer(1, new OutputLayer.Builder().nIn(4).nOut(5).build()).pretrain(false).backprop(true)
+                        .layer(1, new OutputLayer.Builder().nIn(4).nOut(5).activation(Activation.SOFTMAX).build())
                         .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -328,15 +329,15 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
 
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().seed(12345).list()
                         .layer(0, new DenseLayer.Builder().nIn(3).nOut(4).build())
-                        .layer(1, new OutputLayer.Builder().nIn(4).nOut(5).build()).pretrain(false).backprop(true)
+                        .layer(1, new OutputLayer.Builder().nIn(4).nOut(5).activation(Activation.SOFTMAX).build())
                         .build();
         MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
         net2.init();
 
         MultiLayerConfiguration conf3 = new NeuralNetConfiguration.Builder().seed(12345)
                         .list(new DenseLayer.Builder().nIn(3).nOut(4).build(),
-                                        new OutputLayer.Builder().nIn(4).nOut(5).build())
-                        .pretrain(false).backprop(true).build();
+                                        new OutputLayer.Builder().nIn(4).nOut(5).activation(Activation.SOFTMAX).build())
+                        .build();
         MultiLayerNetwork net3 = new MultiLayerNetwork(conf3);
         net3.init();
 
@@ -394,4 +395,49 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
         assertEquals(1e-2, ((Adam)l3.getUpdaterByParam("W")).getLearningRate(), 1e-6);
     }
 
+
+    @Test
+    public void testInvalidOutputLayer(){
+        /*
+        Test case (invalid configs)
+        1. nOut=1 + softmax
+        2. mcxent + tanh
+        3. xent + softmax
+        4. xent + relu
+        5. mcxent + sigmoid
+         */
+
+        LossFunctions.LossFunction[] lf = new LossFunctions.LossFunction[]{
+                LossFunctions.LossFunction.MCXENT, LossFunctions.LossFunction.MCXENT, LossFunctions.LossFunction.XENT,
+                LossFunctions.LossFunction.XENT, LossFunctions.LossFunction.MCXENT};
+        int[] nOut = new int[]{1, 3, 3, 3, 3};
+        Activation[] activations = new Activation[]{Activation.SOFTMAX, Activation.TANH, Activation.SOFTMAX, Activation.RELU, Activation.SIGMOID};
+        for( int i=0; i<lf.length; i++ ){
+            for(boolean lossLayer : new boolean[]{false, true}) {
+                for (boolean validate : new boolean[]{true, false}) {
+                    String s = "nOut=" + nOut[i] + ",lossFn=" + lf[i] + ",lossLayer=" + lossLayer + ",validate=" + validate;
+                    if(nOut[i] == 1 && lossLayer)
+                        continue;   //nOuts are not availabel in loss layer, can't expect it to detect this case
+                    try {
+                        new NeuralNetConfiguration.Builder()
+                                .list()
+                                .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
+                                .layer(!lossLayer ? new OutputLayer.Builder().nIn(10).nOut(nOut[i]).activation(activations[i]).lossFunction(lf[i]).build()
+                                                : new LossLayer.Builder().activation(activations[i]).lossFunction(lf[i]).build())
+                                .validateOutputLayerConfig(validate)
+                                .build();
+                        if (validate) {
+                            fail("Expected exception: " + s);
+                        }
+                    } catch (DL4JInvalidConfigException e) {
+                        if (validate) {
+                            assertTrue(s, e.getMessage().toLowerCase().contains("invalid output"));
+                        } else {
+                            fail("Validation should not be enabled");
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

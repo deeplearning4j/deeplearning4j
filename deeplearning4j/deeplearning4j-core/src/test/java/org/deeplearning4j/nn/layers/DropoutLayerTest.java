@@ -73,9 +73,10 @@ public class DropoutLayerTest extends BaseDL4JTest {
                                                         .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER)
                                                         .build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                        .weightInit(WeightInit.XAVIER).activation(Activation.IDENTITY).dropOut(0.25)
+                                        .activation(Activation.SOFTMAX)
+                                        .weightInit(WeightInit.XAVIER).dropOut(0.25)
                                         .nOut(4).build())
-                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(2, 2, 1)).build();
+                        .setInputType(InputType.convolutionalFlat(2, 2, 1)).build();
 
         MultiLayerNetwork netIntegrated = new MultiLayerNetwork(confIntegrated);
         netIntegrated.init();
@@ -96,9 +97,9 @@ public class DropoutLayerTest extends BaseDL4JTest {
                                                         .build())
                                         .layer(2, new DropoutLayer.Builder(0.25).build())
                                         .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                                        .weightInit(WeightInit.XAVIER).activation(Activation.IDENTITY)
+                                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
                                                         .nOut(4).build())
-                                        .backprop(true).pretrain(false)
+
                                         .setInputType(InputType.convolutionalFlat(2, 2, 1)).build();
 
         MultiLayerNetwork netSeparate = new MultiLayerNetwork(confSeparate);
@@ -156,7 +157,7 @@ public class DropoutLayerTest extends BaseDL4JTest {
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).dropOut(0.25)
                                         .nIn(10).nOut(10).build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         MultiLayerNetwork netIntegrated = new MultiLayerNetwork(confIntegrated);
         netIntegrated.init();
@@ -172,7 +173,7 @@ public class DropoutLayerTest extends BaseDL4JTest {
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nIn(10).nOut(10)
                                         .build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         MultiLayerNetwork netSeparate = new MultiLayerNetwork(confSeparate);
         netSeparate.init();
@@ -226,7 +227,7 @@ public class DropoutLayerTest extends BaseDL4JTest {
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).dropOut(0.5)
                                         .nOut(10).build())
-                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
+                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
         // Run with separate activation layer
         Nd4j.getRandom().setSeed(12345);
@@ -243,7 +244,7 @@ public class DropoutLayerTest extends BaseDL4JTest {
                         .layer(1, new DropoutLayer.Builder(0.5).build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nOut(10).build())
-                        .inputPreProcessors(preProcessorMap).backprop(true).pretrain(false)
+                        .inputPreProcessors(preProcessorMap)
                         .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
 

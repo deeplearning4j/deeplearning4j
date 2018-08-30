@@ -153,6 +153,7 @@ public class TestMasking extends BaseDL4JTest {
                                                 .build())
                                 .layer(1, new OutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf)
                                                 .activation(a).build())
+                                .validateOutputLayerConfig(false)
                                 .build();
 
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -198,7 +199,7 @@ public class TestMasking extends BaseDL4JTest {
                                                 .activation(Activation.TANH).build(), "in")
                                 .addLayer("1", new OutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf)
                                                 .activation(a).build(), "0")
-                                .setOutputs("1").build();
+                                .setOutputs("1").validateOutputLayerConfig(false).build();
 
                 ComputationGraph graph = new ComputationGraph(conf2);
                 graph.init();
