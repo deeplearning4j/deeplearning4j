@@ -3750,15 +3750,41 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd
     }
 }
 
-int NativeOps::decompressParallel(Nd4jPointer* arrays, int arrayCount, Nd4jPointer output) {
+template <typename T> int decompressParallelGeneric(Nd4jPointer* arrays, int arrayCount, Nd4jPointer output) {
+    FloatBits fb;
+    auto z = reinterpret_cast<T *>(output);
+    int* x = reinterpret_cast<int *>(arrays[0]);
 
-#pragma omp parallel for schedule(guided) default(shared)
-    for (int k = 0; k < arrayCount; k++) {
-        nd4j::TypeCast::convertFromThreshold<float>(nullptr, arrays[k], 0, output);
+    // we use 3 as offset, since first 12 bytes are occupied with header
+
+    int threadCount = omp_get_num_threads();
+    int localPart = x[1] / threadCount;
+#pragma omp parallel for schedule(guided)
+    for (int i = 0; i < arrayCount; i++) {
+        x = reinterpret_cast<int *>(arrays[i]);
+        int limit = x[0];
+        fb.i_ = x[2];
+        float threshold = fb.f_;
+        int flimit = limit + 4;
+        int threadID = omp_get_thread_num();
+#pragma omp parallel for schedule(guided)
+        for (int e = 4; e < flimit; e++) {
+            int el = x[e];
+            int ael = nd4j::math::nd4j_abs<int>(el);
+            if ((ael < 1 + threadID * localPart) && (ael > localPart * (1 + threadID))) continue;
+            ael -= 1;
+            z[ael] += el > 0 ? threshold : -threshold;
+        }    //arrays
     }
-    return ND4J_STATUS_OK;
 }
 
+int NativeOps::decompressParallel(Nd4jPointer* arrays, int arrayCount, Nd4jPointer output) {
+    return decompressParallelGeneric<float>(arrays, arrayCount, output);
+}
+
+template int decompressParallelGeneric<float16>(Nd4jPointer* arrays, int arrayCount, Nd4jPointer output);
+template int decompressParallelGeneric<float>(Nd4jPointer* arrays, int arrayCount, Nd4jPointer output);
+template int decompressParallelGeneric<double>(Nd4jPointer* arrays, int arrayCount, Nd4jPointer output);
 
 template void flattenGeneric<float16>(Nd4jPointer*, int, char, float16*, Nd4jLong*, float16*, Nd4jLong*);
 template void flattenGeneric<float>(Nd4jPointer*, int, char, float*, Nd4jLong*, float*, Nd4jLong*);
