@@ -28,6 +28,7 @@ import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMess
 import org.nd4j.parameterserver.distributed.v2.transport.MessageCallable;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
+import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -53,18 +54,24 @@ public class DummyTransport extends BaseTransport {
         super();
         this.id = id;
         this.connector = connector;
+
+        this.splitter = new MessageSplitter();
     }
 
     public DummyTransport(String id, Connector connector, @NonNull String rootId) {
         super(rootId);
         this.id = id;
         this.connector = connector;
+
+        this.splitter = new MessageSplitter();
     }
 
     public DummyTransport(String id, Connector connector, @NonNull String rootId, @NonNull VoidConfiguration configuration) {
         super(rootId, configuration);
         this.id = id;
         this.connector = connector;
+
+        this.splitter = new MessageSplitter();
     }
 
     @Override
@@ -184,6 +191,12 @@ public class DummyTransport extends BaseTransport {
     public MeshOrganizer getMesh() {
         synchronized (mesh) {
             return mesh.get();
+        }
+    }
+
+    public void setMesh(MeshOrganizer mesh) {
+        synchronized (this.mesh) {
+            this.mesh.set(mesh);
         }
     }
 }

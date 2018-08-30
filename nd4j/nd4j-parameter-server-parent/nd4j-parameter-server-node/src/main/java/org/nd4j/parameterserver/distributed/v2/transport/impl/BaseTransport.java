@@ -96,6 +96,9 @@ public abstract  class BaseTransport  implements Transport {
     // this queue handles all incoming messages
     protected final TransferQueue<VoidMessage> messageQueue = new LinkedTransferQueue<>();
 
+    // MessageSplitter instance that'll be used in this transport
+    protected MessageSplitter splitter;
+
     protected final ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors()), new ThreadFactory() {
         @Override
         public Thread newThread(@NotNull Runnable r) {
@@ -104,6 +107,8 @@ public abstract  class BaseTransport  implements Transport {
             return t;
         }
     });
+
+
 
     protected BaseTransport() {
         this(java.util.UUID.randomUUID().toString());
@@ -246,7 +251,7 @@ public abstract  class BaseTransport  implements Transport {
         // if this is INDArrayMessage we'll split it into chunks
         if (voidMessage instanceof INDArrayMessage) {
             // TODO: make chunk size configurable
-            val chunks = MessageSplitter.getInstance().split(voidMessage, 65536);
+            val chunks = splitter.split(voidMessage, 65536);
             // send chunks to the upstream
             if (!node.isRootNode() && (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_UP == mode))
                 chunks.forEach(c -> sendMessage(c, upstream.getId()));
@@ -326,7 +331,7 @@ public abstract  class BaseTransport  implements Transport {
             // do nothing
         }  else if (message instanceof VoidChunk) {
             // we merge chunks to get full INDArrayMessage
-            Optional<INDArrayMessage> opt = MessageSplitter.getInstance().merge((VoidChunk) message);
+            Optional<INDArrayMessage> opt = splitter.merge((VoidChunk) message);
 
             // if this chunk was the last message, we'll forward it to parameter server for actual use
             if (opt.isPresent())

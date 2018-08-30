@@ -49,7 +49,7 @@ public class MessageSplitter {
     // simple counter for memory used by all in-memory trackers
     protected final AtomicLong memoryUse = new AtomicLong(0);
 
-    protected MessageSplitter() {
+    public MessageSplitter() {
         //
     }
 

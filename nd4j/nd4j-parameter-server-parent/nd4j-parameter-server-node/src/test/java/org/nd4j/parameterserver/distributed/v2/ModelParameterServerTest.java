@@ -32,10 +32,12 @@ import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.UpdaterPara
 import org.nd4j.parameterserver.distributed.v2.transport.impl.DelayedDummyTransport;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.DummyTransport;
 import org.nd4j.parameterserver.distributed.v2.util.AbstractSubscriber;
+import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import java.util.ArrayList;
+import java.util.concurrent.LinkedTransferQueue;
 
 import static org.junit.Assert.*;
 
@@ -275,5 +277,219 @@ public class ModelParameterServerTest {
         assertTrue(updatedModel.get());
         assertTrue(updatedUpdater.get());
         assertTrue(gotGradients.get());
+    }
+
+    @Test
+    public void testModelAndUpdaterParamsUpdate_2() throws Exception {
+        Nd4j.create(1);
+        val config = VoidConfiguration.builder().meshBuildMode(MeshBuildMode.MESH).build();
+        val connector = new DummyTransport.Connector();
+        val rootTransport = new DummyTransport(rootId, connector, rootId, config);
+        rootTransport.addRequestConsumer(ModelParametersRequest.class, new Consumer<ModelParametersRequest>() {
+            @Override
+            public void accept(ModelParametersRequest modelParametersRequest) throws Exception {
+                val msg = new ModelParametersMessage("123", Nd4j.create(10));
+                msg.setRequestId(modelParametersRequest.getRequestId());
+                rootTransport.sendMessage(msg, modelParametersRequest.getOriginatorId());
+            }
+        });
+
+        rootTransport.addRequestConsumer(UpdaterParametersRequest.class, new Consumer<UpdaterParametersRequest>() {
+            @Override
+            public void accept(UpdaterParametersRequest updatersParametersRequest) throws Exception {
+                val msg = new UpdaterParametersMessage("123", Nd4j.create(10));
+                msg.setRequestId(updatersParametersRequest.getRequestId());
+                rootTransport.sendMessage(msg, updatersParametersRequest.getOriginatorId());
+            }
+        });
+
+        val updatedModel = new AtomicBoolean(false);
+        val updatedUpdater = new AtomicBoolean(false);
+        val gotGradients = new AtomicBoolean(false);
+
+        connector.register(rootTransport);
+
+        val servers = new ArrayList<ModelParameterServer>();
+        val transports = new ArrayList<DummyTransport>();
+        for (int e = 0; e < 128; e++) {
+            val clientTransport = new DummyTransport(java.util.UUID.randomUUID().toString(), connector, rootId, config);
+            val clientServer = new ModelParameterServer(config, clientTransport, false);
+
+            servers.add(clientServer);
+            transports.add(clientTransport);
+
+            connector.register(clientTransport);
+
+            clientServer.launch();
+            log.info("Client [{}] started", e );
+        }
+
+        Thread.sleep(100);
+        val rootMesh = rootTransport.getMesh();
+
+        // now we're picking one server that'll play bad role
+        val badServer = servers.get(23);
+        val badTransport = transports.get(23);
+        val badId = badTransport.id();
+        val badNode = rootMesh.getNodeById(badId);
+
+        val upstreamId = badNode.getUpstreamNode().getId();
+        log.info("Upstream: [{}]; Number of downstreams: [{}]", upstreamId, badNode.numberOfDownstreams());
+
+        connector.dropConnection(badId);
+        val clientTransport = new DummyTransport(badId, connector, rootId);
+        val clientServer = new ModelParameterServer(clientTransport, false);
+
+        clientServer.addUpdaterParamsSubscriber(new AbstractSubscriber<INDArray>() {
+            @Override
+            public void onNext(INDArray array) {
+                assertNotNull(array);
+                updatedUpdater.set(true);
+            }
+        });
+
+        clientServer.addModelParamsSubscriber(new AbstractSubscriber<INDArray>() {
+            @Override
+            public void onNext(INDArray array) {
+                assertNotNull(array);
+                updatedModel.set(true);
+            }
+        });
+
+        clientServer.addUpdatesSubscriber(new AbstractSubscriber<INDArray>() {
+            @Override
+            public void onNext(INDArray array) {
+                assertNotNull(array);
+                assertEquals(Nd4j.linspace(1, 10, 100).reshape(10, 10), array);
+                gotGradients.set(true);
+            }
+        });
+
+        connector.register(clientTransport);
+
+        clientServer.launch();
+
+        connector.blockUntilFinished();
+
+        log.info("New upstream: {}", clientTransport.getMesh().getRootNode().getId());
+
+        // getting any server
+        val serv = servers.get(96);
+        serv.sendUpdate(Nd4j.linspace(1, 10, 100).reshape(10, 10));
+
+        connector.blockUntilFinished();
+
+        int failedCnt = 0;
+        for (int e = 0; e < 128; e++) {
+            // we're skipping node 23 since it was reconnected, and has different MPS instance
+            // and node 96, since it sends update
+            if (e != 23 && e != 96)
+                if (servers.get(e).getUpdates().size() == 0)
+                    failedCnt++;
+        }
+
+        assertEquals("Some nodes got no updates:", 0, failedCnt);
+
+        assertTrue(updatedModel.get());
+        assertTrue(updatedUpdater.get());
+        assertTrue(gotGradients.get());
+    }
+
+
+    @Test
+    public void testLinearPropagation_1() throws Exception {
+        Nd4j.create(1);
+        val config = VoidConfiguration.builder().meshBuildMode(MeshBuildMode.MESH).build();
+        val connector = new DummyTransport.Connector();
+        val rootTransport = new DummyTransport(rootId, connector, rootId, config);
+        val rootServer = new ModelParameterServer(config, rootTransport, true);
+        rootTransport.addRequestConsumer(ModelParametersRequest.class, new Consumer<ModelParametersRequest>() {
+            @Override
+            public void accept(ModelParametersRequest modelParametersRequest) throws Exception {
+                val msg = new ModelParametersMessage("123", Nd4j.create(10));
+                msg.setRequestId(modelParametersRequest.getRequestId());
+                rootTransport.sendMessage(msg, modelParametersRequest.getOriginatorId());
+            }
+        });
+
+        rootTransport.addRequestConsumer(UpdaterParametersRequest.class, new Consumer<UpdaterParametersRequest>() {
+            @Override
+            public void accept(UpdaterParametersRequest updatersParametersRequest) throws Exception {
+                val msg = new UpdaterParametersMessage("123", Nd4j.create(10));
+                msg.setRequestId(updatersParametersRequest.getRequestId());
+                rootTransport.sendMessage(msg, updatersParametersRequest.getOriginatorId());
+            }
+        });
+
+        connector.register(rootTransport);
+
+        val servers = new ArrayList<ModelParameterServer>();
+        val transports = new ArrayList<DummyTransport>();
+        for (int e = 0; e < 7; e++) {
+            val clientTransport = new DummyTransport(String.valueOf(e), connector, rootId, config);
+            val clientServer = new ModelParameterServer(config, clientTransport, false);
+
+            servers.add(clientServer);
+            transports.add(clientTransport);
+
+            connector.register(clientTransport);
+
+            clientServer.launch();
+            log.info("Client [{}] started", e );
+        }
+
+        val mesh = rootTransport.getMesh();
+        val rootNode = mesh.getRootNode();
+        val nodesForRemap = new LinkedTransferQueue<MeshOrganizer.Node>();
+        MeshOrganizer.Node lastNode = null;
+        int cnt = 0;
+        for (val d: rootNode.getDownstreamNodes()) {
+            assertEquals(0, d.numberOfDownstreams());
+            assertEquals(0, d.numberOfDownstreams());
+            if (cnt++ > 0) {
+                rootNode.removeFromDownstreams(d);
+                lastNode.addDownstreamNode(d);
+                lastNode = d;
+            } else
+                lastNode = d;
+        }
+        assertEquals(1, rootNode.numberOfDownstreams());
+
+        // now we want to ensure that all nodes have only 1 downstream, and last node has 0 downstreams
+        val nodes = new ArrayList<MeshOrganizer.Node>(mesh.flatNodes());
+        for (val n:nodes) {
+            if (!n.getId().equals("6"))
+                assertEquals(1, n.numberOfDownstreams());
+            else
+                assertEquals(0, n.numberOfDownstreams());
+        }
+
+        // update all mesh copies, just to be sure
+        for (int e = 0; e < 7; e++) {
+            val t = transports.get(e);
+            t.setMesh(mesh);
+        }
+
+        val middleServer = servers.get(3);
+        val update = Nd4j.create(10,10);
+        middleServer.sendUpdate(update);
+        connector.blockUntilFinished();
+
+        // checking how many nodes got update
+        int failCnt = 0;
+        for (int e = 0; e < 7; e++) {
+            val s = servers.get(e);
+            if (e != 3)
+                if (1 != s.getUpdates().size()) {
+                    log.info("Node [{}] have no updates", e);
+                    failCnt++;
+                }
+            else
+                assertEquals(0, s.getUpdates().size());
+        }
+        assertEquals(0, failCnt);
+
+        // now we're checking if root server got update
+        assertEquals(1, rootServer.getUpdates().size());
     }
 }

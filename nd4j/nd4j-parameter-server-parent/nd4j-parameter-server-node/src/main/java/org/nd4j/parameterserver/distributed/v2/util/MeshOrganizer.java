@@ -45,7 +45,7 @@ public class MeshOrganizer implements Serializable {
     private MeshBuildMode buildMode = MeshBuildMode.MESH;
 
     // this value determines max number of direct downstream connections for any given node (affects root node as well)
-    public static final int MAX_DOWNSTREAMS = 6;
+    public static final int MAX_DOWNSTREAMS = 8;
 
     // max distance from root
     public static final int MAX_DEPTH = 5;
@@ -425,7 +425,7 @@ public class MeshOrganizer implements Serializable {
          * @param node
          * @return
          */
-        protected Node addDownstreamNode(@NonNull Node node) {
+        public Node addDownstreamNode(@NonNull Node node) {
             this.downstream.add(node);
             node.setUpstreamNode(this);
             return node;
@@ -564,7 +564,7 @@ public class MeshOrganizer implements Serializable {
          * This method removes
          * @param node
          */
-        protected synchronized void removeFromDownstreams(@NonNull Node node) {
+        public synchronized void removeFromDownstreams(@NonNull Node node) {
             val r = downstream.remove(node);
 
             if (!r)
