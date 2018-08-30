@@ -422,3 +422,92 @@ TEST_F(DeclarableOpsTests10, range_test12) {
 
     delete result;
 }
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test1) {
+    
+    NDArray<double> labels('c', {2,3},{3.,2.,1.,0.,1.,2.});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> expected('c', {2,3}, {1.24254, 1.34254, 1.44254, 1.54254, 1.44254, 1.34254});
+                                            
+    logits.linspace(0.1, 0.1);
+
+    nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&labels, &logits}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test2) {
+    
+    NDArray<double> labels('c', {2},{1.,0.});
+    NDArray<double> logits('c', {2,3});
+    NDArray<double> expected('c', {2}, {1.10194, 1.20194});
+                                            
+    logits.linspace(0.1, 0.1);
+
+    nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&labels, &logits}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test3) {
+    
+    NDArray<double> labels('c', {1},{0.});
+    NDArray<double> logits('c', {1,3});
+    NDArray<double> expected('c', {1}, {1.20194});
+                                            
+    logits.linspace(0.1, 0.1);
+
+    nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&labels, &logits}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test4) {
+    
+    NDArray<double> labels('c', {2},{0.,0.});
+    NDArray<double> logits('c', {2,1});
+    NDArray<double> expected('c', {2}, {0., 0.});
+                                            
+    logits.linspace(0.1, 0.1);
+
+    nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&labels, &logits}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
