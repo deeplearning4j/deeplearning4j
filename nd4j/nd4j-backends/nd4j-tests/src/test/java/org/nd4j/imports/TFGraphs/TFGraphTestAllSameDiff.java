@@ -110,14 +110,19 @@ public class TFGraphTestAllSameDiff {
             //Overlapping indices in the test case, need to fix
             "scatter_nd_update/.*",
 
-            //scatter_nd: one minor validation issue mentioned tu Yurii (should validate vs. shape array length, not rank)
+            //scatter_nd: one minor validation issue mentioned tu Yurii, already fixed but not merged (should validate vs. shape array length, not rank)
             "scatter_nd/.*",
 
-            //SpaceToBatch - import issue? "SpaceToBatch: blocks supposed to be vector, but got 1D instead"
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6312
             "cnn1d_layers/channels_last_b1_k2_s1_d2_SAME",
 
-            //Need to look into this more: "vector::_M_range_check: __n (which is 0) >= this->size() (which is 0)
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6311
             "embedding_lookup/.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6313
+            "split/.*num.*axis-1",
+            "split/.*num.*axis-2",
+
 
             //Not sure why these are failing yet
             "lrn/dr3.*",

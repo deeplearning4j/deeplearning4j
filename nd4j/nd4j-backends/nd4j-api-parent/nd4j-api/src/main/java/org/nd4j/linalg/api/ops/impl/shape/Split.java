@@ -30,7 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * SplitV op
+ * Split op
  */
 public class Split extends DynamicCustomOp {
 
