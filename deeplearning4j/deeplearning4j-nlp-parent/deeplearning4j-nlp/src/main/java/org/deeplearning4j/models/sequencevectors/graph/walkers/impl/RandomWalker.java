@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * This is Random-based walker for SequenceVectors-based DeepWalk implementation
  *
- * Original DeepWalk paper: http://arxiv.org/pdf/1403.6652v2
+ * Original DeepWalk paper: <a href="http://arxiv.org/pdf/1403.6652v2">http://arxiv.org/pdf/1403.6652v2</a>
  *
  * @author AlexDBlack
  * @author raver119@gmail.com

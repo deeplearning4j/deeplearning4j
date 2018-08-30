@@ -81,7 +81,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                                         .layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build())
                                         .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                                         .activation(Activation.SOFTMAX).nIn(3).nOut(3).build())
-                                        .pretrain(false).backprop(true);
+                                        ;
 
         MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
         mln.init();
@@ -121,7 +121,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                         .layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build())
                         .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(nOut).build())
-                        .setInputType(InputType.convolutional(hw, hw, depth)).pretrain(false).backprop(true);
+                        .setInputType(InputType.convolutional(hw, hw, depth));
 
         MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
         mln.init();
@@ -190,8 +190,8 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                                         .layer(4, new ActivationLayer.Builder().activation(afn).build())
                                         .layer(5, new OutputLayer.Builder(lf).activation(outputActivation).nOut(nOut)
                                                         .build())
-                                        .setInputType(InputType.convolutional(hw, hw, depth)).pretrain(false)
-                                        .backprop(true);
+                                        .setInputType(InputType.convolutional(hw, hw, depth))
+                                        ;
 
                         MultiLayerConfiguration conf = builder.build();
 
@@ -289,7 +289,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                                                         .layer(4, new OutputLayer.Builder(lf)
                                                                         .activation(outputActivation).nOut(nOut)
                                                                         .build())
-                                                        .pretrain(false).backprop(true);
+                                                        ;
 
                         MultiLayerConfiguration conf = builder.build();
 
@@ -355,7 +355,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                         .layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build())
                         .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(3).nOut(3).build())
-                        .pretrain(false).backprop(true);
+                        ;
 
         MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
         mln.init();
@@ -395,7 +395,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                         .layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build())
                         .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(nOut).build())
-                        .setInputType(InputType.convolutional(hw, hw, depth)).pretrain(false).backprop(true);
+                        .setInputType(InputType.convolutional(hw, hw, depth));
 
         MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
         mln.init();
@@ -429,7 +429,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                         .addLayer("bn", new BatchNormalization.Builder().build(), "in")
                         .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(numClasses).build(), "bn")
-                        .setOutputs("out").backprop(true).pretrain(false).build();
+                        .setOutputs("out").build();
 
         ComputationGraph net = new ComputationGraph(conf);
         net.init();
@@ -503,7 +503,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                                         .addLayer("5", new OutputLayer.Builder(lf).activation(outputActivation)
                                                         .nOut(nOut).build(), "4")
                                         .setOutputs("5").setInputTypes(InputType.convolutional(hw, hw, depth))
-                                        .pretrain(false).backprop(true).build();
+                                        .build();
 
                         ComputationGraph net = new ComputationGraph(conf);
                         net.init();

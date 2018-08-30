@@ -105,7 +105,7 @@ public class TestMemoryReports extends BaseDL4JTest {
         for (Pair<? extends Layer, InputType> p : l) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list().layer(0, p.getFirst().clone())
-                            .layer(1, p.getFirst().clone()).build();
+                            .layer(1, p.getFirst().clone()).validateOutputLayerConfig(false).build();
 
             MemoryReport mr = conf.getMemoryReport(p.getSecond());
             //            System.out.println(mr.toString());
@@ -134,7 +134,7 @@ public class TestMemoryReports extends BaseDL4JTest {
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
                             .addLayer("0", p.getFirst().clone(), "in").addLayer("1", p.getFirst().clone(), "0")
-                            .setOutputs("1").build();
+                            .setOutputs("1").validateOutputLayerConfig(false).build();
 
             MemoryReport mr = conf.getMemoryReport(p.getSecond());
             //            System.out.println(mr.toString());
