@@ -283,8 +283,8 @@ public class CNNProcessorTest extends BaseDL4JTest {
                         .build());
 
         MultiLayerConfiguration conf = listBuilder
-                .backprop(true)
-                .pretrain(false)
+
+
                 .setInputType(InputType.convolutional(20, 10, 2))
                 .build();
 

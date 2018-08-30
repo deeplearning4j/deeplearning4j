@@ -157,11 +157,6 @@
         mentioning java-shaded as the type for why we use this instead of google's (mainly due ot other systems packaging
         their own older protobuf versions-->
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.github.os72</groupId>
             <artifactId>protobuf-java-shaded-351</artifactId>
             <version>0.9</version>
@@ -210,13 +205,6 @@
             <groupId>org.nd4j</groupId>
             <artifactId>jackson</artifactId>
             <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>

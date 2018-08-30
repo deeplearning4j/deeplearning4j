@@ -214,7 +214,7 @@ public class ElementWiseVertexTest extends BaseDL4JTest {
                                                         .activation(new ActivationSigmoid())
                                                         .lossFunction(LossFunction.MSE).build(),
                                         "elementwiseAdd")
-                        .setOutputs("output").backprop(true).build();
+                        .setOutputs("output").build();
 
         ComputationGraph cg = new ComputationGraph(cgc);
         cg.init();
@@ -389,7 +389,7 @@ public class ElementWiseVertexTest extends BaseDL4JTest {
                                                         .activation(new ActivationSigmoid())
                                                         .lossFunction(LossFunction.MSE).build(),
                                         "elementwiseProduct")
-                        .setOutputs("output").backprop(true).build();
+                        .setOutputs("output").build();
 
         ComputationGraph cg = new ComputationGraph(cgc);
         cg.init();
@@ -559,7 +559,7 @@ public class ElementWiseVertexTest extends BaseDL4JTest {
                                                         .activation(new ActivationSigmoid())
                                                         .lossFunction(LossFunction.MSE).build(),
                                         "elementwiseSubtract")
-                        .setOutputs("output").backprop(true).build();
+                        .setOutputs("output").build();
 
         ComputationGraph cg = new ComputationGraph(cgc);
         cg.init();

@@ -333,7 +333,6 @@ public class BackPropMLPTest extends BaseDL4JTest {
                                         .activation(activationFunction.equals(Activation.IDENTITY) ? Activation.IDENTITY
                                                         : Activation.SOFTMAX)
                                         .build());
-        lb.pretrain(false).backprop(true);
 
         return lb.build();
     }

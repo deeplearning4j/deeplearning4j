@@ -789,10 +789,10 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
         /**
-         *  This method allows you to specify training mode for this instance of PW.
-         *  1) AVERAGING - stands for parameters averaging. Each X epochs weights and updaters state will be averaged across all models
-         *  2) SHARED_GRADIENTS - stands for gradients sharing - more details available here: https://deeplearning4j.org/distributed
-         *  3) CUSTOM - this method allows you to specify custom gradients accumulator, this giving you better control of configuration params for training.
+         *  This method allows you to specify training mode for this instance of PW.<br>
+         *  1) AVERAGING - stands for parameters averaging. Each X epochs weights and updaters state will be averaged across all models<br>
+         *  2) SHARED_GRADIENTS - stands for gradients sharing - more details available here: <a href="https://deeplearning4j.org/distributed">https://deeplearning4j.org/distributed</a><br>
+         *  3) CUSTOM - this method allows you to specify custom gradients accumulator, this giving you better control of configuration params for training.<br>
          *
          * @param mode
          * @return
