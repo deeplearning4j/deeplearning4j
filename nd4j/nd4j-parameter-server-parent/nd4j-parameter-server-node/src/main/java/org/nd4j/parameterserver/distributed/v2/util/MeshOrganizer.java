@@ -204,6 +204,7 @@ public class MeshOrganizer implements Serializable {
      * @param node
      */
     public synchronized void remapNodeAndDownstreams(@NonNull Node node) {
+        version++;
         node.setUpstreamNode(this.rootNode);
 
         for (val n: node.getDownstreamNodes())
