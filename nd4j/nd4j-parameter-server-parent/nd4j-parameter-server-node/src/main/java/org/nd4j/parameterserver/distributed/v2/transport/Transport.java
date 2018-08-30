@@ -147,4 +147,10 @@ public interface Transport {
      * @return
      */
     String getRootId();
+
+    /**
+     *  This method checks if all connections required for work are established
+     * @return true
+     */
+    boolean isConnected();
 }

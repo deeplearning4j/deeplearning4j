@@ -202,4 +202,9 @@ public class DummyTransport extends BaseTransport {
             this.mesh.set(mesh);
         }
     }
+
+    @Override
+    public boolean isConnected() {
+        return true;
+    }
 }

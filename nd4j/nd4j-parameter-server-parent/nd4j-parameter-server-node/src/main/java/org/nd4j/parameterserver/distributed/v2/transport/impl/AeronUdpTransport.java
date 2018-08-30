@@ -49,6 +49,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static java.lang.System.setProperty;
@@ -89,6 +90,8 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     protected ReentrantLock aeronLock = new ReentrantLock();
 
     protected final AtomicBoolean shutdownFlag = new AtomicBoolean(false);
+
+    protected final AtomicBoolean connectedFlag = new AtomicBoolean(false);
 
     public AeronUdpTransport(@NonNull String ownIp, @NonNull String rootIp, @NonNull VoidConfiguration configuration) {
         this(ownIp, configuration.getUnicastPort(), rootIp, configuration.getUnicastPort(), configuration);
@@ -216,11 +219,12 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
     protected void addConnection(@NonNull String ipAndPort) {
         try {
-            log.info("Adding UDP connection: [{}]", ipAndPort);
             aeronLock.lock();
 
             if (remoteConnections.containsKey(ipAndPort))
                 return;
+
+            log.info("Adding UDP connection: [{}]", ipAndPort);
 
             val v = aeron.addPublication(ipAndPort, voidConfiguration.getStreamId());
 
@@ -271,6 +275,30 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     }
 
     @Override
+    public boolean isConnected() {
+        if (connectedFlag.get())
+            return true;
+
+        // node supposed to be connected if rootNode is connected and downstreams + upstream + downstreams are connected
+        if (!remoteConnections.containsKey(rootId))
+            return false;
+
+        synchronized (mesh) {
+            val u = mesh.get().getUpstreamForNode(this.id()).getId();
+            if (!remoteConnections.containsKey(u))
+                return false;
+
+            for (val n:mesh.get().getDownstreamsForNode(this.id())) {
+                if (!remoteConnections.containsKey(n.getId()))
+                    return false;
+            }
+        }
+
+        connectedFlag.set(true);
+        return true;
+    }
+
+    @Override
     public void sendMessage(@NonNull VoidMessage message, @NonNull String id) {
         if (message.getOriginatorId() == null)
             message.setOriginatorId(this.id());
@@ -289,6 +317,13 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
         // serialize out of locks
         val b = message.asUnsafeBuffer();
+
+        // blocking until all connections are up
+        if (!id.equals(rootId)) {
+            while (!isConnected()) {
+                LockSupport.parkNanos(10000000);
+            }
+        }
 
         val conn = remoteConnections.get(id);
         if (conn == null)
