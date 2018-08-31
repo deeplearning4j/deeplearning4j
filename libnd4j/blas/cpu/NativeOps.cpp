@@ -3757,6 +3757,7 @@ template <typename T> int decompressParallelGeneric(Nd4jPointer* arrays, int arr
     {
         FloatBits fb;
         int* x = reinterpret_cast<int *>(arrays[0]);
+        T* z = reinterpret_cast<T*>(output);
         int threadCount = omp_get_num_threads();
         int localPart = x[1];
         if (threadCount > 0)
@@ -3779,10 +3780,8 @@ template <typename T> int decompressParallelGeneric(Nd4jPointer* arrays, int arr
             for (int e = 4; e < flimit; e++) {
                 int el = x[e];
                 int ael = nd4j::math::nd4j_abs<int>(el) - 1;
-                if (ael <= lowBound && ael >= upBound) continue;
-//                ael -= 1;
-#pragma omp critical
-                z[ael] += el > 0 ? threshold : -threshold;
+                if (ael >= lowBound && ael < upBound)// continue;
+                    z[ael] += el > 0 ? threshold : -threshold;
             }    //arrays
         }
     }

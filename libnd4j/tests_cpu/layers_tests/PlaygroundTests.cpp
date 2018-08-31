@@ -746,7 +746,7 @@ TEST_F(PlaygroundTests, loop_test_3) {
     auto buffer = array->buffer();
     int cnt = 0;
     int iterations = 10;
-
+    NDArray<float>* ethalon = array->dup();
     int length = (int) array->lengthOf();
     int span = (int) (length / 6) + 8;
 
@@ -811,10 +811,22 @@ TEST_F(PlaygroundTests, loop_test_3) {
     testTime = std::chrono::duration_cast<std::chrono::microseconds> (testEnd - testStart).count();
 
     nd4j_printf("\nLinear time: %lld us\n", testTime);
-
+    /*
+    nd4j_printf("Differences:\n", "");
+    nd4j_printf("parallel > ", "");
+    for (int e = 0; e < array->lengthOf(); e++){
+        nd4j_printf("%f, ", (*array)(e) - (*ethalon)(e));
+    }
+    nd4j_printf("\n", "");
+    nd4j_printf("linear   > ", "");
+    for (int e = 0; e < array->lengthOf(); e++){
+        nd4j_printf("%f, ", (*pRes)(e) - (*ethalon)(e));
+    }
+    nd4j_printf("\n", "");
+    */
     //ops.decompressParallel((Nd4jPointer *)t, 10, array->getBuffer());
-    array->printIndexedBuffer("Output parallel");
-    pRes->printIndexedBuffer("Output linear  ");
+//  array->printIndexedBuffer("Output parallel");
+//  pRes->printIndexedBuffer("Output linear  ");
     nd4j_printf("All done.\n", "");
     ASSERT_TRUE(pRes->equalsTo(array));
     delete pRes;
