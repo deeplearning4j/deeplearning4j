@@ -168,6 +168,12 @@ public class VoidConfiguration implements Serializable {
     private long chunksBufferSize = 1073741824;
 
     /**
+     * This variable defines max chunk size for INDArray splits
+     */
+    @Builder.Default
+    private int maxChunkSize = 65536;
+
+    /**
      * This optional variable defines IP address of the box which acts as master for gradients training.
      * Leave it null, and Spark Master node will be used as Master for parameter server as well.
      */

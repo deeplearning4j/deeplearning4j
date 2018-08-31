@@ -37,7 +37,9 @@ import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
 import org.nd4j.parameterserver.distributed.v2.enums.TransmissionStatus;
+import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
@@ -45,6 +47,7 @@ import org.nd4j.parameterserver.distributed.v2.transport.MessageCallable;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -68,6 +71,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     // this map holds outgoing connections, basically
     protected Map<String, RemoteConnection> remoteConnections = new ConcurrentHashMap<>();
 
+    protected final int SENDER_THREADS = 2;
     protected final int MESSAGE_THREADS = 2;
     protected final int SUBSCRIPTION_THREADS = 1;
 
@@ -85,6 +89,9 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
     // this is intermediate buffer for incoming messages
     protected BlockingQueue<VoidMessage> messageQueue = new LinkedTransferQueue<>();
+
+    // this is intermediate buffer for messages enqueued for propagation
+    protected BlockingQueue<INDArrayMessage> propagationQueue = new LinkedBlockingQueue<>(32);
 
     // this lock is used for aeron publications
     protected ReentrantLock aeronLock = new ReentrantLock();
@@ -135,7 +142,6 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             this.shutdown();
         }));
-
     }
 
     // this executor service han
@@ -187,6 +193,38 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                 }
             });
         }
+
+
+        for (int e = 0; e < SENDER_THREADS; e++) {
+            messagesExecutorService.execute(new Runnable() {
+                @Override
+                public void run() {
+                    while (true) {
+                        try {
+                            val msg = propagationQueue.take();
+                            redirectedPropagateArrayMessage(msg);
+                        } catch (InterruptedException e) {
+                            break;
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    @Override
+    protected void propagateArrayMessage(INDArrayMessage message, PropagationMode mode) throws IOException {
+        try {
+            propagationQueue.put(message);
+        } catch (InterruptedException e) {
+            // just swallow this
+        }
+    }
+
+    protected void redirectedPropagateArrayMessage(INDArrayMessage message) throws IOException {
+        super.propagateArrayMessage(message, PropagationMode.BOTH_WAYS);
     }
 
     /**

@@ -227,6 +227,26 @@ public abstract  class BaseTransport  implements Transport {
         executorService.shutdown();
     }
 
+    protected void propagateArrayMessage(INDArrayMessage message, PropagationMode mode) throws IOException  {
+        val node = mesh.get().getNodeById(id);
+
+        val root = mesh.get().getRootNode();
+        val upstream = node.getUpstreamNode();
+        val downstreams = node.getDownstreamNodes();
+
+        // TODO: make chunk size configurable
+        val chunks = splitter.split(message, voidConfiguration.getMaxChunkSize());
+        // send chunks to the upstream
+        if (!node.isRootNode() && (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_UP == mode))
+            chunks.forEach(c -> sendMessage(c, upstream.getId()));
+
+        // and send chunks to all downstreams
+        if (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_DOWN == mode)
+            downstreams.parallelStream().forEach(n -> {
+                chunks.forEach(c -> sendMessage(c, n.getId()));
+            });
+    }
+
     @Override
     public void propagateMessage(@NonNull VoidMessage voidMessage, PropagationMode mode) throws IOException {
         val node = mesh.get().getNodeById(id);
@@ -236,7 +256,7 @@ public abstract  class BaseTransport  implements Transport {
 
         // it's possible situation to have master as regular node. i.e. spark localhost mode
         if (mesh.get().totalNodes() == 1) {
-            processMessage(voidMessage);
+            internalProcessMessage(voidMessage);
             return;
         }
 
@@ -254,17 +274,7 @@ public abstract  class BaseTransport  implements Transport {
 
         // if this is INDArrayMessage we'll split it into chunks
         if (voidMessage instanceof INDArrayMessage) {
-            // TODO: make chunk size configurable
-            val chunks = splitter.split(voidMessage, 65536);
-            // send chunks to the upstream
-            if (!node.isRootNode() && (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_UP == mode))
-                chunks.forEach(c -> sendMessage(c, upstream.getId()));
-
-            // and send chunks to all downstreams
-            if (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_DOWN == mode)
-                downstreams.parallelStream().forEach(n -> {
-                    chunks.forEach(c -> sendMessage(c, n.getId()));
-                });
+            propagateArrayMessage((INDArrayMessage) voidMessage, mode);
         } else {
             // send message to the upstream
             if (!node.isRootNode() && (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_UP == mode))
@@ -349,7 +359,7 @@ public abstract  class BaseTransport  implements Transport {
             // do nothing
         }  else if (message instanceof VoidChunk) {
             // we merge chunks to get full INDArrayMessage
-            Optional<INDArrayMessage> opt = splitter.merge((VoidChunk) message);
+            Optional<INDArrayMessage> opt = splitter.merge((VoidChunk) message, voidConfiguration.getChunksBufferSize());
 
             // if this chunk was the last message, we'll forward it to parameter server for actual use
             if (opt.isPresent())
