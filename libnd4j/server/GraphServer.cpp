@@ -96,7 +96,7 @@ namespace nd4j {
 
                 try {
                     // GraphHolder
-                    auto response_offset = GraphHolder::getInstance()->execute(request->id(), mb_, request)
+                    auto response_offset = GraphHolder::getInstance()->execute(request->id(), mb_, request);
                     if (response_offset == 0)
                         return grpc::Status::CANCELLED;
 
@@ -106,7 +106,7 @@ namespace nd4j {
 
                     return grpc::Status::OK;
                 } catch (nd4j::graph::unknown_graph_exception &e) {
-                    return graph::Status::CANCELLED;
+                    return grpc::Status::CANCELLED;
                 } catch (nd4j::graph::graph_execution_exception &e) {
                     return grpc::Status::CANCELLED;
                 } catch (std::runtime_error &e) {
