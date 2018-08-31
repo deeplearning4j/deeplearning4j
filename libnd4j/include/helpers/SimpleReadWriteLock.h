@@ -38,7 +38,7 @@ namespace nd4j {
         std::mutex _mutex;
 
     public:
-        SimpleReadWriteLock() = default;
+        SimpleReadWriteLock();
         ~SimpleReadWriteLock() = default;
 
         // read lock
