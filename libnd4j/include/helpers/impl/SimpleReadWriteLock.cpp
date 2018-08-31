@@ -50,7 +50,11 @@ namespace nd4j {
     }
 
     SimpleReadWriteLock& SimpleReadWriteLock::operator= ( const SimpleReadWriteLock &other) {
+        if (this == &other) return *this;
+
         this->_write_locks.store(other._write_locks.load());
         this->_read_locks.store(other._read_locks.load());
+
+        return *this;
     }
 }
