@@ -19,7 +19,7 @@
 //
 
 #include <helpers/StringUtils.h>
-#include <graph/exceptions/unknown_graph_exception.h>
+#include <graph/exceptions/graph_exists_exception.h>
 
 namespace nd4j {
     namespace graph {
