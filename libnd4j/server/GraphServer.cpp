@@ -81,19 +81,24 @@ namespace nd4j {
             }
 
             grpc::Status GraphInferenceServerImpl::ForgetGraph( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatDropRequest> *request_msg, flatbuffers::grpc::Message<FlatResponse> *response_msg) {
-                // getting drop request
-                auto request = request_msg->GetRoot();
+                try {
 
-                // dropping out graph (any datatype)
-                GraphHolder::getInstance()->dropGraphAny(request->id());
+                    // getting drop request
+                    auto request = request_msg->GetRoot();
 
-                // sending out OK response
-                auto response_offset = CreateFlatResponse(mb_, 0);
-                mb_.Finish(response_offset);
-                *response_msg = mb_.ReleaseMessage<FlatResponse>();
-                assert(response_msg->Verify());
+                    // dropping out graph (any datatype)
+                    GraphHolder::getInstance()->dropGraphAny(request->id());
 
-                return grpc::Status::OK;
+                    // sending out OK response
+                    auto response_offset = CreateFlatResponse(mb_, 0);
+                    mb_.Finish(response_offset);
+                    *response_msg = mb_.ReleaseMessage<FlatResponse>();
+                    assert(response_msg->Verify());
+
+                    return grpc::Status::OK;
+                } catch (nd4j::graph::unknown_graph_exception &e) {
+                    return grpc::Status::CANCELLED;
+                }
             }
 
             grpc::Status GraphInferenceServerImpl::InferenceRequest( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatInferenceRequest> *request_msg, flatbuffers::grpc::Message<FlatResult> *response_msg) {

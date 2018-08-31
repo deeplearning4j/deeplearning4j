@@ -204,7 +204,14 @@ namespace nd4j {
             if (!hasGraph<float>(graphId))
                 throw unknown_graph_exception(graphId);
 
-            return 0;
+            lockRead(graphId);
+
+            auto graph = cloneGraph<float>(graphId);
+            auto res = GraphExecutioner<float>::execute(graph, builder, request);
+
+            unlockRead(graphId);
+
+            return res;
         }
 
 
