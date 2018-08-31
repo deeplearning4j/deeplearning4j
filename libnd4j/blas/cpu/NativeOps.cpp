@@ -3753,12 +3753,12 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd
 template <typename T> int decompressParallelGeneric(Nd4jPointer* arrays, int arrayCount, Nd4jPointer output) {
     FloatBits fb;
     auto z = reinterpret_cast<T *>(output);
-    int* x = reinterpret_cast<int *>(arrays[0]);
 
     // we use 3 as offset, since first 12 bytes are occupied with header
 
 #pragma omp parallel
     {
+        int* x = reinterpret_cast<int *>(arrays[0]);
         int threadCount = omp_get_num_threads();
         int localPart = x[1];
         if (threadCount > 0)
@@ -3767,14 +3767,14 @@ template <typename T> int decompressParallelGeneric(Nd4jPointer* arrays, int arr
         int threadID = omp_get_thread_num();
         int upBound = localPart * (1 + threadID);
         int lowBound = 1 + threadID * localPart;
-#pragma omp parallel for schedule(guided)
+//#pragma omp parallel for schedule(guided)
         for (int i = 0; i < arrayCount; i++) {
             x = reinterpret_cast<int *>(arrays[i]);
             int limit = x[0];
             fb.i_ = x[2];
             float threshold = fb.f_;
             int flimit = limit + 4;
-#pragma omp parallel for schedule(guided)
+//#pragma omp parallel for schedule(guided)
             for (int e = 4; e < flimit; e++) {
                 int el = x[e];
                 int ael = nd4j::math::nd4j_abs<int>(el);
