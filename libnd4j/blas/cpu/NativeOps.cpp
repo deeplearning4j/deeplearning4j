@@ -3767,6 +3767,9 @@ template <typename T> int decompressParallelGeneric(Nd4jPointer* arrays, int arr
         int threadID = omp_get_thread_num();
         int upBound = localPart * (1 + threadID);
         int lowBound = 1 + threadID * localPart;
+        if (threadID == threadCount - 1)
+            upBound = localPart * (1 + threadID) + x[1] % threadCount;
+
 //#pragma omp parallel for schedule(guided)
         for (int i = 0; i < arrayCount; i++) {
             x = reinterpret_cast<int *>(arrays[i]);
