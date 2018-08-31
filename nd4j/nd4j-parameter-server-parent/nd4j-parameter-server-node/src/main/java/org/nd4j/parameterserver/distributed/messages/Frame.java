@@ -42,6 +42,7 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public class Frame<T extends TrainingMessage> implements Serializable, Iterable<T>, VoidMessage {
 
     @Getter(AccessLevel.PROTECTED)

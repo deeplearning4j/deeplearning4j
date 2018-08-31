@@ -55,6 +55,7 @@ import static java.lang.System.setProperty;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public class RoutedTransport extends BaseTransport {
 
     private static final long DEFAULT_TERM_BUFFER_PROP = IntMath.pow(2,25); //32MB

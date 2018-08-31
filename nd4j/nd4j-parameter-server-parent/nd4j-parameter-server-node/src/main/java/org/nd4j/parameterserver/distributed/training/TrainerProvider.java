@@ -31,6 +31,7 @@ import java.util.ServiceLoader;
 /**
  * @author raver119@gmail.com
  */
+@Deprecated
 public class TrainerProvider {
     private static final TrainerProvider INSTANCE = new TrainerProvider();
 

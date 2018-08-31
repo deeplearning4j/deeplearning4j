@@ -27,6 +27,7 @@ import org.nd4j.parameterserver.distributed.messages.intercom.DistributedIntrodu
  *
  * @author raver119@gmail.com
  */
+@Deprecated
 public class IntroductionRequestMessage extends BaseVoidMessage implements RequestMessage {
     private String ip;
     private int port;

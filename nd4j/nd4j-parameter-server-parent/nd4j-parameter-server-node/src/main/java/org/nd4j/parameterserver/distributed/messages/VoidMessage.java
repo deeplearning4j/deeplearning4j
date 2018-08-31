@@ -33,6 +33,7 @@ import java.io.Serializable;
 /**
  * @author raver119@gmail.com
  */
+@Deprecated
 public interface VoidMessage extends Serializable {
 
     void setTargetId(short id);

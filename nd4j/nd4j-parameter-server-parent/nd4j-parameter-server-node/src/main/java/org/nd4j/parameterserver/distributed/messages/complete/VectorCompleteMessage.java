@@ -22,6 +22,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 /**
  * @author raver119@gmail.com
  */
+@Deprecated
 public class VectorCompleteMessage extends BaseCompleteMessage {
 
     protected VectorCompleteMessage() {
