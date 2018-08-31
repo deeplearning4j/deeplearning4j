@@ -450,8 +450,13 @@ if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
     esac
 fi
 
-MKLDNN_PATH="$HOME/.javacpp/cache/mkl-dnn-0.16-1.4.3-SNAPSHOT-linux-x86_64.jar/org/bytedeco/javacpp/linux-x86_64/"
-OPENBLAS_PATH="$HOME/.javacpp/cache/openblas-0.3.0-1.4.2-linux-x86_64.jar/org/bytedeco/javacpp/linux-x86_64/"
+if [ "$OS" == "$HOST" ]; then
+    MKLDNN_PATH="$HOME/.javacpp/cache/mkl-dnn-0.16-1.4.3-SNAPSHOT-$HOST-x86_64.jar/org/bytedeco/javacpp/$HOST-x86_64/"
+    OPENBLAS_PATH="$HOME/.javacpp/cache/openblas-0.3.0-1.4.2-$HOST-x86_64.jar/org/bytedeco/javacpp/$HOST-x86_64/"
+else
+    MKLDNN_PATH=""
+    OPENBLAS_PATH=""
+fi
 
 if [[ -n "${BUILD_PATH:-}" ]]; then
     PREVIFS="$IFS"

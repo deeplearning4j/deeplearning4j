@@ -7,12 +7,6 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
 
 option(BUILD_TESTS "Build tests" OFF)
-if(BUILD_TESTS)
-  # tests are always compiled with all ops included
-  set(LIBND4J_ALL_OPS true)
-  set(LIBND4J_BUILD_MINIFIER true)
-  add_subdirectory(tests_cpu)
-endif()
 
 # -fsanitize=address
 # -fsanitize=leak
@@ -35,11 +29,34 @@ if(NATIVE)
     ENDIF()
 endif()
 
+if(NOT CUDA_BLAS)
+    if (NOT "${MKLDNN_PATH}" STREQUAL "")
+        add_definitions(-DHAVE_MKLDNN)
+        include_directories(${MKLDNN_PATH}/include/)
+        link_directories(${MKLDNN_PATH} ${MKLDNN_PATH}/lib/)
+        IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+            set(MKLDNN_LIBRARIES mkldnn mklml_intel)
+        else()
+            set(MKLDNN_LIBRARIES mkldnn mklml)
+        endif()
+    elseif (NOT "${OPENBLAS_PATH}" STREQUAL "")
+        add_definitions(-DHAVE_OPENBLAS)
+        include_directories(${OPENBLAS_PATH}/include/)
+        link_directories(${OPENBLAS_PATH} ${OPENBLAS_PATH}/lib/)
+        set(OPENBLAS_LIBRARIES openblas)
+    endif()
+endif()
 
 if (NOT DEFINED ENV{CLION_IDE})
     message("NOT CLION")
     include_directories(blas/ include/ include/helpers include/loops include/graph include/ops include/types include/array include/cnpy)
     add_subdirectory(blas)
+    if(BUILD_TESTS)
+        # tests are always compiled with all ops included
+        set(LIBND4J_ALL_OPS true)
+        set(LIBND4J_BUILD_MINIFIER true)
+        add_subdirectory(tests_cpu)
+    endif()
 endif ()
 
 if ($ENV{CLION_IDE})
