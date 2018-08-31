@@ -145,7 +145,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     }
 
     // this executor service han
-    protected ExecutorService messagesExecutorService = Executors.newFixedThreadPool(MESSAGE_THREADS + SUBSCRIPTION_THREADS, new ThreadFactory() {
+    protected ExecutorService messagesExecutorService = Executors.newFixedThreadPool(SENDER_THREADS + MESSAGE_THREADS + SUBSCRIPTION_THREADS, new ThreadFactory() {
         @Override
         public Thread newThread(@NotNull Runnable r) {
             val t = Executors.defaultThreadFactory().newThread(r);
