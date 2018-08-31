@@ -20,6 +20,7 @@
 
 #include <graph/GraphHolder.h>
 #include <GraphExecutioner.h>
+#include <graph/exceptions/graph_exists_exception.h>
 
 namespace nd4j {
     namespace graph {
@@ -33,17 +34,33 @@ namespace nd4j {
 
         template <>
         void GraphHolder::registerGraph(Nd4jLong graphId, Graph<float>* graph) {
+            if (hasGraphAny(graphId))
+                throw graph_exists_exception(graphId);
+
             _graphF[graphId] = graph;
+
+            nd4j::SimpleReadWriteLock lock;
+            _locks[graphId] = lock;
         }
 
         template <>
         void GraphHolder::registerGraph(Nd4jLong graphId, Graph<float16>* graph) {
+            if (hasGraphAny(graphId))
+                throw graph_exists_exception(graphId);
+
             _graphH[graphId] = graph;
+
+            nd4j::SimpleReadWriteLock lock;
+            _locks[graphId] = lock;
         }
 
         template <>
         void GraphHolder::registerGraph(Nd4jLong graphId, Graph<double>* graph) {
+            if (hasGraphAny(graphId))
+                throw graph_exists_exception(graphId);
+
             _graphD[graphId] = graph;
+
             nd4j::SimpleReadWriteLock lock;
             _locks[graphId] = lock;
         }
@@ -98,13 +115,13 @@ namespace nd4j {
 
         template <typename T>
         void GraphHolder::forgetGraph(Nd4jLong graphId) {
-            if (sizeof(T) == 4) {
+            if (std::is_same<T, float>::value) {
                 if (this->hasGraph<float>(graphId))
                     _graphF.erase(graphId);
-            } else if (sizeof(T) == 2) {
+            } else if (std::is_same<T, double>::value) {
                 if (this->hasGraph<double>(graphId))
                     _graphD.erase(graphId);
-            } else if (sizeof(T) == 8) {
+            } else if (std::is_same<T, float16>::value) {
                 if (this->hasGraph<float16>(graphId))
                     _graphH.erase(graphId);
             }
@@ -112,8 +129,6 @@ namespace nd4j {
 
         template <typename T>
         void GraphHolder::dropGraph(Nd4jLong graphId) {
-
-
             // FIXME: we don't want this sizeof(T) here really. especially once we add multi-dtype support
             if (std::is_same<T, float>::value) {
                 if (this->hasGraph<float>(graphId)) {
@@ -155,17 +170,57 @@ namespace nd4j {
 
         template<typename T>
         bool GraphHolder::hasGraph(Nd4jLong graphId) {
-            return _graphF.count(graphId) > 0;
+            if (std::is_same<T, float>::value) {
+                return _graphF.count(graphId) > 0;
+            } else if (std::is_same<T, double>::value) {
+                return _graphD.count(graphId) > 0;
+            } else if (std::is_same<T, float16>::value) {
+                return _graphH.count(graphId) > 0;
+            } else {
+                nd4j_printf("Unsupported dtype was requested for GraphHolder::hasGraph","");
+                return false;
+            }
+        }
+
+        template <typename T>
+        void GraphHolder::replaceGraph(Nd4jLong graphId, Graph<T>* graph) {
+            if (!hasGraph<T>(graphId)) {
+                registerGraph<T>(graphId, graph);
+                return;
+            }
+
+            this->lockWrite(graphId);
+
+            if (std::is_same<T, float>::value) {
+                _graphF[graphId] = graph;
+            } else if (std::is_same<T, double>::value) {
+                _graphD[graphId] = graph;
+            } else if (std::is_same<T, float16>::value) {
+                _graphH[graphId] = graph;
+            } else {
+                nd4j_printf("Unsupported dtype was requested for GraphHolder::replaceGraph","");
+            }
+
+            this->unlockWrite(graphId);
         }
 
 
-        flatbuffers::Offset<FlatResult> GraphHolder::execute(long graphId, flatbuffers::FlatBufferBuilder &builder, const FlatInferenceRequest* request) {
+        flatbuffers::Offset<FlatResult> GraphHolder::execute(Nd4jLong graphId, flatbuffers::FlatBufferBuilder &builder, const FlatInferenceRequest* request) {
+            if (!hasGraph<float>(graphId))
+                throw unknown_graph_exception(graphId);
+
             return 0;
         }
 
 
         template bool GraphHolder::hasGraph<float>(Nd4jLong graphId);
+        template bool GraphHolder::hasGraph<double>(Nd4jLong graphId);
+        template bool GraphHolder::hasGraph<float16>(Nd4jLong graphId);
+
         template void GraphHolder::forgetGraph<float>(Nd4jLong graphId);
+        template void GraphHolder::forgetGraph<float16>(Nd4jLong graphId);
+        template void GraphHolder::forgetGraph<double>(Nd4jLong graphId);
+
         template void GraphHolder::dropGraph<float>(Nd4jLong graphId);
 
 

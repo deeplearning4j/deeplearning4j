@@ -24,6 +24,7 @@
 #include <graph/generated/result_generated.h>
 #include <helpers/StringUtils.h>
 #include <algorithm>
+#include <stdexcept>
 
 
 namespace nd4j {
@@ -31,37 +32,47 @@ namespace nd4j {
             grpc::Status GraphInferenceServerImpl::RegisterGraph( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatGraph> *request_msg, flatbuffers::grpc::Message<FlatResponse> *response_msg) {
                 auto flat_graph = request_msg->GetRoot();
 
-                // building our graph
-                auto graph = new Graph<float>(flat_graph);
+                try {
+                    // building our graph
+                    auto graph = new Graph<float>(flat_graph);
 
-                // single data type for now
-                GraphHolder::getInstance()->registerGraph<float>(flat_graph->id(), graph);
+                    // single data type for now
+                    GraphHolder::getInstance()->registerGraph<float>(flat_graph->id(), graph);
 
-                // sending out OK response
-                auto response_offset = CreateFlatResponse(mb_, 0);
-                mb_.Finish(response_offset);
-                *response_msg = mb_.ReleaseMessage<FlatResponse>();
-                assert(response_msg->Verify());
+                    // sending out OK response
+                    auto response_offset = CreateFlatResponse(mb_, 0);
+                    mb_.Finish(response_offset);
+                    *response_msg = mb_.ReleaseMessage<FlatResponse>();
+                    assert(response_msg->Verify());
 
-                return grpc::Status::OK;
+                    return grpc::Status::OK;
+                } catch {std::runtime_error &e} {
+                    return grpc::Status::CANCELLED;
+                }
             }
 
             grpc::Status GraphInferenceServerImpl::ReplaceGraph( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatGraph> *request_msg, flatbuffers::grpc::Message<FlatResponse> *response_msg) {
                 auto flat_graph = request_msg->GetRoot();
 
-                // building our graph
-                auto graph = new Graph<float>(flat_graph);
+                try {
+                    // building our graph
+                    auto graph = new Graph<float>(flat_graph);
 
-                // single data type for now
-                // replace graph
+                    // single data type for now
+                    GraphHolder::getInstance()->replaceGraph(flat_graph->id(), graph);
 
-                // sending out OK response
-                auto response_offset = CreateFlatResponse(mb_, 0);
-                mb_.Finish(response_offset);
-                *response_msg = mb_.ReleaseMessage<FlatResponse>();
-                assert(response_msg->Verify());
+                    // sending out OK response
+                    auto response_offset = CreateFlatResponse(mb_, 0);
+                    mb_.Finish(response_offset);
+                    *response_msg = mb_.ReleaseMessage<FlatResponse>();
+                    assert(response_msg->Verify());
 
-                return grpc::Status::OK;
+                    return grpc::Status::OK;
+                } catch (nd4j::graph::unknown_graph_exception &e) {
+                    return graph::Status::CANCELLED;
+                } catch (std::runtime_error &e) {
+                    return graph::Status::CANCELLED;
+                }
             }
 
             grpc::Status GraphInferenceServerImpl::ForgetGraph( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatDropRequest> *request_msg, flatbuffers::grpc::Message<FlatResponse> *response_msg) {
@@ -83,21 +94,24 @@ namespace nd4j {
             grpc::Status GraphInferenceServerImpl::InferenceRequest( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatInferenceRequest> *request_msg, flatbuffers::grpc::Message<FlatResult> *response_msg) {
                 auto request = request_msg->GetRoot();
 
-                // trying to get graph by id
-                auto graph = GraphHolder::getInstance()->cloneGraph<float>(request->id());
-                if (graph == nullptr)
-                    return grpc::Status::CANCELLED;
+                try {
+                    // GraphHolder
+                    auto response_offset = GraphHolder::getInstance()->execute(request->id(), mb_, request)
+                    if (response_offset == 0)
+                        return grpc::Status::CANCELLED;
 
-                // provide results here
-                auto response_offset = GraphExecutioner<float>::execute(graph, mb_, request);
-                if (response_offset == 0)
-                    return grpc::Status::CANCELLED;
+                    mb_.Finish(response_offset);
+                    *response_msg = mb_.ReleaseMessage<FlatResult>();
+                    assert(response_msg->Verify());
 
-                mb_.Finish(response_offset);
-                *response_msg = mb_.ReleaseMessage<FlatResult>();
-                assert(response_msg->Verify());
-
-                return grpc::Status::OK;
+                    return grpc::Status::OK;
+                } catch (nd4j::graph::unknown_graph_exception &e) {
+                    return graph::Status::CANCELLED;
+                } catch (nd4j::graph::graph_execution_exception &e) {
+                    return graph::Status::CANCELLED;
+                } catch (std::runtime_error &e) {
+                    return graph::Status::CANCELLED;
+                }
             }
     }
 }

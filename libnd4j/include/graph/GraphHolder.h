@@ -66,35 +66,37 @@ namespace nd4j {
             bool hasGraphAny(Nd4jLong graphId);
 
 
-            flatbuffers::Offset<FlatResult> execute(long graphId, flatbuffers::FlatBufferBuilder &builder, const FlatInferenceRequest* request);
+            flatbuffers::Offset<FlatResult> execute(Nd4jLong graphId, flatbuffers::FlatBufferBuilder &builder, const FlatInferenceRequest* request);
 
+            template <typename T>
+            void replaceGraph(Nd4jLong graphId, Graph<T>* graph);
 
             /////////////////////////////
 
             FORCEINLINE void lockWrite(Nd4jLong graphId) {
                 if (_locks.count(graphId) == 0)
-                    throw std::runtime_error("Unknown graph requested for lockWrite");
+                    return;
 
                 _locks[graphId].lockWrite();
             }
 
             FORCEINLINE void unlockWrite(Nd4jLong graphId) {
                 if (_locks.count(graphId) == 0)
-                    throw std::runtime_error("Unknown graph requested for unlockWrite");
+                    return;
 
                 _locks[graphId].unlockWrite();
             }
 
             FORCEINLINE void lockRead(Nd4jLong graphId) {
                 if (_locks.count(graphId) == 0)
-                    throw std::runtime_error("Unknown graph requested for lockRead");
+                    return;
 
                 _locks[graphId].lockRead();
             }
 
             FORCEINLINE void unlockRead(Nd4jLong graphId) {
                 if (_locks.count(graphId) == 0)
-                    throw std::runtime_error("Unknown graph requested for unlockRead");
+                    return;
 
                 _locks[graphId].unlockRead();
             }
