@@ -69,9 +69,9 @@ namespace nd4j {
 
                     return grpc::Status::OK;
                 } catch (nd4j::graph::unknown_graph_exception &e) {
-                    return graph::Status::CANCELLED;
+                    return grpc::Status::CANCELLED;
                 } catch (std::runtime_error &e) {
-                    return graph::Status::CANCELLED;
+                    return grpc::Status::CANCELLED;
                 }
             }
 
@@ -108,9 +108,9 @@ namespace nd4j {
                 } catch (nd4j::graph::unknown_graph_exception &e) {
                     return graph::Status::CANCELLED;
                 } catch (nd4j::graph::graph_execution_exception &e) {
-                    return graph::Status::CANCELLED;
+                    return grpc::Status::CANCELLED;
                 } catch (std::runtime_error &e) {
-                    return graph::Status::CANCELLED;
+                    return grpc::Status::CANCELLED;
                 }
             }
     }
