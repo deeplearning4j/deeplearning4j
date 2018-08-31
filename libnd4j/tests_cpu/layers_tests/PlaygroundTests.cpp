@@ -858,8 +858,8 @@ TEST_F(PlaygroundTests, loop_test_3) {
     //ops.decompressParallel((Nd4jPointer *)t, 10, array->getBuffer());
     array->printIndexedBuffer("Output parallel");
     pRes.printIndexedBuffer("Output linear  ");
-    ASSERT_TRUE(pRes.equalsTo(array));
     nd4j_printf("All done.\n", "");
+    ASSERT_TRUE(pRes.equalsTo(array));
 
     delete result;
     for (int k = 0; k < iterations; k++) {

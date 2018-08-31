@@ -3757,24 +3757,32 @@ template <typename T> int decompressParallelGeneric(Nd4jPointer* arrays, int arr
 
     // we use 3 as offset, since first 12 bytes are occupied with header
 
-    int threadCount = omp_get_num_threads();
-    int localPart = x[1] / threadCount;
-#pragma omp parallel for schedule(guided)
-    for (int i = 0; i < arrayCount; i++) {
-        x = reinterpret_cast<int *>(arrays[i]);
-        int limit = x[0];
-        fb.i_ = x[2];
-        float threshold = fb.f_;
-        int flimit = limit + 4;
+#pragma omp parallel
+    {
+        int threadCount = omp_get_num_threads();
+        int localPart = x[1];
+        if (threadCount > 0)
+            localPart /= threadCount;
+
         int threadID = omp_get_thread_num();
-//#pragma omp parallel for schedule(guided)
-        for (int e = 4; e < flimit; e++) {
-            int el = x[e];
-            int ael = nd4j::math::nd4j_abs<int>(el) - 1;
-            if ((ael < 1 + threadID * localPart) && (ael > localPart * (1 + threadID))) continue;
-            //ael -= 1;
-            z[ael] += el > 0 ? threshold : -threshold;
-        }    //arrays
+        int upBound = localPart * (1 + threadID);
+        int lowBound = 1 + threadID * localPart;
+#pragma omp parallel for schedule(guided)
+        for (int i = 0; i < arrayCount; i++) {
+            x = reinterpret_cast<int *>(arrays[i]);
+            int limit = x[0];
+            fb.i_ = x[2];
+            float threshold = fb.f_;
+            int flimit = limit + 4;
+#pragma omp parallel for schedule(guided)
+            for (int e = 4; e < flimit; e++) {
+                int el = x[e];
+                int ael = nd4j::math::nd4j_abs<int>(el);
+                if (ael < lowBound && ael > upBound) continue;
+                ael -= 1;
+                z[ael] += el > 0 ? threshold : -threshold;
+            }    //arrays
+        }
     }
 }
 
