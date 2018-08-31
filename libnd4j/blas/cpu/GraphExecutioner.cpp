@@ -52,6 +52,8 @@
 #include <deque>
 #include <graph/ResultWrapper.h>
 #include <graph/ExecutionResult.h>
+#include <graph/exceptions/graph_execution_exception.h>
+#include <graph/exceptions/no_results_exception.h>
 
 namespace nd4j{
 namespace graph {
@@ -872,9 +874,13 @@ flatbuffers::Offset<FlatResult> GraphExecutioner<T>::execute(Graph<T> *graph, fl
 
     auto status = GraphExecutioner<T>::execute(graph);
     if (status != nd4j::Status::OK())
-        return 0;
+        throw graph_execution_exception(request->id());
 
     auto outputs = graph->fetchOutputs();
+
+    if (outputs->size() == 0)
+        throw no_results_exception(request->id());
+
 
     for (auto v: *outputs) {
         result.emplace_back(v);

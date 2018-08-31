@@ -208,6 +208,7 @@ namespace nd4j {
 
             auto graph = cloneGraph<float>(graphId);
             auto res = GraphExecutioner<float>::execute(graph, builder, request);
+            delete graph;
 
             unlockRead(graphId);
 

@@ -107,14 +107,14 @@ namespace nd4j {
                 try {
                     // GraphHolder
                     auto response_offset = GraphHolder::getInstance()->execute(request->id(), mb_, request);
-                    if (response_offset == 0)
-                        return grpc::Status::CANCELLED;
 
                     mb_.Finish(response_offset);
                     *response_msg = mb_.ReleaseMessage<FlatResult>();
                     assert(response_msg->Verify());
 
                     return grpc::Status::OK;
+                } catch (nd4j::graph::no_results_exception &e) {
+                    return grpc::Status::CANCELLED;
                 } catch (nd4j::graph::unknown_graph_exception &e) {
                     return grpc::Status::CANCELLED;
                 } catch (nd4j::graph::graph_execution_exception &e) {
