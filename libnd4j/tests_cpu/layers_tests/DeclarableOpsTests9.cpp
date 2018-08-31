@@ -1425,12 +1425,12 @@ TEST_F(DeclarableOpsTests9, clipbynorm_test12) {
     NDArray<double> temp = (x / norm2) * clip;    
 
     for (int j = 0; j < nOut; ++j) {
-        NDArray<double> yCol = y({{}, {j, j+1}});
+        NDArray<double> yCol = y({0,0, j,j+1});
         const double norm2Col = yCol.template reduceNumber<simdOps::Norm2<double>>();
         if (norm2Col <= clip) 
-            expect({{}, {j,j+1}}).assign(yCol);
+            expect({0,0, j,j+1}).assign(yCol);
         else 
-            expect({{}, {j,j+1}}).assign ( yCol * (clip / norm2Col) );
+            expect({0,0, j,j+1}).assign ( yCol * (clip / norm2Col) );
     }
     
     nd4j::ops::clipbynorm<double> op;

@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.layers.custom.testclasses.CustomOutputLayerImpl;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -57,8 +58,8 @@ public class TestCustomLayers extends BaseDL4JTest {
                                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
                                         .layer(1, new CustomLayer(3.14159)).layer(2,
                                                         new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                                                        .nIn(10).nOut(10).build())
-                                        .pretrain(false).backprop(true).build();
+                                                                .activation(Activation.SOFTMAX).nIn(10).nOut(10).build())
+                                        .build();
 
         String json = conf.toJson();
         String yaml = conf.toYaml();
@@ -79,10 +80,10 @@ public class TestCustomLayers extends BaseDL4JTest {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder()
                         .addInputs("in").addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
                         .addLayer("1", new CustomLayer(3.14159), "0").addLayer("2",
-                                        new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10).nOut(10)
-                                                        .build(),
+                                        new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX)
+                                                .nIn(10).nOut(10).build(),
                                         "1")
-                        .setOutputs("2").pretrain(false).backprop(true).build();
+                        .setOutputs("2").build();
 
         String json = conf.toJson();
         String yaml = conf.toYaml();
@@ -103,8 +104,8 @@ public class TestCustomLayers extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
                         .layer(0, new DenseLayer.Builder().nIn(9).nOut(10).build()).layer(1, new CustomLayer(3.14159)) //hard-coded nIn/nOut of 10
-                        .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10).nOut(11).build())
-                        .pretrain(false).backprop(true).build();
+                        .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(10).nOut(11).build())
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -127,8 +128,9 @@ public class TestCustomLayers extends BaseDL4JTest {
                         new NeuralNetConfiguration.Builder().seed(12345).list()
                                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
                                         .layer(1, new CustomOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                                        .activation(Activation.SOFTMAX)
                                                         .nIn(10).nOut(10).build())
-                                        .pretrain(false).backprop(true).build();
+                                        .build();
 
         String json = conf.toJson();
         String yaml = conf.toYaml();
@@ -154,8 +156,8 @@ public class TestCustomLayers extends BaseDL4JTest {
                                         .list()
                                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(1,
                                                         new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                                                        .nIn(10).nOut(10).build())
-                                        .pretrain(false).backprop(true).build();
+                                                                .activation(Activation.SOFTMAX).nIn(10).nOut(10).build())
+                                        .build();
         Nd4j.getRandom().setSeed(12345);
         MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
         net2.init();
@@ -179,9 +181,9 @@ public class TestCustomLayers extends BaseDL4JTest {
                         .graphBuilder().addInputs("in")
                         .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in").addLayer("1",
                                         new CustomOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10)
-                                                        .nOut(10).build(),
+                                                        .nOut(10).activation(Activation.SOFTMAX).build(),
                                         "0")
-                        .setOutputs("1").pretrain(false).backprop(true).build();
+                        .setOutputs("1").build();
 
         String json = conf.toJson();
         String yaml = conf.toYaml();
@@ -206,9 +208,9 @@ public class TestCustomLayers extends BaseDL4JTest {
                         .graphBuilder().addInputs("in")
                         .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in").addLayer("1",
                                         new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10).nOut(10)
-                                                        .build(),
+                                                .activation(Activation.SOFTMAX).build(),
                                         "0")
-                        .setOutputs("1").pretrain(false).backprop(true).build();
+                        .setOutputs("1").build();
         Nd4j.getRandom().setSeed(12345);
         ComputationGraph net2 = new ComputationGraph(conf2);
         net2.init();

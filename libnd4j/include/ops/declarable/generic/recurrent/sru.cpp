@@ -73,8 +73,8 @@ CUSTOM_OP_IMPL(sru_logic, 5, 2, false, 0, 0) {
     const int N      = input->shapeOf()[2];                     // N - number of time steps
         
     const NDArray<T> wi = mmul(*weights, *input);                    //  U [bS x 3K x N]            
-    const NDArray<T> bF = (*bias)({ {}, {0,  K} });                       // biases for forget gate [1 x K]
-    const NDArray<T> bR = (*bias)({ {}, {K,2*K} });                       // biases for reset  gate [1 x K]    
+    const NDArray<T> bF = (*bias)({0,0,  0,  K});                       // biases for forget gate [1 x K]
+    const NDArray<T> bR = (*bias)({0,0,  K,2*K});                       // biases for reset  gate [1 x K]    
 
     NDArray<T> xt(block.getWorkspace());
     NDArray<T> zt(block.getWorkspace()); 
@@ -90,10 +90,10 @@ CUSTOM_OP_IMPL(sru_logic, 5, 2, false, 0, 0) {
     
     for (int t = 0; t < N; ++t) {
   
-        xt = xmt({ {}, {},        {t,t+1} }); xt.reshapei(xt.ordering(), {bS, K});       // [bS x  K x N] -> [bS x K x 1] -> [bS x K]
-        zt =  wi({ {}, {0,    K}, {t,t+1} }); zt.reshapei(zt.ordering(), {bS, K});       // [bS x 3K x N] -> [bS x K x 1] -> [bS x K]
-        ft =  wi({ {}, {K,  2*K}, {t,t+1} }); ft.reshapei(ft.ordering(), {bS, K});       // [bS x 3K x N] -> [bS x K x 1] -> [bS x K]
-        rt =  wi({ {}, {2*K,3*K}, {t,t+1} }); rt.reshapei(rt.ordering(), {bS, K});       // [bS x 3K x N] -> [bS x K x 1] -> [bS x K]
+        xt = xmt({0,0, 0,0,     t,t+1}); xt.reshapei(xt.ordering(), {bS, K});       // [bS x  K x N] -> [bS x K x 1] -> [bS x K]
+        zt =  wi({0,0, 0,    K, t,t+1}); zt.reshapei(zt.ordering(), {bS, K});       // [bS x 3K x N] -> [bS x K x 1] -> [bS x K]
+        ft =  wi({0,0, K,  2*K, t,t+1}); ft.reshapei(ft.ordering(), {bS, K});       // [bS x 3K x N] -> [bS x K x 1] -> [bS x K]
+        rt =  wi({0,0, 2*K,3*K, t,t+1}); rt.reshapei(rt.ordering(), {bS, K});       // [bS x 3K x N] -> [bS x K x 1] -> [bS x K]
 
         ft = _sigmoid(ft + bF);
         rt = _sigmoid(rt + bR);
@@ -601,8 +601,8 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
     }
 
 
-    const NDArray<T> bF = (*b)({ {}, {0,  inSize} });                                 // biases for forget gate [1 x inSize]
-    const NDArray<T> bR = (*b)({ {}, {inSize,2*inSize} });                                 // biases for reset  gate [1 x inSize]
+    const NDArray<T> bF = (*b)({0,0,  0,       inSize});                                 // biases for forget gate [1 x inSize]
+    const NDArray<T> bR = (*b)({0,0,  inSize,2*inSize});                                 // biases for reset  gate [1 x inSize]
     NDArray<T> gradBias(x->ordering(),   {bS, 2*inSize, time}, block.getWorkspace());
     NDArray<T> gradU   (x->ordering(),   {bS, 3*inSize, time}, block.getWorkspace());
     NDArray<T> gradHX  (x->ordering(),   {bS,   inSize, time}, block.getWorkspace());
@@ -616,14 +616,14 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
 
     for (int t = time-1; t >=0 ; --t) {
         // initialization
-        NDArray<T> xt =         (*x)({ {}, {},        {t,t+1} }); xt.reshapei(xt.ordering(), {bS, inSize});          // [bS x inSize  x time] -> [bS x inSize x 1] -> [bS x inSize]
-        NDArray<T> zt =               wi({ {}, {0,    inSize}, {t,t+1} }); zt.reshapei(zt.ordering(), {bS, inSize});          // [bS x 3K x time] -> [bS x inSize x 1] -> [bS x inSize]
-        NDArray<T> ft =               wi({ {}, {inSize,  2*inSize}, {t,t+1} }); ft.reshapei(ft.ordering(), {bS, inSize});          // [bS x 3K x time] -> [bS x inSize x 1] -> [bS x inSize]
-        NDArray<T> rt =               wi({ {}, {2*inSize,3*inSize}, {t,t+1} }); rt.reshapei(rt.ordering(), {bS, inSize});          // [bS x 3K x time] -> [bS x inSize x 1] -> [bS x inSize]
-        NDArray<T> ct =         (*c)({ {}, {},        {t,t+1} }); ct.reshapei(ct.ordering(), {bS, inSize});          // [bS x inSize  x time] -> [bS x inSize x 1] -> [bS x inSize]
-        NDArray<T> inGradHt = (*inGradH)({ {}, {},        {t,t+1} }); inGradHt.reshapei(xt.ordering(), {bS, inSize});    // [bS x inSize  x time] -> [bS x inSize x 1] -> [bS x inSize]
+        NDArray<T> xt =         (*x)({0,0, 0,0,                   t,t+1}); xt.reshapei(xt.ordering(), {bS, inSize});          // [bS x inSize  x time] -> [bS x inSize x 1] -> [bS x inSize]
+        NDArray<T> zt =               wi({0,0, 0,         inSize, t,t+1}); zt.reshapei(zt.ordering(), {bS, inSize});          // [bS x 3K x time] -> [bS x inSize x 1] -> [bS x inSize]
+        NDArray<T> ft =               wi({0,0, inSize,  2*inSize, t,t+1}); ft.reshapei(ft.ordering(), {bS, inSize});          // [bS x 3K x time] -> [bS x inSize x 1] -> [bS x inSize]
+        NDArray<T> rt =               wi({0,0, 2*inSize,3*inSize, t,t+1}); rt.reshapei(rt.ordering(), {bS, inSize});          // [bS x 3K x time] -> [bS x inSize x 1] -> [bS x inSize]
+        NDArray<T> ct =         (*c)({0,0, 0,0,                   t,t+1}); ct.reshapei(ct.ordering(), {bS, inSize});          // [bS x inSize  x time] -> [bS x inSize x 1] -> [bS x inSize]
+        NDArray<T> inGradHt = (*inGradH)({ 0,0, 0,0,              t,t+1}); inGradHt.reshapei(xt.ordering(), {bS, inSize});    // [bS x inSize  x time] -> [bS x inSize x 1] -> [bS x inSize]
 
-        NDArray<T> ct_1 = t ? (*c)({ {}, {}, {t-1,t} }) : *c0;                                                // previous c_{t-1}
+        NDArray<T> ct_1 = t ? (*c)({ 0,0, 0,0, t-1,t}) : *c0;                                                // previous c_{t-1}
         
         ///////////////// forward
         // ft = sigmoid(ft + bf), rt = sigmoid(rt + bR)

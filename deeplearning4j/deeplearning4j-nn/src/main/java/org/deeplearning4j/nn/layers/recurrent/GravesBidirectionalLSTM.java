@@ -37,14 +37,14 @@ import java.util.Map;
  *
  * Bdirectional LSTM layer implementation.
  * Based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
- * http://www.cs.toronto.edu/~graves/phd.pdf
+ * <a href="http://www.cs.toronto.edu/~graves/phd.pdf">http://www.cs.toronto.edu/~graves/phd.pdf</a>
  * See also for full/vectorized equations (and a comparison to other LSTM variants):
  * Greff et al. 2015, "LSTM: A Search Space Odyssey", pg11. This is the "vanilla" variant in said paper
- * http://arxiv.org/pdf/1503.04069.pdf
+ * <a href="http://arxiv.org/pdf/1503.04069.pdf">http://arxiv.org/pdf/1503.04069.pdf</a>
  *
  * A high level description of bidirectional LSTM can be found from
  * "Hybrid Speech Recognition with Deep Bidirectional LSTM"
- *  http://www.cs.toronto.edu/~graves/asru_2013.pdf
+ * <a href="http://www.cs.toronto.edu/~graves/asru_2013.pdf">http://www.cs.toronto.edu/~graves/asru_2013.pdf</a>
  *
  *
  * @author Alex Black

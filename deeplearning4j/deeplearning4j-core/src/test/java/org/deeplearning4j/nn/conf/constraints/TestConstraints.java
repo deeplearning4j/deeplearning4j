@@ -439,8 +439,8 @@ public class TestConstraints extends BaseDL4JTest {
                         "second_dense")
                 .setOutputs("output_layer")
                 .backpropType(BackpropType.Standard)
-                .pretrain(false)
-                .backprop(true)
+
+
                 .build();
 
         ComputationGraph g = new ComputationGraph(conf);

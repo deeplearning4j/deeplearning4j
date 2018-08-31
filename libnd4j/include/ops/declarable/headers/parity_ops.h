@@ -232,6 +232,50 @@ namespace nd4j {
         #endif
 
         /**
+         * This operation scatter "updates" elements into new output array according to given "indices"
+         * Expected arguments:         
+         * indices: array containing elements/slices indexes of output array to put "updates" elements into, the rest output elements will be zeros
+         * updates: array containing elements to be inserted into output array
+         * shape: contains shape of output array
+         */
+        #if NOT_EXCLUDED(OP_scatter_nd)
+        DECLARE_CUSTOM_OP(scatter_nd, 3, 1, false, 0, 0);
+        #endif
+
+        /**
+         * This operation scatter "updates" elements into input array along given "indices"
+         * Expected arguments:   
+         * input: array to be updated      
+         * indices: array containing elements/slices indexes of input array to put "updates" elements into
+         * updates: array containing elements to be inserted into input array
+         */
+        #if NOT_EXCLUDED(OP_scatter_nd_update)
+        DECLARE_OP(scatter_nd_update, 3, 1, true);
+        #endif
+
+        /**
+         * This operation adds "updates" elements to input array along given "indices"
+         * Expected arguments:
+         * input: array to be updated
+         * indices: array containing elements/slices indexes of input array to add "updates" elements to
+         * updates: array containing elements to be interfered with input 
+         */
+        #if NOT_EXCLUDED(OP_scatter_add)
+        DECLARE_OP(scatter_nd_add, 3, 1, true);
+        #endif
+
+        /**
+         * This operation subtract "updates" elements from input array along given "indices"
+         * Expected arguments:
+         * input: array to be updated
+         * indices: array containing elements/slices indexes of input array to subtract "updates" elements from
+         * updates: array containing elements to be interfered with input 
+         */
+        #if NOT_EXCLUDED(OP_scatter_sub)
+        DECLARE_OP(scatter_nd_sub, 3, 1, true);
+        #endif
+
+        /**
          * This operation takes input's shape, and returns new NDArray filled with specified value
          * Expected arguments:
          * input: N-dimensional array
@@ -757,14 +801,6 @@ namespace nd4j {
          */
         #if NOT_EXCLUDED(OP_sufficient_statistics)
         DECLARE_CUSTOM_OP(sufficient_statistics, 2, 3, false, 0, 0);
-        #endif
-
-        /**
-         * Special atan2 op impl for TF's args order
-         * @tparam T
-         */
-        #if NOT_EXCLUDED(OP_tf_atan2)
-        DECLARE_OP(tf_atan2, 2, 1, true);
         #endif
 
         /**

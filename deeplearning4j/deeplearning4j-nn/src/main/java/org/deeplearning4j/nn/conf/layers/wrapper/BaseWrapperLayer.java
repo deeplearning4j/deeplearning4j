@@ -38,6 +38,10 @@ public abstract class BaseWrapperLayer extends Layer {
 
     protected Layer underlying;
 
+    protected BaseWrapperLayer(Builder builder) {
+        super(builder);
+    }
+
     protected BaseWrapperLayer(){ }
 
     public BaseWrapperLayer(Layer underlying){

@@ -1367,8 +1367,7 @@ TEST_F(NDArrayTest, TestIndexing3) {
     for (int e = 0; e < matrix.lengthOf(); e++)
         matrix.putScalar(e, (float) e);
 
-    std::initializer_list<std::vector<Nd4jLong>> idx = {{2,4}, {}};    
-    auto sub = matrix(idx);
+    auto sub = matrix({2,4, 0,0});
 
     ASSERT_EQ(2, sub.rows());
     ASSERT_EQ(5, sub.columns());
@@ -1382,8 +1381,7 @@ TEST_F(NDArrayTest, TestIndexing4) {
     for (int e = 0; e < matrix.lengthOf(); e++)
         matrix.putScalar(e, (float) e);
 
-    std::initializer_list<std::vector<Nd4jLong>> idx = {{}, {2,4}, {}, {}};    
-    auto sub = matrix(idx);    
+    auto sub = matrix({0,0, 2,4, 0,0, 0,0});    
 
     ASSERT_EQ(2, sub.sizeAt(0));
     ASSERT_EQ(2, sub.sizeAt(1));

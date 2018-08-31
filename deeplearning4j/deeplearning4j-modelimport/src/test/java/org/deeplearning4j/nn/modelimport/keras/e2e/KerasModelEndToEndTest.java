@@ -571,6 +571,24 @@ public class KerasModelEndToEndTest {
                 new int[] {24, 24, 3}, false);
         INDArray input = Nd4j.create(10, 3, 24, 24);
         model.output(input);
+        System.out.println(model.summary());
+    }
+
+    /**
+     * Masking layers (simple Masking into LSTM)
+     */
+    @Test
+    public void testMaskingZeroValue() throws Exception {
+        MultiLayerNetwork model = importSequentialModelH5Test(
+                "modelimport/keras/examples/masking/masking_zero_lstm.h5");
+        model.summary();
+    }
+
+    @Test
+    public void testMaskingTwoValue() throws Exception {
+        MultiLayerNetwork model = importSequentialModelH5Test(
+                "modelimport/keras/examples/masking/masking_two_lstm.h5");
+        model.summary();
     }
 
     private ComputationGraph importFunctionalModelH5Test(String modelPath) throws Exception {
@@ -594,12 +612,12 @@ public class KerasModelEndToEndTest {
         return model.getComputationGraph();
     }
 
-    private void importSequentialModelH5Test(String modelPath) throws Exception {
-        importSequentialModelH5Test(modelPath, null);
+    private MultiLayerNetwork importSequentialModelH5Test(String modelPath) throws Exception {
+        return importSequentialModelH5Test(modelPath, null);
     }
 
 
-    private void importSequentialModelH5Test(String modelPath, int[] inputShape) throws Exception {
+    private MultiLayerNetwork importSequentialModelH5Test(String modelPath, int[] inputShape) throws Exception {
         ClassPathResource modelResource =
                 new ClassPathResource(modelPath,
                         KerasModelEndToEndTest.class.getClassLoader());
@@ -611,7 +629,7 @@ public class KerasModelEndToEndTest {
             builder.inputShape(inputShape);
         }
         KerasSequentialModel model = builder.buildSequential();
-        model.getMultiLayerNetwork();
+        return model.getMultiLayerNetwork();
     }
 
 

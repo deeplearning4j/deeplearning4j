@@ -96,7 +96,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
                         .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
                                         .build())
-                        .backprop(true).pretrain(false)
+
                         .setInputType(InputType.convolutional(numRows, numColumns, nChannels));
 
         DataSet d = new DataSet(Nd4j.rand(new int[]{10, nChannels, numRows, numColumns}),
@@ -179,8 +179,8 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
                                         .layer(4, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(
                                                         new int[] {2, 2}).build())
                                         .layer(5, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
-                                                        LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(2)
-                                                                        .build());
+                                                LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(2)
+                                                .activation(Activation.SOFTMAX).build());
         return builder;
     }
 
@@ -198,8 +198,8 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
                                         .layer(3, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(
                                                         new int[] {2, 2}).build())
                                         .layer(4, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
-                                                        LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(2)
-                                                                        .build());
+                                                        LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).activation(Activation.SOFTMAX)
+                                                .nOut(2).build());
         return builder;
     }
 
@@ -259,7 +259,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
                                         .build())
-                        .backprop(true).pretrain(false);
+                        ;
 
         return builder;
     }
@@ -283,7 +283,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
                                         .nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
                                         .build())
                         .inputPreProcessor(0, new FeedForwardToCnnPreProcessor(numRows, numColumns, nChannels))
-                        .inputPreProcessor(2, new CnnToFeedForwardPreProcessor(5, 5, 6)).backprop(true).pretrain(false);
+                        .inputPreProcessor(2, new CnnToFeedForwardPreProcessor(5, 5, 6));
 
         return builder;
     }
@@ -297,7 +297,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
                 .layer(0, new Deconvolution2D.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build())
                 //(56-2+2*1)/2+1 = 29 -> 29x29x3
                 .layer(1, new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build())
-                .layer(2, new OutputLayer.Builder().nOut(3).build())
+                .layer(2, new OutputLayer.Builder().nOut(3).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.convolutional(28, 28, 1));
 
         MultiLayerConfiguration conf = builder.build();
@@ -318,7 +318,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
                         .layer(0, new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
                         .layer(1, new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build()) //(14-2+2)/2+1 = 8 -> 8x8x3
-                        .layer(2, new OutputLayer.Builder().nOut(3).build())
+                        .layer(2, new OutputLayer.Builder().nOut(3).activation(Activation.SOFTMAX).build())
                         .setInputType(InputType.convolutional(28, 28, 1));
 
         MultiLayerConfiguration conf = builder.build();
@@ -339,7 +339,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
                 .layer(new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
                 .layer(new Upsampling2D.Builder().size(3).build()) // 14 * 3 = 42!
-                .layer(new OutputLayer.Builder().nOut(3).build())
+                .layer(new OutputLayer.Builder().nOut(3).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.convolutional(28, 28, 1));
 
         MultiLayerConfiguration conf = builder.build();
@@ -362,7 +362,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
                 .layer(new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
                 .layer(new SpaceToBatchLayer.Builder(blocks).build()) // Divide space dimensions by blocks, i.e. 14/2 = 7
-                .layer(new OutputLayer.Builder().nOut(3).build())
+                .layer(new OutputLayer.Builder().nOut(3).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.convolutional(28, 28, 1));
 
         MultiLayerConfiguration conf = builder.build();
@@ -385,7 +385,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
                 .layer(new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build())
                 // Divide space dimensions by blocks, i.e. 14/2 = 7 -> 7x7x12 out (3x2x2 depth)
                 .layer(new SpaceToDepthLayer.Builder(blocks, SpaceToDepthLayer.DataFormat.NCHW).build())
-                .layer(new OutputLayer.Builder().nIn(3 * 2 * 2).nOut(3).build()) // nIn of the next layer gets multiplied by 2*2.
+                .layer(new OutputLayer.Builder().nIn(3 * 2 * 2).nOut(3).activation(Activation.SOFTMAX).build()) // nIn of the next layer gets multiplied by 2*2.
                 .setInputType(InputType.convolutional(28, 28, 1));
 
         MultiLayerConfiguration conf = builder.build();
@@ -419,7 +419,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
                         .layer(5, new ActivationLayer.Builder().activation(Activation.RELU).build())
                         .layer(6, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(10).build())
-                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
+                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -444,7 +444,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
                         .padding(0, 0)
                         .stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
                 .layer( new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build()) //(14-2+2)/2+1 = 8 -> 8x8x3
-                .layer(2, new OutputLayer.Builder().nOut(3).build())
+                .layer(2, new OutputLayer.Builder().nOut(3).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.convolutional(28, 28, 1));
 
         MultiLayerConfiguration conf = builder.build();
@@ -469,7 +469,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
                         .stride(2, 2).nIn(1).nOut(3).build())
                 //(56-2+2*1)/2+1 = 29 -> 29x29x3
                 .layer( new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build())
-                .layer(2, new OutputLayer.Builder().nOut(3).build())
+                .layer(2, new OutputLayer.Builder().nOut(3).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.convolutional(28, 28, 1));
 
         MultiLayerConfiguration conf = builder.build();

@@ -58,9 +58,9 @@ import java.util.*;
  * Basic idea: compare calculated gradients with those calculated numerically,
  * to check implementation of backpropagation gradient calculation.<br>
  * See:<br>
- * - http://cs231n.github.io/neural-networks-3/#gradcheck<br>
- * - http://ufldl.stanford.edu/wiki/index.php/Gradient_checking_and_advanced_optimization<br>
- * - https://code.google.com/p/cuda-convnet/wiki/CheckingGradients<br>
+ * - <a href="http://cs231n.github.io/neural-networks-3/#gradcheck">http://cs231n.github.io/neural-networks-3/#gradcheck</a><br>
+ * - <a href="http://ufldl.stanford.edu/wiki/index.php/Gradient_checking_and_advanced_optimization">http://ufldl.stanford.edu/wiki/index.php/Gradient_checking_and_advanced_optimization</a><br>
+ * - <a href="https://code.google.com/p/cuda-convnet/wiki/CheckingGradients">https://code.google.com/p/cuda-convnet/wiki/CheckingGradients</a><br>
  *
  *
  * Is C is cost function, then dC/dW ~= (C(w+epsilon)-C(w-epsilon)) / (2*epsilon).<br>

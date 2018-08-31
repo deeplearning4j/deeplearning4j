@@ -70,6 +70,7 @@ public class TransferLearning {
         private Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
 
         private InputType inputType;
+        private Boolean validateOutputLayerConfig;
 
         /**
          * Multilayer Network to tweak for transfer learning
@@ -282,6 +283,11 @@ public class TransferLearning {
             return this;
         }
 
+        public Builder validateOutputLayerConfig(boolean validate){
+            this.validateOutputLayerConfig = validate;
+            return this;
+        }
+
         /**
          * Returns a model with the fine tune configuration and specified architecture changes.
          * .init() need not be called. Can be directly fit.
@@ -447,7 +453,9 @@ public class TransferLearning {
             }
 
             MultiLayerConfiguration conf = new MultiLayerConfiguration.Builder().inputPreProcessors(inputPreProcessors)
-                            .setInputType(this.inputType).confs(allConfs).build();
+                            .setInputType(this.inputType).confs(allConfs)
+                            .validateOutputLayerConfig(validateOutputLayerConfig == null ? true : validateOutputLayerConfig)
+                    .build();
             if (finetuneConfiguration != null) {
                 finetuneConfiguration.applyToMultiLayerConfiguration(conf);
             }
@@ -466,6 +474,7 @@ public class TransferLearning {
         private boolean hasFrozen = false;
         private Set<String> editedVertices = new HashSet<>();
         private WorkspaceMode workspaceMode;
+        private Boolean validateOutputLayerConfig = null;
 
         /**
          * Computation Graph to tweak for transfer learning
@@ -573,6 +582,11 @@ public class TransferLearning {
             return nOutReplace(layerName, nOut, scheme, schemeNext, null, null);
         }
 
+        public GraphBuilder validateOutputLayerConfig(boolean validateOutputLayerConfig){
+            this.validateOutputLayerConfig = validateOutputLayerConfig;
+            return this;
+        }
+
         private GraphBuilder nOutReplace(String layerName, int nOut, WeightInit scheme, WeightInit schemeNext,
                         Distribution dist, Distribution distNext) {
             initBuilderIfReq();
@@ -622,6 +636,9 @@ public class TransferLearning {
                     lvInputs = origConfig.getVertexInputs().get(fanoutVertexName).toArray(new String[0]);
                     editedConfigBuilder.addLayer(fanoutVertexName, layerImpl, lv.getPreProcessor(), lvInputs);
                     editedVertices.add(fanoutVertexName);
+                    if(validateOutputLayerConfig != null) {
+                        editedConfigBuilder.validateOutputLayerConfig(validateOutputLayerConfig);
+                    }
                 }
             } else {
                 throw new IllegalArgumentException("noutReplace can only be applied to layer vertices. " + layerName
@@ -759,7 +776,8 @@ public class TransferLearning {
         public ComputationGraph build() {
             initBuilderIfReq();
 
-            ComputationGraphConfiguration newConfig = editedConfigBuilder.build();
+            ComputationGraphConfiguration newConfig = editedConfigBuilder
+                    .validateOutputLayerConfig(validateOutputLayerConfig == null ? true : validateOutputLayerConfig).build();
             if (this.workspaceMode != null)
                 newConfig.setTrainingWorkspaceMode(workspaceMode);
             ComputationGraph newGraph = new ComputationGraph(newConfig);

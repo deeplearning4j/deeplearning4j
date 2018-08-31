@@ -29,7 +29,7 @@ import java.util.Map;
 /**
  * Keras does not have an official LRN layer. Instead, the Keras community has
  * developed helpers to help address this issue. This custom layer was built specifically
- * to allow import of GoogLeNet https://gist.github.com/joelouismarino/a2ede9ab3928f999575423b9887abd14.
+ * to allow import of GoogLeNet <a href="https://gist.github.com/joelouismarino/a2ede9ab3928f999575423b9887abd14">https://gist.github.com/joelouismarino/a2ede9ab3928f999575423b9887abd14</a>.
  *
  * @author Justin Long (crockpotveggies)
  */

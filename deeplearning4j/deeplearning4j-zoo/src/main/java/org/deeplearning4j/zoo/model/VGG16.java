@@ -41,14 +41,17 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
  * VGG-16, from Very Deep Convolutional Networks for Large-Scale Image Recognition
- * https://arxiv.org/abs/1409.1556
+ * <a href="https://arxiv.org/abs/1409.1556">https://arxiv.org/abs/1409.1556</a><br>
+ * <br>
+ * Deep Face Recognition<br>
+ * <a href="http://www.robots.ox.ac.uk/~vgg/publications/2015/Parkhi15/parkhi15.pdf">http://www.robots.ox.ac.uk/~vgg/publications/2015/Parkhi15/parkhi15.pdf</a>
  *
- * Deep Face Recognition
- * http://www.robots.ox.ac.uk/~vgg/publications/2015/Parkhi15/parkhi15.pdf
- *
- * <p>ImageNet weights for this model are available and have been converted from https://github.com/fchollet/keras/tree/1.1.2/keras/applications.</p>
- * <p>CIFAR-10 weights for this model are available and have been converted using "approach 2" from https://github.com/rajatvikramsingh/cifar10-vgg16.</p>
- * <p>VGGFace weights for this model are available and have been converted from https://github.com/rcmalli/keras-vggface.</p>
+ * <p>ImageNet weights for this model are available and have been converted from <a href="https://github.com/fchollet/keras/tree/1.1.2/keras/applications">
+ *     https://github.com/fchollet/keras/tree/1.1.2/keras/applications</a>.</p>
+ * <p>CIFAR-10 weights for this model are available and have been converted using "approach 2" from <a href="https://github.com/rajatvikramsingh/cifar10-vgg16">
+ *     https://github.com/rajatvikramsingh/cifar10-vgg16</a>.</p>
+ * <p>VGGFace weights for this model are available and have been converted from <a href="https://github.com/rcmalli/keras-vggface">
+ *     https://github.com/rcmalli/keras-vggface</a>.</p>
  *
  * @author Justin Long (crockpotveggies)
  */
@@ -162,7 +165,7 @@ public class VGG16 extends ZooModel {
                                 .nOut(numClasses).activation(Activation.SOFTMAX) // radial basis function required
                                 .build(), "17")
                         .setOutputs("18")
-                        .backprop(true).pretrain(false)
+
                         .setInputTypes(InputType.convolutionalFlat(inputShape[2], inputShape[1], inputShape[0]))
                         .build();
 
