@@ -183,27 +183,21 @@ namespace nd4j {
             }
         }
 
-        template <typename T>
-        void GraphHolder::replaceGraph(Nd4jLong graphId, Graph<T>* graph) {
-            if (!hasGraph<T>(graphId)) {
-                registerGraph<T>(graphId, graph);
+        template <>
+        void GraphHolder::replaceGraph(Nd4jLong graphId, Graph<float>* graph) {
+            if (!hasGraph<float>(graphId)) {
+                registerGraph<float>(graphId, graph);
                 return;
             }
 
             this->lockWrite(graphId);
 
-            if (std::is_same<T, float>::value) {
-                _graphF[graphId] = graph;
-            } else if (std::is_same<T, double>::value) {
-                _graphD[graphId] = graph;
-            } else if (std::is_same<T, float16>::value) {
-                _graphH[graphId] = graph;
-            } else {
-                nd4j_printf("Unsupported dtype was requested for GraphHolder::replaceGraph","");
-            }
+            _graphF[graphId] = graph;
 
             this->unlockWrite(graphId);
         }
+
+
 
 
         flatbuffers::Offset<FlatResult> GraphHolder::execute(Nd4jLong graphId, flatbuffers::FlatBufferBuilder &builder, const FlatInferenceRequest* request) {
