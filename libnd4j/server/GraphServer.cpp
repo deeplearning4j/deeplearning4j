@@ -46,7 +46,7 @@ namespace nd4j {
                     assert(response_msg->Verify());
 
                     return grpc::Status::OK;
-                } catch {std::runtime_error &e} {
+                } catch (std::runtime_error &e) {
                     return grpc::Status::CANCELLED;
                 }
             }
