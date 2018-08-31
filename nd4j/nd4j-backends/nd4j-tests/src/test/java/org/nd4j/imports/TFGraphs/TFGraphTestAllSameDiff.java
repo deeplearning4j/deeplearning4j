@@ -85,9 +85,6 @@ public class TFGraphTestAllSameDiff {
             //https://github.com/deeplearning4j/deeplearning4j/issues/6182
             "zeta.*",
 
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6255
-            "losses/sparse_softmax.*",
-
             //https://github.com/deeplearning4j/deeplearning4j/issues/6225
             "svd/rank2_3,3_noFull_uv",
 
@@ -107,9 +104,6 @@ public class TFGraphTestAllSameDiff {
             //Not sure what's up here - "DEPTHWISECONV2D OP: wrong shape of weights array, expected is [-1, -1, 2, 2], but got [1, 2, 2, 2] instead !"
             "sepconv1d_layers/.*",
 
-            //Overlapping indices in the test case, need to fix
-            "scatter_nd_update/.*",
-
             //scatter_nd: one minor validation issue mentioned tu Yurii, already fixed but not merged (should validate vs. shape array length, not rank)
             "scatter_nd/.*",
 
@@ -125,6 +119,15 @@ public class TFGraphTestAllSameDiff {
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6315
             "nth_element/.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6290
+            "unsorted_segment/.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6321
+            "broadcast_to/.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6322
+            "broadcast_dynamic_shape/.*",
 
             //Not sure why these are failing yet
             "lrn/dr3.*",
