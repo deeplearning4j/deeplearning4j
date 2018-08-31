@@ -48,4 +48,9 @@ namespace nd4j {
     void SimpleReadWriteLock::unlockWrite() {
         _write_locks--;
     }
+
+    SimpleReadWriteLock& SimpleReadWriteLock::operator= ( const SimpleReadWriteLock &other) {
+        this->_write_locks.store(other._write_locks.load());
+        this->_read_locks.store(other._read_locks.load());
+    }
 }

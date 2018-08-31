@@ -48,6 +48,8 @@ namespace nd4j {
         // write lock
         void lockWrite();
         void unlockWrite();
+
+        SimpleReadWriteLock& operator= ( const SimpleReadWriteLock &other);
     };
 }
 
