@@ -34,10 +34,10 @@ import java.util.Random;
 
 /**
  * Fetcher for UCI synthetic control chart time series dataset.
- *
- * Details:     https://archive.ics.uci.edu/ml/datasets/Synthetic+Control+Chart+Time+Series
- * Data:        https://archive.ics.uci.edu/ml/machine-learning-databases/synthetic_control-mld/synthetic_control.data
- * Image:       https://archive.ics.uci.edu/ml/machine-learning-databases/synthetic_control-mld/data.jpeg
+ *<br>
+ * Details:     <a href="https://archive.ics.uci.edu/ml/datasets/Synthetic+Control+Chart+Time+Series">https://archive.ics.uci.edu/ml/datasets/Synthetic+Control+Chart+Time+Series</a><br>
+ * Data:        <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/synthetic_control-mld/synthetic_control.data">https://archive.ics.uci.edu/ml/machine-learning-databases/synthetic_control-mld/synthetic_control.data</a>
+ * Image:       <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/synthetic_control-mld/data.jpeg">https://archive.ics.uci.edu/ml/machine-learning-databases/synthetic_control-mld/data.jpeg</a>
  *
  * @author Briton Park (bpark738)
  */

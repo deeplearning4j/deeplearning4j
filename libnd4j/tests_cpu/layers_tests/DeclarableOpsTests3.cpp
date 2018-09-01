@@ -387,17 +387,17 @@ TEST_F(DeclarableOpsTests3, Test_ListDiff_1) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Range_1) {
-    NDArray<float> start('c', {1, 1}, {2});
-    NDArray<float> stop('c', {1, 1}, {0});
-    NDArray<float> step('c', {1, 1}, {1});
-    NDArray<float> exp('c', {2}, {2, 1});
+    NDArray<float> start(0.3);
+    NDArray<float> stop(-5);
+    NDArray<float> step(-0.33);
+    NDArray<float> exp('c', {17}, { 0.3 , -0.03, -0.36, -0.69, -1.02, -1.35, -1.68, -2.01, -2.34, -2.67,-3. , -3.33, -3.66, -3.99, -4.32, -4.65, -4.98});
 
     nd4j::ops::range<float> op;
     auto result = op.execute({&start, &stop, &step}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
-    auto z = result->at(0);
+    auto z = result->at(0);        
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -418,8 +418,6 @@ TEST_F(DeclarableOpsTests3, Test_Range_2) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-
-    // z->printShapeInfo("shape");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -448,10 +446,10 @@ TEST_F(DeclarableOpsTests3, Test_Range_3) {
 
 
 TEST_F(DeclarableOpsTests3, Test_Range_4) {
-    NDArray<float> exp('c', {2}, {2, 1});
+    NDArray<float> exp('c', {13}, {-10.,  -8.334,  -6.668,  -5.002,  -3.336,  -1.67 ,  -0.004,   1.662,   3.328,   4.994,   6.66 ,   8.326,   9.992});
 
     nd4j::ops::range<float> op;
-    auto result = op.execute({}, {2, 0, 1}, {});
+    auto result = op.execute({}, {-10., 10., 1.666}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -497,10 +495,10 @@ TEST_F(DeclarableOpsTests3, Test_Range_6) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Range_7) {
-    NDArray<float> exp('c', {2}, {2, 1});
+    NDArray<float> exp('c', {10}, {10.,  8.334,  6.668,  5.002,  3.336,  1.67 ,  0.004, -1.662, -3.328, -4.994});
 
     nd4j::ops::range<float> op;
-    auto result = op.execute({}, {}, {2, 0, 1});
+    auto result = op.execute({}, {10,-5,-1.666}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -511,6 +509,7 @@ TEST_F(DeclarableOpsTests3, Test_Range_7) {
 
     delete result;
 }
+
 
 
 TEST_F(DeclarableOpsTests3, Test_Range_8) {

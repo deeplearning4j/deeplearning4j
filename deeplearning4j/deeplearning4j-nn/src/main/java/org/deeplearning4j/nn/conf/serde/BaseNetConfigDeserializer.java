@@ -37,7 +37,8 @@ import java.io.IOException;
  * We deserialize the config using the default deserializer, then handle the new IUpdater (which will be null for
  * 0.8.0 and earlier configs) if necessary
  *
- * Overall design: http://stackoverflow.com/questions/18313323/how-do-i-call-the-default-deserializer-from-a-custom-deserializer-in-jackson
+ * Overall design: <a href="http://stackoverflow.com/questions/18313323/how-do-i-call-the-default-deserializer-from-a-custom-deserializer-in-jackson">
+ *     http://stackoverflow.com/questions/18313323/how-do-i-call-the-default-deserializer-from-a-custom-deserializer-in-jackson</a>
  *
  * @author Alex Black
  */

@@ -54,7 +54,7 @@ public class NoOp extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-
+        System.out.println("");
     }
 
     @Override
@@ -82,6 +82,6 @@ public class NoOp extends DynamicCustomOp {
         if(inputArguments != null && !inputArguments.isEmpty()){
             return Collections.singletonList(inputArguments.get(0).shape());
         }
-        return Collections.emptyList();
+        return Collections.singletonList(new long[]{Long.MIN_VALUE});   //Temporary hack for "empty array"
     }
 }

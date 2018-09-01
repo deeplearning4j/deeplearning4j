@@ -52,6 +52,8 @@ namespace ops {
         if (block.numI() == 2)
             axis = INT_ARG(1);
 
+        if(axis < 0) axis += input->rankOf();
+
         REQUIRE_TRUE(input->sizeAt(axis) % num_splits == 0, 0, "Split: num_splits has wrong value, remainder of division should be 0, but it's %i", input->sizeAt(axis) % num_splits);
 
         int pos = 0;

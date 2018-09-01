@@ -91,8 +91,8 @@ public class DynamicStitch extends DynamicCustomOp {
 
 
     @Override
-    public String tensorflowName() {
-        return "DynamicStitch";
+    public String[] tensorflowNames() {
+        return new String[]{"DynamicStitch", "ParallelDynamicStitch"};
     }
 
     @Override

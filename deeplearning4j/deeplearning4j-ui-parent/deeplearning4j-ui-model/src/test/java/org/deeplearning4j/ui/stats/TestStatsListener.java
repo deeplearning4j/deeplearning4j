@@ -52,7 +52,7 @@ public class TestStatsListener {
                                             .list().layer(0,
                                                             new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                                                             .nIn(4).nOut(3).build())
-                                            .pretrain(false).backprop(true).build();
+                                            .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();

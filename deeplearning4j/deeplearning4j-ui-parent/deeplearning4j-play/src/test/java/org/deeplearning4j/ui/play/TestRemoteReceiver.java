@@ -122,7 +122,7 @@ public class TestRemoteReceiver {
                         .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
                         .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();

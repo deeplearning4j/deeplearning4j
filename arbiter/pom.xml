@@ -220,10 +220,10 @@
                     <artifactId>scala-maven-plugin</artifactId>
                     <version>${maven-scala-plugin.version}</version>
                     <configuration>
-                        <scalaVersion>2.11.7</scalaVersion>
                         <args>
                             <arg>-deprecation</arg>
                             <arg>-explaintypes</arg>
+                            <arg>-nobootcp</arg>
                         </args>
                     </configuration>
                     <executions>

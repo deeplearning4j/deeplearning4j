@@ -384,6 +384,11 @@ public interface OpExecutioner {
 
     List<long[]> calculateOutputShape(CustomOp op);
 
+    /**
+     * Equivalent to calli
+     */
+    INDArray[] allocateOutputArrays(CustomOp op);
+
 
     void enableDebugMode(boolean reallyEnable);
 

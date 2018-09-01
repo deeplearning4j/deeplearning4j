@@ -21,8 +21,8 @@ package org.deeplearning4j.nn.modelimport.keras.exceptions;
  * Indicates that user is attempting to import a Keras model configuration that
  * is not currently supported.
  *
- * See http://deeplearning4j.org/model-import-keras for more information and
- * file an issue at http://github.com/deeplearning4j/deeplearning4j/issues.
+ * See <a href="http://deeplearning4j.org/model-import-keras">http://deeplearning4j.org/model-import-keras</a>
+ * for more information and file an issue at <a href="http://github.com/deeplearning4j/deeplearning4j/issues">http://github.com/deeplearning4j/deeplearning4j/issues</a>.
  *
  * @author dave@skymind.io
  */
