@@ -440,6 +440,7 @@ namespace nd4j {
             bool replaced = false;
             // trying name first
             if (variable->getName() != nullptr && !variable->getName()->empty()) {
+                nd4j_printf("Trying to replace variable by name: [%s]\n", variable->getName()->c_str());
                 if (hasVariable(variable->getName())) {
                     nd4j_printf("Replacing by name: [%s]\n", variable->getName()->c_str());
                     auto vs = getVariable(variable->getName());
@@ -449,6 +450,7 @@ namespace nd4j {
                     replaced = true;
                 }
             } else {
+                nd4j_printf("Trying to replace variable by id: [%i:%i]\n", variable->id(), variable->index());
                 if (hasVariable(variable->id(), variable->index())) {
                     nd4j_printf("Replacing by id: [%i:%i]\n", variable->id(), variable->index());
                     auto vs = getVariable(variable->id(), variable->index());
