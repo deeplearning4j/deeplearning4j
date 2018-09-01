@@ -150,7 +150,7 @@ public class TestLrChanges extends BaseDL4JTest {
                 .list()
                 .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
                 .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .layer(new OutputLayer.Builder().nIn(10).nOut(10).build())
+                .layer(new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build())
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -168,7 +168,7 @@ public class TestLrChanges extends BaseDL4JTest {
                 .list()
                 .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
                 .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .layer(new OutputLayer.Builder().nIn(10).nOut(10).build())
+                .layer(new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build())
                 .build();
         MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
         net2.init();
@@ -316,7 +316,7 @@ public class TestLrChanges extends BaseDL4JTest {
                 .addInputs("in")
                 .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
                 .addLayer("1", new DenseLayer.Builder().nIn(10).nOut(10).build(), "0")
-                .addLayer("2", new OutputLayer.Builder().nIn(10).nOut(10).build(), "1")
+                .addLayer("2", new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build(), "1")
                 .setOutputs("2")
                 .build();
 
@@ -336,7 +336,7 @@ public class TestLrChanges extends BaseDL4JTest {
                 .addInputs("in")
                 .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
                 .addLayer("1", new DenseLayer.Builder().nIn(10).nOut(10).build(), "0")
-                .layer("2", new OutputLayer.Builder().nIn(10).nOut(10).build(), "1")
+                .layer("2", new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build(), "1")
                 .setOutputs("2")
                 .build();
         ComputationGraph net2 = new ComputationGraph(conf2);

@@ -53,7 +53,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 /**
  *
- * RNN tutorial: http://deeplearning4j.org/usingrnns.html
+ * RNN tutorial: <a href="http://deeplearning4j.org/usingrnns.html">http://deeplearning4j.org/usingrnns.html</a>
  * READ THIS FIRST if you want to understand what the heck is happening here.
  *
  * Shared code for the standard "forwards" LSTM RNN and the bidirectional LSTM RNN
@@ -61,13 +61,13 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
  * so we only have math in one place, instead of two.
  *
  * Based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
- * http://www.cs.toronto.edu/~graves/phd.pdf
+ * <a href="http://www.cs.toronto.edu/~graves/phd.pdf">http://www.cs.toronto.edu/~graves/phd.pdf</a>
  * See also for full/vectorized equations (and a comparison to other LSTM variants):
  * Greff et al. 2015, "LSTM: A Search Space Odyssey", pg11.
  * <p>
  * When 'hasPeepholeConnections' is true, this is the "vanilla" variant in said paper<br>
  * When 'hasPeepholeConnections' is false, this is the "no peephole" variant<br>
- * http://arxiv.org/pdf/1503.04069.pdf
+ * <a href="http://arxiv.org/pdf/1503.04069.pdf">http://arxiv.org/pdf/1503.04069.pdf</a>
  *
  *
  * @author Alex Black (LSTM implementations)

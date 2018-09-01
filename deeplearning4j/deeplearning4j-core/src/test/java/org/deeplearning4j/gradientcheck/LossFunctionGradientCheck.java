@@ -168,7 +168,8 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(4).activation(Activation.TANH).build())
                                 .layer(1, new OutputLayer.Builder().lossFunction(lossFunctions[i])
                                                 .activation(outputActivationFn[i]).nIn(4).nOut(nOut[i]).build())
-                                .pretrain(false).backprop(true).build();
+                                .validateOutputLayerConfig(false)
+                                .build();
 
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
                 net.init();
@@ -328,7 +329,8 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                                                 .build())
                                 .layer(1, new LossLayer.Builder().lossFunction(lossFunctions[i])
                                                 .activation(outputActivationFn[i]).build())
-                                .pretrain(false).backprop(true).build();
+                                .validateOutputLayerConfig(false)
+                                .build();
 
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
                 net.init();
@@ -573,7 +575,8 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                                                     .build())
                                     .layer(1, new OutputLayer.Builder().lossFunction(lossFunctions[i])
                                                     .activation(outputActivationFn[i]).nIn(4).nOut(3).build())
-                                    .pretrain(false).backprop(true).build();
+                                    .validateOutputLayerConfig(false)
+                                    .build();
 
                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
                     net.init();

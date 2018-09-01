@@ -39,8 +39,9 @@ import java.util.List;
  * - RMSE: root mean squared error<br>
  * - RSE: relative squared error<br>
  * - PC: pearson correlation coefficient<br>
- * - R^2: coefficient of determination
- * See for example: http://www.saedsayad.com/model_evaluation_r.htm
+ * - R^2: coefficient of determination<br>
+ * <br>
+ * See for example: <a href="http://www.saedsayad.com/model_evaluation_r.htm">http://www.saedsayad.com/model_evaluation_r.htm</a>
  * For classification, see {@link Evaluation}
  *
  * @author Alex Black

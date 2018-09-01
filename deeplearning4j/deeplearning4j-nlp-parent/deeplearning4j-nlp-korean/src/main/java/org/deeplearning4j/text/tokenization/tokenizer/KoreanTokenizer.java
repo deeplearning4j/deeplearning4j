@@ -27,7 +27,7 @@ import java.util.NoSuchElementException;
 
 /**
  * Created by kepricon on 16. 10. 20.
- * KoreanTokenizer using KoreanTwitterText (https://github.com/twitter/twitter-korean-text)
+ * KoreanTokenizer using KoreanTwitterText (<a href="https://github.com/twitter/twitter-korean-text">https://github.com/twitter/twitter-korean-text</a>)
  */
 public class KoreanTokenizer implements Tokenizer {
     private Iterator<String> tokenIter;

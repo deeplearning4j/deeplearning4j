@@ -51,13 +51,13 @@ public class ScoreImprovementEpochTerminationCondition implements EpochTerminati
     }
 
     @Override
-    public boolean terminate(int epochNum, double score) {
+    public boolean terminate(int epochNum, double score, boolean minimize) {
         if (bestEpoch == -1) {
             bestEpoch = epochNum;
             bestScore = score;
             return false;
         } else {
-            double improvement = bestScore - score;
+            double improvement = (minimize ? bestScore - score : score - bestScore);
             if (improvement > minImprovement) {
                 if (minImprovement > 0) {
                     log.info("Epoch with score greater than threshold * * *");

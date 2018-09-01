@@ -176,7 +176,7 @@ public class TestListeners extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .list()
                 .layer(new OutputLayer.Builder().nIn(4).nOut(3)
-                        .activation(Activation.TANH)
+                        .activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .build();
 

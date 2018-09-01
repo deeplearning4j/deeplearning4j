@@ -286,8 +286,10 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
 
 
         //Apply the updaters in blocks. This also applies LR and momentum schedules, L1 and L2
-
-        workspaceMgr.assertNotOpen(ArrayType.UPDATER_WORKING_MEM, "Updater working memory");
+        if(getClass() != LayerUpdater.class){
+            //OK for LayerUpdater as this is part of layerwise pretraining
+            workspaceMgr.assertNotOpen(ArrayType.UPDATER_WORKING_MEM, "Updater working memory");
+        }
         for (UpdaterBlock ub : updaterBlocks) {
             if (ub.skipDueToPretrainConfig()) {
                 //Should skip some updater blocks sometimes

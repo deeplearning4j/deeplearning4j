@@ -100,7 +100,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
                                         new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3)
                                                         .build(),
                                         "dense")
-                        .setOutputs("out").pretrain(false).backprop(true).build();
+                        .setOutputs("out").build();
 
         ComputationGraph cg = new ComputationGraph(config);
         cg.init();
@@ -136,7 +136,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
                                         LossFunctions.LossFunction.MCXENT).nIn(3).nOut(nOut)
                                                         .activation(Activation.SOFTMAX).build(),
                                         "0")
-                        .setOutputs("1").backprop(true).pretrain(false).build();
+                        .setOutputs("1").build();
 
         TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 1, 10, 1, 0);
 
@@ -215,7 +215,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
                                         LossFunctions.LossFunction.MCXENT).nIn(4).nOut(3).activation(Activation.SOFTMAX)
                                                         .build(),
                                         "0")
-                        .setOutputs("1").pretrain(false).backprop(true).build();
+                        .setOutputs("1").build();
 
         Nd4j.getRandom().setSeed(12345);
         ComputationGraph n1 = new ComputationGraph(conf.clone());

@@ -34,7 +34,7 @@ import java.net.URL;
 public class GeoIPFetcher {
     protected static final Logger log = LoggerFactory.getLogger(GeoIPFetcher.class);
 
-    /** Default directory for http://dev.maxmind.com/geoip/geoipupdate/ */
+    /** Default directory for <a href="http://dev.maxmind.com/geoip/geoipupdate/">http://dev.maxmind.com/geoip/geoipupdate/</a> */
     public static final String GEOIP_DIR = "/usr/local/share/GeoIP/";
     public static final String GEOIP_DIR2 = System.getProperty("user.home") + "/.datavec-geoip";
 

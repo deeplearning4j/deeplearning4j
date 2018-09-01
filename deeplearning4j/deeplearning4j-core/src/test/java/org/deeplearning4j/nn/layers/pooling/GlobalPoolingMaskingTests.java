@@ -73,7 +73,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
                                             .poolingType(PoolingType.AVG).build())
                             .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).build())
-                            .pretrain(false).backprop(true).build();
+                            .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -136,7 +136,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
                                             .build())
                             .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(depthOut).nOut(nOut).build())
-                            .pretrain(false).backprop(true).build();
+                            .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -199,7 +199,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
                                             .build())
                             .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(depthOut).nOut(nOut).build())
-                            .pretrain(false).backprop(true).build();
+                            .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -263,7 +263,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
                                             .build())
                             .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(depthOut).nOut(nOut).build())
-                            .pretrain(false).backprop(true).build();
+                            .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -322,7 +322,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
                                             .build())
                             .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(depthOut).nOut(nOut).build())
-                            .pretrain(false).backprop(true).build();
+                            .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -381,7 +381,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
                             .build())
                     .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                             .activation(Activation.SOFTMAX).nIn(depthOut).nOut(nOut).build())
-                    .pretrain(false).backprop(true).build();
+                    .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();

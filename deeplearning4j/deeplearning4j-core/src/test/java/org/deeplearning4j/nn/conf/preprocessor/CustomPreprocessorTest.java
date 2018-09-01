@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.custom.MyCustomPreprocessor;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
@@ -46,8 +47,8 @@ public class CustomPreprocessorTest extends BaseDL4JTest {
                         new NeuralNetConfiguration.Builder().list()
                                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
                                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10)
-                                                        .nOut(10).build())
-                                        .inputPreProcessor(0, new MyCustomPreprocessor()).pretrain(false).backprop(true)
+                                                .activation(Activation.SOFTMAX).nOut(10).build())
+                                        .inputPreProcessor(0, new MyCustomPreprocessor())
                                         .build();
 
         String json = conf.toJson();

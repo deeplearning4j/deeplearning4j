@@ -66,7 +66,7 @@ public class TestConvolutionalListener {
                         .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).activation(Activation.SOFTMAX).build())
                         .setInputType(InputType.convolutionalFlat(28, 28, 1)) //See note below
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();

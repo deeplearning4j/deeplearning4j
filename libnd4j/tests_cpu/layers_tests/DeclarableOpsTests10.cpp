@@ -361,3 +361,201 @@ TEST_F(DeclarableOpsTests10, atan2_test6) {
 
     delete result;
 }
+
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, range_test10) {
+    
+    NDArray<double> limit('c', {1, 3, 4});
+    limit = 5.;
+    NDArray<double> exp('c', {5}, {0.,1.,2.,3.,4.});
+
+    nd4j::ops::range<double> op;
+    auto result = op.execute({&limit}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, range_test11) {
+    
+    NDArray<double> limit('c', {1, 3, 4});
+    NDArray<double> start('c', {2, 4});
+    limit = 5.;
+    start = 0.5;
+    NDArray<double> exp('c', {5}, {0.5,1.5,2.5,3.5,4.5});
+
+    nd4j::ops::range<double> op;
+    auto result = op.execute({&start, &limit}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, range_test12) {
+    
+    NDArray<double> exp('c', {9}, {0.5, 1. , 1.5, 2. , 2.5, 3. , 3.5, 4. , 4.5});
+
+    nd4j::ops::range<double> op;
+    auto result = op.execute({}, {0.5, 5, 0.5}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test1) {
+    
+    NDArray<double> labels('c', {2,3},{3.,2.,1.,0.,1.,2.});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> expected('c', {2,3}, {1.24254, 1.34254, 1.44254, 1.54254, 1.44254, 1.34254});
+                                            
+    logits.linspace(0.1, 0.1);
+
+    nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&labels, &logits}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test2) {
+    
+    NDArray<double> labels('c', {2},{1.,0.});
+    NDArray<double> logits('c', {2,3});
+    NDArray<double> expected('c', {2}, {1.10194, 1.20194});
+                                            
+    logits.linspace(0.1, 0.1);
+
+    nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&labels, &logits}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test3) {
+    
+    NDArray<double> labels('c', {1},{0.});
+    NDArray<double> logits('c', {1,3});
+    NDArray<double> expected('c', {1}, {1.20194});
+                                            
+    logits.linspace(0.1, 0.1);
+
+    nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&labels, &logits}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test4) {
+    
+    NDArray<double> labels('c', {2},{0.,0.});
+    NDArray<double> logits('c', {2,1});
+    NDArray<double> expected('c', {2}, {0., 0.});
+                                            
+    logits.linspace(0.1, 0.1);
+
+    nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&labels, &logits}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, split_test4) {
+    
+    NDArray<float> input('c', {10},{1.f,2.f,3.f,4.f,5.f,6.f,7.f,8.f,9.f,10.f});
+    NDArray<float> axis(-1);
+    NDArray<float> exp1('c', {5}, {1.f,2.f,3.f,4.f,5.f});
+    NDArray<float> exp2('c', {5}, {6.f,7.f,8.f,9.f,10.f});
+                                            
+    nd4j::ops::split<float> op;
+    auto results = op.execute({&input, &axis}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *out1 = results->at(0);
+    NDArray<float> *out2 = results->at(1);
+
+    ASSERT_TRUE(exp1.isSameShape(out1));
+    ASSERT_TRUE(exp2.isSameShape(out2));
+    ASSERT_TRUE(exp1.equalsTo(out1));
+    ASSERT_TRUE(exp2.equalsTo(out2));
+
+    delete results;
+}
+
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, split_test5) {
+    
+    NDArray<float> input('c', {3,8},{1.f,2.f,3.f,4.f,5.f,6.f,7.f,8.f,9.f,10.f,11.f,12.f,13.f,14.f,15.f,16.f,17.f,18.f,19.f,20.f,21.f,22.f,23.f,24.f});
+    NDArray<float> exp1('c', {3,4}, {1.f,2.f,3.f,4.f, 9.f,10.f,11.f,12.f, 17.f,18.f,19.f,20.f});
+    NDArray<float> exp2('c', {3,4}, {5.f,6.f,7.f,8.f, 13.f,14.f,15.f,16.f, 21.f,22.f,23.f,24.f});
+                                            
+    nd4j::ops::split<float> op;
+    auto results = op.execute({&input}, {}, {2,-1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *out1 = results->at(0);
+    NDArray<float> *out2 = results->at(1);
+
+    ASSERT_TRUE(exp1.isSameShape(out1));
+    ASSERT_TRUE(exp2.isSameShape(out2));
+    ASSERT_TRUE(exp1.equalsTo(out1));
+    ASSERT_TRUE(exp2.equalsTo(out2));
+
+    delete results;
+}
+

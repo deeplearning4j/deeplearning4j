@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.factory.Nd4j;
@@ -88,31 +89,6 @@ public class Histogram extends BaseTransformOp {
     }
 
     @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
-    }
-
-    @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-        super.initFromOnnx(node, initWith, attributesForNode, graph);
-    }
-
-    @Override
-    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
-        Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
-        val binMapping = PropertyMapping.builder()
-                .tfInputPosition(-1)
-                .propertyNames(new String[]{"numBins"})
-                .build();
-
-        Map<String,PropertyMapping> map = new HashMap<>();
-        map.put("numBins",binMapping);
-
-        ret.put(tensorflowName(),map);
-        return ret;
-    }
-
-    @Override
     public int opNum() {
         return 48;
     }
@@ -130,7 +106,7 @@ public class Histogram extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "HistogramFixedWidth";
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
     @Override
@@ -141,6 +117,6 @@ public class Histogram extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        throw new UnsupportedOperationException("Not supported");
     }
 }

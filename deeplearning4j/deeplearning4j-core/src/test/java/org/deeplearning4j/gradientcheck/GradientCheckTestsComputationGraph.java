@@ -81,7 +81,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                         new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                                                         .activation(Activation.SOFTMAX).nIn(5).nOut(3).build(),
                                         "firstLayer")
-                        .setOutputs("outputLayer").pretrain(false).backprop(true).build();
+                        .setOutputs("outputLayer").build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -129,7 +129,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                         new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                                                         .activation(Activation.SOFTMAX).nIn(5 + 5).nOut(3).build(),
                                         "merge")
-                        .setOutputs("outputLayer").pretrain(false).backprop(true).build();
+                        .setOutputs("outputLayer").build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -186,7 +186,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                             new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                                                             .activation(Activation.SOFTMAX).nIn(5).nOut(3).build(),
                                             "elementwise")
-                            .setOutputs("outputLayer").pretrain(false).backprop(true).build();
+                            .setOutputs("outputLayer").build();
 
             ComputationGraph graph = new ComputationGraph(conf);
             graph.init();
@@ -246,7 +246,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                             new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                                                             .activation(Activation.SOFTMAX).nIn(5).nOut(3).build(),
                                             "elementwise")
-                            .setOutputs("outputLayer").pretrain(false).backprop(true).build();
+                            .setOutputs("outputLayer").build();
 
             ComputationGraph graph = new ComputationGraph(conf);
             graph.init();
@@ -301,8 +301,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                                         .build(),
                                         "merge")
                         .setOutputs("outputLayer")
-                        .inputPreProcessor("outputLayer", new CnnToFeedForwardPreProcessor(5, 5, 4)).pretrain(false)
-                        .backprop(true).build();
+                        .inputPreProcessor("outputLayer", new CnnToFeedForwardPreProcessor(5, 5, 4))
+                        .build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -360,8 +360,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(),
                                                         "merge")
                                         .inputPreProcessor("dense1", new RnnToFeedForwardPreProcessor())
-                                        .inputPreProcessor("lstm3", new FeedForwardToRnnPreProcessor()).pretrain(false)
-                                        .backprop(true).build();
+                                        .inputPreProcessor("lstm3", new FeedForwardToRnnPreProcessor())
+                                        .build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -402,7 +402,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         .addVertex("subset", new SubsetVertex(0, 3), "lstm1")
                         .addLayer("out", new RnnOutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "subset")
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -444,7 +444,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         .addVertex("lastTS", new LastTimeStepVertex("input"), "lstm1")
                         .addLayer("out", new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "lastTS")
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -507,7 +507,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                                         .activation(Activation.SOFTMAX)
                                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(),
                                                         "lstm1", "duplicate")
-                                        .pretrain(false).backprop(true).build();
+                                        .build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -561,7 +561,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                         .activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(),
                                 "lstm_a", "lstm_b_rev")
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -615,7 +615,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         .addLayer("d3", new DenseLayer.Builder().nIn(6).nOut(2).build(), "d0", "d1", "d2")
                         .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2)
                                         .nOut(2).build(), "d3")
-                        .setOutputs("out").pretrain(false).backprop(true).build();
+                        .setOutputs("out").build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -658,7 +658,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         .addLayer("d3", new DenseLayer.Builder().nIn(2).nOut(2).build(), "d0")
                         .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(6)
                                         .nOut(2).build(), "d1", "d2", "d3")
-                        .setOutputs("out").pretrain(false).backprop(true).build();
+                        .setOutputs("out").build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -701,7 +701,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         .addLayer("D2", new DenseLayer.Builder().nIn(6).nOut(2).build(), "m")
                         .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(6)
                                         .nOut(2).build(), "D0", "D1", "D2")
-                        .setOutputs("out").pretrain(false).backprop(true).build();
+                        .setOutputs("out").build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -754,8 +754,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
                                 .activation(Activation.IDENTITY).nOut(2)
                                         .build(), "l3", "l4")
-                        .setOutputs("out").setInputTypes(InputType.convolutional(inH, inW, 2)).pretrain(false)
-                        .backprop(true).build();
+                        .setOutputs("out").setInputTypes(InputType.convolutional(inH, inW, 2))
+                        .build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -804,7 +804,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                                                         .lossFunction(LossFunctions.LossFunction.MCXENT)
                                                                         .activation(Activation.SOFTMAX).build(),
                                                         "l2-1", "l2-2")
-                                        .setOutputs("lossLayer").pretrain(false).backprop(true).build();
+                                        .setOutputs("lossLayer").build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -870,7 +870,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                                 .lossFunction(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(numLabels)
                                                 .alpha(1.0).lambda(lambda).gradientCheck(true)
                                                 .activation(Activation.SOFTMAX).build(), "l1")
-                                .setOutputs("cl").pretrain(false).backprop(true).build();
+                                .setOutputs("cl").build();
 
                 ComputationGraph graph = new ComputationGraph(conf);
                 graph.init();
@@ -934,7 +934,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                                 .lossFunction(LossFunctions.LossFunction.MCXENT).nOut(numLabels)
                                                 .alpha(1.0).lambda(lambda).gradientCheck(true)
                                                 .activation(Activation.SOFTMAX).build())
-                                .pretrain(false).backprop(true)
+
                                 .setInputType(InputType.convolutional(inputH, inputW, inputDepth)).build();
 
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -987,7 +987,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         .addVertex("l2", new L2Vertex(), "d0", "d1")
                         .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2).nIn(1)
                                         .nOut(1).activation(Activation.IDENTITY).build(), "l2")
-                        .setOutputs("out").pretrain(false).backprop(true).build();
+                        .setOutputs("out").build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -1044,7 +1044,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                         .nIn(layerSizes).nOut(layerSizes).activation(Activation.IDENTITY).build(), "u1")
                         .addLayer("out2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
                                         .nIn(layerSizes).nOut(2).activation(Activation.IDENTITY).build(), "u2")
-                        .setOutputs("out1", "out2").pretrain(false).backprop(true).build();
+                        .setOutputs("out1", "out2").build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -1102,7 +1102,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                         new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2).nIn(2)
                                                         .nOut(2).activation(Activation.IDENTITY).build(),
                                         "u1")
-                        .setOutputs("out1", "out2").pretrain(false).backprop(true).build();
+                        .setOutputs("out1", "out2").build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -1161,7 +1161,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                         .nIn(layerSizes).nOut(layerSizes).activation(Activation.IDENTITY).build(), "p1")
                         .addLayer("out2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
                                         .nIn(layerSizes).nOut(2).activation(Activation.IDENTITY).build(), "p2")
-                        .setOutputs("out1", "out2").pretrain(false).backprop(true).build();
+                        .setOutputs("out1", "out2").build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -1222,7 +1222,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                         new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2).nIn(2)
                                                         .nOut(2).activation(Activation.IDENTITY).build(),
                                         "d1")
-                        .setOutputs("out1", "out2").pretrain(false).backprop(true).build();
+                        .setOutputs("out1", "out2").build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
