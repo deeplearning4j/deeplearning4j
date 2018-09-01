@@ -107,6 +107,8 @@ TEST_F(ServerRelatedTests, Basic_Execution_Test_1) {
 
     delete oGraph;
     delete cGraph;
+
+    GraphHolder::getInstance()->dropGraphAny(11901L);
 }
 
 TEST_F(ServerRelatedTests, Basic_Execution_Test_2) {
@@ -146,6 +148,8 @@ TEST_F(ServerRelatedTests, Basic_Execution_Test_2) {
 
     delete oGraph;
     delete cGraph;
+
+    GraphHolder::getInstance()->dropGraphAny(11902L);
 }
 
 TEST_F(ServerRelatedTests, BasicExecutionTests_3) {
@@ -181,4 +185,6 @@ TEST_F(ServerRelatedTests, BasicExecutionTests_3) {
     ASSERT_EQ(exp, *restored.at(0)->getNDArray());
 
     delete oGraph;
+
+    GraphHolder::getInstance()->dropGraphAny(11903L);
 }
