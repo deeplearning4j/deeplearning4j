@@ -149,5 +149,36 @@ TEST_F(ServerRelatedTests, Basic_Execution_Test_2) {
 }
 
 TEST_F(ServerRelatedTests, BasicExecutionTests_3) {
+    flatbuffers::FlatBufferBuilder builder(4096);
+    flatbuffers::FlatBufferBuilder otherBuilder(4096);
+    auto oGraph = GraphExecutioner<float>::importFromFlatBuffers("./resources/reduce_dim_false.fb");
+    oGraph->printOut();
 
+    NDArray<float> input0('c', {3, 3}, {2.f,2.f,2.f, 2.f,2.f,2.f, 2.f,2.f,2.f});
+    NDArray<float> exp('c', {3}, {6.f, 6.f, 6.f});
+
+    GraphHolder::getInstance()->registerGraph<float>(1L, oGraph);
+
+    // mastering InferenceRequest
+    InferenceRequest<float> ir(1L);
+    ir.appendVariable(1, 0, &input0);
+
+    auto af = ir.asFlatInferenceRequest(otherBuilder);
+    otherBuilder.Finish(af);
+    auto fptr = otherBuilder.GetBufferPointer();
+    auto fir = GetFlatInferenceRequest(fptr);
+
+
+    auto flatResult = GraphHolder::getInstance()->execute(1L, builder, fir);
+
+    builder.Finish(flatResult);
+    auto ptr = builder.GetBufferPointer();
+    auto received = GetFlatResult(ptr);
+
+    ExecutionResult<float> restored(received);
+    ASSERT_EQ(1, restored.size());
+
+    ASSERT_EQ(exp, *restored.at(0)->getNDArray());
+
+    delete oGraph;
 }
