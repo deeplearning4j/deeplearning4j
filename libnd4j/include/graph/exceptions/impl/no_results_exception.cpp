@@ -23,12 +23,8 @@
 
 namespace nd4j {
     namespace graph {
-        no_results_exception::no_results_exception(Nd4jLong graphId) : std::runtime_error(StringUtils::buildGraphErrorMessage("Unknown graph", graphId)) {
+        no_results_exception::no_results_exception(Nd4jLong graphId) : graph_exception(StringUtils::buildGraphErrorMessage("Got no results after graph execution", graphId), graphId) {
             _graphId = graphId;
-        }
-
-        Nd4jLong no_results_exception::graphId() {
-            return _graphId;
         }
     }
 }

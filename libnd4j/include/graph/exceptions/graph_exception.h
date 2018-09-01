@@ -15,24 +15,37 @@
  ******************************************************************************/
 
 //
-// Created by raver on 8/31/2018.
+// Created by raver on 9/1/2018.
 //
 
-#ifndef DEV_TESTS_GRAPH_EXISTS_EXCEPTION_H
-#define DEV_TESTS_GRAPH_EXISTS_EXCEPTION_H
+#ifndef LIBND4J_GRAPH_EXCEPTION_H
+#define LIBND4J_GRAPH_EXCEPTION_H
 
-#include <op_boilerplate.h>
-#include <pointercast.h>
+#include <string>
 #include <stdexcept>
-#include <graph/exceptions/graph_exception.h>
+#include <pointercast.h>
 
 namespace nd4j {
     namespace graph {
-        class graph_exists_exception: public graph_exception {
+        class graph_exception : public std::runtime_error {
+        protected:
+            Nd4jLong _graphId;
+            std::string _message;
+            std::string _description;
         public:
-            explicit graph_exists_exception(Nd4jLong graphId);
+            graph_exception(std::string message, Nd4jLong graphId);
+            graph_exception(std::string message, std::string description, Nd4jLong graphId);
+            graph_exception(std::string message, const char *description, Nd4jLong graphId);
+            ~graph_exception() = default;
+
+            Nd4jLong graphId();
+
+            const char * message();
+            const char * description();
         };
     }
 }
 
-#endif //DEV_TESTS_UNKNOWN_GRAPH_EXCEPTION_H
+
+
+#endif //DEV_TESTS_GRAPH_EXCEPTION_H

@@ -24,16 +24,13 @@
 #include <op_boilerplate.h>
 #include <pointercast.h>
 #include <stdexcept>
+#include <graph/exceptions/graph_exception.h>
 
 namespace nd4j {
     namespace graph {
-        class no_results_exception: public std::runtime_error {
-        private:
-            Nd4jLong _graphId;
+        class no_results_exception: public graph_exception {
         public:
             explicit no_results_exception(Nd4jLong graphId);
-
-            Nd4jLong graphId();
         };
     }
 }

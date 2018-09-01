@@ -23,12 +23,8 @@
 
 namespace nd4j {
     namespace graph {
-        graph_execution_exception::graph_execution_exception(Nd4jLong graphId) : std::runtime_error(StringUtils::buildGraphErrorMessage("Graph with given ID already exists", graphId)) {
+        graph_execution_exception::graph_execution_exception(Nd4jLong graphId) : graph_exception(StringUtils::buildGraphErrorMessage("Caught exception during graph execution", graphId), graphId) {
             _graphId = graphId;
-        }
-
-        Nd4jLong graph_execution_exception::graphId() {
-            return _graphId;
         }
     }
 }

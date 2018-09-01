@@ -53,7 +53,8 @@ namespace nd4j {
 
                     return grpc::Status::OK;
                 } catch (std::runtime_error &e) {
-                    return grpc::Status::CANCELLED;
+                    grpc::string gmsg("Caught runtime_error exception");
+                    return grpc::Status(grpc::StatusCode::UNKNOWN, gmsg);
                 }
             }
 
@@ -75,9 +76,11 @@ namespace nd4j {
 
                     return grpc::Status::OK;
                 } catch (nd4j::graph::unknown_graph_exception &e) {
-                    return grpc::Status::CANCELLED;
+                    grpc::string gmsg(e.message());
+                    return grpc::Status(grpc::StatusCode::NOT_FOUND, gmsg);
                 } catch (std::runtime_error &e) {
-                    return grpc::Status::CANCELLED;
+                    grpc::string gmsg("Caught runtime_error exception");
+                    return grpc::Status(grpc::StatusCode::UNKNOWN, gmsg);
                 }
             }
 
@@ -98,7 +101,8 @@ namespace nd4j {
 
                     return grpc::Status::OK;
                 } catch (nd4j::graph::unknown_graph_exception &e) {
-                    return grpc::Status::CANCELLED;
+                    grpc::string gmsg(e.message());
+                    return grpc::Status(grpc::StatusCode::NOT_FOUND, gmsg);
                 }
             }
 
@@ -115,13 +119,17 @@ namespace nd4j {
 
                     return grpc::Status::OK;
                 } catch (nd4j::graph::no_results_exception &e) {
-                    return grpc::Status::CANCELLED;
+                    grpc::string gmsg(e.message());
+                    return grpc::Status(grpc::StatusCode::INTERNAL, gmsg);
                 } catch (nd4j::graph::unknown_graph_exception &e) {
-                    return grpc::Status::CANCELLED;
+                    grpc::string gmsg(e.message());
+                    return grpc::Status(grpc::StatusCode::NOT_FOUND, gmsg);
                 } catch (nd4j::graph::graph_execution_exception &e) {
-                    return grpc::Status::CANCELLED;
+                    grpc::string gmsg(e.message());
+                    return grpc::Status(grpc::StatusCode::INTERNAL, gmsg);
                 } catch (std::runtime_error &e) {
-                    return grpc::Status::CANCELLED;
+                    grpc::string gmsg("Caught runtime_error exception");
+                    return grpc::Status(grpc::StatusCode::UNKNOWN, gmsg);
                 }
             }
     }

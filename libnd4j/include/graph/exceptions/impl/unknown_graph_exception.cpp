@@ -23,12 +23,8 @@
 
 namespace nd4j {
     namespace graph {
-        unknown_graph_exception::unknown_graph_exception(Nd4jLong graphId) : std::runtime_error(StringUtils::buildGraphErrorMessage("Unknown graph", graphId)) {
+        unknown_graph_exception::unknown_graph_exception(Nd4jLong graphId) : graph_exception(StringUtils::buildGraphErrorMessage("Unknown graph", graphId), graphId) {
             _graphId = graphId;
-        }
-
-        Nd4jLong unknown_graph_exception::graphId() {
-            return _graphId;
         }
     }
 }

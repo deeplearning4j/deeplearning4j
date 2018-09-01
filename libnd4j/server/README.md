@@ -42,7 +42,7 @@ GraphServer relies on gRPC (provided by flatbuffers), and is supposed to work vi
 
 ## Docker & K8S
 
-We provide basic Dockerfile, which allows to build Docker image with GraphServer. Image is based on Ubuntu 18.04, and has pretty small footprint.
+We provide basic Dockerfile, which allows to build Docker image with GraphServer. Image is based on Ubuntu 18.04, and has reasonably small footprint.
 
 ## Roadmap
 
