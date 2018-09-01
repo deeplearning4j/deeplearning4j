@@ -1,6 +1,6 @@
-## GraphServing
+## Native GraphServer
 
-We provide minimalistic binary capable of serving inference requests to SameDiff graphs via gRPC.
+Native GraphServer is a minimalistic binary capable of serving inference requests to SameDiff graphs via gRPC.
 Idea is simple: you start GraphServer, optionally providing path to serialized graph, and you can immediately start sending inference requests.
 You can also update graphs in runtime (i.e. if you've got new model version, or want to do some A/B testing).
 
@@ -33,7 +33,21 @@ This endpoint must be used if you want to remove graph from serving for any reas
 #### InferenceRequest(FlatInferenceRequest)
 This endpoint must be used for actual inference requests. You send inputs in, and get outputs back. Simple as that.
 
+## Clients
+At this moment we only provide Java gRPC client wrapper suitable for inference. We'll add support for other languages and APIs (like REST API) over time.
+
+## Requirements
+
+GraphServer relies on gRPC (provided by flatbuffers), and is supposed to work via TCP/IP, so you'll have to provide an open port.
 
 ## Docker & K8S
 
 We provide basic Dockerfile, which allows to build Docker image with GraphServer. Image is based on Ubuntu 18.04, and has pretty small footprint.
+
+## Roadmap
+
+We're going to provide additional functionality over time:
+- JSON-based REST serving
+- Clients for other languages
+- Extended DL4J support: DL4J -> SameDiff models conversion, which will also allow Keras -> DL4J -> SameDiff scenario
+- RPM and DEB packages for simplified use out of Docker environment
