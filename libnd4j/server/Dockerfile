@@ -12,11 +12,17 @@ RUN apt-get update && \
 
 ENV PROTOBUF_HOME /opt/protobuf
 
-RUN git clone https://github.com/grpc/grpc && cd grpc && git submodule update --init && make -j 4 && make install
+RUN git clone https://github.com/grpc/grpc \
+            && cd grpc \
+            && git checkout v1.14.1 \
+            && git submodule update --init \
+            && make -j 6 \
+            && make install
 
-RUN git clone https://github.com/deeplearning4j/deeplearning4j && cd deeplearning4j &&  \
-    git checkout r119_twenty_percents && \
-    cd libnd4j/server &&  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release && make -j 6
+RUN git clone https://github.com/deeplearning4j/deeplearning4j \
+    && cd deeplearning4j/libnd4j/server \
+    && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
+    && make -j 6
 
 FROM ubuntu:bionic
 
