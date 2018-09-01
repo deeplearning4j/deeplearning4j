@@ -9,7 +9,7 @@ You can also update graphs in runtime (i.e. if you've got new model version, or 
 There's not too much to configure:
 
 ```
--p 40123 // port number to be used
+-p 40123 // TCP port to be used
 -f filename.fb // path to flatbuffers file with serialized SameDiff graph
 ```
 

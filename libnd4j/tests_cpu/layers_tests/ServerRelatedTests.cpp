@@ -88,9 +88,9 @@ TEST_F(ServerRelatedTests, Basic_Execution_Test_1) {
 
     NDArray<float> exp('c', {3}, {3.f, 3.f, 3.f});
 
-    GraphHolder::getInstance()->registerGraph<float>(1L, oGraph);
+    GraphHolder::getInstance()->registerGraph<float>(11901L, oGraph);
 
-    auto cGraph = GraphHolder::getInstance()->cloneGraph<float>(1L);
+    auto cGraph = GraphHolder::getInstance()->cloneGraph<float>(11901L);
 
     ASSERT_TRUE(oGraph != cGraph);
 
@@ -118,14 +118,14 @@ TEST_F(ServerRelatedTests, Basic_Execution_Test_2) {
     NDArray<float> input0('c', {3, 3}, {2.f,2.f,2.f, 2.f,2.f,2.f, 2.f,2.f,2.f});
     NDArray<float> exp('c', {3}, {6.f, 6.f, 6.f});
 
-    GraphHolder::getInstance()->registerGraph<float>(1L, oGraph);
+    GraphHolder::getInstance()->registerGraph<float>(11902L, oGraph);
 
-    auto cGraph = GraphHolder::getInstance()->cloneGraph<float>(1L);
+    auto cGraph = GraphHolder::getInstance()->cloneGraph<float>(11902L);
 
     ASSERT_TRUE(oGraph != cGraph);
 
     // mastering InferenceRequest
-    InferenceRequest<float> ir(1L);
+    InferenceRequest<float> ir(11902L);
     ir.appendVariable(1, 0, &input0);
 
     auto af = ir.asFlatInferenceRequest(otherBuilder);
@@ -157,10 +157,10 @@ TEST_F(ServerRelatedTests, BasicExecutionTests_3) {
     NDArray<float> input0('c', {3, 3}, {2.f,2.f,2.f, 2.f,2.f,2.f, 2.f,2.f,2.f});
     NDArray<float> exp('c', {3}, {6.f, 6.f, 6.f});
 
-    GraphHolder::getInstance()->registerGraph<float>(1L, oGraph);
+    GraphHolder::getInstance()->registerGraph<float>(11903L, oGraph);
 
     // mastering InferenceRequest
-    InferenceRequest<float> ir(1L);
+    InferenceRequest<float> ir(11903L);
     ir.appendVariable(1, 0, &input0);
 
     auto af = ir.asFlatInferenceRequest(otherBuilder);
@@ -169,7 +169,7 @@ TEST_F(ServerRelatedTests, BasicExecutionTests_3) {
     auto fir = GetFlatInferenceRequest(fptr);
 
 
-    auto flatResult = GraphHolder::getInstance()->execute(1L, builder, fir);
+    auto flatResult = GraphHolder::getInstance()->execute(fir->id(), builder, fir);
 
     builder.Finish(flatResult);
     auto ptr = builder.GetBufferPointer();
