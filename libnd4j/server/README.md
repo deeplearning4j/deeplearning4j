@@ -33,6 +33,10 @@ This endpoint must be used if you want to remove graph from serving for any reas
 #### InferenceRequest(FlatInferenceRequest)
 This endpoint must be used for actual inference requests. You send inputs in, and get outputs back. Simple as that.
 
+## Models support
+Native GraphServer is suited for serving of SameDiff models via flatbuffers and gRPC. It means that anything importable into SameDiff will work just fine for GraphServer. I.e. TensorFlow models.
+We're also going to provide DL4J ComputationGraph and MultiLayerNetwork export to SameDiff, so GraphServer will be also able to server DL4J and Keras models.
+
 ## Clients
 At this moment we only provide Java gRPC client wrapper suitable for inference. We'll add support for other languages and APIs (like REST API) over time.
 
@@ -50,4 +54,5 @@ We're going to provide additional functionality over time:
 - JSON-based REST serving
 - Clients for other languages
 - Extended DL4J support: DL4J -> SameDiff models conversion, which will also allow Keras -> DL4J -> SameDiff scenario
+- Full ONNX support via SameDiff import
 - RPM and DEB packages for simplified use out of Docker environment
