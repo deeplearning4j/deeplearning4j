@@ -18,6 +18,7 @@ package org.nd4j.graph;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
@@ -37,18 +38,19 @@ public class GraphInferenceGrpcClientTest {
         // configuring client
         val client = new GraphInferenceGrpcClient("127.0.0.1", 40123);
 
+        val graphId = RandomUtils.nextLong(0, Long.MAX_VALUE);
 
         // preparing and registering graph (it's optional, and graph might be embedded into Docker image
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/expand_dim/frozen_model.pb").getInputStream());
         assertNotNull(tg);
-        client.registerGraph(119, tg, ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build());
+        client.registerGraph(graphId, tg, ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build());
 
         //defining input
         val input0 = Nd4j.create(new double[] {0.09753360, 0.76124972, 0.24693797, 0.13813169, 0.33144656, 0.08299957, 0.67197708, 0.80659380, 0.98274191, 0.63566073, 0.21592326, 0.54902743}, new int[] {3, 4});
         val operands = new Operands().addArgument("input_0", input0);
 
         // sending request and getting result
-        val result = client.output(119, operands);
+        val result = client.output(graphId, operands);
         assertEquals(exp, result.getById("output"));
     }
 
@@ -59,18 +61,19 @@ public class GraphInferenceGrpcClientTest {
         // configuring client
         val client = new GraphInferenceGrpcClient("127.0.0.1", 40123);
 
+        val graphId = RandomUtils.nextLong(0, Long.MAX_VALUE);
 
         // preparing and registering graph (it's optional, and graph might be embedded into Docker image
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/expand_dim/frozen_model.pb").getInputStream());
         assertNotNull(tg);
-        client.registerGraph(119, tg, ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build());
+        client.registerGraph(graphId, tg, ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build());
 
         //defining input
         val input0 = Nd4j.create(new double[] {0.09753360, 0.76124972, 0.24693797, 0.13813169, 0.33144656, 0.08299957, 0.67197708, 0.80659380, 0.98274191, 0.63566073, 0.21592326, 0.54902743}, new int[] {3, 4});
         val operands = new Operands().addArgument(1, 0, input0);
 
         // sending request and getting result
-        val result = client.output(119, operands);
+        val result = client.output(graphId, operands);
         assertEquals(exp, result.getById("output"));
     }
 }
