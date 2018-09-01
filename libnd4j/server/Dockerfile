@@ -4,6 +4,8 @@
 #
 FROM ubuntu:bionic as builder
 
+LABEL Description="GraphServer container"  Vendor="SkyMind.ai"  Version="1.0.0-SNAPSHOT"
+
 RUN apt-get update && \
     apt-get -y --no-install-recommends install \
         git maven gcc g++ automake cmake build-essential autoconf libtool pkg-config libgflags-dev libgtest-dev clang libc++-dev libgomp1 libprotobuf-dev && \
