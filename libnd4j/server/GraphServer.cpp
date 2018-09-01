@@ -28,6 +28,7 @@
 
 #include <graph/exceptions/unknown_graph_exception.h>
 #include <graph/exceptions/graph_exists_exception.h>
+#include <graph/exceptions/no_results_exception.h>
 #include <graph/exceptions/graph_execution_exception.h>
 
 
