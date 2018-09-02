@@ -115,7 +115,13 @@ namespace simdOps {
 		}
 	};
 
-
+	template <typename X, typename Y, typename Z>
+	class NewAdd {
+    public:
+        op_def static Z op(X d1, Y d2, X *params) {
+            return d1 + d2;
+        }
+	};
         
 	template<typename T>
 	class Subtract {

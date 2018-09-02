@@ -100,7 +100,6 @@ namespace functions {
 
 
 
-
             /**
          * CPU implementation of scalar operation
          * @param x the input
