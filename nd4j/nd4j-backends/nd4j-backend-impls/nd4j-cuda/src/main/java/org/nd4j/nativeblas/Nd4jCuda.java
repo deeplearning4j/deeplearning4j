@@ -10187,6 +10187,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
             public native @StdString @Cast({"char*", "std::string*"}) BytePointer getName();
             public native void setName(@StdString @Cast({"char*", "std::string*"}) BytePointer name);
+
+// #ifndef __JAVACPP_HACK__
+// #endif
         }
         @Name("nd4j::graph::Variable<float16>") @NoOffset public static class HalfVariable extends Pointer {
             static { Loader.load(); }
@@ -10255,6 +10258,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
             public native @StdString @Cast({"char*", "std::string*"}) BytePointer getName();
             public native void setName(@StdString @Cast({"char*", "std::string*"}) BytePointer name);
+
+// #ifndef __JAVACPP_HACK__
+// #endif
         }
         @Name("nd4j::graph::Variable<double>") @NoOffset public static class DoubleVariable extends Pointer {
             static { Loader.load(); }
@@ -10323,6 +10329,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
             public native @StdString @Cast({"char*", "std::string*"}) BytePointer getName();
             public native void setName(@StdString @Cast({"char*", "std::string*"}) BytePointer name);
+
+// #ifndef __JAVACPP_HACK__
+// #endif
         }
     
 
@@ -11071,6 +11080,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native FloatVariable getVariable(@ByRef IntIntPair pair);
             public native FloatVariable getVariable(@StdString @Cast({"char*", "std::string*"}) BytePointer symbol);
 
+            public native @Cast("nd4j::graph::Variable<float>**") @StdVector PointerPointer getVariables();
+
             public native void putVariable(@ByRef IntIntPair pair, FloatNDArray array);
             public native void putVariable(@ByRef IntIntPair pair, FloatVariable variable);
             public native void putVariable(int id, FloatVariable variable);
@@ -11084,6 +11095,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native void trackList(FloatNDArrayList list);
 
             public native void putOutputVariable(FloatVariable variable);
+
+            public native void replaceVariable(FloatVariable variable);
 
             // memory-related statistics
             public native @Cast("Nd4jLong") long externalMemory();
@@ -11145,6 +11158,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native HalfVariable getVariable(@ByRef IntIntPair pair);
             public native HalfVariable getVariable(@StdString @Cast({"char*", "std::string*"}) BytePointer symbol);
 
+            public native @Cast("nd4j::graph::Variable<float16>**") @StdVector PointerPointer getVariables();
+
             public native void putVariable(@ByRef IntIntPair pair, HalfNDArray array);
             public native void putVariable(@ByRef IntIntPair pair, HalfVariable variable);
             public native void putVariable(int id, HalfVariable variable);
@@ -11158,6 +11173,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native void trackList(HalfNDArrayList list);
 
             public native void putOutputVariable(HalfVariable variable);
+
+            public native void replaceVariable(HalfVariable variable);
 
             // memory-related statistics
             public native @Cast("Nd4jLong") long externalMemory();
@@ -11219,6 +11236,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native DoubleVariable getVariable(@ByRef IntIntPair pair);
             public native DoubleVariable getVariable(@StdString @Cast({"char*", "std::string*"}) BytePointer symbol);
 
+            public native @Cast("nd4j::graph::Variable<double>**") @StdVector PointerPointer getVariables();
+
             public native void putVariable(@ByRef IntIntPair pair, DoubleNDArray array);
             public native void putVariable(@ByRef IntIntPair pair, DoubleVariable variable);
             public native void putVariable(int id, DoubleVariable variable);
@@ -11232,6 +11251,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native void trackList(DoubleNDArrayList list);
 
             public native void putOutputVariable(DoubleVariable variable);
+
+            public native void replaceVariable(DoubleVariable variable);
 
             // memory-related statistics
             public native @Cast("Nd4jLong") long externalMemory();

@@ -2,6 +2,8 @@ include "node.fbs";
 include "config.fbs";
 include "variable.fbs";
 include "utils.fbs";
+include "result.fbs";
+include "request.fbs";
 
 namespace nd4j.graph;
 
@@ -11,6 +13,22 @@ table FlatGraph {
     nodes:[FlatNode]; // list of nodes
     outputs:[IntPair]; // list of output variables or nodes, in format of IntPair.first is node Id, IntPair.second is output index of the node
     configuration:FlatConfiguration; // optional execution configuration
+}
+
+
+table FlatDropRequest {
+    id:long; // id of the graph to be droppoed
+}
+
+table FlatResponse {
+    status:int; // status of operation
+}
+
+rpc_service GraphInferenceServer {
+    RegisterGraph(FlatGraph):FlatResponse;
+    ForgetGraph(FlatDropRequest):FlatResponse;
+    ReplaceGraph(FlatGraph):FlatResponse;
+    InferenceRequest(FlatInferenceRequest):FlatResult;
 }
 
 root_type FlatGraph;
