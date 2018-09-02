@@ -42,7 +42,7 @@ import java.util.*;
  * Instead of rand walks, this walker produces walks based on number of edges coming into each node.
  * This allows you to build walks filtering too rare nodes, or too popular nodes, depending on your demands.
  *
- * Original DeepWalk paper: http://arxiv.org/pdf/1403.6652v2
+ * Original DeepWalk paper: <a href="http://arxiv.org/pdf/1403.6652v2">http://arxiv.org/pdf/1403.6652v2</a>
  * @author raver119@gmail.com
  */
 public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T> implements GraphWalker<T> {

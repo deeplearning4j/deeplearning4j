@@ -5086,9 +5086,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return n.equals(this);
         }
 
-        if (this.lengthLong() != n.lengthLong())
+        if (this.length() != n.length())
             return false;
 
+        if (this.isEmpty() != n.isEmpty())
+            return false;
+
+        if (this.isEmpty() && n.isEmpty())
+            return true;
 
         //epsilon equals
         if (isScalar() && n.isScalar()) {

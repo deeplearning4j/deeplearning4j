@@ -371,7 +371,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
                         .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nIn(10).nOut(10)
                                         .build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -401,7 +401,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
                         .layer(2, new ActivationLayer.Builder().activation(Activation.RELU).build())
                         .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nOut(10).build())
-                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
+                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -428,7 +428,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
                         .layer(4, new BatchNormalization.Builder().build())
                         .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nOut(10).build())
-                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
+                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -467,7 +467,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
                         .layer(4, new BatchNormalization.Builder().build())
                         .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nOut(10).build())
-                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
+                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -527,7 +527,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
                                                         .build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.IDENTITY).nIn(10).nOut(10).build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
@@ -581,7 +581,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
                         .layer(0, new BatchNormalization.Builder().nIn(3).nOut(3).eps(1e-5).decay(0.95).build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.IDENTITY).nOut(10).build())
-                        .backprop(true).pretrain(false).setInputType(InputType.convolutional(5, 5, 3)).build();
+                        .setInputType(InputType.convolutional(5, 5, 3)).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 

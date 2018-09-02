@@ -121,7 +121,7 @@ public class TestConvolution extends BaseDL4JTest {
                             .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                     .nOut(10).activation(Activation.SOFTMAX).build())
                             .setInputType(InputType.convolutionalFlat(28, 28, 1)) //See note below
-                            .backprop(true).pretrain(false).build();
+                            .build();
                     if (conv) {
                         assertEquals(a, ((ConvolutionLayer) l).getCudnnAlgoMode());
                     }

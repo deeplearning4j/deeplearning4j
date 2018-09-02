@@ -18,7 +18,7 @@ Deeplearning4j is a domain-specific language to configure deep neural networks, 
 
 Hyperparameters are variables that determine how a neural network learns. They include how many times to update the weights of the model, how to initialize those weights, which activation function to attach to the nodes, which optimization algorithm to use, and how fast the model should learn. This is what one configuration would look like:
 
-``` java
+```java
     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
         .weightInit(WeightInit.XAVIER)
         .activation("relu")
@@ -32,7 +32,7 @@ Hyperparameters are variables that determine how a neural network learns. They i
 
 With Deeplearning4j, you add a layer by calling `layer` on the `NeuralNetConfiguration.Builder()`, specifying its place in the order of layers (the zero-indexed layer below is the input layer), the number of input and output nodes, `nIn` and `nOut`, as well as the type: `DenseLayer`.
 
-``` java
+```java
         .layer(0, new DenseLayer.Builder().nIn(784).nOut(250)
                 .build())
 ```
@@ -54,7 +54,7 @@ If you are new to Java or unfamiliar with these tools, read the details below fo
 
 If you don't have Java 1.7 or later, download the current [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). To check if you have a compatible version of Java installed, use the following command:
 
-``` shell
+```shell
 java -version
 ```
 
@@ -64,13 +64,13 @@ Please make sure you have a 64-Bit version of java installed, as you will see an
 
 Maven is a dependency management and automated build tool for Java projects. It works well with IDEs such as IntelliJ and lets you install DL4J project libraries easily. [Install or update Maven](https://maven.apache.org/download.cgi) to the latest release following [their instructions](https://maven.apache.org/install.html) for your system. To check if you have the most recent version of Maven installed, enter the following:
 
-``` shell
+```shell
 mvn --version
 ```
 
 If you are working on a Mac, you can simply enter the following into the command line:
 
-``` shell
+```shell
 brew install maven
 ```
 
@@ -90,17 +90,20 @@ There are other popular IDEs such as [Eclipse](http://books.sonatype.com/m2eclip
 
 Install the [latest version of Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git). If you already have Git, you can update to the latest version using Git itself:
 
-``` shell
+```shell
 $ git clone git://git.kernel.org/pub/scm/git/git.git
 ```
+
 
 ## <a name="examples">DL4J Examples in a Few Easy Steps</a>
 
 1. Use the command line to enter the following:
 
-        $ git clone https://github.com/deeplearning4j/dl4j-examples.git
-        $ cd dl4j-examples/
-        $ mvn clean install
+```shell
+$ git clone https://github.com/deeplearning4j/dl4j-examples.git
+$ cd dl4j-examples/
+$ mvn clean install
+```
 
 2. Open IntelliJ and choose Import Project. Then select the main 'dl4j-examples' directory. (Note: the example in the illustration below refers to an outdated repository named dl4j-0.4-examples. However, the repository that you will download and install will be called dl4j-examples).
 
@@ -195,7 +198,19 @@ If that is the issue, see [this page](https://github.com/bytedeco/javacpp-preset
 
 We recommend and use Maven and Intellij. If you prefer Eclipse and dislike Maven here is a nice [blog post](http://electronsfree.blogspot.com/2016/10/how-to-setup-dl4j-project-with-eclipse.html) to walk you through an Eclipse configuration.
 
-## DL4J Overview
+## Quickstart template
+
+Now that you've learned how to run the different examples, we've made a template available for you that has a basic EMNIST trainer with early stopping and evaluation code.
+
+The Quickstart template is available at [https://github.com/deeplearning4j/dl4j-quickstart](https://github.com/deeplearning4j/dl4j-quickstart).
+
+To use the template:
+
+1. Clone to your local machine `git clone https://github.com/deeplearning4j/dl4j-quickstart.git`
+2. Import the `dl4j-quickstart` main folder into IntelliJ.
+3. Start coding!
+
+## More about Eclipse Deeplearning4j
 
 Deeplearning4j is a framework that lets you pick and choose with everything available from the beginning. We're not Tensorflow (a low-level numerical computing library with automatic differentiation) or Pytorch. Deeplearning4j has several subprojects that make it easy-ish to build end-to-end applications.
 
