@@ -10790,8 +10790,19 @@ public class SameDiff {
         val hash = getOpNum(node.opName(), node.opType());
         //log.info("Exporting node: [{}:<{}> ; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
 
-        double[] extras = node.getExtraArgs() != null ? new double[node.getExtraArgs().length] : new double[0];
-        for (int e = 0; e < extras.length; e++) {
+        // we're optionally saving isKeepDims as T value
+        // TODO: make it boolean arg eventually
+        int ax = 0;
+        double[] extras = node.getExtraArgs() != null ? new double[node.getExtraArgs().length+ax] : new double[0];
+        if (node instanceof Accumulation) {
+            ax = 1;
+            if (((Accumulation) node).isKeepDims())
+                extras[0] = 1.0;
+            else
+                extras[0] = 0.0;
+        }
+
+        for (int e = ax; e < extras.length; e++) {
             extras[e] = ((Number) node.getExtraArgs()[e]).doubleValue();
         }
 
