@@ -12349,6 +12349,7 @@ public static final long MAX_UINT = MAX_UINT();
 
 // #include <cstring>
 // #include <cstdio>
+// #include <climits>
 // #include "../dll.h"
 // #include "../nd4jmalloc.h"
 // #include "../templatemath.h"

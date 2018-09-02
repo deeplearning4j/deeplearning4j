@@ -190,6 +190,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_absolute_difference_loss.class,
         float_cosine_distance_loss.class,
         float_softmax_cross_entropy_loss_with_logits.class,
+        float_sparse_softmax_cross_entropy_loss_with_logits.class,
         float_softmax.class,
         float_softmax_bp.class,
         float_lrn_old.class,
@@ -566,6 +567,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_absolute_difference_loss.class,
         half_cosine_distance_loss.class,
         half_softmax_cross_entropy_loss_with_logits.class,
+        half_sparse_softmax_cross_entropy_loss_with_logits.class,
         half_softmax.class,
         half_softmax_bp.class,
         half_lrn_old.class,
@@ -942,6 +944,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_absolute_difference_loss.class,
         double_cosine_distance_loss.class,
         double_softmax_cross_entropy_loss_with_logits.class,
+        double_sparse_softmax_cross_entropy_loss_with_logits.class,
         double_softmax.class,
         double_softmax_bp.class,
         double_lrn_old.class,
@@ -13478,6 +13481,7 @@ public static final long MAX_UINT = MAX_UINT();
 
 // #include <cstring>
 // #include <cstdio>
+// #include <climits>
 // #include "../dll.h"
 // #include "../nd4jmalloc.h"
 // #include "../templatemath.h"
@@ -38036,9 +38040,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
-          //////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////
     /**
-       * Implementation of softmax cross-entropy loss function max(logits, 0.) - logits * labels + log(1. + exp(-abs(logits))); 
+       * Implementation of softmax cross-entropy loss function 
        * 
        * Input arrays: 
        *    0: logits - logits, type float
@@ -38098,6 +38102,67 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }  
 //         #endif
+
+        //////////////////////////////////////////////////////////////////////////
+    /**
+       * Implementation of sparse softmax cross-entropy loss function
+       * 
+       * Input arrays:        
+       *    0: labels - ground truth vales, expected to be within range [0, num_classes), type float.
+       *       Must have rank equal logits rank minus 1.
+       *    1: logits - logits, type float
+       *  
+       * Output array: 
+       *    0: loss values, type float. Has the same shape as labels
+       */      
+//         #if NOT_EXCLUDED(OP_sparse_softmax_cross_entropy_loss_with_logits)
+        @Name("nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits<float>") public static class float_sparse_softmax_cross_entropy_loss_with_logits extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_sparse_softmax_cross_entropy_loss_with_logits(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_sparse_softmax_cross_entropy_loss_with_logits(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_sparse_softmax_cross_entropy_loss_with_logits position(long position) {
+                return (float_sparse_softmax_cross_entropy_loss_with_logits)super.position(position);
+            }
+        
+                                                    public float_sparse_softmax_cross_entropy_loss_with_logits() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                }
+        @Name("nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits<float16>") public static class half_sparse_softmax_cross_entropy_loss_with_logits extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_sparse_softmax_cross_entropy_loss_with_logits(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_sparse_softmax_cross_entropy_loss_with_logits(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_sparse_softmax_cross_entropy_loss_with_logits position(long position) {
+                return (half_sparse_softmax_cross_entropy_loss_with_logits)super.position(position);
+            }
+        
+                                                    public half_sparse_softmax_cross_entropy_loss_with_logits() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                }
+        @Name("nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits<double>") public static class double_sparse_softmax_cross_entropy_loss_with_logits extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_sparse_softmax_cross_entropy_loss_with_logits(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_sparse_softmax_cross_entropy_loss_with_logits(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_sparse_softmax_cross_entropy_loss_with_logits position(long position) {
+                return (double_sparse_softmax_cross_entropy_loss_with_logits)super.position(position);
+            }
+        
+                                                    public double_sparse_softmax_cross_entropy_loss_with_logits() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                }  
+//         #endif
+
 
 
 
