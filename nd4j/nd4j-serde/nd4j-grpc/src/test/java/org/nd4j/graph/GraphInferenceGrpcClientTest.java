@@ -19,6 +19,7 @@ package org.nd4j.graph;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
@@ -30,6 +31,7 @@ import org.nd4j.linalg.io.ClassPathResource;
 import static org.junit.Assert.*;
 
 @Slf4j
+@Ignore
 public class GraphInferenceGrpcClientTest {
     @Test
     public void testSimpleGraph_1() throws Exception {
