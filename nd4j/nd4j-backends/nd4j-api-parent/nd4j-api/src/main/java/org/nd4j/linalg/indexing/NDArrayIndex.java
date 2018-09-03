@@ -324,6 +324,8 @@ public class NDArrayIndex implements INDArrayIndex {
                         IntervalIndex intervalIndex = (IntervalIndex) intendedIndexes[i];
                         ret[i] = new SpecifiedIndex(ArrayUtil.range(intervalIndex.begin, intervalIndex.end(),
                                         intervalIndex.stride()));
+                    } else if(intendedIndexes[i] instanceof PointIndex){
+                        ret[i] = intendedIndexes[i];
                     }
                 }
             }
