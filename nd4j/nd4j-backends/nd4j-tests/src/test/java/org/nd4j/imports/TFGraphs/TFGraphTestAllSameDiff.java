@@ -68,8 +68,6 @@ public class TFGraphTestAllSameDiff {
             "transforms/atan2_3,1,4_1,2,4",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6142
             "reverse/shape5.*",
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6155
-            "reductions/argmin.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6172
             "pad/rank1.*",
             "pad/rank2Pone_const10",
@@ -84,9 +82,6 @@ public class TFGraphTestAllSameDiff {
             "identity_n.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6182
             "zeta.*",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6225
-            "svd/rank2_3,3_noFull_uv",
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6281
             "log_determinant/.*",
@@ -113,10 +108,6 @@ public class TFGraphTestAllSameDiff {
             //https://github.com/deeplearning4j/deeplearning4j/issues/6311
             "embedding_lookup/.*",
 
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6313
-            "split/.*num.*axis-1",
-            "split/.*num.*axis-2",
-
             //https://github.com/deeplearning4j/deeplearning4j/issues/6315
             "nth_element/.*",
 
@@ -128,6 +119,15 @@ public class TFGraphTestAllSameDiff {
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6322
             "broadcast_dynamic_shape/.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6345
+            "where/cond_only_rank.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6346
+            "boolean_mask/.*",
+
+            //TODO floormod and truncatemod behave differently - i.e., "c" vs. "python" semantics. Need to check implementations too
+            "truncatemod/.*",
 
             //Not sure why these are failing yet
             "lrn/dr3.*",
