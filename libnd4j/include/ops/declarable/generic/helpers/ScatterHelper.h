@@ -125,7 +125,7 @@ class ScatterHelper {
 #pragma omp parallel for schedule(guided)
                 for(Nd4jLong i = 0; i < indLen; ++i) {
                     T& out = output(indices(i));                    
-#pragma omp critical                    
+#pragma omp critical
                     out = OpClass::op(out, updates(i), nullptr);
                 }
             }
