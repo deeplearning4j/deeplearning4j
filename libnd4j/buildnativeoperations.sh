@@ -474,10 +474,12 @@ fi
 
 if [ ! -d "$MKLDNN_PATH" ]; then
     echo "Could not find MKL-DNN, please make sure to run the build with Maven"
+    MKLDNN_PATH=""
 fi
 
 if [ ! -d "$OPENBLAS_PATH" ]; then
     echo "Could not find OpenBLAS, please make sure to run the build with Maven"
+    OPENBLAS_PATH=""
 fi
 
 MKLDNN_PATH="${MKLDNN_PATH//\\//}"

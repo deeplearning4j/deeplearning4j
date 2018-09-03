@@ -19,4 +19,7 @@
 
 set -exo pipefail
 
+# For Windows, add DLLs of MKL-DNN and OpenBLAS to the PATH
+export PATH=$PATH:$BUILD_PATH
+
 ../blasbuild/cpu/tests_cpu/layers_tests/runtests --gtest_output="xml:../target/surefire-reports/TEST-results.xml"

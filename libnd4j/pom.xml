@@ -151,6 +151,21 @@
                             <workingDirectory>${project.basedir}</workingDirectory>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>libnd4j.test.run</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${libnd4j.test.skip}</skip>
+                            <workingDirectory>${basedir}/tests_cpu</workingDirectory>
+                            <buildCommand>
+                                <program>bash</program>
+                                <argument>run_tests.sh</argument>
+                            </buildCommand>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -187,29 +202,6 @@
                         <goals>
                             <goal>single</goal>
                         </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.6.0</version>
-
-                <executions>
-                    <execution>
-                        <id>libnd4j.test.run</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${libnd4j.test.skip}</skip>
-                            <executable>bash</executable>
-                            <workingDirectory>${basedir}/tests_cpu</workingDirectory>
-                            <arguments>
-                                <argument>run_tests.sh</argument>
-                            </arguments>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
