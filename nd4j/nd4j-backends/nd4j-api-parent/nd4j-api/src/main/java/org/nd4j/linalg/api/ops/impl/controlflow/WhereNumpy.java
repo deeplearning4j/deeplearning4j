@@ -49,9 +49,4 @@ public class WhereNumpy extends DynamicCustomOp {
     public String opName() {
         return "where_np";
     }
-
-    @Override
-    public String tensorflowName() {
-        return "Where";
-    }
 }
