@@ -88,12 +88,15 @@ namespace nd4j {
                 // in this case we return 2D matrix, which basically contains coordinates fo true
 
                 REQUIRE_TRUE(block.width() == 1, 0, "Where op takes either 1 or 3 operands, But got %d operands instead", block.width());
-
+//                if (output->isEmpty())
                 Nd4jLong width = condition->rankOf();
                 nd4j::ops::Where<T> op;
                 std::unique_ptr<ResultSet<T>> res(op.execute({condition}, {}, {}));
                 REQUIRE_OK(res->status());
                 NDArray<T>* whereTrue = res->at(0);
+                if (whereTrue->isEmpty())
+                    return ND4J_STATUS_OK;
+
                 for (Nd4jLong outNext = 0; outNext < width; ++outNext) {
                     auto output = OUTPUT_VARIABLE(outNext);
                     for (Nd4jLong e = 0; e < output->lengthOf(); ++e) {
@@ -106,8 +109,6 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
-
-
 
         DECLARE_SHAPE_FN(where_np) {
             auto shapes = SHAPELIST();
@@ -122,11 +123,18 @@ namespace nd4j {
 
                 Nd4jLong numOfTrue = condition->template reduceNumber<simdOps::CountNonZero<T>>();
                 // output shape - a tuple of rank(inShape) 1D tensors with numOfTrue len
-                for (Nd4jLong e = 0; e < condition->rankOf(); ++e) {
-                    Nd4jLong *newShape;
+                if (numOfTrue) {
+                    for (Nd4jLong e = 0; e < condition->rankOf(); ++e) {
+                        Nd4jLong *newShape;
 //                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
-  //                  shape::shapeVector(numOfTrue, newShape);
-                    newShape = ShapeUtils<T>::createVectorShapeInfo(numOfTrue, block.getWorkspace());
+                        //                  shape::shapeVector(numOfTrue, newShape);
+                        newShape = ShapeUtils<T>::createVectorShapeInfo(numOfTrue, block.getWorkspace());
+                        shapes->push_back(newShape);
+                    }
+                }
+                else {
+                    newShape = ShapeUtils<T>::createScalarShapeInfo(block.getWorkspace());
+                    ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
                     shapes->push_back(newShape);
                 }
             }
