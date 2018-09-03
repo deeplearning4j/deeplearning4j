@@ -269,8 +269,8 @@ TEST_F(DeclarableOpsTests10, Where_SGO_Test_3) {
     auto res = op.execute({&input}, {}, {});
     ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
     NDArray<double>* resA = res->at(0);
-    resA->printIndexedBuffer("Result A");
-    resA->printShapeInfo("ShapeA");
+    //resA->printIndexedBuffer("Result A");
+    //resA->printShapeInfo("ShapeA");
     ASSERT_TRUE(exp.equalsTo(resA));
     ASSERT_TRUE(exp.isSameShape(resA));
 //    ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
