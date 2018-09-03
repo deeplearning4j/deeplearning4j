@@ -182,7 +182,7 @@ TEST_F(DeclarableOpsTests10, Unique_SGO_Test_1) {
 
     nd4j::ops::unique<double> op;
     auto res = op.execute({&input}, {}, {});
-    ASSERT_TRUE(res->status() \ ND4J_STATUS_OK);
+    ASSERT_EQ(res->status() , ND4J_STATUS_OK);
     //res->at(0)->printIndexedBuffer("Unique values");
     //res->at(1)->printIndexedBuffer("Unique idxs");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
