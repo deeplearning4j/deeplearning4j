@@ -134,6 +134,29 @@ TEST_F(DeclarableOpsTests10, Test_Size_at_1) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, InTopK_SGO_Test_1) {
+
+    NDArray<double> input('c', {4, 5});
+    NDArray<double> idx('c', {4});
+
+    NDArray<double> exp({0., 0., 0., 1.});
+
+    int exclusive, reverse;
+    input.linspace(1);
+    idx.linspace(1);
+    ////////////////////////////////////////
+
+    nd4j::ops::in_top_k<double> op;
+
+    auto res = op.execute({&input, &idx}, {}, {1});
+
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    //res->at(0)->printIndexedBuffer("IN_TOP_K output");
+    ASSERT_TRUE(res->at(0)->equalsTo(&exp));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, Pad_SGO_Test_1) {
 
     NDArray<double> in({1., 1., 1., 1., 1.});
@@ -159,7 +182,7 @@ TEST_F(DeclarableOpsTests10, Unique_SGO_Test_1) {
 
     nd4j::ops::unique<double> op;
     auto res = op.execute({&input}, {}, {});
-    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    ASSERT_TRUE(res->status() \ ND4J_STATUS_OK);
     //res->at(0)->printIndexedBuffer("Unique values");
     //res->at(1)->printIndexedBuffer("Unique idxs");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
@@ -242,6 +265,29 @@ TEST_F(DeclarableOpsTests10, svd_test11) {
     delete results;
 }
 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, TestMarixBandPart_Test_1) {
+
+    NDArray<double> x('c', {2, 3, 3});
+
+    NDArray<double> exp('c', {2, 3, 3});
+    x.linspace(1);
+    exp.linspace(1);
+    exp(0, 0, 2)  = 0.;
+    exp(1, 0, 2)  = 0.;
+    exp(0, 2, 0)  = 0.;
+    exp(1, 2, 0)  = 0.;
+
+    nd4j::ops::matrix_band_part<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&x}, {}, {1, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    //results->at(0)->printIndexedBuffer("MBP Test1");
+    //exp.printIndexedBuffer("MBP Expec");
+    ASSERT_TRUE(exp.equalsTo(results->at(0)));
+
+    delete results;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, atan2_test1) {
@@ -577,6 +623,54 @@ TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test4
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, split_test4) {
+    
+    NDArray<float> input('c', {10},{1.f,2.f,3.f,4.f,5.f,6.f,7.f,8.f,9.f,10.f});
+    NDArray<float> axis(-1);
+    NDArray<float> exp1('c', {5}, {1.f,2.f,3.f,4.f,5.f});
+    NDArray<float> exp2('c', {5}, {6.f,7.f,8.f,9.f,10.f});
+                                            
+    nd4j::ops::split<float> op;
+    auto results = op.execute({&input, &axis}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *out1 = results->at(0);
+    NDArray<float> *out2 = results->at(1);
+
+    ASSERT_TRUE(exp1.isSameShape(out1));
+    ASSERT_TRUE(exp2.isSameShape(out2));
+    ASSERT_TRUE(exp1.equalsTo(out1));
+    ASSERT_TRUE(exp2.equalsTo(out2));
+
+    delete results;
+}
+
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, split_test5) {
+    
+    NDArray<float> input('c', {3,8},{1.f,2.f,3.f,4.f,5.f,6.f,7.f,8.f,9.f,10.f,11.f,12.f,13.f,14.f,15.f,16.f,17.f,18.f,19.f,20.f,21.f,22.f,23.f,24.f});
+    NDArray<float> exp1('c', {3,4}, {1.f,2.f,3.f,4.f, 9.f,10.f,11.f,12.f, 17.f,18.f,19.f,20.f});
+    NDArray<float> exp2('c', {3,4}, {5.f,6.f,7.f,8.f, 13.f,14.f,15.f,16.f, 21.f,22.f,23.f,24.f});
+                                            
+    nd4j::ops::split<float> op;
+    auto results = op.execute({&input}, {}, {2,-1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *out1 = results->at(0);
+    NDArray<float> *out2 = results->at(1);
+
+    ASSERT_TRUE(exp1.isSameShape(out1));
+    ASSERT_TRUE(exp2.isSameShape(out2));
+    ASSERT_TRUE(exp1.equalsTo(out1));
+    ASSERT_TRUE(exp2.equalsTo(out2));
 
     delete results;
 }

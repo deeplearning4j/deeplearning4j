@@ -1,0 +1,12 @@
+include "variable.fbs";
+include "config.fbs";
+
+namespace nd4j.graph;
+
+table FlatInferenceRequest {
+    id:long; // id of the graph to be executed
+    variables:[FlatVariable]; // input variables to be set as input
+    configuration:FlatConfiguration; // optional configuration for this inference run
+}
+
+root_type FlatInferenceRequest;
