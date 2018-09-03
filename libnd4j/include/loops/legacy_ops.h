@@ -77,7 +77,6 @@
         (4, simdOps::Floor), \
         (5, simdOps::Log), \
         (6, simdOps::Neg), \
-        (7, simdOps::Pow), \
         (8, simdOps::Round), \
         (9, simdOps::SetRange), \
         (10,simdOps::Sigmoid), \
@@ -115,7 +114,6 @@
         (42,simdOps::SpecialDerivative), \
         (43,simdOps::DropOut), \
         (44,simdOps::DropOutInverted), \
-        (45,simdOps::CompareAndSet), \
         (46,simdOps::ReplaceNans) ,\
         (47,simdOps::StabilizeFP16) ,\
         (48,simdOps::Histogram), \
@@ -157,7 +155,6 @@
         (89,simdOps::LogSigmoidDerivative) ,\
         (90,simdOps::Erfc) ,\
         (91,simdOps::Expm1), \
-        (92, simdOps::PowDerivative), \
         (93,simdOps::ATanh), \
         (94,simdOps::Reciprocal), \
         (95,simdOps::Square), \
@@ -206,7 +203,10 @@
         (29, simdOps::LogicalOr) ,\
         (30, simdOps::LogicalXor) ,\
         (31, simdOps::LogicalNot) ,\
-        (32, simdOps::LogicalAnd)
+        (32, simdOps::LogicalAnd) ,\
+        (33, simdOps::Pow) ,\
+        (34, simdOps::PowDerivative) ,\
+        (35,simdOps::CompareAndSet)
 
 
 

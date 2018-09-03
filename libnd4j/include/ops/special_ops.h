@@ -205,7 +205,7 @@ namespace simdOps {
     			} else if (poolingMode == 2) {
     			    for (int h = hstart; h < hend; h += dH) {
       				    for (int w = wstart; w < wend; w += dW) {
-        				    sum += nd4j::math::nd4j_pow<T>(nd4j::math::nd4j_abs<T>(input_slice[h * strideY + w * strideX]), extraParam0);
+        				    sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(input_slice[h * strideY + w * strideX]), extraParam0);
       				    }
     			    }
     			}
@@ -221,7 +221,7 @@ namespace simdOps {
 
     			    res = sum / divide_factor;
     			} else if (poolingMode == 2) {
-                    res = nd4j::math::nd4j_pow<T>(sum, (T) 1.0f / extraParam0);
+                    res = nd4j::math::nd4j_pow<T,T,T>(sum, (T) 1.0f / extraParam0);
     			}
 
 
@@ -408,9 +408,9 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
                                                                     
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
-                                sum += nd4j::math::nd4j_pow<T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
+                                sum += nd4j::math::nd4j_pow<T, T, T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
                                 
-                        sum = nd4j::math::nd4j_pow<T>(sum, (T) 1. / extraParam0);
+                        sum = nd4j::math::nd4j_pow<T,T,T>(sum, (T) 1. / extraParam0);
                                                           
                         out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
                     }
@@ -1463,7 +1463,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 					nullptr, nullptr);
 
 				//subtract max of each row
-				functions::broadcast::Broadcast<T>::template exec<simdOps::Subtract<T>>(dx, xShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1,
+				functions::broadcast::Broadcast<T,T>::template exec<simdOps::Subtract<T,T>>(dx, xShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1,
 					nullptr, nullptr, nullptr, nullptr);
 
 				//after subtracting the row wise maxes take the exp
@@ -1474,7 +1474,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 					nullptr, nullptr);
 
 				//divide by the sum
-				functions::broadcast::Broadcast<T>::template exec<simdOps::Divide<T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1,
+				functions::broadcast::Broadcast<T,T>::template exec<simdOps::Divide<T,T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1,
 					nullptr, nullptr, nullptr, nullptr);
 
 				delete[] maxResultShapeBuffer;
@@ -1620,7 +1620,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 					nullptr, nullptr);
 
 				//subtract max of each row
-				functions::broadcast::Broadcast<T>::template exec<simdOps::Subtract<T>>(dx, xShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1,
+				functions::broadcast::Broadcast<T,T>::template exec<simdOps::Subtract<T,T>>(dx, xShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1,
 					nullptr, nullptr, nullptr, nullptr);
 
 				//after subtracting the row wise maxes take the exp
@@ -1631,7 +1631,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 					nullptr, nullptr);
 
 				//divide by the sum
-				functions::broadcast::Broadcast<T>::template exec<simdOps::Divide<T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1,
+				functions::broadcast::Broadcast<T,T>::template exec<simdOps::Divide<T,T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1,
 					nullptr, nullptr, nullptr, nullptr);
 
 				functions::transform::Transform<T>::template exec<simdOps::Log<T>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
@@ -1793,7 +1793,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 					nullptr, nullptr);
 
 				//subtract max of each row
-				functions::broadcast::Broadcast<T>::template exec<simdOps::Subtract<T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1,
+				functions::broadcast::Broadcast<T,T>::template exec<simdOps::Subtract<T,T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1,
 					nullptr, nullptr, nullptr, nullptr);
 
 				//after subtracting the row wise maxes take the exp
@@ -1804,7 +1804,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 					1, nullptr, nullptr);
 
 				//divide by the sum
-				functions::broadcast::Broadcast<T>::template exec<simdOps::Divide<T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
+				functions::broadcast::Broadcast<T,T>::template exec<simdOps::Divide<T,T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
 
 				if (resultEleStide >= 1) {
 					if (resultEleStide == 1) {

@@ -63,7 +63,7 @@ namespace functions {
 
         // structure used to accumulate the moments and other
         // statistical properties encountered so far.
-        template <typename T>
+        template <typename X>
         class SummaryStatsData {
 
         public:
@@ -86,7 +86,7 @@ namespace functions {
                 n = mean = M2 = M3 = M4 = bias = 0;
             }
 
-            _CUDA_HD void initWithValue(T val) {
+            _CUDA_HD void initWithValue(X val) {
                 n = 1;
                 min = val;
                 max = val;
@@ -97,7 +97,7 @@ namespace functions {
                 bias = 0;
             }
 
-            _CUDA_HD void setValues(SummaryStatsData<T> *target) {
+            _CUDA_HD void setValues(SummaryStatsData<X> *target) {
                 n = target->n;
                 min = target->min;
                 max = target->max;
@@ -129,7 +129,7 @@ namespace functions {
                 return M2 / n;
             }
 
-            _CUDA_HD double skewness() { return M2 > 0.0 ? nd4j::math::nd4j_sqrt<double>(n) * M3 / nd4j::math::nd4j_pow<double>(M2, 1.5) : 0.0; }
+            _CUDA_HD double skewness() { return M2 > 0.0 ? nd4j::math::nd4j_sqrt<double>(n) * M3 / nd4j::math::nd4j_pow<double, double, double>(M2, 1.5) : 0.0; }
 
             _CUDA_HD double kurtosis() { return M2 > 0.0 ? n * M4 / (M2 * M2) : 0; }
 
@@ -137,7 +137,7 @@ namespace functions {
                 return M2;
             }
 
-            _CUDA_HD void setM2(T m2) {
+            _CUDA_HD void setM2(X m2) {
                 M2 = m2;
             }
 
@@ -145,7 +145,7 @@ namespace functions {
                 return M3;
             }
 
-            _CUDA_HD void setM3(T m3) {
+            _CUDA_HD void setM3(X m3) {
                 M3 = m3;
             }
 
@@ -153,7 +153,7 @@ namespace functions {
                 return M4;
             }
 
-            _CUDA_HD void setM4(T m4) {
+            _CUDA_HD void setM4(X m4) {
                 M4 = m4;
             }
 
@@ -161,7 +161,7 @@ namespace functions {
                 return max;
             }
 
-            _CUDA_HD void setMax(T max) {
+            _CUDA_HD void setMax(X max) {
                 this->max = max;
             }
 
@@ -169,7 +169,7 @@ namespace functions {
                 return mean;
             }
 
-            _CUDA_HD void setMean(T mean) {
+            _CUDA_HD void setMean(X mean) {
                 this->mean = mean;
             }
 
@@ -177,7 +177,7 @@ namespace functions {
                 return min;
             }
 
-            _CUDA_HD void setMin(T min) {
+            _CUDA_HD void setMin(X min) {
                 this->min = min;
             }
 
@@ -185,7 +185,7 @@ namespace functions {
                 return n;
             }
 
-            _CUDA_HD void setN(T n) {
+            _CUDA_HD void setN(X n) {
                 this->n = n;
             }
         };
@@ -230,17 +230,17 @@ namespace functions {
         /**
          * Standard deviation or variance 1 pass
          */
-        template<typename T>
+        template<typename X>
         class SummaryStatsReduce {
         public:
             //calculate an update of the reduce operation
-            _CUDA_HD static SummaryStatsData<T> update(SummaryStatsData<T> x, SummaryStatsData<T> y,
-                                                              T* extraParams) {
+            _CUDA_HD static SummaryStatsData<X> update(SummaryStatsData<X> x, SummaryStatsData<X> y,
+                                                              X* extraParams) {
                 if ((long) x.n == 0 && (long) y.n > 0)
                     return y;
                 else if ((long) x.n > 0 && (long) y.n == 0)
                     return x;
-                SummaryStatsData<T> result;
+                SummaryStatsData<X> result;
                 double n = x.n + y.n;
                 double n2 = n  * n;
                 double n3 = n2 * n;
@@ -262,12 +262,12 @@ namespace functions {
                 result.M2 = M2D;
                 result.M3 = x.M3 + y.M3;
                 result.M3 += delta3 * x.n * y.n * (x.n - y.n) / n2;
-                result.M3 += (T) 3.0 * delta * (x.n * y.M2 - y.n * x.M2) / n;
+                result.M3 += (X) 3.0 * delta * (x.n * y.M2 - y.n * x.M2) / n;
 
                 result.M4 = x.M4 + y.M4;
                 result.M4 += delta4 * x.n * y.n * (x.n * x.n - x.n * y.n + y.n * y.n) / n3;
-                result.M4 += (T) 6.0 * delta2 * (x.n * x.n * y.M2 + y.n * y.n * x.M2) / n2;
-                result.M4 += (T) 4.0 * delta * (x.n * y.M3 - y.n * x.M3) / n;
+                result.M4 += (X) 6.0 * delta2 * (x.n * x.n * y.M2 + y.n * y.n * x.M2) / n2;
+                result.M4 += (X) 4.0 * delta * (x.n * y.M3 - y.n * x.M3) / n;
 
                 return result;
             }
@@ -298,16 +298,16 @@ namespace functions {
             static _CUDA_H void execSummaryStatsReduce(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, bool biasCorrected);
 #endif
 
-            static T execScalar(const int opNum, const bool biasCorrected, T *x, Nd4jLong *xShapeInfo, T *extraParams);
+            static X execScalar(const int opNum, const bool biasCorrected, X *x, Nd4jLong *xShapeInfo, X *extraParams);
 
-            static void exec(const int opNum, const bool biasCorrected, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength);
-
-            template<typename OpType>
-            static T execScalar(const bool biasCorrected, T *x, Nd4jLong *xShapeInfo, T *extraParams);
-
+            static void exec(const int opNum, const bool biasCorrected, X *x, Nd4jLong *xShapeInfo, X *extraParams, X *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength);
 
             template<typename OpType>
-            static void exec(const bool biasCorrected, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength);
+            static X execScalar(const bool biasCorrected, X *x, Nd4jLong *xShapeInfo, X *extraParams);
+
+
+            template<typename OpType>
+            static void exec(const bool biasCorrected, X *x, Nd4jLong *xShapeInfo, X *extraParams, X *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength);
 
         };
     }

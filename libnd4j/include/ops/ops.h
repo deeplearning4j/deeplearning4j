@@ -150,11 +150,11 @@ namespace simdOps {
 	class SquaredSubtract {
 	public:
 		op_def static X op(X d1, Y d2) {
-			return nd4j::math::nd4j_pow<X>(d1 - d2, static_cast<X>(2.f));
+			return nd4j::math::nd4j_pow<X, Y, X>(d1 - d2, static_cast<Y>(2.f));
 		}
 
 		op_def static X op(X d1, Y d2, X *params) {
-			return nd4j::math::nd4j_pow<X>(d1 - d2, static_cast<X>(2.f));
+			return nd4j::math::nd4j_pow<X, Y, X>(d1 - d2, static_cast<Y>(2.f));
 		}
 
 		op_def static X op(X d1) {
@@ -163,7 +163,7 @@ namespace simdOps {
 
 		// op for MetaOps
 		op_def static X op(X d1, Y *params) {
-			return nd4j::math::nd4j_pow<X>(d1 - params[0], static_cast<X>(2.f));
+			return nd4j::math::nd4j_pow<X, Y, X>(d1 - params[0], static_cast<X>(2.f));
 		}
 	};
 
@@ -566,13 +566,13 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Y>
+	template <typename X>
 	class Not {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, Y *params) {
+		op_def static X op(X d1, X *params) {
 			auto comp = params[0];
 
 			return d1 == comp ? static_cast<X>(1) : static_cast<X>(0);
@@ -848,7 +848,7 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Y>
+	template <typename X>
 	class Abs {
 	public:
 		no_op_exec_special
@@ -860,7 +860,7 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Y>
+	template <typename X>
 	class Ceiling {
 	public:
 		no_op_exec_special
@@ -872,7 +872,7 @@ namespace simdOps {
 	};
 
 	
-	template <typename X, typename Y>
+	template <typename X>
 	class Cosine {
 	public:
 		no_op_exec_special
@@ -884,7 +884,7 @@ namespace simdOps {
 	};
 
 	
-	template <typename X, typename Y>
+	template <typename X>
 	class Exp {
 	public:
 		no_op_exec_special
@@ -896,7 +896,7 @@ namespace simdOps {
 	};
 
 	
-	template <typename X, typename Y>
+	template <typename X>
 	class HardTanhDerivative {
 	public:
 		no_op_exec_special
@@ -908,7 +908,7 @@ namespace simdOps {
 	};
 
 	
-	template <typename X, typename Y>
+	template <typename X>
 	class HardTanh {
 	public:
 		no_op_exec_special
@@ -926,7 +926,7 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Y>
+	template <typename X>
 	class Floor {
 	public:
 		no_op_exec_special
@@ -938,7 +938,7 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Y>
+	template <typename X>
 	class Log {
 	public:
 		no_op_exec_special
@@ -949,7 +949,7 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Y>
+	template <typename X>
 	class Log1p {
 	public:
 		no_op_exec_special
@@ -960,7 +960,7 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Y>
+	template <typename X>
 	class LogX {
 	public:
 		no_op_exec_special
@@ -971,7 +971,7 @@ namespace simdOps {
 		}
 	};
 
-    template <typename X, typename Y>
+    template <typename X>
     class StabilizeFP16 {
     public:
         no_op_exec_special
@@ -984,7 +984,7 @@ namespace simdOps {
         }
     };
 
-    template <typename X, typename Y>
+    template <typename X>
     class StabilizeX {
     public:
         no_op_exec_special
@@ -997,7 +997,7 @@ namespace simdOps {
         }
     };
 
-	template <typename X, typename Y>
+	template <typename X>
 	class SpecialDerivative {
 	public:
 		no_op_exec_special
@@ -1009,7 +1009,7 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Y>
+	template <typename X>
 	class Neg {
 	public:
 		no_op_exec_special
@@ -1020,7 +1020,7 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Y>
+	template <typename X>
 	class Erf {
 	public:
 		no_op_exec_special
@@ -1032,7 +1032,7 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Y>
+	template <typename X>
 	class Erfc {
 	public:
 		no_op_exec_special
@@ -1043,7 +1043,7 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Y>
+	template <typename X>
 	class Reciprocal {
 	public:
 		no_op_exec_special
@@ -1052,23 +1052,23 @@ namespace simdOps {
 //			return (T(1.0f) / d1);
 //		}
 		// op for MetaOps
-		op_def static X op(X d1, Y *params) {
+		op_def static X op(X d1, X *params) {
 			return (static_cast<X>(1) / d1);
 		}
 	};
 
-	template <typename X, typename Y>
+	template <typename X>
 	class Sqr {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, Y *params) {
-			return nd4j::math::nd4j_pow<X>(d1, static_cast<X>(2));
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_pow<X, X, X>(d1, static_cast<X>(2));
 		}
 
 		op_def static X op(X d1) {
-			return nd4j::math::nd4j_pow<X>(d1, static_cast<X>(2));
+			return nd4j::math::nd4j_pow<X, X, X>(d1, static_cast<X>(2));
 		}
 	};
 
@@ -1151,15 +1151,15 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_pow<X>(d1, params[0]);
+			return nd4j::math::nd4j_pow<X, X, X>(d1, params[0]);
 		}
 
 		op_def static X op(X d1, Y d2) {
-			return nd4j::math::nd4j_pow<X>(d1, d2);
+			return nd4j::math::nd4j_pow<X, Y, X>(d1, d2);
 		}
 
 		op_def static X op(X d1, Y d2, X *params) {
-			return nd4j::math::nd4j_pow<X>(d1, d2);
+			return nd4j::math::nd4j_pow<X, Y, X>(d1, d2);
 		}
 
 		op_def static X op(X d1) {
@@ -1175,15 +1175,15 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static X op(X d1, X *params) {
-			return params[0] * nd4j::math::nd4j_pow<X>(d1, params[0] - static_cast<X>(1));
+			return params[0] * nd4j::math::nd4j_pow<X, X, X>(d1, params[0] - static_cast<X>(1));
 		}
 
 		op_def static X op(X d1, Y d2) {
-			return d2 * nd4j::math::nd4j_pow<X>(d1, d2 - static_cast<Y>(1));
+			return d2 * nd4j::math::nd4j_pow<X, Y, X>(d1, d2 - static_cast<Y>(1));
 		}
 
 		op_def static X op(X d1, Y d2, X *params) {
-			return d2 * nd4j::math::nd4j_pow<X>(d1, d2 - static_cast<Y>(1));
+			return d2 * nd4j::math::nd4j_pow<X, Y, X>(d1, d2 - static_cast<Y>(1));
 		}
 
 		op_def static X op(X d1) {
@@ -1379,8 +1379,8 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static X op(X d1, X *params) {
-			X ex = nd4j::math::nd4j_pow<X>(static_cast<X>(M_E), d1);
-			return (ex * (d1 + ex + static_cast<X>(1))) / nd4j::math::nd4j_pow<X>((ex + static_cast<X>(1)) , static_cast<X>(2));
+			X ex = nd4j::math::nd4j_pow<X, X, X>(static_cast<X>(M_E), d1);
+			return (ex * (d1 + ex + static_cast<X>(1))) / nd4j::math::nd4j_pow<X, X, X>((ex + static_cast<X>(1)) , static_cast<X>(2));
 		}
 	};
 
@@ -1403,7 +1403,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static X op(X d1, X *params) {
-			X ex = nd4j::math::nd4j_pow<X>(M_E, d1);
+			X ex = nd4j::math::nd4j_pow<X, X, X>(M_E, d1);
 			return static_cast<X>(1) / (ex + static_cast<X>(1));
 		}
 	};
@@ -1580,7 +1580,7 @@ namespace simdOps {
 			// keep 2/3 as runtime variable, to match precision
 			auto dis = (static_cast<X>(2) / static_cast<X>(3)) * d1;
 
-			auto tanh = nd4j::math::nd4j_sgn<X>(dis) * (static_cast<X>(1) - (static_cast<X>(1) / (static_cast<X>(1) + nd4j::math::nd4j_abs<X>(dis) + nd4j::math::nd4j_pow<X>(dis, static_cast<X>(2)) + static_cast<X>(1.41645f) * nd4j::math::nd4j_pow<X>(dis, static_cast<X>(4)) )));
+			auto tanh = nd4j::math::nd4j_sgn<X>(dis) * (static_cast<X>(1) - (static_cast<X>(1) / (static_cast<X>(1) + nd4j::math::nd4j_abs<X>(dis) + nd4j::math::nd4j_pow<X, X, X>(dis, static_cast<X>(2)) + static_cast<X>(1.41645f) * nd4j::math::nd4j_pow<X, X, X>(dis, static_cast<X>(4)) )));
 			return static_cast<X>(1.7159f) * tanh;
 		}
 	};
@@ -1594,9 +1594,9 @@ namespace simdOps {
 		op_def static X op(X d1, X *params) {
 			auto dis = (static_cast<X>(2) / static_cast<X>(3)) * d1;
 
-			auto a = static_cast<X>(1) + nd4j::math::nd4j_abs<X>(dis) + nd4j::math::nd4j_pow<X>(dis, static_cast<X>(2)) + static_cast<X>(1.41645f) * nd4j::math::nd4j_pow<X>(dis, static_cast<X>(4));
+			auto a = static_cast<X>(1) + nd4j::math::nd4j_abs<X>(dis) + nd4j::math::nd4j_pow<X, X, X>(dis, static_cast<X>(2)) + static_cast<X>(1.41645f) * nd4j::math::nd4j_pow<X, X, X>(dis, static_cast<X>(4));
 
-			auto tDeriv = (static_cast<X>(1) + nd4j::math::nd4j_sign<X>(dis) * (static_cast<X>(2) * dis + static_cast<X>(4) * static_cast<X>(1.41645f) * nd4j::math::nd4j_pow<X>(dis, static_cast<X>(3)))) / (a * a);
+			auto tDeriv = (static_cast<X>(1) + nd4j::math::nd4j_sign<X>(dis) * (static_cast<X>(2) * dis + static_cast<X>(4) * static_cast<X>(1.41645f) * nd4j::math::nd4j_pow<X, X, X>(dis, static_cast<X>(3)))) / (a * a);
 
 			return static_cast<X>(1.7159f) * (static_cast<X>(2) / static_cast<X>(3)) * tDeriv;
 		}
@@ -1709,7 +1709,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static X op(X d1, X *params) {
-			return static_cast<X>(1) / (nd4j::math::nd4j_sqrt<X>(nd4j::math::nd4j_pow<X>(d1, static_cast<X>(2)) + static_cast<X>(1)));
+			return static_cast<X>(1) / (nd4j::math::nd4j_sqrt<X>(nd4j::math::nd4j_pow<X, X, X>(d1, static_cast<X>(2)) + static_cast<X>(1)));
 		}
 	};
 
@@ -1763,7 +1763,7 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Y>
+	template <typename X>
 	class SoftSignDerivative {
 	public:
 		no_op_exec_special
@@ -1844,7 +1844,7 @@ namespace simdOps {
         }
     };
 
-	template <typename X, typename Y>
+	template <typename X>
 	class ELU {
 	public:
 		no_op_exec_special
@@ -1856,7 +1856,7 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Y>
+	template <typename X>
 	class ELUDerivative {
 	public:
 		no_op_exec_special
@@ -1868,7 +1868,7 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Y>
+	template <typename X>
 	class RELU {
 	public:
 		no_op_exec_special
@@ -1879,7 +1879,7 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Y>
+	template <typename X>
 	class RELU6 {
 	public:
 		no_op_exec_special
@@ -1891,7 +1891,7 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Y>
+	template <typename X>
 	class LeakyRELU {
 	public:
 		no_op_exec_special
@@ -2002,7 +2002,7 @@ namespace simdOps {
         no_op_exec_special_cuda
 
         op_def static X op(X d1, X *params) {
-            return  static_cast<X>(1) / nd4j::math::nd4j_pow<X>(nd4j::math::nd4j_cos<X>(d1), static_cast<X>(2.0f));
+            return  static_cast<X>(1) / nd4j::math::nd4j_pow<X, X, X>(nd4j::math::nd4j_cos<X>(d1), static_cast<X>(2.0f));
         }
     };
 
@@ -2142,7 +2142,7 @@ namespace simdOps {
         }
 
         op_def static X op(X d1, X *extraParams) {
-            return nd4j::math::nd4j_pow<X>(d1, static_cast<X>(2)) * nd4j::math::nd4j_log<X>(nd4j::math::nd4j_pow<X>(d1, static_cast<X>(2.0f)));
+            return nd4j::math::nd4j_pow<X, X, X>(d1, static_cast<X>(2)) * nd4j::math::nd4j_log<X>(nd4j::math::nd4j_pow<X, X, X>(d1, static_cast<X>(2.0f)));
         }
 
         op_def static X postProcess(X reduction, Nd4jLong n, X *extraParams) {
@@ -2760,11 +2760,11 @@ namespace simdOps {
 		}
 
 		op_def static X op(X d1, X *extraParams) {
-			return nd4j::math::nd4j_pow(nd4j::math::nd4j_abs(d1), extraParams[0]);
+			return nd4j::math::nd4j_pow<X, X, X>(nd4j::math::nd4j_abs(d1), extraParams[0]);
 		}
 
 		op_def static X postProcess(X reduction, Nd4jLong n, X *extraParams) {
-			return nd4j::math::nd4j_pow(reduction, static_cast<X>(1.0f) / extraParams[0]);
+			return nd4j::math::nd4j_pow<X, X, X>(reduction, static_cast<X>(1.0f) / extraParams[0]);
 		}
 	};
 
@@ -3773,7 +3773,7 @@ namespace simdOps {
 
         static _CUDA_HD inline X getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<X> val) {
 			if (biasCorrected) {
-				auto ret = val.varianceBiasCorrected();
+				X ret = val.varianceBiasCorrected();
 				if (ret < static_cast<X>(0.0f))
 					return val.variance();
 				return ret;
@@ -3792,7 +3792,7 @@ namespace simdOps {
 
         static _CUDA_HD inline X getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<X> val) {
 			if (biasCorrected) {
-				auto ret = val.varianceBiasCorrected();
+				X ret = val.varianceBiasCorrected();
 				if (ret < static_cast<X>(0.0f))
 					return nd4j::math::nd4j_sqrt(val.variance());
 				else
@@ -4041,7 +4041,8 @@ template <typename X>
 		}
 
         // op definition for PairWise Transform
-        op_def static X op(X d1, Y d2, X *params) {
+        op_def static X op(X d1, Y dY, X *params) {
+		    X d2 = static_cast<X>(dY);
             auto compare = params[0];
 			auto eps = params[2];
 			auto mode = static_cast<int>(params[3]);
@@ -4076,12 +4077,12 @@ template <typename X>
                 else
                     return d1;
             else if (mode == 6) // abs_less_than
-                if (nd4j::math::nd4j_abs<Y>(d2) < compare)
+                if (nd4j::math::nd4j_abs<X>(d2) < compare)
                     return d2;
                 else
                     return d1;
             else if (mode == 7) // abs_greater_than
-                if (nd4j::math::nd4j_abs<Y>(d2) > compare)
+                if (nd4j::math::nd4j_abs<X>(d2) > compare)
                     return d2;
                 else
                     return d1;

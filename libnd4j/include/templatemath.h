@@ -138,8 +138,8 @@ template<typename T>
 		template<typename T>
         math_def inline T nd4j_log(T val);
 
-		template<typename T>
-        math_def inline T nd4j_pow(T val, T val2);
+		template<typename X, typename Y, typename Z>
+        math_def inline Z nd4j_pow(X val, Y val2);
 
 		template<typename T>
         math_def inline T nd4j_round(T val);
@@ -223,6 +223,46 @@ template<typename T>
 			return atan2(value1, value2);
 		}
 
+		template<>
+		math_def inline int nd4j_atan2<int>(int value1, int value2) {
+			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
+		}
+
+		template<>
+		math_def inline uint8_t nd4j_atan2<uint8_t>(uint8_t value1, uint8_t value2) {
+			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
+		}
+
+		template<>
+		math_def inline uint16_t nd4j_atan2<uint16_t>(uint16_t value1, uint16_t value2) {
+			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
+		}
+
+		template<>
+		math_def inline uint32_t nd4j_atan2<uint32_t>(uint32_t value1, uint32_t value2) {
+			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
+		}
+
+		template<>
+		math_def inline int8_t nd4j_atan2<int8_t>(int8_t value1, int8_t value2) {
+			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
+		}
+
+		template<>
+		math_def inline int16_t nd4j_atan2<int16_t>(int16_t value1, int16_t value2) {
+			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
+		}
+
+		template<>
+		math_def inline Nd4jLong nd4j_atan2<Nd4jLong>(Nd4jLong value1, Nd4jLong value2) {
+			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
+		}
+
+		template<>
+		math_def inline Nd4jULong nd4j_atan2<Nd4jULong>(Nd4jULong value1, Nd4jULong value2) {
+			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
+		}
+
         template<typename T>
         math_def inline T nd4j_tan(T val) {
             return nd4j_log((val + 1 / (1 - val)) * 0.5);
@@ -303,7 +343,7 @@ template<typename T>
         template<typename T>
         math_def inline T nd4j_asinh(T val) {
             //Math.log(Math.sqrt(Math.pow(x, 2) + 1) + x)
-            return nd4j_log(nd4j_sqrt(nd4j_pow(val, (T) 2) + (T) 1) + val);
+            return nd4j_log(nd4j_sqrt(nd4j_pow<T,T,T>(val, (T) 2) + (T) 1) + val);
         }
 
 		template<typename T>
@@ -422,12 +462,47 @@ template<typename T>
 		}
 
 		template<>
-        math_def inline bool nd4j_isnan<int>(int value) {
+		math_def inline bool nd4j_isnan<int>(int value) {
+			return false;
+		}
+
+		template<>
+		math_def inline bool nd4j_isnan<uint32_t>(uint32_t value) {
+			return false;
+		}
+
+		template<>
+		math_def inline bool nd4j_isnan<uint16_t>(uint16_t value) {
+			return false;
+		}
+
+		template<>
+		math_def inline bool nd4j_isnan<uint8_t>(uint8_t value) {
+			return false;
+		}
+
+		template<>
+		math_def inline bool nd4j_isnan<int16_t>(int16_t value) {
+			return false;
+		}
+
+		template<>
+		math_def inline bool nd4j_isnan<int8_t>(int8_t value) {
+			return false;
+		}
+
+		template<>
+		math_def inline bool nd4j_isnan<bool>(bool value) {
 			return false;
 		}
 
 		template<>
 		math_def inline bool nd4j_isnan<Nd4jLong>(Nd4jLong value) {
+			return false;
+		}
+
+		template<>
+		math_def inline bool nd4j_isnan<Nd4jULong>(Nd4jULong value) {
 			return false;
 		}
 
@@ -462,7 +537,42 @@ template<typename T>
 		}
 
 		template<>
+		math_def inline bool nd4j_isinf<uint32_t>(uint32_t value) {
+			return false;
+		}
+
+		template<>
+		math_def inline bool nd4j_isinf<uint16_t>(uint16_t value) {
+			return false;
+		}
+
+		template<>
+		math_def inline bool nd4j_isinf<uint8_t>(uint8_t value) {
+			return false;
+		}
+
+		template<>
+		math_def inline bool nd4j_isinf<int16_t>(int16_t value) {
+			return false;
+		}
+
+		template<>
+		math_def inline bool nd4j_isinf<int8_t>(int8_t value) {
+			return false;
+		}
+
+		template<>
+		math_def inline bool nd4j_isinf<bool>(bool value) {
+			return false;
+		}
+
+		template<>
 		math_def inline bool nd4j_isinf<Nd4jLong>(Nd4jLong value) {
+			return false;
+		}
+
+		template<>
+		math_def inline bool nd4j_isinf<Nd4jULong>(Nd4jULong value) {
 			return false;
 		}
 
@@ -627,9 +737,48 @@ template<typename T>
 
 		template<>
         math_def inline int nd4j_floor<int>(int val) {
-			return floorf((float) val);
+			return val;
 		}
 
+		template<>
+		math_def inline int8_t nd4j_floor<int8_t>(int8_t val) {
+			return val;
+		}
+
+		template<>
+		math_def inline bool nd4j_floor<bool>(bool val) {
+			return val;
+		}
+
+		template<>
+		math_def inline uint8_t nd4j_floor<uint8_t>(uint8_t val) {
+			return val;
+		}
+
+		template<>
+		math_def inline int16_t nd4j_floor<int16_t>(int16_t val) {
+			return val;
+		}
+
+		template<>
+		math_def inline uint16_t nd4j_floor<uint16_t>(uint16_t val) {
+			return val;
+		}
+
+		template<>
+		math_def inline uint32_t nd4j_floor<uint32_t>(uint32_t val) {
+			return val;
+		}
+
+		template<>
+		math_def inline Nd4jULong nd4j_floor<Nd4jULong>(Nd4jULong val) {
+			return val;
+		}
+
+		template<>
+		math_def inline Nd4jLong nd4j_floor<Nd4jLong>(Nd4jLong val) {
+			return val;
+		}
 
 		template<>
         math_def inline float16 nd4j_log<float16>(float16 val) {
@@ -657,25 +806,25 @@ template<typename T>
 		}
 
 
-		template<>
-        math_def inline float16 nd4j_pow<float16>(float16 val, float16 val2) {
-			return (float16) powf((float) val, (float) val2);
+		/**
+		 * This func is special case - it must return floating point value, and optionally Y arg can be floating point argument
+		 * @tparam X
+		 * @tparam Y
+		 * @tparam Z
+		 * @param val
+		 * @param val2
+		 * @return
+		 */
+		template <typename X, typename Y, typename Z>
+        math_def inline Z nd4j_pow(X val, Y val2) {
+        	if (std::is_same<X, double>::value || std::is_same<Y, double>::value) {
+				return static_cast<Z>(pow(static_cast<double>(val), static_cast<double>(val2)));
+			} else {
+				return static_cast<Z>(powf(static_cast<float>(val), static_cast<float>(val2)));
+        	}
 		}
 
-		template<>
-        math_def inline float nd4j_pow<float>(float val, float val2) {
-			return powf(val, val2);
-		}
 
-		template<>
-        math_def inline double nd4j_pow<double>(double val, double val2) {
-			return pow(val, val2);
-		}
-
-		template<>
-        math_def inline int nd4j_pow<int>(int val, int val2) {
-			return powf((float) val, (float) val2);
-		}
 
 		template<typename T>
 		math_def inline T nd4j_re(T val1, T val2) {

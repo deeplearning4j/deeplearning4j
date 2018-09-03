@@ -27,33 +27,32 @@ namespace functions {
     namespace summarystats {
 
 
-        template <typename T>
-        T SummaryStatsReduce<T>::execScalar(const int opNum, const bool biasCorrected, T *x, Nd4jLong *xShapeInfo, T *extraParams) {
+        template <typename X>
+        X SummaryStatsReduce<X>::execScalar(const int opNum, const bool biasCorrected, X *x, Nd4jLong *xShapeInfo, X *extraParams) {
             RETURNING_DISPATCH_BY_OPNUM_T(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams), SUMMARY_STATS_OPS);
         }
 
-        template <typename T>
-        void SummaryStatsReduce<T>::exec(const int opNum, const bool biasCorrected, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength) {
+        template <typename X>
+        void SummaryStatsReduce<X>::exec(const int opNum, const bool biasCorrected, X *x, Nd4jLong *xShapeInfo, X *extraParams, X *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength) {
             DISPATCH_BY_OPNUM_T(exec, PARAMS(biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength), SUMMARY_STATS_OPS);
         }
 
-        template <typename T>
+        template <typename X>
         template <typename OpType >
-        T SummaryStatsReduce<T>::execScalar(const bool biasCorrected, T *x, Nd4jLong *xShapeInfo, T *extraParams) {
-            SummaryStatsData<T> startingIndex;
+        X SummaryStatsReduce<X>::execScalar(const bool biasCorrected, X *x, Nd4jLong *xShapeInfo, X *extraParams) {
+            SummaryStatsData<X> startingIndex;
             startingIndex.initialize();
             Nd4jLong length = shape::length(xShapeInfo);
             int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
             if (xElementWiseStride == 1) {
                 for (Nd4jLong i = 0; i < length; i++) {
-                    SummaryStatsData<T> curr;
+                    SummaryStatsData<X> curr;
                     curr.initWithValue(x[i]);
                     startingIndex = update(startingIndex, curr,
                                            extraParams);
                 }
-                T finalVal = (T) OpType::getValue(biasCorrected, startingIndex);
 
-                return finalVal;
+                return (X) OpType::getValue(biasCorrected, startingIndex);
             }
             else {
                 Nd4jLong xCoords[MAX_RANK];
@@ -67,19 +66,18 @@ namespace functions {
                     shape::ind2subC(xRank, xShape, i, length, xCoords);
                     auto xOffset = shape::getOffset(0, xShape, xStride, xCoords, xRank);
 
-                    SummaryStatsData<T> curr;
+                    SummaryStatsData<X> curr;
                     curr.initWithValue(x[xOffset]);
                     startingIndex = update(startingIndex, curr, extraParams);
                 }
 
-                T finalVal = (T)OpType::getValue(biasCorrected, startingIndex);
-                return finalVal;
+                return (X)OpType::getValue(biasCorrected, startingIndex);
             }
         }
 
-        template <typename T>
+        template <typename X>
         template <typename OpType >
-        void SummaryStatsReduce<T>::exec(const bool biasCorrected, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength) {
+        void SummaryStatsReduce<X>::exec(const bool biasCorrected, X *x, Nd4jLong *xShapeInfo, X *extraParams, X *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength) {
             if (shape::isScalar(resultShapeInfoBuffer)) {
                 result[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
                 return;
@@ -130,10 +128,10 @@ namespace functions {
                     int dim;
                     int rankIter = rank;
                     Nd4jLong xStridesIter[MAX_RANK];
-                    T *xPointer = x + offset;
-                    SummaryStatsData<T> comp;
+                    auto xPointer = x + offset;
+                    SummaryStatsData<X> comp;
                     comp.initWithValue(0.0);
-                    if (PrepareOneRawArrayIter<T>(rankIter,
+                    if (PrepareOneRawArrayIter<X>(rankIter,
                                                   xShape,
                                                   xPointer,
                                                   xStride,
@@ -143,7 +141,7 @@ namespace functions {
                                                   xStridesIter) >= 0) {
                         ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                 /* Process the innermost dimension */
-                                SummaryStatsData<T> comp2;
+                                SummaryStatsData<X> comp2;
                                 comp2.initWithValue(xPointer[0]);
                                 comp = update(comp, comp2, extraParams);
                             } ND4J_RAW_ITER_ONE_NEXT(dim,
@@ -168,11 +166,11 @@ namespace functions {
 #pragma omp parallel for schedule(guided) default(shared)
                     for (int i = 0; i < resultLength; i++) {
                         Nd4jLong baseOffset = tad.tadOffsets[i];
-                        SummaryStatsData<T> comp;
+                        SummaryStatsData<X> comp;
                         comp.initWithValue(x[baseOffset]);
 // FIXME: reduction to be used here
                         for (int j = 1; j < tadLength; j++) {
-                            SummaryStatsData<T> comp2;
+                            SummaryStatsData<X> comp2;
                             comp2.initWithValue(x[baseOffset + (tadElementWiseStride * j)]);
                             comp = update(comp, comp2, extraParams);
                         }
@@ -192,7 +190,7 @@ namespace functions {
                         Nd4jLong xCoord[MAX_RANK];
                         auto tadOffsetForBlock = tad.tadOffsets[r];
 
-                        SummaryStatsData<T> comp;
+                        SummaryStatsData<X> comp;
                         comp.initWithValue(x[tadOffsetForBlock]);
 
 // FIXME: reduction should be fixed
@@ -200,7 +198,7 @@ namespace functions {
                             shape::ind2subC(tadRank, tadShape, i, tadLength, xCoord);
                             auto xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 
-                            SummaryStatsData <T> indexVal2;
+                            SummaryStatsData <X> indexVal2;
                             indexVal2.initWithValue(x[xOffset]);
 
                             comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
