@@ -674,3 +674,114 @@ TEST_F(DeclarableOpsTests10, split_test5) {
 
     delete results;
 }
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, histogram_fixed_width_test1) {
+    
+    NDArray<float> input('c', {2,3},{-1.f, 0.f, 1.5f, 2.f, 5.f, 15.f});
+    NDArray<float> range('c', {2}, {0.f, 5.f});
+    NDArray<float> exp('c', {5}, {2.f, 1.f, 1.f, 0.f, 2.f});
+                                            
+    nd4j::ops::histogram_fixed_width<float> op;
+    auto results = op.execute({&input, &range}, {}, {5});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *out = results->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(out));
+    ASSERT_TRUE(exp.equalsTo(out));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, histogram_fixed_width_test2) {
+    
+    NDArray<float> input('c', {2,3,4},{0.f, 5.f, 2.f, 1.f, -1.f, 2.f, 5.f, 3.f, 2.f, 3.f, -1.f, 5.f, 3.f, 2.f, 1.f, 4.f, 2.f, 5.f, 5.f, 5.f, 6.f, 6.f, -1.f, 0.f});
+    NDArray<float> range('c', {2}, {0.f, 5.f});
+    NDArray<float> exp('c', {5}, {5.f, 2.f, 5.f, 3.f, 9.f});
+                                            
+    nd4j::ops::histogram_fixed_width<float> op;
+    auto results = op.execute({&input, &range}, {}, {5});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *out = results->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(out));
+    ASSERT_TRUE(exp.equalsTo(out));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, histogram_fixed_width_test3) {
+    
+    NDArray<float> input('c', {2,3,1,4,1},{0.f, 5.f, 2.001f, 1.f, -1.f, 2.f, 5.f, 3.f, 2.999f, 3.00001f, -1.f, 3.99999f, 3.f, 2.f, 1.f, 4.f, 2.f, 5.f, 5.f, 5.f, 6.f, 6.f, -1.f, 0.00001f});
+    NDArray<float> range('c', {1,2,1}, {0.f, 5.f});
+    NDArray<float> exp('c', {5}, {5.f, 2.f, 5.f, 4.f, 8.f});
+                                            
+    nd4j::ops::histogram_fixed_width<float> op;
+    auto results = op.execute({&input, &range}, {}, {5});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *out = results->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(out));
+    ASSERT_TRUE(exp.equalsTo(out));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, histogram_fixed_width_test4) {
+    
+    NDArray<float> input('c', {20,5},{13.8387f,0.1509f,50.39f,30.403f,13.5174f,9.7351f,37.6652f,28.9215f,22.7011f,45.2834f,40.7628f,50.4995f,26.8003f,27.479f,44.633f,6.9109f,48.5004f,
+                                      46.5971f,1.6203f,23.6381f,38.9661f,50.8146f,17.2482f,8.0429f,7.5666f,7.9709f,21.8403f,20.1694f,23.3004f,50.9151f,46.239f,38.7323f,29.6946f,32.9876f,
+                                      23.0013f,39.7318f,19.4486f,37.6147f,-0.1506f,5.3246f,3.6173f,24.2573f,4.3941f,9.7105f,24.0364f,35.3681f,17.7805f,35.7681f,16.4144f,17.4362f,8.4987f,
+                                      26.8108f,36.2937f,31.6442f,29.7221f,8.7445f,33.3301f,4.0939f,13.078f,45.1481f,29.0172f,21.6548f,35.408f,27.1861f,2.2576f,40.6804f,36.2201f,29.7352f,
+                                      29.1244f,38.7444f,5.8721f,33.5983f,48.2694f,34.4161f,19.7148f,13.8085f,13.6075f,22.5042f,37.8002f,50.0543f,48.5314f,20.3694f,28.5042f,-0.4679f,4.4245f,
+                                      18.9837f,40.7724f,2.7611f,44.0431f,37.186f,27.7361f,14.6001f,9.1721f,14.6087f,21.4072f,49.3344f,11.4668f,14.6171f,15.2502f,5.244f});
+    NDArray<float> range('c', {1,2}, {0.00001f, 50.00001f});
+    NDArray<float> exp('c', {5}, {22.f, 17.f, 24.f, 19.f, 18.f});
+                                            
+    nd4j::ops::histogram_fixed_width<float> op;
+    auto results = op.execute({&input, &range}, {}, {5});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *out = results->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(out));
+    ASSERT_TRUE(exp.equalsTo(out));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, histogram_fixed_width_test5) {
+    
+    NDArray<float> input('c', {5,20},{20.f, 0.f, 60.f, 40.f, 20.f, 0.f, 40.f, 0.f, 40.f, 40.f,40.f,60.f, 20.f, 20.f, 60.f, 0.f, 40.f,
+                                      46.5971f,1.6203f,23.6381f,38.9661f,50.8146f,17.2482f,8.0429f,7.5666f,7.9709f,21.8403f,20.1694f,23.3004f,50.9151f,46.239f,38.7323f,29.6946f,32.9876f,
+                                      23.0013f,39.7318f,19.4486f,37.6147f,-0.1506f,5.3246f,3.6173f,24.2573f,4.3941f,9.7105f,24.0364f,35.3681f,17.7805f,35.7681f,16.4144f,17.4362f,8.4987f,
+                                      26.8108f,36.2937f,31.6442f,29.7221f,8.7445f,33.3301f,4.0939f,13.078f,45.1481f,29.0172f,21.6548f,35.408f,27.1861f,2.2576f,40.6804f,36.2201f,29.7352f,
+                                      29.1244f,38.7444f,5.8721f,33.5983f,48.2694f,34.4161f,19.7148f,13.8085f,13.6075f,22.5042f,37.8002f,50.0543f,48.5314f,20.3694f,28.5042f,-0.4679f,4.4245f,
+                                      18.9837f,40.7724f,2.7611f,44.0431f,37.186f,27.7361f,14.6001f,9.1721f,14.6087f,21.4072f,49.3344f,11.4668f,14.6171f,15.2502f,5.244f});
+    NDArray<float> range('c', {1,2}, {0.00001f, 50.00001f});
+    NDArray<float> exp('c', {5}, {23.f, 19.f, 20.f, 23.f, 15.f});
+                                            
+    nd4j::ops::histogram_fixed_width<float> op;
+    auto results = op.execute({&input, &range}, {}, {5});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *out = results->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(out));
+    ASSERT_TRUE(exp.equalsTo(out));
+
+    delete results;
+}
+
