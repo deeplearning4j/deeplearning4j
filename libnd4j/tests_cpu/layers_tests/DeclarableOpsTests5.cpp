@@ -167,19 +167,19 @@ TEST_F(DeclarableOpsTests5, Test_TTS_bp_1) {
     NDArray<float> x('c', {2, 1, 3});
     NDArray<float> eps('c', {2, 4, 3});
 
-    // NDArray<float> exp('c', {2, 1, 3}, {1.f, 2.f, 3.f,1.f, 2.f, 3.f,1.f, 2.f, 3.f,1.f, 2.f, 3.f},
+    NDArray<float> exp('c', {2, 1, 3}, {22.f, 26.f, 30.f, 70.f, 74.f, 78.f});
 
-    x.linspace(1.f);
+    eps.linspace(1.f);
 
     nd4j::ops::tile_to_shape_bp<float> op;
     auto result = op.execute({&x, &eps}, {}, {2, 4, 3});
 
     ASSERT_EQ(Status::OK(), result->status());
 
-    auto z = result->at(0);
-    z->printIndexedBuffer();
+    auto z = result->at(0);        
 
     ASSERT_TRUE(x.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z)); 
 
     delete result;
 }
