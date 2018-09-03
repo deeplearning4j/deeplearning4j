@@ -277,6 +277,25 @@ TEST_F(DeclarableOpsTests10, Where_SGO_Test_3) {
     delete res;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Where_SGO_Test_4) {
+    NDArray<double> input('c', {5, 1}, {0., 0., 0., 0., 0.});
+    //NDArray<double> expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
+    NDArray<double> exp('c', {4, 2}, {0., 0., 2., 0., 3., 0., 4., 0.});
+
+    nd4j::ops::Where<double> op;
+    auto res = op.execute({&input}, {}, {});
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    NDArray<double>* resA = res->at(0);
+    ASSERT_TRUE(resA->isEmpty());
+    //resA->printIndexedBuffer("Result A");
+    //resA->printShapeInfo("ShapeA");
+    //ASSERT_TRUE(exp.equalsTo(resA));
+    //ASSERT_TRUE(exp.isSameShape(resA));
+//    ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
+    delete res;
+}
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, svd_test11) {
 

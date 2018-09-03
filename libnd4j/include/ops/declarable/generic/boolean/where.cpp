@@ -28,12 +28,11 @@ namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
             auto condition = INPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
 
             if (block.width() == 3) {
                 auto x = INPUT_VARIABLE(1);
                 auto y = INPUT_VARIABLE(2);
-
-                auto z = OUTPUT_VARIABLE(0);
 
                 REQUIRE_TRUE(x->isSameShape(y), 0, "X and Y must have equal shapes");
 
@@ -72,6 +71,8 @@ namespace nd4j {
                 REQUIRE_TRUE(block.width() == 1, 0, "Where op takes either 1 or 3 operands, But got %d operands instead", block.width());
 
                 int width = condition->rankOf();
+                if (z->isEmpty())
+                    return ND4J_STATUS_OK;
 
                 std::vector<int> dims = ShapeUtils<T>::convertAxisToTadTarget(width, {0});
 
@@ -96,7 +97,6 @@ namespace nd4j {
                 auto result = list.stack();
                 OVERWRITE_RESULT(result);
             }
-
             return ND4J_STATUS_OK;
         }
 
@@ -113,19 +113,26 @@ namespace nd4j {
                 auto condition = INPUT_VARIABLE(0);
                 auto inShape = inputShape->at(0);
                 Nd4jLong numOfTrue = condition->template reduceNumber<simdOps::CountNonZero<T>>();
-                Nd4jLong *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
+                Nd4jLong *newShape;
 
-                newshape[0] = 2;
-                newshape[1] = numOfTrue;
-                newshape[2] = shape::rank(inShape);
-                newshape[3] = 1;
-                newshape[4] = 1;
-                newshape[5] = 0;
-                newshape[6] = 1;
-                newshape[7] = 99;
+                if (numOfTrue > 0) {
+                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
 
-                return SHAPELIST(newshape);
+                    newShape[0] = 2;
+                    newShape[1] = numOfTrue;
+                    newShape[2] = shape::rank(inShape);
+                    newShape[3] = 1;
+                    newShape[4] = 1;
+                    newShape[5] = 0;
+                    newShape[6] = 1;
+                    newShape[7] = 99;
+                }
+                else {
+                    newShape = ShapeUtils<T>::createScalarShapeInfo(block.getWorkspace());
+                    ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
+                }
+
+                    return SHAPELIST(newShape);
             }
         }
     }
