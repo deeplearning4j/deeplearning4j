@@ -167,6 +167,9 @@ TEST_F(DeclarableOpsTests5, Test_TTS_bp_1) {
     NDArray<float> x('c', {2, 1, 3});
     NDArray<float> eps('c', {2, 4, 3});
 
+    // NDArray<float> exp('c', {2, 1, 3}, {1.f, 2.f, 3.f,1.f, 2.f, 3.f,1.f, 2.f, 3.f,1.f, 2.f, 3.f},
+
+    x.linspace(1.f);
 
     nd4j::ops::tile_to_shape_bp<float> op;
     auto result = op.execute({&x, &eps}, {}, {2, 4, 3});
@@ -174,6 +177,7 @@ TEST_F(DeclarableOpsTests5, Test_TTS_bp_1) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
+    z->printIndexedBuffer();
 
     ASSERT_TRUE(x.isSameShape(z));
 
