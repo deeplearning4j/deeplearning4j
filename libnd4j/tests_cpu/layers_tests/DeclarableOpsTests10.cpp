@@ -134,6 +134,29 @@ TEST_F(DeclarableOpsTests10, Test_Size_at_1) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, InTopK_SGO_Test_1) {
+
+    NDArray<double> input('c', {4, 5});
+    NDArray<double> idx('c', {4});
+
+    NDArray<double> exp({0., 0., 0., 1.});
+
+    int exclusive, reverse;
+    input.linspace(1);
+    idx.linspace(1);
+    ////////////////////////////////////////
+
+    nd4j::ops::in_top_k<double> op;
+
+    auto res = op.execute({&input, &idx}, {}, {1});
+
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    //res->at(0)->printIndexedBuffer("IN_TOP_K output");
+    ASSERT_TRUE(res->at(0)->equalsTo(&exp));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, Pad_SGO_Test_1) {
 
     NDArray<double> in({1., 1., 1., 1., 1.});
