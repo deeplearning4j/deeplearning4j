@@ -1271,6 +1271,28 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(reduce_dot_bp, 3, 2, false, 0, 0);
         #endif
 
+        /**
+        * This op calculates backprop dot for two tensors along given dimensions
+        *
+        * input array:
+        *    x: tensor to calculate dot for
+        *    y: tensor to calculate dot for
+        *    z: tensor with gradient output of the FF dot for x and y
+        *
+        * int arguments:
+        *   list of integers - dimensions to calculate dot along,
+        *   default corresponds to empty list in which case calculation
+        *   is performed for all dimensions and scalar is returned.
+        *
+        * output array:
+        *   the tensor with calculated backproped dots
+        *
+        */
+
+        #if NOT_EXCLUDED(OP_matrix_band_part)
+        DECLARE_CONFIGURABLE_OP(matrix_band_part, 1, 1, true, 0, 2);
+        #endif
+
     }
 }
 

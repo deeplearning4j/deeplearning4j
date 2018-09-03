@@ -39,11 +39,13 @@ namespace helpers {
 
             if (k == 1) {
                 int pos = 0;
-#pragma omp parallel for if(lastDimList->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
-                for (int e = 0; e < lastDimList->size(); ++e) {
+//#pragma omp parallel for if(lastDimList->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                for (size_t e = 0; e < lastDimList->size(); ++e) {
                     int maxPos = lastDimList->at(e)->argMax();
-                    (*indeces)(e) = maxPos; //topIndex;
-                    (*values)(e) = (*lastDimList->at(e))(maxPos);
+                    if (indeces)
+                        (*indeces)(e) = maxPos; //topIndex;
+                    if (values)
+                        (*values)(e) = (*lastDimList->at(e))(maxPos);
                 }
             }
             else { 

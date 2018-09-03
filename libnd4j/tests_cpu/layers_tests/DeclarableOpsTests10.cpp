@@ -134,6 +134,29 @@ TEST_F(DeclarableOpsTests10, Test_Size_at_1) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, InTopK_SGO_Test_1) {
+
+    NDArray<double> input('c', {4, 5});
+    NDArray<double> idx('c', {4});
+
+    NDArray<double> exp({0., 0., 0., 1.});
+
+    int exclusive, reverse;
+    input.linspace(1);
+    idx.linspace(1);
+    ////////////////////////////////////////
+
+    nd4j::ops::in_top_k<double> op;
+
+    auto res = op.execute({&input, &idx}, {}, {1});
+
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    //res->at(0)->printIndexedBuffer("IN_TOP_K output");
+    ASSERT_TRUE(res->at(0)->equalsTo(&exp));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, Pad_SGO_Test_1) {
 
     NDArray<double> in({1., 1., 1., 1., 1.});
@@ -242,6 +265,29 @@ TEST_F(DeclarableOpsTests10, svd_test11) {
     delete results;
 }
 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, TestMarixBandPart_Test_1) {
+
+    NDArray<double> x('c', {2, 3, 3});
+
+    NDArray<double> exp('c', {2, 3, 3});
+    x.linspace(1);
+    exp.linspace(1);
+    exp(0, 0, 2)  = 0.;
+    exp(1, 0, 2)  = 0.;
+    exp(0, 2, 0)  = 0.;
+    exp(1, 2, 0)  = 0.;
+
+    nd4j::ops::matrix_band_part<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&x}, {}, {1, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    //results->at(0)->printIndexedBuffer("MBP Test1");
+    //exp.printIndexedBuffer("MBP Expec");
+    ASSERT_TRUE(exp.equalsTo(results->at(0)));
+
+    delete results;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, atan2_test1) {

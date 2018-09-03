@@ -10897,7 +10897,6 @@ public class SameDiff {
         return flatNode;
     }
 
-
     /**
      * This method exports the current SameDiff instance into FlatBuffers format, returning the array ops and
      * all arrays as a ByteBuffer containing the FlatBuffers format data
@@ -10906,6 +10905,17 @@ public class SameDiff {
      * @return a ByteBuffer holding the exported FlatBuffers representation of the graph
      */
     public ByteBuffer asFlatBuffers(@NonNull ExecutorConfiguration configuration) {
+        return asFlatBuffers(0, configuration);
+    }
+
+    /**
+     * This method exports the current SameDiff instance into FlatBuffers format, returning the array ops and
+     * all arrays as a ByteBuffer containing the FlatBuffers format data
+     *
+     * @param configuration - ExecutorConfiguration to be embedded into serialized graph
+     * @return a ByteBuffer holding the exported FlatBuffers representation of the graph
+     */
+    public ByteBuffer asFlatBuffers(long graphId, @NonNull ExecutorConfiguration configuration) {
         Nd4j.getExecutioner().commit();
         FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(1024);
         val idCounter = new AtomicInteger(0);
@@ -10989,7 +10999,7 @@ public class SameDiff {
         int variablesOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(flatVariables));
         int nodesOffset = FlatGraph.createNodesVector(bufferBuilder, Ints.toArray(flatNodes));
 
-        int fg = FlatGraph.createFlatGraph(bufferBuilder, 119, variablesOffset, nodesOffset, outputsOffset, configuration.getFlatConfiguration(bufferBuilder));
+        int fg = FlatGraph.createFlatGraph(bufferBuilder, graphId, variablesOffset, nodesOffset, outputsOffset, configuration.getFlatConfiguration(bufferBuilder));
         bufferBuilder.finish(fg);
 
         synchronized (this) {
@@ -10998,6 +11008,20 @@ public class SameDiff {
         }
 
         return bufferBuilder.dataBuffer();
+    }
+
+    public FlatGraph asFlatGraph() {
+        return FlatGraph.getRootAsFlatGraph(this.asFlatBuffers());
+    }
+
+    /**
+     * This method returns FlatGraph structure
+     *
+     * @param configuration
+     * @return
+     */
+    public FlatGraph asFlatGraph(long graphId, ExecutorConfiguration configuration) {
+        return FlatGraph.getRootAsFlatGraph(asFlatBuffers(graphId, configuration));
     }
 
     /**
