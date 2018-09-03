@@ -287,13 +287,13 @@ namespace simdOps {
 	class SafeDivide {
 	public:
 		op_def static X op(X d1, Y d2) {
-			if(d2 == static_cast<X>(0))
+			if(d2 == static_cast<Y>(0))
 				return static_cast<X>(0);
 			return d1 / d2;
 		}
 
 		op_def static X op(X d1, Y d2, X *params) {
-			if(d2 == static_cast<X>(0))
+			if(d2 == static_cast<Y>(0))
 				return static_cast<X>(0);
 			return d1 / d2;
 		}
@@ -304,7 +304,7 @@ namespace simdOps {
 
 		// op for MetaOps
 		op_def static X op(X d1, Y *params) {
-			if(params[0] == static_cast<X>(0))
+			if(params[0] == static_cast<Y>(0))
 				return static_cast<X>(0);
 			return d1 / params[0];
 		}
@@ -362,11 +362,11 @@ namespace simdOps {
     class Remainder {
     public:
         op_def static X op(X d1, Y d2) {
-            return nd4j::math::nd4j_remainder(d1, d2);
+            return nd4j::math::nd4j_remainder<X>(d1, d2);
         }
 
         op_def static X op(X d1, Y d2, X *params) {
-            return nd4j::math::nd4j_remainder(d1, d2);
+            return nd4j::math::nd4j_remainder<X>(d1, d2);
         }
 
         op_def static X op(X d1) {
@@ -383,11 +383,11 @@ namespace simdOps {
     class FMod {
     public:
         op_def static X op(X d1, Y d2) {
-            return nd4j::math::nd4j_fmod(d1, d2);
+            return nd4j::math::nd4j_fmod<X>(d1, d2);
         }
 
         op_def static X op(X d1, Y d2, X *params) {
-            return nd4j::math::nd4j_fmod(d1, d2);
+            return nd4j::math::nd4j_fmod<X>(d1, d2);
         }
 
         op_def static X op(X d1) {
@@ -512,7 +512,7 @@ namespace simdOps {
 
 		op_def static X op(X d1, Y d2, X *params) {
 			auto comp = params[0];
-			return d1 != comp && d2 != comp ? static_cast<X>(1) : static_cast<X>(0);
+			return d1 != comp && static_cast<X>(d2) != comp ? static_cast<X>(1) : static_cast<X>(0);
 		}
 
 		op_def static X op(X d1) {
@@ -535,7 +535,7 @@ namespace simdOps {
 		op_def static X op(X d1, Y d2, X *params) {
 			auto comp = params[0];
 
-			return d1 != comp || d2 != comp ? static_cast<X>(1) : static_cast<X>(0);
+			return d1 != comp || static_cast<X>(d2) != comp ? static_cast<X>(1) : static_cast<X>(0);
 		}
 
 		op_def static X op(X d1) {
@@ -558,7 +558,7 @@ namespace simdOps {
 		op_def static X op(X d1, Y d2, X *params) {
 			auto comp = params[0];
 
-			return ((d1 == comp && d2 != comp)||(d1 != comp && d2 == comp)) ? static_cast<X>(1) : static_cast<X>(0);
+			return ((d1 == comp && static_cast<X>(d2) != comp)||(d1 != comp && static_cast<X>(d2) == comp)) ? static_cast<X>(1) : static_cast<X>(0);
 		}
 
 		op_def static X op(X d1) {
@@ -743,7 +743,7 @@ namespace simdOps {
 	class EqualTo {
 	public:
 		op_def static X op(X d1, Y d2) {
-			return d1 == d2;
+			return d1 == static_cast<X>(d2);
 		}
 
 		op_def static X op(X d1, Y d2, X *params) {
@@ -761,7 +761,7 @@ namespace simdOps {
 	class NotEqualTo {
 	public:
 		op_def static X op(X d1, Y d2) {
-			return d1 != d2;
+			return d1 != static_cast<X>(d2);
 		}
 
 		op_def static X op(X d1, Y d2, X *params) {
@@ -779,7 +779,7 @@ namespace simdOps {
 	class GreaterThanOrEqual {
 	public:
 		op_def static X op(X d1, Y d2) {
-			return d1 >= d2;
+			return d1 >= static_cast<X>(d2);
 		}
 
 		op_def static X op(X d1, Y d2, X *params) {
@@ -797,7 +797,7 @@ namespace simdOps {
 	class GreaterThan {
 	public:
 		op_def static X op(X d1, Y d2) {
-			return d1 > d2;
+			return d1 > static_cast<X>(d2);
 		}
 
 		op_def static X op(X d1, Y d2, X *params) {
@@ -816,7 +816,7 @@ namespace simdOps {
 	class LessThan {
 	public:
 		op_def static X op(X d1, Y d2) {
-			return d1 < d2;
+			return d1 < static_cast<X>(d2);
 		}
 
 		op_def static X op(X d1, Y d2, X *params) {
@@ -834,7 +834,7 @@ namespace simdOps {
 	class LessThanOrEqual {
 	public:
 		op_def static X op(X d1, Y d2) {
-			return d1 <= d2;
+			return d1 <= static_cast<X>(d2);
 		}
 
 		op_def static X op(X d1, Y d2, X *params) {
@@ -2464,6 +2464,56 @@ namespace simdOps {
 		}
 	};
 
+
+	template <typename X, typename Y>
+	class AMaxPairwise {
+	public:
+		op_def static X op(X d1, Y d2, X *params) {
+			return nd4j::math::nd4j_max<X>(nd4j::math::nd4j_abs<X>(d1), nd4j::math::nd4j_abs<Y>(d2));
+		}
+
+		op_def static X op(X d1, Y d2) {
+			return nd4j::math::nd4j_max<X>(nd4j::math::nd4j_abs<X>(d1), nd4j::math::nd4j_abs<Y>(d2));
+		}
+	};
+
+
+	template <typename X, typename Y>
+	class AMinPairwise {
+	public:
+		op_def static X op(X d1, Y d2, X *params) {
+			return nd4j::math::nd4j_min<X>(nd4j::math::nd4j_abs<X>(d1), nd4j::math::nd4j_abs<Y>(d2));
+		}
+
+		op_def static X op(X d1, Y d2) {
+			return nd4j::math::nd4j_min<X>(nd4j::math::nd4j_abs<X>(d1), nd4j::math::nd4j_abs<Y>(d2));
+		}
+	};
+
+	template <typename X, typename Y>
+	class MaxPairwise {
+	public:
+		op_def static X op(X d1, Y d2, X *params) {
+			return nd4j::math::nd4j_max<X>(d1, static_cast<X>(d2));
+		}
+
+		op_def static X op(X d1, Y d2) {
+			return nd4j::math::nd4j_max<X>(d1, static_cast<X>(d2));
+		}
+	};
+
+
+	template <typename X, typename Y>
+	class MinPairwise {
+	public:
+		op_def static X op(X d1, Y d2, X *params) {
+			return nd4j::math::nd4j_min<X>(d1, static_cast<X>(d2));
+		}
+
+		op_def static X op(X d1, Y d2) {
+			return nd4j::math::nd4j_min<X>(d1, static_cast<X>(d2));
+		}
+	};
 
     template <typename X>
     class AMax {

@@ -325,7 +325,6 @@ template<typename T>
 #endif
 		}
 
-
 		template<>
         math_def inline float nd4j_abs<float>(float value) {
 			return fabsf(value);
@@ -346,6 +345,40 @@ template<typename T>
 			return llabs(value);
 		}
 
+		template<>
+		math_def inline bool nd4j_abs<bool>(bool value) {
+			return value;
+		}
+
+		template<>
+		math_def inline uint8_t nd4j_abs<uint8_t>(uint8_t value) {
+			return value;
+		}
+
+		template<>
+		math_def inline uint16_t nd4j_abs<uint16_t>(uint16_t value) {
+			return value;
+		}
+
+		template<>
+		math_def inline uint32_t nd4j_abs<uint32_t>(uint32_t value) {
+			return value;
+		}
+
+		template<>
+		math_def inline Nd4jULong nd4j_abs<Nd4jULong>(Nd4jULong value) {
+			return value;
+		}
+
+		template<>
+		math_def inline int8_t nd4j_abs<int8_t>(int8_t value) {
+			return value < 0 ? -value : value;
+		}
+
+		template<>
+		math_def inline int16_t nd4j_abs<int16_t>(int16_t value) {
+			return value < 0 ? -value : value;
+		}
 
 		template<>
         math_def inline float16 nd4j_rint<float16>(float16 value) {
@@ -465,56 +498,17 @@ template<typename T>
 			else return nd4j_abs<Nd4jLong>(val1);
 		}
 
-		template<>
-        math_def inline float16 nd4j_max<float16>(float16 val1, float16 val2) {
+
+		template<typename T>
+		math_def inline T nd4j_max(T val1, T val2) {
 			return val1 > val2 ? val1 : val2;
 		}
 
-
-		template<>
-        math_def inline float nd4j_max<float>(float val1, float val2) {
-			return val1 > val2 ? val1 : val2;
-		}
-
-		template<>
-        math_def inline double nd4j_max<double>(double val1, double val2) {
-			return val1 > val2 ? val1 : val2;
-		}
-
-		template<>
-        math_def inline int nd4j_max<int>(int val1, int val2) {
-			return val1 > val2 ? val1 : val2;
-		}
-
-		template<>
-		math_def inline Nd4jLong nd4j_max<Nd4jLong>(Nd4jLong val1, Nd4jLong val2) {
-			return val1 > val2 ? val1 : val2;
-		}
-
-		template<>
-		math_def inline Nd4jLong nd4j_min<Nd4jLong>(Nd4jLong val1, Nd4jLong val2) {
+		template<typename T>
+		math_def inline T nd4j_min(T val1, T val2) {
 			return val1 < val2 ? val1 : val2;
 		}
 
-		template<>
-        math_def inline float16 nd4j_min<float16>(float16 val1, float16 val2) {
-			return val1 < val2 ? val1 : val2;
-		}
-
-
-		template<>
-        math_def inline float nd4j_min<float>(float val1, float val2) {
-			return val1 < val2 ? val1 : val2;
-		}
-
-		template<>
-        math_def inline double nd4j_min<double>(double val1, double val2) {
-			return val1 < val2 ? val1 : val2;
-		}
-		template<>
-        math_def inline int nd4j_min<int>(int val1, int val2) {
-			return val1 < val2 ? val1 : val2;
-		}
 
 		template<>
         math_def inline float16 nd4j_ceil<float16>(float16 val) {

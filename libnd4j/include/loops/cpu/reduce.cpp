@@ -25,9 +25,9 @@
 namespace functions {
     namespace reduce {
 
-        template <typename T>
+        template <typename X>
         template <typename OpType>
-            T _CUDA_H ReduceFunction<T>::execScalar(T *x, Nd4jLong *xShapeInfo, T *extraParams) {
+            X _CUDA_H ReduceFunction<X>::execScalar(X *x, Nd4jLong *xShapeInfo, X *extraParams) {
                 const Nd4jLong length = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 if (xElementWiseStride >= 1) {
@@ -41,10 +41,10 @@ namespace functions {
 
                     auto xShape = shape::shapeOf(xShapeInfo);
                     auto xStride = shape::stride(xShapeInfo);
-                    T start = OpType::startingValue(x);
+                    X start = OpType::startingValue(x);
                     int rank = shape::rank(xShapeInfo);
 
-                    if (PrepareOneRawArrayIter<T>(rank,
+                    if (PrepareOneRawArrayIter<X>(rank,
                                                   xShape,
                                                   x,
                                                   xStride,
@@ -55,7 +55,7 @@ namespace functions {
 
                         ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                 /* Process the innermost dimension */
-                                const T *xIter = x;
+                                auto xIter = x;
                                 start = OpType::update(start, OpType::op(xIter[0], extraParams), extraParams);
                             }
                         ND4J_RAW_ITER_ONE_NEXT(dim,
@@ -74,23 +74,23 @@ namespace functions {
                 }
             }
 
-        template <typename T>
-        T ReduceFunction<T>::execScalar(const int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams) {
-                RETURNING_DISPATCH_BY_OPNUM(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_OPS);
+        template <typename X>
+        X ReduceFunction<X>::execScalar(const int opNum, X *x, Nd4jLong *xShapeInfo, X *extraParams) {
+                RETURNING_DISPATCH_BY_OPNUM_T(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_OPS);
         }
 
-        template <typename T>
-        void ReduceFunction<T>::exec(const int opNum,
-                             T *x,
+        template <typename X>
+        void ReduceFunction<X>::exec(const int opNum,
+                             X *x,
                              Nd4jLong *xShapeInfo,
-                             T *extraParams,
-                             T *result,
+                             X *extraParams,
+                             X *result,
                              Nd4jLong *resultShapeInfoBuffer,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
                              Nd4jLong *tadOffset) {
-                DISPATCH_BY_OPNUM(exec, PARAMS(x,
+                DISPATCH_BY_OPNUM_T(exec, PARAMS(x,
                                                xShapeInfo,
                                                extraParams,
                                                result,
@@ -102,12 +102,12 @@ namespace functions {
                                   REDUCE_OPS);
         }
 
-        template <typename T>
+        template <typename X>
         template <typename OpType>
-        void _CUDA_H ReduceFunction<T>::exec(T *x,
+        void _CUDA_H ReduceFunction<X>::exec(X *x,
                              Nd4jLong *xShapeInfo,
-                             T *extraParams,
-                             T *result,
+                             X *extraParams,
+                             X *result,
                              Nd4jLong *resultShapeInfoBuffer,
                              int *dimension,
                              int dimensionLength,
@@ -162,8 +162,8 @@ namespace functions {
 
 #pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
                     for (int i = 0; i < resultLength; i++) {
-                        T *iter = x + tadOffsets[i];
-                        T start = OpType::startingValue(iter);
+                        auto iter = x + tadOffsets[i];
+                        auto start = OpType::startingValue(iter);
                         if (tadEWS == 1) {
 
 // FIXME: proper reduction should be used here
@@ -191,7 +191,7 @@ namespace functions {
                         auto offset = tadOffsets[i];
                         Nd4jLong xCoord[MAX_RANK];
 
-                        T start = OpType::startingValue(x + offset);
+                        auto start = OpType::startingValue(x + offset);
 
                         for (int j = 0; j < tadLength; j++) {
                             shape::ind2subC(tadRank, tadShape, j, tadLength, xCoord);
@@ -209,27 +209,27 @@ namespace functions {
             }
 
 
-        template <typename T>
+        template <typename X>
         template<typename OpType>
-        void _CUDA_H ReduceFunction<T>::exec(T *x,
+        void _CUDA_H ReduceFunction<X>::exec(X *x,
                              Nd4jLong *xShapeInfo,
-                             T *extraParams,
-                             T *result,
+                             X *extraParams,
+                             X *result,
                              Nd4jLong *resultShapeInfo) {
                 return execScalar<OpType>(x, xShapeInfo, extraParams);
         }
 
-        template <typename T>
+        template <typename X>
         template <typename OpType>
-        T _CUDA_H ReduceFunction<T>::execScalar(const T *x, Nd4jLong xElementWiseStride, Nd4jLong length, T *extraParams) {
-                T startingVal = OpType::startingValue(x);
+        X _CUDA_H ReduceFunction<X>::execScalar(const X *x, Nd4jLong xElementWiseStride, Nd4jLong length, X *extraParams) {
+                auto startingVal = OpType::startingValue(x);
                 if (xElementWiseStride == 1) {
                     if (length < ELEMENT_THRESHOLD) {
-                        T local = OpType::startingValue(x);
+                        auto local = OpType::startingValue(x);
 
 // FIXME: proper reduction to be used here
                         for (Nd4jLong i = 0; i < length; i++) {
-                            T curr = OpType::op(x[i], extraParams);
+                            auto curr = OpType::op(x[i], extraParams);
                             local = OpType::update(local, curr, extraParams);
 
                         }
@@ -239,16 +239,16 @@ namespace functions {
                     }
 
                     else {
-                        T finalVal = startingVal;
+                        auto finalVal = startingVal;
                         BlockInformation info(length, ELEMENT_THRESHOLD);
-                        T *blocks = new T[info.threads];
+                        auto blocks = new X[info.threads];
 
 #pragma omp parallel num_threads(info.threads) if (info.threads > 1) proc_bind(AFFINITY) default(shared)
                         {
-                            T local = OpType::startingValue(x);
+                            auto local = OpType::startingValue(x);
                             for (int i = omp_get_thread_num(); i < info.chunks; i += info.threads) {
                                 Nd4jLong newOffset = (i * info.items);
-                                const T *chunk = x + newOffset;
+                                auto chunk = x + newOffset;
                                 Nd4jLong itemsToLoop = info.items;
                                 if (i * info.items >= length) {
                                     break;
@@ -261,7 +261,7 @@ namespace functions {
 
 // FIXME: proper reduction should be used here
                                 for (Nd4jLong j = 0; j < itemsToLoop && i * info.items + j < length; j++) {
-                                    T curr = OpType::op(chunk[j], extraParams);
+                                    auto curr = OpType::op(chunk[j], extraParams);
                                     local = OpType::update(local, curr, extraParams);
                                 }
 
@@ -286,11 +286,11 @@ namespace functions {
 
                 else {
                     if (length < ELEMENT_THRESHOLD) {
-                        T local = OpType::startingValue(x);
+                        auto local = OpType::startingValue(x);
 
 // FIXME: proper reduction should be used here
                         for (Nd4jLong i = 0; i < length; i++) {
-                            T curr = OpType::op(x[i * xElementWiseStride], extraParams);
+                            auto curr = OpType::op(x[i * xElementWiseStride], extraParams);
                             local = OpType::update(local, curr, extraParams);
 
                         }
@@ -300,24 +300,24 @@ namespace functions {
                         return local;
                     }
 
-                    T finalVal = startingVal;
+                    auto finalVal = startingVal;
                     BlockInformation info(length, ELEMENT_THRESHOLD);
-                    T *blocks = new T[info.threads];
+                    auto blocks = new X[info.threads];
 
 
 #pragma omp parallel num_threads(info.threads) if (info.threads > 1) proc_bind(AFFINITY) default(shared)
                     {
-                        T local = OpType::startingValue(x);
+                        auto local = OpType::startingValue(x);
                         for (int i = omp_get_thread_num(); i < info.chunks; i += info.threads) {
                             Nd4jLong newOffset = (i * info.items) * xElementWiseStride;
-                            const T *chunk = x + newOffset;
+                            auto chunk = x + newOffset;
                             Nd4jLong itemsToLoop = info.items;
                             if (i * info.items >= length)
                                 break;
 
 // FIXME: proper reduction should be used here
                             for (Nd4jLong j = 0; j < itemsToLoop && i * info.items + j < length; j++) {
-                                T curr = OpType::op(chunk[j * xElementWiseStride], extraParams);
+                                auto curr = OpType::op(chunk[j * xElementWiseStride], extraParams);
                                 local = OpType::update(local, curr, extraParams);
                             }
                         }
@@ -339,9 +339,7 @@ namespace functions {
             }
 
 
-        template class ND4J_EXPORT ReduceFunction<float>;
-        template class ND4J_EXPORT ReduceFunction<float16>;
-        template class ND4J_EXPORT ReduceFunction<double>;
+        //BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT ReduceFunction, , LIBND4J_TYPES);
 
         //template void ReduceFunction<float16>::exec<simdOps::LogSumExp<float16>>(float16*, int*, float16*, float16*, int*, int*, int, int*, Nd4jLong*);
         //template void ReduceFunction<float>::exec<simdOps::LogSumExp<float>>(float*, int*, float*, float*, int*, int*, int, int*, Nd4jLong*);

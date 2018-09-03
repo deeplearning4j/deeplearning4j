@@ -32,7 +32,7 @@ namespace functions {
                 X *x,
                 Nd4jLong *xShapeInfo,
                 X *extraParams) {
-            RETURNING_DISPATCH_BY_OPNUM(execScalar, PARAMS(x, xShapeInfo, extraParams), INDEX_REDUCE_OPS);
+            RETURNING_DISPATCH_BY_OPNUM_T(execScalar, PARAMS(x, xShapeInfo, extraParams), INDEX_REDUCE_OPS);
         }
 
         template <typename X>
@@ -44,7 +44,7 @@ namespace functions {
                   Nd4jLong *resultShapeInfoBuffer,
                   int *dimension,
                   int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
-            DISPATCH_BY_OPNUM(exec, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
+            DISPATCH_BY_OPNUM_T(exec, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
         }
 
         template <typename X>

@@ -117,10 +117,10 @@ foreach (TMP_PATH ${TEST_SOURCES})
 endforeach(TMP_PATH)
 
 
-add_executable(runtests ../../blas/cpu/NativeOps.cpp ../../blas/cpu/GraphExecutioner.cpp
+add_executable(runtests ${LOOPS_SOURCES} ../../blas/cpu/NativeOps.cpp ../../blas/cpu/GraphExecutioner.cpp
     ../../blas/cpu/NativeOpExcutioner.cpp ../../blas/cpu/NDArray.cpp
     ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h
-    ../../blas/Environment.cpp ../../blas/Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
+    ../../blas/Environment.cpp ../../blas/Environment.h  ${ARRAY_SOURCES} ${TYPES_SOURCES}
     ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
     ${OPS_SOURCES} ${TEST_SOURCES})
 

@@ -34,7 +34,7 @@
 namespace functions {
     namespace random {
 
-        template<typename T>
+        template<typename X>
         class RandomFunction {
         public:
 
@@ -55,17 +55,17 @@ namespace functions {
 #endif
 
             template<typename OpClass>
-            static void execTransform(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments);
+            static void execTransform(Nd4jPointer state, X *x, Nd4jLong *xShapeBuffer, X *y, Nd4jLong *yShapeBuffer, X *z, Nd4jLong *zShapeBuffer, X *extraArguments);
 
             template<typename OpClass>
-            static void execTransform(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments);
+            static void execTransform(Nd4jPointer state, X *x, Nd4jLong *xShapeBuffer, X *z, Nd4jLong *zShapeBuffer, X *extraArguments);
 
             template<typename OpClass>
-            static void execTransform(Nd4jPointer state, T *z, Nd4jLong *zShapeBuffer, T *extraArguments);
+            static void execTransform(Nd4jPointer state, X *z, Nd4jLong *zShapeBuffer, X *extraArguments);
 
-            static void execTransform(int opNum, Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments);
-            static void execTransform(int opNum, Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments);
-            static void execTransform(int opNum, Nd4jPointer state, T *z, Nd4jLong *zShapeBuffer, T *extraArguments);
+            static void execTransform(int opNum, Nd4jPointer state, X *x, Nd4jLong *xShapeBuffer, X *z, Nd4jLong *zShapeBuffer, X *extraArguments);
+            static void execTransform(int opNum, Nd4jPointer state, X *x, Nd4jLong *xShapeBuffer, X *y, Nd4jLong *yShapeBuffer, X *z, Nd4jLong *zShapeBuffer, X *extraArguments);
+            static void execTransform(int opNum, Nd4jPointer state, X *z, Nd4jLong *zShapeBuffer, X *extraArguments);
         };
     }
 }

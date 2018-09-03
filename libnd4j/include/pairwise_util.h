@@ -355,16 +355,16 @@ inline void quickSort(StridePermutation *arr, int elements) {
  *
  * Returns 0 on success, -1 on failure.
  */
-template <typename T>
+template <typename X, typename Y>
 #ifdef __CUDACC__
 __host__ __device__
 #endif
 int PrepareTwoRawArrayIter(int ndim, Nd4jLong *shape,
-                           T *dataA, Nd4jLong *stridesA,
-                           T *dataB, Nd4jLong *stridesB,
+                           X *dataA, Nd4jLong *stridesA,
+                           X *dataB, Nd4jLong *stridesB,
                            int *out_ndim, Nd4jLong *outShape,
-                           T **out_dataA, Nd4jLong *outStridesA,
-                           T **out_dataB, Nd4jLong *outStridesB) {
+                           Y **out_dataA, Nd4jLong *outStridesA,
+                           Y **out_dataB, Nd4jLong *outStridesB) {
     int i;
 
 /* Sort the axes based on the destination strides */
@@ -449,18 +449,18 @@ int PrepareTwoRawArrayIter(int ndim, Nd4jLong *shape,
  *
  * Returns 0 on success, -1 on failure.
  */
-template <typename T>
+template <typename X, typename Y>
 #ifdef __CUDACC__
 __host__ __device__
 #endif
 int  PrepareThreeRawArrayIter(int ndim, Nd4jLong shape[],
-                              T *dataA, Nd4jLong *stridesA,
-                              T *dataB, Nd4jLong *stridesB,
-                              T *dataC, Nd4jLong *stridesC,
+                              X *dataA, Nd4jLong *stridesA,
+                              Y *dataB, Nd4jLong *stridesB,
+                              X *dataC, Nd4jLong *stridesC,
                               int &out_ndim, Nd4jLong *outShape,
-                              T **out_dataA, Nd4jLong outStridesA[],
-                              T **out_dataB, Nd4jLong outStridesB[],
-                              T **out_dataC, Nd4jLong outStridesC[])
+                              X **out_dataA, Nd4jLong outStridesA[],
+                              Y **out_dataB, Nd4jLong outStridesB[],
+                              X **out_dataC, Nd4jLong outStridesC[])
 {
 
     /* Special case 0 and 1 dimensions */

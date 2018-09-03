@@ -39,7 +39,7 @@ namespace functions {
                              Nd4jLong *tadOffset,
                              Nd4jLong *tadShapeInfoZ,
                              Nd4jLong *tadOffsetZ) {
-            DISPATCH_BY_OPNUM(exec, PARAMS(x,
+            DISPATCH_BY_OPNUM_TT(exec, PARAMS(x,
                                                xShapeInfo,
                                                y,
                                                yShapeInfo,

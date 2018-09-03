@@ -23,12 +23,12 @@
 
 namespace functions {
 	namespace broadcast {
-		template <typename T>
+		template <typename X, typename Y>
 		class Broadcast;
 	}
 
 	namespace transform {
-		template <typename T>
+		template <typename X>
 		class Transform;
 	}
 
@@ -36,7 +36,7 @@ namespace functions {
 	}
 
 	namespace reduce {
-		template <typename T>
+		template <typename X>
 		class ReduceFunction;
 	}
 }

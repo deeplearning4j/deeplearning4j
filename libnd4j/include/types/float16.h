@@ -447,11 +447,17 @@ local_def ihalf cpu_float2ihalf_rn(float f)
 
     local_def float16 operator-(const float16& a, const double& b) { return float16((float)a - (float)b); }
     local_def float16 operator-(const float16& a, const float& b) { return float16((float)a - b); }
-    // local_def float16 operator-(const float16& a, const int& b) { return float16((float)a - (float)b); }
+    local_def float16 operator-(const float16& a, const int& b) { return float16((float)a - (float)b); }
+    local_def float16 operator-(const float16& a, const unsigned int& b) { return float16((float)a - (float)b); }
+    local_def float16 operator-(const float16& a, const bool& b) { return float16((float)a - (float)b); }
     local_def float16 operator-(const float16& a, const long long& b) { return float16((float)a - (float)b); }
+    local_def float16 operator-(const float16& a, const unsigned long long& b) { return float16((float)a - (float)b); }
     local_def float16 operator-(const float16& a, const long int& b) { return float16((float)a - (float)b); }
     local_def float16 operator-(const int& a, const float16& b) { return float16((float)a - (float)b); }
+    local_def float16 operator-(const bool& a, const float16& b) { return float16((float)a - (float)b); }
+    local_def float16 operator-(const unsigned int& a, const float16& b) { return float16((float)a - (float)b); }
     local_def float16 operator-(const long long& a, const float16& b) { return float16((float)a - (float)b); }
+    local_def float16 operator-(const unsigned long long& a, const float16& b) { return float16((float)a - (float)b); }
     local_def float16 operator-(const long int& a, const float16& b) { return float16((float)a - (float)b); }
     local_def float16 operator-(const float& a, const float16& b) { return float16((float)a - (float)b); }
     local_def float16 operator-(const double& a, const float16& b) { return float16((float)a - (float)b); }
@@ -459,23 +465,35 @@ local_def ihalf cpu_float2ihalf_rn(float f)
 
     local_def float16 operator/(const float16& a, const double& b) { return float16((float)a / (float)b); }
     local_def float16 operator/(const float16& a, const float& b) { return float16((float)a / b); }
+    local_def float16 operator/(const float16& a, const bool& b) { return float16((float)a / (float)b); }
     local_def float16 operator/(const float16& a, const int& b) { return float16((float)a / (float)b); }
+    local_def float16 operator/(const float16& a, const unsigned int& b) { return float16((float)a / (float)b); }
     local_def float16 operator/(const float16& a, const long long& b) { return float16((float)a / (float)b); }
+    local_def float16 operator/(const float16& a, const unsigned long long& b) { return float16((float)a / (float)b); }
     local_def float16 operator/(const float16& a, const long int& b) { return float16((float)a / (float)b); }
     local_def float16 operator/(const int& a, const float16& b) { return float16((float)a / (float)b); }
+    local_def float16 operator/(const unsigned int& a, const float16& b) { return float16((float)a / (float)b); }
     local_def float16 operator/(const long long& a, const float16& b) { return float16((float)a / (float)b); }
+    local_def float16 operator/(const unsigned long long& a, const float16& b) { return float16((float)a / (float)b); }
     local_def float16 operator/(const long int& a, const float16& b) { return float16((float)a / (float)b); }
+    local_def float16 operator/(const bool& a, const float16& b) { return float16((float)a / (float)b); }
     local_def float16 operator/(const float& a, const float16& b) { return float16((float)a / (float)b); }
     local_def float16 operator/(const double& a, const float16& b) { return float16((float)a / (float)b); }
 
 
     local_def float16 operator*(const float16& a, const double& b) { return float16((float)a * (float)b); }
     local_def float16 operator*(const float16& a, const float& b) { return float16((float)a * b); }
+    local_def float16 operator*(const float16& a, const bool& b) { return float16((float)a * (float)b); }
     local_def float16 operator*(const float16& a, const int& b) { return float16((float)a * (float)b); }
+    local_def float16 operator*(const float16& a, const unsigned int& b) { return float16((float)a * (float)b); }
     local_def float16 operator*(const float16& a, const long long& b) { return float16((float)a * (float)b); }
+    local_def float16 operator*(const float16& a, const unsigned long long& b) { return float16((float)a * (float)b); }
     local_def float16 operator*(const float16& a, const long int& b) { return float16((float)a * (float)b); }
     local_def float16 operator*(const int& a, const float16& b) { return float16((float)a * (float)b); }
+    local_def float16 operator*(const bool& a, const float16& b) { return float16((float)a * (float)b); }
+    local_def float16 operator*(const unsigned int& a, const float16& b) { return float16((float)a * (float)b); }
     local_def float16 operator*(const long long& a, const float16& b) { return float16((float)a * (float)b); }
+    local_def float16 operator*(const unsigned long long& a, const float16& b) { return float16((float)a * (float)b); }
     local_def float16 operator*(const long int& a, const float16& b) { return float16((float)a * (float)b); }
     local_def float16 operator*(const float& a, const float16& b) { return float16((float)a * (float)b); }
     local_def float16 operator*(const double& a, const float16& b) { return float16((float)a * (float)b); }

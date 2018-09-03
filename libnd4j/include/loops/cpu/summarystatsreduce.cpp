@@ -29,12 +29,12 @@ namespace functions {
 
         template <typename T>
         T SummaryStatsReduce<T>::execScalar(const int opNum, const bool biasCorrected, T *x, Nd4jLong *xShapeInfo, T *extraParams) {
-            RETURNING_DISPATCH_BY_OPNUM(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams), SUMMARY_STATS_OPS);
+            RETURNING_DISPATCH_BY_OPNUM_T(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams), SUMMARY_STATS_OPS);
         }
 
         template <typename T>
         void SummaryStatsReduce<T>::exec(const int opNum, const bool biasCorrected, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength) {
-            DISPATCH_BY_OPNUM(exec, PARAMS(biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength), SUMMARY_STATS_OPS);
+            DISPATCH_BY_OPNUM_T(exec, PARAMS(biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength), SUMMARY_STATS_OPS);
         }
 
         template <typename T>

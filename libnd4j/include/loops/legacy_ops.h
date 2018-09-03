@@ -47,10 +47,10 @@
        (10, simdOps::LessThan) ,\
        (11, simdOps::LessThanOrEqual) ,\
        (12, simdOps::NotEqualTo) ,\
-       (13, simdOps::Min) ,\
-       (14, simdOps::Max) ,\
-       (15, simdOps::AMin) ,\
-       (16, simdOps::AMax) ,\
+       (13, simdOps::MinPairwise) ,\
+       (14, simdOps::MaxPairwise) ,\
+       (15, simdOps::AMinPairwise) ,\
+       (16, simdOps::AMaxPairwise) ,\
        (17, simdOps::SquaredSubtract),\
        (18, simdOps::FloorMod),\
        (19, simdOps::FloorDiv),\
@@ -180,13 +180,13 @@
         (3, simdOps::Divide),\
         (4, simdOps::ReverseDivide),\
         (5, simdOps::ReverseSubtract),\
-        (6, simdOps::Max),\
+        (6, simdOps::MaxPairwise),\
         (7, simdOps::LessThan),\
         (8, simdOps::GreaterThan),\
         (9, simdOps::EqualTo),\
         (10,simdOps::LessThanOrEqual),\
         (11,simdOps::NotEqualTo),\
-        (12,simdOps::Min),\
+        (12,simdOps::MinPairwise),\
         (13,simdOps::Copy),\
         (14,simdOps::Mod),\
         (15,simdOps::ReverseMod),\
@@ -198,8 +198,8 @@
         (21, simdOps::FloorMod), \
         (22, simdOps::SquaredSubtract),\
         (23, simdOps::SafeDivide), \
-        (24, simdOps::AMax), \
-        (25, simdOps::AMin), \
+        (24, simdOps::AMaxPairwise), \
+        (25, simdOps::AMinPairwise), \
         (26, simdOps::And), \
         (27, simdOps::Or), \
         (28, simdOps::Atan2) ,\
@@ -291,8 +291,8 @@
         (10,simdOps::Epsilon),\
         (11,simdOps::GreaterThanOrEqual),\
         (12,simdOps::LessThanOrEqual),\
-        (13,simdOps::Max),\
-        (14,simdOps::Min),\
+        (13,simdOps::MaxPairwise),\
+        (14,simdOps::MinPairwise),\
         (15,simdOps::NotEqualTo),\
         (16,simdOps::Copy2),\
         (17,simdOps::Axpy),\

@@ -57,7 +57,7 @@ namespace functions {
  * via aggregating member
  * elements.
  */
-        template<typename T>
+        template<typename X>
         class ReduceFunction {
         public:
 #ifdef __CUDACC__
@@ -130,16 +130,16 @@ namespace functions {
              * @return
              */
             template<typename OpType>
-            static _CUDA_H T execScalar(T *x, Nd4jLong *xShapeInfo, T *extraParams);
+            static _CUDA_H X execScalar(X *x, Nd4jLong *xShapeInfo, X *extraParams);
 
 
-            static T execScalar(const int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams);
+            static X execScalar(const int opNum, X *x, Nd4jLong *xShapeInfo, X *extraParams);
 
             static void exec(const int opNum,
-                             T *x,
+                             X *x,
                              Nd4jLong *xShapeInfo,
-                             T *extraParams,
-                             T *result,
+                             X *extraParams,
+                             X *result,
                              Nd4jLong *resultShapeInfoBuffer,
                              int *dimension,
                              int dimensionLength,
@@ -160,10 +160,10 @@ namespace functions {
 
 
             template<typename OpType>
-            static void _CUDA_H exec(T *x,
+            static void _CUDA_H exec(X *x,
                              Nd4jLong *xShapeInfo,
-                             T *extraParams,
-                             T *result,
+                             X *extraParams,
+                             X *result,
                              Nd4jLong *resultShapeInfoBuffer,
                              int *dimension,
                              int dimensionLength,
@@ -180,10 +180,10 @@ namespace functions {
             * @param resultShapeInfo the shape information
             */
             template<typename OpType>
-            static void _CUDA_H exec(T *x,
+            static void _CUDA_H exec(X *x,
                              Nd4jLong *xShapeInfo,
-                             T *extraParams,
-                             T *result,
+                             X *extraParams,
+                             X *result,
                              Nd4jLong *resultShapeInfo);
 
 
@@ -197,7 +197,7 @@ namespace functions {
             * @return
             */
             template<typename OpType>
-            static T _CUDA_H execScalar(const T *x, Nd4jLong xElementWiseStride, Nd4jLong length, T *extraParams);
+            static X _CUDA_H execScalar(const X *x, Nd4jLong xElementWiseStride, Nd4jLong length, X *extraParams);
         };
 
 #ifdef __CUDACC__

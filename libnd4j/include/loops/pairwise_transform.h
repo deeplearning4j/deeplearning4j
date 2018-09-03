@@ -96,7 +96,7 @@ namespace functions {
 				Nd4jLong *indexes,
 				Nd4jLong *yIndexes,
 				Nd4jLong *resultIndexes) {
-                            DISPATCH_BY_OPNUM(exec, PARAMS(dx,
+                            DISPATCH_BY_OPNUM_TT(exec, PARAMS(dx,
                                                            xShapeBuffer,
                                                            y,
                                                            yShapeBuffer,
@@ -116,7 +116,7 @@ namespace functions {
 				X *result,
 				Nd4jLong *resultShapeBuffer,
 				X *extraParams) {
-				DISPATCH_BY_OPNUM(exec, PARAMS(dx,
+				DISPATCH_BY_OPNUM_TT(exec, PARAMS(dx,
                                                xShapeBuffer,
                                                y,
                                                yShapeBuffer,
@@ -136,7 +136,7 @@ namespace functions {
 				Nd4jLong resultStride,
 				X *extraParams,
 				Nd4jLong n) {
-				DISPATCH_BY_OPNUM(exec, PARAMS(dx,
+				DISPATCH_BY_OPNUM_TT(exec, PARAMS(dx,
                                                xStride,
                                                y,
                                                yStride,
@@ -275,11 +275,11 @@ for (Nd4jLong i = 0; i < xShape[0]; i++) {
                     auto resultLocal = result + resultStride[0] * i;
 
                     int rankLocal = rank - 1;
-                    Nd4jLong *xShapeLocal = xShape + 1;
+                    auto xShapeLocal = xShape + 1;
 
-                    Nd4jLong *xStrideLocal = xStride + 1;
-                    Nd4jLong *yStrideLocal = yStride + 1;
-                    Nd4jLong *resultStrideLocal = resultStride + 1;
+                    auto xStrideLocal = xStride + 1;
+                    auto yStrideLocal = yStride + 1;
+                    auto resultStrideLocal = resultStride + 1;
 
                     Nd4jLong shapeIter[MAX_RANK];
                     Nd4jLong coord[MAX_RANK];
@@ -287,7 +287,7 @@ for (Nd4jLong i = 0; i < xShape[0]; i++) {
                     Nd4jLong xStridesIter[MAX_RANK];
                     Nd4jLong yStridesIter[MAX_RANK];
                     Nd4jLong resultStridesIter[MAX_RANK];
-                    if (PrepareThreeRawArrayIter<T>(rankLocal,
+                    if (PrepareThreeRawArrayIter<X, Y>(rankLocal,
                                                     xShapeLocal,
                                                     dxLocal,
                                                     xStrideLocal,

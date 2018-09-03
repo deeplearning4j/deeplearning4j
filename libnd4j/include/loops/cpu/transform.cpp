@@ -27,7 +27,7 @@ namespace functions {
 
         template <typename X>
         void Transform<X>::exec(int opNum, X *dx, Nd4jLong xStride, X *result, Nd4jLong resultStride, X *extraParams, const Nd4jLong n) {
-            DISPATCH_BY_OPNUM(exec, PARAMS(dx, xStride, result, resultStride, extraParams, n), TRANSFORM_OPS);
+            DISPATCH_BY_OPNUM_T(exec, PARAMS(dx, xStride, result, resultStride, extraParams, n), TRANSFORM_OPS);
 		}
 
         template <typename X>
@@ -38,7 +38,7 @@ namespace functions {
 				X *result,
 				Nd4jLong *resultShapeInfo,
 				X *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-                    DISPATCH_BY_OPNUM(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_OPS);
+                    DISPATCH_BY_OPNUM_T(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_OPS);
 		}
 
         template <typename X>

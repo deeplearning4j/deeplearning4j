@@ -725,7 +725,7 @@ template<typename OpType>
 				Nd4jLong *tadOffsets,
 				Nd4jLong *yTadOnlyShapeInfo,
 				Nd4jLong *yTadOffsets) {
-                            DISPATCH_BY_OPNUM(transform, PARAMS(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
+                            DISPATCH_BY_OPNUM_T(transform, PARAMS(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
 			}
 
             __device__
@@ -747,7 +747,7 @@ template<typename OpType>
 				Nd4jLong *tadOffsets,
 				Nd4jLong *yTadOnlyShapeInfo,
 				Nd4jLong *yTadOffsets) {
-                            DISPATCH_BY_OPNUM(transformAll, PARAMS(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
+                            DISPATCH_BY_OPNUM_T(transformAll, PARAMS(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
 			}
 
 
@@ -765,7 +765,7 @@ template<typename OpType>
 				T *reductionBuffer,
 				UnifiedSharedMemory *manager,
 				Nd4jLong *tadOnlyShapeInfo) {
-                            DISPATCH_BY_OPNUM(execScalarCuda, PARAMS(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, allocationPointer, reductionBuffer, manager, tadOnlyShapeInfo), REDUCE3_OPS);
+                            DISPATCH_BY_OPNUM_T(execScalarCuda, PARAMS(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, allocationPointer, reductionBuffer, manager, tadOnlyShapeInfo), REDUCE3_OPS);
 			}
 #endif
 
@@ -781,7 +781,7 @@ template<typename OpType>
                     X *extraParamsVals,
                     Y *y,
                     Nd4jLong *yShapeInfo) {
-                RETURNING_DISPATCH_BY_OPNUM(execScalar, PARAMS(x,
+                RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x,
                                                                xShapeInfo,
                                                                extraParamsVals,
                                                                y,
@@ -797,7 +797,7 @@ template<typename OpType>
                               Nd4jLong *resultShapeInfoBuffer,
                               int *dimension,
                               int dimensionLength) {
-                DISPATCH_BY_OPNUM(exec, PARAMS(x,
+                DISPATCH_BY_OPNUM_TT(exec, PARAMS(x,
                                                xShapeInfo,
                                                extraParamsVals,
                                                y, yShapeInfo,
@@ -817,7 +817,7 @@ template<typename OpType>
                               Nd4jLong *resultShapeInfoBuffer,
                               int *dimension,
                               int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-                DISPATCH_BY_OPNUM(exec, PARAMS(x,
+                DISPATCH_BY_OPNUM_TT(exec, PARAMS(x,
                                                xShapeInfo,
                                                extraParamsVals,
                                                y, yShapeInfo,
@@ -839,7 +839,7 @@ template<typename OpType>
                                  int dimensionLength,
                                  Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
                                  Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets) {
-                DISPATCH_BY_OPNUM(execAll, PARAMS(x,
+                DISPATCH_BY_OPNUM_TT(execAll, PARAMS(x,
                                                   xShapeInfo,
                                                   extraParamsVals,
                                                   y, yShapeInfo,
@@ -1296,7 +1296,7 @@ template<typename OpType>
                                 int yRank = !xTadBigger ? shape::rank(yTad.tadOnlyShapeInfo) : shape::rank(yShapeInfo);
                                 Nd4jLong coord[MAX_RANK];
                                 Nd4jLong yCoord[MAX_RANK];
-                                T start = OpType::startingValue(x);
+                                auto start = OpType::startingValue(x);
 
                                 for (int j = 0; j < tadLength; j++) {
                                     if(xTadBigger) {
