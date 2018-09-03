@@ -57,7 +57,7 @@ public class TestParallelEarlyStopping {
     //                .weightInit(WeightInit.XAVIER)
     //                .list()
     //                .layer(0,new OutputLayer.Builder().nIn(4).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build())
-    //                .pretrain(false).backprop(true)
+    //
     //                .build();
     //        MultiLayerNetwork net = new MultiLayerNetwork(conf);
     //        net.setListeners(new ScoreIterationListener(1));
@@ -101,7 +101,7 @@ public class TestParallelEarlyStopping {
                         .updater(new Sgd()).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -134,7 +134,7 @@ public class TestParallelEarlyStopping {
                         .weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 

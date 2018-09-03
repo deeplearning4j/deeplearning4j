@@ -3791,7 +3791,7 @@ TEST_F(DeclarableOpsTests1, Test_Range_Integer_1) {
 
     ASSERT_EQ(1, result->size());
 
-    auto array = result->at(0);
+    auto array = result->at(0);    
 
     ASSERT_TRUE(exp.isSameShape(array));
     ASSERT_TRUE(exp.equalsTo(array));
@@ -3818,9 +3818,7 @@ TEST_F(DeclarableOpsTests1, Test_Range_Integer_2) {
 
     ASSERT_EQ(1, result->size());
 
-    auto array = result->at(0);
-
-    // array->printShapeInfo("z");
+    auto array = result->at(0);    
 
     ASSERT_TRUE(exp.isSameShape(array));
     ASSERT_TRUE(exp.equalsTo(array));

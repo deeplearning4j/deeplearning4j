@@ -79,7 +79,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                                 .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt).build())
                                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                                 .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).build())
-                                .pretrain(false).backprop(true).build();
+                                .build();
 
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
@@ -142,7 +142,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                                 .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt).build())
                                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                                 .activation(Activation.SOFTMAX).nOut(nOut).build())
-                                .pretrain(false).backprop(true)
+
                                 .setInputType(InputType.convolutional(inputH, inputW, inputDepth)).build();
 
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
@@ -197,7 +197,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                             .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt).build())
                             .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).build())
-                            .pretrain(false).backprop(true).build();
+                            .build();
 
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();
@@ -283,7 +283,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                                     .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt).build())
                                     .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                                     .activation(Activation.SOFTMAX).nOut(nOut).build())
-                                    .pretrain(false).backprop(true)
+
                                     .setInputType(InputType.convolutional(inputH, inputW, inputDepth)).build();
 
                     MultiLayerNetwork mln = new MultiLayerNetwork(conf);

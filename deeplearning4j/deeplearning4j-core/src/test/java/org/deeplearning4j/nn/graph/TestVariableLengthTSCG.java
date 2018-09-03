@@ -306,7 +306,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                                                                                         .weightInit(WeightInit.ZERO)
                                                                                         .updater(new NoOp()).build(),
                                                                         "0")
-                                                        .setOutputs("1").pretrain(false).backprop(true).build();
+                                                        .setOutputs("1").build();
                         ComputationGraph net = new ComputationGraph(conf);
                         net.init();
 
@@ -374,7 +374,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                                                                                         .weightInit(WeightInit.XAVIER)
                                                                                         .updater(new NoOp()).build(),
                                                                         "0")
-                                                        .setOutputs("1").pretrain(false).backprop(true).build();
+                                                        .setOutputs("1").build();
                         ComputationGraph net = new ComputationGraph(conf);
                         net.init();
 
@@ -389,13 +389,13 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                                                                                         .updater(new NoOp()).build(),
                                                                         "in")
                                                         .addLayer("1", new RnnOutputLayer.Builder(
-                                                                        LossFunctions.LossFunction.MCXENT)
-                                                                                        .activation(Activation.SOFTMAX)
+                                                                        LossFunctions.LossFunction.XENT)
+                                                                                        .activation(Activation.SIGMOID)
                                                                                         .nIn(5).nOut(nOut)
                                                                                         .weightInit(WeightInit.XAVIER)
                                                                                         .updater(new NoOp()).build(),
                                                                         "0")
-                                                        .setOutputs("1").pretrain(false).backprop(true).build();
+                                                        .setOutputs("1").build();
                         ComputationGraph net2 = new ComputationGraph(conf2);
                         net2.init();
 

@@ -90,7 +90,7 @@ namespace ops {
 
             if (tempNorm2->isScalar()) {
                 auto norm2Backprop = LAMBDA_T(_x, epsilon, tempNorm2) {
-                    return (*epsilon)(0) * _x / (*tempNorm2)(0);
+                    return (*epsilon)(0.) * _x / (*tempNorm2)(0.);
                 };
                 input->applyLambda(norm2Backprop, output);
             }

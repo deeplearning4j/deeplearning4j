@@ -387,17 +387,17 @@ TEST_F(DeclarableOpsTests3, Test_ListDiff_1) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Range_1) {
-    NDArray<float> start('c', {1, 1}, {2});
-    NDArray<float> stop('c', {1, 1}, {0});
-    NDArray<float> step('c', {1, 1}, {1});
-    NDArray<float> exp('c', {2}, {2, 1});
+    NDArray<float> start(0.3);
+    NDArray<float> stop(-5);
+    NDArray<float> step(-0.33);
+    NDArray<float> exp('c', {17}, { 0.3 , -0.03, -0.36, -0.69, -1.02, -1.35, -1.68, -2.01, -2.34, -2.67,-3. , -3.33, -3.66, -3.99, -4.32, -4.65, -4.98});
 
     nd4j::ops::range<float> op;
     auto result = op.execute({&start, &stop, &step}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
-    auto z = result->at(0);
+    auto z = result->at(0);        
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -418,8 +418,6 @@ TEST_F(DeclarableOpsTests3, Test_Range_2) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-
-    // z->printShapeInfo("shape");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -448,10 +446,10 @@ TEST_F(DeclarableOpsTests3, Test_Range_3) {
 
 
 TEST_F(DeclarableOpsTests3, Test_Range_4) {
-    NDArray<float> exp('c', {2}, {2, 1});
+    NDArray<float> exp('c', {13}, {-10.,  -8.334,  -6.668,  -5.002,  -3.336,  -1.67 ,  -0.004,   1.662,   3.328,   4.994,   6.66 ,   8.326,   9.992});
 
     nd4j::ops::range<float> op;
-    auto result = op.execute({}, {2, 0, 1}, {});
+    auto result = op.execute({}, {-10., 10., 1.666}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -497,10 +495,10 @@ TEST_F(DeclarableOpsTests3, Test_Range_6) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Range_7) {
-    NDArray<float> exp('c', {2}, {2, 1});
+    NDArray<float> exp('c', {10}, {10.,  8.334,  6.668,  5.002,  3.336,  1.67 ,  0.004, -1.662, -3.328, -4.994});
 
     nd4j::ops::range<float> op;
-    auto result = op.execute({}, {}, {2, 0, 1});
+    auto result = op.execute({}, {10,-5,-1.666}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -511,6 +509,7 @@ TEST_F(DeclarableOpsTests3, Test_Range_7) {
 
     delete result;
 }
+
 
 
 TEST_F(DeclarableOpsTests3, Test_Range_8) {
@@ -2230,13 +2229,15 @@ TEST_F(DeclarableOpsTests3, svd_test7) {
 
 //    NDArray<double> x('c', {2,2,11,10}, {3 ,-8 ,0 ,3 ,-5 ,16 ,-3 ,7 ,-4 ,19 ,19 ,13 ,15 ,15 ,9 ,6 ,-7 ,-5 ,-9 ,-12 ,7 ,-1 ,-1 ,6 ,19
 //            ,-6 ,16 ,0 ,16 ,16 ,7 ,14 ,18. ,0 ,18 ,-4 ,10 ,-16 ,-17 ,15 ,13 ,-17 ,-14 ,-17 ,-5 ,-9 ,-1 ,-19
-//            ,-18 ,5 ,-5 ,-13 ,17 ,-19 ,-5 ,18 ,4 ,10 ,17 ,-7 ,-10 ,16 ,10 ,8 ,-10 ,-3 ,10 ,1 ,-4 ,-16 ,-1//            ,-1 ,5 ,5 ,17 ,14 ,20 ,15 ,-6 ,19 ,14 ,17 ,0 ,-17 ,-16 ,-8 ,-6 ,3 ,-6 ,-11 ,-4 ,-2 ,-7 ,4 ,-6
+//            ,-18 ,5 ,-5 ,-13 ,17 ,-19 ,-5 ,18 ,4 ,10 ,17 ,-7 ,-10 ,16 ,10 ,8 ,-10 ,-3 ,10 ,1 ,-4 ,-16 ,-1
+//            ,-1 ,5 ,5 ,17 ,14 ,20 ,15 ,-6 ,19 ,14 ,17 ,0 ,-17 ,-16 ,-8 ,-6 ,3 ,-6 ,-11 ,-4 ,-2 ,-7 ,4 ,-6
 //            ,-6 ,-17 ,16 ,-8 ,-20 ,2 ,7 ,-12 ,15 ,-15 ,-19 ,14 ,17 ,9 ,10 ,5 ,18 ,2 ,-6 ,0 ,2 ,-10 ,7 ,8
 //            ,-13 ,2 ,8 ,20 ,11 ,-15 ,13 ,-10 ,-14 ,-2 ,20 ,5 ,2 ,16 ,18 ,-3 ,3 ,-18 ,15 ,-11 ,17 ,-8 ,-18
 //            ,20 ,-12 ,20 ,20 ,-16 ,20 ,-8. ,19 ,-8 ,3 ,-3 ,17 ,7 ,13 ,9 ,-2 ,11 ,16 ,4 ,-18 ,5 ,0 ,-12 ,9
 //            ,-6 ,6 ,0 ,-9 ,-13 ,13 ,17 ,-12 ,3 ,-13 ,17 ,-19 ,17 ,0 ,-8 ,4 ,-19 ,-9 ,-7 ,12 ,-1 ,-12 ,-1
 //            ,7 ,2 ,19 ,10 ,19 ,-15 ,-18 ,17 ,-1 ,1 ,14 ,-7 ,-10 ,12 ,-20 ,6 ,-5 ,14 ,5 ,5 ,3 ,-18 ,5 ,17
-//            ,-13 ,20 ,-1 ,-2 ,-11 ,-5 ,14 ,8 ,7 ,-13 ,-9 ,-12 ,11 ,3 ,14 ,-6 ,-2 ,13 ,8 ,-15 ,-5 ,-6 ,-7//            ,19 ,-1 ,6 ,1 ,14 ,8 ,18 ,-20 ,-14 ,-3 ,-5 ,19 ,15 ,13 ,2 ,-20 ,2 ,14 ,13 ,4 ,-15 ,1 ,-14
+//            ,-13 ,20 ,-1 ,-2 ,-11 ,-5 ,14 ,8 ,7 ,-13 ,-9 ,-12 ,11 ,3 ,14 ,-6 ,-2 ,13 ,8 ,-15 ,-5 ,-6 ,-7 ,19
+//            ,-1 ,6 ,1 ,14 ,8 ,18 ,-20 ,-14 ,-3 ,-5 ,19 ,15 ,13 ,2 ,-20 ,2 ,14 ,13 ,4 ,-15 ,1 ,-14
 //            ,0 ,9 ,-1 ,10 ,4 ,6 ,4 ,-7 ,-2 ,-1 ,-15 ,-1 ,-16 ,-5 ,-12 ,-10 ,16 ,-16 ,-15 ,-17 ,-5 ,-6
 //            ,18 ,14 ,-3 ,-10 ,8 ,20 ,19 ,20 ,-3 ,-6 ,9 ,10 ,-1 ,-20 ,-5 ,5 ,12 ,8 ,17 ,13 ,-18 ,-14 ,0
 //            ,4 ,-11 ,3 ,-12 ,-2 ,-5 ,19 ,-15 ,19 ,16 ,-16 ,13 ,-6 ,11 ,11 ,0 ,-18 ,4 ,5 ,6 ,-12 ,-10
@@ -2356,19 +2357,16 @@ TEST_F(DeclarableOpsTests3, svd_test7) {
 //    NDArray<double> *u = results->at(1);
 //    NDArray<double> *v = results->at(2);
 
-//    // u->printIndexedBuffer();
-//    // u->printS();
+//    ASSERT_TRUE(expS.isSameShape(s));
+//    ASSERT_TRUE(expU.isSameShape(u));
+//    ASSERT_TRUE(expV.isSameShape(v));
 
 //    ASSERT_TRUE(expS.equalsTo(s));
 //    ASSERT_TRUE(expU.equalsTo(u));
 //    ASSERT_TRUE(expV.equalsTo(v));
 
-//    ASSERT_TRUE(expS.isSameShape(s));
-//    ASSERT_TRUE(expU.isSameShape(u));
-//    ASSERT_TRUE(expV.isSameShape(v));
-
 //    delete results;
-//}
+// }
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, svd_test9) {

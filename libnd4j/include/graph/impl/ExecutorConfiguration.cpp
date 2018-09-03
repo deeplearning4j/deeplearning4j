@@ -51,5 +51,9 @@ namespace nd4j {
 
             return clone;
         };
+
+        flatbuffers::Offset<FlatConfiguration> ExecutorConfiguration::asFlatConfiguration(flatbuffers::FlatBufferBuilder &builder) {
+            return CreateFlatConfiguration(builder, 0, _executionMode, _profilingMode, _outputMode, _timestats, _footprintBackward, _footprintBackward);
+        }
     }
 }

@@ -208,6 +208,19 @@ namespace nd4j {
         }
 
         template <typename T>
+        std::vector<Variable<T>*> VariableSpace<T>::getVariables() {
+            std::vector<Variable<T>*> result;
+
+            for (auto v: _internal)
+                result.emplace_back(v);
+
+            for (auto v: _external)
+                result.emplace_back(v);
+
+            return result;
+        }
+
+        template <typename T>
         Nd4jLong nd4j::graph::VariableSpace<T>::internalMemory() {
             Nd4jLong size = 0;
             for (auto n: _internal) {
@@ -420,6 +433,38 @@ namespace nd4j {
             }
 
             return *this;
+        }
+
+        template <typename T>
+        void VariableSpace<T>::replaceVariable(Variable<T> *variable) {
+            bool replaced = false;
+            // trying name first
+            if (variable->getName() != nullptr && !variable->getName()->empty()) {
+                nd4j_printf("Trying to replace variable by name: [%s]\n", variable->getName()->c_str());
+                if (hasVariable(variable->getName())) {
+                    nd4j_printf("Replacing by name: [%s]\n", variable->getName()->c_str());
+                    auto vs = getVariable(variable->getName());
+                    dropVariable(vs->id(), vs->index());
+                    putVariable(vs->id(), vs->index(), variable);
+                    //delete vs;
+                    replaced = true;
+                }
+            } else {
+                nd4j_printf("Trying to replace variable by id: [%i:%i]\n", variable->id(), variable->index());
+                if (hasVariable(variable->id(), variable->index())) {
+                    nd4j_printf("Replacing by id: [%i:%i]\n", variable->id(), variable->index());
+                    auto vs = getVariable(variable->id(), variable->index());
+                    dropVariable(variable->id(), variable->index());
+                    putVariable(vs->id(), vs->index(), variable);
+                    //delete vs;
+                    replaced = true;
+                }
+            }
+
+            if (!replaced) {
+                nd4j_printf("wasn't able to replace variable, putting\n", "");
+                putVariable(variable->id(), variable->index(), variable);
+            }
         }
 
         template <typename T>

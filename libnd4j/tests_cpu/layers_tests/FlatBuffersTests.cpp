@@ -545,7 +545,7 @@ TEST_F(FlatBuffersTest, ReduceDim_1) {
 
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/reduce_dim_false.fb");
 
-    //graph->printOut();
+    graph->printOut();
 
     auto variableSpace = graph->getVariableSpace();
 
@@ -577,7 +577,7 @@ TEST_F(FlatBuffersTest, ReduceDim_2) {
 
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/reduce_dim_true.fb");
 
-    //graph->printOut();
+    graph->printOut();
 
     auto variableSpace = graph->getVariableSpace();
 

@@ -34,6 +34,7 @@
         <module>nd4j-camel-routes</module>
         <module>nd4j-gson</module>
         <module>nd4j-arrow</module>
+        <module>nd4j-grpc</module>
     </modules>
 
     <profiles>

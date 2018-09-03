@@ -126,7 +126,7 @@ public abstract class BaseSparkTest implements Serializable {
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(3).nOut(nOut)
                                                         .activation(Activation.SOFTMAX).build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
         return conf;
     }
 }

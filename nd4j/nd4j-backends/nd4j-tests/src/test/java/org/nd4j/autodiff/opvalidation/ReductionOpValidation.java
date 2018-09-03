@@ -435,7 +435,6 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testReductionGradients2() {
-        OpValidationSuite.ignoreFailing();
         //Test reductions: NON-final function
         Nd4j.getRandom().setSeed(12345);
 
@@ -597,8 +596,6 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testReduce3() {
-        OpValidationSuite.ignoreFailing();
-
         Nd4j.getRandom().setSeed(12345);
 
         int d0 = 3;

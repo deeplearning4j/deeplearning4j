@@ -96,7 +96,7 @@ public class WorkspaceTests extends BaseDL4JTest {
                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .activation(Activation.SOFTMAX).nOut(nOut).build())
                 .setInputType(InputType.convolutional(5, 5, 2))
-                .pretrain(false).backprop(true).build();
+                .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf.clone());
         net.init();
@@ -284,8 +284,8 @@ public class WorkspaceTests extends BaseDL4JTest {
                         throw new RuntimeException();
                 }
 
-                b.layer(new RnnOutputLayer.Builder().nIn(10).nOut(10).build());
-                gb.addLayer("out", new RnnOutputLayer.Builder().nIn(10).nOut(10).build(), "1");
+                b.layer(new RnnOutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build());
+                gb.addLayer("out", new RnnOutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build(), "1");
                 gb.setOutputs("out");
 
                 MultiLayerConfiguration conf = b.build();
@@ -401,7 +401,7 @@ public class WorkspaceTests extends BaseDL4JTest {
                     .seed(12345)
                     .trainingWorkspaceMode(ws).inferenceWorkspaceMode(ws)
                     .list()
-                    .layer(new OutputLayer.Builder().nIn(3).nOut(1).activation(Activation.SIGMOID).build())
+                    .layer(new OutputLayer.Builder().nIn(3).nOut(1).activation(Activation.SIGMOID).lossFunction(LossFunctions.LossFunction.XENT).build())
                     .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -428,9 +428,9 @@ public class WorkspaceTests extends BaseDL4JTest {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .weightInit(WeightInit.XAVIER)
                     .seed(12345)
-                    .list()
-                    .layer(new OutputLayer.Builder().nIn(3).nOut(1).activation(Activation.SIGMOID).build())
                     .trainingWorkspaceMode(wsm).inferenceWorkspaceMode(wsm)
+                    .list()
+                    .layer(new OutputLayer.Builder().nIn(3).nOut(1).lossFunction(LossFunctions.LossFunction.MSE).activation(Activation.SIGMOID).build())
                     .build();
 
             assertEquals(wsm, conf.getTrainingWorkspaceMode());
@@ -442,7 +442,7 @@ public class WorkspaceTests extends BaseDL4JTest {
                     .seed(12345)
                     .trainingWorkspaceMode(wsm).inferenceWorkspaceMode(wsm)
                     .list()
-                    .layer(new OutputLayer.Builder().nIn(3).nOut(1).activation(Activation.SIGMOID).build())
+                    .layer(new OutputLayer.Builder().nIn(3).nOut(1).activation(Activation.SIGMOID).lossFunction(LossFunctions.LossFunction.MSE).build())
                     .build();
 
             assertEquals(wsm, conf2.getTrainingWorkspaceMode());
@@ -555,7 +555,8 @@ public class WorkspaceTests extends BaseDL4JTest {
         final ComputationGraphConfiguration computationGraphConfiguration = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("state")
-                .addLayer("value_output", new OutputLayer.Builder().nIn(30).nOut(1).build(), "state")
+                .addLayer("value_output", new OutputLayer.Builder().nIn(30).nOut(1).activation(Activation.IDENTITY)
+                        .lossFunction(LossFunctions.LossFunction.MSE).build(), "state")
                 .setOutputs("value_output")
                 .build();
 
@@ -575,7 +576,7 @@ public class WorkspaceTests extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .list()
-                .layer(new OutputLayer.Builder().nIn(30).nOut(1).build())
+                .layer(new OutputLayer.Builder().nIn(30).nOut(1).activation(Activation.IDENTITY).lossFunction(LossFunctions.LossFunction.MSE).build())
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

@@ -66,6 +66,7 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
 
     @SuppressWarnings("unchecked")
     protected BaseLayerSpace(Builder builder) {
+        super(builder);
         this.activationFunction = builder.activationFunction;
         this.weightInit = builder.weightInit;
         this.biasInit = builder.biasInit;
@@ -98,6 +99,7 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
 
 
     protected void setLayerOptionsBuilder(BaseLayer.Builder builder, double[] values) {
+        super.setLayerOptionsBuilder(builder, values);
         if (activationFunction != null)
             builder.activation(activationFunction.getValue(values));
         if (biasInit != null)
