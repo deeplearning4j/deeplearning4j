@@ -20,18 +20,19 @@
 
 #include <loops/scalar_new.h>
 #include <ops/ops.h>
+#include <types/types.h>
 
 namespace functions {
     namespace scalar {
-        template <typename X, typename Y, typename Z>
-        void NewScalarTransform<X, Y, Z>::transform(const int opNum, X *x, Nd4jLong *xShapeInfo, Z *result, Nd4jLong *resultShapeInfo, Y scalar, X *extraParams) {
+        template <typename X, typename Y>
+        void NewScalarTransform<X, Y>::transform(const int opNum, X *x, Nd4jLong *xShapeInfo, X *result, Nd4jLong *resultShapeInfo, Y scalar, X *extraParams) {
             // NEW DISPATCH BY OP_NUM
-            NewScalarTransform<X,Y,Z>::template transform<simdOps::NewAdd<X, Y, Z>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
+            NewScalarTransform<X,Y>::template transform<simdOps::NewAdd<X, Y>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
         }
 
-        template <typename X, typename Y, typename Z>
+        template <typename X, typename Y>
         template<typename OpType>
-        void NewScalarTransform<X, Y, Z>::transform(X *x, Nd4jLong xStride, Z *result, Nd4jLong resultStride, Y scalar, X *extraParams, const Nd4jLong n) {
+        void NewScalarTransform<X, Y>::transform(X *x, Nd4jLong xStride, X *result, Nd4jLong resultStride, Y scalar, X *extraParams, const Nd4jLong n) {
             int num_threads = 1;
             Nd4jLong span = 100;// (n / num_threads) + 8;
 
@@ -78,9 +79,9 @@ namespace functions {
             }
         }
 
-        template <typename X, typename Y, typename Z>
+        template <typename X, typename Y>
         template<typename OpType>
-        void NewScalarTransform<X, Y, Z>::transform(X *x, Nd4jLong *xShapeInfo, Z *result, Nd4jLong *resultShapeInfo, Y scalar, X *extraParams) {
+        void NewScalarTransform<X, Y>::transform(X *x, Nd4jLong *xShapeInfo, X *result, Nd4jLong *resultShapeInfo, Y scalar, X *extraParams) {
             // actual implementation
             char xOrdering = shape::order(xShapeInfo);
             char resultOrdering = shape::order(resultShapeInfo);
@@ -122,8 +123,6 @@ namespace functions {
             }
         }
 
-        template class NewScalarTransform<float, bool, float>;
-        template class NewScalarTransform<float, int, float>;
-        template class NewScalarTransform<float, Nd4jLong, float>;
+        BUILD_DOUBLE_TEMPLATE(template class NewScalarTransform, , LIBND4J_TYPES, LIBND4J_TYPES);
     }
 }

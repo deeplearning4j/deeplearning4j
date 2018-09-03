@@ -115,10 +115,10 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Y, typename Z>
+	template <typename X, typename Y>
 	class NewAdd {
     public:
-        op_def static Z op(X d1, Y d2, X *params) {
+        op_def static X op(X d1, Y d2, X *params) {
             return d1 + d2;
         }
 	};

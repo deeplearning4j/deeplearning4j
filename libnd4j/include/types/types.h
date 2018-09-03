@@ -22,17 +22,27 @@
 #define LIBND4J_TYPES_H
 
 #include <pointercast.h>
+#include <types/float8.h>
+#include <types/float16.h>
+#include <types/int8.h>
+#include <types/int16.h>
+#include <types/uint8.h>
+#include <types/uint16.h>
 
 #define LIBND4J_TYPES \
-        float, \
         float16, \
-        nd4j::float8, \
+        float, \
         double, \
-        int, \
+        bool, \
+        int8_t, \
+        uint8_t, \
+        int16_t, \
+        uint16_t, \
+        int32_t, \
+        uint32_t, \
         Nd4jLong, \
-        nd4j::int8, \
-        nd4j::uint8, \
-        nd4j::int16, \
-        nd4j::uint16
+        Nd4jULong
+
+
 
 #endif //LIBND4J_TYPES_H

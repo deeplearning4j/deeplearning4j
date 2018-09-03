@@ -25,16 +25,16 @@
 
 namespace functions {
     namespace scalar {
-        template <typename X, typename Y, typename Z>
+        template <typename X, typename Y>
         class NewScalarTransform {
         public:
-            static void transform(const int opNum, X *x, Nd4jLong *xShapeInfo, Z *result, Nd4jLong *resultShapeInfo, Y scalar, X *extraParams);
+            static void transform(const int opNum, X *x, Nd4jLong *xShapeInfo, X *result, Nd4jLong *resultShapeInfo, Y scalar, X *extraParams);
 
             template<typename OpType>
-            static void transform(X *x, Nd4jLong *xShapeInfo, Z *result, Nd4jLong *resultShapeInfo, Y scalar, X *extraParams);
+            static void transform(X *x, Nd4jLong *xShapeInfo, X *result, Nd4jLong *resultShapeInfo, Y scalar, X *extraParams);
 
             template<typename OpType>
-            static void transform(X *x, Nd4jLong xStride, Z *result, Nd4jLong resultStride, Y scalar, X *extraParams, const Nd4jLong n);
+            static void transform(X *x, Nd4jLong xStride, X *result, Nd4jLong resultStride, Y scalar, X *extraParams, const Nd4jLong n);
         };
     }
 }
