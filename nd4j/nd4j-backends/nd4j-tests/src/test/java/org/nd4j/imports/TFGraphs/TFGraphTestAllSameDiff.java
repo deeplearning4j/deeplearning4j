@@ -131,23 +131,7 @@ public class TFGraphTestAllSameDiff {
 
             //Not sure why these are failing yet
             "lrn/dr3.*",
-            "lrn/dr5.*",
-
-            //Temporarily disable these:
-            "split/.*",
-            "multiple_outs.*",
-            "scatter_nd_update/.*",
-            "logsumexp/.*",
-            "nth_element/.*",
-            "reduce_any/.*",
-            "reduce_all/.*",
-            "boolean_mask/.*",
-            "broadcast_dynamic_shape/.*",
-            "broadcast_to/.*",
-            "unsorted_segment/.*",
-            "where/.*",
-            "truncatemod/.*",
-            "tensordot/.*"
+            "lrn/dr5.*"
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 
