@@ -188,7 +188,7 @@ TEST_F(DeclarableOpsTests10, MirrorPad_SGO_Test_1) {
 
     auto res = op.execute({&in, &pad}, {10.0}, {0});
     ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    res->at(0)->printIndexedBuffer("Mirror pad:");
+    //res->at(0)->printIndexedBuffer("Mirror pad:");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
     delete res;
 }
