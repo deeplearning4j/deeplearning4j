@@ -48,7 +48,7 @@ namespace functions {
  * Apply a scalar
  *  operation to an array
  */
-        template<typename T>
+        template<typename X, typename Y>
         class ScalarTransform {
 
         public:
@@ -88,15 +88,15 @@ namespace functions {
 */
 #endif
             template <typename OpType>
-            static void transform(T *x, Nd4jLong *xShapeInfo, T *extraParams, T *z, Nd4jLong *zShapeInfo, T *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
+            static void transform(X *x, Nd4jLong *xShapeInfo, X *extraParams, X *z, Nd4jLong *zShapeInfo, Y *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
-            static void transform(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *z, Nd4jLong *zShapeInfo, T *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
+            static void transform(int opNum, X *x, Nd4jLong *xShapeInfo, X *extraParams, X *z, Nd4jLong *zShapeInfo, Y *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
-            static void transform(const int opNum, T *x, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T scalar, T *extraParams, Nd4jLong *indexes, Nd4jLong *resultIndexes);
+            static void transform(const int opNum, X *x, Nd4jLong *xShapeInfo, X *result, Nd4jLong *resultShapeInfo, Y scalar, X *extraParams, Nd4jLong *indexes, Nd4jLong *resultIndexes);
 
-            static void transform(const int opNum, T *x, Nd4jLong xStride, T *result, Nd4jLong resultStride, T scalar, T *extraParams, const Nd4jLong n);
+            static void transform(const int opNum, X *x, Nd4jLong xStride, X *result, Nd4jLong resultStride, Y scalar, X *extraParams, const Nd4jLong n);
 
-            static void transform(const int opNum, T *x, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T scalar, T *extraParams);
+            static void transform(const int opNum, X *x, Nd4jLong *xShapeInfo, X *result, Nd4jLong *resultShapeInfo, Y scalar, X *extraParams);
 
 
 
@@ -113,7 +113,7 @@ namespace functions {
          */
 
             template <typename OpType>
-            static void transform(T *x, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T scalar, T *extraParams, Nd4jLong *indexes, Nd4jLong *resultIndexes);
+            static void transform(X *x, Nd4jLong *xShapeInfo, X *result, Nd4jLong *resultShapeInfo, Y scalar, X *extraParams, Nd4jLong *indexes, Nd4jLong *resultIndexes);
 
 
 
@@ -135,7 +135,7 @@ namespace functions {
          */
 
             template<typename OpType>
-            static  void transform(T *x, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T scalar, T *extraParams);
+            static  void transform(X *x, Nd4jLong *xShapeInfo, X *result, Nd4jLong *resultShapeInfo, Y scalar, X *extraParams);
 
 
             /**
@@ -151,7 +151,7 @@ namespace functions {
              */
 
             template<typename OpType>
-            static void transform(T *x, Nd4jLong xStride, T *result, Nd4jLong resultStride, T scalar, T *extraParams, const Nd4jLong n);
+            static void transform(X *x, Nd4jLong xStride, X *result, Nd4jLong resultStride, Y scalar, X *extraParams, const Nd4jLong n);
         };
     }
 }

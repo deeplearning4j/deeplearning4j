@@ -29,6 +29,8 @@
 #include <types/uint8.h>
 #include <types/uint16.h>
 
+#include <type_boilerplate.h>
+
 #define LIBND4J_TYPES \
         float16, \
         float, \

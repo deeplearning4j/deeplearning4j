@@ -56,7 +56,7 @@
 namespace functions {
     namespace transform {
 
-        template<typename T>
+        template<typename X>
         class Transform {
         public:
 
@@ -112,16 +112,15 @@ namespace functions {
 #endif
 
 
-			static void exec(int opNum, T *dx, Nd4jLong xStride, T *result, Nd4jLong resultStride, T *extraParams, const Nd4jLong n);
+			static void exec(int opNum, X *dx, Nd4jLong xStride, X *result, Nd4jLong resultStride, X *extraParams, const Nd4jLong n);
 
-			static void exec(int opNum, T *dx, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
-
+			static void exec(int opNum, X *dx, Nd4jLong *xShapeInfo, X *result, Nd4jLong *resultShapeInfo, X *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
 			template<typename OpType>
-			static ND4J_EXPORT void exec(T *dx, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+			static ND4J_EXPORT void exec(X *dx, Nd4jLong *xShapeInfo, X *result, Nd4jLong *resultShapeInfo, X *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
 			template <typename OpType>
-			static ND4J_EXPORT void exec(T *dx, Nd4jLong xStride, T *result, Nd4jLong resultStride, T *extraParams, const Nd4jLong n);
+			static ND4J_EXPORT void exec(X *dx, Nd4jLong xStride, X *result, Nd4jLong resultStride, X *extraParams, const Nd4jLong n);
         };
     }
 }

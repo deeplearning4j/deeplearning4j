@@ -20,39 +20,39 @@
 
 #include "../indexreduce.h"
 #include <op_boilerplate.h>
-
+#include <types/types.h>
 #include "../legacy_ops.h"
 
 namespace functions {
     namespace indexreduce {
 
-        template <typename T>
-        T IndexReduce<T>::execScalar(
+        template <typename X>
+        Nd4jLong IndexReduce<X>::execScalar(
                 const int opNum,
-                T *x,
+                X *x,
                 Nd4jLong *xShapeInfo,
-                T *extraParams) {
+                X *extraParams) {
             RETURNING_DISPATCH_BY_OPNUM(execScalar, PARAMS(x, xShapeInfo, extraParams), INDEX_REDUCE_OPS);
         }
 
-        template <typename T>
-        void IndexReduce<T>::exec(const int opNum,
-                  T *x,
+        template <typename X>
+        void IndexReduce<X>::exec(const int opNum,
+                  X *x,
                   Nd4jLong *xShapeInfo,
-                  T *extraParams,
-                  T *result,
+                  X *extraParams,
+                  Nd4jLong *result,
                   Nd4jLong *resultShapeInfoBuffer,
                   int *dimension,
                   int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
             DISPATCH_BY_OPNUM(exec, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
         }
 
-        template <typename T>
+        template <typename X>
         template<typename OpType>
-        T IndexReduce<T>::execScalar(T *x, Nd4jLong *xShapeInfo, T *extraParams) {
+        Nd4jLong IndexReduce<X>::execScalar(X *x, Nd4jLong *xShapeInfo, X *extraParams) {
 
             //T startingVal = OpType::startingValue(x);
-            IndexValue<T> startingIndex = OpType::startingIndexValue(x);
+            auto startingIndex = OpType::startingIndexValue(x);
 
             Nd4jLong length = shape::length(xShapeInfo);
             int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -66,7 +66,7 @@ namespace functions {
                     shape::ind2subC(tadRank,xShape, i, length, xCoord);
                     auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, tadRank);
 
-                    IndexValue<T> curr;
+                    IndexValue<X> curr;
                     curr.value = x[xOffset];
                     curr.index = i;
 
@@ -81,7 +81,7 @@ namespace functions {
 // FIXME: proper reduction to be used here
 //#pragma omp simd
                         for (Nd4jLong i = 0; i < length; i++) {
-                            IndexValue<T> curr;
+                            IndexValue<X> curr;
                             curr.value = x[i];
                             curr.index = i;
                             startingIndex = OpType::update(startingIndex, curr, extraParams);
@@ -95,12 +95,12 @@ namespace functions {
 #pragma omp parallel num_threads(info.threads) if (info.threads > 1) default(shared)
 
                         {
-                            IndexValue<T> local = OpType::startingIndexValue(x);
+                            auto local = OpType::startingIndexValue(x);
 
 
                             for (Nd4jLong i = omp_get_thread_num(); i < info.chunks; i+= info.threads) {
                                 Nd4jLong newOffset = (i * info.items);
-                                T *chunk = x + newOffset;
+                                auto chunk = x + newOffset;
                                 Nd4jLong itemsToLoop = info.items;
                                 if(newOffset >= length) {
                                     break;
@@ -112,7 +112,7 @@ namespace functions {
                                 }
 
                                 for (Nd4jLong j = 0; j < itemsToLoop; j++) {
-                                    IndexValue<T> curr;
+                                    IndexValue<X> curr;
                                     curr.value = chunk[j];
                                     curr.index = newOffset + j;
                                     local = OpType::update(local, curr, extraParams);
@@ -132,7 +132,7 @@ namespace functions {
 
                 else {
                     for (Nd4jLong i = 0; i < length; i++) {
-                        IndexValue<T> curr;
+                        IndexValue<X> curr;
                         curr.value = x[i * xElementWiseStride];
                         curr.index = i;
                         startingIndex = OpType::update(startingIndex, curr,
@@ -146,7 +146,7 @@ namespace functions {
 
         template <typename T>
         template<typename OpType>
-        void IndexReduce<T>::exec(T *x, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
+        void IndexReduce<T>::exec(T *x, Nd4jLong *xShapeInfo, T *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
 
             if(shape::isScalar(resultShapeInfoBuffer)) {
                 result[0] = execScalar<OpType>(x,xShapeInfo,extraParams);
@@ -154,7 +154,7 @@ namespace functions {
             }
 
             const Nd4jLong resultLength = shape::length(resultShapeInfoBuffer);
-            IndexValue<T> *startingIndex = new IndexValue<T>[resultLength];
+            auto startingIndex = new IndexValue<T>[resultLength];
 
 #pragma omp parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
             for (Nd4jLong i = 0; i < resultLength; i++) {
@@ -244,8 +244,6 @@ namespace functions {
         }
 
 
-        template class ND4J_EXPORT IndexReduce<float>;
-        template class ND4J_EXPORT IndexReduce<float16>;
-        template class ND4J_EXPORT IndexReduce<double>;
+        //BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES);
     };
 }

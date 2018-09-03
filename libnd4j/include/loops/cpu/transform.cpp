@@ -25,33 +25,33 @@
 namespace functions {
     namespace transform {
 
-        template <typename T>
-        void Transform<T>::exec(int opNum, T *dx, Nd4jLong xStride, T *result, Nd4jLong resultStride, T *extraParams, const Nd4jLong n) {
+        template <typename X>
+        void Transform<X>::exec(int opNum, X *dx, Nd4jLong xStride, X *result, Nd4jLong resultStride, X *extraParams, const Nd4jLong n) {
             DISPATCH_BY_OPNUM(exec, PARAMS(dx, xStride, result, resultStride, extraParams, n), TRANSFORM_OPS);
 		}
 
-        template <typename T>
-        void Transform<T>::exec(
+        template <typename X>
+        void Transform<X>::exec(
 				int opNum,
-				T *dx,
+				X *dx,
 				Nd4jLong *xShapeInfo,
-				T *result,
+				X *result,
 				Nd4jLong *resultShapeInfo,
-				T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+				X *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
                     DISPATCH_BY_OPNUM(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_OPS);
 		}
 
-        template <typename T>
+        template <typename X>
         template<typename OpType>
-		void _CUDA_H Transform<T>::exec(
-                    T *dx,
+		void _CUDA_H Transform<X>::exec(
+                    X *dx,
                     Nd4jLong *xShapeInfo,
-                    T *result,
+                    X *result,
                     Nd4jLong *resultShapeInfo,
-                    T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                    X *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
                 if(OpType::requiresSpecial) {
-                    OpType::execSpecial(dx,xShapeInfo,result,resultShapeInfo,extraParams, tadShapeInfo, tadOffsets);
+                    OpType::execSpecial(dx, xShapeInfo,result,resultShapeInfo,extraParams, tadShapeInfo, tadOffsets);
                     return;
                 }
 
@@ -72,7 +72,7 @@ namespace functions {
                     auto xStride = shape::stride(xShapeInfo);
                     auto resultStride = shape::stride(resultShapeInfo);
                     int rank = shape::rank(xShapeInfo);
-                    if(PrepareTwoRawArrayIter<T>(rank,
+                    if(PrepareTwoRawArrayIter<X>(rank,
                                                  xShape,
                                                  dx,
                                                  xStride,
@@ -87,8 +87,8 @@ namespace functions {
                         ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
                         {
                             // Process the innermost dimension
-                            T *xIter = dx;
-                            T *resultIter = result;
+                            auto xIter = dx;
+                            auto resultIter = result;
                             resultIter[0] = OpType::op(xIter[0], extraParams);
                         }
                         ND4J_RAW_ITER_TWO_NEXT(dim,
@@ -104,13 +104,13 @@ namespace functions {
             }
         }
 
-        template <typename T>
+        template <typename X>
         template <typename OpType>
-		void _CUDA_H Transform<T>::exec(T *dx,
+		void _CUDA_H Transform<X>::exec(X *dx,
                              Nd4jLong xStride,
-                             T *result,
+                             X *result,
                              Nd4jLong resultStride,
-                             T *extraParams,
+                             X *extraParams,
                              const Nd4jLong n) {
 
                 int elementsPerThread = n / ELEMENT_THRESHOLD;
@@ -124,9 +124,10 @@ namespace functions {
 #pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared)
                     {
                         int tid = omp_get_thread_num();
-                        int start = span * tid;
-                        int end = span * (tid + 1);
-                        if (end > n) end = n;
+                        Nd4jLong start = span * tid;
+                        Nd4jLong end = span * (tid + 1);
+                        if (end > n)
+                            end = n;
 
 #pragma omp simd
                         for (Nd4jLong i = start; i < end; i++) {
@@ -138,9 +139,10 @@ namespace functions {
 #pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared)
                     {
                         int tid = omp_get_thread_num();
-                        int start = span * tid;
-                        int end = span * (tid + 1);
-                        if (end > n) end = n;
+                        Nd4jLong start = span * tid;
+                        Nd4jLong end = span * (tid + 1);
+                        if (end > n)
+                            end = n;
 
 #pragma omp simd
                         for (Nd4jLong i = start; i < end; i++) {
@@ -150,10 +152,7 @@ namespace functions {
             }
         }
 
-        template class ND4J_EXPORT Transform<float>;
-        template class ND4J_EXPORT Transform<float16>;
-        template class ND4J_EXPORT Transform<double>;
-
+        //BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT Transform, , LIBND4J_TYPES);
 
         BUILD_CALL_1(template void Transform<float>::exec, float, (float*, Nd4jLong*, float*, Nd4jLong*, float*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
         BUILD_CALL_1(template void Transform<float16>::exec, float16, (float16*, Nd4jLong*, float16*, Nd4jLong*, float16*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)

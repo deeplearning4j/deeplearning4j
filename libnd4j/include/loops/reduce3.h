@@ -57,7 +57,7 @@ namespace functions {
  * Reduce involving
  * 2 arrays
  */
-        template<typename T>
+        template<typename X, typename Y>
         class Reduce3 {
 
         public:
@@ -774,12 +774,12 @@ template<typename OpType>
             __host__
 #endif
 
-            static T execScalar(
+            static X execScalar(
                     const int opNum,
-                    T *x,
+                    X *x,
                     Nd4jLong *xShapeInfo,
-                    T *extraParamsVals,
-                    T *y,
+                    X *extraParamsVals,
+                    Y *y,
                     Nd4jLong *yShapeInfo) {
                 RETURNING_DISPATCH_BY_OPNUM(execScalar, PARAMS(x,
                                                                xShapeInfo,
@@ -789,11 +789,11 @@ template<typename OpType>
             }
 
             static void exec( const int opNum,
-                              T *x, Nd4jLong *xShapeInfo,
-                              T *extraParamsVals,
-                              T *y,
+                              X *x, Nd4jLong *xShapeInfo,
+                              X *extraParamsVals,
+                              Y *y,
                               Nd4jLong *yShapeInfo,
-                              T *result,
+                              X *result,
                               Nd4jLong *resultShapeInfoBuffer,
                               int *dimension,
                               int dimensionLength) {
@@ -809,11 +809,11 @@ template<typename OpType>
 
 
             static void exec( const int opNum,
-                              T *x, Nd4jLong *xShapeInfo,
-                              T *extraParamsVals,
-                              T *y,
+                              X *x, Nd4jLong *xShapeInfo,
+                              X *extraParamsVals,
+                              Y *y,
                               Nd4jLong *yShapeInfo,
-                              T *result,
+                              X *result,
                               Nd4jLong *resultShapeInfoBuffer,
                               int *dimension,
                               int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
@@ -828,12 +828,12 @@ template<typename OpType>
             }
 
             static void execAll( const int opNum,
-                                 T *x,
+                                 X *x,
                                  Nd4jLong *xShapeInfo,
-                                 T *extraParamsVals,
-                                 T *y,
+                                 X *extraParamsVals,
+                                 Y *y,
                                  Nd4jLong *yShapeInfo,
-                                 T *result,
+                                 X *result,
                                  Nd4jLong *resultShapeInfoBuffer,
                                  int *dimension,
                                  int dimensionLength,
@@ -855,18 +855,18 @@ template<typename OpType>
 #ifdef __CUDACC__
             __host__
 #endif
-            static T execScalar(
-                    T *x,
+            static X execScalar(
+                    X *x,
                     Nd4jLong *xShapeInfo,
-                    T *extraParams,
-                    T *y,
+                    X *extraParams,
+                    Y *y,
                     Nd4jLong *yShapeInfo) {
-                T startingVal = OpType::startingValue(x);
+                auto startingVal = OpType::startingValue(x);
                 Nd4jLong length = shape::length(xShapeInfo);
                 Nd4jLong xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 Nd4jLong yElementWiseStride = shape::elementWiseStride(yShapeInfo);
 
-                T extraParamsVals[3] = {(T) 0.0, (T) 0.0, (T) 0.0};
+                X extraParamsVals[3] = {(X) 0.0f, (X) 0.0f, (X) 0.0f};
                 // it's possible case for EqualsWithEps op
                 if (extraParams != nullptr) {
                     extraParamsVals[2] = extraParams[0];
@@ -918,8 +918,8 @@ template<typename OpType>
                         shape::ind2subC(xRank, xShape, i, xCoords);
                         shape::ind2subC(yRank, yShape, i, yCoords);
 
-                        Nd4jLong offset = shape::getOffset(0, xShape, xStride, xCoords, xRank);
-                        Nd4jLong yOffset = shape::getOffset(0, yShape, yStride, yCoords, yRank);
+                        auto offset = shape::getOffset(0, xShape, xStride, xCoords, xRank);
+                        auto yOffset = shape::getOffset(0, yShape, yStride, yCoords, yRank);
 
                         startingVal = OpType::update(startingVal, OpType::op(x[offset], y[yOffset], extraParamsVals), extraParamsVals);
                     }
@@ -933,12 +933,12 @@ template<typename OpType>
 
             template<typename OpType>
             static void execAll(
-                    T *x,
+                    X *x,
                     Nd4jLong *xShapeInfo,
-                    T *extraParams,
-                    T *y,
+                    X *extraParams,
+                    Y *y,
                     Nd4jLong *yShapeInfo,
-                    T *result,
+                    X *result,
                     Nd4jLong *resultShapeInfoBuffer,
                     int *dimension,
                     int dimensionLength, Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets, Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets) {
@@ -961,23 +961,23 @@ template<typename OpType>
                 Nd4jLong xCoord[MAX_RANK];
                 Nd4jLong yCoord[MAX_RANK];
 
-                T startingVal = OpType::startingValue(x);
+                auto startingVal = OpType::startingValue(x);
 
 #pragma  omp parallel for proc_bind(AFFINITY) default(shared) private(xCoord, yCoord)
                 for (Nd4jLong r = 0; r < xTads; r++) {
                     Nd4jLong xOffset = xOffsets[r];
 
-                    T *lX = x + xOffset;
+                    auto lX = x + xOffset;
 
                     for (Nd4jLong g = 0; g < yTads; g++) {
                         auto yOffset = yOffsets[g];
-                        T *lY = y + yOffset;
+                        auto lY = y + yOffset;
 
                         auto ri = (r * yTads) + g;
 
-                        T *localExtraParams = nullptr;
+                        X *localExtraParams = nullptr;
                         if (OpType::extraParamsLen > 0)
-                            localExtraParams = new T[OpType::extraParamsLen];
+                            localExtraParams = new X[OpType::extraParamsLen];
                         for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) {
                             localExtraParams[extraParamsIdx] = startingVal;
                         }
@@ -995,8 +995,8 @@ template<typename OpType>
                                 shape::ind2sub(xRank, xShape, f, xCoord);
                             }
 
-                            Nd4jLong xO = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                            Nd4jLong yO = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+                            auto xO = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                            auto yO = shape::getOffset(0, yShape, yStride, yCoord, yRank);
 
                             result[ri] = OpType::update(result[ri], OpType::op(lX[xO], lY[yO], localExtraParams), localExtraParams);
                         }
@@ -1013,12 +1013,12 @@ template<typename OpType>
 
             template<typename OpType>
             static void exec(
-                    T *x,
+                    X *x,
                     Nd4jLong *xShapeInfo,
-                    T *extraParams,
-                    T *y,
+                    X *extraParams,
+                    Y *y,
                     Nd4jLong *yShapeInfo,
-                    T *result,
+                    X *result,
                     Nd4jLong *resultShapeInfoBuffer,
                     int *dimension,
                     int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
@@ -1042,7 +1042,7 @@ template<typename OpType>
                 nd4j_printf("TO[0]: %lld\n", tadOffsets[0]);
                 nd4j_printf("dimLength: %i\n", dimensionLength);
 */
-                T startingVal = OpType::startingValue(x);
+                auto startingVal = OpType::startingValue(x);
 
                 auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                 auto tads = shape::length(xShapeInfo) / tadLength;
@@ -1067,9 +1067,9 @@ template<typename OpType>
                 for (Nd4jLong r = 0; r < tads; r++) {
                     Nd4jLong offset = tadOffsets[r];
 
-                    T *localExtraParams = nullptr;
+                    X *localExtraParams = nullptr;
                     if (OpType::extraParamsLen > 0)
-                        localExtraParams = new T[OpType::extraParamsLen];
+                        localExtraParams = new X[OpType::extraParamsLen];
                     for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) {
                         localExtraParams[extraParamsIdx] = startingVal;
                     }
@@ -1098,12 +1098,12 @@ template<typename OpType>
 
             template<typename OpType>
             static void exec(
-                    T *x,
+                    X *x,
                     Nd4jLong *xShapeInfo,
-                    T *extraParams,
-                    T *y,
+                    X *extraParams,
+                    Y *y,
                     Nd4jLong *yShapeInfo,
-                    T *result,
+                    X *result,
                     Nd4jLong *resultShapeInfoBuffer,
                     int *dimension,
                     int dimensionLength) {
@@ -1125,7 +1125,7 @@ template<typename OpType>
                 nd4j_printf("dimLength: %i\n", dimensionLength);
 */
 
-                T extraParamsVals[3] = {(T) 0.0, (T) 0.0, (T) 0.0};
+                X extraParamsVals[3] = {(X) 0.0, (X) 0.0, (X) 0.0};
 
 
                 if(shape::isScalar(resultShapeInfoBuffer)) {
@@ -1156,7 +1156,7 @@ template<typename OpType>
                     auto yStride = shape::stride(yShapeInfo);
 
                     int rank = shape::rank(xShapeInfo);
-                    if(PrepareTwoRawArrayIter<T>(rank,
+                    if(PrepareTwoRawArrayIter<X, Y>(rank,
                                                  xShape,
                                                  x,
                                                  xStride,
@@ -1197,7 +1197,7 @@ template<typename OpType>
                     }
                 }
                 else {
-                    T startingVal = OpType::startingValue(x);
+                    auto startingVal = OpType::startingValue(x);
 
                     Nd4jLong resultLength = shape::length(resultShapeInfoBuffer);
                     shape::TAD xTad(xShapeInfo, dimension, dimensionLength);
@@ -1254,9 +1254,9 @@ template<typename OpType>
                         if(shape::length(xShapeInfo) == shape::length(yShapeInfo)) {
                             //#pragma omp parallel for proc_bind(AFFINITY) default(shared)
                             for (Nd4jLong i = 0; i < resultLength; i++) {
-                                T *localExtraParams = nullptr;
+                                X *localExtraParams = nullptr;
                                 if (OpType::extraParamsLen > 0)
-                                    localExtraParams = new T[OpType::extraParamsLen];
+                                    localExtraParams = new X[OpType::extraParamsLen];
                                 for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) {
                                     localExtraParams[extraParamsIdx] = startingVal;
                                 }
@@ -1343,7 +1343,7 @@ template<typename OpType>
                             Nd4jLong yOffset = yTad.tadOffsets[i];
 
 
-                            T start = OpType::startingValue(x + xOffset);
+                            auto start = OpType::startingValue(x + xOffset);
 
                             for (int j = 0; j < tadLength; j++) {
                                 shape::ind2subC(shape::rank(iterationTadInfo), shape::shapeOf(iterationTadInfo), j, coord);

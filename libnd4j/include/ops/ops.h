@@ -3483,7 +3483,7 @@ namespace simdOps {
     };
 
 
-	template <typename X, typename Y>
+	template <typename X>
 	class IndexMax  {
 	public:
 
@@ -3639,7 +3639,7 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Y>
+	template <typename X>
 	class IndexMin {
 	public:
 

@@ -25,13 +25,13 @@
 namespace functions {
     namespace broadcast {
 
-        template <typename T>
-        void Broadcast<T>::exec(const int opNum,
-                             T *x,
+        template <typename X, typename Y>
+        void Broadcast<X, Y>::exec(const int opNum,
+                             X *x,
                              Nd4jLong *xShapeInfo,
-                             T *y,
+                             Y *y,
                              Nd4jLong *yShapeInfo,
-                             T *result,
+                             X *result,
                              Nd4jLong *resultShapeInfo,
                              int *dimension,
                              int dimensionLength,
@@ -53,13 +53,13 @@ namespace functions {
                                                tadOffsetZ), BROADCAST_OPS);
         }
 
-        template <typename T>
+        template <typename X, typename  Y>
         template<typename OpType>
-        void Broadcast<T>::exec(T *x,
+        void Broadcast<X, Y>::exec(X *x,
                              Nd4jLong *xShapeInfo,
-                             T *y,
+                             Y *y,
                              Nd4jLong *yShapeInfo,
-                             T *result,
+                             X *result,
                              Nd4jLong *resultShapeInfo,
                              int *dimension,
                              int dimensionLength,
@@ -109,8 +109,8 @@ namespace functions {
                     auto offsetZ = tadOffsetZ[i];
 
                     if (tadEWS > 0 && yStride > 0 && zEWS > 0 && dimensionLength == 1) {
-                        T *oRes = result + offsetZ;
-                        T *oX = x + offset;
+                        auto oRes = result + offsetZ;
+                        auto oX = x + offset;
 
                         if (tadEWS == 1 && yStride == 1 && zEWS == 1) {
 #pragma omp simd
@@ -126,15 +126,15 @@ namespace functions {
                     }
                     else {
                         auto zShape = shape::shapeOf(tadShapeInfoZ);
-                        auto zStride = shape::stride(tadShapeInfoZ);
+                        auto zStrides = shape::stride(tadShapeInfoZ);
                         int zRank = shape::rank(tadShapeInfoZ);
 
                         auto xShape = shape::shapeOf(tadShapeShapeInfo);
-                        auto xStride = shape::stride(tadShapeShapeInfo);
+                        auto xStrides = shape::stride(tadShapeShapeInfo);
                         int xRank = shape::rank(tadShapeShapeInfo);
 
                         auto yShape = shape::shapeOf(yShapeInfo);
-                        auto yStride = shape::stride(yShapeInfo);
+                        auto yStrides = shape::stride(yShapeInfo);
                         int yRank = shape::rank(yShapeInfo);
 
                         Nd4jLong xCoord[MAX_RANK];
@@ -158,9 +158,9 @@ namespace functions {
                             else
                                 shape::ind2sub(zRank, zShape, f, tadLength, zCoord);
 
-                            auto xOffset = shape::getOffset(offset, xShape, xStride, xCoord, xRank);
-                            auto zOffset = shape::getOffset(offsetZ, zShape, zStride, zCoord, zRank);
-                            auto yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+                            auto xOffset = shape::getOffset(offset, xShape, xStrides, xCoord, xRank);
+                            auto zOffset = shape::getOffset(offsetZ, zShape, zStrides, zCoord, zRank);
+                            auto yOffset = shape::getOffset(0, yShape, yStrides, yCoord, yRank);
 
                             result[zOffset] = OpType::op(x[xOffset], y[yOffset]);
                         }
@@ -171,12 +171,10 @@ namespace functions {
                     delete tad;
         }
 
-        template class ND4J_EXPORT Broadcast<float>;
-        template class ND4J_EXPORT Broadcast<float16>;
-        template class ND4J_EXPORT Broadcast<double>;
+        //BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT Broadcast, , LIBND4J_TYPES);
 
-        BUILD_CALL_1(template void Broadcast<float>::exec, float, (float*, Nd4jLong*, float*, Nd4jLong*, float*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
-        BUILD_CALL_1(template void Broadcast<float16>::exec, float16, (float16*, Nd4jLong*, float16*, Nd4jLong*, float16*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
-        BUILD_CALL_1(template void Broadcast<double>::exec, double, (double*, Nd4jLong*, double*, Nd4jLong*, double*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
+        //BUILD_CALL_1(template void Broadcast<float, float>::exec, float, (float*, Nd4jLong*, float*, Nd4jLong*, float*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
+        //BUILD_CALL_1(template void Broadcast<float16, float16>::exec, float16, (float16*, Nd4jLong*, float16*, Nd4jLong*, float16*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
+        //BUILD_CALL_1(template void Broadcast<double, double>::exec, double, (double*, Nd4jLong*, double*, Nd4jLong*, double*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
     }
 }

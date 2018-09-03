@@ -51,7 +51,7 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    static T execIndexReduceScalar(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams);
+    static Nd4jLong execIndexReduceScalar(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams);
 
     /**
      *
@@ -68,7 +68,7 @@ public:
                                 T *x,
                                 Nd4jLong *xShapeInfo,
                                 T *extraParams,
-                                T *result,
+                                Nd4jLong *result,
                                 Nd4jLong *resultShapeInfoBuffer,
                                 int *dimension,
                                 int dimensionLength,

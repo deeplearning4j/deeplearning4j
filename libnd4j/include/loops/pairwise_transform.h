@@ -55,7 +55,7 @@ namespace functions {
 /**
  * Transforms involving 2 arrays
  */
-        template<typename T>
+        template<typename X, typename Y>
         class PairWiseTransform {
         public:
 
@@ -86,13 +86,13 @@ namespace functions {
         public:
 			static void exec(
 				const int opNum,
-				T *dx,
+				X *dx,
 				Nd4jLong *xShapeBuffer,
-				T *y,
+				Y *y,
 				Nd4jLong *yShapeBuffer,
-				T *result,
+				X *result,
 				Nd4jLong *resultShapeBuffer,
-				T *extraParams,
+				X *extraParams,
 				Nd4jLong *indexes,
 				Nd4jLong *yIndexes,
 				Nd4jLong *resultIndexes) {
@@ -109,13 +109,13 @@ namespace functions {
 
 			static void exec(
 				const int opNum,
-				T *dx,
+				X *dx,
 				Nd4jLong *xShapeBuffer,
-				T *y,
+				Y *y,
 				Nd4jLong *yShapeBuffer,
-				T *result,
+				X *result,
 				Nd4jLong *resultShapeBuffer,
-				T *extraParams) {
+				X *extraParams) {
 				DISPATCH_BY_OPNUM(exec, PARAMS(dx,
                                                xShapeBuffer,
                                                y,
@@ -128,13 +128,13 @@ namespace functions {
 			
 			static void exec(
 				const int opNum,
-				T *dx,
+				X *dx,
 				Nd4jLong xStride,
-				T *y,
+				Y *y,
 				Nd4jLong yStride,
-				T *result,
+				X *result,
 				Nd4jLong resultStride,
-				T *extraParams,
+				X *extraParams,
 				Nd4jLong n) {
 				DISPATCH_BY_OPNUM(exec, PARAMS(dx,
                                                xStride,
@@ -148,13 +148,13 @@ namespace functions {
 
 			template<typename OpType>
 			static void exec(
-                    T *dx,
+                    X *dx,
                     Nd4jLong* xShapeBuffer,
-                    T *y,
+                    Y *y,
                     Nd4jLong* yShapeBuffer,
-                    T *result,
+                    X *result,
                     Nd4jLong* resultShapeBuffer,
-                    T *extraParams,
+                    X *extraParams,
                     Nd4jLong *indexes,
                     Nd4jLong *yIndexes,
                     Nd4jLong *resultIndexes) {
@@ -169,13 +169,13 @@ namespace functions {
 
 			template<typename OpType>
 			static void exec(
-                    T *dx,
+                    X *dx,
                     Nd4jLong* xShapeBuffer,
-                    T *y,
+                    Y *y,
                     Nd4jLong* yShapeBuffer,
-                    T *result,
+                    X *result,
                     Nd4jLong* resultShapeBuffer,
-                    T *extraParams) {
+                    X *extraParams) {
                 auto n = shape::length(xShapeBuffer);
                 auto xElementWiseStride = shape::elementWiseStride(xShapeBuffer);
                 auto yElementWiseStride = shape::elementWiseStride(yShapeBuffer);
@@ -270,9 +270,9 @@ namespace functions {
 
 #pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared)
 for (Nd4jLong i = 0; i < xShape[0]; i++) {
-                    T *dxLocal = dx + xStride[0] * i;
-                    T *yLocal = y + yStride[0] * i;
-                    T *resultLocal = result + resultStride[0] * i;
+                    auto dxLocal = dx + xStride[0] * i;
+                    auto yLocal = y + yStride[0] * i;
+                    auto resultLocal = result + resultStride[0] * i;
 
                     int rankLocal = rank - 1;
                     Nd4jLong *xShapeLocal = xShape + 1;
@@ -305,9 +305,9 @@ for (Nd4jLong i = 0; i < xShape[0]; i++) {
                                                     resultStridesIter) >= 0) {
                         ND4J_RAW_ITER_START(dim, rankLocal, coord, shapeIter); {
                                 // Process the innermost dimension
-                                T *xIter = dxLocal;
-                                T *yIter = yLocal;
-                                T *resultIter = resultLocal;
+                                auto xIter = dxLocal;
+                                auto yIter = yLocal;
+                                auto resultIter = resultLocal;
                                 resultIter[0] = OpType::op(xIter[0], yIter[0], extraParams);
                             }
                         ND4J_RAW_ITER_THREE_NEXT(dim,
@@ -334,14 +334,14 @@ for (Nd4jLong i = 0; i < xShape[0]; i++) {
                     int yRank = shape::rank(yShapeBuffer);
                     int resultRank = shape::rank(resultShapeBuffer);
 
-                    Nd4jLong *xShape = shape::shapeOf(xShapeBuffer);
-                    Nd4jLong *xStride = shape::stride(xShapeBuffer);
+                    auto xShape = shape::shapeOf(xShapeBuffer);
+                    auto xStride = shape::stride(xShapeBuffer);
 
-                    Nd4jLong *yShape = shape::shapeOf(yShapeBuffer);
-                    Nd4jLong *yStride = shape::stride(yShapeBuffer);
+                    auto yShape = shape::shapeOf(yShapeBuffer);
+                    auto yStride = shape::stride(yShapeBuffer);
 
-                    Nd4jLong *resultShape = shape::shapeOf(resultShapeBuffer);
-                    Nd4jLong *resultStride = shape::stride(resultShapeBuffer);
+                    auto resultShape = shape::shapeOf(resultShapeBuffer);
+                    auto resultStride = shape::stride(resultShapeBuffer);
 
                     int elementsPerThread = n / ELEMENT_THRESHOLD;
                     int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
@@ -356,8 +356,8 @@ for (Nd4jLong i = 0; i < xShape[0]; i++) {
                             shape::ind2subC(xRank,xShape, i, xCoord);
                             shape::ind2subC(yRank,yShape, i, yCoord);
 
-                            Nd4jLong xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                            Nd4jLong yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+                            auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                            auto yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
                             result[xOffset] = OpType::op(dx[xOffset], y[yOffset], extraParams);
 
                         }
@@ -371,9 +371,9 @@ for (Nd4jLong i = 0; i < xShape[0]; i++) {
                             shape::ind2subC(yRank,yShape, i, yCoord);
                             shape::ind2subC(resultRank,resultShape, i, resultCoord);
 
-                            Nd4jLong xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                            Nd4jLong yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
-                            Nd4jLong resultOffset = shape::getOffset(0, resultShape, resultStride, resultCoord, resultRank);
+                            auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                            auto yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+                            auto resultOffset = shape::getOffset(0, resultShape, resultStride, resultCoord, resultRank);
                             result[resultOffset] = OpType::op(dx[xOffset], y[yOffset], extraParams);
 
                         }
@@ -382,13 +382,13 @@ for (Nd4jLong i = 0; i < xShape[0]; i++) {
             }
 
             template<typename OpType>
-            static void exec(T *dx,
+            static void exec(X *dx,
                              Nd4jLong xStride,
-                             T *y,
+                             Y *y,
                              Nd4jLong yStride,
-                             T *result,
+                             X *result,
                              Nd4jLong resultStride,
-                             T *extraParams,
+                             X *extraParams,
                              const Nd4jLong n) {
                 int elementsPerThread = n / ELEMENT_THRESHOLD;
                 int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);

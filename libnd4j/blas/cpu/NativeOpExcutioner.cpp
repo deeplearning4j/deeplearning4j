@@ -31,7 +31,7 @@
 * @param resultShapeInfo
 */
 template<typename T>
-T NativeOpExcutioner<T>::execIndexReduceScalar(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams) {
+Nd4jLong NativeOpExcutioner<T>::execIndexReduceScalar(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams) {
     return functions::indexreduce::IndexReduce<T>::execScalar(opNum, x,xShapeInfo,extraParams);
 }
 
@@ -48,7 +48,7 @@ T NativeOpExcutioner<T>::execIndexReduceScalar(int opNum, T *x, Nd4jLong *xShape
  * @param dimensionLength
  */
 template<typename T>
-void NativeOpExcutioner<T>::execIndexReduce(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+void NativeOpExcutioner<T>::execIndexReduce(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
     functions::indexreduce::IndexReduce<T>::exec(opNum, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffsets);
 }
 
