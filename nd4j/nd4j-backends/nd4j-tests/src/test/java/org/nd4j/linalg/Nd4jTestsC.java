@@ -6923,6 +6923,17 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, arr);
     }
 
+    @Test
+    public void testSpecifiedIndexArraySize1() {
+        long[] shape = {2, 2, 2, 2};
+        INDArray in = Nd4j.create(shape);
+        INDArrayIndex[] idx1 = new INDArrayIndex[]{NDArrayIndex.all(), new SpecifiedIndex(0), NDArrayIndex.all(), NDArrayIndex.all()};
+
+        INDArray arr = in.get(idx1);
+        long[] expShape = new long[]{2,1,2,2};
+        assertArrayEquals(expShape, arr.shape());
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;
