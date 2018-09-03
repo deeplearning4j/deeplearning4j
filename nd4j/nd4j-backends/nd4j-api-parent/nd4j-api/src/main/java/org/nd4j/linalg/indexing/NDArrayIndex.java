@@ -240,6 +240,10 @@ public class NDArrayIndex implements INDArrayIndex {
         return new NDArrayIndexAll(true);
     }
 
+    public static INDArrayIndex indices(long... indices){
+        return new SpecifiedIndex(indices);
+    }
+
 
     /**
      * Represents adding a new dimension

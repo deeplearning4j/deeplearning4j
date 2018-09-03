@@ -65,6 +65,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.SpecifiedIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -6851,6 +6852,75 @@ public class Nd4jTestsC extends BaseNd4jTest {
             }
             assertArrayEquals(String.valueOf(i), expShape, out.shape());
         }
+    }
+
+    @Test
+    public void testPutSpecifiedIndex(){
+        long[][] ss = new long[][]{{3,4}, {3,4,5}, {3,4,5,6}};
+        long[][] st = new long[][]{{4,4}, {4,4,5}, {4,4,5,6}};
+        long[][] ds = new long[][]{{1,4}, {1,4,5}, {1,4,5,6}};
+
+        for( int test=0; test<ss.length; test++ ) {
+            long[] shapeSource = ss[test];
+            long[] shapeTarget = st[test];
+            long[] diffShape = ds[test];
+
+            final INDArray source = Nd4j.ones(shapeSource);
+            final INDArray target = Nd4j.zeros(shapeTarget);
+
+            final INDArrayIndex[] targetIndexes = new INDArrayIndex[shapeTarget.length];
+            Arrays.fill(targetIndexes, NDArrayIndex.all());
+            int[] arr = new int[(int) shapeSource[0]];
+            for (int i = 0; i < arr.length; i++) {
+                arr[i] = i;
+            }
+            targetIndexes[0] = new SpecifiedIndex(arr);
+
+            // Works
+            //targetIndexes[0] = NDArrayIndex.interval(0, shapeSource[0]);
+
+            target.put(targetIndexes, source);
+            final INDArray expected = Nd4j.concat(0, Nd4j.ones(shapeSource), Nd4j.zeros(diffShape));
+            assertEquals("Expected array to be set!", expected, target);
+        }
+    }
+
+    @Test
+    public void testPutSpecifiedIndices2d(){
+
+        INDArray arr = Nd4j.create(3,4);
+        INDArray toPut = Nd4j.create(new double[]{1,2,3,4}, new int[]{2,2}, 'c');
+        INDArrayIndex[] indices = new INDArrayIndex[]{
+                NDArrayIndex.indices(0,2),
+                NDArrayIndex.indices(1,3)} ;
+
+        INDArray exp = Nd4j.create(new double[][]{
+                {0,1,0,2},
+                {0,0,0,0},
+                {0,3,0,4}});
+
+        arr.put(indices, toPut);
+        assertEquals(exp, arr);
+    }
+
+    @Test
+    public void testPutSpecifiedIndices3d(){
+
+        INDArray arr = Nd4j.create(2,3,4);
+        INDArray toPut = Nd4j.create(new double[]{1,2,3,4}, new int[]{1,2,2}, 'c');
+        INDArrayIndex[] indices = new INDArrayIndex[]{
+                NDArrayIndex.point(1),
+                NDArrayIndex.indices(0,2),
+                NDArrayIndex.indices(1,3)} ;
+
+        INDArray exp = Nd4j.create(2,3,4);
+        exp.putScalar(1, 0, 1, 1);
+        exp.putScalar(1, 0, 3, 2);
+        exp.putScalar(1, 2, 1, 3);
+        exp.putScalar(1, 2, 3, 4);
+
+        arr.put(indices, toPut);
+        assertEquals(exp, arr);
     }
 
     ///////////////////////////////////////////////////////
