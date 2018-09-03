@@ -824,15 +824,25 @@ void mirrorPad(const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& 
         const int leftSide  = static_cast<int>(paddings(static_cast<Nd4jLong>(0)));
         const int rightSide = static_cast<int>(paddings(static_cast<Nd4jLong>(1)));
 
-#pragma omp parallel for if(outLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+//#pragma omp parallel for if(outLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
         for(int i = 0; i < outLen; ++i) {
             
-            for(int j = 0; j < leftSide; ++j)
-                output(j) = input(inLen - leftSide + symmBorder - j);
+            for(int j = 0; j < leftSide; ++j) {
+                int iindex = inLen - leftSide + symmBorder - j;
+                if (iindex >= inLen) iindex = inLen - 1;
+                if (iindex == inLen) iindex--;
+                output(j) = input(iindex);
+
+            }
             for(int j = 0; j < inLen; ++j)
                 output(j + leftSide) = input(j);
-            for(int j = 0; j < rightSide; ++j)
-                output(leftSide + inLen + j) = input(inLen - 1 - symmBorder - j);
+            for(int j = 0; j < rightSide; ++j) {
+                int iindex = inLen - 1 - symmBorder - j;
+                if (iindex < 0) iindex = 0;
+                if (iindex >= inLen) iindex = inLen - 1;
+                output(leftSide + inLen + j) = input(iindex);
+            }
+
         }  
     }
     else {

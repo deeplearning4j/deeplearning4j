@@ -2365,7 +2365,10 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test3) {
     nd4j::ops::mirror_pad<float> op;
     auto result = op.execute({&input, &paddings}, {}, {1});
     NDArray<float>* output = result->at(0);
-
+//    output->printIndexedBuffer("Result");
+//    exp.printIndexedBuffer("Expect");
+//    output->printShapeInfo("Shape");
+//    exp.printShapeInfo("Expected shape");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
