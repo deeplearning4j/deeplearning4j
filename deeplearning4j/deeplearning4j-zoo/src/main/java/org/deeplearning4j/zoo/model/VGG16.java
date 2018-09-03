@@ -153,15 +153,15 @@ public class VGG16 extends ZooModel {
                         .layer(17, new SubsamplingLayer.Builder()
                                 .poolingType(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
                                 .stride(2, 2).build(), "16")
-                        //                .layer(18, new DenseLayer.Builder().nOut(4096).dropOut(0.5)
-                        //                        .build())
-                        //                .layer(19, new DenseLayer.Builder().nOut(4096).dropOut(0.5)
-                        //                        .build())
-                        .layer(18, new OutputLayer.Builder(
+                        .layer(18, new DenseLayer.Builder().nOut(4096).dropOut(0.5)
+                                                .build())
+                        .layer(19, new DenseLayer.Builder().nOut(4096).dropOut(0.5)
+                                                .build())
+                        .layer(20, new OutputLayer.Builder(
                                 LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).name("output")
                                 .nOut(numClasses).activation(Activation.SOFTMAX) // radial basis function required
-                                .build(), "17")
-                        .setOutputs("18")
+                                .build(), "18")
+                        .setOutputs("19")
                         .backprop(true).pretrain(false)
                         .setInputTypes(InputType.convolutionalFlat(inputShape[2], inputShape[1], inputShape[0]))
                         .build();
