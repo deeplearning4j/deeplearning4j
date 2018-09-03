@@ -50,7 +50,7 @@ namespace nd4j {
         #endif
 
         #if NOT_EXCLUDED(OP_expand_dims)
-        DECLARE_CUSTOM_OP(expand_dims, 1, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(expand_dims, 1, 1, false, 0, -2);
         #endif
 
         #if NOT_EXCLUDED(OP_reshape)

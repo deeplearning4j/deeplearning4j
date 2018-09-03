@@ -22,14 +22,15 @@ import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.eval.EvaluationBinary;
 import org.deeplearning4j.gradientcheck.LossFunctionGradientCheck;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.conf.BackpropType;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
+import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToRnnPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -41,12 +42,18 @@ import org.nd4j.linalg.api.ops.impl.transforms.Not;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.*;
+import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.linalg.schedule.MapSchedule;
+import org.nd4j.linalg.schedule.ScheduleType;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -153,6 +160,7 @@ public class TestMasking extends BaseDL4JTest {
                                                 .build())
                                 .layer(1, new OutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf)
                                                 .activation(a).build())
+                                .validateOutputLayerConfig(false)
                                 .build();
 
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -198,7 +206,7 @@ public class TestMasking extends BaseDL4JTest {
                                                 .activation(Activation.TANH).build(), "in")
                                 .addLayer("1", new OutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf)
                                                 .activation(a).build(), "0")
-                                .setOutputs("1").build();
+                                .setOutputs("1").validateOutputLayerConfig(false).build();
 
                 ComputationGraph graph = new ComputationGraph(conf2);
                 graph.init();
@@ -255,5 +263,44 @@ public class TestMasking extends BaseDL4JTest {
 
         EvaluationBinary eb = new EvaluationBinary();
         graph.doEvaluation(iter, eb);
+    }
+
+
+    @Test
+    public void testRnnCnnMaskingSimple(){
+        int kernelSize1 = 2;
+        int padding = 0;
+        int cnnStride1 = 1;
+        int channels = 1;
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .weightInit(WeightInit.XAVIER)
+                .convolutionMode(ConvolutionMode.Same)
+                .graphBuilder()
+                .addInputs("inputs")
+                .addLayer("cnn1",
+                        new ConvolutionLayer.Builder(new int[] { kernelSize1, kernelSize1 },
+                                new int[] { cnnStride1, cnnStride1 },
+                                new int[] { padding, padding })
+                                .nIn(channels)
+                                .nOut(2).build(), "inputs")
+                .addLayer("lstm1", new LSTM.Builder().nIn(7 * 7 * 2).nOut(2).build(), "cnn1")
+                .addLayer("output", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                        .activation(Activation.RELU).nIn(2).nOut(2).build(), "lstm1")
+                .setOutputs("output")
+                .setInputTypes(InputType.recurrent(7*7, 1))
+                .inputPreProcessor("cnn1", new RnnToCnnPreProcessor(7, 7, channels))
+                .inputPreProcessor("lstm1", new CnnToRnnPreProcessor(7, 7, 2))
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        cg.fit(new DataSet(
+                Nd4j.create(1, 7*7, 5),
+                Nd4j.create(1, 2, 5),
+                Nd4j.ones(1, 5),
+                Nd4j.ones(1, 5)));
     }
 }

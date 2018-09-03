@@ -40,7 +40,7 @@ public class TestKryoWarning {
         try {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                            .layer(0, new OutputLayer.Builder().nIn(10).nOut(10).build()).pretrain(false).backprop(true)
+                            .layer(0, new OutputLayer.Builder().nIn(10).nOut(10).build())
                             .build();
 
             TrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(1).build();
@@ -58,7 +58,7 @@ public class TestKryoWarning {
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
                             .addLayer("0", new OutputLayer.Builder().nIn(10).nOut(10).build(), "in").setOutputs("0")
-                            .pretrain(false).backprop(true).build();
+                            .build();
 
             TrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(1).build();
 

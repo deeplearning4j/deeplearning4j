@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.fail;
@@ -232,7 +233,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
                         .layer(0, new ConvolutionLayer.Builder().kernelSize(7, 7).stride(1, 1).padding(0, 0).nOut(5)
                                         .build())
-                        .layer(1, new OutputLayer.Builder().nOut(10).build())
+                        .layer(1, new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build())
                         .setInputType(InputType.convolutional(hIn, wIn, depthIn)).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -264,7 +265,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
                         new NeuralNetConfiguration.Builder().convolutionMode(ConvolutionMode.Strict).list()
                                         .layer(0, new ConvolutionLayer.Builder().kernelSize(3, 3).stride(2, 2)
                                                         .padding(0, 0).nIn(depthIn).nOut(5).build())
-                                        .layer(1, new OutputLayer.Builder().nIn(5 * 4 * 4).nOut(10).build())
+                                        .layer(1, new OutputLayer.Builder().nIn(5 * 4 * 4).nOut(10).activation(Activation.SOFTMAX).build())
                                         .inputPreProcessor(1, new CnnToFeedForwardPreProcessor()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -297,7 +298,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
                             .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 3).stride(2, 2).padding(0, 0).nOut(5)
                                             .build())
-                            .layer(1, new OutputLayer.Builder().nOut(10).build())
+                            .layer(1, new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build())
                             .setInputType(InputType.convolutional(hIn, wIn, depthIn)).build();
         } catch (Exception e) {
             fail("Did not expect exception with default (truncate)");

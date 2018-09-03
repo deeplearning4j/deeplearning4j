@@ -302,6 +302,13 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <configuration>
+                    <scalaVersion>${scala.version}</scalaVersion>
+                </configuration>
+            </plugin>
 
             <!-- Build helper plugin: used to add the multiple independent source directories (Java, Scala, HTML templates) -->
             <plugin>

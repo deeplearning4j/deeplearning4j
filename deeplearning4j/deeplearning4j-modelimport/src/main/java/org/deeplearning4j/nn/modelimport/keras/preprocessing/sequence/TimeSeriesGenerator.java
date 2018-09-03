@@ -38,7 +38,7 @@ import java.util.Map;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils.parseJsonString;
 
 /**
- * Java port of Keras' TimeSeriesGenerator, see https://keras.io/preprocessing/sequence/
+ * Java port of Keras' TimeSeriesGenerator, see <a href="https://keras.io/preprocessing/sequence/">https://keras.io/preprocessing/sequence/</a>
  *
  * @author Max Pumperla
  */

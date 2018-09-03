@@ -42,8 +42,10 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -208,6 +210,7 @@ public class TFGraphTestAllHelper {
     public static SameDiff getGraphAfterExec(String baseDir, String modelName, Map<String, INDArray> inputs, ExecuteWith executeWith) throws IOException {
         log.info("\n\tRUNNING TEST " + modelName + "...");
         val graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource(baseDir + "/" + modelName + "/frozen_model.pb").getInputStream());
+        //System.out.println(graph.summary());
         if (executeWith.equals(ExecuteWith.SAMEDIFF)) {
             if (!inputs.isEmpty()) {
                 graph.execWithPlaceHolder(inputs); //This is expected to be just one result
@@ -327,16 +330,28 @@ public class TFGraphTestAllHelper {
                 for( int j=0; j<filtered.size(); j++ ){
                     varShape[j] = Integer.parseInt(filtered.get(j));
                 }
+
                 try {
-                    float[] varContents = Nd4j.readNumpy(new ClassPathResource(varPath.replace(".shape", ".csv")).getInputStream(), ",").data().asFloat();
-                    if (varShape.length == 1) {
-                        if (varShape[0] == 0) {
-                            varValue = Nd4j.trueScalar(varContents[0]);
+                    String content = FileUtils.readFileToString(new ClassPathResource(varPath.replace(".shape", ".csv")).getFile(), Charset.forName("UTF-8"));
+                    if (content.isEmpty()) {
+                        if (varShape.length == 1 && varShape[0] == 0) {
+                            varValue = Nd4j.empty();
                         } else {
-                            varValue = Nd4j.trueVector(varContents);
+                            throw new IllegalStateException("Empty data but non-empty shape: " + varPath);
                         }
                     } else {
-                        varValue = Nd4j.create(varContents, varShape);
+                        content = content.replaceAll("False", "0");
+                        content = content.replaceAll("True", "1");
+                        float[] varContents = Nd4j.readNumpy(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)), ",").data().asFloat();
+                        if (varShape.length == 1) {
+                            if (varShape[0] == 0) {
+                                varValue = Nd4j.trueScalar(varContents[0]);
+                            } else {
+                                varValue = Nd4j.trueVector(varContents);
+                            }
+                        } else {
+                            varValue = Nd4j.create(varContents, varShape);
+                        }
                     }
                 } catch (NumberFormatException e) {
                     // FIXME: we can't parse boolean arrays right now :(

@@ -101,6 +101,12 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <scalaVersion>${scala.version}</scalaVersion>
+                    <args>
+                        <arg>-deprecation</arg>
+                        <arg>-explaintypes</arg>
+                        <arg>-nobootcp</arg>
+                    </args>
                     <jvmArgs>
                         <jvmArg>-Xms128m</jvmArg>
                         <jvmArg>-Xmx512m</jvmArg>

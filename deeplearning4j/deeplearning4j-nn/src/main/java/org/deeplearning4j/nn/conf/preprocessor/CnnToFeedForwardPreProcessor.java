@@ -80,6 +80,11 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
     public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         if (input.rank() == 2)
             return input; //Should usually never happen
+        if(input.size(1) != numChannels || input.size(2) != inputHeight || input.size(3) != inputWidth){
+            throw new IllegalStateException("Invalid input, does not match configuration: expected [minibatch, numChannels="
+                    + numChannels + ", inputHeight=" + inputHeight + ", inputWidth=" + inputWidth + "] but got input array of" +
+                    "shape " + Arrays.toString(input.shape()));
+        }
 
         //Check input: nchw format
         if(input.size(1) != numChannels || input.size(2) != inputHeight ||

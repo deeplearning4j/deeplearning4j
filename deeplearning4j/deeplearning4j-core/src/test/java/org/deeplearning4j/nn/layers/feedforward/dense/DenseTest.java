@@ -130,7 +130,7 @@ public class DenseTest extends BaseDL4JTest {
                         .layer(1, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(3).nOut(2)
                                         .activation(Activation.TANH).weightInit(WeightInit.XAVIER).build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                        .weightInit(WeightInit.XAVIER).nIn(2).nOut(outputNum).build())
+                                        .weightInit(WeightInit.XAVIER).nIn(2).nOut(outputNum).activation(Activation.SOFTMAX).build())
                         .backprop(backprop).pretrain(pretrain).build();
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);

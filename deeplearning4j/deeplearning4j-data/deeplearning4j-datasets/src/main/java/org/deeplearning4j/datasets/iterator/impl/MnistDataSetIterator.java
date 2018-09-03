@@ -67,6 +67,6 @@ public class MnistDataSetIterator extends BaseDatasetIterator {
      */
     public MnistDataSetIterator(int batch, int numExamples, boolean binarize, boolean train, boolean shuffle,
                     long rngSeed) throws IOException {
-        super(batch, numExamples, new MnistDataFetcher(binarize, train, shuffle, rngSeed));
+        super(batch, numExamples, new MnistDataFetcher(binarize, train, shuffle, rngSeed, numExamples));
     }
 }

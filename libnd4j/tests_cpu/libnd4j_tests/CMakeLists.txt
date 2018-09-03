@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
 project(dev_tests)
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../cmake" ${CMAKE_MODULE_PATH})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../lib/googletest-release-1.8.0 ${CMAKE_CURRENT_BINARY_DIR}/lib/googletest-release-1.8.0)
 set(gtest_SOURCE_DIR ../lib/googletest-release-1.8.0)
 
@@ -115,11 +116,14 @@ foreach (TMP_PATH ${TEST_SOURCES})
     endif ()
 endforeach(TMP_PATH)
 
-add_executable(runtests  ../../blas/cpu/NativeOps.cpp ../../blas/cpu/GraphExecutioner.cpp
-        ../../blas/cpu/NativeOpExcutioner.cpp ../../blas/cpu/NDArray.cpp
-        ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h
-        ../../blas/Environment.cpp ../../blas/Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
-        ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
-        ${OPS_SOURCES} ${TEST_SOURCES})
+
+add_executable(runtests ../../blas/cpu/NativeOps.cpp ../../blas/cpu/GraphExecutioner.cpp
+    ../../blas/cpu/NativeOpExcutioner.cpp ../../blas/cpu/NDArray.cpp
+    ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h
+    ../../blas/Environment.cpp ../../blas/Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
+    ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
+    ${OPS_SOURCES} ${TEST_SOURCES})
 
 target_link_libraries(runtests gtest gtest_main)
+
+
