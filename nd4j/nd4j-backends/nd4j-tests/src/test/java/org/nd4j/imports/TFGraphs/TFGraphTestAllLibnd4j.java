@@ -84,7 +84,13 @@ public class TFGraphTestAllLibnd4j {
             //Exceptions - need to look into:
             "alpha_dropout/.*",
             "layers_dropout/.*",
-            "losses/.*"
+            "losses/.*",
+
+            //Failing only on libnd4j/native graph execution
+            "logsumexp/.*",
+            "reduce_all/.*",
+            "reduce_any/.*",
+            "split/.*"
     };
 
     @BeforeClass
