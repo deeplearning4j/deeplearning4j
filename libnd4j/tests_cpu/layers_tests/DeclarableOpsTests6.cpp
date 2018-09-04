@@ -640,8 +640,6 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_5) {
     NDArray<double> exp({2., 4.});
 
     nd4j::ops::broadcast_dynamic_shape<double> op;
-    ASSERT_TRUE(shape::isVector(y.getShapeInfo()));
-    ASSERT_TRUE(y.isVector());
     auto res = op.execute({&x, &y}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, res->status());
