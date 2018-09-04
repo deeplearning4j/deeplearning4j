@@ -18,6 +18,7 @@ package org.nd4j.parameterserver.distributed.messages;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 
@@ -26,6 +27,8 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
+@Ignore
+@Deprecated
 public class VoidMessageTest {
     @Before
     public void setUp() throws Exception {

@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Deprecated
 public class RequestDescriptor {
     private long originatorId;
     private long taskId;

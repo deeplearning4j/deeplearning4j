@@ -31,6 +31,7 @@ import org.nd4j.parameterserver.distributed.training.TrainingDriver;
  */
 @Data
 @Slf4j
+@Deprecated
 public class CbowRequestMessage extends BaseVoidMessage implements TrainingMessage, RequestMessage {
     protected byte counter = 1;
 

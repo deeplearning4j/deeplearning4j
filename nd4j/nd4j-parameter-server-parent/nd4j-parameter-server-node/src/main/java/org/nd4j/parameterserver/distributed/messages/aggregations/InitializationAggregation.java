@@ -25,6 +25,7 @@ import org.nd4j.parameterserver.distributed.messages.complete.InitializationComp
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public class InitializationAggregation extends BaseAggregation {
 
     protected InitializationAggregation() {
