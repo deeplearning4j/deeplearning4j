@@ -29,18 +29,37 @@ namespace functions {
 
 
         template <typename X>
-        X SummaryStatsReduce<X>::execScalar(const int opNum, const bool biasCorrected, X *x, Nd4jLong *xShapeInfo, X *extraParams) {
+        X SummaryStatsReduce<X>::execScalar(const int opNum,
+                const bool biasCorrected,
+                void *x,
+                Nd4jLong *xShapeInfo,
+                void *extraParams) {
             RETURNING_DISPATCH_BY_OPNUM_T(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams), SUMMARY_STATS_OPS);
         }
 
         template <typename X>
-        void SummaryStatsReduce<X>::exec(const int opNum, const bool biasCorrected, X *x, Nd4jLong *xShapeInfo, X *extraParams, X *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength) {
+        void SummaryStatsReduce<X>::exec(const int opNum,
+                const bool biasCorrected,
+                void *x,
+                Nd4jLong *xShapeInfo,
+                void *extraParams,
+                void *result,
+                Nd4jLong *resultShapeInfoBuffer,
+                int *dimension,
+                int dimensionLength) {
             DISPATCH_BY_OPNUM_T(exec, PARAMS(biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength), SUMMARY_STATS_OPS);
         }
 
         template <typename X>
         template <typename OpType >
-        X SummaryStatsReduce<X>::execScalar(const bool biasCorrected, X *x, Nd4jLong *xShapeInfo, X *extraParams) {
+        X SummaryStatsReduce<X>::execScalar(const bool biasCorrected,
+                void *vx,
+                Nd4jLong *xShapeInfo,
+                void *vextraParams) {
+
+            auto x = reinterpret_cast<X *>(vx);
+            auto extraParams = reinterpret_cast<X *>(vextraParams);
+
             SummaryStatsData<X> startingIndex;
             startingIndex.initialize();
             Nd4jLong length = shape::length(xShapeInfo);
@@ -78,7 +97,18 @@ namespace functions {
 
         template <typename X>
         template <typename OpType >
-        void SummaryStatsReduce<X>::exec(const bool biasCorrected, X *x, Nd4jLong *xShapeInfo, X *extraParams, X *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength) {
+        void SummaryStatsReduce<X>::exec(const bool biasCorrected,
+                void *vx,
+                Nd4jLong *xShapeInfo,
+                void *vextraParams,
+                void *vresult,
+                Nd4jLong *resultShapeInfoBuffer,
+                int *dimension,
+                int dimensionLength) {
+            auto x = reinterpret_cast<X *>(vx);
+            auto result = reinterpret_cast<X *>(vresult);
+            auto extraParams = reinterpret_cast<X *>(vextraParams);
+
             if (shape::isScalar(resultShapeInfoBuffer)) {
                 result[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
                 return;

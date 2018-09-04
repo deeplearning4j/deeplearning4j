@@ -298,16 +298,37 @@ namespace functions {
             static _CUDA_H void execSummaryStatsReduce(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, bool biasCorrected);
 #endif
 
-            static X execScalar(const int opNum, const bool biasCorrected, X *x, Nd4jLong *xShapeInfo, X *extraParams);
+            static X execScalar(const int opNum,
+                    const bool biasCorrected,
+                    void *x,
+                    Nd4jLong *xShapeInfo,
+                    void *extraParams);
 
-            static void exec(const int opNum, const bool biasCorrected, X *x, Nd4jLong *xShapeInfo, X *extraParams, X *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength);
+            static void exec(const int opNum,
+                    const bool biasCorrected,
+                    void *x,
+                    Nd4jLong *xShapeInfo,
+                    void *extraParams,
+                    void *result,
+                    Nd4jLong *resultShapeInfoBuffer,
+                    int *dimension, int dimensionLength);
 
             template<typename OpType>
-            static X execScalar(const bool biasCorrected, X *x, Nd4jLong *xShapeInfo, X *extraParams);
+            static X execScalar(const bool biasCorrected,
+                    void *x,
+                    Nd4jLong *xShapeInfo,
+                    void *extraParams);
 
 
             template<typename OpType>
-            static void exec(const bool biasCorrected, X *x, Nd4jLong *xShapeInfo, X *extraParams, X *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength);
+            static void exec(const bool biasCorrected,
+                    void *x,
+                    Nd4jLong *xShapeInfo,
+                    void *extraParams,
+                    void *result,
+                    Nd4jLong *resultShapeInfoBuffer,
+                    int *dimension,
+                    int dimensionLength);
 
         };
     }
