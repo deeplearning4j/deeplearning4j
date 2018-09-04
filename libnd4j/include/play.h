@@ -28,10 +28,12 @@
         (DATA_DOUBLE, double) ,\
         (DATA_HALF, float16)
 
+//BUILD_SINGLE_SELECTOR(xType, functions::IndexReduce, ::op(a, b, c, d, e), DATA_TYPES)
+BUILD_DOUBLE_SELECTOR(xType, yType, functions::IndexReduce, ::op(a, b, c, d, e), DATA_TYPES, DATA_TYPES)
 
-BUILD_SINGLE_TEMPLATE(template class Alpha, (signature), DATA_TYPES);
+//BUILD_SINGLE_TEMPLATE(template class Alpha, (signature), DATA_TYPES);
 
-BUILD_DOUBLE_TEMPLATE(template class Alpha, (signature) , DATA_TYPES, DATA_TYPES);
+//BUILD_DOUBLE_TEMPLATE(template class Alpha, (signature) , DATA_TYPES, DATA_TYPES);
 
 /*
 #define SCALAR_OPS \
