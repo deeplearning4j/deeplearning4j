@@ -68,6 +68,11 @@ FORCEINLINE _CUDA_HD char DataTypeUtils::min<char>() {
     return 1;
 }
 
+template <>
+FORCEINLINE _CUDA_HD bool DataTypeUtils::min<bool>() {
+    return false;
+}
+
 template<>
 FORCEINLINE _CUDA_HD Nd4jLong DataTypeUtils::min<Nd4jLong>() {
     return 1L;
@@ -106,8 +111,28 @@ FORCEINLINE _CUDA_HD int DataTypeUtils::max<int>() {
 }
 
 template <>
-FORCEINLINE _CUDA_HD char DataTypeUtils::max<char>() {
+FORCEINLINE _CUDA_HD bool DataTypeUtils::max<bool>() {
+    return true;
+}
+
+template <>
+FORCEINLINE _CUDA_HD int8_t DataTypeUtils::max<int8_t>() {
     return 127;
+}
+
+template <>
+FORCEINLINE _CUDA_HD uint8_t DataTypeUtils::max<uint8_t>() {
+    return 255;
+}
+
+template <>
+FORCEINLINE _CUDA_HD int16_t DataTypeUtils::max<int16_t>() {
+    return 32767;
+}
+
+template <>
+FORCEINLINE _CUDA_HD uint16_t DataTypeUtils::max<uint16_t>() {
+    return 65535;
 }
 
 template <>
@@ -121,7 +146,7 @@ FORCEINLINE _CUDA_HD uint32_t DataTypeUtils::max<uint32_t>() {
 }
 
 template <>
-FORCEINLINE _CUDA_HD uint64_t DataTypeUtils::max<uint64_t>() {
+FORCEINLINE _CUDA_HD Nd4jULong DataTypeUtils::max<Nd4jULong>() {
     return 18446744073709551615LLU;
 }
 

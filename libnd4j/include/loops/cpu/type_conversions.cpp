@@ -39,7 +39,7 @@ namespace nd4j {
 
 
         for (Nd4jLong e = 0; e < N; e++) {
-            z[e] = static_cast<T>(static_cast<float>(x[e]) / static_cast<float>(DataTypeUtils::max<char>()) * nd4j::math::nd4j_max<float>(amin, amax));
+            z[e] = static_cast<T>(static_cast<float>(x[e]) / static_cast<float>(DataTypeUtils::max<int8_t>()) * nd4j::math::nd4j_max<float>(amin, amax));
         }
     }
 
@@ -74,7 +74,7 @@ namespace nd4j {
         float max = static_cast<float>(mx);
         float min = static_cast<float>(mn);
 
-        int max_byte = static_cast<int>(DataTypeUtils::max<char>());
+        int max_byte = static_cast<int>(DataTypeUtils::max<int8_t>());
         fz[0] = min;
         fz[1] = max;
 

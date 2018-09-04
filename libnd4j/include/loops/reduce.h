@@ -202,7 +202,7 @@ namespace functions {
             * @return
             */
             template<typename OpType>
-            static X _CUDA_H execScalar(const void *x,
+            static X _CUDA_H execScalar(void *x,
                     Nd4jLong xElementWiseStride,
                     Nd4jLong length,
                     void *extraParams);

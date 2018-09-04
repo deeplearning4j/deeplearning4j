@@ -66,7 +66,7 @@ namespace functions {
 		        auto extraParams = reinterpret_cast<X *>(vextraParams);
 
                 if(OpType::requiresSpecial) {
-                    OpType::execSpecial(dx, xShapeInfo,result,resultShapeInfo,extraParams, tadShapeInfo, tadOffsets);
+                    OpType::execSpecial(dx, xShapeInfo, result,resultShapeInfo, extraParams, tadShapeInfo, tadOffsets);
                     return;
                 }
 

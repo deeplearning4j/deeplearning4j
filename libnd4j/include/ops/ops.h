@@ -110,7 +110,7 @@ namespace simdOps {
 		op_def static X op(X d1, Y *params) {
 			return d1 + params[0];
 		}
-		
+
 		op_def static X startingValue() {
 			return static_cast<X>(0.f);
 		}
@@ -123,7 +123,7 @@ namespace simdOps {
             return d1 + d2;
         }
 	};
-        
+
 	template <typename X, typename Y>
 	class Subtract {
 	public:
@@ -173,7 +173,7 @@ namespace simdOps {
 		op_def static X op(X d1, Y d2) {
 			return d2 - d1;
 		}
-		
+
 		op_def static X op(X d1, Y d2, X *params) {
 			return d2 - d1;
 		}
@@ -188,7 +188,7 @@ namespace simdOps {
 		}
 	};
 
-        
+
 	template <typename X, typename Y>
 	class LogPoisonLossFull {
 
@@ -268,7 +268,7 @@ namespace simdOps {
 		op_def static X op(X d1, Y d2, X *params) {
 			return d1 / d2;
 		}
-		
+
 		op_def static X op(X d1) {
 			return d1;
 		}
@@ -297,7 +297,7 @@ namespace simdOps {
 				return static_cast<X>(0);
 			return d1 / d2;
 		}
-		
+
 		op_def static X op(X d1) {
 			return d1;
 		}
@@ -417,7 +417,7 @@ namespace simdOps {
             return d1;
         }
 
-        // op for MetaOps 
+        // op for MetaOps
         op_def static X op(X d1, Y *params) {
             return op(d1, params[0]);
         }
@@ -853,7 +853,7 @@ namespace simdOps {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
-		
+
 		op_def static X op(X d1, X *params) {
 			return nd4j::math::nd4j_abs<X>(d1);
 		}
@@ -871,7 +871,7 @@ namespace simdOps {
 		}
 	};
 
-	
+
 	template <typename X>
 	class Cosine {
 	public:
@@ -883,7 +883,7 @@ namespace simdOps {
 		}
 	};
 
-	
+
 	template <typename X>
 	class Exp {
 	public:
@@ -895,7 +895,7 @@ namespace simdOps {
 		}
 	};
 
-	
+
 	template <typename X>
 	class HardTanhDerivative {
 	public:
@@ -907,7 +907,7 @@ namespace simdOps {
 		}
 	};
 
-	
+
 	template <typename X>
 	class HardTanh {
 	public:
@@ -1191,7 +1191,7 @@ namespace simdOps {
 		}
 	};
 
-	
+
 	template <typename X>
 	class Round {
 	public:
@@ -1477,7 +1477,7 @@ namespace simdOps {
 		}
 	};
 
-	
+
 	template <typename X>
 	class Sin {
 	public:
@@ -1533,7 +1533,7 @@ namespace simdOps {
 		}
 	};
 
-	
+
 	template <typename X>
 	class SoftPlus {
 	public:
@@ -1545,7 +1545,7 @@ namespace simdOps {
 		}
 	};
 
-	
+
 	template <typename X>
 	class Sign {
 	public:
@@ -1750,7 +1750,7 @@ namespace simdOps {
 	};
 
 
-	
+
 	template <typename X>
 	class SoftSign {
 	public:
@@ -1875,7 +1875,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static X op(X d1, X *params) {
-			return d1 < params[0] ? params[0] : d1;			
+			return d1 < params[0] ? params[0] : d1;
 		}
 	};
 
@@ -3155,10 +3155,10 @@ namespace simdOps {
         }
 
         op_def static X op(X d1, Y d2, X *extraParamsRef) {
-        	
+
         	X eps = extraParamsRef[2];
     	    X diff = nd4j::math::nd4j_abs<X>(d1 - d2);
-    	
+
     		// works well except in the range of very large numbers
     		if (diff <= eps)
     	    	return static_cast<X>(0.f);
@@ -3167,7 +3167,7 @@ namespace simdOps {
     	    // works well except in the range of very small numbers
 		    if (diff <= nd4j::math::nd4j_max<X>(nd4j::math::nd4j_abs<X>(d1), nd4j::math::nd4j_abs<Y>(d2)) * eps)
 		    	return static_cast<X>(0.f);
-        
+
         	return static_cast<X>(1.f);
         }
 

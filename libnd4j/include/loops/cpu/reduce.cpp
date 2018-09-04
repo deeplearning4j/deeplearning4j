@@ -236,7 +236,7 @@ namespace functions {
 
         template <typename X>
         template <typename OpType>
-        X _CUDA_H ReduceFunction<X>::execScalar(const void *vx,
+        X _CUDA_H ReduceFunction<X>::execScalar(void *vx,
                 Nd4jLong xElementWiseStride,
                 Nd4jLong length,
                 void *vextraParams) {
