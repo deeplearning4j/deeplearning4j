@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public abstract class BaseTransport implements Transport {
     protected VoidConfiguration voidConfiguration;
     protected NodeRole nodeRole;

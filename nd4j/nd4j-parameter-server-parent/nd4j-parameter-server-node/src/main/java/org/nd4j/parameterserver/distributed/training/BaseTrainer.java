@@ -27,6 +27,7 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
 /**
  * @author raver119@gmail.co,
  */
+@Deprecated
 public abstract class BaseTrainer<T extends TrainingMessage> implements TrainingDriver<T> {
     protected VoidConfiguration voidConfiguration;
     protected Transport transport;

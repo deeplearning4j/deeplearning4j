@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.AtomicThrowable;
 
 import java.util.ArrayList;
@@ -39,6 +40,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -77,6 +79,8 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
     protected boolean isDebug = false;
     protected final boolean relocatable;
+
+    protected ThreadLocal<AtomicLong> updatesApplied = new ThreadLocal<>();
 
     protected WorkspaceConfiguration appliedConfiguration = WorkspaceConfiguration.builder().minSize(5 * 1024 * 1024L)
                     .overallocationLimit(0.3).policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
@@ -259,6 +263,8 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
      */
     @Override
     public void applyUpdate(StepFunction function, INDArray params, INDArray updates) {
+        if (updatesApplied.get() == null)
+            updatesApplied.set(new AtomicLong(0));
         try {
             // nullify given updates first
             Nd4j.getMemoryManager().memset(updates);
@@ -326,8 +332,12 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
             // TODO: average updates probably?
 
-            if (cnt > 0)
+            if (cnt > 0) {
                 function.step(params, updates);
+                updatesApplied.get().addAndGet(cnt);
+                if (isDebug)
+                    log.info("Total updates applied so far for thread [{}]: [{}]", Thread.currentThread().getName(), updatesApplied.get());
+            }
         } catch (Exception e) {
             throwable.setIfFirst(e);
             throw new RuntimeException(e);
@@ -524,7 +534,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                         messages.get(i).put(compressed);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
-                        log.info("Something bad at index_{}", i);
+                        log.warn("Something bad at index_{}", i);
                         throw new RuntimeException(e);
                     }
                 }
