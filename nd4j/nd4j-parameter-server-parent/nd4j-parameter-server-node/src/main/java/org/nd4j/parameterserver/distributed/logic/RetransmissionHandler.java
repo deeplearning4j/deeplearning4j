@@ -24,6 +24,7 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
 /**
  * @author raver119@gmail.com
  */
+@Deprecated
 public interface RetransmissionHandler {
     public enum TransmissionStatus {
         MESSAGE_SENT, NOT_CONNECTED, BACKPRESSURE, ADMIN_ACTION,

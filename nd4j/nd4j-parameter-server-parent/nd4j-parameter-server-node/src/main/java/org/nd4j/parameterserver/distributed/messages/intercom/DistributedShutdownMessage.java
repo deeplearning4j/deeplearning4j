@@ -22,6 +22,7 @@ import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
 /**
  * @author raver119@gmail.com
  */
+@Deprecated
 public class DistributedShutdownMessage extends BaseVoidMessage implements DistributedMessage {
 
     public DistributedShutdownMessage() {

@@ -19,7 +19,7 @@ package org.deeplearning4j.spark.parameterserver.training;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.api.java.JavaPairRDD;
+import lombok.val;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.function.FlatMapFunction;
@@ -48,22 +48,25 @@ import org.deeplearning4j.spark.parameterserver.accumulation.SharedTrainingAccum
 import org.deeplearning4j.spark.parameterserver.accumulation.SharedTrainingAggregateFunction;
 import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
 import org.deeplearning4j.spark.parameterserver.functions.*;
-import org.deeplearning4j.spark.parameterserver.networking.SilentTrainingDriver;
+import org.deeplearning4j.spark.parameterserver.networking.v1.SilentTrainingDriver;
+import org.deeplearning4j.spark.parameterserver.networking.v2.UpdatesConsumer;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.ExecutionMode;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.enums.TransportType;
-import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
-import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
-import org.nd4j.parameterserver.distributed.transport.Transport;
 import org.nd4j.parameterserver.distributed.util.NetworkOrganizer;
+import org.nd4j.parameterserver.distributed.v2.ModelParameterServer;
+import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
+import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeResponse;
+import org.nd4j.parameterserver.distributed.v2.transport.Transport;
+import org.nd4j.parameterserver.distributed.v2.transport.impl.AeronUdpTransport;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
@@ -123,6 +126,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     protected transient Broadcast<SharedTrainingConfiguration> broadcastConfiguration;
     protected transient Transport transport;
     protected transient SilentTrainingDriver trainingDriver;
+
+    protected transient UpdatesConsumer updatesConsumer;
 
     protected boolean setupDone;
 
@@ -413,8 +418,12 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         // set current box as controller, if field is unset - switch to next step
         if (voidConfiguration.getControllerAddress() == null) {
             try {
-                String sparkIp = InetAddress.getByName(System.getenv("SPARK_PUBLIC_DNS")).getHostAddress();
-                voidConfiguration.setControllerAddress(sparkIp);
+                val e = System.getenv("SPARK_PUBLIC_DNS");
+                log.info("Trying {SPARK_PUBLIC_DNS}: [{}]", e);
+                if (e != null) {
+                    String sparkIp = InetAddress.getByName(e).getHostAddress();
+                    voidConfiguration.setControllerAddress(sparkIp);
+                }
             } catch (UnknownHostException e) {
             }
         }
@@ -422,7 +431,10 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         // next step - is to get ip address that matches specific network mask
         if (voidConfiguration.getControllerAddress() == null && voidConfiguration.getNetworkMask() != null) {
             NetworkOrganizer organizer = new NetworkOrganizer(voidConfiguration.getNetworkMask());
-            voidConfiguration.setControllerAddress(organizer.getMatchingAddress());
+            val s = organizer.getMatchingAddress();
+            log.info("Trying auto-detected address: [{}]", s);
+
+            voidConfiguration.setControllerAddress(s);
         }
 
         if (voidConfiguration.getControllerAddress() == null)
@@ -438,12 +450,12 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         voidConfiguration.setShardAddresses(voidConfiguration.getControllerAddress());
         voidConfiguration.setNumberOfShards(1);
 
-        Transport transport = voidConfiguration.getTransportType() == TransportType.ROUTED ? new RoutedTransport()
-                        : voidConfiguration.getTransportType() == TransportType.BROADCAST ? new MulticastTransport()
-                                        : this.transport;
-
-        if (transport == null)
-            throw new DL4JInvalidConfigException("No Transport implementation was defined for this training session!");
+        {
+            log.info("Initializing messages lol");
+            val hreq = new HandshakeRequest();
+            val hres = new HandshakeResponse();
+            val gm = new GradientsUpdateMessage();
+        }
 
         if (network != null)
             network.getNetwork().init();
@@ -455,7 +467,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             if(LAST_TRAINING_INSTANCE.get() >= 0 && LAST_TRAINING_INSTANCE.get() != instanceId){
                 log.debug("Detected changed training instance - setting up new parameter server - old instance {}, new instance {}",
                         LAST_TRAINING_INSTANCE, instanceId);
-                VoidParameterServer.getInstance().shutdown();
+
+                ModelParameterServer.getInstance().shutdown();
                 try{    //TODO is this required?
                     Thread.sleep(3000);
                 } catch (Exception e){
@@ -463,11 +476,32 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                 }
             }
 
-            trainingDriver = new SilentTrainingDriver(
-                            network != null ? network.getNetwork().params() : graph.getNetwork().params(),
-                            network != null ? network.getNetwork().getOptimizer().getStepFunction()
-                                            : graph.getNetwork().getOptimizer().getStepFunction());
-            VoidParameterServer.getInstance().init(voidConfiguration, transport, trainingDriver);
+            val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP
+                    ? new AeronUdpTransport(voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort(), voidConfiguration)
+                    : null;
+
+            if (transport == null)
+                throw new DL4JInvalidConfigException("No Transport implementation was defined for this training session!");
+
+            val params = network != null ? network.getNetwork().params() : graph.getNetwork().params();
+
+            updatesConsumer = UpdatesConsumer.builder()
+                    .params(params)
+                    .updates(Nd4j.create(params.shape(), params.ordering()))
+                    .stepFunction(network != null ? network.getNetwork().getOptimizer().getStepFunction() : graph.getNetwork().getOptimizer().getStepFunction())
+                    .build();
+
+            // apply configuration
+            ModelParameterServer.getInstance().configure(voidConfiguration, transport, true);
+
+            // and attach our consumer
+            ModelParameterServer.getInstance().addUpdatesSubscriber(updatesConsumer);
+
+
+            // and start actual server
+            if (!ModelParameterServer.getInstance().isInitialized())
+                ModelParameterServer.getInstance().launch();
+
             LAST_TRAINING_INSTANCE.set(instanceId);
         }
 
@@ -486,6 +520,10 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (trainingDriver != null) {
             trainingDriver.finishTraining(0L, 0L);
         }
+
+        // the same, but v2 impl
+        if (updatesConsumer != null)
+            updatesConsumer.flush();
     }
 
     @Override

@@ -35,9 +35,10 @@ import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualDataSetIterator;
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualIterator;
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualMultiDataSetIterator;
-import org.deeplearning4j.spark.parameterserver.networking.SilentTrainingDriver;
-import org.deeplearning4j.spark.parameterserver.networking.WiredEncodingHandler;
-import org.deeplearning4j.spark.parameterserver.networking.messages.SilentIntroductoryMessage;
+import org.deeplearning4j.spark.parameterserver.networking.v2.ModelParamsConsumer;
+import org.deeplearning4j.spark.parameterserver.networking.v2.UpdaterParamsConsumer;
+import org.deeplearning4j.spark.parameterserver.networking.v2.UpdatesConsumer;
+import org.deeplearning4j.spark.parameterserver.networking.v2.WiredEncodingHandler;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingResult;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingWorker;
 import org.deeplearning4j.spark.parameterserver.util.BlockingObserver;
@@ -47,13 +48,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.TransportType;
-import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
-import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
-import org.nd4j.parameterserver.distributed.transport.Transport;
 import org.nd4j.parameterserver.distributed.util.NetworkOrganizer;
+import org.nd4j.parameterserver.distributed.v2.ModelParameterServer;
+import org.nd4j.parameterserver.distributed.v2.transport.impl.AeronUdpTransport;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -91,7 +90,7 @@ public class SharedTrainingWrapper {
     protected EncodedGradientsAccumulator accumulator;
     protected Model originalModel;
 
-    protected SilentTrainingDriver driver;
+    protected UpdatesConsumer consumer;
 
     protected SharedTrainingWrapper() {
         init();
@@ -120,7 +119,7 @@ public class SharedTrainingWrapper {
             INSTANCE.iteratorDataSetCount = new ThreadLocal<>();
             INSTANCE.accumulator = null;
             INSTANCE.originalModel = null;
-            INSTANCE.driver = null;
+            INSTANCE.consumer = null;
             LAST_INSTANCE_ID.set(id);
         }
 
@@ -226,7 +225,7 @@ public class SharedTrainingWrapper {
 
             // now we're attaching VoidParameterServer to GradientsAccumulator, but doing that only once
             if (wrapper == null) {
-                log.info("Starting ParallelWrapper at thread {}", Thread.currentThread().getId());
+                log.debug("Starting ParallelWrapper at thread {}", Thread.currentThread().getId());
 
                 model = worker.getInitialModel();
                 if (model == null) {
@@ -249,10 +248,14 @@ public class SharedTrainingWrapper {
                     }
                 }
 
-                MessageHandler handler = new WiredEncodingHandler(trainingConfiguration.getThreshold(),
+                val handler = new WiredEncodingHandler(trainingConfiguration.getThreshold(),
                                 trainingConfiguration.getMinThreshold(), trainingConfiguration.getThresholdStep(),
                                 trainingConfiguration.getStepTrigger(), trainingConfiguration.getStepDelay(),
                                 trainingConfiguration.getShakeFrequency());
+
+                // TODO: if there will be no code difference - use the same class instead of 2 different classes
+                val modelParamsSupplier = new ModelParamsConsumer();
+                val updateParamsSupplier = new UpdaterParamsConsumer();
 
                 // this accumulator will provide sharing gradients over network, via WiredEncodedHandler. But we create it only once
                 if (accumulator == null) {
@@ -272,30 +275,6 @@ public class SharedTrainingWrapper {
                     accumulator = new EncodedGradientsAccumulator.Builder(numWorkers).messageHandler(handler)
                                     .encodingThreshold(trainingConfiguration.getThreshold())
                                     .memoryParameters(bufferSize, queueSize).build();
-
-                    // FIXME: implement support for Custom transport implementation
-                    Transport transport =
-                                    voidConfiguration.getTransportType() == TransportType.ROUTED ? new RoutedTransport()
-                                                    : voidConfiguration.getTransportType() == TransportType.BROADCAST
-                                                                    ? new MulticastTransport() : null;
-
-                    if (transport == null)
-                        throw new DL4JInvalidConfigException(
-                                        "No Transport implementation was defined for this training session!");
-
-                    // let's check for spark local edge case
-                    if (!VoidParameterServer.getInstance().isInit()) {
-                        // all nodes that are NOT master - enforced to be Clients
-                        voidConfiguration.setForcedRole(null);
-
-                        // TODO: tbd: let's allow one of executor nodes to be silent worker maybe? or this going to be too expensive?
-                    }
-
-                    driver = new SilentTrainingDriver(accumulator);
-                    VoidParameterServer.getInstance().init(voidConfiguration, transport, driver);
-
-                    // we're saving reference to original model
-                    originalModel = model;
 
                     // we should introduce ourselves to controller
                     // FIXME: if localIP is null - use original ip discovery available in VoidParameterServer
@@ -317,14 +296,39 @@ public class SharedTrainingWrapper {
                         log.warn("Can't get IP address to start VoidParameterServer client. Using localhost instead");
                     }
 
-                    // FIXME: do we need port here, in case of Multicast/Broadcast Transport?
-                    SilentIntroductoryMessage sim =
-                                    new SilentIntroductoryMessage(localIP, voidConfiguration.getUnicastPort());
+                    log.debug("Checking for ModelParameterServer existence");
 
-                    // we're sending this message to all shards, though it's just one Shard by design here - Spark Master
-                    VoidParameterServer.getInstance().sendMessageToAllShards(sim);
+                    // if we're running in spark localhost mode - we don't want double initialization
+                    if (!ModelParameterServer.getInstance().isInitialized()) {
+                        log.info("Initializing transport [{}:{}] with root as [{}:{}]...", localIP, voidConfiguration.getUnicastPort(), voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort());
+                        // FIXME: implement support for Custom transport implementation
+                        val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP ? new AeronUdpTransport(localIP, voidConfiguration.getUnicastPort(), voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort(), voidConfiguration) :  null;
 
+                        if (transport == null)
+                            throw new DL4JInvalidConfigException(
+                                    "No Transport implementation was defined for this training session!");
+
+                        consumer = UpdatesConsumer.builder()
+                                .accumulator(accumulator)
+                                .build();
+
+                        accumulator.setExternalSource(consumer.getUpdatesQueue());
+
+                        log.debug("Configuring transport...");
+                        //  pass values right away
+                        ModelParameterServer.getInstance().configure(voidConfiguration, transport, false);
+                        ModelParameterServer.getInstance().addUpdatesSubscriber(consumer);
+                        ModelParameterServer.getInstance().addModelParamsSubscriber(modelParamsSupplier);
+                        ModelParameterServer.getInstance().addUpdaterParamsSubscriber(updateParamsSupplier);
+                    }
+
+
+                    // we're saving reference to original model
+                    originalModel = model;
+
+                    log.debug("Starting ModelParameterServer...");
                     // after initialization finished, we're ok to actually start training
+                    ModelParameterServer.getInstance().launch();
                 }
 
                 // if we're going to extend iteratation for debugging purposes - let's do that here
@@ -336,12 +340,16 @@ public class SharedTrainingWrapper {
 
                 // we're launching PW only if number of workers is more then 1
                 if (numWorkers > 1) {
-                    //log.debug("Params at PW: {}", originalModel.params().meanNumber().doubleValue());
+                    //log.info("Params at PW:  {mean: [{}]; stdev: [{}]}", originalModel.params().meanNumber().doubleValue(), originalModel.params().stdNumber().doubleValue());
 
-                    wrapper = new ParallelWrapper.Builder<>(originalModel).workers(numWorkers)
+                    wrapper = new ParallelWrapper.Builder<>(originalModel)
+                                    .workers(numWorkers)
                                     .workspaceMode(trainingConfiguration.getWorkspaceMode())
-                                    .trainingMode(ParallelWrapper.TrainingMode.CUSTOM).gradientsAccumulator(accumulator)
+                                    .trainingMode(ParallelWrapper.TrainingMode.CUSTOM)
+                                    .gradientsAccumulator(accumulator)
                                     .prefetchBuffer(trainingConfiguration.getPrefetchSize())
+                                    .modelParamsSupplier(modelParamsSupplier)
+                                    .updaterParamsSupplier(updateParamsSupplier)
                                     .build();
                     wrapper.setExceptionEncountered(exceptionEncountered);
                 } else {
@@ -367,7 +375,8 @@ public class SharedTrainingWrapper {
             // TODO: optionally we might be waiting until we have >1 splits delivered
 
 
-            driver.bypassMode(false);
+            if (consumer != null)
+                consumer.bypassMode(false);
 
             // now we're just calling for fit
             if(iteratorDS == null && iteratorMDS == null)
@@ -419,12 +428,13 @@ public class SharedTrainingWrapper {
             accumulator.reset();
 
             // current TrainingDriver won't be receiving any updates beyond this point
-            driver.bypassMode(true);
+            if (consumer != null)
+                consumer.bypassMode(true);
 
 
             isFirst.set(false);
 
-            log.info("Master thread done...");
+            log.debug("Master thread done...");
 
             INDArray updaterState = null;
             if (model instanceof ComputationGraph) {

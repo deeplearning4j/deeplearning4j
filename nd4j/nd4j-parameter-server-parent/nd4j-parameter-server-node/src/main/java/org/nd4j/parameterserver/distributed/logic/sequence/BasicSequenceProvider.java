@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author raver119@gmail.com
  */
+@Deprecated
 public class BasicSequenceProvider implements SequenceProvider {
 
     private static final BasicSequenceProvider INSTANCE = new BasicSequenceProvider();

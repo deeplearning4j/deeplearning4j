@@ -62,6 +62,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public class VoidParameterServer {
     private static final VoidParameterServer INSTANCE = new VoidParameterServer();
 

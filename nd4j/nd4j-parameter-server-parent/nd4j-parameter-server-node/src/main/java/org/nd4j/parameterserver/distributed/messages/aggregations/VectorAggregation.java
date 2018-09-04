@@ -25,6 +25,7 @@ import org.nd4j.parameterserver.distributed.messages.complete.VectorCompleteMess
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public class VectorAggregation extends BaseAggregation {
 
     protected VectorAggregation() {
