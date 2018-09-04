@@ -121,7 +121,7 @@
 
 #define LIST(...) __VA_ARGS__
 
-#define RANDOMSINGLE(A, B, C) A<C>B;
+#define RANDOMSINGLE(A, B, C) A<C>UNPAREN(B);
 #define RANDOMDOUBLE(A, B, C, D) EXPAND(DISPATCH_DTYPES(A, UNPAREN(B), D, UNPAREN(C)))
 #define RANDOMDOUBLE2(A, B, C, D) A<C,D>B;
 

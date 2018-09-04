@@ -31,6 +31,8 @@
 
 BUILD_SINGLE_TEMPLATE(template class Alpha, , DATA_TYPES);
 
+BUILD_DOUBLE_TEMPLATE(template class Alpha, , DATA_TYPES, DATA_TYPES);
+
 /*
 #define SCALAR_OPS \
         (0, simdOps::Identity) ,\
