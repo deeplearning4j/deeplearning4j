@@ -19,6 +19,7 @@
 //
 
 #include <op_boilerplate.h>
+#include <types/types.h>
 #include <loops/transform.h>
 #include <loops/legacy_ops.h>
 
@@ -26,29 +27,43 @@ namespace functions {
     namespace transform {
 
         template <typename X>
-        void Transform<X>::exec(int opNum, X *dx, Nd4jLong xStride, X *result, Nd4jLong resultStride, X *extraParams, const Nd4jLong n) {
+        void Transform<X>::exec(int opNum,
+                void *dx,
+                Nd4jLong xStride,
+                void *result,
+                Nd4jLong resultStride,
+                void *extraParams,
+                const Nd4jLong n) {
             DISPATCH_BY_OPNUM_T(exec, PARAMS(dx, xStride, result, resultStride, extraParams, n), TRANSFORM_OPS);
 		}
 
         template <typename X>
         void Transform<X>::exec(
 				int opNum,
-				X *dx,
+				void *dx,
 				Nd4jLong *xShapeInfo,
-				X *result,
+				void *result,
 				Nd4jLong *resultShapeInfo,
-				X *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+				void *extraParams,
+				Nd4jLong *tadShapeInfo,
+				Nd4jLong *tadOffsets) {
                     DISPATCH_BY_OPNUM_T(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_OPS);
 		}
 
         template <typename X>
         template<typename OpType>
 		void _CUDA_H Transform<X>::exec(
-                    X *dx,
+                    void *vx,
                     Nd4jLong *xShapeInfo,
-                    X *result,
+                    void *vresult,
                     Nd4jLong *resultShapeInfo,
-                    X *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                    void *vextraParams,
+                    Nd4jLong *tadShapeInfo,
+                    Nd4jLong *tadOffsets) {
+
+		        auto dx = reinterpret_cast<X *>(vx);
+		        auto result = reinterpret_cast<X *>(vresult);
+		        auto extraParams = reinterpret_cast<X *>(vextraParams);
 
                 if(OpType::requiresSpecial) {
                     OpType::execSpecial(dx, xShapeInfo,result,resultShapeInfo,extraParams, tadShapeInfo, tadOffsets);
@@ -106,12 +121,15 @@ namespace functions {
 
         template <typename X>
         template <typename OpType>
-		void _CUDA_H Transform<X>::exec(X *dx,
+		void _CUDA_H Transform<X>::exec(void *vx,
                              Nd4jLong xStride,
-                             X *result,
+                             void *vresult,
                              Nd4jLong resultStride,
-                             X *extraParams,
+                             void *vextraParams,
                              const Nd4jLong n) {
+                auto dx = reinterpret_cast<X *>(vx);
+                auto result = reinterpret_cast<X *>(vresult);
+                auto extraParams = reinterpret_cast<X *>(vextraParams);
 
                 int elementsPerThread = n / ELEMENT_THRESHOLD;
                 int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
@@ -152,8 +170,9 @@ namespace functions {
             }
         }
 
-        //BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT Transform, , LIBND4J_TYPES);
+        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT Transform, , LIBND4J_TYPES);
 
+        /*
         BUILD_CALL_1(template void Transform<float>::exec, float, (float*, Nd4jLong*, float*, Nd4jLong*, float*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
         BUILD_CALL_1(template void Transform<float16>::exec, float16, (float16*, Nd4jLong*, float16*, Nd4jLong*, float16*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
         BUILD_CALL_1(template void Transform<double>::exec, double, (double*, Nd4jLong*, double*, Nd4jLong*, double*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
@@ -161,5 +180,6 @@ namespace functions {
         BUILD_CALL_1(template void Transform<float>::exec, float, (float*, Nd4jLong, float*, Nd4jLong, float*, const Nd4jLong), TRANSFORM_OPS)
         BUILD_CALL_1(template void Transform<float16>::exec, float16, (float16*, Nd4jLong, float16*, Nd4jLong, float16*, const Nd4jLong), TRANSFORM_OPS)
         BUILD_CALL_1(template void Transform<double>::exec, double, (double*, Nd4jLong, double*, Nd4jLong, double*, const Nd4jLong), TRANSFORM_OPS)
+         */
     }
 }

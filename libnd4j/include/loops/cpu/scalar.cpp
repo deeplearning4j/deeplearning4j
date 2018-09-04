@@ -30,7 +30,11 @@ namespace functions {
 
         template<typename X, typename Y>
         template<typename OpType>
-        void ScalarTransform<X, Y>::transform(X *x, Nd4jLong *xShapeInfo, X *extraParams, X *z, Nd4jLong *zShapeInfo, Y *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+        void ScalarTransform<X, Y>::transform(void *vx, Nd4jLong *xShapeInfo, void *vextraParams, void *vz, Nd4jLong *zShapeInfo, void *vscalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+            auto x = reinterpret_cast<X *>(vx);
+            auto z = reinterpret_cast<X *>(vz);
+            auto scalars = reinterpret_cast<Y *>(vscalars);
+            auto extraParams = reinterpret_cast<X *>(vextraParams);
 
             if (tadShapeInfoZ == nullptr) {
                 tadShapeInfoZ = tadShapeInfo;
@@ -84,12 +88,12 @@ namespace functions {
 
         template<typename X, typename Y>
         void ScalarTransform<X,Y>::transform(int opNum,
-                              X *x,
+                              void *x,
                               Nd4jLong *xShapeInfo,
-                              X *extraParams,
-                              X *z,
+                              void *extraParams,
+                              void *z,
                               Nd4jLong *zShapeInfo,
-                              Y *scalars,
+                              void *scalars,
                               int *dimension,
                               int dimensionLength,
                               Nd4jLong *tadShapeInfo,
@@ -101,12 +105,12 @@ namespace functions {
 
         template<typename X, typename Y>
         void ScalarTransform<X, Y>::transform(const int opNum,
-                              X *x,
+                              void *x,
                               Nd4jLong *xShapeInfo,
-                              X *result,
+                              void *result,
                               Nd4jLong *resultShapeInfo,
                               Y scalar,
-                              X *extraParams,
+                              void *extraParams,
                               Nd4jLong *indexes,
                               Nd4jLong *resultIndexes) {
             DISPATCH_BY_OPNUM_TT(transform, PARAMS(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes), SCALAR_OPS);
@@ -114,31 +118,42 @@ namespace functions {
 
 
         template<typename X, typename Y>
-        void ScalarTransform<X, Y>::transform(const int opNum, X *x, Nd4jLong xStride, X *result, Nd4jLong resultStride,
-                              Y scalar, X *extraParams, const Nd4jLong n) {
+        void ScalarTransform<X, Y>::transform(const int opNum,
+                void *x,
+                Nd4jLong xStride,
+                void *result,
+                Nd4jLong resultStride,
+                Y scalar,
+                void *extraParams,
+                const Nd4jLong n) {
             DISPATCH_BY_OPNUM_TT(transform, PARAMS(x, xStride, result, resultStride, scalar, extraParams, n), SCALAR_OPS);
         }
 
         template<typename X, typename Y>
         void ScalarTransform<X, Y>::transform(const int opNum,
-                              X *x,
-                              Nd4jLong *xShapeInfo,
-                              X *result,
-                              Nd4jLong *resultShapeInfo,
-                              Y scalar, X *extraParams) {
+                void *x,
+                Nd4jLong *xShapeInfo,
+                void *result,
+                Nd4jLong *resultShapeInfo,
+                Y scalar,
+                void *extraParams) {
             DISPATCH_BY_OPNUM_TT(transform, PARAMS(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams), SCALAR_OPS);
         }
 
         template<typename X, typename Y>
         template<typename OpType>
-        void ScalarTransform<X, Y>::transform(X *x,
+        void ScalarTransform<X, Y>::transform(void *vx,
                               Nd4jLong *xShapeInfo,
-                              X *result,
+                              void *vz,
                               Nd4jLong *resultShapeInfo,
                               Y scalar,
-                              X *extraParams,
+                              void *vextraParams,
                               Nd4jLong *indexes,
                               Nd4jLong *resultIndexes) {
+            auto x = reinterpret_cast<X *>(vx);
+            auto result = reinterpret_cast<X *>(vz);
+            auto extraParams = reinterpret_cast<X *>(vextraParams);
+
             const Nd4jLong n = shape::length(xShapeInfo);
 #pragma omp parallel for simd schedule(guided) if (n > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)
             for (Nd4jLong i = 0; i < n; i++) {
@@ -148,11 +163,16 @@ namespace functions {
 
         template<typename X, typename Y>
         template<typename OpType>
-        void ScalarTransform<X, Y>::transform(X *x,
+        void ScalarTransform<X, Y>::transform(void *vx,
                                Nd4jLong *xShapeInfo,
-                               X *result,
+                               void *vz,
                                Nd4jLong *resultShapeInfo,
-                               Y scalar, X *extraParams) {
+                               Y scalar,
+                               void *vextraParams) {
+            auto x = reinterpret_cast<X *>(vx);
+            auto result = reinterpret_cast<X *>(vz);
+            auto extraParams = reinterpret_cast<X *>(vextraParams);
+
             char xOrdering = shape::order(xShapeInfo);
             char resultOrdering = shape::order(resultShapeInfo);
             int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -242,7 +262,16 @@ namespace functions {
 
             template<typename X, typename Y>
             template<typename OpType>
-            void ScalarTransform<X, Y>::transform(X *x, Nd4jLong xStride, X *result, Nd4jLong resultStride, Y scalar, X *extraParams, const Nd4jLong n) {
+            void ScalarTransform<X, Y>::transform(void *vx,
+                    Nd4jLong xStride,
+                    void *vz,
+                    Nd4jLong resultStride,
+                    Y scalar,
+                    void *vextraParams,
+                    const Nd4jLong n) {
+                auto x = reinterpret_cast<X *>(vx);
+                auto result = reinterpret_cast<X *>(vz);
+                auto extraParams = reinterpret_cast<X *>(vextraParams);
 /*
                 Nd4jLong elementsPerThread = n / ELEMENT_THRESHOLD;
                 int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);

@@ -88,15 +88,15 @@ namespace functions {
 */
 #endif
             template <typename OpType>
-            static void transform(X *x, Nd4jLong *xShapeInfo, X *extraParams, X *z, Nd4jLong *zShapeInfo, Y *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
+            static void transform(void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, void *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
-            static void transform(int opNum, X *x, Nd4jLong *xShapeInfo, X *extraParams, X *z, Nd4jLong *zShapeInfo, Y *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
+            static void transform(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, void *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
-            static void transform(const int opNum, X *x, Nd4jLong *xShapeInfo, X *result, Nd4jLong *resultShapeInfo, Y scalar, X *extraParams, Nd4jLong *indexes, Nd4jLong *resultIndexes);
+            static void transform(const int opNum, void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, Y scalar, void *extraParams, Nd4jLong *indexes, Nd4jLong *resultIndexes);
 
-            static void transform(const int opNum, X *x, Nd4jLong xStride, X *result, Nd4jLong resultStride, Y scalar, X *extraParams, const Nd4jLong n);
+            static void transform(const int opNum, void *x, Nd4jLong xStride, void *result, Nd4jLong resultStride, Y scalar, void *extraParams, const Nd4jLong n);
 
-            static void transform(const int opNum, X *x, Nd4jLong *xShapeInfo, X *result, Nd4jLong *resultShapeInfo, Y scalar, X *extraParams);
+            static void transform(const int opNum, void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, Y scalar, void *extraParams);
 
 
 
@@ -113,7 +113,7 @@ namespace functions {
          */
 
             template <typename OpType>
-            static void transform(X *x, Nd4jLong *xShapeInfo, X *result, Nd4jLong *resultShapeInfo, Y scalar, X *extraParams, Nd4jLong *indexes, Nd4jLong *resultIndexes);
+            static void transform(void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, Y scalar, void *extraParams, Nd4jLong *indexes, Nd4jLong *resultIndexes);
 
 
 
@@ -135,7 +135,7 @@ namespace functions {
          */
 
             template<typename OpType>
-            static  void transform(X *x, Nd4jLong *xShapeInfo, X *result, Nd4jLong *resultShapeInfo, Y scalar, X *extraParams);
+            static  void transform(void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, Y scalar, void *extraParams);
 
 
             /**
@@ -151,7 +151,7 @@ namespace functions {
              */
 
             template<typename OpType>
-            static void transform(X *x, Nd4jLong xStride, X *result, Nd4jLong resultStride, Y scalar, X *extraParams, const Nd4jLong n);
+            static void transform(void *x, Nd4jLong xStride, void *result, Nd4jLong resultStride, Y scalar, void *extraParams, const Nd4jLong n);
         };
     }
 }

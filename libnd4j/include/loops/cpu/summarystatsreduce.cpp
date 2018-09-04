@@ -18,6 +18,7 @@
 // Created by raver119 on 18.12.17.
 //
 
+#include <types/types.h>
 #include <op_boilerplate.h>
 #include <loops/summarystatsreduce.h>
 #include <helpers/shape.h>
@@ -210,8 +211,6 @@ namespace functions {
         }
 
 
-        template class ND4J_EXPORT SummaryStatsReduce<float>;
-        template class ND4J_EXPORT SummaryStatsReduce<float16>;
-        template class ND4J_EXPORT SummaryStatsReduce<double>;
+        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT SummaryStatsReduce, , LIBND4J_TYPES);
     }
 }

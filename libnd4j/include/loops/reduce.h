@@ -130,16 +130,21 @@ namespace functions {
              * @return
              */
             template<typename OpType>
-            static _CUDA_H X execScalar(X *x, Nd4jLong *xShapeInfo, X *extraParams);
+            static _CUDA_H X execScalar(void *x,
+                    Nd4jLong *xShapeInfo,
+                    void *extraParams);
 
 
-            static X execScalar(const int opNum, X *x, Nd4jLong *xShapeInfo, X *extraParams);
+            static X execScalar(const int opNum,
+                    void *x,
+                    Nd4jLong *xShapeInfo,
+                    void *extraParams);
 
             static void exec(const int opNum,
-                             X *x,
+                             void *x,
                              Nd4jLong *xShapeInfo,
-                             X *extraParams,
-                             X *result,
+                             void *extraParams,
+                             void *result,
                              Nd4jLong *resultShapeInfoBuffer,
                              int *dimension,
                              int dimensionLength,
@@ -160,10 +165,10 @@ namespace functions {
 
 
             template<typename OpType>
-            static void _CUDA_H exec(X *x,
+            static void _CUDA_H exec(void *x,
                              Nd4jLong *xShapeInfo,
-                             X *extraParams,
-                             X *result,
+                             void *extraParams,
+                             void *result,
                              Nd4jLong *resultShapeInfoBuffer,
                              int *dimension,
                              int dimensionLength,
@@ -180,10 +185,10 @@ namespace functions {
             * @param resultShapeInfo the shape information
             */
             template<typename OpType>
-            static void _CUDA_H exec(X *x,
+            static void _CUDA_H exec(void *x,
                              Nd4jLong *xShapeInfo,
-                             X *extraParams,
-                             X *result,
+                             void *extraParams,
+                             void *result,
                              Nd4jLong *resultShapeInfo);
 
 
@@ -197,7 +202,10 @@ namespace functions {
             * @return
             */
             template<typename OpType>
-            static X _CUDA_H execScalar(const X *x, Nd4jLong xElementWiseStride, Nd4jLong length, X *extraParams);
+            static X _CUDA_H execScalar(const void *x,
+                    Nd4jLong xElementWiseStride,
+                    Nd4jLong length,
+                    void *extraParams);
         };
 
 #ifdef __CUDACC__

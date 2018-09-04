@@ -86,13 +86,13 @@ namespace functions {
         public:
 			static void exec(
 				const int opNum,
-				X *dx,
+				void *dx,
 				Nd4jLong *xShapeBuffer,
-				Y *y,
+				void *y,
 				Nd4jLong *yShapeBuffer,
-				X *result,
+				void *result,
 				Nd4jLong *resultShapeBuffer,
-				X *extraParams,
+				void *extraParams,
 				Nd4jLong *indexes,
 				Nd4jLong *yIndexes,
 				Nd4jLong *resultIndexes) {
@@ -109,13 +109,13 @@ namespace functions {
 
 			static void exec(
 				const int opNum,
-				X *dx,
+				void *dx,
 				Nd4jLong *xShapeBuffer,
-				Y *y,
+				void *y,
 				Nd4jLong *yShapeBuffer,
-				X *result,
+				void *result,
 				Nd4jLong *resultShapeBuffer,
-				X *extraParams) {
+				void *extraParams) {
 				DISPATCH_BY_OPNUM_TT(exec, PARAMS(dx,
                                                xShapeBuffer,
                                                y,
@@ -128,13 +128,13 @@ namespace functions {
 			
 			static void exec(
 				const int opNum,
-				X *dx,
+				void *dx,
 				Nd4jLong xStride,
-				Y *y,
+				void *y,
 				Nd4jLong yStride,
-				X *result,
+				void *result,
 				Nd4jLong resultStride,
-				X *extraParams,
+				void *extraParams,
 				Nd4jLong n) {
 				DISPATCH_BY_OPNUM_TT(exec, PARAMS(dx,
                                                xStride,
@@ -148,16 +148,21 @@ namespace functions {
 
 			template<typename OpType>
 			static void exec(
-                    X *dx,
+                    void *vx,
                     Nd4jLong* xShapeBuffer,
-                    Y *y,
+                    void *vy,
                     Nd4jLong* yShapeBuffer,
-                    X *result,
+                    void *vresult,
                     Nd4jLong* resultShapeBuffer,
-                    X *extraParams,
+                    void *vextraParams,
                     Nd4jLong *indexes,
                     Nd4jLong *yIndexes,
                     Nd4jLong *resultIndexes) {
+			    auto dx = reinterpret_cast<X *>(vx);
+                auto y = reinterpret_cast<Y *>(vy);
+                auto result = reinterpret_cast<X *>(vresult);
+                auto extraParams = reinterpret_cast<X *>(vextraParams);
+
                 Nd4jLong n = shape::length(xShapeBuffer);
 
 #pragma omp parallel for simd schedule(guided) proc_bind(AFFINITY) default(shared)
@@ -169,13 +174,18 @@ namespace functions {
 
 			template<typename OpType>
 			static void exec(
-                    X *dx,
+                    void *vx,
                     Nd4jLong* xShapeBuffer,
-                    Y *y,
+                    void *vy,
                     Nd4jLong* yShapeBuffer,
-                    X *result,
+                    void *vresult,
                     Nd4jLong* resultShapeBuffer,
-                    X *extraParams) {
+                    void *vextraParams) {
+                auto dx = reinterpret_cast<X *>(vx);
+                auto y = reinterpret_cast<Y *>(vy);
+                auto result = reinterpret_cast<X *>(vresult);
+                auto extraParams = reinterpret_cast<X *>(vextraParams);
+
                 auto n = shape::length(xShapeBuffer);
                 auto xElementWiseStride = shape::elementWiseStride(xShapeBuffer);
                 auto yElementWiseStride = shape::elementWiseStride(yShapeBuffer);
@@ -193,11 +203,11 @@ namespace functions {
                         int xRank = shape::rank(xShapeBuffer);
                         int resultRank = shape::rank(resultShapeBuffer);
 
-                        Nd4jLong *xShape = shape::shapeOf(xShapeBuffer);
-                        Nd4jLong *xStride = shape::stride(xShapeBuffer);
+                        auto xShape = shape::shapeOf(xShapeBuffer);
+                        auto xStride = shape::stride(xShapeBuffer);
 
-                        Nd4jLong *resultShape = shape::shapeOf(resultShapeBuffer);
-                        Nd4jLong *resultStride = shape::stride(resultShapeBuffer);
+                        auto resultShape = shape::shapeOf(resultShapeBuffer);
+                        auto resultStride = shape::stride(resultShapeBuffer);
 
                         int elementsPerThread = n / ELEMENT_THRESHOLD;
                         int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
@@ -208,8 +218,8 @@ namespace functions {
                             shape::ind2subC(xRank,xShape, i, xCoord);
                             shape::ind2subC(resultRank,resultShape, i, resultCoord);
 
-                            Nd4jLong xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                            Nd4jLong resultOffset = shape::getOffset(0, resultShape, resultStride, resultCoord, resultRank);
+                            auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                            auto resultOffset = shape::getOffset(0, resultShape, resultStride, resultCoord, resultRank);
                             result[resultOffset] = OpType::op(dx[xOffset], y[0], extraParams);
                         }
                     }
@@ -256,11 +266,11 @@ namespace functions {
 
                 else if (sameShape) {
                     int rank = shape::rank(xShapeBuffer);
-                    Nd4jLong *xShape = shape::shapeOf(xShapeBuffer);
+                    auto xShape = shape::shapeOf(xShapeBuffer);
 
-                    Nd4jLong *xStride = shape::stride(xShapeBuffer);
-                    Nd4jLong *yStride = shape::stride(yShapeBuffer);
-                    Nd4jLong *resultStride = shape::stride(resultShapeBuffer);
+                    auto xStride = shape::stride(xShapeBuffer);
+                    auto yStride = shape::stride(yShapeBuffer);
+                    auto resultStride = shape::stride(resultShapeBuffer);
 
                     // tad-oriented rotation technically
 
@@ -382,14 +392,19 @@ for (Nd4jLong i = 0; i < xShape[0]; i++) {
             }
 
             template<typename OpType>
-            static void exec(X *dx,
+            static void exec(void *vx,
                              Nd4jLong xStride,
-                             Y *y,
+                             void *vy,
                              Nd4jLong yStride,
-                             X *result,
+                             void *vresult,
                              Nd4jLong resultStride,
-                             X *extraParams,
+                             void *vextraParams,
                              const Nd4jLong n) {
+                auto dx = reinterpret_cast<X *>(vx);
+                auto y = reinterpret_cast<Y *>(vy);
+                auto result = reinterpret_cast<X *>(vresult);
+                auto extraParams = reinterpret_cast<X *>(vextraParams);
+
                 int elementsPerThread = n / ELEMENT_THRESHOLD;
                 int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
                 _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());

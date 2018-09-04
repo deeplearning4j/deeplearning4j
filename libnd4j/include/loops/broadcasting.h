@@ -75,11 +75,11 @@ namespace functions {
 #endif
 
             static void exec(const int opNum,
-                             X *x,
+                             void *x,
                              Nd4jLong *xShapeInfo,
-                             Y *y,
+                             void *y,
                              Nd4jLong *yShapeInfo,
-                             X *result,
+                             void *result,
                              Nd4jLong *resultShapeInfo,
                              int *dimension,
                              int dimensionLength,
@@ -100,11 +100,11 @@ namespace functions {
              * @param dimensionLength the length of the dimension buffer
              */
             template<typename OpType>
-            static void exec(X *x,
+            static void exec(void *x,
                              Nd4jLong *xShapeInfo,
-                             Y *y,
+                             void *y,
                              Nd4jLong *yShapeInfo,
-                             X *result,
+                             void *result,
                              Nd4jLong *resultShapeInfo,
                              int *dimension,
                              int dimensionLength,

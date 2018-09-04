@@ -29,17 +29,17 @@ namespace functions {
         template <typename X>
         Nd4jLong IndexReduce<X>::execScalar(
                 const int opNum,
-                X *x,
+                void *x,
                 Nd4jLong *xShapeInfo,
-                X *extraParams) {
+                void *extraParams) {
             RETURNING_DISPATCH_BY_OPNUM_T(execScalar, PARAMS(x, xShapeInfo, extraParams), INDEX_REDUCE_OPS);
         }
 
         template <typename X>
         void IndexReduce<X>::exec(const int opNum,
-                  X *x,
+                  void *x,
                   Nd4jLong *xShapeInfo,
-                  X *extraParams,
+                  void *extraParams,
                   Nd4jLong *result,
                   Nd4jLong *resultShapeInfoBuffer,
                   int *dimension,
@@ -49,7 +49,11 @@ namespace functions {
 
         template <typename X>
         template<typename OpType>
-        Nd4jLong IndexReduce<X>::execScalar(X *x, Nd4jLong *xShapeInfo, X *extraParams) {
+        Nd4jLong IndexReduce<X>::execScalar(void *vx,
+                Nd4jLong *xShapeInfo,
+                void *vextraParams) {
+            auto x = reinterpret_cast<X *>(vx);
+            auto extraParams = reinterpret_cast<X *>(vextraParams);
 
             //T startingVal = OpType::startingValue(x);
             auto startingIndex = OpType::startingIndexValue(x);
@@ -144,9 +148,20 @@ namespace functions {
             return  startingIndex.index;
         };
 
-        template <typename T>
+        template <typename X>
         template<typename OpType>
-        void IndexReduce<T>::exec(T *x, Nd4jLong *xShapeInfo, T *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
+        void IndexReduce<X>::exec(void *vx,
+                Nd4jLong *xShapeInfo,
+                void *vextraParams,
+                Nd4jLong *result,
+                Nd4jLong *resultShapeInfoBuffer,
+                int *dimension,
+                int dimensionLength,
+                Nd4jLong *tadShapeInfo,
+                Nd4jLong *tadOffset) {
+
+            auto x = reinterpret_cast<X *>(vx);
+            auto extraParams = reinterpret_cast<X *>(vextraParams);
 
             if(shape::isScalar(resultShapeInfoBuffer)) {
                 result[0] = execScalar<OpType>(x,xShapeInfo,extraParams);
@@ -154,11 +169,11 @@ namespace functions {
             }
 
             const Nd4jLong resultLength = shape::length(resultShapeInfoBuffer);
-            auto startingIndex = new IndexValue<T>[resultLength];
+            auto startingIndex = new IndexValue<X>[resultLength];
 
 #pragma omp parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
             for (Nd4jLong i = 0; i < resultLength; i++) {
-                IndexValue<T> val = OpType::startingIndexValue(x);
+                auto val = OpType::startingIndexValue(x);
                 startingIndex[i] = val;
             }
 
@@ -206,7 +221,7 @@ namespace functions {
                 for(Nd4jLong i = 0; i < resultLength; i++) {
                     auto offset = tadOffsets[i];
 
-                    IndexValue<T> indexValue = OpType::startingIndexValue(&x[offset]);
+                    auto indexValue = OpType::startingIndexValue(&x[offset]);
 
                     Nd4jLong xCoord[MAX_RANK];
 
@@ -214,7 +229,7 @@ namespace functions {
                         shape::ind2subC(rank,xShape, j, tadLength, xCoord);
                         auto  xOffset = shape::getOffset(offset, xShape, xStride, xCoord, rank);
 
-                        IndexValue<T> comp;
+                        IndexValue<X> comp;
                         comp.index = j;
                         comp.value = x[xOffset];
                         indexValue = OpType::update(indexValue,comp,extraParams);
@@ -227,11 +242,11 @@ namespace functions {
 //#pragma omp parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
                 for(Nd4jLong i = 0;  i < resultLength; i++) {
                     auto baseOffset = tadOffsets[i];
-                    IndexValue<T> indexValue = OpType::startingIndexValue(&x[baseOffset]);
+                    auto indexValue = OpType::startingIndexValue(&x[baseOffset]);
 
 // FIXME: proper reduction required here
                     for(int j = 0; j < tadLength; j++) {
-                        IndexValue<T> comp;
+                        IndexValue<X> comp;
                         comp.index = j;
                         comp.value = x[baseOffset + tadElementWiseStride * j];
                         indexValue = OpType::update(indexValue,comp,extraParams);
@@ -244,6 +259,6 @@ namespace functions {
         }
 
 
-        //BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES);
+        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES);
     };
 }

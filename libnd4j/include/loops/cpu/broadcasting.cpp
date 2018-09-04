@@ -21,17 +21,18 @@
 #include <op_boilerplate.h>
 #include <loops/broadcasting.h>
 #include <loops/legacy_ops.h>
+#include <types/types.h>
 
 namespace functions {
     namespace broadcast {
 
         template <typename X, typename Y>
         void Broadcast<X, Y>::exec(const int opNum,
-                             X *x,
+                             void *x,
                              Nd4jLong *xShapeInfo,
-                             Y *y,
+                             void *y,
                              Nd4jLong *yShapeInfo,
-                             X *result,
+                             void *result,
                              Nd4jLong *resultShapeInfo,
                              int *dimension,
                              int dimensionLength,
@@ -55,11 +56,11 @@ namespace functions {
 
         template <typename X, typename  Y>
         template<typename OpType>
-        void Broadcast<X, Y>::exec(X *x,
+        void Broadcast<X, Y>::exec(void *vx,
                              Nd4jLong *xShapeInfo,
-                             Y *y,
+                             void *vy,
                              Nd4jLong *yShapeInfo,
-                             X *result,
+                             void *vz,
                              Nd4jLong *resultShapeInfo,
                              int *dimension,
                              int dimensionLength,
@@ -68,6 +69,9 @@ namespace functions {
                              Nd4jLong *tadShapeInfoZ,
                              Nd4jLong *tadOffsetZ) {
 
+                auto x = reinterpret_cast<X *>(vx);
+                auto y = reinterpret_cast<X *>(vy);
+                auto result = reinterpret_cast<X *>(vz);
 
                 //decompose in to several sub tads after
                 //moving all dimensions (in sorted order)
@@ -171,7 +175,7 @@ namespace functions {
                     delete tad;
         }
 
-        //BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT Broadcast, , LIBND4J_TYPES);
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT Broadcast, , LIBND4J_TYPES, LIBND4J_TYPES);
 
         //BUILD_CALL_1(template void Broadcast<float, float>::exec, float, (float*, Nd4jLong*, float*, Nd4jLong*, float*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
         //BUILD_CALL_1(template void Broadcast<float16, float16>::exec, float16, (float16*, Nd4jLong*, float16*, Nd4jLong*, float16*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
