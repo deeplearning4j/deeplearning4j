@@ -6,9 +6,6 @@ import java.nio.*;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.annotation.*;
 
-import static org.bytedeco.javacpp.mklml.*;
-import static org.bytedeco.javacpp.mkldnn.*;
-
 public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
     static { Loader.load(); }
 

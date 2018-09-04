@@ -62,23 +62,23 @@
             <artifactId>mkl</artifactId>
             <version>${mkl.version}-${javacpp-presets.version}</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.bytedeco.javacpp-presets</groupId>-->
-<!--            <artifactId>mkl</artifactId>-->
-<!--            <version>${mkl.version}-${javacpp-presets.version}</version>-->
-<!--            <classifier>${dependency.platform}</classifier>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>mkl</artifactId>
+            <version>${mkl.version}-${javacpp-presets.version}</version>
+            <classifier>${dependency.platform2}</classifier>
+        </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>mkl-dnn</artifactId>
             <version>${mkl-dnn.javacpp.version}</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.bytedeco.javacpp-presets</groupId>-->
-<!--            <artifactId>mkl-dnn</artifactId>-->
-<!--            <version>${mkl-dnn.javacpp.version}</version>-->
-<!--            <classifier>${dependency.platform}</classifier>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>mkl-dnn</artifactId>
+            <version>${mkl-dnn.javacpp.version}</version>
+            <classifier>${dependency.platform2}</classifier>
+        </dependency>
 
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -191,11 +191,6 @@
                         <groupId>org.nd4j</groupId>
                         <artifactId>nd4j-native-api</artifactId>
                         <version>${project.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.bytedeco.javacpp-presets</groupId>
-                        <artifactId>mkl-dnn-platform</artifactId>
-                        <version>${mkl-dnn.javacpp.version}</version>
                     </dependency>
                 </dependencies>
                 <configuration>
@@ -351,6 +346,17 @@
             </activation>
             <properties>
                 <javacpp.platform.extension>-avx512</javacpp.platform.extension>
+            </properties>
+        </profile>
+        <profile>
+            <id>macosx-gcc8</id>
+            <activation>
+                <file>
+                    <exists>/usr/local/bin/g++-8</exists>
+                </file>
+            </activation>
+            <properties>
+                <javacpp.platform.compiler>/usr/local/bin/g++-8</javacpp.platform.compiler>
             </properties>
         </profile>
         <profile>

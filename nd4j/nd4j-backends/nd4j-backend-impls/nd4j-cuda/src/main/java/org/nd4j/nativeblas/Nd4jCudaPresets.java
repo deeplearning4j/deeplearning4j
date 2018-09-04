@@ -27,7 +27,8 @@ import org.bytedeco.javacpp.tools.InfoMapper;
  * @author saudet
  */
 @Properties(target = "org.nd4j.nativeblas.Nd4jCuda",
-                value = {@Platform(include = {"NativeOps.h",
+                value = {@Platform(define = "LIBND4J_ALL_OPS", include = {
+                        "NativeOps.h",
                         "memory/ExternalWorkspace.h",
                         "memory/Workspace.h",
                         "indexing/NDIndex.h",
@@ -71,7 +72,6 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         exclude = {"cnpy/cnpy.h"},
                                 compiler = {"cpp11", "nowarnings"},
                                 library = "jnind4jcuda", link = "nd4jcuda", preload = "libnd4jcuda"),
-                                @Platform(define = "LIBND4J_ALL_OPS"),
                                 @Platform(value = "linux", preload = "gomp@.1",
                                                 preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/",
                                                                 "/usr/lib/powerpc64-linux-gnu/",

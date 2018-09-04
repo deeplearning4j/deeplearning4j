@@ -27,15 +27,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Scanner;
 
-import org.bytedeco.javacpp.presets.mkldnn;
-
 /**
  *
  * @author saudet
  */
-@Properties(inherit = mkldnn.class,
-                target = "org.nd4j.nativeblas.Nd4jCpu",
-                value = {@Platform(include = {"NativeOps.h",
+@Properties(target = "org.nd4j.nativeblas.Nd4jCpu",
+                value = {@Platform(define = "LIBND4J_ALL_OPS", include = {
+                                              "NativeOps.h",
                                               "memory/ExternalWorkspace.h",
                                               "memory/Workspace.h",
                                               "indexing/NDIndex.h",
@@ -112,14 +110,15 @@ import org.bytedeco.javacpp.presets.mkldnn;
                                               "ops/declarable/headers/third_party.h",
                                               "cnpy/cnpy.h"
                                    },
-                                compiler = {"cpp11", "nowarnings"}, library = "jnind4jcpu", link = "nd4jcpu", preload = "libnd4jcpu"),
-                                @Platform(value = "linux", preload = "gomp@.1",
+                                compiler = {"cpp11", "nowarnings"}, library = "jnind4jcpu", link = "nd4jcpu", preload = {"openblas", "openblas_nolapack", "libnd4jcpu"}),
+                                @Platform(value = "linux", preload = {"gomp@.1", "iomp5", "mklml", "mkldnn@.0"},
                                                 preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/",
                                                                 "/usr/lib/powerpc64-linux-gnu/",
                                                                 "/usr/lib/powerpc64le-linux-gnu/"}),
-                @Platform(define = "LIBND4J_ALL_OPS"),
-                @Platform(value = "macosx", preload = {"gcc_s@.1", "gomp@.1", "stdc++@.6"},
-                                preloadpath = {"/usr/local/lib/gcc/7/", "/usr/local/lib/gcc/6/", "/usr/local/lib/gcc/5/"}),
+                @Platform(value = "macosx", preload = {"gcc_s@.1", "gomp@.1", "stdc++@.6", "iomp5", "mklml", "mkldnn@.0"},
+                                preloadpath = {"/usr/local/lib/gcc/8/", "/usr/local/lib/gcc/7/", "/usr/local/lib/gcc/6/", "/usr/local/lib/gcc/5/"}),
+                @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6",
+                                                        "msvcr120", "libiomp5md", "mklml", "libmkldnn", "libnd4jcpu"}),
                 @Platform(extension = {"-avx512", "-avx2"}) })
 public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 
