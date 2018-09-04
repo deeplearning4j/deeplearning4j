@@ -49,7 +49,8 @@ public class TFGraphTestSubDir {
 
     @Parameterized.Parameters
     public static Collection<Object[]> data() throws IOException {
-        return TFGraphTestAllHelper.fetchTestParams(modelDir,EXECUTE_WITH);
+//        return TFGraphTestAllHelper.fetchTestParams(modelDir,EXECUTE_WITH);
+        throw new UnsupportedOperationException();
     }
 
     public TFGraphTestSubDir(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName) throws IOException {
@@ -66,7 +67,8 @@ public class TFGraphTestSubDir {
             return;
         }
         Double precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
-        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, modelDir, EXECUTE_WITH, precisionOverride);
-        TFGraphTestAllHelper.checkIntermediate(inputs,modelName,modelDir,EXECUTE_WITH);
+//        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, modelDir, EXECUTE_WITH, precisionOverride);
+//        TFGraphTestAllHelper.checkIntermediate(inputs,modelName,modelDir,EXECUTE_WITH);
+        throw new UnsupportedOperationException();
     }
 }

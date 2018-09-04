@@ -57,6 +57,9 @@ public class TFGraphTestAllLibnd4j {
     private Map<String, INDArray> predictions;
     private String modelName;
     private static final TFGraphTestAllHelper.ExecuteWith EXECUTE_WITH = TFGraphTestAllHelper.ExecuteWith.LIBND4J;
+    private static final String BASE_DIR = "tf_graphs/examples";
+    private static final String MODEL_FILENAME = "frozen_model.pb";
+
     private static final String[] SKIP_ARR = new String[] {
             "deep_mnist",
             "deep_mnist_no_dropout",
@@ -111,7 +114,7 @@ public class TFGraphTestAllLibnd4j {
 
     @Parameterized.Parameters(name="{2}")
     public static Collection<Object[]> data() throws IOException {
-        return TFGraphTestAllHelper.fetchTestParams(EXECUTE_WITH);
+        return TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH);
     }
 
     public TFGraphTestAllLibnd4j(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName) throws IOException {
@@ -143,7 +146,8 @@ public class TFGraphTestAllLibnd4j {
 
         Double precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
 
-        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, EXECUTE_WITH, precisionOverride);
+        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH,
+                TFGraphTestAllHelper.LOADER, precisionOverride);
         //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
     }
 

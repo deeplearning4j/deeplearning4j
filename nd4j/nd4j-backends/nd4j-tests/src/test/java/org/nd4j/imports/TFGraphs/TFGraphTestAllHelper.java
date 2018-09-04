@@ -36,14 +36,15 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.function.BiFunction;
+import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -58,22 +59,23 @@ import static org.nd4j.imports.TFGraphs.TFGraphsSkipNodes.skipNode;
 @Slf4j
 public class TFGraphTestAllHelper {
 
-
     public enum ExecuteWith {
-        SAMEDIFF(SAMEDIFF_DEFAULT_BASE_DIR),
-        LIBND4J(LIBND4J_DEFAULT_BASE_DIR),
-        JUST_PRINT(COMMON_BASE_DIR);
+        SAMEDIFF, LIBND4J, JUST_PRINT
+    }
 
-        private ExecuteWith(String baseDir) {
-            this.BASE_DIR = baseDir;
-        }
-
-        private final String BASE_DIR;
-
-        public String getDefaultBaseDir() {
-            return BASE_DIR;
+    public static class DefaultGraphLoader implements BiFunction<File,String,SameDiff> {
+        @Override
+        public SameDiff apply(File file, String name) {
+            try(InputStream is = new BufferedInputStream(new FileInputStream(file))){
+                SameDiff sd = TFGraphMapper.getInstance().importGraph(is);
+                return sd;
+            } catch (IOException e){
+                throw new RuntimeException(e);
+            }
         }
     }
+
+    public static final DefaultGraphLoader LOADER = new DefaultGraphLoader();
 
     @BeforeClass
     public void beforeClass(){
@@ -92,9 +94,10 @@ public class TFGraphTestAllHelper {
     }
 
     //TODO: Later, we can add this as a param so we can test different graphs in samediff and not samediff
-    public static final String COMMON_BASE_DIR = "tf_graphs/examples";
-    public static final String SAMEDIFF_DEFAULT_BASE_DIR = COMMON_BASE_DIR;
-    public static final String LIBND4J_DEFAULT_BASE_DIR = COMMON_BASE_DIR;
+//    public static String COMMON_BASE_DIR = "tf_graphs/examples";
+//    public static final String COMMON_BASE_DIR = "tf_graphs/zoo_models";
+//    public static final String SAMEDIFF_DEFAULT_BASE_DIR = COMMON_BASE_DIR;
+//    public static final String LIBND4J_DEFAULT_BASE_DIR = COMMON_BASE_DIR;
 
     private static ExecutorConfiguration configuration = ExecutorConfiguration.builder()
             .executionMode(ExecutionMode.SEQUENTIAL)
@@ -103,12 +106,8 @@ public class TFGraphTestAllHelper {
             .outputMode(OutputMode.VARIABLE_SPACE)
             .build();
 
-    protected static List<Object[]> fetchTestParams(ExecuteWith executeWith) throws IOException {
-        return fetchTestParams(executeWith.getDefaultBaseDir(), executeWith);
-    }
-
-    protected static List<Object[]> fetchTestParams(String baseDir, ExecuteWith executeWith) throws IOException {
-        String[] modelNames = modelDirNames(baseDir, executeWith);
+    protected static List<Object[]> fetchTestParams(String baseDir, String modelFileName, ExecuteWith executeWith) throws IOException {
+        String[] modelNames = modelDirNames(baseDir, executeWith, modelFileName);
         List<Object[]> modelParams = new ArrayList<>();
         for (int i = 0; i < modelNames.length; i++) {
             Object[] currentParams = new Object[3];
@@ -120,15 +119,12 @@ public class TFGraphTestAllHelper {
         return modelParams;
     }
 
-    protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, ExecuteWith execType, Double precisionOverride) throws IOException {
-        log.info("Running model " + modelName + " only output");
-        checkOnlyOutput(inputs, predictions, modelName, execType.getDefaultBaseDir(), execType, precisionOverride);
-    }
-
-    protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, String baseDir, ExecuteWith execType, Double precisionOverride) throws IOException {
+    protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName,
+                                          String baseDir, String modelFilename, ExecuteWith execType, BiFunction<File,String,SameDiff> loader,
+                                          Double precisionOverride) throws IOException {
         Nd4j.EPS_THRESHOLD = 1e-3;
 
-        SameDiff graph = getGraphAfterExec(baseDir, modelName, inputs, execType);
+        SameDiff graph = getGraphAfterExec(baseDir, modelFilename, modelName, inputs, execType, loader);
 
         //Collect coverage info about ops
         OpValidation.collectTensorflowImportCoverage(graph);
@@ -173,13 +169,9 @@ public class TFGraphTestAllHelper {
         Nd4j.EPS_THRESHOLD = 1e-5;
     }
 
-    public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, ExecuteWith execType) throws IOException {
-        checkIntermediate(inputs, modelName, execType.getDefaultBaseDir(), execType);
-    }
-
-    public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, String baseDir, ExecuteWith execType) throws IOException {
+    public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, String baseDir, String modelFileName, ExecuteWith execType) throws IOException {
         Nd4j.EPS_THRESHOLD = 1e-3;
-        val graph = getGraphAfterExec(baseDir, modelName, inputs, execType);
+        val graph = getGraphAfterExec(baseDir, modelFileName, modelName, inputs, execType, LOADER);
 
         //Collect coverage info about ops
         OpValidation.collectTensorflowImportCoverage(graph);
@@ -207,9 +199,11 @@ public class TFGraphTestAllHelper {
         Nd4j.EPS_THRESHOLD = 1e-5;
     }
 
-    public static SameDiff getGraphAfterExec(String baseDir, String modelName, Map<String, INDArray> inputs, ExecuteWith executeWith) throws IOException {
+    public static SameDiff getGraphAfterExec(String baseDir, String modelFilename, String modelName, Map<String, INDArray> inputs,
+                                             ExecuteWith executeWith, BiFunction<File,String,SameDiff> graphLoaderFunction) throws IOException {
         log.info("\n\tRUNNING TEST " + modelName + "...");
-        val graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource(baseDir + "/" + modelName + "/frozen_model.pb").getInputStream());
+        SameDiff graph = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
+//        = TFGraphMapper.getInstance().importGraph(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getInputStream());
         //System.out.println(graph.summary());
         if (executeWith.equals(ExecuteWith.SAMEDIFF)) {
             if (!inputs.isEmpty()) {
@@ -239,13 +233,13 @@ public class TFGraphTestAllHelper {
         return graph;
     }
 
-    private static String[] modelDirNames(String base_dir, ExecuteWith executeWith) throws IOException {
+    private static String[] modelDirNames(String base_dir, ExecuteWith executeWith, String modelFileName) throws IOException {
         ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(new ClassPathResource(base_dir).getClassLoader());
-        Resource[] resources = resolver.getResources("classpath*:" + base_dir + "/**/frozen_model.pb");
+        Resource[] resources = resolver.getResources("classpath*:" + base_dir + "/**/" + modelFileName );
         String[] exampleNames = new String[resources.length];
         for (int i = 0; i < resources.length; i++) {
             String nestedName = resources[i].getURL().toString().split(base_dir + "/")[1];
-            exampleNames[i] = nestedName.replaceAll(Pattern.quote(executeWith.getDefaultBaseDir()), "").replaceAll("/frozen_model.pb", "");
+            exampleNames[i] = nestedName.replaceAll(Pattern.quote(base_dir), "").replaceAll("/" + modelFileName, "");
         }
         return exampleNames;
     }

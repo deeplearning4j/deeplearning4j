@@ -54,6 +54,11 @@ public class TFGraphTestAllSameDiff {
     private Map<String, INDArray> predictions;
     private String modelName;
     private static final TFGraphTestAllHelper.ExecuteWith EXECUTE_WITH = TFGraphTestAllHelper.ExecuteWith.SAMEDIFF;
+    private static final String BASE_DIR = "tf_graphs/examples";
+    private static final String MODEL_FILENAME = "frozen_model.pb";
+
+
+
     private static final String[] SKIP_ARR = new String[] {
             "deep_mnist",
             "deep_mnist_no_dropout",
@@ -178,7 +183,7 @@ public class TFGraphTestAllSameDiff {
 
     @Parameterized.Parameters(name="{2}")
     public static Collection<Object[]> data() throws IOException {
-        List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(EXECUTE_WITH);
+        List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH);
         return params;
     }
 
@@ -204,7 +209,8 @@ public class TFGraphTestAllSameDiff {
         }
         Double precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
 
-        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, EXECUTE_WITH, precisionOverride);
+        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH,
+                TFGraphTestAllHelper.LOADER, precisionOverride);
         //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
     }
 
