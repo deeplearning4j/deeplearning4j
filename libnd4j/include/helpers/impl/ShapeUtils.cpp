@@ -426,19 +426,19 @@ bool ShapeUtils<T>::evalBroadcastShapeInfo(const NDArray<T> &max, const NDArray<
 template <typename T>
 bool ShapeUtils<T>::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, nd4j::memory::Workspace* workspace) {
 
-    if (shape::isScalar(max) && shape::isScalar(min)) {
-        resultShapeInfo = nullptr;
-        if (shape::rank(max) >= shape::rank(min)) {
-            COPY_SHAPE_EX(max, resultShapeInfo, workspace);
-        } else {
-            COPY_SHAPE_EX(min, resultShapeInfo, workspace);
-        }
-        return true;
-    } else if ((shape::rank(max) == 0 && shape::isScalar(min))) {
-        // X is the driver here
-        resultShapeInfo = ShapeUtils<T>::createScalarShapeInfo(workspace);
-        return true;
-    }
+    // if (shape::isScalar(max) && shape::isScalar(min)) {
+    //     resultShapeInfo = nullptr;
+    //     if (shape::rank(max) >= shape::rank(min)) {
+    //         COPY_SHAPE_EX(max, resultShapeInfo, workspace);
+    //     } else {
+    //         COPY_SHAPE_EX(min, resultShapeInfo, workspace);
+    //     }
+    //     return true;
+    // } else if ((shape::rank(max) == 0 && shape::isScalar(min))) {
+    //     // X is the driver here
+    //     resultShapeInfo = ShapeUtils<T>::createScalarShapeInfo(workspace);
+    //     return true;
+    // }
 
     // check whether broadcast operation is possible for input arrays
     if(!areShapesBroadcastable(max, min))
@@ -452,8 +452,8 @@ bool ShapeUtils<T>::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const b
         minShapeInfo = max;
     }
        
-    const int  maxRank      = maxShapeInfo[0];
-    const int  minRank      = minShapeInfo[0];  
+    const int  maxRank = maxShapeInfo[0];
+    const int  minRank = minShapeInfo[0];  
     
     // evaluate shapeInfo for resulting array
     if(resultShapeInfo != nullptr)

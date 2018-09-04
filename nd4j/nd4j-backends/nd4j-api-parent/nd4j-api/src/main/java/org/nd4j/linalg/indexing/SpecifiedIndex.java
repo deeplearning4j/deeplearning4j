@@ -169,6 +169,12 @@ public class SpecifiedIndex implements INDArrayIndex {
          */
         public SpecifiedIndexesGenerator(INDArrayIndex[] indexes) {
             this.indexes = indexes;
+            for(int i=0; i<indexes.length; i++ ){
+                //Replace point indices with specified indices
+                if(indexes[i] instanceof PointIndex){
+                    indexes[i] = new SpecifiedIndex(indexes[i].current());
+                }
+            }
         }
 
         @Override

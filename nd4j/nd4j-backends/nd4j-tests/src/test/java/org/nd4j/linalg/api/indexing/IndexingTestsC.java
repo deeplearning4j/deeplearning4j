@@ -146,8 +146,7 @@ public class IndexingTestsC extends BaseNd4jTest {
     @Test
     public void testIntervalLowerBound() {
         INDArray wholeArr = Nd4j.linspace(1, 24, 24).reshape(4, 2, 3);
-        INDArray subarray = wholeArr.get(interval(1, 3), new SpecifiedIndex(new int[] {0}),
-                        new SpecifiedIndex(new int[] {0, 2}));
+        INDArray subarray = wholeArr.get(interval(1, 3), NDArrayIndex.point(0), NDArrayIndex.indices(0, 2));
         INDArray assertion = Nd4j.create(new double[][] {{7, 9}, {13, 15}});
 
         assertEquals(assertion, subarray);
