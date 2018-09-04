@@ -17,6 +17,7 @@
 package org.nd4j.parameterserver.distributed.logic;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -27,6 +28,8 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
+@Ignore
+@Deprecated
 public class FrameCompletionHandlerTest {
     @Before
     public void setUp() throws Exception {

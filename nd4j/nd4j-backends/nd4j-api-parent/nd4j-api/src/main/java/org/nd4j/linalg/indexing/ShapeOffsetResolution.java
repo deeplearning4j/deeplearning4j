@@ -644,31 +644,6 @@ public class ShapeOffsetResolution implements Serializable {
         else
             this.offset += ArrayUtil.calcOffsetLong2(accumShape, accumOffsets, accumStrides)
                     / Math.max(1, numIntervals);
-
-
-        //collapse singular dimensions with specified index
-        List<Integer> removeShape = new ArrayList<>();
-        for (int i = 0; i < Math.min(this.shapes.length, indexes.length); i++) {
-            if (this.shapes[i] == 1 && indexes[i] instanceof SpecifiedIndex) {
-                removeShape.add(i);
-            }
-        }
-
-
-        if (!removeShape.isEmpty()) {
-            List<Long> newShape = new ArrayList<>();
-            List<Long> newStrides = new ArrayList<>();
-            for (int i = 0; i < this.shapes.length; i++) {
-                if (!removeShape.contains(i)) {
-                    newShape.add(this.shapes[i]);
-                    newStrides.add(this.strides[i]);
-                }
-            }
-
-            this.shapes = Longs.toArray(newShape);
-            this.strides = Longs.toArray(newStrides);
-        }
-
     }
 
     public void resolveFixedDimensionsCOO(INDArrayIndex... indexes) {

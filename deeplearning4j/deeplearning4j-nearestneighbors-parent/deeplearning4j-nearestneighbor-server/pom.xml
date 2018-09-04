@@ -23,15 +23,15 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>deeplearning4j-nearestneighbor-server_2.10</artifactId>
+    <artifactId>deeplearning4j-nearestneighbor-server_2.11</artifactId>
     <packaging>jar</packaging>
 
     <name>deeplearning4j-nearestneighbor-server</name>
 
     <properties>
         <!-- Default scala versions, may be overwritten by build profiles -->
-        <scala.version>2.10.7</scala.version>
-        <scala.binary.version>2.10</scala.binary.version>
+        <scala.version>2.11.12</scala.version>
+        <scala.binary.version>2.11</scala.binary.version>
     </properties>
     <build>
         <plugins>
@@ -84,12 +84,12 @@
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.10</artifactId>
+            <artifactId>akka-actor_2.11</artifactId>
             <version>${akka.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-slf4j_2.10</artifactId>
+            <artifactId>akka-slf4j_2.11</artifactId>
             <version>${akka.version}</version>
         </dependency>
         <dependency>
@@ -154,7 +154,7 @@
         </dependency>
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-java_2.10</artifactId>
+            <artifactId>play-java_2.11</artifactId>
             <version>${playframework.version}</version>
             <exclusions>
                 <exclusion>
@@ -186,12 +186,12 @@
         </dependency>
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-json_2.10</artifactId>
+            <artifactId>play-json_2.11</artifactId>
             <version>${playframework.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-server_2.10</artifactId>
+            <artifactId>play-server_2.11</artifactId>
             <version>${playframework.version}</version>
         </dependency>
         <dependency>
@@ -201,12 +201,12 @@
         </dependency>
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-netty-server_2.10</artifactId>
+            <artifactId>play-netty-server_2.11</artifactId>
             <version>${playframework.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-cluster_2.10</artifactId>
+            <artifactId>akka-cluster_2.11</artifactId>
             <version>${akka.version}</version>
         </dependency>
 

@@ -28,6 +28,7 @@ import org.nd4j.parameterserver.distributed.messages.RequestMessage;
  * @author raver119@gmail.com
  */
 @Data
+@Deprecated
 public class DistributedAssignMessage extends BaseVoidMessage implements DistributedMessage {
     /**
      * The only use of this message is negTable sharing.

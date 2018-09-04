@@ -27,6 +27,7 @@ import org.nd4j.parameterserver.distributed.messages.VoidMessage;
  *
  * @author raver119@gmail.com
  */
+@Deprecated
 public interface Transport {
     enum ThreadingModel {
         SAME_THREAD, // DO NOT USE IT IN REAL ENVIRONMENT!!!11oneoneeleven

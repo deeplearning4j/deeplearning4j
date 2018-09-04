@@ -39,7 +39,7 @@ public class SplitV extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "splitv";
+        return "split_v";
     }
 
     @Override
@@ -49,16 +49,15 @@ public class SplitV extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val numSplits = (int) attributesForNode.get("num_split").getI();
-        this.numSplit = numSplits;
         val splitDim = TFGraphMapper.getInstance().getArrayFrom(TFGraphMapper.getInstance().getNodeWithNameFromGraph(graph,nodeDef.getInput(0)),graph);
         if(splitDim != null) {
             this.splitDim = splitDim.getInt(0);
             addIArgument(splitDim.getInt(0));
         }
 
-        addIArgument(numSplits);
-
+        val numSplits = (int) attributesForNode.get("num_split").getI();
+        this.numSplit = numSplits;
+        //addIArgument(numSplits);  //libnd4j op doesn't used/need it for execution
     }
 
     @Override
@@ -90,9 +89,14 @@ public class SplitV extends DynamicCustomOp {
         map.put("splitDim",splitDim);
 
         ret.put(tensorflowName(),map);
-        ret.put(onnxName(),map);
+        //ret.put(onnxName(),map);
 
         return ret;
+    }
+
+    @Override
+    public int getNumOutputs(){
+        return numSplit;
     }
 
 }

@@ -240,6 +240,17 @@ public class NDArrayIndex implements INDArrayIndex {
         return new NDArrayIndexAll(true);
     }
 
+    /**
+     * Returns an instance of {@link SpecifiedIndex}.
+     * Note that SpecifiedIndex works differently than the other indexing options, in that it always returns a copy
+     * of the (subset of) the underlying array, for get operations. This means that INDArray.get(..., indices(x,y,z), ...)
+     * will be a copy of the relevant subset of the array.
+     * @param indices Indices to get
+     */
+    public static INDArrayIndex indices(long... indices){
+        return new SpecifiedIndex(indices);
+    }
+
 
     /**
      * Represents adding a new dimension
@@ -313,6 +324,8 @@ public class NDArrayIndex implements INDArrayIndex {
                         IntervalIndex intervalIndex = (IntervalIndex) intendedIndexes[i];
                         ret[i] = new SpecifiedIndex(ArrayUtil.range(intervalIndex.begin, intervalIndex.end(),
                                         intervalIndex.stride()));
+                    } else if(intendedIndexes[i] instanceof PointIndex){
+                        ret[i] = intendedIndexes[i];
                     }
                 }
             }
