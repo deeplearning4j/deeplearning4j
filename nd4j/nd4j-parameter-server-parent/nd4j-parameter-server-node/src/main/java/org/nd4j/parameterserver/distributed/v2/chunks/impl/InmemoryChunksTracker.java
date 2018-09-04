@@ -109,7 +109,7 @@ public class InmemoryChunksTracker<T extends VoidMessage> implements ChunksTrack
         try (val bais = new ByteArrayInputStream(buffer)) {
             return SerializationUtils.deserialize(bais);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Exception: {}",e);
             throw new RuntimeException(e);
         }
     }

@@ -175,7 +175,7 @@ public abstract  class BaseTransport  implements Transport {
                         } catch (InterruptedException e) {
                             break;
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            log.error("Exception: {}", e);
                         }
                     }
                 }
