@@ -17,6 +17,7 @@
 
 import jnius_config
 import os
+import warnings
 
 
 class_path = os.environ.get('DATAVEC_CLASS_PATH')
@@ -29,8 +30,10 @@ if class_path[-1] == '/':
 else:
     class_path += '/*'
 
-
-jnius_config.set_classpath(class_path)
+try:
+    jnius_config.set_classpath(class_path)
+except:
+    warnings.warn('JVM is already running. Can not set options and class path.')
 
 # -------------JVM starts here-------------
 from jnius import autoclass
