@@ -110,13 +110,15 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    void   execIndexReduceDouble(Nd4jPointer *extraPointers,int opNum,
-                                 double *x,
-                                 Nd4jLong *xInfo,
-                                 double *extraParams,
-                                 double *result,
-                                 Nd4jLong *resultShapeInfoBuffer,
-                                 int *dimension, int dimensionLength);
+    void   execIndexReduce(Nd4jPointer *extraPointers,
+            int opNum,
+            void *x,
+            Nd4jLong *xInfo,
+            void *extraParams,
+            Nd4jLong *result,
+            Nd4jLong *resultShapeInfoBuffer,
+            int *dimension,
+            int dimensionLength);
     /**
      *
      * @param opNum
@@ -579,44 +581,6 @@ public:
                                     Nd4jLong *xShapeInfo,
                                     float16 *extraParams);
 
-    /**
-     *
-     * @param opNum
-     * @param x
-     * @param xShapeInfo
-     * @param extraParams
-     * @param result
-     * @param resultShapeInfoBuffer
-     * @param dimension
-     * @param dimensionLength
-     */
-    void   execIndexReduceFloat(Nd4jPointer *extraPointers,int opNum,
-                                float *x,
-                                Nd4jLong *xShapeInfo,
-                                float *extraParams,
-                                float *result,
-                                Nd4jLong *resultShapeInfoBuffer,
-                                int *dimension, int dimensionLength);
-
-    /**
-     *
-     * @param extraPointers
-     * @param opNum
-     * @param x
-     * @param xShapeInfo
-     * @param extraParams
-     * @param result
-     * @param resultShapeInfoBuffer
-     * @param dimension
-     * @param dimensionLength
-     */
-    void   execIndexReduceHalf(Nd4jPointer *extraPointers,int opNum,
-                               float16 *x,
-                               Nd4jLong *xShapeInfo,
-                               float16 *extraParams,
-                               float16 *result,
-                               Nd4jLong *resultShapeInfoBuffer,
-                               int *dimension, int dimensionLength);
     /**
      *
      * @param opNum

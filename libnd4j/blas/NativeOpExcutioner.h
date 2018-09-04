@@ -39,7 +39,6 @@
  *
  */
 
-template <typename T>
 class NativeOpExcutioner {
 public:
     /**
@@ -65,9 +64,9 @@ public:
      * @param dimensionLength
      */
     static void execIndexReduce(int opNum,
-                                T *x,
+                                void *x,
                                 Nd4jLong *xShapeInfo,
-                                T *extraParams,
+                                void *extraParams,
                                 Nd4jLong *result,
                                 Nd4jLong *resultShapeInfoBuffer,
                                 int *dimension,

@@ -47,9 +47,32 @@ Nd4jLong NativeOpExcutioner<T>::execIndexReduceScalar(int opNum, T *x, Nd4jLong 
  * @param dimension
  * @param dimensionLength
  */
-template<typename T>
-void NativeOpExcutioner<T>::execIndexReduce(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-    functions::indexreduce::IndexReduce<T>::exec(opNum, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffsets);
+
+void NativeOpExcutioner::execIndexReduce(int opNum,
+        void *x,
+        Nd4jLong *xShapeInfo,
+        void *extraParams,
+        Nd4jLong *result,
+        Nd4jLong *resultShapeInfoBuffer,
+        int *dimension,
+        int dimensionLength,
+        Nd4jLong *tadShapeInfo,
+        Nd4jLong *tadOffsets) {
+
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+
+    switch (xType) {
+        case nd4j::DataType::DataType_DOUBLE: {
+                functions::indexreduce::IndexReduce<double>::exec(opNum, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffsets);
+            };
+            break;
+        case nd4j::DataType::DataType_FLOAT: {
+                functions::indexreduce::IndexReduce<float>::exec(opNum, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffsets);
+            };
+            break;
+    }
+
+    //functions::indexreduce::IndexReduce<T>::exec(opNum, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffsets);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -391,13 +414,6 @@ template<typename T>
 void NativeOpExcutioner<T>::execReduce3(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParamsVals, T *y, Nd4jLong *yShapeInfo, T *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength) {
     functions::reduce3::Reduce3<T>::exec(opNum, x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength);
 }
-
-
-template class ND4J_EXPORT NativeOpExcutioner<float16>;
-template class ND4J_EXPORT NativeOpExcutioner<float>;
-template class ND4J_EXPORT NativeOpExcutioner<double>;
-
-
 
 
 

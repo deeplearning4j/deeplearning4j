@@ -110,26 +110,27 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,
  * @param dimension
  * @param dimensionLength
  */
-void   NativeOps::execIndexReduceDouble(Nd4jPointer *extraPointers,int opNum,
-                                        double *x,
+void  NativeOps::execIndexReduce(Nd4jPointer *extraPointers,int opNum,
+                                        void *x,
                                         Nd4jLong *xShapeInfo,
-                                        double *extraParams,
-                                        double *result,
+                                        void *extraParams,
+                                        Nd4jLong *result,
                                         Nd4jLong *resultShapeInfo,
                                         int *dimension,
                                         int dimensionLength) {
-    Nd4jLong *tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    Nd4jLong *tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
-    NativeOpExcutioner<double>::execIndexReduce(opNum,
-                                                x,
-                                                xShapeInfo,
-                                                extraParams,
-                                                result,
-                                                resultShapeInfo,
-                                                dimension,
-                                                dimensionLength,
-                                                tadShapeInfo,
-                                                tadOffsets);
+    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
+    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
+
+    NativeOpExcutioner::execIndexReduce(opNum,
+            x,
+            xShapeInfo,
+            extraParams,
+            result,
+            resultShapeInfo,
+            dimension,
+            dimensionLength,
+            tadShapeInfo,
+            tadOffsets);
 }
 
 

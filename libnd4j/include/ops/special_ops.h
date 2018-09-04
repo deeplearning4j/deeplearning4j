@@ -1467,7 +1467,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 					maxResult[i] = 0.0;
 				Nd4jLong maxShape[2] = { shape[0], 1 };
 				auto maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
-				functions::reduce::ReduceFunction<X>::template exec<simdOps::Max<X>>(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,  nullptr, nullptr);
+				functions::reduce::ReduceFunction<X>::template exec<simdOps::Max<X>>(reinterpret_cast<void *>(dx), xShapeBuffer, reinterpret_cast<void *>(extraParams), reinterpret_cast<void *>(maxResult.data()), maxResultShapeBuffer, maxDimension, 1,  nullptr, nullptr);
 
 				//subtract max of each row
 				functions::broadcast::Broadcast<X, X>::template exec<simdOps::Subtract<X,X>>(dx, xShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);

@@ -170,7 +170,7 @@ namespace functions {
             }
         }
 
-        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT Transform, , LIBND4J_TYPES);
+        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT Transform, , FLOAT_TYPES);
 
         /*
         BUILD_CALL_1(template void Transform<float>::exec, float, (float*, Nd4jLong*, float*, Nd4jLong*, float*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)

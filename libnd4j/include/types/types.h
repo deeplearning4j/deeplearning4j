@@ -45,6 +45,21 @@
         Nd4jLong, \
         Nd4jULong
 
+#define FLOAT_TYPES \
+        float16, \
+        float, \
+        double
+
+#define DECIMAL_TYPES \
+        int8_t, \
+        uint8_t, \
+        int16_t, \
+        uint16_t, \
+        int32_t, \
+        uint32_t, \
+        Nd4jLong, \
+        Nd4jULong
+
 
 
 #endif //LIBND4J_TYPES_H
