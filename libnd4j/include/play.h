@@ -24,14 +24,14 @@
 #include <type_boilerplate.h>
 
 #define DATA_TYPES \
-        float ,\
-        double ,\
-        float16
+        (DATA_FLOAT, float) ,\
+        (DATA_DOUBLE, double) ,\
+        (DATA_HALF, float16)
 
 
-BUILD_SINGLE_TEMPLATE(template class Alpha, , DATA_TYPES);
+BUILD_SINGLE_TEMPLATE(template class Alpha, (signature), DATA_TYPES);
 
-BUILD_DOUBLE_TEMPLATE(template class Alpha, , DATA_TYPES, DATA_TYPES);
+BUILD_DOUBLE_TEMPLATE(template class Alpha, (signature) , DATA_TYPES, DATA_TYPES);
 
 /*
 #define SCALAR_OPS \
