@@ -144,11 +144,11 @@ template<typename T>
 		template<typename T>
         math_def inline T nd4j_round(T val);
 
-        template<typename T>
-        math_def inline T nd4j_remainder(T num, T denom);
+        template<typename X, typename Y, typename Z>
+        math_def inline Z nd4j_remainder(X num, Y denom);
 
-        template<typename T>
-        math_def inline T nd4j_fmod(T num, T denom);
+        template<typename X, typename Y, typename Z>
+        math_def inline Z nd4j_fmod(X num, Y denom);
 
 		template<typename T>
         math_def inline T nd4j_erf(T num);
@@ -230,6 +230,11 @@ template<typename T>
 
 		template<>
 		math_def inline uint8_t nd4j_atan2<uint8_t>(uint8_t value1, uint8_t value2) {
+			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
+		}
+
+		template<>
+		math_def inline bool nd4j_atan2<bool>(bool value1, bool value2) {
 			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
 		}
 
@@ -845,36 +850,23 @@ template<typename T>
 			return roundf(val);
 		}
 
-        template<>
-        math_def inline float nd4j_remainder<float>(float num, float denom) {
-            return remainderf(num, denom);
-        }
+		template <typename X, typename Y, typename Z>
+		math_def inline Z nd4j_remainder(X val, Y val2) {
+			if (std::is_same<X, double>::value || std::is_same<Y, double>::value) {
+				return static_cast<Z>(remainder(static_cast<double>(val), static_cast<double>(val2)));
+			} else {
+				return static_cast<Z>(remainderf(static_cast<float>(val), static_cast<float>(val2)));
+			}
+		}
 
-        template<>
-        math_def inline double nd4j_remainder<double>(double num, double denom) {
-            return remainder(num, denom);
-        }
-
-        template<>
-        math_def inline float16 nd4j_remainder<float16>(float16 num, float16 denom) {
-            return (float16) remainderf((float) num, (float) denom);
-        }
-
-
-        template<>
-        math_def inline float nd4j_fmod<float>(float num, float denom) {
-            return fmodf(num, denom);
-        }
-
-        template<>
-        math_def inline double nd4j_fmod<double>(double num, double denom) {
-            return fmod(num, denom);
-        }
-
-        template<>
-        math_def inline float16 nd4j_fmod<float16>(float16 num, float16 denom) {
-            return (float16) fmodf((float) num, (float) denom);
-        }
+		template <typename X, typename Y, typename Z>
+		math_def inline Z nd4j_fmod(X val, Y val2) {
+			if (std::is_same<X, double>::value || std::is_same<Y, double>::value) {
+				return static_cast<Z>(fmod(static_cast<double>(val), static_cast<double>(val2)));
+			} else {
+				return static_cast<Z>(fmodf(static_cast<float>(val), static_cast<float>(val2)));
+			}
+		}
 
 		template<>
         math_def inline float nd4j_erf<float>(float num) {

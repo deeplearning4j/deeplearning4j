@@ -362,11 +362,11 @@ namespace simdOps {
     class Remainder {
     public:
         op_def static X op(X d1, Y d2) {
-            return nd4j::math::nd4j_remainder<X>(d1, d2);
+            return nd4j::math::nd4j_remainder<X, Y, X>(d1, d2);
         }
 
         op_def static X op(X d1, Y d2, X *params) {
-            return nd4j::math::nd4j_remainder<X>(d1, d2);
+            return nd4j::math::nd4j_remainder<X, Y, X>(d1, d2);
         }
 
         op_def static X op(X d1) {
@@ -375,7 +375,7 @@ namespace simdOps {
 
         // op for MetaOps
         op_def static X op(X d1, Y *params) {
-            return nd4j::math::nd4j_remainder(d1, params[0]);
+            return nd4j::math::nd4j_remainder<X, Y, X>(d1, params[0]);
         }
     };
 
@@ -383,11 +383,11 @@ namespace simdOps {
     class FMod {
     public:
         op_def static X op(X d1, Y d2) {
-            return nd4j::math::nd4j_fmod<X>(d1, d2);
+            return nd4j::math::nd4j_fmod<X, Y, X>(d1, d2);
         }
 
         op_def static X op(X d1, Y d2, X *params) {
-            return nd4j::math::nd4j_fmod<X>(d1, d2);
+            return nd4j::math::nd4j_fmod<X, Y, X>(d1, d2);
         }
 
         op_def static X op(X d1) {
@@ -396,7 +396,7 @@ namespace simdOps {
 
         // op for MetaOps
         op_def static X op(X d1, Y *params) {
-            return nd4j::math::nd4j_fmod<X>(d1, params[0]);
+            return nd4j::math::nd4j_fmod<X, Y, X>(d1, params[0]);
         }
     };
 
@@ -404,13 +404,13 @@ namespace simdOps {
     class FloorMod {
     public:
         op_def static X op(X d1, Y d2) {
-			auto m = nd4j::math::nd4j_fmod<X>(d1, d2);;
-            return (d1 < static_cast<X>(0)) == (d2 < static_cast<Y>(0)) ? m : nd4j::math::nd4j_fmod<X>(m + d2, d2);
+			auto m = nd4j::math::nd4j_fmod<X, Y, X>(d1, d2);;
+            return (d1 < static_cast<X>(0)) == (d2 < static_cast<Y>(0)) ? m : nd4j::math::nd4j_fmod<X, Y, X>(m + d2, d2);
         }
 
         op_def static X op(X d1, Y d2, X *params) {
-            auto m = nd4j::math::nd4j_fmod<X>(d1, d2);
-			return (d1 < static_cast<X>(0.0f)) == (d2 < static_cast<Y>(0)) ? m : nd4j::math::nd4j_fmod<X>(m + d2, d2);
+            auto m = nd4j::math::nd4j_fmod<X, Y, X>(d1, d2);
+			return (d1 < static_cast<X>(0.0f)) == (d2 < static_cast<Y>(0)) ? m : nd4j::math::nd4j_fmod<X, Y, X>(m + d2, d2);
         }
 
         op_def static X op(X d1) {
