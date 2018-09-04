@@ -21,8 +21,15 @@
 #ifndef LIBND4J_PLAY_H
 #define LIBND4J_PLAY_H
 
-#include "op_boilerplate.h"
-#include <loops/legacy_ops.h>
+#include <type_boilerplate.h>
+
+#define DATA_TYPES \
+        float ,\
+        double ,\
+        float16
+
+
+BUILD_SINGLE_TEMPLATE(template class Alpha, , DATA_TYPES);
 
 /*
 #define SCALAR_OPS \
@@ -36,10 +43,7 @@
 //        (2, nd4j::layers::Pooling2DLayer) ,\
 //        (3, nd4j::layers::LSTMLayer)
 
-#define DATA_TYPES \
-        (0, float) ,\
-        (1, double) ,\
-        (2, float16)
+
 */
 /*
 #define PAIRWISE_TRANSFORM_OPS \
@@ -75,7 +79,7 @@ EXECUTE_NOE((x, y, extras), OPS_A(PAIRWISE_TRANSFORM_OPS))
 */
 
 
-EXECUTE_NOE((x, extras), OPS_A(SCALAR_OPS))
+//EXECUTE_NOE((x, extras), OPS_A(SCALAR_OPS))
 
 //BUILD_CALL_1(template void nd4j::NDArray<float16>::applyTransform, float16, (NDArray<float16>* a, float16* b), TRANSFORM_OPS)
 
