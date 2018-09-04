@@ -14,18 +14,23 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.spark.parameterserver.networking.messages;
+package org.nd4j.parameterserver.distributed.v2.messages.pairs.params;
 
-import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.parameterserver.distributed.v2.messages.ResponseMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseINDArrayMessage;
 
 /**
+ * This message holds INDArray with model parameters
  * @author raver119@gmail.com
  */
-public class SilentIntroductoryConfirmation extends BaseVoidMessage {
-    @Override
-    public void processMessage() {
-        /*
-            we just want to get clearance before training starts here
-         */
+@NoArgsConstructor
+public final class ModelParametersMessage extends BaseINDArrayMessage implements ResponseMessage {
+    private static final long serialVersionUID = 1L;
+
+    public ModelParametersMessage(@NonNull String messageId, INDArray payload) {
+        super(messageId, payload);
     }
 }

@@ -23,7 +23,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nd4j-parameter-server-node_2.10</artifactId>
+    <artifactId>nd4j-parameter-server-node_2.11</artifactId>
     <packaging>jar</packaging>
 
     <name>nd4j-parameter-server-node</name>
@@ -41,13 +41,26 @@
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-parameter-server-status_2.10</artifactId>
+            <artifactId>nd4j-parameter-server-status_2.11</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-parameter-server</artifactId>
             <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.reactivex.rxjava2</groupId>
+            <artifactId>rxjava</artifactId>
+            <version>2.2.0</version>
         </dependency>
     </dependencies>
 

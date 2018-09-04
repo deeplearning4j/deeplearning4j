@@ -19,7 +19,6 @@ package org.nd4j.parameterserver.distributed.messages;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.io.input.ClassLoaderObjectInputStream;
-import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
@@ -34,6 +33,7 @@ import java.io.Serializable;
 /**
  * @author raver119@gmail.com
  */
+@Deprecated
 public interface VoidMessage extends Serializable {
 
     void setTargetId(short id);

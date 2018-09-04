@@ -53,6 +53,7 @@ import static org.junit.Assert.*;
  */
 @Slf4j
 @Ignore
+@Deprecated
 public class VoidParameterServerTest {
     private static List<String> localIPs;
     private static List<String> badIPs;

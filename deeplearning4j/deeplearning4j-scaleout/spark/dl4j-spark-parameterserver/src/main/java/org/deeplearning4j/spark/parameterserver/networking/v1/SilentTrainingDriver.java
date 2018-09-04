@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.spark.parameterserver.networking;
+package org.deeplearning4j.spark.parameterserver.networking.v1;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,7 @@ import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.solvers.accumulation.FancyBlockingQueue;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
-import org.deeplearning4j.spark.parameterserver.networking.messages.SilentUpdatesMessage;
+import org.deeplearning4j.spark.parameterserver.networking.v1.messages.SilentUpdatesMessage;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.ThresholdCompression;
@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage> {
     protected transient INDArray params;
     protected transient INDArray updates;

@@ -27,6 +27,7 @@ import org.nd4j.parameterserver.distributed.messages.intercom.DistributedAssignM
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public class AssignRequestMessage extends BaseVoidMessage implements RequestMessage {
 
     protected Integer key;

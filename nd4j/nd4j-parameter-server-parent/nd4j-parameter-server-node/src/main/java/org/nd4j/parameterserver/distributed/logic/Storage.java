@@ -21,6 +21,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 /**
  * @author raver119@gmail.com
  */
+@Deprecated
 public interface Storage {
 
     INDArray getArray(Integer key);
