@@ -476,6 +476,8 @@ public class TransferLearning {
         private WorkspaceMode workspaceMode;
         private Boolean validateOutputLayerConfig = null;
 
+        private Map<String,Integer> nInFromNewConfig = new HashMap<>();
+
         /**
          * Computation Graph to tweak for transfer learning
          * @param origGraph
@@ -601,6 +603,14 @@ public class TransferLearning {
                 layerImplF.setDist(dist);
                 layerImplF.setNOut(nOut);
 
+                if(editedVertices.contains(layerName) && editedConfigBuilder.getVertices().get(layerName) instanceof LayerVertex
+                        && nInFromNewConfig.containsKey(layerName)){
+                    Layer l = ((LayerVertex)editedConfigBuilder.getVertices().get(layerName)).getLayerConf().getLayer();
+                    if(l instanceof FeedForwardLayer){
+                        layerImplF.setNIn(nInFromNewConfig.get(layerName));
+                    }
+                }
+
                 editedConfigBuilder.removeVertex(layerName, false);
                 LayerVertex lv = (LayerVertex) origConfig.getVertices().get(layerName);
                 String[] lvInputs = origConfig.getVertexInputs().get(layerName).toArray(new String[0]);
@@ -630,6 +640,8 @@ public class TransferLearning {
                     layerImplF.setWeightInit(schemeNext);
                     layerImplF.setDist(distNext);
                     layerImplF.setNIn(nOut);
+
+                    nInFromNewConfig.put(fanoutVertexName, nOut);
 
                     editedConfigBuilder.removeVertex(fanoutVertexName, false);
                     lv = (LayerVertex) origConfig.getVertices().get(fanoutVertexName);

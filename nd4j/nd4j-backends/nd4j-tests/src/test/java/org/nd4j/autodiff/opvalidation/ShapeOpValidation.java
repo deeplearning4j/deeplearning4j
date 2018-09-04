@@ -1757,4 +1757,40 @@ public class ShapeOpValidation extends BaseOpValidation {
             assertEquals(expOut[i], out);
         }
     }
+
+    @Test
+    public void testSplit1(){
+        INDArray in = Nd4j.linspace(1,10,10).reshape(10);
+        INDArray axis = Nd4j.trueScalar(-1);
+
+        INDArray out1 = Nd4j.create(new long[]{5});
+        INDArray out2 = Nd4j.create(new long[]{5});
+
+        INDArray exp1 = in.get(NDArrayIndex.interval(0,5)).reshape(5);
+        INDArray exp2 = in.get(NDArrayIndex.interval(5,10)).reshape(5);
+
+        assertNull(OpValidation.validate(new OpTestCase(DynamicCustomOp.builder("split")
+                .addInputs(axis, in)
+                .addOutputs(out1, out2)
+                .addIntegerArguments(2)
+                .build()).expectedOutput(0, exp1).expectedOutput(1,exp2)));
+    }
+
+    @Test
+    public void testSplit2(){
+        INDArray in = Nd4j.linspace(1,24,24).reshape(3,8);
+        INDArray axis = Nd4j.trueScalar(-1);
+
+        INDArray out1 = Nd4j.create(new long[]{3,4});
+        INDArray out2 = Nd4j.create(new long[]{3,4});
+
+        INDArray exp1 = in.get(NDArrayIndex.all(), NDArrayIndex.interval(0,4));
+        INDArray exp2 = in.get(NDArrayIndex.all(), NDArrayIndex.interval(4,8));
+
+        assertNull(OpValidation.validate(new OpTestCase(DynamicCustomOp.builder("split")
+                .addInputs(axis, in)
+                .addOutputs(out1, out2)
+                .addIntegerArguments(2)
+                .build()).expectedOutput(0, exp1).expectedOutput(1,exp2)));
+    }
 }
