@@ -190,6 +190,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_absolute_difference_loss.class,
         float_cosine_distance_loss.class,
         float_softmax_cross_entropy_loss_with_logits.class,
+        float_sparse_softmax_cross_entropy_loss_with_logits.class,
         float_softmax.class,
         float_softmax_bp.class,
         float_lrn_old.class,
@@ -308,6 +309,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_reduce_stdev.class,
         float_reduce_stdev_bp.class,
         float_reduce_dot_bp.class,
+        float_matrix_band_part.class,
         float_set_seed.class,
         float_get_seed.class,
         float_randomuniform.class,
@@ -343,6 +345,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_order.class,
         float_tile_to_shape.class,
         float_tile_to_shape_bp.class,
+        float_broadcast_to.class,
         float_test_output_reshape.class,
         float_test_scalar.class,
         float_testreduction.class,
@@ -384,7 +387,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_triu_bp.class,
         float_mirror_pad.class,
         float_cumsum_bp.class,
-        float_cumprod_bp.class,};
+        float_cumprod_bp.class,
+        float_histogram_fixed_width.class,};
     Class[] halfOps = {
         half_Switch.class,
         half_While.class,
@@ -566,6 +570,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_absolute_difference_loss.class,
         half_cosine_distance_loss.class,
         half_softmax_cross_entropy_loss_with_logits.class,
+        half_sparse_softmax_cross_entropy_loss_with_logits.class,
         half_softmax.class,
         half_softmax_bp.class,
         half_lrn_old.class,
@@ -684,6 +689,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_reduce_stdev.class,
         half_reduce_stdev_bp.class,
         half_reduce_dot_bp.class,
+        half_matrix_band_part.class,
         half_set_seed.class,
         half_get_seed.class,
         half_randomuniform.class,
@@ -719,6 +725,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_order.class,
         half_tile_to_shape.class,
         half_tile_to_shape_bp.class,
+        half_broadcast_to.class,
         half_test_output_reshape.class,
         half_test_scalar.class,
         half_testreduction.class,
@@ -760,7 +767,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_triu_bp.class,
         half_mirror_pad.class,
         half_cumsum_bp.class,
-        half_cumprod_bp.class,};
+        half_cumprod_bp.class,
+        half_histogram_fixed_width.class,};
     Class[] doubleOps = {
         double_Switch.class,
         double_While.class,
@@ -942,6 +950,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_absolute_difference_loss.class,
         double_cosine_distance_loss.class,
         double_softmax_cross_entropy_loss_with_logits.class,
+        double_sparse_softmax_cross_entropy_loss_with_logits.class,
         double_softmax.class,
         double_softmax_bp.class,
         double_lrn_old.class,
@@ -1060,6 +1069,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_reduce_stdev.class,
         double_reduce_stdev_bp.class,
         double_reduce_dot_bp.class,
+        double_matrix_band_part.class,
         double_set_seed.class,
         double_get_seed.class,
         double_randomuniform.class,
@@ -1095,6 +1105,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_order.class,
         double_tile_to_shape.class,
         double_tile_to_shape_bp.class,
+        double_broadcast_to.class,
         double_test_output_reshape.class,
         double_test_scalar.class,
         double_testreduction.class,
@@ -1136,7 +1147,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_triu_bp.class,
         double_mirror_pad.class,
         double_cumsum_bp.class,
-        double_cumprod_bp.class,};
+        double_cumprod_bp.class,
+        double_histogram_fixed_width.class,};
 
 @Name("std::vector<std::vector<int> >") public static class IntVectorVector extends Pointer {
     static { Loader.load(); }
@@ -28999,6 +29011,66 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+        /**
+         * returns histogram (as 1D array) with fixed bins width
+         * 
+         * Input arrays:
+         * - input array with elements to be binned into output histogram 
+         * - range array with first element being bottom limit and second element being top limit of histogram,
+             please note that input_value <= range[0] will be mapped to histogram[0], input_value >= range[1] will be mapped to histogram[-1]
+         * 
+         * Input integer arguments:
+         *    nbins (optional) - number of histogram bins, default value is 100
+         */
+//         #if NOT_EXCLUDED(OP_histogram_fixed_width)
+        @Name("nd4j::ops::histogram_fixed_width<float>") public static class float_histogram_fixed_width extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_histogram_fixed_width(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_histogram_fixed_width(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_histogram_fixed_width position(long position) {
+                return (float_histogram_fixed_width)super.position(position);
+            }
+        
+                                                                                    public float_histogram_fixed_width() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::histogram_fixed_width<float16>") public static class half_histogram_fixed_width extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_histogram_fixed_width(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_histogram_fixed_width(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_histogram_fixed_width position(long position) {
+                return (half_histogram_fixed_width)super.position(position);
+            }
+        
+                                                                                    public half_histogram_fixed_width() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::histogram_fixed_width<double>") public static class double_histogram_fixed_width extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_histogram_fixed_width(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_histogram_fixed_width(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_histogram_fixed_width position(long position) {
+                return (double_histogram_fixed_width)super.position(position);
+            }
+        
+                                                                                    public double_histogram_fixed_width() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+//         #endif
+
+
     
 
 
@@ -34978,6 +35050,72 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+        /**
+        * This op calculates backprop dot for two tensors along given dimensions
+        *
+        * input array:
+        *    x: tensor to calculate dot for
+        *    y: tensor to calculate dot for
+        *    z: tensor with gradient output of the FF dot for x and y
+        *
+        * int arguments:
+        *   list of integers - dimensions to calculate dot along,
+        *   default corresponds to empty list in which case calculation
+        *   is performed for all dimensions and scalar is returned.
+        *
+        * output array:
+        *   the tensor with calculated backproped dots
+        *
+        */
+
+//         #if NOT_EXCLUDED(OP_matrix_band_part)
+        @Name("nd4j::ops::matrix_band_part<float>") public static class float_matrix_band_part extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_matrix_band_part(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_matrix_band_part(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_matrix_band_part position(long position) {
+                return (float_matrix_band_part)super.position(position);
+            }
+        
+                                                                                    public float_matrix_band_part() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::matrix_band_part<float16>") public static class half_matrix_band_part extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_matrix_band_part(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_matrix_band_part(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_matrix_band_part position(long position) {
+                return (half_matrix_band_part)super.position(position);
+            }
+        
+                                                                                    public half_matrix_band_part() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::matrix_band_part<double>") public static class double_matrix_band_part extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_matrix_band_part(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_matrix_band_part(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_matrix_band_part position(long position) {
+                return (double_matrix_band_part)super.position(position);
+            }
+        
+                                                                                    public double_matrix_band_part() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+//         #endif
+
     
 
 
@@ -35595,6 +35733,61 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
+//         #endif
+
+        /**
+         * This op broadcast given input up to given shape
+         *  
+         * inputs:
+         *  input array - array to be broadcasted to given shape
+         *  shape array - array containing shape be broadcasted to
+         */
+//         #if NOT_EXCLUDED(OP_broadcast_to)
+        @Name("nd4j::ops::broadcast_to<float>") public static class float_broadcast_to extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_broadcast_to(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_broadcast_to(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_broadcast_to position(long position) {
+                return (float_broadcast_to)super.position(position);
+            }
+        
+                                                                                    public float_broadcast_to() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::broadcast_to<float16>") public static class half_broadcast_to extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_broadcast_to(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_broadcast_to(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_broadcast_to position(long position) {
+                return (half_broadcast_to)super.position(position);
+            }
+        
+                                                                                    public half_broadcast_to() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::broadcast_to<double>") public static class double_broadcast_to extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_broadcast_to(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_broadcast_to(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_broadcast_to position(long position) {
+                return (double_broadcast_to)super.position(position);
+            }
+        
+                                                                                    public double_broadcast_to() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }        
 //         #endif
     
 
@@ -38036,9 +38229,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
-          //////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////
     /**
-       * Implementation of softmax cross-entropy loss function max(logits, 0.) - logits * labels + log(1. + exp(-abs(logits))); 
+       * Implementation of softmax cross-entropy loss function 
        * 
        * Input arrays: 
        *    0: logits - logits, type float
@@ -38098,6 +38291,67 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }  
 //         #endif
+
+        //////////////////////////////////////////////////////////////////////////
+    /**
+       * Implementation of sparse softmax cross-entropy loss function
+       * 
+       * Input arrays:        
+       *    0: labels - ground truth vales, expected to be within range [0, num_classes), type float.
+       *       Must have rank equal logits rank minus 1.
+       *    1: logits - logits, type float
+       *  
+       * Output array: 
+       *    0: loss values, type float. Has the same shape as labels
+       */      
+//         #if NOT_EXCLUDED(OP_sparse_softmax_cross_entropy_loss_with_logits)
+        @Name("nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits<float>") public static class float_sparse_softmax_cross_entropy_loss_with_logits extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_sparse_softmax_cross_entropy_loss_with_logits(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_sparse_softmax_cross_entropy_loss_with_logits(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_sparse_softmax_cross_entropy_loss_with_logits position(long position) {
+                return (float_sparse_softmax_cross_entropy_loss_with_logits)super.position(position);
+            }
+        
+                                                    public float_sparse_softmax_cross_entropy_loss_with_logits() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                }
+        @Name("nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits<float16>") public static class half_sparse_softmax_cross_entropy_loss_with_logits extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_sparse_softmax_cross_entropy_loss_with_logits(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_sparse_softmax_cross_entropy_loss_with_logits(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_sparse_softmax_cross_entropy_loss_with_logits position(long position) {
+                return (half_sparse_softmax_cross_entropy_loss_with_logits)super.position(position);
+            }
+        
+                                                    public half_sparse_softmax_cross_entropy_loss_with_logits() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                }
+        @Name("nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits<double>") public static class double_sparse_softmax_cross_entropy_loss_with_logits extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_sparse_softmax_cross_entropy_loss_with_logits(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_sparse_softmax_cross_entropy_loss_with_logits(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_sparse_softmax_cross_entropy_loss_with_logits position(long position) {
+                return (double_sparse_softmax_cross_entropy_loss_with_logits)super.position(position);
+            }
+        
+                                                    public double_sparse_softmax_cross_entropy_loss_with_logits() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                }  
+//         #endif
+
 
 
 

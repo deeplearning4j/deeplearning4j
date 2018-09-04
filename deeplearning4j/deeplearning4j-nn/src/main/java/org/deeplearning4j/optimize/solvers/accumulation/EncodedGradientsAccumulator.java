@@ -335,7 +335,8 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
             if (cnt > 0) {
                 function.step(params, updates);
                 updatesApplied.get().addAndGet(cnt);
-                log.info("Total updates applied so far for thread [{}]: [{}]", Thread.currentThread().getName(), updatesApplied.get());
+                if (isDebug)
+                    log.info("Total updates applied so far for thread [{}]: [{}]", Thread.currentThread().getName(), updatesApplied.get());
             }
         } catch (Exception e) {
             throwable.setIfFirst(e);
@@ -533,7 +534,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                         messages.get(i).put(compressed);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
-                        log.info("Something bad at index_{}", i);
+                        log.warn("Something bad at index_{}", i);
                         throw new RuntimeException(e);
                     }
                 }

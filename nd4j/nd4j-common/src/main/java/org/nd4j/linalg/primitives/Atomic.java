@@ -29,7 +29,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 @NoArgsConstructor
 public class Atomic<T extends Serializable> implements Serializable {
-    private T value;
+    private volatile T value;
     private transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public Atomic(T initialValue) {

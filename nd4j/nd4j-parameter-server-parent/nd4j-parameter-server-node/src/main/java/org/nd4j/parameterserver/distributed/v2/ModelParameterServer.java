@@ -65,6 +65,12 @@ public final class ModelParameterServer {
 
     protected VoidConfiguration configuration;
 
+    // this flag is true once mps is launched
+    private final AtomicBoolean launchLock = new AtomicBoolean(false);
+    private final AtomicBoolean stopLock = new AtomicBoolean(false);
+
+    private Disposable disposable;
+
     protected ModelParameterServer() {
         //
     }
@@ -115,12 +121,6 @@ public final class ModelParameterServer {
         this.masterMode = isMasterNode;
         this.configuration = configuration;
     }
-
-    // this flag is true once mps is launched
-    private final AtomicBoolean launchLock = new AtomicBoolean(false);
-    private final AtomicBoolean stopLock = new AtomicBoolean(false);
-
-    private Disposable disposable;
 
     /**
      * This method adds subcriber that will be called upon gradients update receival

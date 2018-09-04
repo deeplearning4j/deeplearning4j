@@ -407,7 +407,7 @@ public abstract  class BaseTransport  implements Transport {
                 propagateMessageDirect(new MeshUpdateMessage(mesh.get()));
             } catch (Exception e) {
                 log.error("Wasn't able to propagate message from [{}]", id());
-                e.printStackTrace();
+                log.error("Exception: {}", e);
                 throw new RuntimeException(e);
             }
         } else if (message instanceof HandshakeResponse) {

@@ -130,7 +130,7 @@ public class EncodingHandler implements MessageHandler {
 
     public INDArray encodeUpdates(INDArray updates) {
         // getting statistics
-        log.info("Residual: {amean: {}; amax: {}; 50%: {}; 95%: {}; 99%: {};  99.9%: {}}; Current Threshold: [{}]", updates.ameanNumber().doubleValue(), updates.amaxNumber().doubleValue(), Transforms.abs(updates, true).percentileNumber(50).doubleValue(), Transforms.abs(updates, true).percentileNumber(90).doubleValue(), Transforms.abs(updates, true).percentileNumber(99).doubleValue(), Transforms.abs(updates, true).percentileNumber(99.9).doubleValue(), currentThreshold.get());
+        //log.info("Residual: {amean: {}; amax: {}; 50%: {}; 95%: {}; 99%: {};  99.9%: {}}; Current Threshold: [{}]", updates.ameanNumber().doubleValue(), updates.amaxNumber().doubleValue(), Transforms.abs(updates, true).percentileNumber(50).doubleValue(), Transforms.abs(updates, true).percentileNumber(90).doubleValue(), Transforms.abs(updates, true).percentileNumber(99).doubleValue(), Transforms.abs(updates, true).percentileNumber(99.9).doubleValue(), currentThreshold.get());
 
 
         // special op should be called here for encoding

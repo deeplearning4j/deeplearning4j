@@ -62,13 +62,6 @@
             <artifactId>rxjava</artifactId>
             <version>2.2.0</version>
         </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <profiles>

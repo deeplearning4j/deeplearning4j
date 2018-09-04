@@ -206,7 +206,8 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                         } catch (InterruptedException e) {
                             break;
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            log.error("Exception: {}", e);
+                            throw new RuntimeException(e);
                         }
                     }
                 }
@@ -220,6 +221,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             propagationQueue.put(message);
         } catch (InterruptedException e) {
             // just swallow this
+            throw new RuntimeException(e);
         }
     }
 

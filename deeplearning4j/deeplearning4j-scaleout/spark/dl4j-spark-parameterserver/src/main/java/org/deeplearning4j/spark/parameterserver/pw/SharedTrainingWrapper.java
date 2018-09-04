@@ -225,7 +225,7 @@ public class SharedTrainingWrapper {
 
             // now we're attaching VoidParameterServer to GradientsAccumulator, but doing that only once
             if (wrapper == null) {
-                log.info("Starting ParallelWrapper at thread {}", Thread.currentThread().getId());
+                log.debug("Starting ParallelWrapper at thread {}", Thread.currentThread().getId());
 
                 model = worker.getInitialModel();
                 if (model == null) {
@@ -296,7 +296,7 @@ public class SharedTrainingWrapper {
                         log.warn("Can't get IP address to start VoidParameterServer client. Using localhost instead");
                     }
 
-                    log.info("Checking for ModelParameterServer existence");
+                    log.debug("Checking for ModelParameterServer existence");
 
                     // if we're running in spark localhost mode - we don't want double initialization
                     if (!ModelParameterServer.getInstance().isInitialized()) {
@@ -314,7 +314,7 @@ public class SharedTrainingWrapper {
 
                         accumulator.setExternalSource(consumer.getUpdatesQueue());
 
-                        log.info("Configuring transport...");
+                        log.debug("Configuring transport...");
                         //  pass values right away
                         ModelParameterServer.getInstance().configure(voidConfiguration, transport, false);
                         ModelParameterServer.getInstance().addUpdatesSubscriber(consumer);
@@ -326,7 +326,7 @@ public class SharedTrainingWrapper {
                     // we're saving reference to original model
                     originalModel = model;
 
-                    log.info("Starting ModelParameterServer...");
+                    log.debug("Starting ModelParameterServer...");
                     // after initialization finished, we're ok to actually start training
                     ModelParameterServer.getInstance().launch();
                 }
@@ -340,7 +340,7 @@ public class SharedTrainingWrapper {
 
                 // we're launching PW only if number of workers is more then 1
                 if (numWorkers > 1) {
-                    log.info("Params at PW:  {mean: [{}]; stdev: [{}]}", originalModel.params().meanNumber().doubleValue(), originalModel.params().stdNumber().doubleValue());
+                    //log.info("Params at PW:  {mean: [{}]; stdev: [{}]}", originalModel.params().meanNumber().doubleValue(), originalModel.params().stdNumber().doubleValue());
 
                     wrapper = new ParallelWrapper.Builder<>(originalModel)
                                     .workers(numWorkers)
@@ -434,7 +434,7 @@ public class SharedTrainingWrapper {
 
             isFirst.set(false);
 
-            log.info("Master thread done...");
+            log.debug("Master thread done...");
 
             INDArray updaterState = null;
             if (model instanceof ComputationGraph) {
