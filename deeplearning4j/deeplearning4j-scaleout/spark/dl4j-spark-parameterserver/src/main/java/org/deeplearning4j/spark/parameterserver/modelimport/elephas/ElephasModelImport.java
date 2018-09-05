@@ -24,13 +24,14 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.spark.api.RDDTrainingApproach;
-import org.deeplearning4j.spark.api.TrainingMaster;
+import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
+import org.deeplearning4j.spark.impl.repartitioner.DefaultRepartitioner;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingMaster;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 
 import java.io.IOException;
 import java.util.Map;
@@ -46,8 +47,6 @@ public class ElephasModelImport {
 
     private static final String DISTRIBUTED_CONFIG = "distributed_config";
     private static final RDDTrainingApproach APPROACH = RDDTrainingApproach.Export;
-    private static final int WORKERS_PER_NODE = 4;
-    private static final double UPDATES_THRESHOLD = 1e-3;
 
     /**
      * Load Elephas model stored using model.save(...) in case that the underlying Keras
@@ -105,28 +104,97 @@ public class ElephasModelImport {
         return KerasModelUtils.parseJsonString(initialModelJson);
     }
 
-    private static TrainingMaster getTrainingMaster(Map<String, Object> distributedProperties) {
+    private static TrainingMaster getTrainingMaster(Map<String, Object> distributedProperties)
+            throws InvalidKerasConfigurationException {
         Map innerConfig = (Map) distributedProperties.get("config");
 
         Integer numWorkers = (Integer) innerConfig.get("num_workers");
         int batchSize = (int) innerConfig.get("batch_size");
-        String mode = (String) innerConfig.get("mode");
 
-        TrainingMaster tm;
-        if (mode.equals("synchronous"))
+        String mode = "synchronous";
+        if (innerConfig.containsKey("mode")) {
+            mode = (String) innerConfig.get("mode");
+        } else {
+            throw new InvalidKerasConfigurationException("Couldn't find mode field.");
+        }
+
+        // TODO: Create InvalidElephasConfigurationException
+        boolean collectStats = false;
+        if (innerConfig.containsKey("collect_stats"))
+            collectStats = (boolean) innerConfig.get("collect_stats");
+
+        int numBatchesPrefetch = 0;
+        if (innerConfig.containsKey("num_batches_prefetch"))
+            numBatchesPrefetch = (int) innerConfig.get("num_batches_prefetch");
+
+
+    TrainingMaster tm;
+        if (mode.equals("synchronous")) {
+            int averagingFrequency = 5;
+            if (innerConfig.containsKey("averaging_frequency"))
+                averagingFrequency = (int) innerConfig.get("averaging_frequency");
+
             tm = new ParameterAveragingTrainingMaster.Builder(numWorkers, batchSize)
-                    .rddTrainingApproach(APPROACH)
+                    .collectTrainingStats(collectStats)
                     .batchSizePerWorker(batchSize)
+                    .averagingFrequency(averagingFrequency)
+                    .workerPrefetchNumBatches(numBatchesPrefetch)
+                    .aggregationDepth(2) // we leave this as default
+                    .repartionData(Repartition.Always)
+                    .rddTrainingApproach(APPROACH)
+                    .repartitionStrategy(RepartitionStrategy.Balanced)
+                    .saveUpdater(false)
                     .build();
-        else {
+        } else if (mode.equals("asynchronous")){
+            int shakeFrequency = 0;
+            if (innerConfig.containsKey("shake_frequency"))
+                shakeFrequency = (int) innerConfig.get("shake_frequency");
+
+            double minThreshold = 1e-5;
+            if (innerConfig.containsKey("min_threshold"))
+                minThreshold = (double) innerConfig.get("min_threshold");
+
+            double updateThreshold = 1e-3;
+            if (innerConfig.containsKey("update_threshold"))
+                minThreshold = (double) innerConfig.get("update_threshold");
+
+            int workersPerNode = -1;
+            if (innerConfig.containsKey("workers_per_node"))
+                workersPerNode = (int) innerConfig.get("workers_per_node");
+
+            int stepDelay = 50;
+            if (innerConfig.containsKey("step_delay"))
+                stepDelay = (int) innerConfig.get("step_delay");
+
+            double stepTrigger = 0.05;
+            if (innerConfig.containsKey("step_trigger"))
+                stepTrigger = (double) innerConfig.get("step_trigger");
+
+            double thresholdStep = 1e-5;
+            if (innerConfig.containsKey("threshold_step"))
+                thresholdStep = (double) innerConfig.get("threshold_step");
+
+
             VoidConfiguration voidConfiguration = VoidConfiguration.builder()
                     .build();
             tm = new SharedTrainingMaster.Builder(voidConfiguration, batchSize)
-                    .updatesThreshold(UPDATES_THRESHOLD)
-                    .rddTrainingApproach(APPROACH)
+                    .shakeFrequency(shakeFrequency)
+                    .minUpdatesThreshold(minThreshold)
+                    .updatesThreshold(updateThreshold)
                     .batchSizePerWorker(batchSize)
-                    .workersPerNode(WORKERS_PER_NODE)
+                    .workersPerNode(workersPerNode)
+                    .collectTrainingStats(collectStats)
+                    .stepDelay(stepDelay)
+                    .stepTrigger(stepTrigger)
+                    .workerPrefetchNumBatches(numBatchesPrefetch)
+                    .thresholdStep(thresholdStep)
+                    .rddTrainingApproach(APPROACH)
+                    .rddTrainingApproach(RDDTrainingApproach.Export)
+                    .repartitioner(new DefaultRepartitioner())
+                    .transport(new RoutedTransport())
                     .build();
+        } else {
+            throw new InvalidKerasConfigurationException("Unknown mode " + mode);
         }
         return tm;
     }
