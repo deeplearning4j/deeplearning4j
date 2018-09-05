@@ -27,6 +27,7 @@
 #define TAD_THRESHOLD 2
 #endif
 
+#include <pointercast.h>
 
 namespace nd4j {
     //FIXME: get rid of this redefinition
@@ -41,22 +42,22 @@ namespace nd4j {
     template <typename T>
     class SpecialMethods {
     public:
-        static void concatCpuGeneric(int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfo, T *result, Nd4jLong *resultShapeInfo);
-        static void accumulateGeneric(T **x, T *z, int n, const Nd4jLong length);
-        static void averageGeneric(T **x, T *z, int n, const Nd4jLong length, bool propagate);
+        static void concatCpuGeneric(int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfo, void *result, Nd4jLong *resultShapeInfo);
+        static void accumulateGeneric(void **x, void *z, Nd4jLong *zShapeInfo, int n, const Nd4jLong length);
+        static void averageGeneric(void **x, void *z, Nd4jLong  *zShapeInfo, int n, const Nd4jLong length, bool propagate);
 
         static Nd4jLong getPosition(Nd4jLong *xShapeInfo, Nd4jLong index);
         static void quickSort_parallel_internal(T* array, Nd4jLong *xShapeInfo, int left, int right, int cutoff, bool descending);
-        static void quickSort_parallel(T* array, Nd4jLong *xShapeInfo, Nd4jLong lenArray, int numThreads, bool descending);
+        static void quickSort_parallel(void* array, Nd4jLong *xShapeInfo, Nd4jLong lenArray, int numThreads, bool descending);
 
         static int nextPowerOf2(int number);
         static int lastPowerOf2(int number);
 
-        static void sortGeneric(T *x, Nd4jLong *xShapeInfo, bool descending);
-        static void sortTadGeneric(T *x, Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending);
+        static void sortGeneric(void *x, Nd4jLong *xShapeInfo, bool descending);
+        static void sortTadGeneric(void *x, Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending);
 
-        static void decodeBitmapGeneric(void *dx, Nd4jLong N, T *dz);
-        static Nd4jLong encodeBitmapGeneric(T *dx, Nd4jLong N, int *dz, float threshold);
+        static void decodeBitmapGeneric(void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo);
+        static Nd4jLong encodeBitmapGeneric(void *dx, Nd4jLong *zShapeInfo, Nd4jLong N, int *dz, float threshold);
     };
 }
 
