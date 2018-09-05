@@ -26,6 +26,63 @@
 
 namespace functions {
     namespace reduce {
+        template <typename X>
+        template <typename OpType>
+        void _CUDA_H ReduceFunction<X>::execScalar(void *vx,
+                                                Nd4jLong *xShapeInfo,
+                                                void *vextraParams,
+                                                void *vz,
+                                                Nd4jLong *zShapeInfo) {
+            auto x = reinterpret_cast<X *>(vx);
+            auto z = reinterpret_cast<X *>(vx);
+            auto extraParams = reinterpret_cast<X *>(vextraParams);
+
+            const Nd4jLong length = shape::length(xShapeInfo);
+            int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+            if (xElementWiseStride >= 1) {
+                z[0] = execScalar<OpType>(x, xElementWiseStride, length, extraParams);
+            }
+            else {
+                Nd4jLong shapeIter[MAX_RANK];
+                Nd4jLong coord[MAX_RANK];
+                int dim;
+                Nd4jLong xStridesIter[MAX_RANK];
+
+                auto xShape = shape::shapeOf(xShapeInfo);
+                auto xStride = shape::stride(xShapeInfo);
+                X start = OpType::startingValue(x);
+                int rank = shape::rank(xShapeInfo);
+
+                if (PrepareOneRawArrayIter<X>(rank,
+                                              xShape,
+                                              x,
+                                              xStride,
+                                              &rank,
+                                              shapeIter,
+                                              &x,
+                                              xStridesIter) >= 0) {
+
+                    ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+                            /* Process the innermost dimension */
+                            auto xIter = x;
+                            start = OpType::update(start, OpType::op(xIter[0], extraParams), extraParams);
+                        }
+                    ND4J_RAW_ITER_ONE_NEXT(dim,
+                                           rank,
+                                           coord,
+                                           shapeIter,
+                                           x,
+                                           xStridesIter);
+                    start = OpType::postProcess(start, shape::length(xShapeInfo), extraParams);
+                }
+                else {
+                    printf("Unable to prepare array\n");
+                }
+
+                z[0] = start;
+            }
+        }
+
 
         template <typename X>
         template <typename OpType>
@@ -87,6 +144,16 @@ namespace functions {
                 Nd4jLong *xShapeInfo,
                 void *extraParams) {
                 RETURNING_DISPATCH_BY_OPNUM_T(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_OPS);
+        }
+
+        template <typename X>
+        void ReduceFunction<X>::execScalar(const int opNum,
+                                        void *x,
+                                        Nd4jLong *xShapeInfo,
+                                        void *extraParams,
+                                        void *z,
+                                        Nd4jLong *zShapeInfo) {
+            DISPATCH_BY_OPNUM_T(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_OPS);
         }
 
         template <typename X>

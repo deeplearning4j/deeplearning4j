@@ -774,12 +774,12 @@ template<typename OpType>
             __host__
 #endif
 
-            static X execScalar(
+            static double execScalar(
                     const int opNum,
-                    X *x,
+                    void *x,
                     Nd4jLong *xShapeInfo,
-                    X *extraParamsVals,
-                    Y *y,
+                    void *extraParamsVals,
+                    void *y,
                     Nd4jLong *yShapeInfo) {
                 RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x,
                                                                xShapeInfo,
@@ -789,11 +789,12 @@ template<typename OpType>
             }
 
             static void exec( const int opNum,
-                              X *x, Nd4jLong *xShapeInfo,
-                              X *extraParamsVals,
-                              Y *y,
+                              void *x,
+                              Nd4jLong *xShapeInfo,
+                              void *extraParamsVals,
+                              void *y,
                               Nd4jLong *yShapeInfo,
-                              X *result,
+                              void *result,
                               Nd4jLong *resultShapeInfoBuffer,
                               int *dimension,
                               int dimensionLength) {
@@ -809,14 +810,17 @@ template<typename OpType>
 
 
             static void exec( const int opNum,
-                              X *x, Nd4jLong *xShapeInfo,
-                              X *extraParamsVals,
-                              Y *y,
+                              void *x,
+                              Nd4jLong *xShapeInfo,
+                              void *extraParamsVals,
+                              void *y,
                               Nd4jLong *yShapeInfo,
-                              X *result,
+                              void *result,
                               Nd4jLong *resultShapeInfoBuffer,
                               int *dimension,
-                              int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                              int dimensionLength,
+                              Nd4jLong *tadShapeInfo,
+                              Nd4jLong *tadOffsets) {
                 DISPATCH_BY_OPNUM_TT(exec, PARAMS(x,
                                                xShapeInfo,
                                                extraParamsVals,
@@ -828,17 +832,19 @@ template<typename OpType>
             }
 
             static void execAll( const int opNum,
-                                 X *x,
+                                 void *x,
                                  Nd4jLong *xShapeInfo,
-                                 X *extraParamsVals,
-                                 Y *y,
+                                 void *extraParamsVals,
+                                 void *y,
                                  Nd4jLong *yShapeInfo,
-                                 X *result,
+                                 void *result,
                                  Nd4jLong *resultShapeInfoBuffer,
                                  int *dimension,
                                  int dimensionLength,
-                                 Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
-                                 Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets) {
+                                 Nd4jLong *xTadShapeInfo,
+                                 Nd4jLong *xOffsets,
+                                 Nd4jLong *yTadShapeInfo,
+                                 Nd4jLong *yOffsets) {
                 DISPATCH_BY_OPNUM_TT(execAll, PARAMS(x,
                                                   xShapeInfo,
                                                   extraParamsVals,
@@ -855,16 +861,20 @@ template<typename OpType>
 #ifdef __CUDACC__
             __host__
 #endif
-            static X execScalar(
-                    X *x,
+            static double execScalar(
+                    void *vx,
                     Nd4jLong *xShapeInfo,
-                    X *extraParams,
-                    Y *y,
+                    void *vextraParams,
+                    void *vy,
                     Nd4jLong *yShapeInfo) {
+                auto x = reinterpret_cast<X *>(vx);
+                auto y = reinterpret_cast<Y *>(vy);
+                auto extraParams = reinterpret_cast<X *>(vextraParams);
+
                 auto startingVal = OpType::startingValue(x);
-                Nd4jLong length = shape::length(xShapeInfo);
-                Nd4jLong xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-                Nd4jLong yElementWiseStride = shape::elementWiseStride(yShapeInfo);
+                auto length = shape::length(xShapeInfo);
+                auto xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+                auto yElementWiseStride = shape::elementWiseStride(yShapeInfo);
 
                 X extraParamsVals[3] = {(X) 0.0f, (X) 0.0f, (X) 0.0f};
                 // it's possible case for EqualsWithEps op
@@ -873,8 +883,8 @@ template<typename OpType>
                 }
 
 
-                char xOrder = shape::order(xShapeInfo);
-                char yOrder = shape::order(yShapeInfo);
+                auto xOrder = shape::order(xShapeInfo);
+                auto yOrder = shape::order(yShapeInfo);
                 if(xOrder == yOrder && (xElementWiseStride  >=1 && yElementWiseStride >= 1) && shape::strideDescendingCAscendingF(xShapeInfo) && shape::strideDescendingCAscendingF(yShapeInfo)) {
                     if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 
@@ -909,10 +919,10 @@ template<typename OpType>
                     int xRank = shape::rank(xShapeInfo);
                     int yRank = shape::rank(yShapeInfo);
 
-                    Nd4jLong *xShape = shape::shapeOf(xShapeInfo);
-                    Nd4jLong *xStride = shape::stride(xShapeInfo);
-                    Nd4jLong *yShape = shape::shapeOf(yShapeInfo);
-                    Nd4jLong *yStride = shape::stride(yShapeInfo);
+                    auto xShape = shape::shapeOf(xShapeInfo);
+                    auto xStride = shape::stride(xShapeInfo);
+                    auto yShape = shape::shapeOf(yShapeInfo);
+                    auto yStride = shape::stride(yShapeInfo);
 
                     for(unsigned int i = 0 ;i < length; i++) {
                         shape::ind2subC(xRank, xShape, i, xCoords);
@@ -933,15 +943,20 @@ template<typename OpType>
 
             template<typename OpType>
             static void execAll(
-                    X *x,
+                    void *vx,
                     Nd4jLong *xShapeInfo,
-                    X *extraParams,
-                    Y *y,
+                    void *vextraParams,
+                    void *vy,
                     Nd4jLong *yShapeInfo,
-                    X *result,
+                    void *vresult,
                     Nd4jLong *resultShapeInfoBuffer,
                     int *dimension,
                     int dimensionLength, Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets, Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets) {
+
+                auto x = reinterpret_cast<X *>(vx);
+                auto y = reinterpret_cast<Y *>(vy);
+                auto result = reinterpret_cast<X *>(vresult);
+                auto extraParams = reinterpret_cast<X *>(vextraParams);
 
                 auto xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                 auto yTadLength = shape::tadLength(yShapeInfo, dimension, dimensionLength);
@@ -1013,15 +1028,23 @@ template<typename OpType>
 
             template<typename OpType>
             static void exec(
-                    X *x,
+                    void *vx,
                     Nd4jLong *xShapeInfo,
-                    X *extraParams,
-                    Y *y,
+                    void *vextraParams,
+                    void *vy,
                     Nd4jLong *yShapeInfo,
-                    X *result,
+                    void *vresult,
                     Nd4jLong *resultShapeInfoBuffer,
                     int *dimension,
-                    int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                    int dimensionLength,
+                    Nd4jLong *tadShapeInfo,
+                    Nd4jLong *tadOffsets) {
+
+                auto x = reinterpret_cast<X *>(vx);
+                auto y = reinterpret_cast<Y *>(vy);
+                auto result = reinterpret_cast<X *>(vresult);
+                auto extraParams = reinterpret_cast<X *>(vextraParams);
+
 /*
                 nd4j_printf("Xp: [%p]; Yp: [%p]; Zp: [%p];\n", (void *) x, (void *) y, (void *) result);
                 nd4j_printf("XSp: [%p]; YSp: [%p]; ZSp: [%p];\n", (void *) xShapeInfo, (void *) yShapeInfo, (void *) resultShapeInfoBuffer);
@@ -1083,8 +1106,8 @@ template<typename OpType>
                             shape::ind2sub(yRank, yShape, f, yCoord);
                         }
 
-                        Nd4jLong xOffset = shape::getOffset(offset, xShape, xStride, xCoord, xRank);
-                        Nd4jLong yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+                        auto xOffset = shape::getOffset(offset, xShape, xStride, xCoord, xRank);
+                        auto yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
 
                         result[r] = OpType::update(result[r], OpType::op(x[xOffset], y[yOffset], localExtraParams), localExtraParams);
                     }
@@ -1098,15 +1121,21 @@ template<typename OpType>
 
             template<typename OpType>
             static void exec(
-                    X *x,
+                    void *vx,
                     Nd4jLong *xShapeInfo,
-                    X *extraParams,
-                    Y *y,
+                    void *vextraParams,
+                    void *vy,
                     Nd4jLong *yShapeInfo,
-                    X *result,
+                    void *vresult,
                     Nd4jLong *resultShapeInfoBuffer,
                     int *dimension,
                     int dimensionLength) {
+
+                auto x = reinterpret_cast<X *>(vx);
+                auto y = reinterpret_cast<Y *>(vy);
+                auto result = reinterpret_cast<X *>(vresult);
+                auto extraParams = reinterpret_cast<X *>(vextraParams);
+
 /*
                 nd4j_printf("Xp: [%p]; Yp: [%p]; Zp: [%p];\n", (void *) x, (void *) y, (void *) result);
                 nd4j_printf("XSp: [%p]; YSp: [%p]; ZSp: [%p];\n", (void *) xShapeInfo, (void *) yShapeInfo, (void *) resultShapeInfoBuffer);

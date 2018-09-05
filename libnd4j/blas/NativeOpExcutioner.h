@@ -174,10 +174,12 @@ public:
      * @param extraParams
      * @return
      */
-    static T execReduceScalar(int opNum,
+    static void execReduceScalar(int opNum,
                               void *x,
                               Nd4jLong *xShapeInfo,
-                              void *extraParams);
+                              void *extraParams,
+                              void *z,
+                              Nd4jLong *zShapeInfo);
 
     /**
      *
@@ -213,11 +215,11 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    static T execReduce3Scalar(int opNum,
-                               T *x,
+    static double execReduce3Scalar(int opNum,
+                               void *x,
                                Nd4jLong *xShapeInfo,
-                               T *extraParamsVals,
-                               T *y,
+                               void *extraParamsVals,
+                               void *y,
                                Nd4jLong *yShapeInfo);
 
     /**
@@ -234,12 +236,12 @@ public:
      * @param dimensionLength
      */
     static void execReduce3(int opNum,
-                            T *x,
+                            void *x,
                             Nd4jLong *xShapeInfo,
-                            T *extraParamsVals,
-                            T *y,
+                            void *extraParamsVals,
+                            void *y,
                             Nd4jLong *yShapeInfo,
-                            T *result,
+                            void *result,
                             Nd4jLong *resultShapeInfoBuffer,
                             int *dimension,
                             int dimensionLength);
@@ -272,25 +274,6 @@ public:
                             Nd4jLong *tadShapeInfo, 
                             Nd4jLong *tadOffsets);
 
-    /**
-     *
-     * @param opNum
-     * @param x
-     * @param xStride
-     * @param result
-     * @param resultStride
-     * @param scalar
-     * @param extraParams
-     * @param n
-     */
-    static void execScalar(int opNum,
-                           T *x,
-                           Nd4jLong xStride,
-                           T *result,
-                           Nd4jLong resultStride,
-                           T scalar,
-                           T *extraParams,
-                           Nd4jLong n);
 
     /**
      *
@@ -304,41 +287,23 @@ public:
      * @param n
      */
     static void execScalar(int opNum,
-                           T *x,
+                           void *x,
                            Nd4jLong *xShapeInfo,
-                           T *result,
+                           void *result,
                            Nd4jLong *resultShapeInfo,
-                           T scalar,
-                           T *extraParams);
+                           void *scalar,
+                           Nd4jLong *scalarShapeInfo,
+                           void *extraParams);
 
-    /**
- *
- * @param opNum
- * @param x
- * @param xStride
- * @param result
- * @param resultStride
- * @param scalar
- * @param extraParams
- * @param n
- */
-    static void execScalar(int opNum,
-                           T *x,
-                           Nd4jLong *xShapeInfo,
-                           T *result,
-                           Nd4jLong *resultShapeInfo,
-                           T scalar,
-                           T *extraParams,
-                           Nd4jLong *xIndexes,
-                           Nd4jLong *resultIndexes);
 
     static void execScalar(int opNum,
-                           T *x,
+                           void *x,
                            Nd4jLong *xShapeInfo,
-                           T *extraParams,
-                           T *z,
+                           void *extraParams,
+                           void *z,
                            Nd4jLong *zShapeInfo,
-                           T *scalars,
+                           void *scalars,
+                           Nd4jLong *scalarShapeInfo,
                            int *dimension,
                            int dimensionLength,
                            Nd4jLong *tadShapeInfo,
@@ -356,10 +321,10 @@ public:
      * @param resultShapeInfo
      */
     static void execSummaryStats(int opNum,
-                                 T *x,
+                                 void *x,
                                  Nd4jLong *xShapeInfo,
-                                 T *extraParams,
-                                 T *result,
+                                 void *extraParams,
+                                 void *result,
                                  Nd4jLong *resultShapeInfo,
                                  bool biasCorrected);
 
@@ -372,10 +337,10 @@ public:
     * @param result
     * @param resultShapeInfo
     */
-    static T execSummaryStatsScalar(int opNum,
-                                    T *x,
+    static double execSummaryStatsScalar(int opNum,
+                                    void *x,
                                     Nd4jLong *xShapeInfo,
-                                    T *extraParams,
+                                    void *extraParams,
                                     bool biasCorrected);
 
     /**
@@ -389,32 +354,16 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    static void execSummaryStats(int opNum,T *x,
+    static void execSummaryStats(int opNum,
+                                 void *x,
                                  Nd4jLong *xShapeInfo,
-                                 T *extraParams,
-                                 T *result,
+                                 void *extraParams,
+                                 void *result,
                                  Nd4jLong *resultShapeInfoBuffer,
                                  int *dimension,
                                  int dimensionLength,
                                  bool biasCorrected);
 
-    /**
-     *
-     * @param opNum
-     * @param dx
-     * @param xStride
-     * @param result
-     * @param resultStride
-     * @param extraParams
-     * @param n
-     */
-    static void execTransform(int opNum,
-                              T *dx,
-                              Nd4jLong xStride,
-                              T *result,
-                              Nd4jLong resultStride,
-                              T *extraParams,
-                              Nd4jLong n);
  /**
  *
  * @param opNum
@@ -426,11 +375,11 @@ public:
  * @param n
  */
     static void execTransform(int opNum,
-                              T *dx,
+                              void *dx,
                               Nd4jLong *xShapeInfo,
-                              T *result,
+                              void *result,
                               Nd4jLong *resultShapeInfo,
-                              T *extraParams,
+                              void *extraParams,
                               Nd4jLong *tadShapeInfo,
                               Nd4jLong *tadOffsets);
 /**
@@ -444,18 +393,18 @@ public:
 * @param n
 */
     static void execTransform(int opNum,
-                              T *dx,
+                              void *dx,
                               Nd4jLong *xShapeInfo,
-                              T *result,
+                              void *result,
                               Nd4jLong *resultShapeInfo,
-                              T *extraParams,
+                              void *extraParams,
                               Nd4jLong *xIndexes,
                               Nd4jLong *resultIndexes,
                               Nd4jLong *tadShapeInfo,
                               Nd4jLong *tadOffsets);
 
     static void execAggregate(int opNum,
-                              T **arguments,
+                              void **arguments,
                               int numArguments,
                               Nd4jLong **shapeArguments,
                               int numShapeArguments,
@@ -463,32 +412,32 @@ public:
                               int numIndexArguments,
                               int **intArrays,
                               int numIntArrays,
-                              T *realArguments,
+                              void *realArguments,
                               int numRealArguments);
 
     static void execRandom(int opNum,
                            Nd4jPointer state,
-                           T *z,
+                           void *z,
                            Nd4jLong *zShapeBuffer, 
-                           T *extraArguments);
+                           void *extraArguments);
 
     static void execRandom(int opNum,
                            Nd4jPointer state,
-                           T *x,
+                           void *x,
                            Nd4jLong *xShapeBuffer,
-                           T *z,
+                           void *z,
                            Nd4jLong *zShapeBuffer, 
-                           T *extraArguments);
+                           void *extraArguments);
 
     static void execRandom(int opNum,
                            Nd4jPointer state,
-                           T *x,
+                           void *x,
                            Nd4jLong *xShapeBuffer,
-                           T *y, 
+                           void *y,
                            Nd4jLong *yShapeBuffer,
-                           T *z, 
+                           void *z,
                            Nd4jLong *zShapeBuffer,
-                           T *extraArguments);
+                           void *extraArguments);
 
     inline static void execSort(T *x, Nd4jLong *xShapeInfo, bool descending) {
         nd4j::SpecialMethods<T>::sortGeneric(x, xShapeInfo, descending);

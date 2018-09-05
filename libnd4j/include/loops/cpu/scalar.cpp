@@ -103,19 +103,6 @@ namespace functions {
             DISPATCH_BY_OPNUM_TT(transform, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), SCALAR_OPS);
         }
 
-        template<typename X, typename Y>
-        void ScalarTransform<X, Y>::transform(const int opNum,
-                              void *x,
-                              Nd4jLong *xShapeInfo,
-                              void *result,
-                              Nd4jLong *resultShapeInfo,
-                              Y scalar,
-                              void *extraParams,
-                              Nd4jLong *indexes,
-                              Nd4jLong *resultIndexes) {
-            DISPATCH_BY_OPNUM_TT(transform, PARAMS(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes), SCALAR_OPS);
-        }
-
 
         template<typename X, typename Y>
         void ScalarTransform<X, Y>::transform(const int opNum,
@@ -123,7 +110,7 @@ namespace functions {
                 Nd4jLong xStride,
                 void *result,
                 Nd4jLong resultStride,
-                Y scalar,
+                void *scalar,
                 void *extraParams,
                 const Nd4jLong n) {
             DISPATCH_BY_OPNUM_TT(transform, PARAMS(x, xStride, result, resultStride, scalar, extraParams, n), SCALAR_OPS);
@@ -135,30 +122,9 @@ namespace functions {
                 Nd4jLong *xShapeInfo,
                 void *result,
                 Nd4jLong *resultShapeInfo,
-                Y scalar,
+                void *scalar,
                 void *extraParams) {
             DISPATCH_BY_OPNUM_TT(transform, PARAMS(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams), SCALAR_OPS);
-        }
-
-        template<typename X, typename Y>
-        template<typename OpType>
-        void ScalarTransform<X, Y>::transform(void *vx,
-                              Nd4jLong *xShapeInfo,
-                              void *vz,
-                              Nd4jLong *resultShapeInfo,
-                              Y scalar,
-                              void *vextraParams,
-                              Nd4jLong *indexes,
-                              Nd4jLong *resultIndexes) {
-            auto x = reinterpret_cast<X *>(vx);
-            auto result = reinterpret_cast<X *>(vz);
-            auto extraParams = reinterpret_cast<X *>(vextraParams);
-
-            const Nd4jLong n = shape::length(xShapeInfo);
-#pragma omp parallel for simd schedule(guided) if (n > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)
-            for (Nd4jLong i = 0; i < n; i++) {
-                result[resultIndexes[i]] = OpType::op(x[indexes[i]], scalar,extraParams);
-            }
         }
 
         template<typename X, typename Y>
@@ -167,10 +133,11 @@ namespace functions {
                                Nd4jLong *xShapeInfo,
                                void *vz,
                                Nd4jLong *resultShapeInfo,
-                               Y scalar,
+                               void *vscalar,
                                void *vextraParams) {
             auto x = reinterpret_cast<X *>(vx);
             auto result = reinterpret_cast<X *>(vz);
+            auto scalar = reinterpret_cast<Y *>(vscalar)[0];
             auto extraParams = reinterpret_cast<X *>(vextraParams);
 
             char xOrdering = shape::order(xShapeInfo);
@@ -180,7 +147,7 @@ namespace functions {
             // nd4j_logger("Launching scalar: xOrder: %i; zOrder: %i; xEWS: %i\n", xOrdering, resultOrdering, xElementWiseStride);
 
             if (xElementWiseStride == 1 && shape::elementWiseStride(resultShapeInfo) == 1 && xOrdering == resultOrdering) {
-                transform<OpType>(x, 1, result, 1, scalar, extraParams, shape::length(xShapeInfo));
+                transform<OpType>(x, 1, result, 1, vscalar, extraParams, shape::length(xShapeInfo));
                 return;
             }
 
@@ -230,7 +197,7 @@ namespace functions {
                 const Nd4jLong n = shape::length(xShapeInfo);
 
                 if(xElementWiseStride >= 1 && resultElementWiseStride >= 1) {
-                    transform<OpType>(x,xElementWiseStride,result,resultElementWiseStride,scalar,extraParams,n);
+                    transform<OpType>(x,xElementWiseStride,result,resultElementWiseStride,vscalar,extraParams,n);
                 }
                 else {
                     Nd4jLong xIdx[MAX_RANK];
@@ -266,11 +233,12 @@ namespace functions {
                     Nd4jLong xStride,
                     void *vz,
                     Nd4jLong resultStride,
-                    Y scalar,
+                    void *vscalar,
                     void *vextraParams,
                     const Nd4jLong n) {
                 auto x = reinterpret_cast<X *>(vx);
                 auto result = reinterpret_cast<X *>(vz);
+                auto scalar = reinterpret_cast<Y *>(vscalar)[0];
                 auto extraParams = reinterpret_cast<X *>(vextraParams);
 /*
                 Nd4jLong elementsPerThread = n / ELEMENT_THRESHOLD;

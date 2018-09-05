@@ -134,11 +134,25 @@ namespace functions {
                     Nd4jLong *xShapeInfo,
                     void *extraParams);
 
+            template<typename OpType>
+            static _CUDA_H void execScalar(void *x,
+                                        Nd4jLong *xShapeInfo,
+                                        void *extraParams,
+                                        void *z,
+                                        Nd4jLong *zShapeInfo);
+
 
             static X execScalar(const int opNum,
                     void *x,
                     Nd4jLong *xShapeInfo,
                     void *extraParams);
+
+            static void execScalar(const int opNum,
+                                void *x,
+                                Nd4jLong *xShapeInfo,
+                                void *extraParams,
+                                void *z,
+                                Nd4jLong *zShapeInfo);
 
             static void exec(const int opNum,
                              void *x,

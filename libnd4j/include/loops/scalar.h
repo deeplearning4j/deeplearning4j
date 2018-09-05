@@ -92,28 +92,10 @@ namespace functions {
 
             static void transform(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, void *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
-            static void transform(const int opNum, void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, Y scalar, void *extraParams, Nd4jLong *indexes, Nd4jLong *resultIndexes);
+            static void transform(const int opNum, void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo,  void *scalar,  void *extraParams);
 
-            static void transform(const int opNum, void *x, Nd4jLong xStride, void *result, Nd4jLong resultStride, Y scalar, void *extraParams, const Nd4jLong n);
+            static void transform(const int opNum, void *x, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *scalar, void *extraParams, const Nd4jLong n);
 
-            static void transform(const int opNum, void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, Y scalar, void *extraParams);
-
-
-
-            /**
-         * CPU implementation of scalar operation
-         * @param x the input
-         * @param xStride the stride for the input
-         * @param result the result buffer
-         * @param resultStride the stride for the result
-         * @param scalar the scalar to apply
-         * @param extraParams the extra parameters where
-         * neccssary
-         * @param n the number of elements to loop over
-         */
-
-            template <typename OpType>
-            static void transform(void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, Y scalar, void *extraParams, Nd4jLong *indexes, Nd4jLong *resultIndexes);
 
 
 
@@ -135,7 +117,7 @@ namespace functions {
          */
 
             template<typename OpType>
-            static  void transform(void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, Y scalar, void *extraParams);
+            static  void transform(void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *scalar, void *extraParams);
 
 
             /**
@@ -151,7 +133,7 @@ namespace functions {
              */
 
             template<typename OpType>
-            static void transform(void *x, Nd4jLong xStride, void *result, Nd4jLong resultStride, Y scalar, void *extraParams, const Nd4jLong n);
+            static void transform(void *x, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *scalar, void *extraParams, const Nd4jLong n);
         };
     }
 }
