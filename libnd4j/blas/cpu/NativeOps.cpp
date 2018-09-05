@@ -700,14 +700,9 @@ void NativeOps::concat(
         Nd4jLong *resultShapeInfo,
         Nd4jPointer *tadPointers,
         Nd4jPointer *offsetPointers) {
-    nd4j::SpecialMethods::concatCpuGeneric(
-            dimension,
-            numArrays,
-            data,
-            inputShapeInfo,
-            result,
-            resultShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
 
+    BUILD_SINGLE_SELECTOR(zType, nd4j::SpecialMethods, ::concatCpuGeneric(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo), LIBND4J_TYPES);
 }
 
 /**
@@ -724,14 +719,10 @@ void NativeOps::specialConcat(
         Nd4jLong *resultShapeInfo,
         Nd4jPointer *tadPointers,
         Nd4jPointer *offsetPointers) {
-    nd4j::SpecialMethods::concatCpuGeneric(
-            dimension,
-            numArrays,
-            data,
-            inputShapeInfo,
-            result,
-            resultShapeInfo);
 
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+    BUILD_SINGLE_SELECTOR(zType, nd4j::SpecialMethods, ::concatCpuGeneric(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo), LIBND4J_TYPES);
 }
 
 /**
@@ -1103,7 +1094,7 @@ void NativeOps::average(Nd4jPointer *extras,
         bool propagate) {
     auto xType = nd4j::ArrayOptions::dataType(zShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::averageGeneric(dx, dz, n, length, propagate), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::averageGeneric(dx, dz, zShapeInfo, n, length, propagate), LIBND4J_TYPES);
 }
 
 void NativeOps::accumulate(Nd4jPointer *extras,
@@ -1115,7 +1106,7 @@ void NativeOps::accumulate(Nd4jPointer *extras,
 
     auto xType = nd4j::ArrayOptions::dataType(zShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::accumulateGeneric(dx, dz, n, length), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::accumulateGeneric(dx, dz, zShapeInfo, n, length), LIBND4J_TYPES);
 }
 
 void NativeOps::enableP2P(bool enable) {
@@ -1382,7 +1373,7 @@ void NativeOps::execAggregateFloat(Nd4jPointer *extraPointers,int opNum,
                                    int numIntArrays,
                                    float *realArguments,
                                    int numRealArguments) {
-
+/*
     NativeOpExcutioner<float>::execAggregate(opNum,
                                              arguments,
                                              numArguments,
@@ -1394,6 +1385,7 @@ void NativeOps::execAggregateFloat(Nd4jPointer *extraPointers,int opNum,
                                              numIntArrays,
                                              realArguments,
                                              numRealArguments);
+    */
 }
 
 void NativeOps::execAggregateDouble(Nd4jPointer *extraPointers,int opNum,
@@ -1407,7 +1399,7 @@ void NativeOps::execAggregateDouble(Nd4jPointer *extraPointers,int opNum,
                                     int numIntArrays,
                                     double *realArguments,
                                     int numRealArguments) {
-
+/*
     NativeOpExcutioner<double>::execAggregate(opNum,
                                               arguments,
                                               numArguments,
@@ -1419,6 +1411,7 @@ void NativeOps::execAggregateDouble(Nd4jPointer *extraPointers,int opNum,
                                               numIntArrays,
                                               realArguments,
                                               numRealArguments);
+    */
 }
 
 void NativeOps::execAggregateHalf(Nd4jPointer *extraPointers,int opNum,
@@ -1683,25 +1676,8 @@ void NativeOps::sortCooIndices(Nd4jPointer *extraPointers,
     NativeOpExcutioner::execSortCooIndices(indices, values, length, rank);
 }
 
-Nd4jLong NativeOps::encodeBitmapFloat(Nd4jPointer *extraPointers, float *dx, Nd4jLong N, int *dz, float threshold) {
-    return NativeOpExcutioner::encodeBitmap<float>(dx, N, dz, threshold);
-}
-
-Nd4jLong NativeOps::encodeBitmapDouble(Nd4jPointer *extraPointers, double *dx, Nd4jLong N, int *dz, float threshold) {
-    return NativeOpExcutioner<double>::encodeBitmap(dx, N, dz, threshold);
-}
-
-Nd4jLong NativeOps::encodeBitmapHalf(Nd4jPointer *extraPointers, float16 *dx, Nd4jLong N, int *dz, float threshold) {
-    //return NativeOpExcutioner<float16>::encodeBitmap(dx, N, dz, threshold);
-    return 0L;
-}
-
-void NativeOps::decodeBitmapFloat(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, float *dz) {
-    NativeOpExcutioner<float>::decodeBitmap(dx, N, dz);
-}
-
-void NativeOps::decodeBitmapDouble(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, double *dz) {
-    NativeOpExcutioner<double>::decodeBitmap(dx, N, dz);
+Nd4jLong NativeOps::encodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold) {
+    return NativeOpExcutioner::encodeBitmap(dx, xShapeInfo, N, dz, threshold);
 }
 
 void NativeOps::decodeBitmapHalf(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, float16 *dz) {
@@ -2028,8 +2004,8 @@ static VariablesSet<T>* executeStoredGraphT(Nd4jPointer *extraPointers, Nd4jLong
     return varSet;
 }
 
-VariablesSet* NativeOps::executeStoredGraph(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int* inputIndices, int numInputs) {
-    return executeStoredGraphT<double>(extraPointers, graphId, inputBuffers, inputShapes, inputIndices, numInputs);
+nd4j::graph::VariablesSet<float>* NativeOps::executeStoredGraph(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int* inputIndices, int numInputs) {
+    return nullptr;
 }
 
 int NativeOps::unregisterGraph(Nd4jPointer *extraPointers, Nd4jLong graphId) {
@@ -2145,7 +2121,7 @@ Nd4jStatus execCustomOpWithScope(Nd4jPointer *extraPointers, nd4j::graph::GraphS
 }
 
 Nd4jStatus NativeOps::execCustomOpWithScope(Nd4jPointer *extraPointers, Nd4jPointer state, Nd4jLong opHash, Nd4jLong *scopes, int numScopes, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int numInputs, Nd4jPointer *outputBuffers, Nd4jPointer *outputShapes, int numOutputs) {
-    return execCustomOpWithScope<double>(extraPointers, reinterpret_cast<nd4j::graph::GraphState<double> *>(state), opHash, scopes, numScopes, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs);
+    return nd4j::Status::OK(); //execCustomOpWithScope<double>(extraPointers, reinterpret_cast<nd4j::graph::GraphState<double> *>(state), opHash, scopes, numScopes, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs);
 }
 
 void NativeOps::deleteResultWrapper(Nd4jPointer ptr) {

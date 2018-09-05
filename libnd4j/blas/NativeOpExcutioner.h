@@ -34,6 +34,8 @@
 #include <pointercast.h>
 #include <ops/specials.h>
 #include <ops/specials_sparse.h>
+#include <types/types.h>
+
 /**
  * Native op executioner:
  *
@@ -442,25 +444,33 @@ public:
                            Nd4jLong *zShapeBuffer,
                            void *extraArguments);
 
-    inline static void execSort(T *x, Nd4jLong *xShapeInfo, bool descending) {
-        nd4j::SpecialMethods<T>::sortGeneric(x, xShapeInfo, descending);
+    inline static void execSort(void *x, Nd4jLong *xShapeInfo, bool descending) {
+        auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+
+        BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::sortGeneric(x, xShapeInfo, descending), LIBND4J_TYPES);
     }
 
-    static void execSort(T *x, Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending) {
-        nd4j::SpecialMethods<T>::sortTadGeneric(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
+    static void execSort(void *x, Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending) {
+        auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+
+        BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::sortTadGeneric(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending), LIBND4J_TYPES);
     }
 
-    inline static void execSortCooIndices(Nd4jLong *indices, T *values, Nd4jLong length, int rank) {
-        nd4j::sparse::SparseUtils<T>::sortCooIndicesGeneric(indices, values, length, rank);
+    inline static void execSortCooIndices(Nd4jLong *indices, void *values, Nd4jLong length, int rank) {
+        nd4j::sparse::SparseUtils<Nd4jLong>::sortCooIndicesGeneric(indices, reinterpret_cast<Nd4jLong *>(values), length, rank);
     }
 
 
-    inline static Nd4jLong encodeBitmap(T *dx, Nd4jLong N, int *dz, float threshold) {
-        return nd4j::SpecialMethods<T>::encodeBitmapGeneric(dx, N, dz, threshold);
+    inline static Nd4jLong encodeBitmap(void *dx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold) {
+        auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+
+        BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::encodeBitmapGeneric(dx, xShapeInfo, N, dz, threshold), FLOAT_TYPES);
     }
 
-    inline static void decodeBitmap(void *dx, Nd4jLong N, T *dz) {
-        nd4j::SpecialMethods<T>::decodeBitmapGeneric(dx, N, dz);
+    inline static void decodeBitmap(void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo) {
+        auto zType = nd4j::ArrayOptions::dataType(zShapeInfo);
+
+        BUILD_SINGLE_SELECTOR(zType, nd4j::SpecialMethods, ::decodeBitmapGeneric(dx, N, dz, zShapeInfo), FLOAT_TYPES);
     }
 
 };
