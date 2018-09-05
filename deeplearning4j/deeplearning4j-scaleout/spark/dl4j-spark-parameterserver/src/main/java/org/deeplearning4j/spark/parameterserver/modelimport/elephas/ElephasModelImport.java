@@ -123,29 +123,29 @@ public class ElephasModelImport {
         if (innerConfig.containsKey("collect_stats"))
             collectStats = (boolean) innerConfig.get("collect_stats");
 
-        String paramServer = "";
-        if (innerConfig.containsKey("parameter_server"))
-            paramServer = (String) innerConfig.get("parameter_server");
+        int numBatchesPrefetch = 0;
+        if (innerConfig.containsKey("num_batches_prefetch"))
+            numBatchesPrefetch = (int) innerConfig.get("num_batches_prefetch");
+
 
     TrainingMaster tm;
-        if (mode.equals("synchronous") || paramServer.equals("average")) {
+        if (mode.equals("synchronous")) {
             int averagingFrequency = 5;
             if (innerConfig.containsKey("averaging_frequency"))
                 averagingFrequency = (int) innerConfig.get("averaging_frequency");
-
 
             tm = new ParameterAveragingTrainingMaster.Builder(numWorkers, batchSize)
                     .collectTrainingStats(collectStats)
                     .batchSizePerWorker(batchSize)
                     .averagingFrequency(averagingFrequency)
+                    .workerPrefetchNumBatches(numBatchesPrefetch)
                     .aggregationDepth(2) // we leave this as default
-                    .workerPrefetchNumBatches(0) // default, no pre-fetching
                     .repartionData(Repartition.Always)
                     .rddTrainingApproach(APPROACH)
                     .repartitionStrategy(RepartitionStrategy.Balanced)
                     .saveUpdater(false)
                     .build();
-        } else if (mode.equals("asynchronous") || paramServer.equals("sharing")){
+        } else if (mode.equals("asynchronous")){
             int shakeFrequency = 0;
             if (innerConfig.containsKey("shake_frequency"))
                 shakeFrequency = (int) innerConfig.get("shake_frequency");
@@ -161,10 +161,6 @@ public class ElephasModelImport {
             int workersPerNode = -1;
             if (innerConfig.containsKey("workers_per_node"))
                 workersPerNode = (int) innerConfig.get("workers_per_node");
-
-            int numBatchesPrefetch = 0;
-            if (innerConfig.containsKey("num_batches_prefetch"))
-                numBatchesPrefetch = (int) innerConfig.get("num_batches_prefetch");
 
             int stepDelay = 50;
             if (innerConfig.containsKey("step_delay"))
@@ -198,8 +194,7 @@ public class ElephasModelImport {
                     .transport(new RoutedTransport())
                     .build();
         } else {
-            throw new InvalidKerasConfigurationException("Unknown mode " + mode + " or unknown parameter server" +
-                    "type " + paramServer);
+            throw new InvalidKerasConfigurationException("Unknown mode " + mode);
         }
         return tm;
     }

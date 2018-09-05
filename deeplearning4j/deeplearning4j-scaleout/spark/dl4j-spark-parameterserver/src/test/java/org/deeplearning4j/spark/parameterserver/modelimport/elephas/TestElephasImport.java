@@ -71,7 +71,24 @@ public class TestElephasImport extends BaseSparkTest {
         assert model.getTrainingMaster() instanceof ParameterAveragingTrainingMaster;
     }
 
+    @Test
+    public void testElephasJavaAveragingModelImport() throws Exception {
 
+        String modelPath = "modelimport/elephas/java_param_averaging_model.h5";
+        SparkComputationGraph model = importElephasModel(sc, modelPath);
+        // System.out.println(model.getNetwork().summary());
+        assert model.getTrainingMaster() instanceof ParameterAveragingTrainingMaster;
+    }
+
+    @Test
+    public void testElephasJavaSharingModelImport() throws Exception {
+
+        String modelPath = "modelimport/elephas/java_param_sharing_model.h5";
+        SparkComputationGraph model = importElephasModel(sc, modelPath);
+        // System.out.println(model.getNetwork().summary());
+        assert model.getTrainingMaster() instanceof SharedTrainingMaster;
+    }
+    
     @Test
     public void testElephasModelImportAsync() throws Exception {
 
