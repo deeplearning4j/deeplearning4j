@@ -2140,7 +2140,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     protected void assertSlice(INDArray put, long slice) {
-        Preconditions.checkArgument(slice < slices(), "Invalid slice specified: slice %s must be in range 0 (inclusive) to numSlices=%s (exclusive)", slice, slices())
+        Preconditions.checkArgument(slice < slices(), "Invalid slice specified: slice %s must be in range 0 (inclusive) to numSlices=%s (exclusive)", slice, slices());
         long[] sliceShape = put.shape();
         if (Shape.isRowVectorShape(sliceShape)) {
             return;
