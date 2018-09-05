@@ -479,7 +479,7 @@ public class ArrayUtil {
     }
 
     public static boolean anyMore(int[] target, int[] test) {
-        assert target.length == test.length : "Unable to compare: different sizes";
+        Preconditions.checkArgument(target.length == test.length, "Unable to compare: different sizes: length %s vs. %s", target.length, test.length);
         for (int i = 0; i < target.length; i++) {
             if (target[i] > test[i])
                 return true;
@@ -489,7 +489,7 @@ public class ArrayUtil {
 
 
     public static boolean anyLess(int[] target, int[] test) {
-        assert target.length == test.length : "Unable to compare: different sizes";
+        Preconditions.checkArgument(target.length == test.length, "Unable to compare: different sizes: length %s vs. %s", target.length, test.length);
         for (int i = 0; i < target.length; i++) {
             if (target[i] < test[i])
                 return true;
@@ -498,7 +498,7 @@ public class ArrayUtil {
     }
 
     public static boolean lessThan(int[] target, int[] test) {
-        assert target.length == test.length : "Unable to compare: different sizes";
+        Preconditions.checkArgument(target.length == test.length, "Unable to compare: different sizes: length %s vs. %s", target.length, test.length);
         for (int i = 0; i < target.length; i++) {
             if (target[i] < test[i])
                 return true;
@@ -509,7 +509,7 @@ public class ArrayUtil {
     }
 
     public static boolean greaterThan(int[] target, int[] test) {
-        assert target.length == test.length : "Unable to compare: different sizes";
+        Preconditions.checkArgument(target.length == test.length, "Unable to compare: different sizes: length %s vs. %s", target.length, test.length);
         for (int i = 0; i < target.length; i++) {
             if (target[i] > test[i])
                 return true;
@@ -1663,7 +1663,7 @@ public class ArrayUtil {
     }
 
     public static int[] times(int[] ints, int[] mult) {
-        assert ints.length == mult.length : "Ints and mult must be the same length";
+        Preconditions.checkArgument(ints.length == mult.length, "Ints and mult must be the same length");
         int[] ret = new int[ints.length];
         for (int i = 0; i < ints.length; i++)
             ret[i] = ints[i] * mult[i];
@@ -1778,7 +1778,7 @@ public class ArrayUtil {
         } else {
             int firstLength = d[0].length;
             for (int i = 1; i < d.length; i++) {
-                assert d[i].length == firstLength;
+                Preconditions.checkState(d[i].length == firstLength);
             }
         }
     }

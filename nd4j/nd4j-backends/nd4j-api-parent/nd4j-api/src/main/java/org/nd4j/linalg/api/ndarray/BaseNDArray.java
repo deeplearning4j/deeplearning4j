@@ -205,8 +205,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 new int[] {data.length, data[0].length},
                 Nd4j.getStrides(new int[] {data.length, data[0].length}, ordering), 0, ordering);
 
+        int c = columns();
         for (int r = 0; r < rows(); r++) {
-            assert (data[r].length == columns());
+            Preconditions.checkState(data[r].length == c, "data[%s].length=%s must be equal to number of columns %s", r, data[r].length, c );
         }
     }
 
@@ -840,8 +841,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 new int[] {data.length, data[0].length},
                 Nd4j.getStrides(new int[] {data.length, data[0].length}, ordering), 0, ordering);
 
+        int c = columns();
         for (int r = 0; r < rows(); r++) {
-            assert (data[r].length == columns());
+            Preconditions.checkState(data[r].length == c, "data[%s].length=%s must be equal to number of columns %s", r, data[r].length, c );
         }
     }
 
@@ -2106,18 +2108,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         if (isScalar()) {
-            assert put.isScalar() : "Invalid dimension. Can only insert a scalar in to another scalar";
+            Preconditions.checkState(put.isScalar(), "Invalid dimension. Can only insert a scalar in to another scalar");
             put(0, put.getScalar(0));
             return this;
         } else if (isVector()) {
-            assert put.isScalar() || put.isVector() && put
-                    .length() == length() : "Invalid dimension on insertion. Can only insert scalars input vectors";
+            Preconditions.checkState(put.isVectorOrScalar() && put.length() == length(),
+                    "Invalid dimension on insertion. Can only insert scalars/vectors into other scalar/vectors");
             if (put.isScalar())
                 putScalar(slice, put.getDouble(0));
             else
                 for (int i = 0; i < length(); i++)
                     putScalar(i, put.getDouble(i));
-
             return this;
         }
 
@@ -2132,23 +2133,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             for (int i = 0; i < put.length(); i++)
                 view.putScalar(i, put.getDouble(i));
         else {
-            assert Shape.shapeEquals(view.shape(), put.shape());
-            INDArray linear = view;
-            INDArray putLinearView = put;
-            for (int i = 0; i < linear.length(); i++) {
-                linear.putScalar(i, putLinearView.getDouble(i));
-            }
-
-
+            Preconditions.checkState(view.equalShapes(put), "Cannot put slice: array to be put and current array have different shapes");
+            view.assign(put);
         }
-
         return this;
-
     }
 
     protected void assertSlice(INDArray put, long slice) {
-
-        assert slice <= slices() : "Invalid slice specified " + slice;
+        Preconditions.checkArgument(slice < slices(), "Invalid slice specified: slice %s must be in range 0 (inclusive) to numSlices=%s (exclusive)", slice, slices())
         long[] sliceShape = put.shape();
         if (Shape.isRowVectorShape(sliceShape)) {
             return;
@@ -4632,22 +4624,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return reshape(Nd4j.order(), shape);
     }
 
-    @Override
-    public void checkDimensions(INDArray other) {
-        assert Shape.contentEquals(other.shape(),
-                Shape.shapeOf(shapeInformation)) : " Other array should have been shape: "
-                + Shape.toString(Shape.shapeOf(shapeInformation)) + " but was "
-                + Arrays.toString(other.shape());
-        assert Shape.contentEquals(other.stride(),
-                Shape.stride(shapeInformation)) : " Other array should have been stride: "
-                + Shape.toString(Shape.stride(shapeInformation)) + " but was "
-                + Arrays.toString(other.stride());
-        assert Shape.offset(jvmShapeInfo.javaShapeInformation) == other.offset() : "Offset of this array is "
-                + Shape.offset(jvmShapeInfo.javaShapeInformation) + " but other was " + other.offset();
-
-    }
-
-
     /**
      * Returns the product along a given dimension
      *
@@ -5683,7 +5659,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     protected void checkArrangeArray(int[] arr) {
-        assert arr.length == jvmShapeInfo.rank : "Invalid rearrangement: number of arrangement != shape";
+        Preconditions.checkArgument(arr.length == jvmShapeInfo.rank, "Invalid rearrangement: number of arrangement (%s) != rank (%s)",
+                arr.length, jvmShapeInfo.rank);
         for (int i = 0; i < arr.length; i++) {
             if (arr[i] >= arr.length)
                 throw new IllegalArgumentException("The specified dimensions can't be swapped. Given element " + i
