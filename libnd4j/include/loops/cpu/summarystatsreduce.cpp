@@ -241,6 +241,6 @@ namespace functions {
         }
 
 
-        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT SummaryStatsReduce, , LIBND4J_TYPES);
+        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT SummaryStatsReduce, , FLOAT_TYPES);
     }
 }

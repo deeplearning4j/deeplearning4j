@@ -175,7 +175,7 @@ namespace functions {
                     delete tad;
         }
 
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT Broadcast, , LIBND4J_TYPES, LIBND4J_TYPES);
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT Broadcast, , FLOAT_TYPES, FLOAT_TYPES);
 
         //BUILD_CALL_1(template void Broadcast<float, float>::exec, float, (float*, Nd4jLong*, float*, Nd4jLong*, float*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
         //BUILD_CALL_1(template void Broadcast<float16, float16>::exec, float16, (float16*, Nd4jLong*, float16*, Nd4jLong*, float16*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)

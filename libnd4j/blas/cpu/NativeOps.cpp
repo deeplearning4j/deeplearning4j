@@ -724,9 +724,11 @@ void   NativeOps::execIndexReduceFloat(Nd4jPointer *extraPointers, int opNum,
                                        float *extraParams,
                                        float *result,
                                        Nd4jLong *resultShapeInfo,
-                                       int *dimension, int dimensionLength) {
+                                       int *dimension,
+                                       int dimensionLength) {
     auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
     auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
+
     NativeOpExcutioner<float>::execIndexReduce(opNum,x,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,tadShapeInfo, tadOffsets);
 }
 

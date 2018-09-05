@@ -427,7 +427,7 @@ namespace functions {
             }
 
 
-        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT ReduceFunction, , LIBND4J_TYPES);
+        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT ReduceFunction, , FLOAT_TYPES);
 
         //template void ReduceFunction<float16>::exec<simdOps::LogSumExp<float16>>(float16*, int*, float16*, float16*, int*, int*, int, int*, Nd4jLong*);
         //template void ReduceFunction<float>::exec<simdOps::LogSumExp<float>>(float*, int*, float*, float*, int*, int*, int, int*, Nd4jLong*);

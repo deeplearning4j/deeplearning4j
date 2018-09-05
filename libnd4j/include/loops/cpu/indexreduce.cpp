@@ -259,6 +259,6 @@ namespace functions {
         }
 
 
-        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES);
+        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , FLOAT_TYPES);
     };
 }
