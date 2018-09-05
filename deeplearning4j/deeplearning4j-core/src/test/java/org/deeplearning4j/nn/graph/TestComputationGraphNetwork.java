@@ -1771,13 +1771,43 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         ComputationGraph net = new ComputationGraph(conf);
         net.init();
 
-        List<TrainingListener> listeners = new ArrayList<>();
-        listeners.add(new ScoreIterationListener(1));
-        net.setListeners(
-                (TrainingListener[]) listeners.toArray(new TrainingListener[listeners.size()]));
-
         INDArray[] features = new INDArray[]{Nd4j.create(1, 5, 5), Nd4j.create(1, 5, 5)};
         INDArray[] labels = new INDArray[]{Nd4j.create(1, 6, 5), Nd4j.create(1, 4, 5)};
+        MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(features, labels);
+        net.fit(mds);
+    }
+
+    @Test
+    public void testCompGraphDropoutOutputLayers2(){
+        //https://github.com/deeplearning4j/deeplearning4j/issues/6326
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .dropOut(0.8)
+                .graphBuilder()
+                .addInputs("in1", "in2")
+                .addVertex("merge", new MergeVertex(), "in1", "in2")
+                .addLayer("dense",
+                        new DenseLayer.Builder()
+                                .nIn(10).nOut(5)
+                                .activation(Activation.TANH)
+                                .dropOut(new GaussianNoise(0.05))
+                                .build(),"merge")
+                .addLayer("out1",
+                        new OutputLayer.Builder().activation(Activation.SOFTMAX)
+                                .lossFunction(LossFunctions.LossFunction.MCXENT).nIn(5)
+                                .nOut(6).build(),
+                        "dense")
+                .addLayer("out2",
+                        new OutputLayer.Builder().activation(Activation.SOFTMAX)
+                                .lossFunction(LossFunctions.LossFunction.MCXENT).nIn(5)
+                                .nOut(4).build(),
+                        "dense")
+                .setOutputs("out1", "out2").build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        INDArray[] features = new INDArray[]{Nd4j.create(1, 5), Nd4j.create(1, 5)};
+        INDArray[] labels = new INDArray[]{Nd4j.create(1, 6), Nd4j.create(1, 4)};
         MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(features, labels);
         net.fit(mds);
     }

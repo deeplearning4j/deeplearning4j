@@ -54,9 +54,11 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
         applyDropOutIfNecessary(true, workspaceMgr);    //Edge case: we skip OutputLayer forward pass during training as this isn't required to calculate gradients
-        if (input.rank() != 3)
+        if (input.rank() != 3) {
             throw new UnsupportedOperationException(
-                            "Input is not rank 3. Got input with rank " + input.rank() + " " + layerId());
+                    "Input is not rank 3. RnnOutputLayer expects rank 3 input with shape [minibatch, layerInSize, sequenceLength]." +
+                            " Got input with rank " + input.rank() + " and shape " + Arrays.toString(input.shape()) + " - " + layerId());
+        }
         INDArray inputTemp = input;
         this.input = TimeSeriesUtils.reshape3dTo2d(input, workspaceMgr, ArrayType.BP_WORKING_MEM);
         Pair<Gradient, INDArray> gradAndEpsilonNext = super.backpropGradient(epsilon, workspaceMgr);    //Also applies dropout
