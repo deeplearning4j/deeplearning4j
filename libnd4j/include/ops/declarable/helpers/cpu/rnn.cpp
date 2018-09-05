@@ -41,16 +41,16 @@ static FORCEINLINE NDArray<T> activation(const NDArray<T>& arr) {
 template <typename T>
 void rnnCell(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* ht) {
 
-    NDArray<T>* xt   = inArrs[0];                   // input [bS x inSize]    
-    NDArray<T>* Wx   = inArrs[1];                   // input-to-hidden weights, [inSize  x numUnits] 
-    NDArray<T>* Wh   = inArrs[2];                   // hidden-to-hidden weights, [numUnits x numUnits] 
-    NDArray<T>* b    = inArrs[3];                   // biases, [2*numUnits]: {0, numUnits} are input-to-hidden biases and {numUnits, 2*numUnits} are hidden-to-hidden biases    
-    NDArray<T>* ht_1 = inArrs[4];                   // previous cell output [bS x numUnits],  that is at previous time step t-1, in case of projection=false -> numUnits=numUnits!!!     
+    NDArray<T>* xt   = inArrs[0];                   // input [bS x iS]    
+    NDArray<T>* Wx   = inArrs[1];                   // input-to-hidden weights, [iS  x nU] 
+    NDArray<T>* Wh   = inArrs[2];                   // hidden-to-hidden weights, [nU x nU] 
+    NDArray<T>* b    = inArrs[3];                   // biases, [2*nU]: {0, nU} are input-to-hidden biases and {nU, 2*nU} are hidden-to-hidden biases    
+    NDArray<T>* ht_1 = inArrs[4];                   // previous cell output [bS x nU],  that is at previous time step t-1, in case of projection=false -> nU=nU!!!     
 
-    const int numUnits  = ht_1->sizeAt(1);
+    const int nU  = ht_1->sizeAt(1);
     
-    // ht is current cell output [bS x numUnits], that is at current time step t        
-    ht->assign(activation<T>(mmul(*xt, *Wx) + (*b)({{0, numUnits}})  +  mmul(*ht_1, *Wh) + (*b)({{numUnits, 2*numUnits}})));      // [bS x numUnits] + [numUnits]  +  [bS x numUnits] + [numUnits] = [bS x numUnits]    
+    // ht is current cell output [bS x nU], that is at current time step t        
+    ht->assign(activation<T>(mmul(*xt, *Wx) + (*b)({{0, nU}})  +  mmul(*ht_1, *Wh) + (*b)({{nU, 2*nU}})));      // [bS x nU] + [nU]  +  [bS x nU] + [nU] = [bS x nU]    
 
 }
 
@@ -60,31 +60,31 @@ void rnnCell(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* ht) {
 template <typename T>
 void rnnTimeLoop(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* h, NDArray<T>* hFinal) {
 
-    NDArray<T>* x  = inArrs[0];               	// input [time x bS x inSize]
-	NDArray<T>* Wx = inArrs[1];               	// input-to-hidden  weights, [inSize  x numUnits] 	
-    NDArray<T>* Wh = inArrs[2];               	// hidden-to-hidden weights, [numUnits x numUnits]         
-	NDArray<T>* b  = inArrs[3];               	// biases for, [2*numUnits] 
+    NDArray<T>* x  = inArrs[0];               	// input [N x bS x iS]
+	NDArray<T>* Wx = inArrs[1];               	// input-to-hidden  weights, [iS  x nU] 	
+    NDArray<T>* Wh = inArrs[2];               	// hidden-to-hidden weights, [nU x nU]         
+	NDArray<T>* b  = inArrs[3];               	// biases for, [2*nU] 
 
-	NDArray<T>* h0          = inArrs[4];		// initial cell output (at time step = 0) [bS x numUnits]	
-	NDArray<T>* maxTimeStep = inArrs[5];     	// vector [bS] containing integer values within [0,time), each element of this vector set max time step per each input in batch, this means there are no calculations for time >= maxTimeStep
+	NDArray<T>* hi          = inArrs[4];		// initial cell output (at time step = 0) [bS x nU]	
+	NDArray<T>* maxTimeStep = inArrs[5];     	// vector [bS] containing integer values within [0,N), each element of this vector set max time step per each input in batch, this means there are no calculations for time >= maxTimeStep
     
-    const int time     = x->sizeAt(0);
-    const int bS       = x->sizeAt(1);        
+    const Nd4jLong N  = x->sizeAt(0);
+    const Nd4jLong bS = x->sizeAt(1);        
     
     // at first time step
-    if(h0)
-        hFinal->assign(h0);
+    if(hi)
+        hFinal->assign(hi);
     else 
         *hFinal = 0.;   
 
     BlasHelper::getInstance();          // to avoid memory leak in pragma parallel loops
 // #pragma omp parallel for schedule(guided) collapse(2) if(bS > Environment::getInstance()->elementwiseThreshold())  
     // loop through batch of inputs           
-    for (int e = 0; e < bS; ++e) {                  
+    for (Nd4jLong e = 0; e < bS; ++e) {                  
         // loop through time steps
-        for (int t = 0; t < time; ++t) {                                 
+        for (Nd4jLong t = 0; t < N; ++t) {                                 
 
-            int maxStep = maxTimeStep ? (int)(*maxTimeStep)(e) : time;
+            int maxStep = maxTimeStep ? (int)(*maxTimeStep)(e) : N;
 
             NDArray<T> xt   = (*x)({t,t+1, e,e+1, 0,0}, true);
             NDArray<T> ht   = (*h)({t,t+1, e,e+1, 0,0}, true);
@@ -105,38 +105,81 @@ void rnnTimeLoop(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* h, NDArray<
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void rnnCellBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs, const bool lastTimeStep) {
+void rnnTimeLoopBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs) {
 
-    NDArray<T>* xt       = inArrs[0];         // x_{t}, input [bS x inSize]
-    NDArray<T>* Wx       = inArrs[1];         // input-to-hidden weights, [inSize  x numUnits] 
-    NDArray<T>* Wh       = inArrs[2];         // hidden-to-hidden weights, [numUnits x numUnits] 
-    NDArray<T>* b        = inArrs[3];         // biases, [2*numUnits]: {0, numUnits} are input-to-hidden biases and {numUnits, 2*numUnits} are hidden-to-hidden biases        
-    NDArray<T>* htM1     = inArrs[4];         // h_{t-1}, previous cell output [bS x numUnits],  that is at previous time step t-1, in case of projection=false -> numUnits=numUnits!!!     
-    NDArray<T>* dLtdht   = inArrs[5];         // derivative dL_{t}/dh_{t}, [bS x numUnits], epsilon
-    NDArray<T>* dLdhtP1  = inArrs[6];         // derivative dL/dh_{t+1}, [bS x numUnits], for example for t=0 it is equal to: dL_0/dh_0 + dL_1/dh_1°dh_1/dh_0 + dL_2/dh_2°dh_2/dh_1°dh_1/dh_0 + dL_3/dh_3°dh_3/dh_2°dh_2/dh_1°dh_1/dh_0 + ..., [bS x numUnits]
-        
-    NDArray<T>* dLdht = outArrs[0];          // derivative dL/dh_{t}, [bS x numUnits]
-    NDArray<T>* dLdxt = outArrs[1];          // derivative dL/dx_{t}, [bS x inSize]
+    NDArray<T>* x           = inArrs[0];         // input [N x bS x iS]
+    NDArray<T>* Wx          = inArrs[1];         // input-to-hidden weights, [iS  x nU] 
+    NDArray<T>* Wh          = inArrs[2];         // hidden-to-hidden weights, [nU x nU] 
+    NDArray<T>* b           = inArrs[3];         // biases, [2*nU]: {0, nU} are input-to-hidden biases and {nU, 2*nU} are hidden-to-hidden biases        
+    NDArray<T>* hi          = inArrs[4];         // initial cell output [bS x nU]
+    NDArray<T>* maxTimeStep = inArrs[5];         // vector [bS] containing integer values within [0,N), each element of this vector set max time step per each input in batch, this means there are no calculations for time >= maxTimeStep
+    NDArray<T>* dLdh        = inArrs[6];         // set of derivatives dL_{t}/dh_{t}, [N x bS x nU], epsilon    
+          
+    NDArray<T>* dLdx  = outArrs[0];          // set of derivatives dL/dx_{t}, [N x bS x iS]
+    NDArray<T>* dLdWx = outArrs[1];          // derivative dL/dWx, [iS x nU]
+    NDArray<T>* dLdWh = outArrs[2];          // derivative dL/dWh, [nU x nU]
+    NDArray<T>* dLdb  = outArrs[3];          // derivative dL/db, [2*nU]
+    // NDArray<T>* dLdhtP1  = outArrs[6];         // derivative dL/dh_{t+1}, [bS x nU], for example for t=0 it is equal to: dL_0/dh_0 + dL_1/dh_1°dh_1/dh_0 + dL_2/dh_2°dh_2/dh_1°dh_1/dh_0 + dL_3/dh_3°dh_3/dh_2°dh_2/dh_1°dh_1/dh_0 + ..., [bS x nU]
 
-    const Nd4jLong numUnits  = htM1->sizeAt(1);
+    *dLdWx = T(0);
+    *dLdWh = T(0);
+    *dLdb  = T(0);
+
+    const Nd4jLong N  = x->sizeAt(0);
+    const Nd4jLong bS = x->sizeAt(1);
+    const Nd4jLong nU = Wx->sizeAt(1);
+
+    NDArray<T> h(hi->ordering(), {N, bS, nU});          // set of cell outputs, [N x bS x nU]
+    NDArray<T> hFinal(hi->ordering(), {bS, nU}); 
+
+    // feed forward time loop
+    rnnTimeLoop({x, Wx, Wb, b, hi, maxTimeStep}, &h, &hFinal);    // use dhtdhtM1 as temporary array here 
+   
+    NDArray<T> WxT = Wx->transp();
+    NDArray<T> WhT = Wh->transp();
+    NDArray<T>* xT = x->permute({0,2,1});                       // [N x bS x iS] -> [N x iS x bS]
+    NDArray<T>* hT = h->permute({0,2,1});                       // [N x bS x nU] -> [N x nU x bS]
+
+    // backprop time loop
+    for(Nd4jLong t = N-1; i >= 0; --t) {
+                
+        NDArray<T> dLtdht = (*dLdh)({t,t+1, 0,0, 0,0});                 // derivative dL_{t}/dh_{t}, epsilon, [bS x nU]           
+        NDArray<T> dhtP1dht = dLtdht;                                   // dh_{t+1}/dh_{t}, [bS x nU], choose initial value to be equal dLtdht
+
+        for(Nd4jLong tt = t; tt >= 0; --tt) {
+
+            NDArray<T> ht  =  (*h)({tt,tt+1, 0,0, 0,0});
+            NDArray<T> xtT = (*xT)({tt,tt+1, 0,0, 0,0});
+            NDArray<T> htT = (*hT)({tt,tt+1, 0,0, 0,0});
+            
+            NDArray<T> dhtdzt = T(1) - ht * ht;                             // derivative dh_{t}/dz_{t}, [bS x nU]
+            *dLdWx += mmul(xtT, dhtdzt * dhtP1dht);
+            *dLdWh += mmul(htT, dhtdzt * dhtP1dht);
+            *dLdb  += mmul(dhtdzt.sum(), dhtdzt * dhtP1dht);
+
+            dhtP1dht *= mmul(dhtdzt, WhT);                                  // get series of derivatives products, for example: dL_3/dh_3°dh_3/dh_2, dL_3/dh_3°dh_3/dh_2°dh_2/dh_1, dL_3/dh_3°dh_3/dh_2°dh_2/dh_1°dh_1/dh_0
+
+        }
         
-    // feed forward
-    NDArray<T> ht = activation<T>(mmul(*xt, *Wx) + (*b)({{0, numUnits}})  +  mmul(*htM1, *Wh) + (*b)({{numUnits, 2*numUnits}}));      // [bS x numUnits] + [numUnits]  +  [bS x numUnits] + [numUnits] = [bS x numUnits]        
+    }
+
+    delete xT;
+    delete hT;
     
     // back propagation    
-    NDArray<T> dhtdzt = T(1) - ht * ht;                     // dh_{t}/dz_{t}, [bS x numUnits]
-    NDArray<T> dhtdhtM1 = mmul(dhtdzt, Wh->transp());       // dh_{t}/dh_{t-1}, [bS x numUnits]
+                         // dh_{t}/dz_{t}, [bS x nU]
+    
 
-    if(!lastTimeStep)
-        dLdht->assign(*dLtdht + *dLdhtP1);
-    else
-        dLdht->assign(*dLtdht);
-
+    dLdht->assign(*dLtdht + *dLdhtP1);
+    
     dLdhtP1->assign(dLdht * dhtdhtM1);
 
-    dLdxt->assign(mmul(*dLdht * dhtdzt, Wx->transp()));     // [bS x inSize]
+    dLdxt->assign(mmul(*dLdht * dhtdzt, Wx->transp()));     // [bS x iS]
+
+    for(int i = 0; i < t; ++t)
 
     // dLdhtP1->assign(dLdht);
+    }
 }
 
 
