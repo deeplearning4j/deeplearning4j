@@ -182,7 +182,7 @@ TEST_F(DeclarableOpsTests10, Unique_SGO_Test_1) {
 
     nd4j::ops::unique<double> op;
     auto res = op.execute({&input}, {}, {});
-    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    ASSERT_EQ(res->status() , ND4J_STATUS_OK);
     //res->at(0)->printIndexedBuffer("Unique values");
     //res->at(1)->printIndexedBuffer("Unique idxs");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
@@ -469,6 +469,76 @@ TEST_F(DeclarableOpsTests10, range_test12) {
     delete result;
 }
 
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, top_k_permuted_test1) {
+
+    NDArray<double> x({7., 3., 1., 2., 5., 0., 4., 6., 9., 8.});
+    NDArray<double> expUnsorted({7., 6., 9., 8.}); // Sorted = False
+    NDArray<double> expSorted({9., 8., 7., 6., 5.}); // Sorted = False
+
+
+    nd4j::ops::top_k<double> op;
+    auto result = op.execute({&x}, {}, {4, 0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    auto zI = result->at(1);
+    //z->printIndexedBuffer("TopK(5)");
+    //zI->printIndexedBuffer("TopKI(5)");
+    ASSERT_TRUE(expUnsorted.isSameShape(z));
+    ASSERT_TRUE(expUnsorted.equalsTo(z));
+
+    auto result2 = op.execute({&x}, {}, {5, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result2->status());
+
+    z = result2->at(0);
+    zI = result2->at(1);
+    //z->printIndexedBuffer("sorted TopK(5)");
+    //zI->printIndexedBuffer("sorted TopKI(5)");
+    ASSERT_TRUE(expSorted.isSameShape(z));
+    ASSERT_TRUE(expSorted.equalsTo(z));
+
+    delete result;
+    delete result2;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, top_k_permuted_test2) {
+
+    NDArray<double> x({7., 3., 1., 2., 5., 0., 4., 6., 9., 8.});
+    NDArray<double> expUnsorted({7.,    5.,    6.,    9.,    8.}); // Sorted = False
+    NDArray<double> expSorted({9., 8., 7., 6., 5.}); // Sorted = False
+
+
+    nd4j::ops::top_k<double> op;
+    auto result = op.execute({&x}, {}, {5, 0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    auto zI = result->at(1);
+    //z->printIndexedBuffer("TopK(5)");
+    //zI->printIndexedBuffer("TopKI(5)");
+    ASSERT_TRUE(expUnsorted.isSameShape(z));
+    ASSERT_TRUE(expUnsorted.equalsTo(z));
+
+    auto result2 = op.execute({&x}, {}, {5, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result2->status());
+
+    z = result2->at(0);
+    zI = result2->at(1);
+    //z->printIndexedBuffer("sorted TopK(5)");
+    //zI->printIndexedBuffer("sorted TopKI(5)");
+    ASSERT_TRUE(expSorted.isSameShape(z));
+    ASSERT_TRUE(expSorted.equalsTo(z));
+
+    delete result;
+    delete result2;
+}
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test1) {
     
@@ -580,6 +650,7 @@ TEST_F(DeclarableOpsTests10, split_test4) {
 
     delete results;
 }
+
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, split_test5) {
