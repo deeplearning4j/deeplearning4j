@@ -30,10 +30,7 @@ namespace nd4j {
         class GraphHolder {
         private:
             static GraphHolder *_INSTANCE;
-            std::map<Nd4jLong, Graph<float>*> _graphF;
-            std::map<Nd4jLong, Graph<double>*> _graphD;
-            std::map<Nd4jLong, Graph<float16>*> _graphH;
-
+            std::map<Nd4jLong, Graph *> _graphF;
 
             std::map<Nd4jLong, SimpleReadWriteLock> _locks;
 
@@ -42,34 +39,25 @@ namespace nd4j {
         public:
             static GraphHolder* getInstance();
 
-            template <typename T>
-            void registerGraph(Nd4jLong graphId, Graph<T>* graph);
+            void registerGraph(Nd4jLong graphId, Graph *graph);
             
-            template <typename T>
-            Graph<T>* cloneGraph(Nd4jLong graphId);
+            Graph* cloneGraph(Nd4jLong graphId);
 
-            template <typename T>
-            Graph<T>* pullGraph(Nd4jLong graphId);
+            Graph* pullGraph(Nd4jLong graphId);
 
-            template <typename T>
             void forgetGraph(Nd4jLong graphId);
 
-            template <typename T>
             void dropGraph(Nd4jLong graphId);
-
 
             void dropGraphAny(Nd4jLong graphId);
 
-            template <typename T>
             bool hasGraph(Nd4jLong graphId);
 
             bool hasGraphAny(Nd4jLong graphId);
 
-
             flatbuffers::Offset<FlatResult> execute(Nd4jLong graphId, flatbuffers::FlatBufferBuilder &builder, const FlatInferenceRequest* request);
 
-            template <typename T>
-            void replaceGraph(Nd4jLong graphId, Graph<T>* graph);
+            void replaceGraph(Nd4jLong graphId, Graph *graph);
 
             /////////////////////////////
 

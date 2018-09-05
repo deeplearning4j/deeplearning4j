@@ -29,27 +29,26 @@
 
 namespace nd4j{
     namespace graph {
-        template <typename T>
         class SessionLocalStorage {
         protected:
             std::atomic<Nd4jLong> _sessionCounter;
             std::map<Nd4jLong, Nd4jLong> _threadSession;
-            std::map<Nd4jLong, VariableSpace<T>*> _threadVariableSpace;
+            std::map<Nd4jLong, VariableSpace*> _threadVariableSpace;
 
-            VariableSpace<T>* _variableSpace;
-            Stash<T>* _stash;
+            VariableSpace* _variableSpace;
+            Stash* _stash;
 
             std::mutex _mutex;
 
             Nd4jLong getSessionId();
             Nd4jLong getThreadId();
         public:
-            SessionLocalStorage(VariableSpace<T>* variableSpace = nullptr, Stash<T>* stash = nullptr);
+            SessionLocalStorage(VariableSpace* variableSpace = nullptr, Stash* stash = nullptr);
 
             ~SessionLocalStorage();
 
-            VariableSpace<T>* localVariableSpace();
-            VariableSpace<T>* localVariableSpace(Nd4jLong sessionId);
+            VariableSpace* localVariableSpace();
+            VariableSpace* localVariableSpace(Nd4jLong sessionId);
 
 
             Nd4jLong startSession();

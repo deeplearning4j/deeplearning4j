@@ -30,10 +30,9 @@
 
 namespace nd4j {
     namespace graph {
-        template <typename T>
         class VariablesSet {
         protected:
-            std::vector<nd4j::graph::Variable<T>*> _holder;
+            std::vector<nd4j::graph::Variable*> _holder;
             Nd4jStatus _status;
         public:
             VariablesSet(Nd4jStatus status = ND4J_STATUS_OK);
@@ -43,9 +42,9 @@ namespace nd4j {
 
             int size();
 
-            void push_back(Variable<T>* variable);
+            void push_back(Variable* variable);
 
-            Variable<T>* at(int index);
+            Variable* at(int index);
 
         };
     }

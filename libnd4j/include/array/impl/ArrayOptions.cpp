@@ -46,14 +46,16 @@ namespace nd4j {
     }
 
     nd4j::DataType ArrayOptions::dataType(Nd4jLong *shapeInfo) {
-        if (hasPropertyBitSet(shapeInfo, ARRAY_FLOAT))
+        if (hasPropertyBitSet(shapeInfo, ARRAY_QUANTIZED))
+            return nd4j::DataType::DataType_QINT8;
+        else if (hasPropertyBitSet(shapeInfo, ARRAY_FLOAT))
             return nd4j::DataType::DataType_FLOAT;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_DOUBLE))
             return nd4j::DataType::DataType_DOUBLE;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_HALF))
             return nd4j::DataType::DataType_HALF;
-        else if (hasPropertyBitSet(shapeInfo, ARRAY_HALF2))
-            return nd4j::DataType ::DataType_HALF2;
+        else if (hasPropertyBitSet(shapeInfo, ARRAY_BOOL))
+            return nd4j::DataType ::DataType_BOOL;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_UNSIGNED)) {
             if (hasPropertyBitSet(shapeInfo, ARRAY_CHAR))
                 return nd4j::DataType ::DataType_UINT8;

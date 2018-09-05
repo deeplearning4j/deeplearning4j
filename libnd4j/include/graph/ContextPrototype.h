@@ -26,13 +26,13 @@
 
 namespace nd4j {
     namespace graph {
-        template <typename T>
+
         class ContextPrototype {
         protected:
             // int ids of the input nodes
             std::vector<std::pair<int, int>> _inputs;
             int _nodeId;
-            std::vector<T> _tArgs;
+            std::vector<double> _tArgs;
             std::vector<int> _iArgs;            
 			
 			bool _isInplace;
@@ -60,7 +60,7 @@ namespace nd4j {
             void fillInputs(std::vector<int>& inputs);
             std::vector<std::pair<int, int>>* inputs();
 
-            std::vector<T>* getTArguments();
+            std::vector<double>* getTArguments();
             std::vector<int>* getIArguments();
 
             int numT();
@@ -78,10 +78,10 @@ namespace nd4j {
             unsigned long width();
 
             // just a clone
-            ContextPrototype<T>* clone();
+            ContextPrototype* clone();
 
             template <typename N>
-            ContextPrototype<N>* asT();
+            ContextPrototype* asT();
         };
     }
 }

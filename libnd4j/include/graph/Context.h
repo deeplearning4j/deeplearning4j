@@ -43,11 +43,10 @@ namespace nd4j {
         /**
          * This class defines input desired for any given node/operation within graph
          */
-        template <typename T>
-        class Context : public nd4j::graph::ContextPrototype<T> {
+        class Context : public nd4j::graph::ContextPrototype {
         protected:
             nd4j::memory::Workspace* _workspace = nullptr;
-            nd4j::graph::VariableSpace<T>* _variableSpace = nullptr;
+            nd4j::graph::VariableSpace* _variableSpace = nullptr;
             std::pair<Nd4jLong, Nd4jLong> _executionTime;
             nd4j::random::RandomBuffer* _rng = nullptr;
 
@@ -61,10 +60,10 @@ namespace nd4j {
             cudaStream_t* _stream;
 #endif
 
-            Context(ContextPrototype<T>* prototype, VariableSpace<T>* variableSpace);
+            Context(ContextPrototype *prototype, VariableSpace *variableSpace);
 
-            explicit Context(int nodeId, VariableSpace<T> *variableSpace = nullptr);
-            Context(int nodeId, VariableSpace<T> *variableSpace, bool isInplace);
+            explicit Context(int nodeId, VariableSpace *variableSpace = nullptr);
+            Context(int nodeId, VariableSpace *variableSpace, bool isInplace);
 
             // default destructor
             ~Context();
@@ -92,12 +91,12 @@ namespace nd4j {
             nd4j::memory::Workspace* oWorkspace();
 
 
-            void setVariableSpace(VariableSpace<T> *variableSpace);
+            void setVariableSpace(VariableSpace *variableSpace);
 
             nd4j::random::RandomBuffer* getRNG();
             void setRNG(nd4j::random::RandomBuffer* rng);
 
-            VariableSpace<T> *getVariableSpace();
+            VariableSpace *getVariableSpace();
 
             // these fields define, if we can execute specific node in-place, without generating new array
 
@@ -110,12 +109,12 @@ namespace nd4j {
              *
              * @return
              */
-            Stash<T>* getStash();
+            Stash* getStash();
 
             /**
              *
              */
-            void trackList(NDArrayList<T>* list);
+            void trackList(NDArrayList *list);
 
 
             /**
@@ -123,8 +122,8 @@ namespace nd4j {
              * @param idx
              * @return
              */
-            Variable<T>* getVariable(int idx);
-            Variable<T>* variable(int idx);
+            Variable* getVariable(int idx);
+            Variable* variable(int idx);
 
 
             /**
@@ -132,20 +131,20 @@ namespace nd4j {
              * @param p
              * @return
              */
-            Variable<T>* variable(int node, int index);
-            Variable<T>* variable(std::pair<int,int>& p);
-            Variable<T>* variable(std::initializer_list<int> p);
+            Variable* variable(int node, int index);
+            Variable* variable(std::pair<int,int>& p);
+            Variable* variable(std::initializer_list<int> p);
 
 
-            void pushNDArrayToVariableSpace(int nodeId, int index, NDArray<T>* array, bool removable = true);
-            void pushNDArrayToVariableSpace(std::pair<int, int>& pair, NDArray<T>* array, bool removable = true);
+            void pushNDArrayToVariableSpace(int nodeId, int index, NDArray* array, bool removable = true);
+            void pushNDArrayToVariableSpace(std::pair<int, int>& pair, NDArray* array, bool removable = true);
 
-            void pushNDArrayListToVariableSpace(int nodeId, int index, NDArrayList<T>* list, bool track = true);
-            void pushNDArrayListToVariableSpace(std::pair<int, int>& pair, NDArrayList<T>* list, bool track = true);
+            void pushNDArrayListToVariableSpace(int nodeId, int index, NDArrayList* list, bool track = true);
+            void pushNDArrayListToVariableSpace(std::pair<int, int>& pair, NDArrayList* list, bool track = true);
 
             bool isValueAvailable(int idx = 0);
 
-            Variable<T>* ensureVariable(int idx = 0);
+            Variable* ensureVariable(int idx = 0);
         };
     }
 }

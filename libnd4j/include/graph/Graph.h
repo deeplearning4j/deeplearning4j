@@ -38,7 +38,6 @@
 namespace nd4j {
     namespace graph {
 
-        template <typename T>
         class Graph {
         protected:
             ExecutorConfiguration *_configuration;

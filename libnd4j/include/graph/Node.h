@@ -33,15 +33,14 @@
 namespace nd4j {
     namespace graph {
 
-        template <typename T>
+
         class Graph;
 
-        template <typename T>
         class Node {
         protected:
             DataType _dataType;
             OpType _opType;
-            ContextPrototype<T>* _protoContext = nullptr;
+            ContextPrototype* _protoContext = nullptr;
             Nd4jLong _opNum;
             int _id;
             std::vector<std::pair<int, int>> _input;
@@ -58,7 +57,7 @@ namespace nd4j {
             int _layer = -1;
 
             // many ops require extra parameters to run
-            T *_extraParams = nullptr;
+            double *_extraParams = nullptr;
 
 
             // optional scalar. used in scalar ops and in summary stats
@@ -78,8 +77,8 @@ namespace nd4j {
             OpClass _opClass;
 
             // these fields are used to store embedded CustomOps and Graph in case of Graph-in-Graph scenario
-            nd4j::graph::Graph<T> * _graph= nullptr;
-            nd4j::ops::DeclarableOp<T> *_customOp = nullptr;
+            nd4j::graph::Graph * _graph= nullptr;
+            nd4j::ops::DeclarableOp *_customOp = nullptr;
 
             // each node can be active or inactive, if used with divergents, like IF statements
             bool _active = true;
@@ -101,7 +100,7 @@ namespace nd4j {
             bool equals(Node *other);
 
             DataType dataType();
-            ContextPrototype<T>* protoContext();
+            ContextPrototype *protoContext();
             OpType opType();
             Nd4jLong opNum();
             int id();
@@ -119,7 +118,7 @@ namespace nd4j {
 
             void setId(int id);
 
-            T *extraParams();
+            double *extraParams();
 
             bool isMultiInput();
             bool isMultiOutput();
@@ -136,7 +135,7 @@ namespace nd4j {
             bool hasInternalOutputs();
             bool hasInternalInputs();
 
-            T scalar();
+            double scalar();
 
             std::vector<int> * getDimensions();
             int * getDimensionsPtr();
@@ -190,21 +189,21 @@ namespace nd4j {
             std::string* scopeName();
 
             // clone Node
-            Node<T>* clone();
+            Node* clone();
 
             // change Node data type
             template <typename N>
-            Node<N>* asT();
+            Node* asT();
 
             template <typename N>
-            FORCEINLINE void pullValues(Node<N> *other) {
+            FORCEINLINE void pullValues(Node *other) {
 
                 if (this->_protoContext != nullptr)
                     delete _protoContext;
 
                 this->_dataType = other->dataType();
-                this->_protoContext = other->protoContext()->template asT<T>();
-                this->_scalar = (T) other->scalar();
+                this->_protoContext = other->protoContext()->clone();
+                this->_scalar =  other->scalar();
                 this->_hasExternalInputs = other->hasExternalInputs();
                 this->_hasExternalOutputs = other->hasExternalOutputs();
                 this->_hasInternalInputs = other->hasInternalInputs();

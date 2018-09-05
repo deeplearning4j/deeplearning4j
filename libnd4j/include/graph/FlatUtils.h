@@ -33,10 +33,9 @@ namespace nd4j {
         public:
             static std::pair<int, int> fromIntPair(IntPair* pair);
 
-            static std::pair<Nd4jLong, Nd4jLong > fromLongPair(LongPair* pair);
+            static std::pair<Nd4jLong, Nd4jLong> fromLongPair(LongPair* pair);
 
-            template <typename T>
-            static NDArray<T>* fromFlatArray(const nd4j::graph::FlatArray* flatArray);
+            static NDArray* fromFlatArray(const nd4j::graph::FlatArray* flatArray);
         };
     }
 }

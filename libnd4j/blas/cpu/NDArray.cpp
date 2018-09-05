@@ -3793,12 +3793,7 @@ ResultSet<T>* NDArray<T>::allExamples() const {
 }
 
 
-
-
-template class ND4J_EXPORT NDArray<float>;
-template class ND4J_EXPORT NDArray<float16>;
-template class ND4J_EXPORT NDArray<double>;
-
+/*
 
 template NDArray<float>* NDArray<float>::asT<float>();
 template NDArray<float16>* NDArray<float>::asT<float16>();
@@ -3816,6 +3811,7 @@ template NDArray<double>* NDArray<double>::asT<double>();
 #ifndef __CLION_IDE__
 #include "NDArray.macro"
 #endif
+ */
 }
 
 #endif

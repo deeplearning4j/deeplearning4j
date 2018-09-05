@@ -39,24 +39,23 @@ namespace nd4j {
             bool operator<(const KeyPair& other) const;
         };
 
-        template <typename T>
         class Stash {
         protected:
-            std::map<nd4j::graph::KeyPair, nd4j::NDArray<T>*> _stash;
-            std::vector<nd4j::NDArray<T>*> _handles;
+            std::map<nd4j::graph::KeyPair, nd4j::NDArray*> _stash;
+            std::vector<nd4j::NDArray*> _handles;
 
         public:
             Stash();
             ~Stash();
 
             //void storeArray(nd4j::graph::Block<T>& block, const char *name, nd4j::NDArray<T> *array);
-            void storeArray(int nodeId, const char *name, nd4j::NDArray<T> *array);
+            void storeArray(int nodeId, const char *name, nd4j::NDArray *array);
 
             //bool checkStash(nd4j::graph::Block<T>& block, const char *name);
             bool checkStash(int nodeId, const char *name);
 
             //nd4j::NDArray<T>* extractArray(nd4j::graph::Block<T>& block, const char *name);
-            nd4j::NDArray<T>* extractArray(int nodeId, const char *name);
+            nd4j::NDArray* extractArray(int nodeId, const char *name);
 
             void clear();
         };
