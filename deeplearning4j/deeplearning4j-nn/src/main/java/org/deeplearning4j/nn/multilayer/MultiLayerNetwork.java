@@ -341,7 +341,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (!layer.isPretrainLayer())
             return;
 
-        if(numEpochs > 1 && iter.resetSupported())
+        if(numEpochs > 1 && !iter.resetSupported())
             throw new IllegalStateException("Cannot fit multiple epochs (" + numEpochs + ") on an iterator that doesn't support resetting");
 
         if (!iter.hasNext() && iter.resetSupported()) {
