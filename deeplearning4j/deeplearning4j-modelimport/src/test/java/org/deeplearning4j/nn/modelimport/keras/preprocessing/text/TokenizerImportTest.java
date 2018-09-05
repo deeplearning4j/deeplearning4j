@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Import Keras Tokenizer
@@ -44,7 +45,7 @@ public class TokenizerImportTest {
         KerasTokenizer tokenizer = KerasTokenizer.fromJson(configResource.getFile().getAbsolutePath());
 
         assertEquals(100, tokenizer.getNumWords().intValue());
-        assertEquals(tokenizer.isLower();
+        assertTrue(tokenizer.isLower());
         assertEquals(" ", tokenizer.getSplit());
         assertFalse(tokenizer.isCharLevel());
         assertEquals(0, tokenizer.getDocumentCount().intValue());
