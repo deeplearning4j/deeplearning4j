@@ -37,12 +37,14 @@
     </dependencies>
 
     <properties>
+        <!-- Hack to load only at runtime platform specific dependency with Maven -->
         <dependency.groupId>${project.groupId}</dependency.groupId>
         <dependency.artifactId>${project.artifactId}</dependency.artifactId>
         <dependency.version>${project.version}</dependency.version>
         <dependency.packaging>${project.packaging}</dependency.packaging>
         <dependency.classifier>${javacpp.platform}${javacpp.platform.extension}</dependency.classifier>
-        <dependency.platform></dependency.platform>
+        <dependency.platform></dependency.platform>   <!-- Same as ${javacpp.platform} but without breaking Gradle, sbt, etc -->
+        <dependency.platform2></dependency.platform2> <!-- Same as ${dependency.platform} minus Android, iOS, etc -->
         <javacpp.platform.android-arm>android-arm</javacpp.platform.android-arm>
         <javacpp.platform.android-arm64>android-arm64</javacpp.platform.android-arm64>
         <javacpp.platform.android-x86>android-x86</javacpp.platform.android-x86>
@@ -178,40 +180,7 @@
         </pluginManagement>
     </build>
 
-    <!-- Disable platform dependency when building the artifact for the dependency itself -->
     <profiles>
-        <profile>
-            <id>no-platform-dependency</id>
-            <activation>
-                <file>
-                    <exists>${basedir}</exists>
-                </file>
-            </activation>
-            <properties>
-                <javacpp.platform.android-arm></javacpp.platform.android-arm>
-                <javacpp.platform.android-arm64></javacpp.platform.android-arm64>
-                <javacpp.platform.android-x86></javacpp.platform.android-x86>
-                <javacpp.platform.android-x86_64></javacpp.platform.android-x86_64>
-                <javacpp.platform.ios-arm></javacpp.platform.ios-arm>
-                <javacpp.platform.ios-arm64></javacpp.platform.ios-arm64>
-                <javacpp.platform.ios-x86></javacpp.platform.ios-x86>
-                <javacpp.platform.ios-x86_64></javacpp.platform.ios-x86_64>
-                <javacpp.platform.linux-armhf></javacpp.platform.linux-armhf>
-                <javacpp.platform.linux-arm64></javacpp.platform.linux-arm64>
-                <javacpp.platform.linux-ppc64le></javacpp.platform.linux-ppc64le>
-                <javacpp.platform.linux-x86></javacpp.platform.linux-x86>
-                <javacpp.platform.linux-x86_64></javacpp.platform.linux-x86_64>
-                <javacpp.platform.macosx-x86_64></javacpp.platform.macosx-x86_64>
-                <javacpp.platform.windows-x86></javacpp.platform.windows-x86>
-                <javacpp.platform.windows-x86_64></javacpp.platform.windows-x86_64>
-                <dependency.groupId>${project.parent.groupId}</dependency.groupId>
-                <dependency.artifactId>${project.parent.artifactId}</dependency.artifactId>
-                <dependency.version>${project.parent.version}</dependency.version>
-                <dependency.packaging>pom</dependency.packaging>
-                <dependency.classifier></dependency.classifier>
-            </properties>
-        </profile>
-
         <profile>
             <id>javacpp-platform-default</id>
             <activation>
@@ -221,6 +190,7 @@
             </activation>
             <properties>
                 <dependency.platform>${javacpp.platform}</dependency.platform>
+                <dependency.platform2>${javacpp.platform}</dependency.platform2>
             </properties>
         </profile>
 
@@ -250,6 +220,7 @@
                 <javacpp.platform.windows-x86_64>${javacpp.platform}</javacpp.platform.windows-x86_64>
                 <dependency.classifier>${javacpp.platform}${javacpp.platform.extension}</dependency.classifier>
                 <dependency.platform>${javacpp.platform}</dependency.platform>
+                <dependency.platform2>${javacpp.platform}</dependency.platform2>
             </properties>
         </profile>
 
@@ -280,6 +251,7 @@
                 <javacpp.platform.windows-x86_64>${os.name}-${os.arch}</javacpp.platform.windows-x86_64>
                 <dependency.classifier>${os.name}-${os.arch}${javacpp.platform.extension}</dependency.classifier>
                 <dependency.platform>${os.name}-${os.arch}</dependency.platform>
+                <dependency.platform2>${os.name}-${os.arch}</dependency.platform2>
             </properties>
         </profile>
 
@@ -310,6 +282,7 @@
                 <javacpp.platform.windows-x86_64></javacpp.platform.windows-x86_64>
                 <dependency.classifier></dependency.classifier>
                 <dependency.platform></dependency.platform>
+                <dependency.platform2></dependency.platform2>
             </properties>
         </profile>
 
@@ -326,6 +299,7 @@
             <javacpp.platform.properties>android-arm-clang</javacpp.platform.properties>
             <javacpp.platform.root>${env.ANDROID_NDK}</javacpp.platform.root>
             <javacpp.platform.compiler>toolchains/llvm/prebuilt/${os.name}-${os.arch}/bin/clang++</javacpp.platform.compiler>
+            <dependency.platform2></dependency.platform2>
           </properties>
         </profile>
         <profile>
@@ -340,6 +314,7 @@
             <javacpp.platform.properties>android-arm64-clang</javacpp.platform.properties>
             <javacpp.platform.root>${env.ANDROID_NDK}</javacpp.platform.root>
             <javacpp.platform.compiler>toolchains/llvm/prebuilt/${os.name}-${os.arch}/bin/clang++</javacpp.platform.compiler>
+            <dependency.platform2></dependency.platform2>
           </properties>
         </profile>
         <profile>
@@ -354,6 +329,7 @@
             <javacpp.platform.properties>android-x86-clang</javacpp.platform.properties>
             <javacpp.platform.root>${env.ANDROID_NDK}</javacpp.platform.root>
             <javacpp.platform.compiler>toolchains/llvm/prebuilt/${os.name}-${os.arch}/bin/clang++</javacpp.platform.compiler>
+            <dependency.platform2></dependency.platform2>
           </properties>
         </profile>
         <profile>
@@ -368,6 +344,33 @@
             <javacpp.platform.properties>android-x86_64-clang</javacpp.platform.properties>
             <javacpp.platform.root>${env.ANDROID_NDK}</javacpp.platform.root>
             <javacpp.platform.compiler>toolchains/llvm/prebuilt/${os.name}-${os.arch}/bin/clang++</javacpp.platform.compiler>
+            <dependency.platform2></dependency.platform2>
+          </properties>
+        </profile>
+        <profile>
+          <id>ios-arm64</id>
+          <activation>
+            <property>
+              <name>javacpp.platform</name>
+              <value>ios-arm64</value>
+            </property>
+          </activation>
+          <properties>
+            <javacpp.platform.properties>ios-arm64</javacpp.platform.properties>
+            <dependency.platform2></dependency.platform2>
+          </properties>
+        </profile>
+        <profile>
+          <id>ios-x86_64</id>
+          <activation>
+            <property>
+              <name>javacpp.platform</name>
+              <value>ios-x86_64</value>
+            </property>
+          </activation>
+          <properties>
+            <javacpp.platform.properties>ios-x86_64</javacpp.platform.properties>
+            <dependency.platform2></dependency.platform2>
           </properties>
         </profile>
         <profile>
@@ -382,7 +385,55 @@
             <javacpp.platform.properties>linux-armhf</javacpp.platform.properties>
             <javacpp.platform.root>/home/almanac/raspberrypi/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf</javacpp.platform.root>
             <javacpp.platform.compiler>bin/arm-linux-gnueabihf-g++</javacpp.platform.compiler>
+            <dependency.platform2></dependency.platform2>
           </properties>
+        </profile>
+        <profile>
+          <id>linux-ppc64le-default</id>
+          <activation>
+            <property>
+              <name>javacpp.platform</name>
+              <value>linux-ppc64le</value>
+            </property>
+          </activation>
+          <properties>
+            <javacpp.platform.properties>linux-ppc64le</javacpp.platform.properties>
+            <javacpp.platform.compiler>powerpc64le-linux-gnu-g++</javacpp.platform.compiler>
+            <dependency.platform2></dependency.platform2>
+          </properties>
+        </profile>
+
+        <!-- Disable platform dependency when building the artifact for the dependency itself -->
+        <profile>
+            <id>no-platform-dependency</id>
+            <activation>
+                <file>
+                    <exists>${basedir}</exists>
+                </file>
+            </activation>
+            <properties>
+                <javacpp.platform.android-arm></javacpp.platform.android-arm>
+                <javacpp.platform.android-arm64></javacpp.platform.android-arm64>
+                <javacpp.platform.android-x86></javacpp.platform.android-x86>
+                <javacpp.platform.android-x86_64></javacpp.platform.android-x86_64>
+                <javacpp.platform.ios-arm></javacpp.platform.ios-arm>
+                <javacpp.platform.ios-arm64></javacpp.platform.ios-arm64>
+                <javacpp.platform.ios-x86></javacpp.platform.ios-x86>
+                <javacpp.platform.ios-x86_64></javacpp.platform.ios-x86_64>
+                <javacpp.platform.linux-armhf></javacpp.platform.linux-armhf>
+                <javacpp.platform.linux-arm64></javacpp.platform.linux-arm64>
+                <javacpp.platform.linux-ppc64le></javacpp.platform.linux-ppc64le>
+                <javacpp.platform.linux-x86></javacpp.platform.linux-x86>
+                <javacpp.platform.linux-x86_64></javacpp.platform.linux-x86_64>
+                <javacpp.platform.macosx-x86_64></javacpp.platform.macosx-x86_64>
+                <javacpp.platform.windows-x86></javacpp.platform.windows-x86>
+                <javacpp.platform.windows-x86_64></javacpp.platform.windows-x86_64>
+                <dependency.groupId>${project.parent.groupId}</dependency.groupId>
+                <dependency.artifactId>${project.parent.artifactId}</dependency.artifactId>
+                <dependency.version>${project.parent.version}</dependency.version>
+                <dependency.packaging>pom</dependency.packaging>
+                <dependency.classifier></dependency.classifier>
+            </properties>
         </profile>
 
         <profile>
