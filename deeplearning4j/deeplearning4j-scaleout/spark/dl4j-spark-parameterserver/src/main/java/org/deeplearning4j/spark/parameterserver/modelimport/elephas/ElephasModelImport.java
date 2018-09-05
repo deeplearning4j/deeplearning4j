@@ -24,13 +24,14 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.spark.api.RDDTrainingApproach;
-import org.deeplearning4j.spark.api.TrainingMaster;
+import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
+import org.deeplearning4j.spark.impl.repartitioner.DefaultRepartitioner;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingMaster;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 
 import java.io.IOException;
 import java.util.Map;
@@ -46,7 +47,7 @@ public class ElephasModelImport {
 
     private static final String DISTRIBUTED_CONFIG = "distributed_config";
     private static final RDDTrainingApproach APPROACH = RDDTrainingApproach.Export;
-    private static final int WORKERS_PER_NODE = 4;
+    private static final int WORKERS_PER_NODE = -1;
     private static final double UPDATES_THRESHOLD = 1e-3;
 
     /**
@@ -111,21 +112,39 @@ public class ElephasModelImport {
         Integer numWorkers = (Integer) innerConfig.get("num_workers");
         int batchSize = (int) innerConfig.get("batch_size");
         String mode = (String) innerConfig.get("mode");
+        int rddDataSetNumExamples = batchSize;
 
         TrainingMaster tm;
-        if (mode.equals("synchronous"))
-            tm = new ParameterAveragingTrainingMaster.Builder(numWorkers, batchSize)
+        if (mode.equals("synchronous")) {
+            tm = new ParameterAveragingTrainingMaster.Builder(numWorkers, rddDataSetNumExamples)
                     .rddTrainingApproach(APPROACH)
                     .batchSizePerWorker(batchSize)
+                    .aggregationDepth(2) // we leave this as default
+                    .averagingFrequency(1) // TODO in number of batches
+                    .workerPrefetchNumBatches(0) // default, no pre-fetching
+                    .repartionData(Repartition.Always)
+                    .repartitionStrategy(RepartitionStrategy.Balanced)
+                    .saveUpdater(false)
+                    .collectTrainingStats(false)
                     .build();
-        else {
+        } else {
             VoidConfiguration voidConfiguration = VoidConfiguration.builder()
                     .build();
-            tm = new SharedTrainingMaster.Builder(voidConfiguration, batchSize)
+            tm = new SharedTrainingMaster.Builder(voidConfiguration, rddDataSetNumExamples)
+                    .shakeFrequency(0) // TODO disabled by default
+                    .minUpdatesThreshold(1e-5) // TODO
                     .updatesThreshold(UPDATES_THRESHOLD)
                     .rddTrainingApproach(APPROACH)
                     .batchSizePerWorker(batchSize)
-                    .workersPerNode(WORKERS_PER_NODE)
+                    .workersPerNode(WORKERS_PER_NODE) // TODO
+                    .rddTrainingApproach(RDDTrainingApproach.Export)
+                    .repartitioner(new DefaultRepartitioner())
+                    .collectTrainingStats(false)
+                    .stepDelay(50) // TODO
+                    .stepTrigger(0.05) // TODO
+                    .workerPrefetchNumBatches(0) // default, no pre-fetching
+                    .thresholdStep(1e-5) // TODO
+                    .transport(new RoutedTransport())
                     .build();
         }
         return tm;
