@@ -654,7 +654,7 @@ public class BidirectionalTest extends BaseDL4JTest {
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "RNN")
                 .setOutputs("OUT")
                 .pretrain(true)
-                .backprop(true);
+                ;
 
         ComputationGraph net = new ComputationGraph(builder.build());
         net.init();

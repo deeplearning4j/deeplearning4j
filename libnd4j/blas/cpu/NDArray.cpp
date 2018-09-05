@@ -211,7 +211,16 @@ template <typename T>
     if (workspace == nullptr) {
         _buffer =  new T[this->_length];
         _shapeInfo = new Nd4jLong[shapeLength];
-    } else {
+    }
+    else if (shape::isEmpty(const_cast<Nd4jLong*>(shapeInfo)))         {
+        _buffer    = nullptr;
+        _shapeInfo = reinterpret_cast<Nd4jLong *>(_workspace->allocateBytes(shape::shapeInfoByteLength(const_cast<Nd4jLong*>(shapeInfo))));
+
+        _workspace = workspace;
+
+        triggerAllocationFlag(false, true);
+    }
+    else {
         _buffer = reinterpret_cast<T*>(_workspace->allocateBytes(this->_length * sizeOfT()));
         _shapeInfo = reinterpret_cast<Nd4jLong *>(_workspace->allocateBytes(shape::shapeInfoByteLength(const_cast<Nd4jLong*>(shapeInfo))));
     }
@@ -882,7 +891,17 @@ void NDArray<T>::replacePointers(T *buffer, Nd4jLong *shapeInfo, const bool rele
     template<typename T>
     void NDArray<T>::assign(const NDArray<T> *other) {
         if (this->isScalar() && other->isScalar()) {
-            this ->_buffer[0] = other->_buffer[0];
+            if (!other->isEmpty())
+                this ->_buffer[0] = other->_buffer[0];
+            else {
+                if (this->_buffer != nullptr)
+                    RELEASE(_buffer, _workspace);
+                _buffer = nullptr;
+                _length = 0;
+                ArrayOptions::setPropertyBit(this->_shapeInfo, ARRAY_EMPTY);
+                this->triggerAllocationFlag(false, true);
+
+            }
             return;
         } else if (other->isScalar()) {
             this->assign(other->_buffer[0]);

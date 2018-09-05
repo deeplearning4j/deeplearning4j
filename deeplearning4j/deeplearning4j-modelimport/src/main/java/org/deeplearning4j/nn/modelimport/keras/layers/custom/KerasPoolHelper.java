@@ -27,7 +27,7 @@ import java.util.Map;
 
 /**
  * Custom PoolHelper layer developed for importing GoogLeNet. This layer strips
- * the first column and row of the input. See https://gist.github.com/joelouismarino/a2ede9ab3928f999575423b9887abd14.
+ * the first column and row of the input. See <a href="https://gist.github.com/joelouismarino/a2ede9ab3928f999575423b9887abd14">https://gist.github.com/joelouismarino/a2ede9ab3928f999575423b9887abd14</a>.
  *
  * @author Justin Long (crockpotveggies)
  */

@@ -30,6 +30,7 @@
 #include <graph/Graph.h>
 #include <graph/ResultWrapper.h>
 #include <sys/stat.h>
+#include <graph/ExecutionResult.h>
 
 #define TF_INPUT "Placeholder"
 #define TF_CONST "Const"
@@ -63,6 +64,7 @@ namespace nd4j {
         */
         static nd4j::graph::ResultWrapper* executeFlatBuffer(Nd4jPointer pointer);
 
+        static flatbuffers::Offset<FlatResult> execute(Graph<T> *graph, flatbuffers::FlatBufferBuilder &builder, const FlatInferenceRequest* request);
 
         static Graph<T> *importFromTensorFlow(const char *fileName);
 

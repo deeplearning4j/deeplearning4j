@@ -43,15 +43,14 @@ import org.nd4j.util.OneTimeLogger;
 import java.util.*;
 
 /**
- * Batch normalization layer.
- * Rerences:
- *  http://arxiv.org/pdf/1502.03167v3.pdf
- *  http://arxiv.org/pdf/1410.7455v8.pdf
- *  https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html
+ * Batch normalization layer.<br>
+ * Rerences:<br>
+ *  <a href="http://arxiv.org/pdf/1502.03167v3.pdf">http://arxiv.org/pdf/1502.03167v3.pdf</a><br>
+ *  <a href="http://arxiv.org/pdf/1410.7455v8.pdf">http://arxiv.org/pdf/1410.7455v8.pdf</a><br>
+ *  <a href="https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html">
+ *      https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html</a>
  *
- * tried this approach but results did not match https://cthorey.github.io/backpropagation/
- *
- * ideal to apply this between linear and non-linear transformations in layers it follows
+ * Batch normalization should be applied between the output of a layer (with identity activation) and the activation function.
  **/
 @Slf4j
 public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.layers.BatchNormalization> {

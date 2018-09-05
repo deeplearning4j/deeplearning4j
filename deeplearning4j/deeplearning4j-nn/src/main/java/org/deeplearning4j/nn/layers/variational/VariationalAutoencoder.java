@@ -53,7 +53,7 @@ import static org.deeplearning4j.nn.params.VariationalAutoencoderParamInitialize
 /**
  * Variational Autoencoder layer
  * <p>
- * See: Kingma & Welling, 2013: Auto-Encoding Variational Bayes - https://arxiv.org/abs/1312.6114
+ * See: Kingma & Welling, 2013: Auto-Encoding Variational Bayes - <a href="https://arxiv.org/abs/1312.6114">https://arxiv.org/abs/1312.6114</a>
  * <p>
  * This implementation allows multiple encoder and decoder layers, the number and sizes of which can be set independently.
  * <p>

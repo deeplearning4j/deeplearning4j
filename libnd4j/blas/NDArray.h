@@ -736,7 +736,7 @@ namespace nd4j {
         *  returns an array which is result of broadcasting of this and other arrays 
         *  other - input array
         */
-		NDArray<T>*  broadcast(const NDArray<T>& other);
+		NDArray<T>* broadcast(const NDArray<T>& other);
 		
         /**
         *  check whether array's rows (arg=0) or columns (arg=1) create orthogonal basis

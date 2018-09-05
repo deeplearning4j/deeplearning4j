@@ -45,7 +45,7 @@ import static org.bytedeco.javacpp.opencv_imgproc.COLOR_BGR2YCrCb;
  * Reference: Learning Multiple Layers of Features from Tiny Images, Alex Krizhevsky, 2009.
  *
  * There is a special preProcessor used to normalize the dataset based on Sergey Zagoruyko example
- * https://github.com/szagoruyko/cifar.torch
+ * <a href="https://github.com/szagoruyko/cifar.torch">https://github.com/szagoruyko/cifar.torch</a>
  */
 public class CifarLoader extends NativeImageLoader implements Serializable {
     public static final int NUM_TRAIN_IMAGES = 50000;
@@ -262,7 +262,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
 
     /**
      * Preprocess and store cifar based on successful Torch approach by Sergey Zagoruyko
-     * Reference: https://github.com/szagoruyko/cifar.torch
+     * Reference: <a href="https://github.com/szagoruyko/cifar.torch">https://github.com/szagoruyko/cifar.torch</a>
      */
     public opencv_core.Mat convertCifar(Mat orgImage) {
         numExamples++;
@@ -286,7 +286,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
 
     /**
      * Normalize and store cifar based on successful Torch approach by Sergey Zagoruyko
-     * Reference: https://github.com/szagoruyko/cifar.torch
+     * Reference: <a href="https://github.com/szagoruyko/cifar.torch">https://github.com/szagoruyko/cifar.torch</a>
      */
     public void normalizeCifar(File fileName) {
         DataSet result = new DataSet();

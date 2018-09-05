@@ -98,7 +98,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                                                             .weightInit(WeightInit.DISTRIBUTION)
                                                             .dist(new NormalDistribution(0, 1.0)).updater(new NoOp())
                                                             .build())
-                                            .pretrain(false).backprop(true).build();
+                                            .build();
 
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();
@@ -202,7 +202,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                 NeuralNetConfiguration.ListBuilder conf2 = conf.list().layer(0, layer)
                         .layer(1, new RnnOutputLayer.Builder(lf).activation(outputActivation)
                                 .nIn(layerSize).nOut(nOut).build())
-                        .pretrain(false).backprop(true);
+                        ;
 
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf2.build());
                 mln.init();
@@ -272,7 +272,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                                 .updater(new NoOp()).list().layer(0, layer)
                                 .layer(1, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX)
                                                 .nIn(layerSize).nOut(nOut).build())
-                                .pretrain(false).backprop(true).build();
+                                .build();
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
 
@@ -355,7 +355,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                                     .layer(1, new RnnOutputLayer.Builder(lf).activation(outputActivation).nIn(layerSize)
                                                     .nOut(nOut).weightInit(WeightInit.DISTRIBUTION)
                                                     .dist(new NormalDistribution(0, 1)).updater(new NoOp()).build())
-                                    .pretrain(false).backprop(true).build();
+                                    .build();
 
 
                     MultiLayerNetwork mln = new MultiLayerNetwork(mlc);
@@ -422,7 +422,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                             .layer(1, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX)
                                             .nIn(layerSize).nOut(nOut).weightInit(WeightInit.DISTRIBUTION)
                                             .dist(new NormalDistribution(0, 1)).updater(new NoOp()).build())
-                            .pretrain(false).backprop(true).build();
+                            .build();
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();
 
@@ -470,7 +470,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                         .layer(3, new GravesLSTM.Builder().nIn(4).nOut(3).activation(Activation.TANH).build())
                         .layer(4, new RnnOutputLayer.Builder().lossFunction(LossFunction.MCXENT).nIn(3).nOut(nClasses)
                                         .activation(Activation.SOFTMAX).build())
-                        .setInputType(InputType.convolutional(10, 10, 3)).pretrain(false).backprop(true).build();
+                        .setInputType(InputType.convolutional(10, 10, 3)).build();
 
         //Here: ConvolutionLayerSetup in config builder doesn't know that we are expecting time series input, not standard FF input -> override it here
         conf.getInputPreProcessors().put(0, new RnnToCnnPreProcessor(10, 10, 3));

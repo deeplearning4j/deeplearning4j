@@ -26,7 +26,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>arbiter-ui_2.10</artifactId>
+    <artifactId>arbiter-ui_2.11</artifactId>
     <name>arbiter-ui</name>
 
     <properties>
@@ -114,7 +114,7 @@
 
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-ui_2.10</artifactId>
+            <artifactId>deeplearning4j-ui_2.11</artifactId>
             <version>${dl4j.version}</version>
         </dependency>
 
@@ -188,7 +188,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <scalaVersion>2.11.7</scalaVersion>
+                    <scalaVersion>${scala.version}</scalaVersion>
                 </configuration>
             </plugin>
 

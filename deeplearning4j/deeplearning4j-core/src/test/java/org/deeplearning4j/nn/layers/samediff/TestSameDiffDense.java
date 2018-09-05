@@ -23,9 +23,7 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
-import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -43,7 +41,6 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.Arrays;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -185,6 +182,7 @@ public class TestSameDiffDense extends BaseDL4JTest {
                         .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut)
                                 .weightInit(WeightInit.XAVIER)
                                 .activation(a).build())
+                        .validateOutputLayerConfig(false)
                         .build();
 
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -200,6 +198,7 @@ public class TestSameDiffDense extends BaseDL4JTest {
                         .layer(new DenseLayer.Builder().activation(a).nIn(nOut).nOut(nOut).build())
                         .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut)
                                 .activation(a).build())
+                        .validateOutputLayerConfig(false)
                         .build();
 
                 MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);

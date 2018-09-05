@@ -21,6 +21,7 @@ import org.nd4j.parameterserver.distributed.logic.storage.BaseStorage;
 /**
  * @author raver119@gmail.com
  */
+@Deprecated
 public class WordVectorStorage extends BaseStorage {
     public static final Integer SYN_0 = "syn0".hashCode();
     public static final Integer SYN_1 = "syn1".hashCode();

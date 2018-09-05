@@ -16,10 +16,7 @@
 
 package org.deeplearning4j.parallelism;
 
-import lombok.Data;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
@@ -50,6 +47,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.function.Supplier;
 
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -88,6 +86,9 @@ public class ParallelWrapper implements AutoCloseable {
          */
         CUSTOM,
     }
+
+    protected Supplier<INDArray> modelParamsSupplier;
+    protected Supplier<INDArray> updaterParamsSupplier;
 
     protected AtomicBoolean exceptionEncountered;
     protected Throwable exception;
@@ -229,6 +230,24 @@ public class ParallelWrapper implements AutoCloseable {
 
         long time1 = System.currentTimeMillis();
         while (iterator.hasNext() && !stopFit.get()) {
+            if (modelParamsSupplier != null) {
+                val params = modelParamsSupplier.get();
+                if (params != null) {
+                    if (zoo != null)
+                        for (val z: zoo)
+                            z.updateModelParams(params);
+                }
+            }
+
+            if (updaterParamsSupplier != null) {
+                val params = updaterParamsSupplier.get();
+                if (params != null) {
+                    if (zoo != null)
+                        for (val z: zoo)
+                            z.updateUpdaterParams(params);
+                }
+            }
+
             MultiDataSet dataSet = iterator.next();
             long time2 = System.currentTimeMillis();
 
@@ -520,6 +539,28 @@ public class ParallelWrapper implements AutoCloseable {
         log.info("Starting ParallelWrapper training round...");
         long intcnt = 0;
         while (iterator.hasNext() && !stopFit.get()) {
+            if (modelParamsSupplier != null) {
+                val params = modelParamsSupplier.get();
+                if (params != null) {
+                    if (zoo != null) {
+                        for (val z:zoo) {
+                            z.updateModelParams(params);
+                        }
+                    }
+                }
+            }
+
+            if (updaterParamsSupplier != null) {
+                val params = updaterParamsSupplier.get();
+                if (params != null) {
+                    if (zoo != null) {
+                        for (val z:zoo) {
+                            z.updateUpdaterParams(params);
+                        }
+                    }
+                }
+            }
+
             //while (intcnt < 1000) {
             intcnt++;
             DataSet dataSet = iterator.next();
@@ -682,6 +723,8 @@ public class ParallelWrapper implements AutoCloseable {
         protected TrainerContext trainerContext = new DefaultTrainerContext();
         protected Object[] trainerContextArgs;
         protected WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
+        protected Supplier<INDArray> modelParamsSupplier;
+        protected Supplier<INDArray> updaterParamsSupplier;
 
         protected GradientsAccumulator accumulator;
 
@@ -711,8 +754,37 @@ public class ParallelWrapper implements AutoCloseable {
             return this;
         }
 
+        /**
+         * This method allows to override model's WorkspaceMode configuration option
+         * @param mode
+         * @return
+         */
         public Builder workspaceMode(@NonNull WorkspaceMode mode) {
             this.workspaceMode = mode;
+            return this;
+        }
+
+        /**
+         * This method attaches supplier that'll probably provide model params update
+         *
+         * PLEASE NOTE: This method is mostly used in Spark environment as part of fault tolerance logic
+         * @param supplier
+         * @return
+         */
+        public Builder modelParamsSupplier(Supplier<INDArray> supplier) {
+            this.modelParamsSupplier = supplier;
+            return this;
+        }
+
+        /**
+         * This method attaches supplier that'll probably provide updater params update
+         *
+         * PLEASE NOTE: This method is mostly used in Spark environment as part of fault tolerance logic
+         * @param supplier
+         * @return
+         */
+        public Builder updaterParamsSupplier(Supplier<INDArray> supplier) {
+            this.updaterParamsSupplier = supplier;
             return this;
         }
 
@@ -789,10 +861,10 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
         /**
-         *  This method allows you to specify training mode for this instance of PW.
-         *  1) AVERAGING - stands for parameters averaging. Each X epochs weights and updaters state will be averaged across all models
-         *  2) SHARED_GRADIENTS - stands for gradients sharing - more details available here: https://deeplearning4j.org/distributed
-         *  3) CUSTOM - this method allows you to specify custom gradients accumulator, this giving you better control of configuration params for training.
+         *  This method allows you to specify training mode for this instance of PW.<br>
+         *  1) AVERAGING - stands for parameters averaging. Each X epochs weights and updaters state will be averaged across all models<br>
+         *  2) SHARED_GRADIENTS - stands for gradients sharing - more details available here: <a href="https://deeplearning4j.org/distributed">https://deeplearning4j.org/distributed</a><br>
+         *  3) CUSTOM - this method allows you to specify custom gradients accumulator, this giving you better control of configuration params for training.<br>
          *
          * @param mode
          * @return
@@ -840,6 +912,8 @@ public class ParallelWrapper implements AutoCloseable {
             wrapper.legacyAveraging = this.legacyAveraging;
             wrapper.isMQ = this.isMQ;
             wrapper.workspaceMode = this.workspaceMode;
+            wrapper.modelParamsSupplier = this.modelParamsSupplier;
+            wrapper.updaterParamsSupplier = this.updaterParamsSupplier;
 
 
             switch (trainingMode) {

@@ -212,7 +212,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <!--  <plugin>
+            <plugin>
                 <groupId>com.lewisd</groupId>
                 <artifactId>lint-maven-plugin</artifactId>
                 <version>0.0.11</version>
@@ -222,8 +222,9 @@
                     <rule>DuplicateDep</rule>
                     <rule>RedundantDepVersion</rule>
                     <rule>RedundantPluginVersion</rule>
+                    <!-- Rules incompatible with Java 9
                     <rule>VersionProp</rule>
-                    <rule>DotVersionProperty</rule>
+                    <rule>DotVersionProperty</rule> -->
                   </onlyRunRules>
                 </configuration>
                 <executions>
@@ -235,7 +236,7 @@
                     </goals>
                   </execution>
                 </executions>
-              </plugin>-->
+              </plugin>
             <plugin>
                 <groupId>net.revelc.code.formatter</groupId>
                 <artifactId>formatter-maven-plugin</artifactId>

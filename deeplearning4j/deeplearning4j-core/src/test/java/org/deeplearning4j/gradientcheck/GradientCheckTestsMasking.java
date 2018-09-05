@@ -31,7 +31,6 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -137,7 +136,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                                 .layer(1, new RnnOutputLayer.Builder(s.lf).activation(s.act).nIn(layerSize).nOut(s.nOut)
                                                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                                                 .updater(new NoOp()).build())
-                                .pretrain(false).backprop(true).build();
+                                .build();
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
 
@@ -180,7 +179,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                                             .activation(Activation.TANH).build())
                             .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).build())
-                            .pretrain(false).backprop(true).build();
+                            .build();
 
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();
@@ -266,6 +265,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                                                 .build())
                                 .layer(1, new OutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf)
                                                 .activation(a).build())
+                                .validateOutputLayerConfig(false)
                                 .build();
 
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -360,6 +360,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                                                 .build())
                                 .layer(1, new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf)
                                                 .activation(a).build())
+                                .validateOutputLayerConfig(false)
                                 .build();
 
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -390,7 +391,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                                                 .activation(Activation.TANH).build(), "in")
                                 .addLayer("1", new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf)
                                                 .activation(a).build(), "0")
-                                .setOutputs("1").build();
+                                .setOutputs("1").validateOutputLayerConfig(false).build();
 
                 ComputationGraph graph = new ComputationGraph(cg);
                 graph.init();
@@ -419,7 +420,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                 .list()
                 .layer(new LSTM.Builder().nIn(10).nOut(10).build())
                 .layer(new GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build())
-                .layer(new OutputLayer.Builder().nIn(10).nOut(10).build())
+                .layer(new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.recurrent(10))
                 .build();
 
@@ -470,7 +471,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                 .addInputs("in")
                 .layer("0", new LSTM.Builder().nIn(10).nOut(10).build(), "in")
                 .layer("1", new GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build(), "0")
-                .layer("out", new OutputLayer.Builder().nIn(10).nOut(10).build(), "1")
+                .layer("out", new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build(), "1")
                 .setOutputs("out")
                 .setInputTypes(InputType.recurrent(10))
                 .build();

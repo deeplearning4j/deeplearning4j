@@ -114,6 +114,13 @@ namespace nd4j {
                            double *beta_Array, double **C_Array, int *ldc_Array,
                            int group_count, int *group_size);
 
+#ifdef LAPACK_ROW_MAJOR
+#undef LAPACK_ROW_MAJOR
+#endif
+
+#ifdef LAPACK_COL_MAJOR
+#undef LAPACK_COL_MAJOR
+#endif
     enum LAPACK_LAYOUT { LAPACK_ROW_MAJOR=101, LAPACK_COL_MAJOR=102 };
 
     typedef int (*LapackeSgesvd)(LAPACK_LAYOUT matrix_layout, char jobu, char jobvt,

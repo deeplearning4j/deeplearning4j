@@ -68,8 +68,6 @@ public class TFGraphTestAllSameDiff {
             "transforms/atan2_3,1,4_1,2,4",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6142
             "reverse/shape5.*",
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6155
-            "reductions/argmin.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6172
             "pad/rank1.*",
             "pad/rank2Pone_const10",
@@ -84,12 +82,6 @@ public class TFGraphTestAllSameDiff {
             "identity_n.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6182
             "zeta.*",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6255
-            "losses/sparse_softmax.*",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6225
-            "svd/rank2_3,3_noFull_uv",
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6281
             "log_determinant/.*",
@@ -107,17 +99,35 @@ public class TFGraphTestAllSameDiff {
             //Not sure what's up here - "DEPTHWISECONV2D OP: wrong shape of weights array, expected is [-1, -1, 2, 2], but got [1, 2, 2, 2] instead !"
             "sepconv1d_layers/.*",
 
-            //Overlapping indices in the test case, need to fix
-            "scatter_nd_update/.*",
-
-            //scatter_nd: one minor validation issue mentioned tu Yurii (should validate vs. shape array length, not rank)
+            //scatter_nd: one minor validation issue mentioned tu Yurii, already fixed but not merged (should validate vs. shape array length, not rank)
             "scatter_nd/.*",
 
-            //SpaceToBatch - import issue? "SpaceToBatch: blocks supposed to be vector, but got 1D instead"
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6312
             "cnn1d_layers/channels_last_b1_k2_s1_d2_SAME",
 
-            //Need to look into this more: "vector::_M_range_check: __n (which is 0) >= this->size() (which is 0)
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6311
             "embedding_lookup/.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6315
+            "nth_element/.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6290
+            "unsorted_segment/.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6321
+            "broadcast_to/.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6322
+            "broadcast_dynamic_shape/.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6345
+            "where/cond_only_rank.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6346
+            "boolean_mask/.*",
+
+            //TODO floormod and truncatemod behave differently - i.e., "c" vs. "python" semantics. Need to check implementations too
+            "truncatemod/.*",
 
             //Not sure why these are failing yet
             "lrn/dr3.*",

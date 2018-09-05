@@ -80,6 +80,35 @@ public class SerializationUtils {
 
     }
 
+    /**
+     * Deserializes object from byte array
+     * @param bytes
+     * @param <T>
+     * @return
+     */
+    public static <T> T fromByteArray(byte[] bytes) {
+        return readObject(new ByteArrayInputStream(bytes));
+    }
+
+    /**
+     * Deserializes object from byte array
+     * @param bytes
+     * @param <T>
+     * @return
+     */
+    public static <T> T deserialize(byte[] bytes) {
+        return fromByteArray(bytes);
+    }
+
+    /**
+     * Deserializes object from InputStream
+     * @param bytes
+     * @param <T>
+     * @return
+     */
+    public static <T> T deserialize(InputStream is) {
+        return readObject(is);
+    }
 
     /**
      * Writes the object to the output stream
@@ -94,7 +123,16 @@ public class SerializationUtils {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
 
+    /**
+     * Writes the object to the output stream
+     * THIS DOES NOT FLUSH THE STREAM
+     * @param toSave the object to save
+     * @param writeTo the output stream to write to
+     */
+    public static void serialize(Serializable object, OutputStream os) {
+        writeObject(object, os);
     }
 
     public static void saveObject(Object toSave, File saveTo) {

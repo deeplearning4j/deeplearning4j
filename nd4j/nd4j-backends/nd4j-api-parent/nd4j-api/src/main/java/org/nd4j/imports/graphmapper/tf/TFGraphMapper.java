@@ -820,24 +820,19 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     public INDArray mapTensorProto(TensorProto tfTensor) {
         // building shape first
         int dims = tfTensor.getTensorShape().getDimCount();
-        int[] arrayShape = null;
         List<Integer> dimensions = new ArrayList<>();
-        // we allow vectors now
-        //if(dims == 1) {
-        //    dimensions.add(1);
-        //    dimensions.add( (int) Math.max(1,tfTensor.getTensorShape().getDim(0).getSize()));
-        // }
-
         for (int e = 0; e < dims; e++) {
             // TODO: eventually we want long shapes :(
             int dim = (int) tfTensor.getTensorShape().getDim(e).getSize();
-
             dimensions.add(dim);
         }
 
 
 
-        arrayShape = Ints.toArray(dimensions);
+        long[] arrayShape = new long[dimensions.size()];
+        for(int i=0; i< arrayShape.length; i++ ){
+            arrayShape[i] = dimensions.get(i);
+        }
 
         if (tfTensor.getDtype() == DataType.DT_INT32 || tfTensor.getDtype() == DataType.DT_INT16 || tfTensor.getDtype() == DataType.DT_INT8) {
             // valueOf
@@ -882,7 +877,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 if (arrayShape.length == 1)
                     return Nd4j.trueVector(fa);
 
-                val array = Nd4j.create(fa, arrayShape, 'c', 0);
+                val array = Nd4j.create(fa, arrayShape, 'c');
                 //log.debug("SUM1: {}", array.sumNumber());
                 //log.debug("Data: {}", Arrays.toString(array.data().asFloat()));
                 return array;
@@ -897,7 +892,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 float val = tfTensor.getFloatVal(0);
 
                 if (arrayShape == null || arrayShape.length == 0)
-                    arrayShape = new int[]{};
+                    arrayShape = new long[]{};
 
                 INDArray array = Nd4j.valueArrayOf(arrayShape, (double) val);
                 return array;
@@ -908,7 +903,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 }
 
                 // FIXME: we're missing float[] signature
-                INDArray array = Nd4j.create(Nd4j.createBuffer(jArray), arrayShape,  'c');
+                INDArray array = Nd4j.create(Nd4j.createBuffer(jArray), arrayShape);
                 return array;
             } else if (tfTensor.getTensorContent().size() > 0){
                 // binary representation
@@ -927,7 +922,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 if (arrayShape.length == 1)
                     return Nd4j.trueVector(fa);
 
-                val array = Nd4j.create(fa, arrayShape, 'c', 0);
+                val array = Nd4j.create(fa, arrayShape, 'c');
                 return array;
             }
         } else if (tfTensor.getDtype() == DataType.DT_DOUBLE) {
@@ -1006,7 +1001,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
                 if (arrayShape.length == 1)
                     return Nd4j.trueVector(fa);
-                val array = Nd4j.create(fa, arrayShape, 'c', 0);
+                val array = Nd4j.create(fa, arrayShape, 'c');
                 //log.debug("SUM1: {}", array.sumNumber());
                 //log.debug("Data: {}", Arrays.toString(array.data().asFloat()));
                 return array;

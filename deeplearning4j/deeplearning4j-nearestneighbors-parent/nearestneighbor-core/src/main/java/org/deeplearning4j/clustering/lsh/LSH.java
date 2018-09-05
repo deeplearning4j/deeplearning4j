@@ -24,7 +24,7 @@ import org.nd4j.linalg.api.ops.BaseAccumulation;
  *
  * See chapter 3 of :
  * _Mining Massive Datasets_, Anand Rajaraman and Jeffrey Ullman
- * http://www.mmds.org/
+ * <a href="http://www.mmds.org/">http://www.mmds.org/</a>
  *
  */
 public interface LSH {

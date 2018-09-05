@@ -17,7 +17,7 @@
 package org.deeplearning4j.nn.conf;
 
 /**
- * Workspace mode to use. See https://deeplearning4j.org/workspaces<br>
+ * Workspace mode to use. See <a href="https://deeplearning4j.org/workspaces">https://deeplearning4j.org/workspaces</a><br>
  * <br>
  * NONE: No workspaces will be used for the network. Highest memory use, least performance.<br>
  * ENABLED: Use workspaces.<br>

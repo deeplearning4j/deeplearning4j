@@ -135,8 +135,6 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testConv2d() {
-        OpValidationSuite.ignoreFailing();
-
         //avg pool, batch norm, conv2d, max pool 2d, pooling2d, upsampling
         //Tested elsewhere: deconv2d, depthwise2d, LRN, sconv2d
 
