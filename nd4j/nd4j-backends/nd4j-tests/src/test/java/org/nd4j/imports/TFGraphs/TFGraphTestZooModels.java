@@ -46,7 +46,7 @@ public class TFGraphTestZooModels {
         @Override
         public SameDiff apply(File file, String name) {
             try {
-                String s = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
+                String s = FileUtils.readFileToString(file, StandardCharsets.UTF_8).replaceAll("\r\n","\n");
                 String[] split = s.split("\n");
                 if(split.length != 2){
                     throw new IllegalStateException("Invalid file: expected 2 lines with URL and MD5 hash. Got " + split.length + " lines");
@@ -59,10 +59,16 @@ public class TFGraphTestZooModels {
                     localDir.mkdirs();
 
                 String filename = FilenameUtils.getName(url);
-                File localFile = new File(localDir, filename);
-                if(!localFile.exists())
-                    log.info("Starting resource download from: {}", url);
-                Downloader.download(name, new URL(url), localFile, md5, 3);
+                if(filename.endsWith(".pb")) {
+                    File localFile = new File(localDir, filename);
+                    if (!localFile.exists())
+                        log.info("Starting resource download from: {} to {}", url, localFile.getAbsolutePath());
+                    Downloader.download(name, new URL(url), localFile, md5, 3);
+                } else if(filename.endsWith(".tar.gz")){
+
+                } else {
+                    throw new IllegalStateException("Unknown format: " + filename);
+                }
 
                 return TFGraphTestAllHelper.LOADER.apply(localFile, name);
             } catch (IOException e){
@@ -83,7 +89,7 @@ public class TFGraphTestZooModels {
         this.modelName = modelName;
     }
 
-    @Test(timeout = 25000L)
+    @Test(timeout = 360000L)
     public void testOutputOnly() throws Exception {
         Nd4j.create(1);
 //        if (SKIP_SET.contains(modelName)) {
