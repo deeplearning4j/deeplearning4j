@@ -19,12 +19,12 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>spark_2.10</artifactId>
+        <artifactId>spark_2.11</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>1.0.0_spark_1-SNAPSHOT</version>
+        <version>1.0.0_spark_2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>dl4j-spark-ml_2.10</artifactId>
+    <artifactId>dl4j-spark-ml_2.11</artifactId>
     <packaging>jar</packaging>
 
     <name>dl4j-spark-ml</name>
@@ -55,7 +55,7 @@
 
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>dl4j-spark_2.10</artifactId>
+            <artifactId>dl4j-spark_2.11</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -74,7 +74,7 @@
 
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_2.10</artifactId>
+            <artifactId>spark-core_2.11</artifactId>
             <version>${spark.version}</version>
             <scope>provided</scope>
         </dependency>

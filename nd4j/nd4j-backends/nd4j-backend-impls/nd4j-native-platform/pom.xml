@@ -43,7 +43,7 @@
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>mkl-dnn-platform</artifactId>
-            <version>${mkl-dnn.version}-${javacpp-presets.version}</version>
+            <version>${mkl-dnn.javacpp.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
