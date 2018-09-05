@@ -655,6 +655,11 @@ NDArray<T>::NDArray(NDArray<T>&& other) noexcept {
         _shapeInfoD = shape;
     }
 
+    template<typename T>
+    nd4j::DataType NDArray<T>::dataType() {
+        return nd4j::ArrayOptions::dataType(this->shapeInfo());
+    }
+
 ////////////////////////////////////////////////////////////////////////
 // assignment operator
 template<typename T>

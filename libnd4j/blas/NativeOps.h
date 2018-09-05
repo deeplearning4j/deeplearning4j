@@ -261,20 +261,6 @@ public:
      * @param opNum
      * @param x
      * @param xShapeInfo
-     * @param extraParams
-     * @return
-     */
-    double execReduceScalar(Nd4jPointer *extraPointers,
-                                  int opNum,
-                                  void *x,
-                                  Nd4jLong *xInfo,
-                                  void *extraParams);
-
-    /**
-     *
-     * @param opNum
-     * @param x
-     * @param xShapeInfo
      * @param extraParamsVals
      * @param y
      * @param yShapeInfo
@@ -459,6 +445,7 @@ public:
                           void *z,
                           Nd4jLong *zShapeInfo,
                           void *scalars,
+                          Nd4jLong *scalarShapeInfo,
                           void *extraParams,
                           int *dimension,
                           int dimensionLength);
@@ -832,6 +819,7 @@ public:
     void average(Nd4jPointer *extras,
                        Nd4jPointer *dx,
                        void *dz,
+                       Nd4jLong *zShapeInfo,
                        int n,
                        Nd4jLong length,
                        bool propagate);
@@ -840,6 +828,7 @@ public:
     void accumulate(Nd4jPointer *extras,
                        Nd4jPointer *dx,
                        void *dz,
+                       Nd4jLong *zShapeInfo,
                        int n,
                        Nd4jLong length);
 
@@ -1683,31 +1672,7 @@ public:
      * @param zShapeInfo
      * @return
      */
-    void tearDouble(Nd4jPointer *extraPointers, double *x, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong
-     *tadShapeInfo, Nd4jLong *tadOffsets);
-
-    /**
-     * This method takes single N-dimensional tensor, and copies its TADs to target arrays
-     *
-     * @param x
-     * @param xShapeInfo
-     * @param targets
-     * @param zShapeInfo
-     * @return
-     */
-    void tearFloat(Nd4jPointer *extraPointers, float *x, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
-
-    /**
-     * This method takes single N-dimensional tensor, and copies its TADs to target arrays
-     *
-     * @param x
-     * @param xShapeInfo
-     * @param targets
-     * @param zShapeInfo
-     * @return
-     */
-    void tearHalf(Nd4jPointer *extraPointers, float16 *x, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
-
+    void tear(Nd4jPointer *extraPointers, void *x, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
     Nd4jLong encodeBitmapFloat(Nd4jPointer *extraPointers, float *dx, Nd4jLong N, int *dz, float threshold);
 
@@ -1771,7 +1736,7 @@ public:
     // customOp executioner
     int execCustomOp(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool isInplace);
     nd4j::ShapeList* calculateOutputShapes(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs);
-    nd4j::ShapeList* calculateOutputShapesDouble(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs);
+    nd4j::ShapeList* calculateOutputShapes(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs);
 
     void deleteShapeList(Nd4jPointer shapeList);
 
@@ -1788,9 +1753,9 @@ public:
     void deleteVariablesSet(Nd4jPointer pointer);
 
     // GraphState creation
-    Nd4jPointer getGraphStateDouble(Nd4jLong id);
+    Nd4jPointer getGraphState(Nd4jLong id);
 
-    void deleteGraphStateDouble(Nd4jPointer state);
+    void deleteGraphState(Nd4jPointer state);
 
     void deleteResultWrapper(Nd4jPointer ptr);
 

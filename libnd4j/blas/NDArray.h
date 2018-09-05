@@ -377,6 +377,12 @@ namespace nd4j {
         */
         NDArray<T> *dup(const char newOrder = 'a');
 
+        /**
+         * Returns data type of this array
+         * @return
+         */
+        nd4j::DataType dataType();
+
         /** 
         *  returns sum of all elements of array
         */
