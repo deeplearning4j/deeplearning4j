@@ -18,6 +18,7 @@ package org.deeplearning4j.text.movingwindow;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.word2vec.Word2Vec;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -57,7 +58,7 @@ public class WindowConverter {
         int length = vec.lookupTable().layerSize();
         List<String> words = window.getWords();
         int windowSize = vec.getWindow();
-        assert words.size() == vec.getWindow();
+        Preconditions.checkState(words.size() == vec.getWindow());
         INDArray ret = Nd4j.create(length * windowSize);
 
 

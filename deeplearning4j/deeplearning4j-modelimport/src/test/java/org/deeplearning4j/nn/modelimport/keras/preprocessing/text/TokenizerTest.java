@@ -21,6 +21,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+
 /**
  * Tests for Keras Tokenizer
  *
@@ -44,10 +47,10 @@ public class TokenizerTest {
         };
 
         tokenizer.fitOnTexts(texts);
-        assert tokenizer.getDocumentCount() == numDocs;
+        assertEquals(numDocs, tokenizer.getDocumentCount().intValue());
 
         INDArray matrix = tokenizer.textsToMatrix(texts, TokenizerMode.BINARY);
-        assert Arrays.equals(matrix.shape(), new long[] {numDocs, numWords});
+        assertArrayEquals(new long[] {numDocs, numWords}, matrix.shape());
 
         Integer[][] sequences = tokenizer.textsToSequences(texts);
 

@@ -22,6 +22,9 @@ import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.IOException;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
 /**
  * Import Keras Tokenizer
  *
@@ -40,11 +43,11 @@ public class TokenizerImportTest {
         ClassPathResource configResource = new ClassPathResource(path, classLoader);
         KerasTokenizer tokenizer = KerasTokenizer.fromJson(configResource.getFile().getAbsolutePath());
 
-        assert tokenizer.getNumWords() == 100;
-        assert tokenizer.isLower();
-        assert tokenizer.getSplit().equals(" ");
-        assert !tokenizer.isCharLevel();
-        assert tokenizer.getDocumentCount() == 0;
+        assertEquals(100, tokenizer.getNumWords().intValue());
+        assertEquals(tokenizer.isLower();
+        assertEquals(" ", tokenizer.getSplit());
+        assertFalse(tokenizer.isCharLevel());
+        assertEquals(0, tokenizer.getDocumentCount().intValue());
 
 
     }
