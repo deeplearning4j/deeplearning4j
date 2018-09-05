@@ -47,8 +47,6 @@ public class ElephasModelImport {
 
     private static final String DISTRIBUTED_CONFIG = "distributed_config";
     private static final RDDTrainingApproach APPROACH = RDDTrainingApproach.Export;
-    private static final int WORKERS_PER_NODE = -1;
-    private static final double UPDATES_THRESHOLD = 1e-3;
 
     /**
      * Load Elephas model stored using model.save(...) in case that the underlying Keras
@@ -106,44 +104,95 @@ public class ElephasModelImport {
         return KerasModelUtils.parseJsonString(initialModelJson);
     }
 
-    private static TrainingMaster getTrainingMaster(Map<String, Object> distributedProperties) {
+    private static TrainingMaster getTrainingMaster(Map<String, Object> distributedProperties)
+            throws InvalidKerasConfigurationException {
         Map innerConfig = (Map) distributedProperties.get("config");
 
         Integer numWorkers = (Integer) innerConfig.get("num_workers");
         int batchSize = (int) innerConfig.get("batch_size");
-        String mode = (String) innerConfig.get("mode");
-        int rddDataSetNumExamples = batchSize;
 
-        TrainingMaster tm;
+        String mode = "synchronous";
+        if (innerConfig.containsKey("mode")) {
+            mode = (String) innerConfig.get("mode");
+        } else {
+            throw new InvalidKerasConfigurationException("Couldn't find mode field.");
+        }
+
+        // TODO: Create InvalidElephasConfigurationException
+        boolean collectStats = false;
+        if (innerConfig.containsKey("collect_stats"))
+            collectStats = (boolean) innerConfig.get("collect_stats");
+
+
+    TrainingMaster tm;
         if (mode.equals("synchronous")) {
-            tm = new ParameterAveragingTrainingMaster.Builder(numWorkers, rddDataSetNumExamples)
-                    .rddTrainingApproach(APPROACH)
+            int averagingFrequency = 10; // TODO what's a useful default?
+            if (innerConfig.containsKey("averaging_frequency"))
+                averagingFrequency = (int) innerConfig.get("averaging_frequency");
+
+
+            tm = new ParameterAveragingTrainingMaster.Builder(numWorkers, batchSize)
+                    .collectTrainingStats(collectStats)
                     .batchSizePerWorker(batchSize)
+                    .averagingFrequency(averagingFrequency)
                     .aggregationDepth(2) // we leave this as default
-                    .averagingFrequency(1) // TODO in number of batches
                     .workerPrefetchNumBatches(0) // default, no pre-fetching
                     .repartionData(Repartition.Always)
+                    .rddTrainingApproach(APPROACH)
                     .repartitionStrategy(RepartitionStrategy.Balanced)
                     .saveUpdater(false)
-                    .collectTrainingStats(false)
                     .build();
         } else {
+            int shakeFrequency = 0;
+            if (innerConfig.containsKey("shake_frequency"))
+                shakeFrequency = (int) innerConfig.get("shake_frequency");
+
+            double minThreshold = 1e-5;
+            if (innerConfig.containsKey("min_threshold"))
+                minThreshold = (double) innerConfig.get("min_threshold");
+
+            double updateThreshold = 1e-3;
+            if (innerConfig.containsKey("update_threshold"))
+                minThreshold = (double) innerConfig.get("update_threshold");
+
+            int workersPerNode = -1;
+            if (innerConfig.containsKey("workers_per_node"))
+                workersPerNode = (int) innerConfig.get("workers_per_node");
+
+            int numBatchesPrefetch = 0;
+            if (innerConfig.containsKey("num_batches_prefetch"))
+                numBatchesPrefetch = (int) innerConfig.get("num_batches_prefetch");
+
+            int stepDelay = 50;
+            if (innerConfig.containsKey("step_delay"))
+                stepDelay = (int) innerConfig.get("step_delay");
+
+            double stepTrigger = 0.05;
+            if (innerConfig.containsKey("step_trigger"))
+                stepTrigger = (double) innerConfig.get("step_trigger");
+
+            double thresholdStep = 1e-5;
+            if (innerConfig.containsKey("threshold_step"))
+                thresholdStep = (double) innerConfig.get("threshold_step");
+
+
+
             VoidConfiguration voidConfiguration = VoidConfiguration.builder()
                     .build();
-            tm = new SharedTrainingMaster.Builder(voidConfiguration, rddDataSetNumExamples)
-                    .shakeFrequency(0) // TODO disabled by default
-                    .minUpdatesThreshold(1e-5) // TODO
-                    .updatesThreshold(UPDATES_THRESHOLD)
-                    .rddTrainingApproach(APPROACH)
+            tm = new SharedTrainingMaster.Builder(voidConfiguration, batchSize)
+                    .shakeFrequency(shakeFrequency)
+                    .minUpdatesThreshold(minThreshold)
+                    .updatesThreshold(updateThreshold)
                     .batchSizePerWorker(batchSize)
-                    .workersPerNode(WORKERS_PER_NODE) // TODO
+                    .workersPerNode(workersPerNode)
+                    .collectTrainingStats(collectStats)
+                    .stepDelay(stepDelay)
+                    .stepTrigger(stepTrigger)
+                    .workerPrefetchNumBatches(numBatchesPrefetch)
+                    .thresholdStep(thresholdStep)
+                    .rddTrainingApproach(APPROACH)
                     .rddTrainingApproach(RDDTrainingApproach.Export)
                     .repartitioner(new DefaultRepartitioner())
-                    .collectTrainingStats(false)
-                    .stepDelay(50) // TODO
-                    .stepTrigger(0.05) // TODO
-                    .workerPrefetchNumBatches(0) // default, no pre-fetching
-                    .thresholdStep(1e-5) // TODO
                     .transport(new RoutedTransport())
                     .build();
         }
