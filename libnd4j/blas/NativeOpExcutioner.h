@@ -403,8 +403,9 @@ public:
                               Nd4jLong *tadShapeInfo,
                               Nd4jLong *tadOffsets);
 
-    static void execAggregate(int opNum,
-                              void **arguments,
+    template <typename X>
+    static FORCEINLINE void execAggregate(int opNum,
+                              X **arguments,
                               int numArguments,
                               Nd4jLong **shapeArguments,
                               int numShapeArguments,
@@ -412,8 +413,10 @@ public:
                               int numIndexArguments,
                               int **intArrays,
                               int numIntArrays,
-                              void *realArguments,
-                              int numRealArguments);
+                              X *realArguments,
+                              int numRealArguments) {
+        functions::aggregate::AggregatedFunction<X>::exec(opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments);
+    }
 
     static void execRandom(int opNum,
                            Nd4jPointer state,

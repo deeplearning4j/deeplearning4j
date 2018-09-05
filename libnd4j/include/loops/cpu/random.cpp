@@ -26,7 +26,19 @@ namespace functions {
 
         template<typename X>
         template<typename OpClass>
-        void RandomFunction<X>::execTransform(Nd4jPointer state, X *x, Nd4jLong *xShapeBuffer, X *y, Nd4jLong *yShapeBuffer, X *z, Nd4jLong *zShapeBuffer, X *extraArguments) {
+        void RandomFunction<X>::execTransform(Nd4jPointer state,
+                void *vx,
+                Nd4jLong *xShapeBuffer,
+                void *vy,
+                Nd4jLong *yShapeBuffer,
+                void *vz,
+                Nd4jLong *zShapeBuffer,
+                void *vextraArguments) {
+
+            auto x = reinterpret_cast<X *>(vx);
+            auto y = reinterpret_cast<X *>(vy);
+            auto z = reinterpret_cast<X *>(vz);
+            auto extraArguments = reinterpret_cast<X *>(vextraArguments);
 
             if (OpClass::requiresSpecial) {
                 OpClass::specialOp(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
@@ -98,7 +110,16 @@ namespace functions {
 
         template<typename X>
         template<typename OpClass>
-        void RandomFunction<X>::execTransform(Nd4jPointer state, X *x, Nd4jLong *xShapeBuffer, X *z, Nd4jLong *zShapeBuffer, X *extraArguments) {
+        void RandomFunction<X>::execTransform(Nd4jPointer state,
+                void *vx,
+                Nd4jLong *xShapeBuffer,
+                void *vz,
+                Nd4jLong *zShapeBuffer,
+                void *vextraArguments) {
+            auto x = reinterpret_cast<X *>(vx);
+            auto z = reinterpret_cast<X *>(vz);
+            auto extraArguments = reinterpret_cast<X *>(vextraArguments);
+
             auto length = shape::length(zShapeBuffer);
             auto xEWS = shape::elementWiseStride(xShapeBuffer);
             auto zEWS = shape::elementWiseStride(zShapeBuffer);
@@ -155,7 +176,13 @@ namespace functions {
 
         template<typename X>
         template<typename OpClass>
-        void RandomFunction<X>::execTransform(Nd4jPointer state, X *z, Nd4jLong  *zShapeBuffer, X *extraArguments) {
+        void RandomFunction<X>::execTransform(Nd4jPointer state,
+                void *vz,
+                Nd4jLong  *zShapeBuffer,
+                void *vextraArguments) {
+            auto z = reinterpret_cast<X *>(vz);
+            auto extraArguments = reinterpret_cast<X *>(vextraArguments);
+
             auto length = shape::length(zShapeBuffer);
             auto ews = shape::elementWiseStride(zShapeBuffer);
 
@@ -200,22 +227,23 @@ namespace functions {
         }
 
         template<typename X>
-        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, X *x, Nd4jLong *xShapeBuffer, X *z, Nd4jLong *zShapeBuffer, X *extraArguments) {
+        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments) {
             DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), RANDOM_OPS)
         }
 
         template<typename X>
-        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, X *x, Nd4jLong *xShapeBuffer, X *y, Nd4jLong *yShapeBuffer, X *z, Nd4jLong *zShapeBuffer, X *extraArguments) {
+        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *y, Nd4jLong *yShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments) {
             DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), RANDOM_OPS)
         }
 
         template<typename X>
-        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, X *z, Nd4jLong *zShapeBuffer, X *extraArguments) {
+        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, void *z, Nd4jLong *zShapeBuffer, void *extraArguments) {
             DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, z, zShapeBuffer, extraArguments), RANDOM_OPS)
         }
 
         // FIXME: eventually we might want to get rid of that
 #ifndef __CLION_IDE__
+/*
         BUILD_CALL_1(template void RandomFunction<float>::execTransform, float, (Nd4jPointer state, float *x, Nd4jLong *xShapeBuffer, float *y, Nd4jLong *yShapeBuffer, float *z, Nd4jLong *zShapeBuffer, float *extraArguments), RANDOM_OPS)
         BUILD_CALL_1(template void RandomFunction<float16>::execTransform, float16, (Nd4jPointer state, float16 *x, Nd4jLong *xShapeBuffer, float16 *y, Nd4jLong *yShapeBuffer, float16 *z, Nd4jLong *zShapeBuffer, float16 *extraArguments), RANDOM_OPS)
         BUILD_CALL_1(template void RandomFunction<double>::execTransform, double, (Nd4jPointer state, double *x, Nd4jLong *xShapeBuffer, double *y, Nd4jLong *yShapeBuffer, double *z, Nd4jLong *zShapeBuffer, double *extraArguments), RANDOM_OPS)
@@ -227,6 +255,7 @@ namespace functions {
         BUILD_CALL_1(template void RandomFunction<float>::execTransform, float, (Nd4jPointer state, float *z, Nd4jLong *zShapeBuffer, float *extraArguments), RANDOM_OPS)
         BUILD_CALL_1(template void RandomFunction<float16>::execTransform, float16, (Nd4jPointer state, float16 *z, Nd4jLong *zShapeBuffer, float16 *extraArguments), RANDOM_OPS)
         BUILD_CALL_1(template void RandomFunction<double>::execTransform, double, (Nd4jPointer state, double *z, Nd4jLong *zShapeBuffer, double *extraArguments), RANDOM_OPS)
+*/
 #endif
 
         template class ND4J_EXPORT RandomFunction<float>;

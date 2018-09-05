@@ -55,17 +55,17 @@ namespace functions {
 #endif
 
             template<typename OpClass>
-            static void execTransform(Nd4jPointer state, X *x, Nd4jLong *xShapeBuffer, X *y, Nd4jLong *yShapeBuffer, X *z, Nd4jLong *zShapeBuffer, X *extraArguments);
+            static void execTransform(Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *y, Nd4jLong *yShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments);
 
             template<typename OpClass>
-            static void execTransform(Nd4jPointer state, X *x, Nd4jLong *xShapeBuffer, X *z, Nd4jLong *zShapeBuffer, X *extraArguments);
+            static void execTransform(Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments);
 
             template<typename OpClass>
-            static void execTransform(Nd4jPointer state, X *z, Nd4jLong *zShapeBuffer, X *extraArguments);
+            static void execTransform(Nd4jPointer state, void *z, Nd4jLong *zShapeBuffer, void *extraArguments);
 
-            static void execTransform(int opNum, Nd4jPointer state, X *x, Nd4jLong *xShapeBuffer, X *z, Nd4jLong *zShapeBuffer, X *extraArguments);
-            static void execTransform(int opNum, Nd4jPointer state, X *x, Nd4jLong *xShapeBuffer, X *y, Nd4jLong *yShapeBuffer, X *z, Nd4jLong *zShapeBuffer, X *extraArguments);
-            static void execTransform(int opNum, Nd4jPointer state, X *z, Nd4jLong *zShapeBuffer, X *extraArguments);
+            static void execTransform(int opNum, Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments);
+            static void execTransform(int opNum, Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *y, Nd4jLong *yShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments);
+            static void execTransform(int opNum, Nd4jPointer state, void *z, Nd4jLong *zShapeBuffer, void *extraArguments);
         };
     }
 }

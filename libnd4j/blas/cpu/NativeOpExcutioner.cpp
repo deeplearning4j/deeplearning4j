@@ -342,33 +342,33 @@ void NativeOpExcutioner::execTransform(int opNum, void *dx, Nd4jLong *xShapeInfo
 }
 
 
+
 ////////////////////////////////////////////////////////////////////////
-template<typename T>
-void NativeOpExcutioner<T>::execAggregate(int opNum, T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
-    functions::aggregate::AggregatedFunction<T>::exec(opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments);
+void NativeOpExcutioner::execRandom(int opNum, Nd4jPointer state, void *z, Nd4jLong *zShapeInfo, void *extraArguments) {
+    auto zType = nd4j::ArrayOptions::dataType(zShapeInfo);
+
+    BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::execTransform(opNum, state, z, zShapeInfo, extraArguments), FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
-template<typename T>
-void NativeOpExcutioner<T>::execRandom(int opNum, Nd4jPointer state, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
-    functions::random::RandomFunction<T>::execTransform(opNum, state, z, zShapeBuffer, extraArguments);
+void NativeOpExcutioner::execRandom(int opNum, Nd4jPointer state, void *x, Nd4jLong *xShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraArguments) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+
+    BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::execTransform(opNum, state, x, xShapeInfo, z, zShapeInfo, extraArguments), FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
-template<typename T>
-void NativeOpExcutioner<T>::execRandom(int opNum, Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
-    functions::random::RandomFunction<T>::execTransform(opNum, state, x, xShapeBuffer, z, zShapeBuffer, extraArguments);
+void NativeOpExcutioner::execRandom(int opNum, Nd4jPointer state, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+
+    BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::execTransform(opNum, state, x, xShapeInfo, y, yShapeBuffer, z, zShapeBuffer, extraArguments), FLOAT_TYPES);
 }
 
-////////////////////////////////////////////////////////////////////////
-template<typename T>
-void NativeOpExcutioner<T>::execRandom(int opNum, Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
-    functions::random::RandomFunction<T>::execTransform(opNum, state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
-}
+void NativeOpExcutioner::execReduce3(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParamsVals, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(yShapeInfo);
 
-template<typename T>
-void NativeOpExcutioner<T>::execReduce3(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParamsVals, T *y, Nd4jLong *yShapeInfo, T *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength) {
-    functions::reduce3::Reduce3<T>::exec(opNum, x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength);
+    BUILD_DOUBLE_SELECTOR(xType, yType, functions::reduce3::Reduce3, ::exec(opNum, x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength), LIBND4J_TYPES, LIBND4J_TYPES);
 }
 
 
