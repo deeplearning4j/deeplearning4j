@@ -123,10 +123,13 @@ public class ElephasModelImport {
         if (innerConfig.containsKey("collect_stats"))
             collectStats = (boolean) innerConfig.get("collect_stats");
 
+        String paramServer = "";
+        if (innerConfig.containsKey("parameter_server"))
+            paramServer = (String) innerConfig.get("parameter_server");
 
     TrainingMaster tm;
-        if (mode.equals("synchronous")) {
-            int averagingFrequency = 10; // TODO what's a useful default?
+        if (mode.equals("synchronous") || paramServer.equals("average")) {
+            int averagingFrequency = 5;
             if (innerConfig.containsKey("averaging_frequency"))
                 averagingFrequency = (int) innerConfig.get("averaging_frequency");
 
@@ -142,7 +145,7 @@ public class ElephasModelImport {
                     .repartitionStrategy(RepartitionStrategy.Balanced)
                     .saveUpdater(false)
                     .build();
-        } else {
+        } else if (mode.equals("asynchronous") || paramServer.equals("sharing")){
             int shakeFrequency = 0;
             if (innerConfig.containsKey("shake_frequency"))
                 shakeFrequency = (int) innerConfig.get("shake_frequency");
@@ -176,7 +179,6 @@ public class ElephasModelImport {
                 thresholdStep = (double) innerConfig.get("threshold_step");
 
 
-
             VoidConfiguration voidConfiguration = VoidConfiguration.builder()
                     .build();
             tm = new SharedTrainingMaster.Builder(voidConfiguration, batchSize)
@@ -195,6 +197,9 @@ public class ElephasModelImport {
                     .repartitioner(new DefaultRepartitioner())
                     .transport(new RoutedTransport())
                     .build();
+        } else {
+            throw new InvalidKerasConfigurationException("Unknown mode " + mode + " or unknown parameter server" +
+                    "type " + paramServer);
         }
         return tm;
     }
