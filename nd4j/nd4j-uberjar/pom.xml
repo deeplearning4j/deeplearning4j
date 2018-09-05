@@ -149,6 +149,13 @@
             </execution>
           </executions>
         </plugin>
+        <plugin>
+          <groupId>com.lewisd</groupId>
+            <artifactId>lint-maven-plugin</artifactId>
+              <configuration>
+                <failOnViolation>false</failOnViolation>
+              </configuration>
+        </plugin>
       </plugins>
     </build>
     <dependencies>
