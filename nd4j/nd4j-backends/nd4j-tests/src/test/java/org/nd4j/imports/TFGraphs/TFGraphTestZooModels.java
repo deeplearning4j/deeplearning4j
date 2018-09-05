@@ -3,21 +3,18 @@ package org.nd4j.imports.TFGraphs;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.BiFunction;
-import org.nd4j.linalg.function.Function;
-import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.resources.Downloader;
+import org.nd4j.util.ArchiveUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,6 +27,10 @@ import java.util.Map;
 @RunWith(Parameterized.class)
 @Slf4j
 public class TFGraphTestZooModels {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+    private static File currentTestDir;
 
     public static final File BASE_MODEL_DL_DIR = new File(System.getProperty("user.home"), ".nd4jtests");
 
@@ -59,18 +60,45 @@ public class TFGraphTestZooModels {
                     localDir.mkdirs();
 
                 String filename = FilenameUtils.getName(url);
-                if(filename.endsWith(".pb")) {
-                    File localFile = new File(localDir, filename);
-                    if (!localFile.exists())
-                        log.info("Starting resource download from: {} to {}", url, localFile.getAbsolutePath());
-                    Downloader.download(name, new URL(url), localFile, md5, 3);
-                } else if(filename.endsWith(".tar.gz")){
+                File localFile = new File(localDir, filename);
 
+                if(localFile.exists() && !Downloader.checkMD5OfFile(md5, localFile)) {
+                    log.info("Deleting local file: does not match MD5. {}", localFile.getAbsolutePath());
+                    localFile.delete();
+                }
+
+                if (!localFile.exists()) {
+                    log.info("Starting resource download from: {} to {}", url, localFile.getAbsolutePath());
+                    Downloader.download(name, new URL(url), localFile, md5, 3);
+                }
+
+                File modelFile;
+
+                if(filename.endsWith(".pb")) {
+                    modelFile = localFile;
+                } else if(filename.endsWith(".tar.gz")){
+                    List<String> files = ArchiveUtils.tarGzListFiles(localFile);
+                    String toExtract = null;
+                    for(String f : files){
+                        if(f.endsWith(".pb")){
+                            if(toExtract != null){
+                                throw new IllegalStateException("Found multiple .pb files in archive: " + toExtract + " and " + f);
+                            }
+                            toExtract = f;
+                        }
+                    }
+                    Preconditions.checkState(toExtract != null, "Found to .pb files in archive: %s", localFile.getAbsolutePath());
+
+                    Preconditions.checkNotNull(currentTestDir);
+                    modelFile = new File(currentTestDir, "tf_model.pb");
+                    ArchiveUtils.tarGzExtractSingleFile(localFile, modelFile, toExtract);
+                } else if(filename.endsWith(".zip")){
+                    throw new IllegalStateException("Not yet implemented");
                 } else {
                     throw new IllegalStateException("Unknown format: " + filename);
                 }
 
-                return TFGraphTestAllHelper.LOADER.apply(localFile, name);
+                return TFGraphTestAllHelper.LOADER.apply(modelFile, name);
             } catch (IOException e){
                 throw new RuntimeException(e);
             }
@@ -105,8 +133,8 @@ public class TFGraphTestZooModels {
 //        }
         Double precisionOverride = null;    //TFGraphTestAllHelper.testPrecisionOverride(modelName);
 
+        currentTestDir = testDir.newFolder();
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
                 LOADER, precisionOverride);
-        //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
     }
 }
