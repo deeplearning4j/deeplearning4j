@@ -553,16 +553,6 @@ namespace nd4j {
 #endif
 
         /**
-        *  apply OpName random operation to array 
-        *  buffer - pointer on RandomBuffer
-        *  y - optional input array
-        *  z - optional input array
-        *  extraArgs - extra parameters for operation
-        */
-        template<typename OpName>
-        void applyRandom(nd4j::random::RandomBuffer *buffer, NDArray* y = nullptr, NDArray* z = nullptr, T* extraArgs = nullptr);
-
-        /**
         *   apply transpose operation to the copy of this array, that is this array remains unaffected 
         */
         NDArray* transpose() const;
@@ -749,8 +739,7 @@ namespace nd4j {
         *  dimensions - vector of dimensions to reduce along
         *  extraArgs - extra parameters for operation
         */
-        template<typename OpName>
-        NDArray* applyIndexReduce(const std::vector<int>& dimensions, const T *extraParams = nullptr) const;
+        NDArray* applyIndexReduce(nd4j::IndexReduceOps op, const std::vector<int>& dimensions, const T *extraParams = nullptr) const;
 
         /**
         *  reduces dimensions in array relying on index operation OpName
@@ -758,16 +747,14 @@ namespace nd4j {
         *  dimensions - vector of dimensions to reduce along
         *  extraArgs - extra parameters for operation
         */
-        template<typename OpName>
-        void applyIndexReduce(const NDArray* target, const std::vector<int>& dimensions, const T *extraParams = nullptr) const;
+        void applyIndexReduce(nd4j::IndexReduceOps op, const NDArray* target, const std::vector<int>& dimensions, const T *extraParams = nullptr) const;
 
         /**
         *  apply reduce3 operation OpName to this and other array, return result in new output array
         *  other - input array
         *  extraArgs - extra parameters for operation
         */
-        template<typename OpName>
-        NDArray* applyReduce3(const NDArray* other, const T* extraParams = nullptr) const;
+        NDArray* applyReduce3(nd4j::Reduce3Ops op, const NDArray* other, const T* extraParams = nullptr) const;
 
         /**
         *  apply reduce3 operation OpName to this and other array, return result in new output array
@@ -775,8 +762,7 @@ namespace nd4j {
         *  dimensions - vector of dimensions to reduce along (tads not axis)
         *  extraArgs - extra parameters for operation
         */
-        template<typename OpName>
-        NDArray* applyAllReduce3(const NDArray* other, const std::vector<int>& dimensions, const T* extraParams = nullptr) const;
+        NDArray* applyAllReduce3(nd4j::Reduce3Ops op, const NDArray* other, const std::vector<int>& dimensions, const T* extraParams = nullptr) const;
                 
         /**
         *  apply reduce3 (exec) operation OpName to this and other array, return result in new output array
@@ -784,8 +770,7 @@ namespace nd4j {
         *  dimensions - vector of dimensions to reduce along (same as reduceAlongDimension)
         *  extraArgs - extra parameters for operation
         */
-        template<typename OpName>
-        NDArray* applyReduce3(const NDArray* other, const std::vector<int>& dimensions, const T* extraParams = nullptr) const;
+        NDArray* applyReduce3(nd4j::Reduce3Ops op, const NDArray* other, const std::vector<int>& dimensions, const T* extraParams = nullptr) const;
 
 
         /**
@@ -793,16 +778,13 @@ namespace nd4j {
         *  biasCorrected -  if true bias correction will be applied
         *  dimensions - vector of dimensions to calculate variance along
         */
-        template<typename OpName>
-        NDArray* varianceAlongDimension(const bool biasCorrected, const std::vector<int>& dimensions) const;
-        template<typename OpName>
+        NDArray* varianceAlongDimension(nd4j::VarianceOps op, const bool biasCorrected, const std::vector<int>& dimensions) const;
+
         NDArray* varianceAlongDimension(const bool biasCorrected, const std::initializer_list<int>& dimensions) const;
 
+        void varianceAlongDimension(nd4j::VarianceOps op, const NDArray* target, const bool biasCorrected, const std::vector<int>& dimensions);
 
-        template<typename OpName>
-        void varianceAlongDimension(const NDArray* target, const bool biasCorrected, const std::vector<int>& dimensions);
-        template<typename OpName>
-        void varianceAlongDimension(const NDArray* target, const bool biasCorrected, const std::initializer_list<int>& dimensions);
+        void varianceAlongDimension(nd4j::VarianceOps op, const NDArray* target, const bool biasCorrected, const std::initializer_list<int>& dimensions);
 
         /**
         *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
@@ -1007,8 +989,8 @@ namespace nd4j {
 
         ResultSet* allExamples()const ;        
 
-        template <typename OpName>
-        void saveResultOfBroadcast(const NDArray& x, const NDArray& y, const bool checkThisShape = false);
+        // FIXME: get rid of this signature
+        void saveResultOfBroadcast(nd4j::BroadcastOps op, const NDArray& x, const NDArray& y, const bool checkThisShape = false);
 
         /**
         *  default destructor
