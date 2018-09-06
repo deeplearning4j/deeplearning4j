@@ -31,7 +31,7 @@
 #include <array/ArrayOptions.h>
 #include <array/ArrayType.h>
 #include <array/ResultSet.h>
-#include <enum_boilerplate.h>
+#include <op_enums.h>
 
 
 namespace nd4j {
@@ -430,7 +430,7 @@ namespace nd4j {
         *  keepDims - if true then put unities in place of reduced dimensions
         *  extras - extra parameters
         */ 
-        void reduceAlongDimension(nd4j::ReduceOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, T *extras = nullptr) const;
+        void reduceAlongDimension(nd4j::ReduceOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, void *extras = nullptr) const;
 
         /**
         *  return variance of array elements set
@@ -472,7 +472,7 @@ namespace nd4j {
         *  other - second array necessary for pairwise operation
         *  extraParams - extra parameters for operation
         */
-        void applyPairwiseTransform(nd4j::PairwiseOps op, NDArray *other, T *extraParams);
+        void applyPairwiseTransform(nd4j::PairwiseOps op, NDArray *other, void *extraParams);
 
         /**
         *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in target array
@@ -480,7 +480,7 @@ namespace nd4j {
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */
-        void applyPairwiseTransform(nd4j::PairwiseOps op, NDArray *other, NDArray *target, T *extraParams);
+        void applyPairwiseTransform(nd4j::PairwiseOps op, NDArray *other, NDArray *target, void *extraParams);
 
         /**
         *  apply operation which requires broadcasting, broadcast a smaller array (tad) along  bigger one (this)
@@ -489,18 +489,18 @@ namespace nd4j {
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */               
-        void applyBroadcast(nd4j::BroadcastOps op, std::initializer_list<int> dimensions, const NDArray* tad, NDArray* target = nullptr, T* extraArgs = nullptr);
+        void applyBroadcast(nd4j::BroadcastOps op, std::initializer_list<int> dimensions, const NDArray* tad, NDArray* target = nullptr, void* extraArgs = nullptr);
 
-        void applyBroadcast(nd4j::BroadcastOps op, std::vector<int> &dimensions, const NDArray *tad, NDArray *target = nullptr, T *extraArgs = nullptr);
+        void applyBroadcast(nd4j::BroadcastOps op, std::vector<int> &dimensions, const NDArray *tad, NDArray *target = nullptr, void *extraArgs = nullptr);
 
         /**
         *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
         *  other - input array 
         *  extraParams - extra parameters for operation
         */                       
-        NDArray applyTrueBroadcast(nd4j::BroadcastOps op, const NDArray& other, T *extraArgs = nullptr) const;
+        NDArray applyTrueBroadcast(nd4j::BroadcastOps op, const NDArray& other, void *extraArgs = nullptr) const;
 
-        NDArray* applyTrueBroadcast(nd4j::BroadcastOps op, const NDArray* other, T *extraArgs = nullptr) const;
+        NDArray* applyTrueBroadcast(nd4j::BroadcastOps op, const NDArray* other, void *extraArgs = nullptr) const;
 
         /**
         *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
@@ -509,7 +509,7 @@ namespace nd4j {
         *  checkTargetShape - if true check whether target shape is suitable for broadcasting
         *  extraParams - extra parameters for operation
         */
-        void applyTrueBroadcast(nd4j::BroadcastOps op, const NDArray* other, NDArray* target, const bool checkTargetShape = true, T *extraArgs = nullptr) const;
+        void applyTrueBroadcast(nd4j::BroadcastOps op, const NDArray* other, NDArray* target, const bool checkTargetShape = true, void *extraArgs = nullptr) const;
 
         /** 
         *  apply a scalar operation to an array
@@ -535,9 +535,9 @@ namespace nd4j {
         *  func - what operation to apply
         *  target - where to store result
         */
-        void applyLambda(const std::function<T(T)>& func, NDArray* target = nullptr);
+        //void applyLambda(const std::function<T(T)>& func, NDArray* target = nullptr);
 
-        void applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDArray* target = nullptr);
+        //void applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDArray* target = nullptr);
 
         /** 
         *  apply pairwise operation "func" to an array
@@ -545,11 +545,11 @@ namespace nd4j {
         *  func - what pairwise operation to apply
         *  target - where to store result
         */ 
-        void applyPairwiseLambda(const NDArray* other, const std::function<T(T, T)>& func, NDArray* target = nullptr);
+        //void applyPairwiseLambda(const NDArray* other, const std::function<T(T, T)>& func, NDArray* target = nullptr);
 
-        void applyIndexedPairwiseLambda(NDArray* other, const std::function<T(Nd4jLong, T, T)>& func, NDArray* target = nullptr);
+        //void applyIndexedPairwiseLambda(NDArray* other, const std::function<T(Nd4jLong, T, T)>& func, NDArray* target = nullptr);
 
-        void applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<T(T, T, T)>& func, NDArray* target = nullptr);
+        //void applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<T(T, T, T)>& func, NDArray* target = nullptr);
 #endif
 
         /**
@@ -589,8 +589,8 @@ namespace nd4j {
         *  other - input array to compare
         *  eps - epsilon, this value defines the precision of elements comparison
         */
-        bool equalsTo(const NDArray *other, T eps = (T) 1e-5f) const;
-        bool equalsTo(NDArray &other, T eps = (T) 1e-5f) const;
+        bool equalsTo(const NDArray *other, double eps = 1e-5) const;
+        bool equalsTo(NDArray &other, double eps = 1e-5) const;
         
         /**
         *  add given row vector to all rows of this array
@@ -739,7 +739,7 @@ namespace nd4j {
         *  dimensions - vector of dimensions to reduce along
         *  extraArgs - extra parameters for operation
         */
-        NDArray* applyIndexReduce(nd4j::IndexReduceOps op, const std::vector<int>& dimensions, const T *extraParams = nullptr) const;
+        NDArray* applyIndexReduce(nd4j::IndexReduceOps op, const std::vector<int>& dimensions, const void *extraParams = nullptr) const;
 
         /**
         *  reduces dimensions in array relying on index operation OpName
@@ -747,14 +747,14 @@ namespace nd4j {
         *  dimensions - vector of dimensions to reduce along
         *  extraArgs - extra parameters for operation
         */
-        void applyIndexReduce(nd4j::IndexReduceOps op, const NDArray* target, const std::vector<int>& dimensions, const T *extraParams = nullptr) const;
+        void applyIndexReduce(nd4j::IndexReduceOps op, const NDArray* target, const std::vector<int>& dimensions, const void *extraParams = nullptr) const;
 
         /**
         *  apply reduce3 operation OpName to this and other array, return result in new output array
         *  other - input array
         *  extraArgs - extra parameters for operation
         */
-        NDArray* applyReduce3(nd4j::Reduce3Ops op, const NDArray* other, const T* extraParams = nullptr) const;
+        NDArray* applyReduce3(nd4j::Reduce3Ops op, const NDArray* other, const void* extraParams = nullptr) const;
 
         /**
         *  apply reduce3 operation OpName to this and other array, return result in new output array
@@ -762,7 +762,7 @@ namespace nd4j {
         *  dimensions - vector of dimensions to reduce along (tads not axis)
         *  extraArgs - extra parameters for operation
         */
-        NDArray* applyAllReduce3(nd4j::Reduce3Ops op, const NDArray* other, const std::vector<int>& dimensions, const T* extraParams = nullptr) const;
+        NDArray* applyAllReduce3(nd4j::Reduce3Ops op, const NDArray* other, const std::vector<int>& dimensions, const void* extraParams = nullptr) const;
                 
         /**
         *  apply reduce3 (exec) operation OpName to this and other array, return result in new output array
@@ -770,7 +770,7 @@ namespace nd4j {
         *  dimensions - vector of dimensions to reduce along (same as reduceAlongDimension)
         *  extraArgs - extra parameters for operation
         */
-        NDArray* applyReduce3(nd4j::Reduce3Ops op, const NDArray* other, const std::vector<int>& dimensions, const T* extraParams = nullptr) const;
+        NDArray* applyReduce3(nd4j::Reduce3Ops op, const NDArray* other, const std::vector<int>& dimensions, const void* extraParams = nullptr) const;
 
 
         /**
@@ -812,13 +812,15 @@ namespace nd4j {
         *  addition operator: array + scalar
         *  scalar - input scalar to add
         */
+        template <typename T>
         NDArray operator+(const T scalar) const;
 
         /**
         *  friend functions which implement addition operator: scalar + array
         *  scalar - input scalar to add
         */
-        friend NDArray nd4j::operator+(const float scalar, const NDArray& arr);
+        template <typename T>
+        friend NDArray nd4j::operator+(const T scalar, const NDArray& arr);
 
         
         /**
@@ -833,7 +835,10 @@ namespace nd4j {
         */
         void operator-=(const NDArray& other);
 
+        template <typename T>
         void operator+=(const T other);
+
+        template <typename T>
         void operator-=(const T other);
         
         /**
@@ -846,6 +851,7 @@ namespace nd4j {
         *  subtraction operator: array - scalar
         *  scalar - input scalar to subtract
         */
+        template <typename T>
         NDArray operator-(const T& scalar) const;        
 
         /**
@@ -869,6 +875,7 @@ namespace nd4j {
         *  multiplication operator: array * scalar
         *  scalar - input scalar to multiply on
         */
+        template <typename T>
         NDArray operator*(const T scalar) const;
         
         /**
@@ -881,6 +888,7 @@ namespace nd4j {
         *  multiplication unary operator array *= scalar
         *  scalar - input scalar to multiply on
         */
+        template <typename T>
         void operator*=(const T scalar);
 
         /**
@@ -893,6 +901,7 @@ namespace nd4j {
         *  division operator: array / scalar
         *  scalar - input scalar to divide each array element on
         */
+        template <typename T>
         NDArray operator/(const T scalar) const;
 
         /**
@@ -905,6 +914,7 @@ namespace nd4j {
         *  division unary operator: array /= scalar
         *  scalar - input scalar to divide on
         */
+        template <typename T>
         void operator/=(const T scalar);
 
         /**
@@ -1087,12 +1097,14 @@ namespace nd4j {
         *  returns array element with given index from linear buffer
         *  i - element index in array
         */
+        template <typename T>
         FORCEINLINE T getScalar(const Nd4jLong i) const;
 
         /** 
         *  returns array element with given index, takes into account offset between elements (element-wise-stride)
         *  i - element index in array
         */
+        template <typename T>
         FORCEINLINE T getIndexedScalar(const Nd4jLong i) const;
         
         /** 
@@ -1100,6 +1112,7 @@ namespace nd4j {
         *  i - number of row 
         *  j - number of column
         */
+        template <typename T>
         FORCEINLINE T getScalar(const Nd4jLong i, const Nd4jLong j) const;
 
         /** 
@@ -1108,6 +1121,7 @@ namespace nd4j {
         *  j - width
         *  k - depth
         */
+        template <typename T>
         FORCEINLINE T getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
         
         /** 
@@ -1115,6 +1129,7 @@ namespace nd4j {
         *  i - element index in array
         *  value - scalar value to assign
         */
+        template <typename T>
         FORCEINLINE void putIndexedScalar(const Nd4jLong i, const T value);
 
         /** 
@@ -1122,6 +1137,7 @@ namespace nd4j {
         *  i - element index in array
         *  value - scalar value to assign
         */
+        template <typename T>
         FORCEINLINE void putScalar(const Nd4jLong i, const T value);
 
         /** 
@@ -1130,6 +1146,7 @@ namespace nd4j {
         *  j - number of row
         *  value - scalar value to assign
         */
+        template <typename T>
         FORCEINLINE void putScalar(const Nd4jLong i, const Nd4jLong j, const T value);
 
         /** 
@@ -1139,6 +1156,7 @@ namespace nd4j {
         *  k - depth
         *  value - scalar value to assign
         */
+        template <typename T>
         FORCEINLINE void putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const T value);
 
         /**
@@ -1169,54 +1187,54 @@ namespace nd4j {
         /**
         *  inline accessing operator for matrix, i - absolute index        
         */
-        FORCEINLINE T operator()(const Nd4jLong i) const;
+        FORCEINLINE NDArray operator()(const Nd4jLong i) const;
 
         /**
         *  inline modifying operator for matrix, i - absolute index        
         */
-        FORCEINLINE T& operator()(const Nd4jLong i);
+        FORCEINLINE NDArray& operator()(const Nd4jLong i);
 
         /**
         *  inline accessing operator for 2D array, i - row, j - column
         */
-        FORCEINLINE T operator()(const Nd4jLong i, const Nd4jLong j) const;
+        FORCEINLINE NDArray operator()(const Nd4jLong i, const Nd4jLong j) const;
 
         /**
         *  inline modifying operator for 2D array, i - row, j - column
         */
-        FORCEINLINE T& operator()(const Nd4jLong i, const Nd4jLong j);
+        FORCEINLINE NDArray& operator()(const Nd4jLong i, const Nd4jLong j);
 
         /**
         *  inline accessing operator for 3D array, i - height, j - width, k - depth
         */
-        FORCEINLINE T operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
+        FORCEINLINE NDArray operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
 
         /**
         *  inline modifying operator for 3D array, i - height, j - width, k - depth
         */ 
-        FORCEINLINE T& operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k);
+        FORCEINLINE NDArray& operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k);
 
         /**
         *  inline modifying operator for 4D array, i - height, j - width, k - depth
         */ 
-        FORCEINLINE T& operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w);
+        FORCEINLINE NDArray& operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w);
 
         /**
         *  inline accessing operator for 4D array, i - height, j - width, k - depth
         */
-        FORCEINLINE T operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) const;
+        FORCEINLINE NDArray operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) const;
 
         /**
         *  inline modifying operator for ND array
         *  idx - array with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
         */ 
-        FORCEINLINE T& operator()(const Nd4jLong* idx);
+        FORCEINLINE NDArray& operator()(const Nd4jLong* idx);
 
         /**
         *  inline accessing operator for ND array
         *  idx - array with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
         */
-        FORCEINLINE T operator()(const Nd4jLong* idx) const;
+        FORCEINLINE NDArray operator()(const Nd4jLong* idx) const;
 
 
 
@@ -1245,7 +1263,7 @@ template <typename T2>
 
 #pragma omp parallel for simd
     for (int e = 0; e < this->lengthOf(); e++)
-        result[e] = static_cast<T2>(this->getIndexedScalar(e));
+        result[e] = this->getIndexedScalar<T2>(e);
 
     return result;
 }

@@ -23,6 +23,8 @@
 #include <types/types.h>
 #include "../legacy_ops.h"
 
+using namespace simdOps;
+
 namespace functions {
     namespace indexreduce {
 

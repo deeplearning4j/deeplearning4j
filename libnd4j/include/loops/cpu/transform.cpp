@@ -23,6 +23,8 @@
 #include <loops/transform.h>
 #include <loops/legacy_ops.h>
 
+using namespace simdOps;
+
 namespace functions {
     namespace transform {
 

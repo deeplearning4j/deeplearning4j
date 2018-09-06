@@ -24,6 +24,8 @@
 #include <helpers/shape.h>
 #include <helpers/TAD.h>
 
+using namespace simdOps;
+
 namespace functions {
     namespace summarystats {
 

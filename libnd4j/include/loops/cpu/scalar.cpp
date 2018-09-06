@@ -24,6 +24,8 @@
 
 #include "../legacy_ops.h"
 
+using namespace simdOps;
+
 namespace functions {
     namespace scalar {
 

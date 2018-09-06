@@ -21,8 +21,6 @@
 #ifndef PROJECT_LEGACY_OPS_H
 #define PROJECT_LEGACY_OPS_H
 
-using namespace simdOps;
-
 #define AGGREGATE_OPS \
         (0, aggregateOps::HierarchicSoftmax) ,\
         (1, aggregateOps::Dot) ,\
@@ -328,10 +326,10 @@ using namespace simdOps;
 #define INDEX_REDUCE_OPS \
         (0, IndexMax), \
         (1, IndexMin), \
-	(2, IndexAbsoluteMax), \
-	(3, IndexAbsoluteMin) , \
-	(4, FirstIndex) , \
-	(5, LastIndex)
+        (2, IndexAbsoluteMax), \
+	    (3, IndexAbsoluteMin) , \
+	    (4, FirstIndex) , \
+	    (5, LastIndex)
 
 
 

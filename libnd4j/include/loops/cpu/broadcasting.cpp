@@ -23,6 +23,8 @@
 #include <loops/legacy_ops.h>
 #include <types/types.h>
 
+using namespace simdOps;
+
 namespace functions {
     namespace broadcast {
 
