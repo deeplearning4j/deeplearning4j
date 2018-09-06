@@ -328,10 +328,10 @@
 #define INDEX_REDUCE_OPS \
         (0, simdOps::IndexMax), \
         (1, simdOps::IndexMin), \
-		(2, simdOps::IndexAbsoluteMax), \
-		(3, simdOps::IndexAbsoluteMin) , \
-		(4, simdOps::FirstIndex) , \
-		(5, simdOps::LastIndex)
+	(2, simdOps::IndexAbsoluteMax), \
+	(3, simdOps::IndexAbsoluteMin) , \
+	(4, simdOps::FirstIndex) , \
+	(5, simdOps::LastIndex)
 
 
 

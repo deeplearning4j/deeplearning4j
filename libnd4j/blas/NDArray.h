@@ -31,6 +31,7 @@
 #include <array/ArrayOptions.h>
 #include <array/ArrayType.h>
 #include <array/ResultSet.h>
+#include <enum_boilerplate.h>
 
 
 namespace nd4j {
@@ -389,14 +390,12 @@ namespace nd4j {
         /** 
         *  returns sum of all elements of array
         */
-        template<typename T>
-        T sumNumber() const;
+        NDArray sumNumber() const;
 
         /**
         *  returns mean number of array
         */
-        template<typename T>
-        T meanNumber() const;
+        NDArray meanNumber() const;
 
 
         /**
@@ -417,12 +416,12 @@ namespace nd4j {
         *  dimensions - array of dimensions to reduce along
         *  keepDims - if true then put unities in place of reduced dimensions
         */ 
-        template<typename OpName>
-        NDArray* reduceAlongDimension(const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
-		template<typename OpName>
-        NDArray* reduceAlongDimension(const std::initializer_list<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
-        template<typename OpName>
-        NDArray reduceAlongDims(const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
+
+        NDArray* reduceAlongDimension(nd4j::ReduceOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
+
+        NDArray* reduceAlongDimension(nd4j::ReduceOps op, const std::initializer_list<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
+        
+        NDArray reduceAlongDims(nd4j::ReduceOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
 
         /**
         *  method reduces array by excluding its shapes along dimensions present in given dimensions vector
@@ -431,29 +430,25 @@ namespace nd4j {
         *  keepDims - if true then put unities in place of reduced dimensions
         *  extras - extra parameters
         */ 
-        template<typename OpName>
-        void reduceAlongDimension(NDArray* target, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, T *extras = nullptr) const;
+        void reduceAlongDimension(nd4j::ReduceOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, T *extras = nullptr) const;
 
         /**
         *  return variance of array elements set
         *  biasCorrected -  if true bias correction will be applied
         */
-        template<typename T, typename OpName>
-        T varianceNumber(bool biasCorrected = true);
+        NDArray varianceNumber(nd4j::VarianceOps op, bool biasCorrected = true);
 
         /**
         *  apply scalar operation to array 
         *  extraParams - extra parameters for operation
         */  
-        template<typename T, typename OpName>
-        T reduceNumber(T *extraParams = nullptr) const;
+        NDArray reduceNumber(nd4j::ReduceOps ops, void *extraParams = nullptr) const;
 
         /**
         *  returns element index which corresponds to some condition imposed by operation
         *  extraParams - extra parameters for operation
         */ 
-        template<typename OpName>
-        Nd4jLong indexReduceNumber(T *extraParams = nullptr);
+        Nd4jLong indexReduceNumber(nd4j::IndexReduceOps op, void *extraParams = nullptr);
 
         /**
         *  returns index of max element in a given array (optionally: along given dimension(s))
@@ -462,34 +457,22 @@ namespace nd4j {
         Nd4jLong argMax(std::initializer_list<int> dimensions = {});
 
         /**
-        *  apply OpName transformation directly to array
-        *  extraParams - extra parameters for operation
-        */
-        template<typename OpName>
-        void applyTransform(T *extraParams = nullptr);
-
-        /**
-        *  apply OpName transformation to array and store result in target
-        *  target - where to store result
-        *  extraParams - extra parameters for operation
-        */
-        template<typename OpName>
-        void applyTransform(NDArray *target, T *extraParams = nullptr);
+         * 
+         */
+        void applyTransform(nd4j::TransformOps op, NDArray *target = nullptr, void *extraParams = nullptr);
 
         /**
         *  apply OpName transformation to this array and store result in new array being returned
         *  extraParams - extra parameters for operation
         */
-        template<typename OpName>
-        NDArray transform(T *extraParams = nullptr) const;
+        NDArray transform(nd4j::TransformOps op, void *extraParams = nullptr) const;
 
         /**
         *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in this array
         *  other - second array necessary for pairwise operation
         *  extraParams - extra parameters for operation
         */
-        template<typename OpName>
-        void applyPairwiseTransform(NDArray *other, T *extraParams);
+        void applyPairwiseTransform(nd4j::PairwiseOps op, NDArray *other, T *extraParams);
 
         /**
         *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in target array
@@ -497,8 +480,7 @@ namespace nd4j {
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */
-        template<typename OpName>
-        void applyPairwiseTransform(NDArray *other, NDArray *target, T *extraParams);
+        void applyPairwiseTransform(nd4j::PairwiseOps op, NDArray *other, NDArray *target, T *extraParams);
 
         /**
         *  apply operation which requires broadcasting, broadcast a smaller array (tad) along  bigger one (this)
@@ -507,20 +489,18 @@ namespace nd4j {
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */               
-        template<typename OpName>
-        void applyBroadcast(std::initializer_list<int> dimensions, const NDArray* tad, NDArray* target = nullptr, T* extraArgs = nullptr);
-        template <typename OpName>
-        void applyBroadcast(std::vector<int> &dimensions, const NDArray *tad, NDArray *target = nullptr, T *extraArgs = nullptr);
+        void applyBroadcast(nd4j::BroadcastOps op, std::initializer_list<int> dimensions, const NDArray* tad, NDArray* target = nullptr, T* extraArgs = nullptr);
+
+        void applyBroadcast(nd4j::BroadcastOps op, std::vector<int> &dimensions, const NDArray *tad, NDArray *target = nullptr, T *extraArgs = nullptr);
 
         /**
         *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
         *  other - input array 
         *  extraParams - extra parameters for operation
         */                       
-        template <typename OpName>
-        NDArray applyTrueBroadcast(const NDArray& other, T *extraArgs = nullptr) const;
-        template <typename OpName>
-        NDArray* applyTrueBroadcast(const NDArray* other, T *extraArgs = nullptr) const;
+        NDArray applyTrueBroadcast(nd4j::BroadcastOps op, const NDArray& other, T *extraArgs = nullptr) const;
+
+        NDArray* applyTrueBroadcast(nd4j::BroadcastOps op, const NDArray* other, T *extraArgs = nullptr) const;
 
         /**
         *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
@@ -529,8 +509,7 @@ namespace nd4j {
         *  checkTargetShape - if true check whether target shape is suitable for broadcasting
         *  extraParams - extra parameters for operation
         */
-        template <typename OpName>
-        void applyTrueBroadcast(const NDArray* other, NDArray* target, const bool checkTargetShape = true, T *extraArgs = nullptr) const;
+        void applyTrueBroadcast(nd4j::BroadcastOps op, const NDArray* other, NDArray* target, const bool checkTargetShape = true, T *extraArgs = nullptr) const;
 
         /** 
         *  apply a scalar operation to an array
@@ -538,8 +517,8 @@ namespace nd4j {
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */ 
-        template<typename OpName>
-        void applyScalar(T scalar, NDArray* target = nullptr, T *extraParams = nullptr) const;
+        void applyScalar(nd4j::ScalarOps op, double scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
+        void applyScalar(nd4j::ScalarOps op, Nd4jLong scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
 
         /** 
         *  apply a scalar operation to an array
@@ -547,8 +526,7 @@ namespace nd4j {
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */ 
-        template<typename OpName>
-        void applyScalar(NDArray& scalar, NDArray* target = nullptr, T *extraParams = nullptr) const;
+        void applyScalar(nd4j::ScalarOps op, NDArray& scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
 
 
 #ifndef __JAVACPP_HACK__
@@ -1550,7 +1528,7 @@ T& NDArray::operator()(const Nd4jLong i) {
 //////////////////////////////////////////////////////////////////////////
 // modifying operator for 3D array
 
- T& NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) {
+ NDArray& NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) {
     
     if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
        throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=3 !");
@@ -1561,7 +1539,7 @@ T& NDArray::operator()(const Nd4jLong i) {
 }
 
 
- T NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) const {
+ NDArray NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) const {
     
     if (rankOf() != 4 || t >= shapeOf()[0] || u >= shapeOf()[1] || v >= shapeOf()[2] || w >= shapeOf()[3])
        throw std::invalid_argument("NDArray::operator(t,u,v,w): one of input indexes is out of array length or rank!=4 !");
@@ -1572,7 +1550,7 @@ T& NDArray::operator()(const Nd4jLong i) {
 }
 
 
- T& NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) {
+NDArray& NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) {
     
     if (rankOf() != 4 || t >= shapeOf()[0] || u >= shapeOf()[1] || v >= shapeOf()[2] || w >= shapeOf()[3])
        throw std::invalid_argument("NDArray::operator(t,u,v,w): one of input indexes is out of array length or rank!=4 !");
@@ -1584,7 +1562,7 @@ T& NDArray::operator()(const Nd4jLong i) {
 
 //////////////////////////////////////////////////////////////////////////
 
-T NDArray::operator()(const Nd4jLong* idx) const {
+NDArray NDArray::operator()(const Nd4jLong* idx) const {
 
     for(int i = 0; i < rankOf(); ++i)    
         if (idx[i] >= sizeAt(i))
