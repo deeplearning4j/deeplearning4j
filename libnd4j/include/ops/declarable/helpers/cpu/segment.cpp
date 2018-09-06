@@ -246,6 +246,7 @@ namespace helpers {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
         int idx = static_cast<int>((*indices)(0.));
+        output->assign((T)1.);
         if (input->isVector()) {
             T val = (*input)(0.);
             int count = 0;
@@ -451,6 +452,50 @@ namespace helpers {
 
     template <typename T>
     void unsortedSegmentMeanFunctor(NDArray<T>* input, NDArray<T>* indices, Nd4jLong numOfClasses, NDArray<T>* output) {
+        std::map<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
+        for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
+            idxs[static_cast<Nd4jLong>(indices->getScalar(e))].push_back(e);
+
+        //std::sort(idxs.begin(), idxs.end());
+
+        if (input->isVector()) { // 1D case
+//#pragma omp parallel for schedule(static)
+            for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
+                T sumValue = input->getScalar(fi->second.at(0));
+                for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
+                    sumValue += input->getScalar(fi->second.at(idx));
+                }
+                (*output)(fi->first) = sumValue / T(fi->second.size());
+            }
+        }
+        else {
+            std::vector<int> restDims(input->rankOf() - 1);
+#pragma omp parallel for
+            for (int e = 1; e < input->rankOf(); e++)
+                restDims[e - 1] = e;
+
+            std::unique_ptr<ResultSet<T>> listOfTensors(input->allTensorsAlongDimension(restDims));
+            std::unique_ptr<ResultSet<T>> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+
+//            int numOfClasses = output->sizeAt(0); // number of classes
+//            std::vector<std::pair<NDArray<T>*, int>> outputs(numOfClasses);
+//            NDArray<T>* maxT = listOfOutTensors->at(idx);
+//#pragma omp parallel for schedule(static)
+            for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
+                auto outputT = listOfOutTensors->at(fi->first);
+                outputT->assign(listOfTensors->at(fi->second.at(0)));
+                for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
+                    auto current = listOfTensors->at(fi->second.at(idx));
+                    for (Nd4jLong e = 0; e < outputT->lengthOf(); ++e) {
+                        //T val = minT->getScalar(e) + outputT->getScalar(e);
+
+                        (*outputT)(e) += current->getScalar(e);
+                    }
+                }
+                //outputT->assign(maxT);
+                (*outputT) /= T(fi->second.size());
+            }
+        }
     }
 
     template <typename T>
