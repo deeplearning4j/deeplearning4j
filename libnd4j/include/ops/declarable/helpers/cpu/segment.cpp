@@ -325,6 +325,53 @@ namespace helpers {
     template void segmentProdFunctor<float16>(NDArray<float16>* input, NDArray<float16>* , NDArray<float16>* output);
     template void segmentProdFunctor<double>(NDArray<double>* input, NDArray<double>* , NDArray<double>* output);
 
+    template <typename T>
+    void unsortedSegmentMaxFunctor(NDArray<T>* input, NDArray<T>* indices, Nd4jLong numOfClasses, NDArray<T>* output) {
+    }
+
+    template <typename T>
+    void unsortedSegmentMinFunctor(NDArray<T>* input, NDArray<T>* indices, Nd4jLong numOfClasses, NDArray<T>* output) {
+    }
+
+    template <typename T>
+    void unsortedSegmentMeanFunctor(NDArray<T>* input, NDArray<T>* indices, Nd4jLong numOfClasses, NDArray<T>* output) {
+    }
+
+    template <typename T>
+    void unsortedSegmentSumFunctor(NDArray<T>* input, NDArray<T>* indices, Nd4jLong numOfClasses, NDArray<T>* output) {
+    }
+
+    template <typename T>
+    void unsortedSegmentProdFunctor(NDArray<T>* input, NDArray<T>* indices, Nd4jLong numOfClasses, NDArray<T>* output) {
+    }
+
+    template <typename T>
+    void unsortedSegmentSqrtNFunctor(NDArray<T>* input, NDArray<T>* indices, Nd4jLong numOfClasses, NDArray<T>* output) {
+    }
+    template void unsortedSegmentMaxFunctor<float>(NDArray<float>* input, NDArray<float>* indices, Nd4jLong numOfClasses, NDArray<float>* output);
+    template void unsortedSegmentMaxFunctor<float16>(NDArray<float16>* input, NDArray<float16>* indices, Nd4jLong numOfClasses, NDArray<float16>* output);
+    template void unsortedSegmentMaxFunctor<double>(NDArray<double>* input, NDArray<double>* indices, Nd4jLong numOfClasses, NDArray<double>* output);
+
+    template void unsortedSegmentMinFunctor<float>(NDArray<float>* input, NDArray<float>* indices, Nd4jLong numOfClasses, NDArray<float>* output);
+    template void unsortedSegmentMinFunctor<float16>(NDArray<float16>* input, NDArray<float16>* indices, Nd4jLong numOfClasses, NDArray<float16>* output);
+    template void unsortedSegmentMinFunctor<double>(NDArray<double>* input, NDArray<double>* indices, Nd4jLong numOfClasses, NDArray<double>* output);
+
+    template void unsortedSegmentMeanFunctor<float>(NDArray<float>* input, NDArray<float>* indices, Nd4jLong numOfClasses, NDArray<float>* output);
+    template void unsortedSegmentMeanFunctor<float16>(NDArray<float16>* input, NDArray<float16>* indices, Nd4jLong numOfClasses, NDArray<float16>* output);
+    template void unsortedSegmentMeanFunctor<double>(NDArray<double>* input, NDArray<double>* indices, Nd4jLong numOfClasses, NDArray<double>* output);
+
+    template void unsortedSegmentSumFunctor<float>(NDArray<float>* input, NDArray<float>* indices, Nd4jLong numOfClasses, NDArray<float>* output);
+    template void unsortedSegmentSumFunctor<float16>(NDArray<float16>* input, NDArray<float16>* indices, Nd4jLong numOfClasses, NDArray<float16>* output);
+    template void unsortedSegmentSumFunctor<double>(NDArray<double>* input, NDArray<double>* indices, Nd4jLong numOfClasses, NDArray<double>* output);
+
+    template void unsortedSegmentProdFunctor<float>(NDArray<float>* input, NDArray<float>* indices, Nd4jLong numOfClasses, NDArray<float>* output);
+    template void unsortedSegmentProdFunctor<float16>(NDArray<float16>* input, NDArray<float16>* indices, Nd4jLong numOfClasses, NDArray<float16>* output);
+    template void unsortedSegmentProdFunctor<double>(NDArray<double>* input, NDArray<double>* indices, Nd4jLong numOfClasses, NDArray<double>* output);
+
+    template void unsortedSegmentSqrtNFunctor<float>(NDArray<float>* input, NDArray<float>* indices, Nd4jLong numOfClasses, NDArray<float>* output);
+    template void unsortedSegmentSqrtNFunctor<float16>(NDArray<float16>* input, NDArray<float16>* indices, Nd4jLong numOfClasses, NDArray<float16>* output);
+    template void unsortedSegmentSqrtNFunctor<double>(NDArray<double>* input, NDArray<double>* indices, Nd4jLong numOfClasses, NDArray<double>* output);
+
 }
 }
 }

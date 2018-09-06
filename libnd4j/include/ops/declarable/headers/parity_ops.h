@@ -966,6 +966,93 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(segment_mean, 2, 1, false, 0, 0);
 
         /**
+         * unsorted_segment_max op. - make a tensor filled by max values according to index tensor given.
+         *
+         * input params:
+         *    0 - the tensor with data;
+         *    1 - the tensor with indices.
+         *
+         * return value:
+         *    tensor with max values according to indices sets.
+         */
+        DECLARE_CUSTOM_OP(unsorted_segment_max, 2, 1, false, 0, 1);
+
+        /**
+         * unsorted_segment_min op. - make a tensor filled by min values according to index tensor given.
+         *
+         * input params:
+         *    0 - the tensor with data;
+         *    1 - the tensor with indices.
+         *
+         * integer param:
+         *    0 - num of segments
+         *
+         * return value:
+         *    tensor with min values according to indices sets.
+         */
+        DECLARE_CUSTOM_OP(unsorted_segment_min, 2, 1, false, 0, 1);
+
+        /**
+         * unsorted_segment_sum op. - make a tensor filled by sum of values according to index tensor given.
+         *
+         * input params:
+         *    0 - the tensor with data;
+         *    1 - the tensor with indices.
+         *
+         * integer param:
+         *    0 - num of segments
+         *
+         * return value:
+         *    tensor with sum of values according to indices sets.
+         */
+        DECLARE_CUSTOM_OP(unsorted_segment_sum, 2, 1, false, 0, 1);
+
+        /**
+         * unsorted_segment_prod op. - make a tensor filled by product of values according to index tensor given.
+         *
+         * input params:
+         *    0 - the tensor with data;
+         *    1 - the tensor with indices.
+         *
+         * integer param:
+         *    0 - num of segments
+         *
+         * return value:
+         *    tensor with product of values according to indices sets.
+         */
+        DECLARE_CUSTOM_OP(unsorted_segment_prod, 2, 1, false, 0, 1);
+
+        /**
+         * unsorted_segment_mean op. - make a tensor filled by average of values according to index tensor given.
+         *
+         * input params:
+         *    0 - the tensor with data;
+         *    1 - the tensor with indices.
+         *
+         * integer param:
+         *    0 - num of segments
+         *
+         * return value:
+         *    tensor with average of values according to indices sets.
+         */
+        DECLARE_CUSTOM_OP(unsorted_segment_mean, 2, 1, false, 0, 1);
+
+        /**
+         * unsorted_segment_sqrt_n op. - computes the sum along segments of a tensor divided by the sqrt(N).
+         *
+         * input params:
+         *    0 - the tensor with data;
+         *    1 - the tensor with indices.
+         *
+         * integer param:
+         *    0 - num of segments
+         *
+         * return value:
+         *    tensor with average of values according to indices sets.
+         */
+        DECLARE_CUSTOM_OP(unsorted_segment_sqrt_n, 2, 1, false, 0, 1);
+
+        /**
          * extract_image_patches op - Extract patches from images and put them in the "depth" output dimension.
          *
          * input params:
