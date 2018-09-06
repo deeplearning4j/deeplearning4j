@@ -48,7 +48,8 @@ namespace nd4j {
         // returns the difference between 1.0 and the next representable value of the given floating-point type 
         template <typename T>
         FORCEINLINE static T eps();
-        
+
+        FORCEINLINE static size_t sizeOf(DataType type);
     };
 
 
@@ -57,6 +58,10 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////
+FORCEINLINE size_t DataTypeUtils::sizeOf(DataType type) {
+    return sizeOfElement(type);
+}
+
 // returns the smallest finite value of the given type
 template<>
 FORCEINLINE _CUDA_HD int DataTypeUtils::min<int>() {
@@ -142,7 +147,7 @@ FORCEINLINE _CUDA_HD Nd4jLong DataTypeUtils::max<Nd4jLong>() {
 
 template <>
 FORCEINLINE _CUDA_HD uint32_t DataTypeUtils::max<uint32_t>() {
-    return ((uint32_t)-1);
+    return 4294967295;
 }
 
 template <>
@@ -169,17 +174,14 @@ FORCEINLINE _CUDA_HD float16 DataTypeUtils::max<float16>() {
 // returns the difference between 1.0 and the next representable value of the given floating-point type 
 template <typename T>
 FORCEINLINE T DataTypeUtils::eps() {
-
-	switch (sizeof(T)) {
-        case 8:                // T = double            
-            return std::numeric_limits<double>::epsilon();    
-        case 4:                // T = float            
-            return std::numeric_limits<float>::epsilon();    
-        case 2:                // T = float16        
+        if (std::is_same<T, double>::value)
+            return std::numeric_limits<double>::epsilon();
+        else if (std::is_same<T, float>::value)
+            return std::numeric_limits<float>::epsilon();
+        else if (std::is_same<T, float16>::value)
             return 0.00097656;    
-        default:
-            throw("DataTypeUtils::epsilon function: type of T is undefined !");    
-        }
+        else
+            return 0;
 }
 
 

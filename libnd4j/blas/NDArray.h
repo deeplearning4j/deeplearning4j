@@ -135,8 +135,8 @@ namespace nd4j {
          *
          * @param values
          */
-        NDArray(std::initializer_list values, nd4j::memory::Workspace* workspace = nullptr);
-        NDArray(std::vector &values, nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(std::initializer_list<double> values, nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(std::vector<double> &values, nd4j::memory::Workspace* workspace = nullptr);
 #endif
 
         /**
@@ -164,7 +164,7 @@ namespace nd4j {
         *
         * PLEASE NOTE: data will be copied AS IS, without respect to specified order. You must ensure order match here.
         */
-        NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector &data, nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double> &data, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
         *  this constructor creates new array using given buffer (without memory allocating) and shape information stored in shape
@@ -292,7 +292,7 @@ namespace nd4j {
         /**
         *  set values for _bufferD and _shapeInfoD
         */
-        void setSpecialBuffers(void * buffer, Nd4jLong *shape);
+        void setSpecialBuffers(void *buffer, Nd4jLong *shape);
 
         /**
         *  permutes (in-place) the dimensions in array according to "dimensions" array
@@ -330,8 +330,6 @@ namespace nd4j {
          * This method streamlines given view or permuted array, and reallocates buffer
          */
         void streamline(char order = 'a');
-
-
 
         /**
         *  check whether array is contiguous in memory
@@ -687,7 +685,8 @@ namespace nd4j {
         /**
         *  these methods suited for FlatBuffers use
         */
-        std::vector getBufferAsVector();
+        template <typename T>
+        std::vector<T> getBufferAsVector();
         std::vector<Nd4jLong> getShapeAsVector();
         std::vector<Nd4jLong> getShapeInfoAsVector();
         std::vector<int64_t> getShapeInfoAsFlatVector();
@@ -859,9 +858,8 @@ namespace nd4j {
         *  friend functions which implement addition operator: scalar + array
         *  scalar - input scalar to add
         */
-        friend NDArray<float> nd4j::operator+(const float scalar, const NDArray<float>& arr);
-        friend NDArray<float16> nd4j::operator+(const float16 scalar, const NDArray<float16>& arr);
-        friend NDArray<double> nd4j::operator+(const double scalar, const NDArray<double>& arr);
+        friend NDArray nd4j::operator+(const float scalar, const NDArray& arr);
+
         
         /**
         *  addition unary operator array += other
@@ -899,9 +897,7 @@ namespace nd4j {
         *  friend functions which implement subtraction operator: scalar - array
         *  scalar - input scalar to subtract
         */
-        friend NDArray<float> nd4j::operator-(const float scalar, const NDArray<float>& arr);
-        friend NDArray<float16> nd4j::operator-(const float16 scalar, const NDArray<float16>& arr);
-        friend NDArray<double> nd4j::operator-(const double scalar, const NDArray<double>& arr);
+        friend NDArray nd4j::operator-(const float scalar, const NDArray& arr);
 
         /**
         *  pairwise multiplication operator: array * other
@@ -1010,17 +1006,18 @@ namespace nd4j {
         void tileToShape(const std::initializer_list<Nd4jLong>& shape, NDArray* target = nullptr);
 
         template <typename N>
-        NDArray<N>* asT();
+        NDArray* asT();
 
         /**
         *  calculates the trace of an array, that is sum of elements on main diagonal = sum array[i, i, i, ...]
         */
-        T getTrace() const;
+        double getTrace() const;
 
         /**
         *  fill array linearly as follows: arr[0] = from, arr[1] = from+step, arr[2] = from+2*step, ...
         */
-        void linspace(const T from, const T step = 1.0f);
+        void linspace(const double from, const double step = 1.0f);
+        void linspace(const Nd4jLong from, const Nd4jLong step = 1);
 
         NDArray* createUninitialized() const;
 
@@ -1048,7 +1045,7 @@ namespace nd4j {
         /**
         *  set _buffer
         */
-        FORCEINLINE void setBuffer(T* buffer);
+        FORCEINLINE void setBuffer(void* buffer);
 
         /**
         *  set _isBuffAlloc and _isShapeAlloc
@@ -1282,7 +1279,6 @@ namespace nd4j {
 ///// IMLEMENTATION OF INLINE METHODS ///// 
 //////////////////////////////////////////////////////////////////////////
 
-template <typename T>
 template <typename T2>
  std::vector<T2> NDArray::asVectorT() {
     std::vector<T2> result(this->lengthOf());
@@ -1313,7 +1309,7 @@ template <typename T2>
 
 //////////////////////////////////////////////////////////////////////////
 
- void NDArray::setBuffer(T* buffer) {
+ void NDArray::setBuffer(void* buffer) {
     if(_isBuffAlloc && _workspace == nullptr)
         delete []_buffer;
  
@@ -1398,7 +1394,7 @@ Nd4jLong NDArray::columns() const {
 //////////////////////////////////////////////////////////////////////////
 
 int NDArray::sizeOfT() const {
-    return sizeof(T);
+    return DataTypeUtils::sizeOf(this->dataType());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1680,7 +1676,6 @@ bool NDArray::isSameShape(const std::vector<Nd4jLong>& shape) const{
 }
 
 //////////////////////////////////////////////////////////////////////////
-
  bool NDArray::isSameShape(const NDArray *other) const {
     if (this->isEmpty() != other->isEmpty())
         return false;
@@ -1690,7 +1685,6 @@ bool NDArray::isSameShape(const std::vector<Nd4jLong>& shape) const{
 }
 
 //////////////////////////////////////////////////////////////////////////
-
  bool NDArray::isSameShape(NDArray &other) const {
     return isSameShape(&other);
 }
@@ -1698,7 +1692,6 @@ bool NDArray::isSameShape(const std::vector<Nd4jLong>& shape) const{
 //////////////////////////////////////////////////////////////////////////
 
  bool NDArray::isSameShape(const std::initializer_list<Nd4jLong>& other) const {
-    
     return isSameShape(std::vector<Nd4jLong>(other));
 }
 
@@ -1710,12 +1703,10 @@ bool NDArray::isSameShapeStrict(const NDArray *other) const {
   return shape::equalsStrict(_shapeInfo, other->_shapeInfo);
 }
 
-
 bool NDArray::isEmpty() const {
     return ArrayOptions::arrayType(this->getShapeInfo()) == ArrayType::EMPTY;
 }
 
-template <typename T>
 bool NDArray::operator ==(const NDArray &other) const {
     if (!this->isSameShape(&other))
         return false;
