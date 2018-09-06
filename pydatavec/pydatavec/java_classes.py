@@ -20,7 +20,7 @@ import os
 import warnings
 import pydl4j
 
-pydl4j.validate_pydatavec_jars()
+pydl4j.validate_datavec_jars()
 
 
 # -------------JVM starts here-------------
