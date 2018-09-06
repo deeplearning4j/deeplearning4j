@@ -56,7 +56,7 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
 
     int bS, iC, iD, iH, iW, oC, oD, oH, oW;                     // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
     int indIOioC, indIOioD, indWoC, indWiC, indWkD;             // corresponding indexes
-    ConvolutionUtils<T>::getSizesAndIndexesConv3d(isNCDHW, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWiC, indWoC, indWkD);
+    ConvolutionUtils<T>::getSizesAndIndexesConv3d(isNCDHW, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWoC, indWiC, indWkD);
 
     std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({iC,oC,kD,kH,kW,  indWiC,indWoC,indWkD,indWkD+1,indWkD+2}));            
     REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(weights), 0, "CUSTOM DECONV3D OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weights).c_str());        
@@ -96,8 +96,8 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
 
 DECLARE_SHAPE_FN(deconv3d) {
 
-    auto inputShapeInfo   = inputShape->at(0);                                    // [bS, iD, iH, iW, iC] (NHWC) or [bS, iC, iD, iH, iW] (NCHW)
-    auto weightsShapeInfo = inputShape->at(1);                                    // [kD, kH, kW, oC, iC] (NHWC) or [iC, oC, kD, kH, kW] (NCHW)
+    auto inputShapeInfo   = inputShape->at(0);                                    // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NDCHW)
+    auto weightsShapeInfo = inputShape->at(1);                                    // [kD, kH, kW, oC, iC] (NDHWC) or [iC, oC, kD, kH, kW] (NDCHW)
     auto biasShapeInfo    = block.width() > 2 ? inputShape->at(2) : nullptr;      // [oC]
 
     const int rank = 5;
@@ -121,10 +121,10 @@ DECLARE_SHAPE_FN(deconv3d) {
 
     int indIOioC, indIiD, indWkD, indWoC, indWiC;
     if(!isNCDHW) {
-        indIOioC = 4; indIiD = 1; indWkD = 0; indWoC = 4; indWiC = 3;
+        indIOioC = 4; indIiD = 1; indWkD = 0; indWiC = 4; indWoC = 3;
     }
     else {        
-        indIOioC = 1; indIiD = 2; indWkD = 2; indWoC = 0; indWiC = 1;              
+        indIOioC = 1; indIiD = 2; indWkD = 2; indWiC = 0; indWoC = 1;              
     }    
 
     const int bS = inputShapeInfo[1];                           // batch size
@@ -133,7 +133,6 @@ DECLARE_SHAPE_FN(deconv3d) {
     const int iW = inputShapeInfo[indIiD+3];                    // input width
     const int iC = inputShapeInfo[indIOioC+1];                  // input channels        
     const int oC = weightsShapeInfo[indWoC+1];                  // output channels
-
 
     std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({iC,oC,kD,kH,kW,  indWiC,indWoC,indWkD,indWkD+1,indWkD+2}));                
     REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(weightsShapeInfo), 0, "CUSTOM DECONV3D OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weightsShapeInfo).c_str());
@@ -216,8 +215,8 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
     if(isSameMode)                       // SAME
         ConvolutionUtils<T>::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
 
-     // ----- calculation of gradI -> pass it through conv2d_ff ----- //
-    nd4j::ops::conv3d<T> conv3d;
+     // ----- calculation of gradI -> pass it through conv3d_ff ----- //
+    nd4j::ops::conv3dnew<T> conv3d;
     const Nd4jStatus status = conv3d.execute({gradO, weights}, {gradI}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  isSameMode,  !isNCDHW});
     if (status != ND4J_STATUS_OK)
         return status;
@@ -227,7 +226,7 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
     if(!isNCDHW) {
         gradO = gradO->permute({0, 4, 1, 2, 3});                                // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
         inputAxesForDot = {0, 1, 2, 3};                                         // bS, iD, iH, iW
-        permutForGradW = {3, 2, 0, 1};                                          // [kH, kW, oC, iC] -> [iC, oC, kH, kW]
+        permutForGradW = {4, 3, 0, 1, 2};                                       // [kD, kH, kW, oC, iC] -> [iC, oC, kD, kH, kW]
     }
     else
         inputAxesForDot = {0, 2, 3, 4};                                         // bS, iD, iH, iW
@@ -281,10 +280,10 @@ DECLARE_SHAPE_FN(deconv3d_bp) {
 
     int indIOioC, indIiD, indWkD, indWoC, indWiC;
     if(!isNCDHW) {
-        indIOioC = 4; indIiD = 1; indWkD = 0; indWoC = 4; indWiC = 3;
+        indIOioC = 4; indIiD = 1; indWkD = 0; indWiC = 4; indWoC = 3;
     }
     else {        
-        indIOioC = 1; indIiD = 2; indWkD = 2; indWoC = 0; indWiC = 1;              
+        indIOioC = 1; indIiD = 2; indWkD = 2; indWiC = 0; indWoC = 1;              
     }    
 
     const int bS = inputShapeInfo[1];                           // batch size
