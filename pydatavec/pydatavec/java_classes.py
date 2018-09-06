@@ -18,22 +18,10 @@
 import jnius_config
 import os
 import warnings
+import pydl4j
 
+pydl4j.validate_datavec_jars()
 
-class_path = os.environ.get('DATAVEC_CLASS_PATH')
-
-if class_path is None:
-    raise Exception('Environment variable DATAVEC_CLASS_PATH not set.')
-
-if class_path[-1] == '/':
-    class_path += '*'
-else:
-    class_path += '/*'
-
-try:
-    jnius_config.set_classpath(class_path)
-except:
-    warnings.warn('JVM is already running. Can not set options and class path.')
 
 # -------------JVM starts here-------------
 from jnius import autoclass
