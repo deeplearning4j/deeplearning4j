@@ -28,13 +28,13 @@ namespace nd4j {
             NDArray<T>* idxSegments = INPUT_VARIABLE(1);
             NDArray<T>* segmentedOutput = OUTPUT_VARIABLE(0);
             Nd4jLong numOfClasses = INT_ARG(0);
-            REQUIRE_TRUE(idxSegments->isVector(), 0, "segment_min: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
+            REQUIRE_TRUE(idxSegments->isVector(), 0, "unsorted_segment_min: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
             REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "segment_min: segment indexes array length should be equal to the input first dimension, but %i != %i.", idxSegments->lengthOf(), input->sizeAt(0));
 
-            T expected = (T) 0.f, wrong = (T) 0.f;
+            Nd4jLong wrong;
 
-            REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_min: segment indices should be arranged, but %2.1f > %2.1f",
-                    expected, wrong);
+            REQUIRE_TRUE(helpers::unsortedSegmentIndicesValidate(idxSegments, numOfClasses, wrong), 0, "unsorted_segment_min: segment indices should be arranged, but %i > %i",
+                    wrong, numOfClasses);
 
             helpers::unsortedSegmentMinFunctor(input, idxSegments, numOfClasses, segmentedOutput);
 
