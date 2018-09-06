@@ -396,6 +396,57 @@ namespace helpers {
 
     template <typename T>
     void unsortedSegmentMinFunctor(NDArray<T>* input, NDArray<T>* indices, Nd4jLong numOfClasses, NDArray<T>* output) {
+        // if input is a vector: (as if in doc sample)
+        //int idx = static_cast<int>((*indices)(0.));
+        std::map<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
+        for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
+            idxs[static_cast<Nd4jLong>(indices->getScalar(e))].push_back(e);
+
+        //std::sort(idxs.begin(), idxs.end());
+
+        if (input->isVector()) { // 1D case
+            T maxVal = DataTypeUtils::max<T>();
+            output->assign(maxVal);
+//#pragma omp parallel for schedule(static)
+            for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
+                T val = input->getScalar(fi->second.at(0));
+                for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
+                    val = nd4j::math::nd4j_min(val, input->getScalar(fi->second.at(idx)));
+                }
+                (*output)(fi->first) = val;
+            }
+        }
+        else {
+            std::vector<int> restDims(input->rankOf() - 1);
+            Nd4jLong idx = idxs[0][0];
+#pragma omp parallel for
+            for (int e = 1; e < input->rankOf(); e++)
+                restDims[e - 1] = e;
+
+            std::unique_ptr<ResultSet<T>> listOfTensors(input->allTensorsAlongDimension(restDims));
+            std::unique_ptr<ResultSet<T>> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+
+//            int numOfClasses = output->sizeAt(0); // number of classes
+//            std::vector<std::pair<NDArray<T>*, int>> outputs(numOfClasses);
+//            NDArray<T>* maxT = listOfOutTensors->at(idx);
+            T maxVal = DataTypeUtils::max<T>();
+            output->assign(maxVal);
+//#pragma omp parallel for schedule(static)
+            for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
+                auto outputT = listOfOutTensors->at(fi->first);
+                outputT->assign(listOfTensors->at(fi->second.at(0)));
+                for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
+                    auto minT = listOfTensors->at(fi->second.at(idx));
+                    for (Nd4jLong e = 0; e < outputT->lengthOf(); ++e) {
+                        T val = nd4j::math::nd4j_min(minT->getScalar(e), outputT->getScalar(e));
+
+                        (*outputT)(e) = val;
+                    }
+                }
+                //outputT->assign(maxT);
+            }
+        }
+
     }
 
     template <typename T>
