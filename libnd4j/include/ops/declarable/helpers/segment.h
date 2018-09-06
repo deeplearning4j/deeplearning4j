@@ -47,7 +47,7 @@ namespace helpers {
     void segmentProdFunctor(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* output);
 
     template <typename T>
-    bool unsortedSegmentSqrtNFunctor(NDArray<T>* input, NDArray<T>* indices, Nd4jLong numOfClasses, NDArray<T>* output);
+    void unsortedSegmentSqrtNFunctor(NDArray<T>* input, NDArray<T>* indices, Nd4jLong numOfClasses, NDArray<T>* output);
 
     template <typename T>
     void unsortedSegmentMaxFunctor(NDArray<T>* input, NDArray<T>* indices, Nd4jLong numOfClasses, NDArray<T>* output);
