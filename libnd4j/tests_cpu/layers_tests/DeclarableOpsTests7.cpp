@@ -771,6 +771,49 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMax_2) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMax_3) {
+    NDArray<double> x('c', {4, 4}, {1.8, 2.5,  4.,  9.,2.1, 2.4,  3.,  9.,2.1, 2.1, 0.7, 0.1,3., 4.2, 2.2, 1.  });
+    NDArray<double> idx({0.0, 0.0, 1.0, 2.0});
+    NDArray<double> exp('c', {3, 4}, {2.1, 2.5, 4.0, 9.0,2.1, 2.1, 0.7, 0.1,3., 4.2, 2.2, 1.});
+
+    //{ 2.1, 2.5,  4.,  9., 2.1, 2.1, 0.7, 0.1, 3.,  4.2, 2.2, 1.}
+
+    nd4j::ops::unsorted_segment_max<double> op;
+
+    auto result = op.execute({&x, &idx}, {}, {3});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_EQ(result->size(), 1);
+    exp.printIndexedBuffer("Expect");
+    result->at(0)->printIndexedBuffer("Output");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMax_4) {
+    NDArray<double> x('c', {4, 4}, {1.8, 2.5,  4.,  9., 2.1, 2.4,  3.,  8., 2.1, 2.1, 11.7, 0.1, 3., 4.2, 2.2, 1.  });
+    NDArray<double> idx({0.0, 0.0, 0.0, 2.0});
+    double principalMax = DataTypeUtils::max<double>();
+    NDArray<double> exp('c', {3, 4}, {2.1, 2.5, 11.7, 9.0,
+                                      -principalMax, -principalMax, -principalMax, -principalMax,
+                                      3., 4.2, 2.2, 1.});
+
+    //{ 2.1, 2.5,  4.,  9., 2.1, 2.1, 0.7, 0.1, 3.,  4.2, 2.2, 1.}
+
+    nd4j::ops::unsorted_segment_max<double> op;
+
+    auto result = op.execute({&x, &idx}, {}, {3});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_EQ(result->size(), 1);
+    exp.printIndexedBuffer("Expect");
+    result->at(0)->printIndexedBuffer("Output");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestSegmentMin_1) {
     NDArray<double> x({1.8, 2.5,4.,  9., 2.1, 2.4,3.,9., 2.1, 2.1,0.7, 0.1, 3., 4.2, 2.2, 1.});
     NDArray<double> idx({0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 2.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0});

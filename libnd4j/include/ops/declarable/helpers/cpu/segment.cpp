@@ -351,7 +351,6 @@ namespace helpers {
         //std::sort(idxs.begin(), idxs.end());
 
         if (input->isVector()) { // 1D case
-            T val = (*input)(0.);
             T maxVal = DataTypeUtils::max<T>();
             output->assign(-maxVal);
 //#pragma omp parallel for schedule(static)
@@ -369,31 +368,29 @@ namespace helpers {
 #pragma omp parallel for
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
-            ResultSet<T>* listOfTensors = input->allTensorsAlongDimension(restDims);
-            ResultSet<T>* listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
-            int numOfClasses = output->sizeAt(0); // number of classes
-            std::vector<std::pair<NDArray<T>*, int>> outputs(numOfClasses);
-            NDArray<T>* maxT = listOfOutTensors->at(idx);
+            std::unique_ptr<ResultSet<T>> listOfTensors(input->allTensorsAlongDimension(restDims));
+            std::unique_ptr<ResultSet<T>> listOfOutTensors(output->allTensorsAlongDimension(restDims));
 
-            int pos = 0;
-            maxT->assign(listOfTensors->at(0));
-            for (int i = 1; i < indices->lengthOf(); i++) {
-                if (static_cast<int>((*indices)(i)) == idx) {
-#pragma omp parallel for
-                    for (int e = 0; e < maxT->lengthOf(); e++) {
-                        (*maxT)(e) = nd4j::math::nd4j_max((*maxT)(e), (*listOfTensors->at(i))(e));
+//            int numOfClasses = output->sizeAt(0); // number of classes
+//            std::vector<std::pair<NDArray<T>*, int>> outputs(numOfClasses);
+//            NDArray<T>* maxT = listOfOutTensors->at(idx);
+            T maxVal = DataTypeUtils::max<T>();
+            output->assign(-maxVal);
+//#pragma omp parallel for schedule(static)
+            for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
+                auto outputT = listOfOutTensors->at(fi->first);
+                outputT->assign(listOfTensors->at(fi->second.at(0)));
+                for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
+                    auto maxT = listOfTensors->at(fi->second.at(idx));
+                    for (Nd4jLong e = 0; e < outputT->lengthOf(); ++e) {
+                        T val = nd4j::math::nd4j_max(maxT->getScalar(e), outputT->getScalar(e));
+
+                        (*outputT)(e) = val;
                     }
                 }
-                else {
-                    idx = static_cast<int>((*indices)(i));
-                    maxT = listOfOutTensors->at(idx);
-                    maxT->assign(listOfTensors->at(i));
-                }
-
+                //outputT->assign(maxT);
             }
-            delete listOfTensors;
-            delete listOfOutTensors;
         }
     }
 
