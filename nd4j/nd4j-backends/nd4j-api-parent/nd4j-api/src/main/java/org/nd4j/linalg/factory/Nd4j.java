@@ -6031,7 +6031,7 @@ public class Nd4j {
         outShapes = Nd4j.getExecutioner().calculateOutputShape(o);
         INDArray[] outputs = new INDArray[outShapes.size()];
 
-        if(x == null && outShapes.get(0)[0] == 0){
+        if(x == null && (outShapes.get(0) == null || outShapes.get(0).length == 0 || outShapes.get(0)[0] == 0)){
             //Empty: no conditions match
             for( int i=0; i<outputs.length; i++ ){
                 outputs[i]  = Nd4j.empty();
