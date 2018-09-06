@@ -434,6 +434,8 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD size_t shapeInfoByteLength(Nd4jLong* shapeInfo);
 
+    ND4J_EXPORT _CUDA_HD size_t shapeInfoByteLength(const Nd4jLong* shapeInfo);
+
 /**
  * Returns the rank portion of
  * an information buffer
@@ -2586,6 +2588,11 @@ template <typename T>
     }
 
     INLINEDEF _CUDA_HD size_t shapeInfoByteLength(Nd4jLong* shapeInfo) {
+        //FIXME magic numbers
+        return shapeInfoByteLength((int) shapeInfo[0]);
+    }
+
+    INLINEDEF _CUDA_HD size_t shapeInfoByteLength(const Nd4jLong* shapeInfo) {
         //FIXME magic numbers
         return shapeInfoByteLength((int) shapeInfo[0]);
     }

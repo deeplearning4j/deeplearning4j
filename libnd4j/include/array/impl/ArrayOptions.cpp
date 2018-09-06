@@ -45,6 +45,10 @@ namespace nd4j {
         return hasPropertyBitSet(shapeInfo, ARRAY_UNSIGNED);
     }
 
+    nd4j::DataType ArrayOptions::dataType(const Nd4jLong *shapeInfo) {
+        return dataType(const_cast<Nd4jLong *>(shapeInfo));
+    }
+
     nd4j::DataType ArrayOptions::dataType(Nd4jLong *shapeInfo) {
         if (hasPropertyBitSet(shapeInfo, ARRAY_QUANTIZED))
             return nd4j::DataType::DataType_QINT8;
@@ -80,6 +84,10 @@ namespace nd4j {
             throw std::runtime_error("Bad datatype");
     }
 
+    SpaceType ArrayOptions::spaceType(const Nd4jLong *shapeInfo) {
+        return spaceType(const_cast<Nd4jLong *>(shapeInfo));
+    }
+
     SpaceType ArrayOptions::spaceType(Nd4jLong *shapeInfo) {
         if (hasPropertyBitSet(shapeInfo, ARRAY_QUANTIZED))
             return SpaceType::QUANTIZED;
@@ -87,6 +95,10 @@ namespace nd4j {
             return SpaceType::COMPLEX;
         else // by default we return continuous type here
             return SpaceType::CONTINUOUS;
+    }
+
+    ArrayType ArrayOptions::arrayType(const Nd4jLong *shapeInfo) {
+        return arrayType(const_cast<Nd4jLong *>(shapeInfo));
     }
 
     ArrayType ArrayOptions::arrayType(Nd4jLong *shapeInfo) {
@@ -112,6 +124,10 @@ namespace nd4j {
 
     void ArrayOptions::unsetPropertyBit(Nd4jLong *shapeInfo, int property) {
         shape::extra(shapeInfo) &= property;
+    }
+
+    SparseType ArrayOptions::sparseType(const Nd4jLong *shapeInfo) {
+        spaceType(const_cast<Nd4jLong *>(shapeInfo));
     }
 
     SparseType ArrayOptions::sparseType(Nd4jLong *shapeInfo) {

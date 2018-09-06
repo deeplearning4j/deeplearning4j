@@ -96,7 +96,7 @@ namespace nd4j {
     
     public:
         template <typename T>
-        static NDArray* createEmpty(nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray* empty(nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
         static NDArray* valueOf(const std::initializer_list<Nd4jLong>& shape, const T value, const char order = 'c');
@@ -108,15 +108,33 @@ namespace nd4j {
         static NDArray* linspace(const T from, const T to, const Nd4jLong numElements);
 
         template <typename T>
-        static NDArray* scalar(const T value);
+        static NDArray* scalar(const T value, nd4j::memory::Workspace* workspace = nullptr);
 
+        template <typename T>
+        static NDArray* create(std::initializer_list<Nd4jLong> s, nd4j::memory::Workspace* workspace);
+
+        template <typename T>
+        static NDArray* create(const char order, const std::vector<Nd4jLong> &shape, nd4j::memory::Workspace* workspace);
+
+
+#ifndef __JAVACPP_HACK__
+        // this method only available out of javacpp
+        /**
+         * This constructor creates vector of T
+         *
+         * @param values
+         */
+        template <typename T>
+        static NDArray* create(std::initializer_list<T> values, nd4j::memory::Workspace* workspace = nullptr);
+
+        template <typename T>
+        static NDArray* create(std::vector<T> &values, nd4j::memory::Workspace* workspace = nullptr);
+#endif
         
         /**
         *  default constructor, do not allocate memory, memory for array is passed from outside 
         */
         NDArray(void *buffer = nullptr, Nd4jLong* shapeInfo = nullptr, nd4j::memory::Workspace* workspace = nullptr);
-
-        NDArray(std::initializer_list<Nd4jLong> shape, nd4j::memory::Workspace* workspace = nullptr);
 
 
         /**
@@ -129,16 +147,7 @@ namespace nd4j {
         */
         NDArray(NDArray&& other) noexcept;
 
-#ifndef __JAVACPP_HACK__
-        // this method only available out of javacpp
-        /**
-         * This constructor creates vector of T
-         *
-         * @param values
-         */
-        NDArray(std::initializer_list<double> values, nd4j::memory::Workspace* workspace = nullptr);
-        NDArray(std::vector<double> &values, nd4j::memory::Workspace* workspace = nullptr);
-#endif
+
 
         /**
         *  constructor, create empty array stored at given workspace

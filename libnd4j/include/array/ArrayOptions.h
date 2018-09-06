@@ -92,9 +92,16 @@ namespace nd4j {
         static bool isUnsigned(Nd4jLong *shapeInfo);
 
         static nd4j::DataType dataType(Nd4jLong *shapeInfo);
+        static nd4j::DataType dataType(const Nd4jLong *shapeInfo);
+
         static SpaceType spaceType(Nd4jLong *shapeInfo);
+        static SpaceType spaceType(const Nd4jLong *shapeInfo);
+
         static ArrayType arrayType(Nd4jLong *shapeInfo);
+        static ArrayType arrayType(const Nd4jLong *shapeInfo);
+
         static SparseType sparseType(Nd4jLong *shapeInfo);
+        static SparseType sparseType(const Nd4jLong *shapeInfo);
 
         static bool hasExtraProperties(Nd4jLong *shapeInfo);
     };
