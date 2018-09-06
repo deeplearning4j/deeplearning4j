@@ -24,14 +24,16 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.spark.api.*;
+import org.deeplearning4j.spark.api.RDDTrainingApproach;
+import org.deeplearning4j.spark.api.Repartition;
+import org.deeplearning4j.spark.api.RepartitionStrategy;
+import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.deeplearning4j.spark.impl.repartitioner.DefaultRepartitioner;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingMaster;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
-import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 
 import java.io.IOException;
 import java.util.Map;
@@ -189,9 +191,7 @@ public class ElephasModelImport {
                     .workerPrefetchNumBatches(numBatchesPrefetch)
                     .thresholdStep(thresholdStep)
                     .rddTrainingApproach(APPROACH)
-                    .rddTrainingApproach(RDDTrainingApproach.Export)
                     .repartitioner(new DefaultRepartitioner())
-                    .transport(new RoutedTransport())
                     .build();
         } else {
             throw new InvalidKerasConfigurationException("Unknown mode " + mode);
