@@ -1353,6 +1353,100 @@ TEST_F(DeclarableOpsTests7, TestSegmentProd_3) {
     delete result;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestUnsortedSegmentProd_1) {
+    NDArray<double> x({1.8, 2.5,4.,  9., 2.1, 2.4,3.,9., 2.1, 2.1,0.7, 0.1, 3., 4.2, 2.2, 1.});
+    NDArray<double> idx({0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 2.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0});
+    NDArray<double> exp({4.5,    181.44,     3.,      39.69,     1.9404});
+
+    nd4j::ops::unsorted_segment_prod<double> op;
+
+    auto result = op.execute({&x, &idx}, {}, {5});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestUnsortedSegmentProd_2) {
+    NDArray<double> x('c', {4, 4}, {
+            1.8, 2.5,  4.,  9.,        2.1, 2.4,  3.,  9.,        2.1, 2.1, 0.7, 0.1,         3., 4.2, 2.2, 1.    });
+    NDArray<double> idx({0.0, 0.0, 1.0, 2.0});
+    NDArray<double> exp('c', {3, 4}, {        3.78,       6. ,       12.  ,      81.,        2.1 ,       2.1,        0.7 ,       0.1,        3.  ,       4.2,        2.2 ,       1.});
+
+    //{ 2.1, 2.5,  4.,  9., 2.1, 2.1, 0.7, 0.1, 3.,  4.2, 2.2, 1.}
+
+    nd4j::ops::unsorted_segment_prod<double> op;
+
+    auto result = op.execute({&x, &idx}, {}, {3});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_EQ(result->size(), 1);
+//    exp.printIndexedBuffer("Expect");
+//    exp.printShapeInfo("Exp Shape");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestUnsortedSegmentProd_3) {
+    NDArray<double> x('c', {4, 4, 4}, {
+            91. ,  82. ,  37. ,  64. ,     55.1,  46.4,  73. ,  28. ,    119.1,  12.1, 112.7,  13.1,     14. , 114.2,  16.2, 117. ,     51. ,  42. ,  67. ,   24.,
+            15.1,  56.4,  93. ,   28.,    109.1,  82.1,  12.7, 113.1,    114. ,  14.2, 116.2,  11. ,     31. ,  22. ,  87.,   44. ,     55.1,  46.4,  73.,   28. ,
+            119.1,  12.1, 112.7,  13.1,     14. , 114.2,  16.2, 117. ,     91. ,  82. ,  37.,   64. ,     55.1,  46.4,  73.,   28. ,    119.1,  12.1, 112.7,  13.1,     14. , 114.2,  16.2, 117. });
+
+// ----------------------------------------------------------------
+
+    NDArray<double> idx({0.0, 1.0, 1.0, 2.0});
+    NDArray<double> exp('c', {3, 4, 4}, {
+            91. ,  82. ,  37. ,  64. , 55.1,  46.4,  73. ,  28. ,  119.1,  12.1, 112.7,  13.1, 14. , 114.2,  16.2, 117. ,
+            1581.0, 924.0, 5829.0, 1056.0,832.01001, 2616.9602, 6789.0, 784.0, 12993.810, 993.41003, 1431.2899, 1481.61, 1596.0000, 1621.6399, 1882.4401, 1287.0,
+            91. ,  82. ,  37. ,  64. ,   55.1,  46.4,  73. ,  28. ,119.1,  12.1, 112.7,  13.1, 14. , 114.2,  16.2, 117. });
+
+    nd4j::ops::unsorted_segment_prod<double> op;
+
+    auto result = op.execute({&x, &idx}, {}, {3});
+    ASSERT_EQ(result->status(), Status::OK());
+//    result->at(0)->printIndexedBuffer("Output");
+//    result->at(0)->printShapeInfo("Out Shape");
+//    exp.printIndexedBuffer("Expect");
+//    exp.printShapeInfo("Exp Shape");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestUnsortedSegmentProd_4) {
+    NDArray<double> x('c', {4, 4, 4}, {
+            91. ,  82. ,  37. ,  64. ,     55.1,  46.4,  73. ,  28. ,    119.1,  12.1, 112.7,  13.1,     14. , 114.2,  16.2, 117. ,     51. ,  42. ,  67. ,   24.,
+            15.1,  56.4,  93. ,   28.,    109.1,  82.1,  12.7, 113.1,    114. ,  14.2, 116.2,  11. ,     31. ,  22. ,  87.,   44. ,     55.1,  46.4,  73.,   28. ,
+            119.1,  12.1, 112.7,  13.1,     14. , 114.2,  16.2, 117. ,     91. ,  82. ,  37.,   64. ,     55.1,  46.4,  73.,   28. ,    119.1,  12.1, 112.7,  13.1,     14. , 114.2,  16.2, 117. });
+
+// ----------------------------------------------------------------
+
+    NDArray<double> idx({1.0, 1.0, 1.0, 2.0});
+    NDArray<double> exp('c', {3, 4, 4}, {
+            1., 1., 1., 1.,      1., 1.,1.,1.,     1.,1.,1.,1.,     1.,1.,1.,1.,
+
+            143871.0, 75768.0, 215673.0, 67584.,     45843.75, 121426.96, 495597.0, 21952.0,
+            1547562.8, 12020.262, 161306.38, 19409.092,  22344.0, 185191.27, 30495.531, 150579.0,
+
+            91., 82., 37., 64,     55.1, 46.400002, 73, 28,    119.1, 12.1, 112.7, 13.1,    14.0, 114.2, 16.2, 117.0});
+
+    nd4j::ops::unsorted_segment_prod<double> op;
+
+    auto result = op.execute({&x, &idx}, {}, {3});
+    ASSERT_EQ(result->status(), Status::OK());
+    //result->at(0)->printIndexedBuffer("Output");
+//    result->at(0)->printShapeInfo("Out Shape");
+    //exp.printIndexedBuffer("Expect");
+//    exp.printShapeInfo("Exp Shape");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestExtractImagePatches_1) {
