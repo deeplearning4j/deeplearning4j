@@ -42,6 +42,8 @@ namespace nd4j {
             uint64_t _rootSeed;
             RandomGenerator _randomGenerator;
 
+            bool _useMKLDNN = true;
+
         public:
             explicit ContextPrototype(int nodeId = 1, bool inPlace = false);
             ~ContextPrototype() = default;
@@ -72,6 +74,9 @@ namespace nd4j {
 
             int opNum();
             void setOpNum(int opNum);
+
+            bool isUseMKLDNN() { return _useMKLDNN; }
+            void setUseMKLDNN(bool useMKLDNN) { _useMKLDNN = useMKLDNN; }
 
             /**
              * This method returns number of inputs available in this block

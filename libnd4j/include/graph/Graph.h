@@ -183,6 +183,11 @@ namespace nd4j {
              */
             Graph<T>* clone();
 
+            /**
+             * This method returns clone of the graph, backed by VariableProxy instead of VariableSpace
+             */
+            Graph<T>* cloneWithProxy();
+
             template <typename N>
             Graph<N>* asT();
 

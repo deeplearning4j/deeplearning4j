@@ -22,15 +22,18 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.constraint.UnitNormConstraint;
+import org.deeplearning4j.nn.conf.distribution.ConstantDistribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
@@ -478,5 +481,51 @@ public class TransferLearningCompGraphTest extends BaseDL4JTest {
         assertNull(l.getWeightNoise());
         assertNull(l.getConstraints());
         assertEquals(0.0, l.getL2(), 0.0);
+    }
+
+
+    @Test
+    public void testTransferLearningSubsequent() {
+        String inputName = "in";
+        String outputName = "out";
+
+        final String firstConv = "firstConv";
+        final String secondConv = "secondConv";
+        final INDArray input = Nd4j.create(6,6,6,6);
+        final ComputationGraph graph = new ComputationGraph(new NeuralNetConfiguration.Builder()
+                .weightInit(new ConstantDistribution(666))
+                .graphBuilder()
+                .addInputs(inputName)
+                .setOutputs(outputName)
+                .setInputTypes(InputType.inferInputTypes(input))
+                .addLayer(firstConv, new Convolution2D.Builder(3, 3)
+                        .nOut(10)
+                        .build(), inputName)
+                .addLayer(secondConv, new Convolution2D.Builder(1, 1)
+                        .nOut(3)
+                        .build(), firstConv)
+                .addLayer(outputName, new OutputLayer.Builder()
+                        .nOut(2)
+                        .lossFunction(LossFunctions.LossFunction.MSE)
+                        .build(), secondConv)
+                .build());
+        graph.init();
+
+        final ComputationGraph newGraph = new TransferLearning
+                .GraphBuilder(graph)
+                .nOutReplace(firstConv, 7, new ConstantDistribution(333))
+                .nOutReplace(secondConv, 3, new ConstantDistribution(111))
+                .removeVertexAndConnections(outputName)
+                .addLayer(outputName, new OutputLayer.Builder()
+                        .nIn(48).nOut(2)
+                        .lossFunction(LossFunctions.LossFunction.MSE)
+                        .build(), new CnnToFeedForwardPreProcessor(4,4,3), secondConv)
+                .setOutputs(outputName)
+                .build();
+        newGraph.init();
+
+        assertEquals("Incorrect # inputs", 7, newGraph.layerInputSize(secondConv));
+
+        newGraph.outputSingle(input);
     }
 }

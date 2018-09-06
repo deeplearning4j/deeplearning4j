@@ -2463,19 +2463,59 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray put(INDArrayIndex[] indices, INDArray element) {
         Nd4j.getCompressor().autoDecompress(this);
-        if (indices[0] instanceof SpecifiedIndex && element.isVector()) {
-            indices[0].reset();
-            int cnt = 0;
-            while (indices[0].hasNext()) {
-                long idx = indices[0].next();
-                // FIXME: LONG
-                putScalar((int) idx, element.getDouble(cnt));
-                cnt++;
+        boolean isSpecifiedIndex = false;
+        for(INDArrayIndex idx : indices){
+            if(idx instanceof SpecifiedIndex){
+                isSpecifiedIndex = true;
+                break;
             }
-            return this;
-        } else {
-            return get(indices).assign(element);
         }
+
+        if(!isSpecifiedIndex){
+            return get(indices).assign(element);
+        } else {
+            //Can't get a view, so we'll do it in subsets instead
+            // This is inefficient, but it is correct...
+            int numSpecified = 0;
+            List<long[]> specifiedIdxs = new ArrayList<>();
+            List<Integer> specifiedIdxDims = new ArrayList<>();
+
+            INDArrayIndex[] destinationIndices = indices.clone();  //Shallow clone
+            INDArrayIndex[] sourceIndices = indices.clone();
+            for( int i=0; i<indices.length; i++){
+                INDArrayIndex idx = indices[i];
+                if(idx instanceof SpecifiedIndex){
+                    numSpecified++;
+                    long[] idxs = ((SpecifiedIndex) idx).getIndexes();
+                    specifiedIdxs.add(idxs);
+                    specifiedIdxDims.add(i);
+                } else if(idx instanceof PointIndex){
+                    //Example: [2,3,3].put(point(1), ..., [1,x,y]) -> can't use point(1) on [1,x,y]
+                    sourceIndices[i] = NDArrayIndex.point(0);
+                }
+            }
+            int[] counts = new int[specifiedIdxs.size()];
+            int[] dims = new int[specifiedIdxDims.size()];
+            for( int i=0; i<specifiedIdxs.size(); i++ ){
+                counts[i] = specifiedIdxs.get(i).length;
+                dims[i] = specifiedIdxDims.get(i);
+            }
+
+            NdIndexIterator iter = new NdIndexIterator(counts);
+            while(iter.hasNext()){
+                long[] iterationIdxs = iter.next();
+                for(int i=0; i<iterationIdxs.length; i++ ){
+                    long[] indicesForDim = specifiedIdxs.get(i);
+                    destinationIndices[dims[i]] = NDArrayIndex.point(indicesForDim[(int)iterationIdxs[i]]);
+                    sourceIndices[dims[i]] = NDArrayIndex.point(iterationIdxs[i]);
+                }
+
+                INDArray sourceView = element.get(sourceIndices);
+                INDArray destinationView = this.get(destinationIndices);
+                destinationView.assign(sourceView);
+            }
+        }
+        return this;
     }
 
     @Override

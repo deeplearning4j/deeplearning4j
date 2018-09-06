@@ -38,6 +38,7 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 @Ignore
+@Deprecated
 public class RoutedTransportTest {
     @Before
     public void setUp() throws Exception {

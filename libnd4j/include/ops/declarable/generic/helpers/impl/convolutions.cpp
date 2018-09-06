@@ -805,6 +805,80 @@ void ConvolutionUtils<T>::conv2d(const std::vector<NDArray<T>*>& inArrs, NDArray
         delete input;                
 }
 
+#ifdef HAVE_MKLDNN
+using namespace mkldnn;
+
+template <typename T>
+void ConvolutionUtils<T>::mkldnn_conv2d(MKLDNNStream<T> &stream, const std::vector<NDArray<T>*>& inArrs, NDArray<T>* output, const std::vector<int>& intArgs) {
+
+    NDArray<T> *input   = inArrs[0];                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    NDArray<T> *weights = inArrs[1];                                    // [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)
+    NDArray<T> *bias    = inArrs[2];                                    // [oC]
+
+    // output [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
+
+    int kH = intArgs[0];                                                        // filter(kernel) height
+    int kW = intArgs[1];                                                        // filter(kernel) width
+    int sH = intArgs[2];                                                        // strides height
+    int sW = intArgs[3];                                                        // strides width
+    int pH = intArgs[4];                                                        // paddings height
+    int pW = intArgs[5];                                                        // paddings width
+    int dH = intArgs[6];                                                        // dilations height
+    int dW = intArgs[7];                                                        // dilations width
+    int isSameMode = intArgs[8];                                                // 0-VALID, 1-SAME
+    int isNCHW     = intArgs[9];                                                // 1-NCHW,  0-NHWC
+
+    int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
+    int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
+    ConvolutionUtils<T>::getSizesAndIndexesConv2d(isNCHW, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
+
+    if(isSameMode)                       // SAME
+        ConvolutionUtils<T>::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
+
+    if (stream.checkAndReset(inArrs, {output}, {}, intArgs)) {
+        mkldnn::memory::dims conv_src_tz = { bS, iC, iH, iW };
+        mkldnn::memory::dims conv_weights_tz = { oC, iC, kH, kW };
+        mkldnn::memory::dims conv_bias_tz = { oC };
+        mkldnn::memory::dims conv_dst_tz = { bS, oC, oH, oW };
+        mkldnn::memory::dims conv_strides = { sH, sW };
+        mkldnn::memory::dims conv_padding = { pH, pW };
+        mkldnn::memory::dims conv_padding_r = { (oH - 1) * sH - iH + kH - pH,
+                                                (oW - 1) * sW - iW + kW - pW };
+
+        auto type = mkldnn::memory::data_type::f32;
+        auto format = isNCHW ? mkldnn::memory::format::nchw : mkldnn::memory::format::nhwc;
+        auto formatw = isNCHW ? mkldnn::memory::format::oihw : mkldnn::memory::format::hwio;
+        auto conv_src_md = mkldnn::memory::desc({ conv_src_tz }, type, format);
+        auto conv_bias_md = mkldnn::memory::desc({ conv_bias_tz }, type, mkldnn::memory::format::x);
+        auto conv_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
+        auto conv_dst_md = mkldnn::memory::desc({ conv_dst_tz }, type, format);
+
+        auto conv_desc = bias != nullptr
+                ? convolution_forward::desc(prop_kind::forward,
+                        convolution_direct, conv_src_md, conv_weights_md, conv_bias_md,
+                        conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero)
+                : convolution_forward::desc(prop_kind::forward,
+                        convolution_direct, conv_src_md, conv_weights_md,
+                        conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero);
+
+        auto conv_prim_desc = convolution_forward::primitive_desc(conv_desc, stream.getEngine());
+        auto conv_src_memory = mkldnn::memory(conv_prim_desc.src_primitive_desc(), input->buffer());
+        auto conv_weights_memory = mkldnn::memory(conv_prim_desc.weights_primitive_desc(), weights->buffer());
+        auto conv_dst_memory = mkldnn::memory(conv_prim_desc.dst_primitive_desc(), output->buffer());
+        if (bias != nullptr) {
+            auto conv_bias_memory = mkldnn::memory(conv_prim_desc.bias_primitive_desc(), bias->buffer());
+            stream.setMemory({conv_src_memory, conv_weights_memory, conv_bias_memory, conv_dst_memory});
+            stream.setOperation(convolution_forward(conv_prim_desc, conv_src_memory, conv_weights_memory, conv_bias_memory, conv_dst_memory));
+        } else {
+            stream.setMemory({conv_src_memory, conv_weights_memory, conv_dst_memory});
+            stream.setOperation(convolution_forward(conv_prim_desc, conv_src_memory, conv_weights_memory, conv_dst_memory));
+        }
+    }
+
+    stream.submitAndWait();
+}
+#endif
+
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void ConvolutionUtils<T>::conv2dBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs, const std::vector<int>& intArgs) {

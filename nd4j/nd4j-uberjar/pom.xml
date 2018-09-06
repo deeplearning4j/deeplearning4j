@@ -149,6 +149,13 @@
             </execution>
           </executions>
         </plugin>
+        <plugin>
+          <groupId>com.lewisd</groupId>
+            <artifactId>lint-maven-plugin</artifactId>
+              <configuration>
+                <failOnViolation>false</failOnViolation>
+              </configuration>
+        </plugin>
       </plugins>
     </build>
     <dependencies>
@@ -185,7 +192,7 @@
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-kryo_2.10</artifactId>
+        <artifactId>nd4j-kryo_2.11</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -195,7 +202,7 @@
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-kafka_2.10</artifactId>
+        <artifactId>nd4j-kafka_2.11</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -240,7 +247,7 @@
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-parameter-server-status_2.10</artifactId>
+        <artifactId>nd4j-parameter-server-status_2.11</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -250,7 +257,7 @@
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-parameter-server-node_2.10</artifactId>
+        <artifactId>nd4j-parameter-server-node_2.11</artifactId>
         <version>${project.version}</version>
       </dependency>
     </dependencies>

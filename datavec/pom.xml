@@ -69,7 +69,6 @@
         <module>datavec-excel</module>
         <module>datavec-arrow</module>
         <module>datavec-perf</module>
-        <module>datavec-uberjar</module>
     </modules>
 
     <dependencies>

@@ -17,10 +17,7 @@
 package org.nd4j.parameterserver.distributed.messages.aggregations;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.Timeout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,6 +31,8 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Ignore
+@Deprecated
 public class VoidAggregationTest {
     private static final short NODES = 100;
     private static final int ELEMENTS_PER_NODE = 3;

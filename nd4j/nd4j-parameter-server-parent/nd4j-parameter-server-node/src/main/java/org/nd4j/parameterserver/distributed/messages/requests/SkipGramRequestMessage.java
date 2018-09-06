@@ -37,6 +37,7 @@ import java.util.Arrays;
  */
 @Data
 @Slf4j
+@Deprecated
 public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingMessage, RequestMessage {
 
     // learning rate for this sequence

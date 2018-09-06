@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public class Clipboard {
     protected Map<RequestDescriptor, VoidAggregation> clipboard = new ConcurrentHashMap<>();
 
