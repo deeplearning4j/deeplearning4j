@@ -741,6 +741,36 @@ TEST_F(DeclarableOpsTests7, TestSegmentMax_4) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMax_1) {
+    NDArray<double>   x({1.8, 2.5,  4.,  9., 2.1, 2.4, 3., 9., 2.1, 2.1, 0.7, 0.1,  3.,  4.2,  2.2, 1.});
+    NDArray<double> idx({4.0, 4.0,  1.,  1.,  1.,  1., 2., 3.,  3.,  3., 4.,   4.,  4.,   4.,   0., 0.});
+    NDArray<double> exp({2.2, 9., 3., 9., 4.2});
+
+    nd4j::ops::unsorted_segment_max<double> op;
+
+    auto result = op.execute({&x, &idx}, {}, {5});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMax_2) {
+    NDArray<double>   x({1.8, 2.5,  4.,  9., 2.1, 2.4, 3., 9., 2.1, 2.1, 0.7, 0.1,  3.,  4.2,  2.2, 1.});
+    NDArray<double> idx({4.0, 4.0,  1.,  1.,  1.,  1., 3., 3.,  3.,  3., 4.,   4.,  4.,   4.,   0., 0.});
+    NDArray<double> exp({2.2, 9., -DataTypeUtils::max<double>(), 9., 4.2});
+
+    nd4j::ops::unsorted_segment_max<double> op;
+
+    auto result = op.execute({&x, &idx}, {}, {5});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestSegmentMin_1) {
     NDArray<double> x({1.8, 2.5,4.,  9., 2.1, 2.4,3.,9., 2.1, 2.1,0.7, 0.1, 3., 4.2, 2.2, 1.});
     NDArray<double> idx({0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 2.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0});

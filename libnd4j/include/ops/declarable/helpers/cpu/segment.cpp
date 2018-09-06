@@ -343,26 +343,29 @@ namespace helpers {
     void unsortedSegmentMaxFunctor(NDArray<T>* input, NDArray<T>* indices, Nd4jLong numOfClasses, NDArray<T>* output) {
 
         // if input is a vector: (as if in doc sample)
-        int idx = static_cast<int>((*indices)(0.));
+        //int idx = static_cast<int>((*indices)(0.));
+        std::map<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
+        for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
+            idxs[static_cast<Nd4jLong>(indices->getScalar(e))].push_back(e);
+
+        //std::sort(idxs.begin(), idxs.end());
+
         if (input->isVector()) { // 1D case
             T val = (*input)(0.);
-            //T minVal = DataTypeUtils::min<T>();
-            //output->assign(minVal);
-//#pragma omp parallel for
-            for (int e = 1; e < indices->lengthOf(); e++) {
-                if (idx == static_cast<int>((*indices)(e))) {
-                    // max
-                    val = nd4j::math::nd4j_max(val, (*input)(e));
+            T maxVal = DataTypeUtils::max<T>();
+            output->assign(-maxVal);
+//#pragma omp parallel for schedule(static)
+            for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
+                T val = input->getScalar(fi->second.at(0));
+                for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
+                    val = nd4j::math::nd4j_max(val, input->getScalar(fi->second.at(idx)));
                 }
-                else {
-                    idx = static_cast<int>((*indices)(e));
-                    val = (*input)(e);
-                }
-                (*output)(idx) = val;
+                (*output)(fi->first) = val;
             }
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
+            Nd4jLong idx = idxs[0][0];
 #pragma omp parallel for
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
