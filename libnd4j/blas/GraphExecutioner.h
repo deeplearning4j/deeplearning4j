@@ -39,7 +39,6 @@
 namespace nd4j {
     namespace graph {
 
-    template <typename T>
     class GraphExecutioner {
     protected:
 
@@ -47,13 +46,13 @@ namespace nd4j {
     public:
         //static Nd4jStatus executeFlatNode(nd4j::graph::Graph *graph, nd4j::graph::Node *node, nd4j::graph::VariableSpace<float> *variableSpace);
 
-        static Nd4jStatus executeFlatNode(Graph<T> *graph, Node<T> *node, VariableSpace<T> *variableSpace);
+        static Nd4jStatus executeFlatNode(Graph *graph, Node *node, VariableSpace *variableSpace);
 
         /**
         * This method executes given Graph
         * @return
         */
-        static Nd4jStatus execute(Graph<T> *graph, VariableSpace<T>* variableSpace = nullptr);
+        static Nd4jStatus execute(Graph *graph, VariableSpace *variableSpace = nullptr);
 
 
         /**
@@ -64,14 +63,14 @@ namespace nd4j {
         */
         static nd4j::graph::ResultWrapper* executeFlatBuffer(Nd4jPointer pointer);
 
-        static flatbuffers::Offset<FlatResult> execute(Graph<T> *graph, flatbuffers::FlatBufferBuilder &builder, const FlatInferenceRequest* request);
+        static flatbuffers::Offset<FlatResult> execute(Graph *graph, flatbuffers::FlatBufferBuilder &builder, const FlatInferenceRequest* request);
 
-        static Graph<T> *importFromTensorFlow(const char *fileName);
+        static Graph *importFromTensorFlow(const char *fileName);
 
 
-        static Graph<T> *importFromFlatBuffers(const char *filename);
+        static Graph *importFromFlatBuffers(const char *filename);
 
-        static Graph<T> *importFromFlatPointer(Nd4jPointer ptr);
+        static Graph *importFromFlatPointer(Nd4jPointer ptr);
     };
 
     long getFileSize(const char * filename);

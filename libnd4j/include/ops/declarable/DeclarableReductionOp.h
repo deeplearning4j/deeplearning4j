@@ -25,18 +25,17 @@
 
 namespace nd4j {
     namespace ops {
-        template <typename T>
-        class ND4J_EXPORT DeclarableReductionOp : public nd4j::ops::DeclarableOp<T> {
+        class ND4J_EXPORT DeclarableReductionOp : public nd4j::ops::DeclarableOp {
         protected:
             /**
              * This method executes this Op
              */
-            virtual Nd4jStatus validateAndExecute(Context<T>& block) = 0;
+            virtual Nd4jStatus validateAndExecute(Context& block) = 0;
         public:
             DeclarableReductionOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs);
             ~DeclarableReductionOp();
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context<T>& block);
+            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block);
         };
     }
 }

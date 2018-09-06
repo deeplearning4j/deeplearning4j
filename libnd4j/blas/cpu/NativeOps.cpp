@@ -1776,9 +1776,9 @@ void NativeOps::deleteShapeList(Nd4jPointer shapeList) {
 }
 
 template<typename T>
-nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, T* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs) {
-    nd4j::graph::VariableSpace<T> varSpace;
-    Context<T> block(2, &varSpace);
+nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::DeclarableOp* op, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs) {
+    nd4j::graph::VariableSpace varSpace;
+    Context block(2, &varSpace);
     nd4j::ShapeList inShapes;
 
     for (int e = 0; e < numIArgs; e++)
@@ -1814,12 +1814,11 @@ nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::D
 nd4j::ShapeList* NativeOps::calculateOutputShapes(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs) {
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationDouble(hash);
 
-    return _calculateOutputShapes<double>(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
+    return _calculateOutputShapes(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
 }
 
-template<typename T>
-nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* inputShapes, int numInputShapes, T* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs) {
-    Context<T> block(1);
+nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::DeclarableOp *op, Nd4jPointer* inputShapes, int numInputShapes, double *tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs) {
+    Context block(1);
     nd4j::ShapeList inShapes;
 
     for (int e = 0; e < numIArgs; e++)
@@ -1839,19 +1838,18 @@ nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::D
 nd4j::ShapeList* NativeOps::calculateOutputShapes(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs) {
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationDouble(hash);
 
-    return _calculateOutputShapes<double>(extraPointers, op, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
+    return _calculateOutputShapes(extraPointers, op, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
 }
 
-template<typename T>
-Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, T* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool isInplace) {
+Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool isInplace) {
     if (op == nullptr)
         nd4j_printf("Can't find requested operation: [%lld]\n", hash);
 
     // we're using the same fake nodeId everywhere here
 
-    std::vector<nd4j::NDArray<T>*> inputs(numInputs);
-    std::vector<nd4j::NDArray<T>*> outputs(numOutputs);
-    std::vector<T> ttArgs(numTArgs);
+    std::vector<nd4j::NDArray*> inputs(numInputs);
+    std::vector<nd4j::NDArray*> outputs(numOutputs);
+    std::vector<double> ttArgs(numTArgs);
     std::vector<Nd4jLong> iiArgs(numIArgs);
 
     // filling block now with inputs
@@ -1868,9 +1866,9 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, 
         for (int e = 0; e < numOutputs; e++) {
             // we want to keep original output shape intact
             auto shape = shape::copyShape(reinterpret_cast<Nd4jLong *>(outputShapes[e]));
-            T *buffer = nd4j::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : reinterpret_cast<T *>(outputBuffers[e]);
+            void *buffer = nd4j::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : outputBuffers[e];
 
-            auto array = new nd4j::NDArray<T>(buffer, shape);
+            auto array = new nd4j::NDArray(buffer, shape);
             outputs[e] = array;
 
             // and we want to release shape copy once we're done
@@ -1938,10 +1936,6 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, 
     return Status::OK();
 }
 
-template Nd4jStatus realExec<float16>(nd4j::ops::DeclarableOp<float16>*, Nd4jPointer*, Nd4jLong, Nd4jPointer*, Nd4jPointer*, int, Nd4jPointer*, Nd4jPointer*, int, float16*, int, Nd4jLong*, int, bool);
-template Nd4jStatus realExec<float> (nd4j::ops::DeclarableOp<float>*, Nd4jPointer*, Nd4jLong, Nd4jPointer*, Nd4jPointer*, int, Nd4jPointer*, Nd4jPointer*, int, float*, int, Nd4jLong*, int, bool);
-template Nd4jStatus realExec<double>(nd4j::ops::DeclarableOp<double>*, Nd4jPointer*, Nd4jLong, Nd4jPointer*, Nd4jPointer*, int, Nd4jPointer*, Nd4jPointer*, int, double*, int, Nd4jLong*, int, bool);
-
 
 int NativeOps::execCustomOp(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool isInplace) {
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationDouble(hash);
@@ -1950,15 +1944,14 @@ int NativeOps::execCustomOp(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPoint
 }
 
 int NativeOps::registerGraph(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer flatBufferPointer) {
-    auto graph = nd4j::graph::GraphExecutioner<double>::importFromFlatPointer(flatBufferPointer);
+    auto graph = nd4j::graph::GraphExecutioner::importFromFlatPointer(flatBufferPointer);
 
     nd4j::graph::GraphHolder::getInstance()->registerGraph(graphId, graph);
 
     return ND4J_STATUS_OK;
 }
 
-template <typename T>
-static VariablesSet<T>* executeStoredGraphT(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int* inputIndices, int numInputs) {
+static VariablesSet* executeStoredGraphT(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int* inputIndices, int numInputs) {
     auto graph = nd4j::graph::GraphHolder::getInstance()->pullGraph<T>(graphId);
     auto varSpace = graph->getVariableSpace()->clone();
 
@@ -1981,8 +1974,8 @@ static VariablesSet<T>* executeStoredGraphT(Nd4jPointer *extraPointers, Nd4jLong
             varSpace->putVariable(idx, array);
     }
 
-    auto result = nd4j::graph::GraphExecutioner<T>::execute(graph, varSpace);
-    auto varSet = new nd4j::graph::VariablesSet<T>(result);
+    auto result = nd4j::graph::GraphExecutioner::execute(graph, varSpace);
+    auto varSet = new nd4j::graph::VariablesSet(result);
 
     if (result == ND4J_STATUS_OK) {
         // pull back results, and provide them
@@ -2004,7 +1997,7 @@ static VariablesSet<T>* executeStoredGraphT(Nd4jPointer *extraPointers, Nd4jLong
     return varSet;
 }
 
-nd4j::graph::VariablesSet<float>* NativeOps::executeStoredGraph(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int* inputIndices, int numInputs) {
+nd4j::graph::VariablesSet* NativeOps::executeStoredGraph(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int* inputIndices, int numInputs) {
     return nullptr;
 }
 
@@ -2012,7 +2005,7 @@ int NativeOps::unregisterGraph(Nd4jPointer *extraPointers, Nd4jLong graphId) {
 
     nd4j::graph::GraphHolder::getInstance()->dropGraphAny(graphId);
 
-    return ND4J_STATUS_OK;
+    return nd4j::Status::OK();
 }
 
 void NativeOps::deletePointerArray(Nd4jPointer pointer) {
@@ -2054,8 +2047,7 @@ void NativeOps::deleteGraphState(Nd4jPointer state) {
     delete stateP;
 }
 
-template <typename T>
-Nd4jStatus execCustomOpWithScope(Nd4jPointer *extraPointers, nd4j::graph::GraphState<T> *state, Nd4jLong opHash, Nd4jLong *scopes, int numScopes, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int numInputs, Nd4jPointer *outputBuffers, Nd4jPointer *outputShapes, int numOutputs) {
+Nd4jStatus execCustomOpWithScope(Nd4jPointer *extraPointers, nd4j::graph::GraphState *state, Nd4jLong opHash, Nd4jLong *scopes, int numScopes, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int numInputs, Nd4jPointer *outputBuffers, Nd4jPointer *outputShapes, int numOutputs) {
     /**
      * That's basically exec, with VariableSpace provided in GraphState:
      * depending on operation (i.e. while of if), different logic executors could be used
@@ -2066,14 +2058,14 @@ Nd4jStatus execCustomOpWithScope(Nd4jPointer *extraPointers, nd4j::graph::GraphS
 
     // Node is dynamically created, and has nothing beyond it: only inputs and outputs
     // this node has id of 0, and inputs are
-    Node<T> node(OpType_LOGIC, opHash, 0);
+    Node node(OpType_LOGIC, opHash, 0);
 
     // mapping inputs
     for (int e = 0; e < numInputs; e++) {
-        auto buffer = reinterpret_cast<T *>(inputBuffers[e]);
+        auto buffer = inputBuffers[e];
         auto shapeInfo = reinterpret_cast<Nd4jLong *>(inputShapes[e]);
 
-        auto array = new nd4j::NDArray<T>(buffer, shapeInfo, varSpace->workspace());
+        auto array = new nd4j::NDArray(buffer, shapeInfo, varSpace->workspace());
 
         // now we just put array to VarSpace
         varSpace->putVariable(0, e, array);
@@ -2098,10 +2090,10 @@ Nd4jStatus execCustomOpWithScope(Nd4jPointer *extraPointers, nd4j::graph::GraphS
     // mapping outputs
 
     for (int e = 0; e < numOutputs; e++) {
-        auto buffer = reinterpret_cast<T *>(outputBuffers[e]);
+        auto buffer = outputBuffers[e];
         auto shapeInfo = reinterpret_cast<Nd4jLong *>(outputShapes[e]);
 
-        NDArray<T> array(buffer, shapeInfo, varSpace->workspace());
+        NDArray array(buffer, shapeInfo, varSpace->workspace());
 
         // now we just put array to VarSpace to the same ID
         //varSpace->putVariable(0, e, array);

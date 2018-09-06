@@ -28,19 +28,18 @@ namespace nd4j {
         /**
         *   This class provides wrapper for scalar transform operations, i.e. a + b = c, where either a or b is scalar primitive and other operand is NDArray
         */
-        template <typename T>
-        class ND4J_EXPORT LegacyScalarOp : public LegacyOp<T>{
+        class ND4J_EXPORT LegacyScalarOp : public LegacyOp {
         protected:
-            Nd4jStatus validateAndExecute(Context<T>& block);
+            Nd4jStatus validateAndExecute(Context& block);
 
-            T _scalar;
+            double _scalar;
         public:
             LegacyScalarOp();
             LegacyScalarOp(int opNum);
-            LegacyScalarOp(int opNum, T scalar);
+            LegacyScalarOp(int opNum, double scalar);
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context<T>& block);
-            virtual LegacyOp<T>* clone();
+            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block);
+            virtual LegacyOp* clone();
         };
     }
 }

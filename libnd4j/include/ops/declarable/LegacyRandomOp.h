@@ -30,21 +30,20 @@ namespace nd4j {
         /**
         *   This class provides wrapper for Random operations (i.e. linspace or Uniform)
         */
-        template <typename T>
-        class ND4J_EXPORT LegacyRandomOp : public LegacyOp<T> {
+        class ND4J_EXPORT LegacyRandomOp : public LegacyOp {
         protected:
-            Nd4jStatus validateAndExecute(Context<T>& block);
+            Nd4jStatus validateAndExecute(Context& block);
         public:
             LegacyRandomOp();
             LegacyRandomOp(int opNum);
             ~LegacyRandomOp() = default;
 
-            nd4j::ResultSet<T>*  execute(nd4j::random::RandomBuffer* rng, std::initializer_list<NDArray<T>*> inputs, std::initializer_list<T> tArgs, std::initializer_list<int> iArgs, bool isInplace = false);
-            nd4j::ResultSet<T>*  execute(nd4j::random::RandomBuffer* rng, std::vector<NDArray<T>*>& inputs, std::vector<T>& tArgs, std::vector<int>& iArgs, bool isInplace = false);
-            Nd4jStatus execute(Context<T>* block);
+            nd4j::ResultSet*  execute(nd4j::random::RandomBuffer* rng, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs, bool isInplace = false);
+            nd4j::ResultSet*  execute(nd4j::random::RandomBuffer* rng, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs, bool isInplace = false);
+            Nd4jStatus execute(Context* block);
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context<T>& block);
-            virtual LegacyOp<T>* clone();
+            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block);
+            virtual LegacyOp* clone();
         };
     }
 }

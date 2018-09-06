@@ -25,16 +25,15 @@
 
 namespace nd4j {
     namespace ops {
-        template <typename T>
-        class ND4J_EXPORT LegacyReduceOp : public LegacyOp<T> {
+        class ND4J_EXPORT LegacyReduceOp : public LegacyOp {
         protected:
-            Nd4jStatus validateAndExecute(Context<T>& block);
+            Nd4jStatus validateAndExecute(Context& block);
         public:
             LegacyReduceOp();
             LegacyReduceOp(int opNum);
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context<T>& block);
-            virtual LegacyOp<T>* clone();
+            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block);
+            virtual LegacyOp* clone();
         };
     }
 }

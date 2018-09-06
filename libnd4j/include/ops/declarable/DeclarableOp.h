@@ -62,7 +62,6 @@ namespace nd4j {
          * This class is the basic building block of Graph Operations. Any CustomOp out there is built on top of this "abstract" class.
          *
          */
-        template <typename T>
         class ND4J_EXPORT DeclarableOp {
         protected:
             OpDescriptor *_descriptor;
@@ -78,8 +77,8 @@ namespace nd4j {
              *
              * TODO: we want workspaces support right here
              */
-            bool allocateResult(Context<T>& block, std::initializer_list<Nd4jLong>& shape, char order = 'c');
-            bool allocateResult(Context<T>& block, Nd4jLong* shape);
+            bool allocateResult(Context& block, std::initializer_list<Nd4jLong>& shape, char order = 'c');
+            bool allocateResult(Context& block, Nd4jLong* shape);
 
             /**
              * This method overwrites existen NDArray or NDArrayList in VariableSpace
@@ -96,14 +95,14 @@ namespace nd4j {
             /*
             * This method attaches array to specific Variable, identified by node ID and outputNumber (which is output index for multi-output operations)
             */
-            void storeResult(Context<T> &block, int outputNumber, NDArray<T>& array);
-            void storeResult(Context<T> &block, int outputNumber, NDArray<T>* array);
-            nd4j::NDArray<T> *getZ(Context<T>& block, int inputId = 0);
+            void storeResult(Context &block, int outputNumber, NDArray& array);
+            void storeResult(Context &block, int outputNumber, NDArray* array);
+            nd4j::NDArray* getZ(Context& block, int inputId = 0);
 
             /**
             *   This method pre-allocates NDArrays for Op output, in case they are not available at op execution time
             */
-            int prepareOutputs(Context<T>& block);
+            int prepareOutputs(Context& block);
 
             //std::vector<int>* calculateOutputShape(std::vector<int>* inputShape, nd4j::graph::Block<T>& block);
         public:
@@ -128,7 +127,7 @@ namespace nd4j {
             /**
             *   This method should be available in each implemented Op, and should return Op output shape(s), for a given input shape(s)
             */
-            virtual ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context<T>& block) = 0;
+            virtual ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block) = 0;
 
             /**
              * Returns opName
@@ -158,44 +157,44 @@ namespace nd4j {
              * @param block
              * @return 0 if OK, error code otherwise
              */
-            virtual Nd4jStatus execute(Context<T>* block);
+            virtual Nd4jStatus execute(Context* block);
 
-            nd4j::ResultSet<T>* execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<T> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace = false);
-            Nd4jStatus execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<NDArray<T>*> outputs , std::initializer_list<T> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace = false);
-            Nd4jStatus execute(nd4j::random::RandomBuffer *rng, std::initializer_list<NDArray<T>*> inputs, std::initializer_list<NDArray<T>*> outputs , std::initializer_list<T> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace = false);
+            nd4j::ResultSet* execute(std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace = false);
+            Nd4jStatus execute(std::initializer_list<NDArray*> inputs, std::initializer_list<NDArray*> outputs , std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace = false);
+            Nd4jStatus execute(nd4j::random::RandomBuffer *rng, std::initializer_list<NDArray*> inputs, std::initializer_list<NDArray*> outputs , std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace = false);
 
-            nd4j::ResultSet<T>* execute(const std::vector<NDArray<T>*>& inputs, const std::vector<T>& tArgs, const std::vector<Nd4jLong>& iArgs, bool isInplace = false);
-            Nd4jStatus execute(std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& outputs , std::vector<T>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace = false);
-            Nd4jStatus execute(nd4j::random::RandomBuffer *rng, std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& outputs , std::vector<T>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace = false);
+            nd4j::ResultSet* execute(const std::vector<NDArray*>& inputs, const std::vector<double>& tArgs, const std::vector<Nd4jLong>& iArgs, bool isInplace = false);
+            Nd4jStatus execute(std::vector<NDArray*>& inputs, std::vector<NDArray*>& outputs , std::vector<double>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace = false);
+            Nd4jStatus execute(nd4j::random::RandomBuffer *rng, std::vector<NDArray*>& inputs, std::vector<NDArray*>& outputs , std::vector<double>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace = false);
 
-            nd4j::ResultSet<T>* execute(const nd4j::OpArgsHolder<T>& holder, bool isInplace = false);
+            nd4j::ResultSet* execute(const nd4j::OpArgsHolder& holder, bool isInplace = false);
 
             // There methods provide various validation options
-            Nd4jStatus validateNonEmptyInput(Context<T>& block);
+            Nd4jStatus validateNonEmptyInput(Context& block);
 
             // this method checks if all input arrays have equal lengths
-            Nd4jStatus validateInputLengthMatch(Context<T>& block);
+            Nd4jStatus validateInputLengthMatch(Context& block);
 
             // this method checks if all input arrays have the same shapes (orders/strides are NOT checked)
-            Nd4jStatus validateInputDimensionsMatch(Context<T>& block);
+            Nd4jStatus validateInputDimensionsMatch(Context& block);
 
             // this method check if all input arrays have the same orders
-            Nd4jStatus validateOrdersMatch(Context<T>& block);
+            Nd4jStatus validateOrdersMatch(Context& block);
 
             // this method checks if all input arrays are 2D
-            Nd4jStatus validateInput2D(Context<T>& block);
+            Nd4jStatus validateInput2D(Context& block);
 
             // this method checks if all input arrays are 3D
-            Nd4jStatus validateInput3D(Context<T>& block);
+            Nd4jStatus validateInput3D(Context& block);
 
             // this method checks if all input arrays are 4D
-            Nd4jStatus validateInput4D(Context<T>& block);
+            Nd4jStatus validateInput4D(Context& block);
 
             // this method checks if all input arrays are ND
-            Nd4jStatus validateInputDimensions(Context<T>& block, int rank);
+            Nd4jStatus validateInputDimensions(Context& block, int rank);
 
             // this method checks if number of available arguments matches op expectations
-            Nd4jStatus validateArguments(Context<T>& block);
+            Nd4jStatus validateArguments(Context& block);
         };
     }
 }
