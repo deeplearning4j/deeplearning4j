@@ -21,15 +21,17 @@
 #ifndef LIBND4J_PLAY_H
 #define LIBND4J_PLAY_H
 
-#include <type_boilerplate.h>
+#include <enum_boilerplate.h>
 
 #define DATA_TYPES \
         (DATA_FLOAT, float) ,\
         (DATA_DOUBLE, double) ,\
         (DATA_HALF, float16)
 
+BUILD_ENUMERATION(DATA_TYPES)
+
 //BUILD_SINGLE_SELECTOR(xType, functions::IndexReduce, ::op(a, b, c, d, e), DATA_TYPES)
-BUILD_DOUBLE_SELECTOR(xType, yType, functions::IndexReduce, ::op(a, b, c, d, e), DATA_TYPES, DATA_TYPES)
+//BUILD_DOUBLE_SELECTOR(xType, yType, functions::IndexReduce, ::op(a, b, c, d, e), DATA_TYPES, DATA_TYPES)
 
 //BUILD_SINGLE_TEMPLATE(template class Alpha, (signature), DATA_TYPES);
 
