@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.dimensionalityreduction;
 
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.eigen.Eigen;
 import org.nd4j.linalg.factory.Nd4j;
@@ -354,7 +355,7 @@ public class PCA {
      *      the columns of element 0 and the eigenvalues are element 1.
      */
     public static INDArray[] principalComponents(INDArray cov) {
-        assert cov.rows() == cov.columns();
+        Preconditions.checkArgument(cov.isMatrix() && cov.isSquare(), "Convariance matrix must be a square matrix: has shape %s", cov.shape());
         INDArray[] result = new INDArray[2];
         result[0] = Nd4j.eye(cov.rows());
         result[1] = Eigen.symmetricGeneralizedEigenvalues(result[0], cov, true);
