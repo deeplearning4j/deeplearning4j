@@ -1723,7 +1723,7 @@ void NativeOps::munmapFile(Nd4jPointer *extraPointers, Nd4jLong *ptrMap, Nd4jLon
 }
 
 nd4j::graph::ResultWrapper* NativeOps::executeFlatGraph(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
-    return nd4j::graph::GraphExecutioner<double>::executeFlatBuffer(flatBufferPointer);
+    return nd4j::graph::GraphExecutioner::executeFlatBuffer(flatBufferPointer);
 }
 
 const char* NativeOps::getAllCustomOps() {
@@ -1775,7 +1775,6 @@ void NativeOps::deleteShapeList(Nd4jPointer shapeList) {
     delete list;
 }
 
-template<typename T>
 nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::DeclarableOp* op, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs) {
     nd4j::graph::VariableSpace varSpace;
     Context block(2, &varSpace);
@@ -1791,9 +1790,9 @@ nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::D
         auto shape_ = reinterpret_cast<Nd4jLong *>(inputShapes[e]);
 
         // we shouldn't copy buffer if that's empty array
-        T *buffer_ = nd4j::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : reinterpret_cast<T *>(inputBuffers[e]);
+        void *buffer_ = nd4j::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
 
-        auto array = new nd4j::NDArray<T>(buffer_, shape_);
+        auto array = new nd4j::NDArray(buffer_, shape_);
         array->triggerAllocationFlag(false, false);
 
         // block should contain references to proper variable
@@ -1812,7 +1811,7 @@ nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::D
 }
 
 nd4j::ShapeList* NativeOps::calculateOutputShapes(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs) {
-    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationDouble(hash);
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
 
     return _calculateOutputShapes(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
 }
@@ -1836,7 +1835,7 @@ nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::D
 }
 
 nd4j::ShapeList* NativeOps::calculateOutputShapes(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs) {
-    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationDouble(hash);
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
 
     return _calculateOutputShapes(extraPointers, op, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
 }
@@ -1855,9 +1854,9 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4
     // filling block now with inputs
     for (int e = 0; e < numInputs; e++) {
         auto shape = reinterpret_cast<Nd4jLong *>(inputShapes[e]);
-        T *buffer = nd4j::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : reinterpret_cast<T *>(inputBuffers[e]);
+        void *buffer = nd4j::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
 
-        inputs[e] = new nd4j::NDArray<T>(buffer, shape);
+        inputs[e] = new nd4j::NDArray(buffer, shape);
     }
 
     // if not inplace - transferring output arrays
@@ -1938,9 +1937,9 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4
 
 
 int NativeOps::execCustomOp(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool isInplace) {
-    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationDouble(hash);
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
 
-    return realExec<double>(op, extraPointers, hash, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs, tArgs, numTArgs, iArgs, numIArgs, isInplace);
+    return realExec(op, extraPointers, hash, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs, tArgs, numTArgs, iArgs, numIArgs, isInplace);
 }
 
 int NativeOps::registerGraph(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer flatBufferPointer) {
@@ -1952,16 +1951,16 @@ int NativeOps::registerGraph(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jP
 }
 
 static VariablesSet* executeStoredGraphT(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int* inputIndices, int numInputs) {
-    auto graph = nd4j::graph::GraphHolder::getInstance()->pullGraph<T>(graphId);
-    auto varSpace = graph->getVariableSpace()->clone();
+    auto graph = nd4j::graph::GraphHolder::getInstance()->cloneGraph(graphId);
+    auto varSpace = graph->getVariableSpace();
 
-    std::vector<nd4j::NDArray<T> *> handles;
+    std::vector<nd4j::NDArray*> handles;
 
     for (int e = 0; e < numInputs; e++) {
         auto idx = inputIndices[e];
 
         // we'll delete this array later, together with cloned VariableSpace
-        auto array = new nd4j::NDArray<T>(reinterpret_cast<T *>(inputBuffers[e]), reinterpret_cast<Nd4jLong *>(inputShapes[e]));
+        auto array = new nd4j::NDArray(inputBuffers[e], reinterpret_cast<Nd4jLong *>(inputShapes[e]));
         handles.emplace_back(array);
 
         if (varSpace->hasVariable(idx)) {
@@ -1992,7 +1991,7 @@ static VariablesSet* executeStoredGraphT(Nd4jPointer *extraPointers, Nd4jLong gr
         delete outputs;
     }
 
-    delete varSpace;
+    delete graph;
 
     return varSet;
 }
@@ -2025,7 +2024,7 @@ void NativeOps::deleteLongArray(Nd4jPointer pointer) {
 
 template <typename T>
 static void deleteVariablesSetT(Nd4jPointer pointer) {
-    auto ptr = reinterpret_cast<nd4j::graph::VariablesSet<T>*>(pointer);
+    auto ptr = reinterpret_cast<nd4j::graph::VariablesSet*>(pointer);
     delete ptr;
 }
 
@@ -2039,11 +2038,11 @@ const char* NativeOps::getAllOperations() {
 
 
 Nd4jPointer NativeOps::getGraphState(Nd4jLong id) {
-    return (Nd4jPointer) new nd4j::graph::GraphState<double>(id);
+    return (Nd4jPointer) new nd4j::graph::GraphState(id);
 }
 
 void NativeOps::deleteGraphState(Nd4jPointer state) {
-    auto stateP = reinterpret_cast<nd4j::graph::GraphState<double> *>(state);
+    auto stateP = reinterpret_cast<nd4j::graph::GraphState*>(state);
     delete stateP;
 }
 
@@ -2083,7 +2082,7 @@ Nd4jStatus execCustomOpWithScope(Nd4jPointer *extraPointers, nd4j::graph::GraphS
         node.pickInput(scopeId, 0);
     }
 
-    auto result = LogicExecutor<T>::processNode(graph, &node);
+    auto result = LogicExecutor::processNode(graph, &node);
     if (result != Status::OK())
         return result;
 

@@ -18,6 +18,10 @@
 //  @author raver119@gmail.com
 //
 
+
+#ifndef LIBND4J_OP_ENUMS_H
+#define LIBND4J_OP_ENUMS_H
+
 #include <loops/legacy_ops.h>
 #include <type_boilerplate.h>
 #include <enum_boilerplate.h>
@@ -55,3 +59,5 @@ namespace nd4j {
         BUILD_ENUMERATION(SUMMARY_STATS_OPS)
     };
 }
+
+#endif

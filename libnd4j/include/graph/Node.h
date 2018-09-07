@@ -93,7 +93,7 @@ namespace nd4j {
             Nd4jLong _frameId = -1;
 
         public:
-            Node(OpType opType = OpType_TRANSFORM, int opNum = 0, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {}, float scalar = 0.0f, std::initializer_list<T> tArgs = {}, std::initializer_list<int> iArgs = {});
+            Node(OpType opType = OpType_TRANSFORM, int opNum = 0, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {}, float scalar = 0.0f, std::initializer_list<double> tArgs = {}, std::initializer_list<int> iArgs = {});
             Node(const nd4j::graph::FlatNode *node);
             ~Node();
 
@@ -160,16 +160,16 @@ namespace nd4j {
             int totalReferences();
             void addReference(int nodeId);
 
-            void setContextPrototype(ContextPrototype<T> *block);
-            ContextPrototype<T>* getContextPrototype();
+            void setContextPrototype(ContextPrototype *block);
+            ContextPrototype* getContextPrototype();
             bool hasBlockAttached();
 
             void setCustomOp(nd4j::ops::DeclarableOp<T> *customOp = nullptr);
-            nd4j::ops::DeclarableOp<T>* getCustomOp();
+            nd4j::ops::DeclarableOp* getCustomOp();
             bool hasCustomOp();
 
-            void setGraph(nd4j::graph::Graph<T>* graph = nullptr);
-            nd4j::graph::Graph<T>* getGraph();
+            void setGraph(nd4j::graph::Graph* graph = nullptr);
+            nd4j::graph::Graph* getGraph();
             bool hasGraphEmbedded();
 
             bool isInplace();
@@ -230,7 +230,7 @@ namespace nd4j {
 
             }
 
-            static nd4j::ops::DeclarableOp<T>* buildOpByType(OpType opType, int numInputs, int numIArgs, int numTArgs, int opNum, T scalar);
+            static nd4j::ops::DeclarableOp* buildOpByType(OpType opType, int numInputs, int numIArgs, int numTArgs, int opNum, T scalar);
         };
     }
 }

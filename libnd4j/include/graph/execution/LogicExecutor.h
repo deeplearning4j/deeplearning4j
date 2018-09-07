@@ -31,10 +31,9 @@ namespace nd4j {
          * This class acts as switch for picking logic execution based on opNum, unique for each logical op
          * @tparam T
          */
-        template <typename T>
         class LogicExecutor {
         public:
-            static Nd4jStatus processNode(Graph<T>* graph, Node<T>* node);
+            static Nd4jStatus processNode(Graph* graph, Node* node);
         };
     }
 }

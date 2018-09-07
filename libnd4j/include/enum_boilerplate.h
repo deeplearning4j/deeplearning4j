@@ -18,6 +18,9 @@
 //  @author raver119@gmail.com
 //
 
+#ifndef LIBND4J_ENUM_BOILERPLATE_H
+#define LIBND4J_ENUM_BOILERPLATE_H
+
 #include <type_boilerplate.h>
 
 
@@ -131,3 +134,5 @@
 #define EXEC_ENUMERATOR(...) EXPAND(_EXEC_ENUM(_EXPAND_ENUM, __VA_ARGS__))
 
 #define BUILD_ENUMERATION(OPS) EVAL(EXEC_ENUMERATOR(OPS))
+
+#endif

@@ -18,8 +18,8 @@
 // Created by raver on 6/12/2018.
 //
 
-#ifndef TESTS_CPU_TYPE_BOILERPLATE_H
-#define TESTS_CPU_TYPE_BOILERPLATE_H
+#ifndef LIBND4J_TYPE_BOILERPLATE_H
+#define LIBND4J_TYPE_BOILERPLATE_H
 
 #define EXPAND(...) __VA_ARGS__
 #define EXTRACT(...) EXTRACT __VA_ARGS__
