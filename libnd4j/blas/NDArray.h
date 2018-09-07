@@ -31,6 +31,7 @@
 #include <array/ArrayOptions.h>
 #include <array/ArrayType.h>
 #include <array/ResultSet.h>
+#include <helpers/ShapeBuilders.h>
 #include <op_enums.h>
 
 
@@ -1133,6 +1134,7 @@ namespace nd4j {
         *  value - scalar value to assign
         */
         FORCEINLINE void putIndexedScalar(const Nd4jLong i, const double value);
+        FORCEINLINE void putIndexedScalar(const Nd4jLong i, const NDArray value);
 
         /** 
         *  assigns given scalar to array element by given index, regards array buffer as linear
@@ -1147,8 +1149,7 @@ namespace nd4j {
         *  j - number of row
         *  value - scalar value to assign
         */
-        template <typename T>
-        FORCEINLINE void putScalar(const Nd4jLong i, const Nd4jLong j, const T value);
+        FORCEINLINE void putScalar(const Nd4jLong i, const Nd4jLong j, const double value);
 
         /** 
         *  assigns given scalar to 3D array element by given indexes
@@ -1157,8 +1158,7 @@ namespace nd4j {
         *  k - depth
         *  value - scalar value to assign
         */
-        template <typename T>
-        FORCEINLINE void putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const T value);
+        FORCEINLINE void putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const double value);
 
         /**
         *  returns true if array is 2D
@@ -1436,8 +1436,7 @@ Nd4jLong NDArray::ews() const {
 
 //////////////////////////////////////////////////////////////////////////
 
- bool NDArray::isScalar() const {
-    
+bool NDArray::isScalar() const {
     return shape::isScalar(this->_shapeInfo);
 }
 
@@ -1452,15 +1451,25 @@ NDArray NDArray::operator()(const Nd4jLong i) const {
     auto ews   = shape::elementWiseStride(_shapeInfo);
     char order = ordering();   
 
-    if(ews == 1 && order == 'c')
-        return _buffer[i];
-    else if(ews > 1 && order == 'c')
-        return _buffer[i*ews];
-    else {
+    if(ews == 1 && order == 'c') {
+        auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * this->sizeOfT());
+        NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
+        result.triggerAllocationFlag(false, true);
+        return result;
+    } else if(ews > 1 && order == 'c') {
+        auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * ews * this->sizeOfT());
+        NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
+        result.triggerAllocationFlag(false, true);
+        return result;
+    } else {
         Nd4jLong idx[MAX_RANK];
         shape::ind2subC(rankOf(), shapeOf(), i, idx);
-        Nd4jLong offset = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
-        return _buffer[offset];        
+        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
+
+        auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
+        NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
+        result.triggerAllocationFlag(false, true);
+        return result;
     }
 }
 
@@ -1474,15 +1483,27 @@ NDArray& NDArray::operator()(const Nd4jLong i) {
     auto ews = shape::elementWiseStride(_shapeInfo);
     auto order = ordering();
 
-    if(ews == 1 && order == 'c')
-        return _buffer[i];
-    else if(ews > 1 && order == 'c')
-        return _buffer[i*ews];
-    else {
+    if(ews == 1 && order == 'c') {
+        auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * this->sizeOfT());
+        NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
+        result.triggerAllocationFlag(false, true);
+
+        // FIXME: bad
+        return result;
+    } else if(ews > 1 && order == 'c') {
+        auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * ews * this->sizeOfT());
+        NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
+        result.triggerAllocationFlag(false, true);
+        return result;
+    } else {
         Nd4jLong idx[MAX_RANK];
         shape::ind2subC(rankOf(), shapeOf(), i, idx);
-        auto offset = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
-        return _buffer[offset];
+        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
+
+        auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
+        NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
+        result.triggerAllocationFlag(false, true);
+        return result;
     }    
 }
 
@@ -1496,7 +1517,12 @@ NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j) const {
     
     Nd4jLong coords[2] = {i, j};
     auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
-    return _buffer[xOffset];
+
+    // TODO: do we really want a view here?
+    auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
+    NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
+    result.triggerAllocationFlag(false, true);
+    return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1508,7 +1534,13 @@ NDArray& NDArray::operator()(const Nd4jLong  i, const Nd4jLong j) {
 
     Nd4jLong coords[2] = {i, j};
     auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
-    return _buffer[xOffset];
+
+    auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
+    NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
+    result.triggerAllocationFlag(false, true);
+
+    //FIXME: bad, will crash!
+    return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1521,7 +1553,11 @@ NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k
     
     Nd4jLong coords[3] = {i, j, k};
     auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
-    return _buffer[xOffset];
+
+    auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
+    NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
+    result.triggerAllocationFlag(false, true);
+    return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1534,7 +1570,13 @@ NDArray& NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong 
 
     Nd4jLong coords[3] = {i, j, k};
     auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
-    return _buffer[xOffset];
+
+    auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
+    NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
+    result.triggerAllocationFlag(false, true);
+
+    //FIXME: bad, will crash!
+    return result;
 }
 
 
@@ -1545,7 +1587,11 @@ NDArray NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v
 
     Nd4jLong coords[4] = {t, u, v, w};
     auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
-    return _buffer[xOffset];
+
+    auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
+    NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
+    result.triggerAllocationFlag(false, true);
+    return result;
 }
 
 
@@ -1556,7 +1602,12 @@ NDArray& NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong 
 
     Nd4jLong coords[4] = {t, u, v, w};
     auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
-    return _buffer[xOffset];
+
+    // FIXME
+    auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
+    NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
+    result.triggerAllocationFlag(false, true);
+    return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1567,7 +1618,12 @@ NDArray NDArray::operator()(const Nd4jLong* idx) const {
         if (idx[i] >= sizeAt(i))
             throw std::invalid_argument("NDArray::operator(const Nd4jLong* idx): input index is out of dimension length !");
     
-    return _buffer[shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf())];
+    auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
+
+    auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
+    NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
+    result.triggerAllocationFlag(false, true);
+    return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1578,7 +1634,14 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
         if (idx[i] >= sizeAt(i))
             throw std::invalid_argument("NDArray::operator(const Nd4jLong* idx): input index is out of dimension length !");
 
-    return _buffer[shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf())];
+    auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
+
+    auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
+    NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
+    result.triggerAllocationFlag(false, true);
+
+    // FIXME
+    return result;
 }
 
 //////////////////////////////////////////////////////////////////////////

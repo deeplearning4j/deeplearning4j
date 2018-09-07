@@ -100,12 +100,6 @@ namespace nd4j {
         // returns ShapeList pointer with result shape
         static Nd4jLong* matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* theSecondShape, bool shouldTranspondFirst, bool shouldTranspondSecond, nd4j::memory::Workspace* workspace);
 
-        static Nd4jLong* createScalarShapeInfo(nd4j::memory::Workspace* workspace = nullptr);
-        static Nd4jLong* createScalarShapeInfo(nd4j::DataType dataType, nd4j::memory::Workspace* workspace = nullptr);
-
-        static Nd4jLong* createVectorShapeInfo(Nd4jLong length, nd4j::memory::Workspace* workspace = nullptr);
-        static Nd4jLong* createVectorShapeInfo(nd4j::DataType dataType, Nd4jLong length, nd4j::memory::Workspace* workspace = nullptr);
-
         /**
         *  This method evaluates permutation vector necessary for reducing of shapeFrom to shapeTo 
         *  if shapeFrom is identical to shapeTo (permutation is unnecessary) then empty vector is returned
@@ -142,13 +136,6 @@ namespace nd4j {
         *  idxRanges - where to put result, the length of idxRanges must be equal to 2*shapeInfo[0]
         */ 
         static void evalIdxRangesForSubArr(const Nd4jLong subArrIdx,  const Nd4jLong* shapeInfo, const std::vector<int>& dimsToExclude, Nd4jLong* idxRanges);
-
-        /**
-        *   create shapeInfo for given order basing on shape stored in shapeOnly vector
-        *   memory allocation for shapeInfo is on given workspace
-        */
-        static Nd4jLong* createShapeInfo(const char order, const std::vector<Nd4jLong> shapeOnly, memory::Workspace* workspace);
-        static Nd4jLong* createShapeInfo(nd4j::DataType dataType, const char order, const std::vector<Nd4jLong> shapeOnly, memory::Workspace* workspace);
 
         /**
         *   return shape without unities, for example if shape is [1,2,1,3] then [2,3] will be returned
