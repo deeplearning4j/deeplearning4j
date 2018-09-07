@@ -62,6 +62,18 @@ namespace nd4j {
 
             return SHAPELIST(outputShape);
         }
-    }
+        CUSTOM_OP_IMPL(segment_min_bp, 3, 2, false, 0, 0) {
+            return ND4J_STATUS_OK;
+        }
+        DECLARE_SHAPE_FN(segment_min_bp){
+            Nd4jLong* in = inputShape->at(0);
+            Nd4jLong* inIdx = inputShape->at(1);
 
+            Nd4jLong* outShape;
+            Nd4jLong* outIndex;
+            COPY_SHAPE(in, outShape);
+            COPY_SHAPE(inIdx, outIndex);
+            return SHAPELIST(outShape, outIndex);
+        }
+    }
 }
