@@ -98,10 +98,10 @@ namespace nd4j {
         return result;
     }
 
-////////////////////////////////////////////////////////////////////////
-// default constructor, do not allocate memory, memory for array is passed from outside
+    ////////////////////////////////////////////////////////////////////////
+    // default constructor, do not allocate memory, memory for array is passed from outside
     NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, nd4j::memory::Workspace* workspace) {
-        _buffer    = buffer;
+        _buffer    = reinterpret_cast<int8_t *>(buffer);
         _shapeInfo = shapeInfo;
         _isBuffAlloc = false;                                  // indicate that memory for array is passed from outside
         _isShapeAlloc = false;
@@ -111,10 +111,9 @@ namespace nd4j {
             _length = shape::length(shapeInfo);
     }
 
-////////////////////////////////////////////////////////////////////////
-//constructor, create empty array at given workspace
+    ////////////////////////////////////////////////////////////////////////
+    //constructor, create empty array at given workspace
     NDArray::NDArray(nd4j::memory::Workspace* workspace) {
-
         _buffer    = nullptr;
         _shapeInfo = nullptr;
         _isBuffAlloc = false;                                  // indicate that memory for array is passed from outside
@@ -123,7 +122,7 @@ namespace nd4j {
         _length = 0;
     }
 
-////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////
     template <typename T>
     NDArray* NDArray::create(std::initializer_list<Nd4jLong> s, nd4j::memory::Workspace* workspace) {
         auto res = new NDArray();
@@ -146,26 +145,26 @@ namespace nd4j {
         return res;
     }
 
-////////////////////////////////////////////////////////////////////////
-template <typename T>
-NDArray* NDArray::scalar(T scalar, nd4j::memory::Workspace* workspace) {
-     auto res = new NDArray();
+    ////////////////////////////////////////////////////////////////////////
+    template <typename T>
+    NDArray* NDArray::scalar(T scalar, nd4j::memory::Workspace* workspace) {
+        auto res = new NDArray();
 
-     res->_length = 1;
-     ALLOCATE(res->_buffer, workspace, 1 * sizeof(T), int8_t);
-     ALLOCATE(res->_shapeInfo, workspace, shape::shapeInfoByteLength(0), Nd4jLong);
-     res->_shapeInfo[0] = 0;
-     res->_shapeInfo[1] = 0;
-     res->_shapeInfo[2] = 1;
-     res->_shapeInfo[3] = 99;
+        res->_length = 1;
+        ALLOCATE(res->_buffer, workspace, 1 * sizeof(T), int8_t);
+        ALLOCATE(res->_shapeInfo, workspace, shape::shapeInfoByteLength(0), Nd4jLong);
+        res->_shapeInfo[0] = 0;
+        res->_shapeInfo[1] = 0;
+        res->_shapeInfo[2] = 1;
+        res->_shapeInfo[3] = 99;
 
-     res->_isBuffAlloc = true;
-     res->_isShapeAlloc = true;
+        res->_isBuffAlloc = true;
+        res->_isShapeAlloc = true;
 
-     res->assign(scalar);
+        res->assign(scalar);
 
-     return res;
-}
+        return res;
+    }
 
 #ifndef __JAVACPP_HACK__
     template <typename T>
