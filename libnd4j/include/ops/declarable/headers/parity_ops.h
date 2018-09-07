@@ -1126,7 +1126,7 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_extract_image_patches)
         DECLARE_CUSTOM_OP(extract_image_patches, 1, 1, false, 0, 7);
         #endif
-        
+
         /**
          * roll - op porting from numpy (https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.roll.html)
          * 
