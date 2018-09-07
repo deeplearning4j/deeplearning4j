@@ -424,11 +424,11 @@ namespace nd4j {
         *  keepDims - if true then put unities in place of reduced dimensions
         */ 
 
-        NDArray* reduceAlongDimension(nd4j::ReduceOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
+        NDArray* reduceAlongDimension(nd4j::reduce::Ops op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
 
-        NDArray* reduceAlongDimension(nd4j::ReduceOps op, const std::initializer_list<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
+        NDArray* reduceAlongDimension(nd4j::reduce::Ops op, const std::initializer_list<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
         
-        NDArray reduceAlongDims(nd4j::ReduceOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
+        NDArray reduceAlongDims(nd4j::reduce::Ops op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
 
         /**
         *  method reduces array by excluding its shapes along dimensions present in given dimensions vector
@@ -437,25 +437,25 @@ namespace nd4j {
         *  keepDims - if true then put unities in place of reduced dimensions
         *  extras - extra parameters
         */ 
-        void reduceAlongDimension(nd4j::ReduceOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, void *extras = nullptr) const;
+        void reduceAlongDimension(nd4j::reduce::Ops op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, void *extras = nullptr) const;
 
         /**
         *  return variance of array elements set
         *  biasCorrected -  if true bias correction will be applied
         */
-        NDArray varianceNumber(nd4j::VarianceOps op, bool biasCorrected = true);
+        NDArray varianceNumber(nd4j::variance::Ops op, bool biasCorrected = true);
 
         /**
         *  apply scalar operation to array 
         *  extraParams - extra parameters for operation
         */  
-        NDArray reduceNumber(nd4j::ReduceOps ops, void *extraParams = nullptr) const;
+        NDArray reduceNumber(nd4j::reduce::Ops ops, void *extraParams = nullptr) const;
 
         /**
         *  returns element index which corresponds to some condition imposed by operation
         *  extraParams - extra parameters for operation
         */ 
-        Nd4jLong indexReduceNumber(nd4j::IndexReduceOps op, void *extraParams = nullptr);
+        Nd4jLong indexReduceNumber(nd4j::indexreduce::Ops op, void *extraParams = nullptr);
 
         /**
         *  returns index of max element in a given array (optionally: along given dimension(s))
@@ -466,20 +466,21 @@ namespace nd4j {
         /**
          * 
          */
-        void applyTransform(nd4j::TransformOps op, NDArray *target = nullptr, void *extraParams = nullptr);
+        void applyTransform(nd4j::transform::Ops op, NDArray *target = nullptr, void *extraParams = nullptr);
+        void applyTransform(nd4j::transform::Ops, void *extraParams = nullptr);
 
         /**
         *  apply OpName transformation to this array and store result in new array being returned
         *  extraParams - extra parameters for operation
         */
-        NDArray transform(nd4j::TransformOps op, void *extraParams = nullptr) const;
+        NDArray transform(nd4j::transform::Ops op, void *extraParams = nullptr) const;
 
         /**
         *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in this array
         *  other - second array necessary for pairwise operation
         *  extraParams - extra parameters for operation
         */
-        void applyPairwiseTransform(nd4j::PairwiseOps op, NDArray *other, void *extraParams);
+        void applyPairwiseTransform(nd4j::pairwise::Ops op, NDArray *other, void *extraParams);
 
         /**
         *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in target array
@@ -487,7 +488,7 @@ namespace nd4j {
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */
-        void applyPairwiseTransform(nd4j::PairwiseOps op, NDArray *other, NDArray *target, void *extraParams);
+        void applyPairwiseTransform(nd4j::pairwise::Ops op, NDArray *other, NDArray *target, void *extraParams);
 
         /**
         *  apply operation which requires broadcasting, broadcast a smaller array (tad) along  bigger one (this)
@@ -496,18 +497,18 @@ namespace nd4j {
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */               
-        void applyBroadcast(nd4j::BroadcastOps op, std::initializer_list<int> dimensions, const NDArray* tad, NDArray* target = nullptr, void* extraArgs = nullptr);
+        void applyBroadcast(nd4j::broadcast::Ops op, std::initializer_list<int> dimensions, const NDArray* tad, NDArray* target = nullptr, void* extraArgs = nullptr);
 
-        void applyBroadcast(nd4j::BroadcastOps op, std::vector<int> &dimensions, const NDArray *tad, NDArray *target = nullptr, void *extraArgs = nullptr);
+        void applyBroadcast(nd4j::broadcast::Ops op, std::vector<int> &dimensions, const NDArray *tad, NDArray *target = nullptr, void *extraArgs = nullptr);
 
         /**
         *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
         *  other - input array 
         *  extraParams - extra parameters for operation
         */                       
-        NDArray applyTrueBroadcast(nd4j::BroadcastOps op, const NDArray& other, void *extraArgs = nullptr) const;
+        NDArray applyTrueBroadcast(nd4j::broadcast::Ops op, const NDArray& other, void *extraArgs = nullptr) const;
 
-        NDArray* applyTrueBroadcast(nd4j::BroadcastOps op, const NDArray* other, void *extraArgs = nullptr) const;
+        NDArray* applyTrueBroadcast(nd4j::broadcast::Ops op, const NDArray* other, void *extraArgs = nullptr) const;
 
         /**
         *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
@@ -516,7 +517,7 @@ namespace nd4j {
         *  checkTargetShape - if true check whether target shape is suitable for broadcasting
         *  extraParams - extra parameters for operation
         */
-        void applyTrueBroadcast(nd4j::BroadcastOps op, const NDArray* other, NDArray* target, const bool checkTargetShape = true, void *extraArgs = nullptr) const;
+        void applyTrueBroadcast(nd4j::broadcast::Ops op, const NDArray* other, NDArray* target, const bool checkTargetShape = true, void *extraArgs = nullptr) const;
 
         /** 
         *  apply a scalar operation to an array
@@ -524,8 +525,8 @@ namespace nd4j {
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */ 
-        void applyScalar(nd4j::ScalarOps op, double scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
-        void applyScalar(nd4j::ScalarOps op, Nd4jLong scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
+        void applyScalar(nd4j::scalar::Ops op, double scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
+        void applyScalar(nd4j::scalar::Ops op, Nd4jLong scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
 
         /** 
         *  apply a scalar operation to an array
@@ -533,7 +534,7 @@ namespace nd4j {
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */ 
-        void applyScalar(nd4j::ScalarOps op, NDArray& scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
+        void applyScalar(nd4j::scalar::Ops op, NDArray& scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
 
 
 #ifndef __JAVACPP_HACK__
@@ -746,7 +747,7 @@ namespace nd4j {
         *  dimensions - vector of dimensions to reduce along
         *  extraArgs - extra parameters for operation
         */
-        NDArray* applyIndexReduce(nd4j::IndexReduceOps op, const std::vector<int>& dimensions, const void *extraParams = nullptr) const;
+        NDArray* applyIndexReduce(nd4j::indexreduce::Ops op, const std::vector<int>& dimensions, const void *extraParams = nullptr) const;
 
         /**
         *  reduces dimensions in array relying on index operation OpName
@@ -754,14 +755,14 @@ namespace nd4j {
         *  dimensions - vector of dimensions to reduce along
         *  extraArgs - extra parameters for operation
         */
-        void applyIndexReduce(nd4j::IndexReduceOps op, const NDArray* target, const std::vector<int>& dimensions, const void *extraParams = nullptr) const;
+        void applyIndexReduce(nd4j::indexreduce::Ops op, const NDArray* target, const std::vector<int>& dimensions, const void *extraParams = nullptr) const;
 
         /**
         *  apply reduce3 operation OpName to this and other array, return result in new output array
         *  other - input array
         *  extraArgs - extra parameters for operation
         */
-        NDArray* applyReduce3(nd4j::Reduce3Ops op, const NDArray* other, const void* extraParams = nullptr) const;
+        NDArray* applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, const void* extraParams = nullptr) const;
 
         /**
         *  apply reduce3 operation OpName to this and other array, return result in new output array
@@ -769,7 +770,7 @@ namespace nd4j {
         *  dimensions - vector of dimensions to reduce along (tads not axis)
         *  extraArgs - extra parameters for operation
         */
-        NDArray* applyAllReduce3(nd4j::Reduce3Ops op, const NDArray* other, const std::vector<int>& dimensions, const void* extraParams = nullptr) const;
+        NDArray* applyAllReduce3(nd4j::reduce3::Ops op, const NDArray* other, const std::vector<int>& dimensions, const void* extraParams = nullptr) const;
                 
         /**
         *  apply reduce3 (exec) operation OpName to this and other array, return result in new output array
@@ -777,7 +778,7 @@ namespace nd4j {
         *  dimensions - vector of dimensions to reduce along (same as reduceAlongDimension)
         *  extraArgs - extra parameters for operation
         */
-        NDArray* applyReduce3(nd4j::Reduce3Ops op, const NDArray* other, const std::vector<int>& dimensions, const void* extraParams = nullptr) const;
+        NDArray* applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, const std::vector<int>& dimensions, const void* extraParams = nullptr) const;
 
 
         /**
@@ -785,13 +786,13 @@ namespace nd4j {
         *  biasCorrected -  if true bias correction will be applied
         *  dimensions - vector of dimensions to calculate variance along
         */
-        NDArray* varianceAlongDimension(nd4j::VarianceOps op, const bool biasCorrected, const std::vector<int>& dimensions) const;
+        NDArray* varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const;
 
         NDArray* varianceAlongDimension(const bool biasCorrected, const std::initializer_list<int>& dimensions) const;
 
-        void varianceAlongDimension(nd4j::VarianceOps op, const NDArray* target, const bool biasCorrected, const std::vector<int>& dimensions);
+        void varianceAlongDimension(nd4j::variance::Ops op, const NDArray* target, const bool biasCorrected, const std::vector<int>& dimensions);
 
-        void varianceAlongDimension(nd4j::VarianceOps op, const NDArray* target, const bool biasCorrected, const std::initializer_list<int>& dimensions);
+        void varianceAlongDimension(nd4j::variance::Ops op, const NDArray* target, const bool biasCorrected, const std::initializer_list<int>& dimensions);
 
         /**
         *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
@@ -1008,7 +1009,7 @@ namespace nd4j {
         ResultSet* allExamples()const ;        
 
         // FIXME: get rid of this signature
-        void saveResultOfBroadcast(nd4j::BroadcastOps op, const NDArray& x, const NDArray& y, const bool checkThisShape = false);
+        void saveResultOfBroadcast(nd4j::broadcast::Ops op, const NDArray& x, const NDArray& y, const bool checkThisShape = false);
 
         /**
         *  default destructor

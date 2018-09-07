@@ -27,37 +27,53 @@
 #include <enum_boilerplate.h>
 
 namespace nd4j {
-    enum class TransformOps {
-       BUILD_ENUMERATION(TRANSFORM_OPS)
-    };
+    namespace transform {
+        enum Ops {
+            BUILD_ENUMERATION(TRANSFORM_OPS)
+        };
+    }
 
-    enum class PairwiseOps {
-       BUILD_ENUMERATION(PAIRWISE_TRANSFORM_OPS)
-    };
+    namespace pairwise {
+        enum Ops {
+            BUILD_ENUMERATION(PAIRWISE_TRANSFORM_OPS)
+        };
+    }
 
-    enum class ScalarOps {
-        BUILD_ENUMERATION(SCALAR_OPS)
-    };
+    namespace scalar {
+        enum Ops {
+            BUILD_ENUMERATION(SCALAR_OPS)
+        };
+    }
 
-    enum class ReduceOps {
-        BUILD_ENUMERATION(REDUCE_OPS)
-    };
+    namespace reduce {
+        enum Ops {
+            BUILD_ENUMERATION(REDUCE_OPS)
+        };
+    }
 
-    enum class Reduce3Ops {
-        BUILD_ENUMERATION(REDUCE3_OPS)
-    };
+    namespace reduce3 {
+        enum Ops {
+            BUILD_ENUMERATION(REDUCE3_OPS)
+        };
+    }
 
-    enum class IndexReduceOps {
-        BUILD_ENUMERATION(INDEX_REDUCE_OPS)
-    };
+    namespace indexreduce {
+        enum Ops {
+            BUILD_ENUMERATION(INDEX_REDUCE_OPS)
+        };
+    }
 
-    enum class BroadcastOps {
-        BUILD_ENUMERATION(BROADCAST_OPS)
-    };
+    namespace broadcast {
+        enum Ops {
+            BUILD_ENUMERATION(BROADCAST_OPS)
+        };
+    }
 
-    enum class VarianceOps {
-        BUILD_ENUMERATION(SUMMARY_STATS_OPS)
-    };
+    namespace variance {
+        enum Ops {
+            BUILD_ENUMERATION(SUMMARY_STATS_OPS)
+        };
+    }
 }
 
 #endif

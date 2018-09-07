@@ -65,6 +65,11 @@ namespace nd4j {
     }
 
     template <>
+    DataType DataTypeUtils::fromT<bool>() {
+        return DataType_BOOL;
+    }
+
+    template <>
     DataType DataTypeUtils::fromT<float>() {
         return DataType_FLOAT;
     }
@@ -79,4 +84,43 @@ namespace nd4j {
         return DataType_DOUBLE;
     }
 
+    template <>
+    DataType DataTypeUtils::fromT<int8_t>() {
+        return DataType_INT8;
+    }
+
+    template <>
+    DataType DataTypeUtils::fromT<int16_t>() {
+        return DataType_INT16;
+    }
+
+    template <>
+    DataType DataTypeUtils::fromT<int>() {
+        return DataType_INT32;
+    }
+
+    template <>
+    DataType DataTypeUtils::fromT<Nd4jLong>() {
+        return DataType_INT64;
+    }
+
+    template <>
+    DataType DataTypeUtils::fromT<Nd4jULong>() {
+        return DataType_UINT64;
+    }
+
+    template <>
+    DataType DataTypeUtils::fromT<uint32_t >() {
+        return DataType_UINT32;
+    }
+
+    template <>
+    DataType DataTypeUtils::fromT<uint16_t >() {
+        return DataType_UINT16;
+    }
+
+    template <>
+    DataType DataTypeUtils::fromT<uint8_t >() {
+        return DataType_UINT8;
+    }
 }
