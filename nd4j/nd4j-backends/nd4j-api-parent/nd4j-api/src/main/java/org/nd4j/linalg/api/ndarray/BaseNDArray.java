@@ -1913,10 +1913,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 return Shape.getDouble(this, 0, indices[0]);
             else if (isColumnVector())
                 return Shape.getDouble(this, indices[0], 0);
-            else if (isScalar() && indices[0] == 0)
+            else if ((isScalar() || length() == 1) && indices[0] == 0)
                 return data().getDouble(0);
-            else
-                throw new IllegalStateException("Indexes length must be > 1 for non vectors and scalars");
         }
         return Shape.getDouble(this, indices);
     }
@@ -2133,7 +2131,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             for (int i = 0; i < put.length(); i++)
                 view.putScalar(i, put.getDouble(i));
         else {
-            Preconditions.checkState(view.equalShapes(put), "Cannot put slice: array to be put and current array have different shapes");
+            if(!view.equalShapes(put)){
+                throw new IllegalStateException("Cannot put slice: array to be put (" + Arrays.toString(put.shape()) +
+                        ") and slice array (" + Arrays.toString(view.shape()) + ") have different shapes");
+            }
             view.assign(put);
         }
         return this;

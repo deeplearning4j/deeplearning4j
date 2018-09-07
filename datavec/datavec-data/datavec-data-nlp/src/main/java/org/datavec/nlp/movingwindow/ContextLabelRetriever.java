@@ -81,7 +81,7 @@ public class ContextLabelRetriever {
             if (currLabel != null && endLabel != null) {
                 currLabel = currLabel.replaceAll("[<>/]", "");
                 endLabel = endLabel.replaceAll("[<>/]", "");
-                Preconditions.checkState(!currLabel.isEmpty, "Current label is empty!");
+                Preconditions.checkState(!currLabel.isEmpty(), "Current label is empty!");
                 Preconditions.checkState(!endLabel.isEmpty(), "End label is empty!");
                 Preconditions.checkState(currLabel.equals(endLabel), "Current label begin and end did not match for the parse. Was: %s ending with %s",
                         currLabel, endLabel);
