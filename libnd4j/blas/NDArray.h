@@ -825,8 +825,8 @@ namespace nd4j {
         *  friend functions which implement addition operator: scalar + array
         *  scalar - input scalar to add
         */
-        template <typename T>
-        friend NDArray nd4j::operator+(const T scalar, const NDArray& arr);
+        //template <typename T>
+        //friend NDArray nd4j::operator+(const T scalar, const NDArray& arr);
 
         
         /**
@@ -869,7 +869,7 @@ namespace nd4j {
         *  friend functions which implement subtraction operator: scalar - array
         *  scalar - input scalar to subtract
         */
-        friend NDArray nd4j::operator-(const float scalar, const NDArray& arr);
+        //friend NDArray nd4j::operator-(const float scalar, const NDArray& arr);
 
         /**
         *  pairwise multiplication operator: array * other
@@ -928,7 +928,7 @@ namespace nd4j {
         *  left - input array
         *  right - input array
         */
-        friend NDArray mmul<>(const NDArray& left, const NDArray& right);
+        //friend NDArray mmul<>(const NDArray& left, const NDArray& right);
 
         /**
         *  this method assigns elements of other array to the subarray of this array defined by given intervals
@@ -970,7 +970,8 @@ namespace nd4j {
         *      'u' - fill up, mathematically this corresponds to lower triangular matrix 
         *      'l' - fill down, mathematically this corresponds to upper triangular matrix
         */
-        void setValueInDiagMatrix(const T& value, const int diag, const char direction);
+        void setValueInDiagMatrix(const double& value, const int diag, const char direction);
+        void setValueInDiagMatrix(const Nd4jLong& value, const int diag, const char direction);
 
 		/**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
@@ -1103,23 +1104,20 @@ namespace nd4j {
         *  returns array element with given index from linear buffer
         *  i - element index in array
         */
-        template <typename T>
-        FORCEINLINE T getScalar(const Nd4jLong i) const;
+        FORCEINLINE NDArray getScalar(const Nd4jLong i) const;
 
         /** 
         *  returns array element with given index, takes into account offset between elements (element-wise-stride)
         *  i - element index in array
         */
-        template <typename T>
-        FORCEINLINE T getIndexedScalar(const Nd4jLong i) const;
+        FORCEINLINE NDArray getIndexedScalar(const Nd4jLong i) const;
         
         /** 
         *  returns element with given indexes from 2D array 
         *  i - number of row 
         *  j - number of column
         */
-        template <typename T>
-        FORCEINLINE T getScalar(const Nd4jLong i, const Nd4jLong j) const;
+        FORCEINLINE NDArray getScalar(const Nd4jLong i, const Nd4jLong j) const;
 
         /** 
         *  returns element with given indexes from 3D array 
@@ -1127,24 +1125,21 @@ namespace nd4j {
         *  j - width
         *  k - depth
         */
-        template <typename T>
-        FORCEINLINE T getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
+        FORCEINLINE NDArray getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
         
         /** 
         *  assigns given scalar to array element by given index, takes into account offset between elements (element-wise-stride)
         *  i - element index in array
         *  value - scalar value to assign
         */
-        template <typename T>
-        FORCEINLINE void putIndexedScalar(const Nd4jLong i, const T value);
+        FORCEINLINE void putIndexedScalar(const Nd4jLong i, const double value);
 
         /** 
         *  assigns given scalar to array element by given index, regards array buffer as linear
         *  i - element index in array
         *  value - scalar value to assign
         */
-        template <typename T>
-        FORCEINLINE void putScalar(const Nd4jLong i, const T value);
+        FORCEINLINE void putScalar(const Nd4jLong i, const double value);
 
         /** 
         *  assigns given scalar to 2D array element by given indexes
@@ -1269,7 +1264,7 @@ template <typename T2>
 
 #pragma omp parallel for simd
     for (int e = 0; e < this->lengthOf(); e++)
-        result[e] = this->getIndexedScalar<T2>(e);
+        result[e] = this->getIndexedScalar(e);
 
     return result;
 }
@@ -1449,7 +1444,7 @@ Nd4jLong NDArray::ews() const {
 //////////////////////////////////////////////////////////////////////////
 // accessing operator for matrix, i - absolute index
 
-T NDArray::operator()(const Nd4jLong i) const {
+NDArray NDArray::operator()(const Nd4jLong i) const {
 
     if (i >= shape::length(_shapeInfo))
             throw std::invalid_argument("NDArray::operator(i): input index is out of array length !");
@@ -1472,12 +1467,11 @@ T NDArray::operator()(const Nd4jLong i) const {
 //////////////////////////////////////////////////////////////////////////
 // modifying operator for matrix, i - absolute index
 
-T& NDArray::operator()(const Nd4jLong i) {
-
+NDArray& NDArray::operator()(const Nd4jLong i) {
     if (i >= shape::length(_shapeInfo))
             throw std::invalid_argument("NDArray::operator(i): input index is out of array length !");
 
-    auto  ews   = shape::elementWiseStride(_shapeInfo);
+    auto ews = shape::elementWiseStride(_shapeInfo);
     auto order = ordering();
 
     if(ews == 1 && order == 'c')
@@ -1495,7 +1489,7 @@ T& NDArray::operator()(const Nd4jLong i) {
 //////////////////////////////////////////////////////////////////////////
 // accessing operator for 2D matrix, i - row, j - column
 
- T NDArray::operator()(const Nd4jLong i, const Nd4jLong j) const {
+NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j) const {
     
     if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
        throw std::invalid_argument("NDArray::operator(i,j): one of input indexes is out of array length or rank!=2 !");
@@ -1508,8 +1502,7 @@ T& NDArray::operator()(const Nd4jLong i) {
 //////////////////////////////////////////////////////////////////////////
 // modifying operator for 2D matrix, i - row, j - column
 
- T& NDArray::operator()(const Nd4jLong  i, const Nd4jLong j) {
-    
+NDArray& NDArray::operator()(const Nd4jLong  i, const Nd4jLong j) {
     if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
        throw std::invalid_argument("NDArray::operator(i,j): one of input indexes is out of array length or rank!=2 !");
 
@@ -1521,7 +1514,7 @@ T& NDArray::operator()(const Nd4jLong i) {
 //////////////////////////////////////////////////////////////////////////
 // accessing operator for 3D array, i - row, j - column
 
- T NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
+NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
     
     if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || j >= shapeOf()[2])
        throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=3 !");
@@ -1534,7 +1527,7 @@ T& NDArray::operator()(const Nd4jLong i) {
 //////////////////////////////////////////////////////////////////////////
 // modifying operator for 3D array
 
- NDArray& NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) {
+NDArray& NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) {
     
     if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
        throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=3 !");
@@ -1545,7 +1538,7 @@ T& NDArray::operator()(const Nd4jLong i) {
 }
 
 
- NDArray NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) const {
+NDArray NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) const {
     
     if (rankOf() != 4 || t >= shapeOf()[0] || u >= shapeOf()[1] || v >= shapeOf()[2] || w >= shapeOf()[3])
        throw std::invalid_argument("NDArray::operator(t,u,v,w): one of input indexes is out of array length or rank!=4 !");
@@ -1579,7 +1572,7 @@ NDArray NDArray::operator()(const Nd4jLong* idx) const {
 
 //////////////////////////////////////////////////////////////////////////
 
-T& NDArray::operator()(const Nd4jLong* idx) {
+NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
     for(int i = 0; i < rankOf(); ++i)    
         if (idx[i] >= sizeAt(i))
@@ -1591,54 +1584,60 @@ T& NDArray::operator()(const Nd4jLong* idx) {
 //////////////////////////////////////////////////////////////////////////
 // Return value from linear buffer
 
- T NDArray::getScalar(const Nd4jLong i) const
-{ return (*this)(i); }
+NDArray NDArray::getScalar(const Nd4jLong i) const {
+    return (*this)(i);
+}
 
 //////////////////////////////////////////////////////////////////////////
 
- T NDArray::getIndexedScalar(const Nd4jLong i) const {
+NDArray NDArray::getIndexedScalar(const Nd4jLong i) const {
     return (*this)(i); 
 }
 
 //////////////////////////////////////////////////////////////////////////
 // Returns value from 2D matrix by coordinates/indexes         
 
- T NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const
-{ return (*this)(i, j); }
+NDArray NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const {
+    return (*this)(i, j);
+}
 
 //////////////////////////////////////////////////////////////////////////
 // returns value from 3D tensor by coordinates        
 
- T NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const
-{ return (*this)(i, j, k); }
+NDArray NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
+    return (*this)(i, j, k);
+}
 
 //////////////////////////////////////////////////////////////////////////
 
- void NDArray::putIndexedScalar(const Nd4jLong i, const T value)
-{ (*this)(i) = value; }
+ void NDArray::putIndexedScalar(const Nd4jLong i, const NDArray value) {
+     (*this)(i) = value;
+ }
 
 //////////////////////////////////////////////////////////////////////////
 // This method sets value in linear buffer to position i        
 
-    void NDArray::putScalar(const Nd4jLong i, const T value)
-{ (*this)(i) = value; }
+void NDArray::putScalar(const Nd4jLong i, const double value) {
+    (*this)(i) = value;
+}
 
 //////////////////////////////////////////////////////////////////////////
 // This method sets value in 2D matrix to position i, j         
 
- void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const T value)
-{ (*this)(i,j) = value; }
+ void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const double value) {
+     (*this)(i,j) = value;
+ }
 
 //////////////////////////////////////////////////////////////////////////
 // This method sets value in 3D matrix to position i,j,k        
 
- void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const T value)
-{ (*this)(i,j,k) = value; }
+ void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const double value) {
+     (*this)(i,j,k) = value;
+ }
 
 //////////////////////////////////////////////////////////////////////////
 
 Nd4jLong  NDArray::memoryFootprint() {
-
     Nd4jLong size = this->lengthOf() * this->sizeOfT();
     size += shape::shapeInfoByteLength(this->rankOf());
     return size;

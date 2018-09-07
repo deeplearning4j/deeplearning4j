@@ -27,35 +27,35 @@
 #include <enum_boilerplate.h>
 
 namespace nd4j {
-    enum TransformOps {
+    enum class TransformOps {
        BUILD_ENUMERATION(TRANSFORM_OPS)
     };
 
-    enum PairwiseOps {
+    enum class PairwiseOps {
        BUILD_ENUMERATION(PAIRWISE_TRANSFORM_OPS)
     };
 
-    enum ScalarOps {
+    enum class ScalarOps {
         BUILD_ENUMERATION(SCALAR_OPS)
     };
 
-    enum ReduceOps {
+    enum class ReduceOps {
         BUILD_ENUMERATION(REDUCE_OPS)
     };
 
-    enum Reduce3Ops {
+    enum class Reduce3Ops {
         BUILD_ENUMERATION(REDUCE3_OPS)
     };
 
-    enum IndexReduceOps {
+    enum class IndexReduceOps {
         BUILD_ENUMERATION(INDEX_REDUCE_OPS)
     };
 
-    enum BroadcastOps {
+    enum class BroadcastOps {
         BUILD_ENUMERATION(BROADCAST_OPS)
     };
 
-    enum VarianceOps {
+    enum class VarianceOps {
         BUILD_ENUMERATION(SUMMARY_STATS_OPS)
     };
 }
