@@ -104,6 +104,10 @@ namespace nd4j {
         static SparseType sparseType(const Nd4jLong *shapeInfo);
 
         static bool hasExtraProperties(Nd4jLong *shapeInfo);
+
+
+        static void resetDataType(Nd4jLong *shapeInfo);
+        static void setDataType(Nd4jLong *shapeInfo, nd4j::DataType dataType);
     };
 }
 

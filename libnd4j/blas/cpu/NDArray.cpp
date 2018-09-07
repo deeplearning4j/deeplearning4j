@@ -723,7 +723,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 }
 
     template<typename T>
-    NDArray<T>::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace) {
+    NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace) {
         int rank = (int) shape.size();
 
         if (rank > MAX_RANK)
@@ -795,7 +795,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
             res->_length = shape::length(res->_shapeInfo);
             res->_buffer =  new T[this->_length];
         } else {
-            res->_shapeInfo = reinterpret_cast<Nd4jLong*>(_workspace->allocateBytes(shape::shapeInfoByteLength(rank)));
+            res->_shapeInfo = reinterpret_cast<Nd4jLong*>(res->_workspace->allocateBytes(shape::shapeInfoByteLength(rank)));
 
             if (order == 'f')
                 shape::shapeBufferFortran(rank, shapeOf, res->_shapeInfo);
@@ -804,10 +804,10 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
             res->_length = shape::length(res->_shapeInfo);
 
-            res->_buffer = _workspace->allocateBytes(res->_length * sizeOfT());
+            res->_buffer = res->_workspace->allocateBytes(res->_length * res->sizeOfT());
         }
 
-        memset(_buffer, 0, sizeOfT() * res->_length);
+        memset(res->_buffer, 0, res->sizeOfT() * res->_length);
         
 		res->_isBuffAlloc = true;
 		res->_isShapeAlloc = true;
@@ -883,7 +883,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
             memcpy(_buffer, other->_buffer, lengthOf() * sizeOfT());
         } else {
             // now we invoke dup pwt against target buffer
-            NativeOpExcutioner<T>::execPairwiseTransform(1, _buffer, _shapeInfo, other->_buffer, other->_shapeInfo, _buffer, _shapeInfo, nullptr);
+            NativeOpExcutioner::execPairwiseTransform(1, _buffer, _shapeInfo, other->_buffer, other->_shapeInfo, _buffer, _shapeInfo, nullptr);
         }
     }
 
@@ -996,30 +996,22 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
 //////////////////////////////////////////////////////////////////////////
 // This method returns sum of all elements of this NDArray
-    template<typename T>
-    T NDArray<T>::sumNumber() const {
-        return NativeOpExcutioner<T>::execReduceScalar(1, _buffer, _shapeInfo, nullptr);
+    NDArray& NDArray::sumNumber() const {
+        auto res = NDArray::scalar(this->dataType(), 0, this->_workspace);
+        NativeOpExcutioner::execReduceScalar(1, _buffer, _shapeInfo, nullptr, res->buffer(), res->shapeInfo());
+        return *res;
     }
 
 //////////////////////////////////////////////////////////////////////////
 // This method returns mean number of this NDArray
-    template<typename T>
-    T NDArray<T>::meanNumber() const {
-        return NativeOpExcutioner<T>::execReduceScalar(0, _buffer, _shapeInfo, nullptr);
+    NDArray& NDArray<T>::meanNumber() const {
+        auto res = NDArray::scalar(this->dataType(), 0, this->_workspace);
+        NativeOpExcutioner<T>::execReduceScalar(0, _buffer, _shapeInfo, nullptr, res->buffer(), res->shapeInfo());
+        return *res;
     }
 
 //////////////////////////////////////////////////////////////////////////
-// method calculates sum along dimension(s) in this array and save it to row: as new NDArray with dimensions 1xN
-    template<typename T>
-    NDArray<T> *NDArray<T>::sum(const std::vector<int> &dimensions) const {
-
-        return reduceAlongDimension<simdOps::Sum<T>>(dimensions);
-//    NativeOpExcutioner<T>::execReduce(1, _buffer, _shapeInfo, nullptr, result->_buffer, result->_shapeInfo, dims, dimensions.size(), tad->tadOnlyShapeInfo, tad->tadOffsets);
-    }
-
-//////////////////////////////////////////////////////////////////////////
-    template<typename T>
-    bool NDArray<T>::isContiguous() {
+    bool NDArray::isContiguous() {
         Nd4jLong z = 1;
         int d;
         for(d = this->rankOf() - 1; d >= 0; d--)  {
@@ -1033,31 +1025,26 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         return true;
     }
 
-    template <typename T>
     bool NDArray<T>::hasNaNs() {
         return static_cast<int>(this->template reduceNumber<simdOps::IsNan<T>>()) > 0;
     }
 
-    template <typename T>
     bool NDArray<T>::hasInfs() {
         return static_cast<int>(this->template reduceNumber<simdOps::IsInf<T>>()) > 0;
     }
 
-    template <typename T>
     bool NDArray<T>::isFinite() {
         return static_cast<int>(this->template reduceNumber<simdOps::IsInfOrNan<T>>()) == 0;
     }
 
 //////////////////////////////////////////////////////////////////////////
 // eventually method reduces array by excluding its shapes along axes present in dimensions vector
-    template<typename T>
-    template<typename OpName>
-    NDArray<T> *NDArray<T>::reduceAlongDimension(const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+    NDArray* NDArray::reduceAlongDimension(nd4j::ReduceOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
 
         std::vector<int> copy(dimensions);
 
         auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
-        NDArray<T>* result = new NDArray<T>(newShape, _workspace);
+        NDArray* result = new NDArray(newShape, _workspace);
         RELEASE(newShape, _workspace);
 
         if(rankOf() == copy.size() || copy.empty())

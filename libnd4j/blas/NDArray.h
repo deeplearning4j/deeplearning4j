@@ -110,6 +110,9 @@ namespace nd4j {
         template <typename T>
         static NDArray* scalar(const T value, nd4j::memory::Workspace* workspace = nullptr);
 
+        static NDArray* scalar(nd4j::DataType dType, const double value, nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray* scalar(nd4j::DataType dType, const Nd4jLong value, nd4j::memory::Workspace* workspace = nullptr);
+
         template <typename T>
         static NDArray* create(std::initializer_list<Nd4jLong> s, nd4j::memory::Workspace* workspace);
 
@@ -413,12 +416,6 @@ namespace nd4j {
         void enforce(const std::initializer_list<Nd4jLong> &dimensions, char order = 'a');
         void enforce(std::vector<Nd4jLong> &dimensions, char order = 'a');
 
-        /**
-        *  calculates sum along dimension(s) in this array and save it to created reduced array
-        *  dimensions - array of dimensions to calculate sum over
-        *  keepDims - if true then put unities in place of reduced dimensions
-        */
-        NDArray *sum(const std::vector<int> &dimensions) const;
 
 		/**
         *  method reduces array by excluding its shapes along dimensions present in given dimensions vector, result is stored in new array to be returned
