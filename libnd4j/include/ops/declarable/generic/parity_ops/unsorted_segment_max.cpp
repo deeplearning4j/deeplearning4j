@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 //
-// Created by george@skymind.io on 2/21/2018.
+// Created by george@skymind.io on 9/6/2018.
 //
 
 #include <ops/declarable/CustomOperations.h>
@@ -23,33 +23,30 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(segment_max, 2, 1, false, 0, 0) {
+        CUSTOM_OP_IMPL(unsorted_segment_max, 2, 1, false, 0, 1) {
             NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* idxSegments = INPUT_VARIABLE(1);
             NDArray<T>* segmentedOutput = OUTPUT_VARIABLE(0);
-            REQUIRE_TRUE(idxSegments->isVector(), 0, "segment_max: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
-            REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "segment_max: segment indexes array length should be equal to the input first dimension, but %i != %i.", idxSegments->lengthOf(), input->sizeAt(0));
+            Nd4jLong numOfClasses = INT_ARG(0);
+            REQUIRE_TRUE(idxSegments->isVector(), 0, "unsorted_segment_max: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
+            REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "unsorted_segment_max: segment indexes array length should be equal to the input first dimension, but %i != %i.", idxSegments->lengthOf(), input->sizeAt(0));
 
-            Nd4jLong expected, wrong;
+            Nd4jLong wrong;
 
-            REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_max: segment indices should be arranged, but %i > %i",
-                    wrong, expected);
+            REQUIRE_TRUE(helpers::unsortedSegmentIndicesValidate(idxSegments, numOfClasses, wrong), 0, "unsorted_segment_max: segment indices should be arranged, but %i > %i",
+                    numOfClasses, wrong);
 
-            helpers::segmentMaxFunctor(input, idxSegments, segmentedOutput);
+            helpers::unsortedSegmentMaxFunctor(input, idxSegments, numOfClasses, segmentedOutput);
 
             return ND4J_STATUS_OK;
         }
 
-        DECLARE_SHAPE_FN(segment_max) {
-
-            NDArray<T>* idxVector = INPUT_VARIABLE(1);
+        DECLARE_SHAPE_FN(unsorted_segment_max) {
 
             auto in = inputShape->at(0);
             int outRank = shape::rank(in);
-            Nd4jLong* outputShape = nullptr;
-            T val = (*idxVector)(idxVector->lengthOf() - 1);
-
-            int numOfClasses = static_cast<int>(val) + 1;
+            Nd4jLong numOfClasses = INT_ARG(0);
+            Nd4jLong* outputShape;
 
             ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
 
