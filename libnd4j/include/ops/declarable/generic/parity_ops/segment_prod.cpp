@@ -63,8 +63,9 @@ namespace nd4j {
         }
 
         CUSTOM_OP_IMPL(segment_prod_bp, 3, 2, false, 0, 0) {
-            return ND4J_STATUS_OK;
+            return helpers::segmentProdFunctorBP(INPUT_VARIABLE(0), INPUT_VARIABLE(1), INPUT_VARIABLE(2), OUTPUT_VARIABLE(0));
         }
+
         DECLARE_SHAPE_FN(segment_prod_bp){
             Nd4jLong* in = inputShape->at(0);
             Nd4jLong* inIdx = inputShape->at(1);

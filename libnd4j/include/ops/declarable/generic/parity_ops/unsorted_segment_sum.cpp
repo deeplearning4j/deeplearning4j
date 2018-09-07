@@ -60,7 +60,7 @@ namespace nd4j {
             return SHAPELIST(outputShape);
         }
         CUSTOM_OP_IMPL(unsorted_segment_sum_bp, 3, 2, false, 0, 1) {
-            return ND4J_STATUS_OK;
+            return helpers::unsortedSegmentSumFunctorBP(INPUT_VARIABLE(0), INPUT_VARIABLE(1), INPUT_VARIABLE(2), INT_ARG(0), OUTPUT_VARIABLE(0));
         }
 
         DECLARE_SHAPE_FN(unsorted_segment_sum_bp){

@@ -64,7 +64,7 @@ namespace nd4j {
         }
 
         CUSTOM_OP_IMPL(segment_mean_bp, 3, 2, false, 0, 0) {
-            return ND4J_STATUS_OK;
+            return helpers::segmentMeanFunctorBP(INPUT_VARIABLE(0), INPUT_VARIABLE(1), INPUT_VARIABLE(2), OUTPUT_VARIABLE(0));
         }
         DECLARE_SHAPE_FN(segment_mean_bp){
             Nd4jLong* in = inputShape->at(0);
