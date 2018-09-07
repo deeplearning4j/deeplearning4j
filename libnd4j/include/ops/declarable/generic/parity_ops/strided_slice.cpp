@@ -351,18 +351,27 @@ namespace nd4j {
                 REQUIRE_TRUE(false, 0, "StridedSlice: Can't find begin/end/stride information neither in IArguments or in input arrays");
             }            
 
-            // validation of begin and start                        
-            const int diff = begin.size() - x->rankOf();
-            for (int e = diff; e < begin.size(); ++e) {
-                
-                int first = strides[e] > 0 ? begin[e] : math::nd4j_abs<int>(begin[e]) - 1;
-                int last  = strides[e] > 0 ? end[e]   : math::nd4j_abs<int>(end[e])   - 1;;                                
+            // validation of begin and start
+            std::vector<int> addAxes     = BitwiseUtils::valueBits(new_axis_mask);
+            std::vector<int> moveAxes    = BitwiseUtils::valueBits(shrink_axis_mask);
+            std::vector<int> ignoreBegin = BitwiseUtils::valueBits(begin_mask);
+            std::vector<int> ignoreEnd   = BitwiseUtils::valueBits(end_mask);
+            
+            for (int dim = 0, b = 0, e = 0; dim < x->rankOf(); ++dim) {
 
-                // REQUIRE_TRUE(first <= last, 0, "StridedSlice: begin index should be <= end index, but got %i and %i correspondingly for dimension %i !", first, last, e-diff);
-                if(begin[e] != -999)
-                    REQUIRE_TRUE(first <= x->sizeAt(e-diff), 0, "StridedSlice: begin index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", begin[e], e-diff);
-                if(end[e] != -999)
-                    REQUIRE_TRUE(last <= x->sizeAt(e-diff), 0, "StridedSlice: end index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", end[e], e-diff);
+                if(moveAxes[dim])
+                    continue;                            
+                
+                if(b < begin.size() && !ignoreBegin[b] && !addAxes[dim]) {
+                    int first = strides[b] > 0 ? begin[b] : math::nd4j_abs<int>(begin[b]) - 1;
+                    REQUIRE_TRUE(first <= x->sizeAt(dim), 0, "StridedSlice: begin index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", begin[b], dim);
+                }
+                if(e < end.size() && !ignoreEnd[e] && !addAxes[dim]) {
+                   int last  = strides[e] > 0 ? end[e] : math::nd4j_abs<int>(end[e])   - 1;
+                   REQUIRE_TRUE(last <= x->sizeAt(dim), 0, "StridedSlice: end index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", end[e], dim);
+                }                
+                ++b;
+                ++e;
             }
 
             IndicesList indices;
@@ -426,18 +435,27 @@ namespace nd4j {
 
             REQUIRE_TRUE(begin.size() > 0 && end.size() > 0 && strides.size() > 0, 0, "Strided_Slice: empty arguments");
             
-            // validation of begin and start                        
-            const int diff = begin.size() - inShape[0];
-            for (int e = diff; e < begin.size(); ++e) {
-                
-                int first = strides[e] > 0 ? begin[e] : math::nd4j_abs<int>(begin[e]) - 1;
-                int last  = strides[e] > 0 ? end[e]   : math::nd4j_abs<int>(end[e])   - 1;;                                
+            // validation of begin and start
+            std::vector<int> addAxes     = BitwiseUtils::valueBits(new_axis_mask);
+            std::vector<int> moveAxes    = BitwiseUtils::valueBits(shrink_axis_mask);
+            std::vector<int> ignoreBegin = BitwiseUtils::valueBits(begin_mask);
+            std::vector<int> ignoreEnd   = BitwiseUtils::valueBits(end_mask);
+            
+            for (int dim = 0, b = 0, e = 0; dim < inShape[0]; ++dim) {
 
-                // REQUIRE_TRUE(first <= last, 0, "StridedSlice: begin index should be <= end index, but got %i and %i correspondingly for dimension %i !", first, last, e-diff);
-                if(begin[e] != -999)
-                    REQUIRE_TRUE(first <= inShape[e+1-diff], 0, "StridedSlice: begin index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", begin[e], e-diff);
-                if(end[e] != -999)
-                    REQUIRE_TRUE(last <= inShape[e+1-diff], 0, "StridedSlice: end index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", end[e], e-diff);
+                if(moveAxes[dim])
+                    continue;                            
+
+                if(b < begin.size() && !ignoreBegin[b] && !addAxes[dim]) {
+                    int first = strides[b] > 0 ? begin[b] : math::nd4j_abs<int>(begin[b]) - 1;
+                    REQUIRE_TRUE(first <= inShape[dim+1], 0, "StridedSlice: begin index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", begin[b], dim);                    
+                }
+                if(e < end.size() && !ignoreEnd[e] && !addAxes[dim]) {
+                   int last  = strides[e] > 0 ? end[e] : math::nd4j_abs<int>(end[e])   - 1;
+                   REQUIRE_TRUE(last <= inShape[dim+1], 0, "StridedSlice: end index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", end[e], dim);                   
+                }
+                ++b;
+                ++e;
             }
 
             Nd4jLong *newShape;
@@ -532,19 +550,28 @@ namespace nd4j {
             }
 
             // validation of begin and start
-            const int diff = begin.size() - x->rankOf();
-            for (int e = diff; e < begin.size(); ++e) {
+            std::vector<int> addAxes     = BitwiseUtils::valueBits(new_axis_mask);
+            std::vector<int> moveAxes    = BitwiseUtils::valueBits(shrink_axis_mask);
+            std::vector<int> ignoreBegin = BitwiseUtils::valueBits(begin_mask);
+            std::vector<int> ignoreEnd   = BitwiseUtils::valueBits(end_mask);
+            
+            for (int dim = 0, b = 0, e = 0; dim < x->rankOf(); ++dim) {
+
+                if(moveAxes[dim])
+                    continue;                            
                 
-                int first = strides[e] > 0 ? begin[e] : math::nd4j_abs<int>(begin[e]) - 1;
-                int last  = strides[e] > 0 ? end[e]   : math::nd4j_abs<int>(end[e])   - 1;;                                
-
-                // REQUIRE_TRUE(first <= last, 0, "StridedSlice: begin index should be <= end index, but got %i and %i correspondingly for dimension %i !", first, last, e-diff);
-                if(begin[e] != -999)
-                    REQUIRE_TRUE(first <= x->sizeAt(e-diff), 0, "StridedSlice: begin index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", begin[e], e-diff);
-                if(end[e] != -999)
-                    REQUIRE_TRUE(last <= x->sizeAt(e-diff), 0, "StridedSlice: end index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", end[e], e-diff);
+                if(b < begin.size() && !ignoreBegin[b] && !addAxes[dim]) {
+                    int first = strides[b] > 0 ? begin[b] : math::nd4j_abs<int>(begin[b]) - 1;
+                    REQUIRE_TRUE(first <= x->sizeAt(dim), 0, "StridedSlice: begin index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", begin[b], dim);
+                }
+                if(e < end.size() && !ignoreEnd[e] && !addAxes[dim]) {
+                   int last  = strides[e] > 0 ? end[e] : math::nd4j_abs<int>(end[e])   - 1;
+                   REQUIRE_TRUE(last <= x->sizeAt(dim), 0, "StridedSlice: end index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", end[e], dim);
+                }                
+                ++b;
+                ++e;
             }
-
+    
             IndicesList indices;
             auto input_shape = x->getShapeAsVector();
             std::vector<Nd4jLong> final_shape;
