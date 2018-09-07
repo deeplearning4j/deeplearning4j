@@ -21,8 +21,11 @@ import com.google.common.io.Files;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.datavec.api.conf.Configuration;
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
+import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.impl.collection.CollectionSequenceRecordReader;
@@ -30,7 +33,9 @@ import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.split.CollectionInputSplit;
 import org.datavec.api.split.FileSplit;
+import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.NumberedFileInputSplit;
+import org.datavec.api.util.ndarray.RecordConverter;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
@@ -55,6 +60,7 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
@@ -792,8 +798,131 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
 
         assertEquals(expFeatures, mds.getFeatures(0));
         assertEquals(expLabels, mds.getLabels(0));
+    }
 
 
+    private static final int nX = 32;
+    private static final int nY = 32;
+    private static final int nZ = 28;
 
+
+    @Test
+    public void testRRMDSI5D() {
+        int batchSize = 5;
+
+        CustomRecordReader recordReader = new CustomRecordReader();
+        DataSetIterator dataIter = new RecordReaderDataSetIterator(recordReader, batchSize,
+                1, /* Index of label in records */
+                2 /* number of different labels */);
+
+        int count = 0;
+        while(dataIter.hasNext()){
+            DataSet ds = dataIter.next();
+
+            int offset = 5*count;
+            for( int i=0; i<5; i++ ){
+                INDArray act = ds.getFeatures().get(interval(i,i,true), all(), all(), all(), all());
+                INDArray exp = Nd4j.valueArrayOf(new int[]{1, 1, nZ, nX, nY}, i + offset );
+                assertEquals(exp, act);
+            }
+            count++;
+        }
+
+        assertEquals(2, count);
+    }
+
+
+    static class CustomRecordReader extends BaseRecordReader {
+
+        int n = 0;
+
+        CustomRecordReader() { }
+
+        @Override
+        public boolean batchesSupported() {
+            return false;
+        }
+
+        @Override
+        public List<List<Writable>> next(int num) {
+            throw new RuntimeException("Not implemented");
+        }
+
+        @Override
+        public List<Writable> next() {
+            INDArray nd = Nd4j.create(new float[nZ*nY*nX], new int[] {1, 1, nZ, nY, nX }, 'C').assign(n);
+            final List<Writable>res = RecordConverter.toRecord(nd);
+            res.add(new IntWritable(0));
+            n++;
+            return res;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return n<10;
+        }
+
+        final static ArrayList<String> labels = new ArrayList<>(2);
+        static {
+            labels.add("lbl0");
+            labels.add("lbl1");
+        }
+        @Override
+        public List<String> getLabels() {
+            return labels;
+        }
+
+        @Override
+        public void reset() {
+            n = 0;
+        }
+
+        @Override
+        public boolean resetSupported() {
+            return true;
+        }
+
+        @Override
+        public List<Writable> record(URI uri, DataInputStream dataInputStream) {
+            return next();
+        }
+
+        @Override
+        public Record nextRecord() {
+            List<Writable> r = next();
+            return new org.datavec.api.records.impl.Record(r, null);
+        }
+
+        @Override
+        public Record loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
+            throw new RuntimeException("Not implemented");
+        }
+
+        @Override
+        public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) {
+            throw new RuntimeException("Not implemented");
+        }
+
+        @Override
+        public void close() {
+        }
+
+        @Override
+        public void setConf(Configuration conf) {
+        }
+
+        @Override
+        public Configuration getConf() {
+            return null;
+        }
+
+        @Override
+        public void initialize(InputSplit split) {
+            n = 0;
+        }
+        @Override
+        public void initialize(Configuration conf, InputSplit split) {
+            n = 0;
+        }
     }
 }

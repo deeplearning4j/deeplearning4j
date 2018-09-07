@@ -97,7 +97,7 @@ public class SparseNDArrayCSRTest {
                 }
             }
             int finalSize = sparseCSRArray.getDoubleValues().length;
-            assert (finalSize > initialSize);
+            assertTrue(finalSize > initialSize);
         }
 
     }

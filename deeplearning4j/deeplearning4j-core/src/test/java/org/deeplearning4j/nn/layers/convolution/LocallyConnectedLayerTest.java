@@ -39,6 +39,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
 
+import static org.junit.Assert.assertArrayEquals;
+
 /**
  * @author Max Pumperla
  */
@@ -75,7 +77,7 @@ public class LocallyConnectedLayerTest extends BaseDL4JTest {
         INDArray input = Nd4j.ones(10, 3, 28, 28);
         INDArray output = network.output(input, false);
 
-        assert Arrays.equals(output.shape(), new long[] {10, 10});
+        assertArrayEquals(new long[] {10, 10}, output.shape());
     }
 
     @Test
@@ -105,7 +107,7 @@ public class LocallyConnectedLayerTest extends BaseDL4JTest {
             output = network.output(input, false);
         }
 
-        assert Arrays.equals(output.shape(), new long[] {(28 - 8 + 1) * 10, 10});
+        assertArrayEquals(new long[] {(28 - 8 + 1) * 10, 10}, output.shape());
         network.fit(input, output);
 
     }

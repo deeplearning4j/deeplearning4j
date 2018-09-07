@@ -530,7 +530,7 @@ public class TestGraphNodes {
 
         reshapeVertex.setEpsilon(out);
         INDArray[] backward = reshapeVertex.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond();
-        assert (Arrays.equals(backward[0].shape(), inputShape));
+        assertTrue(Arrays.equals(backward[0].shape(), inputShape));
     }
 
     @Test

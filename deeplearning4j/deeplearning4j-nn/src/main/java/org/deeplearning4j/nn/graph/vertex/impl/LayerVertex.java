@@ -110,7 +110,7 @@ public class LayerVertex extends BaseGraphVertex {
         return layer.activate(training, workspaceMgr);
     }
 
-    protected void applyPreprocessorAndSetInput(LayerWorkspaceMgr workspaceMgr){
+    public void applyPreprocessorAndSetInput(LayerWorkspaceMgr workspaceMgr){
         //Apply preprocessor
         INDArray currInput = inputs[0];
         if (layerPreProcessor != null) {
