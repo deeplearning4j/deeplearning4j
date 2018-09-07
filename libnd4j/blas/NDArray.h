@@ -115,6 +115,9 @@ namespace nd4j {
         static NDArray* scalar(nd4j::DataType dType, const Nd4jLong value, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
+        static NDArray* vector(Nd4jLong length, const T startingValue = (T) 0, nd4j::memory::Workspace *workspace = nullptr);
+
+        template <typename T>
         static NDArray* create(std::initializer_list<Nd4jLong> s, nd4j::memory::Workspace* workspace);
 
         template <typename T>
@@ -992,12 +995,6 @@ namespace nd4j {
         */
         double getTrace() const;
 
-        /**
-        *  fill array linearly as follows: arr[0] = from, arr[1] = from+step, arr[2] = from+2*step, ...
-        */
-        void linspace(const double from, const double step = 1.0f);
-        void linspace(const Nd4jLong from, const Nd4jLong step = 1);
-
         NDArray* createUninitialized() const;
 
         ResultSet* multipleTensorsAlongDimension(const std::vector<int>& indices, const std::vector<int>& dimensions) const;
@@ -1293,7 +1290,7 @@ template <typename T2>
     if(_isBuffAlloc && _workspace == nullptr)
         delete []_buffer;
  
-    _buffer = buffer;
+    _buffer = reinterpret_cast<int8_t *>(buffer);
     _isBuffAlloc = false;
 }
 
