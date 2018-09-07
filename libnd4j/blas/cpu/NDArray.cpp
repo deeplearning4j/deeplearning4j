@@ -1133,26 +1133,29 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
 //
     NDArray NDArray::reduceNumber(nd4j::reduce::Ops op, void *extraParams) const {
-        return functions::reduce::ReduceFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extraParams);
+        auto shape = ShapeBuilders::createScalarShapeInfo(this->dataType(), this->_workspace);
+        NDArray result(shape, this->_workspace);
+
+        NativeOpExcutioner::execReduceScalar(op, _buffer, _shapeInfo, extraParams, result.buffer(), result.shapeInfo());
+        return result;
     }
 
-    Nd4jLong NDArray::indexReduceNumber(nd4j::IndexReduceOps op, void *extraParams) {
-        return (Nd4jLong) functions::indexreduce::IndexReduce<T>::template execScalar<OpName>(_buffer, _shapeInfo, extraParams);
+    Nd4jLong NDArray::indexReduceNumber(nd4j::indexreduce::Ops op, void *extraParams) {
+        return NativeOpExcutioner::execIndexReduceScalar(op, _buffer, _shapeInfo, extraParams);
     }
 
 // perform array transformation
-    void NDArray::applyTransform(nd4j::TransformOps op, NDArray *target, void *extraParams) {
+    void NDArray::applyTransform(nd4j::transform::Ops op, NDArray *target, void *extraParams) {
         NativeOpExcutioner::execTransform(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams, nullptr, nullptr);
     }
 
 // perform array transformation
-    void NDArray::applyTransform(nd4j::TransformOps op, void *extraParams) {
+    void NDArray::applyTransform(nd4j::transform::Ops op, void *extraParams) {
         applyTransform(op, this, extraParams);
     }
 
     // perform array transformation
-    NDArray NDArray::transform(nd4j::transform::ops op, void *extraParams) const {
-    
+    NDArray NDArray::transform(nd4j::transform::Ops op, void *extraParams) const {
         NDArray result(this->_shapeInfo, true, this->_workspace);
         NativeOpExcutioner::execTransform(op, this->_buffer, this->_shapeInfo, result._buffer, result._shapeInfo, extraParams, nullptr, nullptr);
         return result;
@@ -1160,26 +1163,19 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
 
 // perform pairwise transformation
-    template<typename T>
-    template<typename OpName>
-    void NDArray<T>::applyPairwiseTransform(NDArray<T> *other, T *extraParams) {
-        applyPairwiseTransform<OpName>(other, this, extraParams);
+    void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, NDArray *other, void *extraParams) {
+        applyPairwiseTransform(op, other, this, extraParams);
     }
 
 // perform pairwise transformation
-    template<typename T>
-    template<typename OpName>
-    void NDArray<T>::applyPairwiseTransform(NDArray<T> *other, NDArray<T> *target, T *extraParams) {
+    void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, NDArray *other, NDArray *target, void *extraParams) {
         if (other->lengthOf() != target->lengthOf())
             throw std::invalid_argument("NDArray::applyPairwiseTransform method - lengths of arrays are mismatched");
 
-        functions::pairwise_transforms::PairWiseTransform<T>::template exec<OpName>(this->_buffer, this->_shapeInfo,
-                                                                                    other->_buffer, other->_shapeInfo,
-                                                                                    target->_buffer, target->_shapeInfo,
-                                                                                    extraParams);
+        NativeOpExcutioner::execPairwiseTransform(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams);
     }
 
-
+/*
     template<typename T>
     template<typename OpName>
     void NDArray<T>::applyRandom(nd4j::random::RandomBuffer *buffer, NDArray<T>* y, NDArray<T>* z, T* extraArgs) {
@@ -1195,16 +1191,13 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
             functions::random::RandomFunction<T>::template execTransform<OpName>(state, this->buffer(), this->shapeInfo(), y->buffer(), y->shapeInfo(), z->buffer(), z->shapeInfo(), extraArgs);
         }
     }
+    */
 
-    template <typename T>
-    Nd4jLong NDArray<T>::tensorsAlongDimension(std::initializer_list<int> dimensions) const {
-
+    Nd4jLong NDArray::tensorsAlongDimension(std::initializer_list<int> dimensions) const {
         return tensorsAlongDimension(std::vector<int>(dimensions));
     }
 
-    template <typename T>
-    Nd4jLong NDArray<T>::tensorsAlongDimension(const std::vector<int>& dimensions) const {
-        
+    Nd4jLong NDArray::tensorsAlongDimension(const std::vector<int>& dimensions) const {
         std::vector<int> copy(dimensions);
         shape::checkDimensions(rankOf(), copy);
 
@@ -1214,14 +1207,11 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         return numTads;
     }
 
-    template <typename T>
-    NDArray<T>* NDArray<T>::tensorAlongDimension(Nd4jLong index, const std::initializer_list<int>& dimensions) const {
-
+    NDArray* NDArray::tensorAlongDimension(Nd4jLong index, const std::initializer_list<int>& dimensions) const {
         return tensorAlongDimension(index, std::vector<int>(dimensions));
     }
 
-    template <typename T>
-    void NDArray<T>::printShapeInfo(const char * msg) const {
+    void NDArray::printShapeInfo(const char * msg) const {
         //shape::printShapeInfo(_shapeInfo);
         if (msg == nullptr)
             shape::printShapeInfoLinear(_shapeInfo);
@@ -1240,8 +1230,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         fflush(stdout);
     }
 
-    template <typename T>
-    void NDArray<T>::printBuffer(const char* msg, Nd4jLong limit) {
+    void NDArray::printBuffer(const char* msg, Nd4jLong limit) {
         if (limit == -1)
             limit = (int) this->lengthOf();
 
@@ -1259,8 +1248,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         fflush(stdout);
     }
 
-    template <typename T>
-    void NDArray<T>::printIndexedBuffer(const char* msg, Nd4jLong limit) const {
+    void NDArray::printIndexedBuffer(const char* msg, Nd4jLong limit) const {
         if (limit == -1)
             limit = (int) this->lengthOf();
 
@@ -1269,7 +1257,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         else
             printf("[");
         for (Nd4jLong e = 0; e < limit; e++) {
-            printf("%f", (float) this->getIndexedScalar(e));
+            printf("%f", this->getIndexedScalar(e));
             if (e < limit - 1)
                 printf(", ");
         }
@@ -1277,9 +1265,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         fflush(stdout);
     }
 
-    template <typename T>
-    NDArray<T>* NDArray<T>::tensorAlongDimension(Nd4jLong index, const std::vector<int>& dimensions) const {
-        
+    NDArray* NDArray::tensorAlongDimension(Nd4jLong index, const std::vector<int>& dimensions) const {
         std::vector<int> copy(dimensions);
         shape::checkDimensions(rankOf(), copy);
 
@@ -1305,7 +1291,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         }
         std::memcpy(shapeInfo, tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
 
-        auto array = new NDArray<T>(buffer, shapeInfo, _workspace);
+        auto array = new NDArray(buffer, shapeInfo, _workspace);
         array->_isBuffAlloc = false;
         array->_isShapeAlloc = true;
         array->_isView = true;
@@ -1314,68 +1300,31 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
 // method makes copy of this array and applies to the copy transpose operation, this array remains unaffected 
-template <typename T>
-    NDArray<T>* NDArray<T>::transpose() const {
+    NDArray* NDArray::transpose() const {
         auto shapeInfoLength = shape::shapeInfoLength(rankOf());
         Nd4jLong* newShapeInfo;
 
         ALLOCATE(newShapeInfo , _workspace, shapeInfoLength, Nd4jLong);
         memcpy(newShapeInfo, _shapeInfo, shapeInfoLength*sizeof(Nd4jLong));
 
-        NDArray<T>* newArr = new NDArray<T>(_buffer, newShapeInfo, _workspace);
+        auto newArr = new NDArray(_buffer, newShapeInfo, _workspace);
         newArr->_isShapeAlloc = true;
         newArr->_isBuffAlloc  = false;
 
         newArr->transposei();
 
         return newArr;
-        /*
-    int *rearrange = new int[rankOf()];
-    int cnt = 0;
-    for (int d = rankOf() - 1; d >= 0; d--) {
-        rearrange[cnt++] = d;
-    }
-
-    int sLen = shape::shapeInfoLength(rankOf());
-    int *newShapeBuffer;
-    T *newBuffer;
-    if (_workspace == nullptr) {
-        newShapeBuffer = new int[sLen];
-        newBuffer = new T[lengthOf()];
-    } else {
-        newShapeBuffer = (int*) _workspace->allocateBytes(shape::shapeInfoByteLength(rankOf()));
-        newBuffer = (T*) _workspace->allocateBytes(lengthOf() * sizeOfT());
-    }
-    memcpy(newShapeBuffer, _shapeInfo, shape::shapeInfoByteLength(rankOf()));
-
-    shape::doPermuteShapeInfo(newShapeBuffer, rearrange);
-
-    // fixme: this is bad
-    newShapeBuffer[sLen - 2] = 1;
-
-    memcpy(newBuffer, _buffer, sizeOfT() * lengthOf());
-
-    NDArray<T> *result = new NDArray(newBuffer, newShapeBuffer, _workspace);
-    result->_isBuffAlloc = true;
-    result->_isShapeAlloc = true;
-
-    delete[] rearrange;
-
-    return result;
-        */
 }
 
 ////////////////////////////////////////////////////////////////////////
-template <typename T>
-NDArray<T> NDArray<T>::transp() const {
-        
+NDArray NDArray::transp() const {
     int shapeInfoLength = shape::shapeInfoLength(rankOf());
     Nd4jLong* newShapeInfo;
 
     ALLOCATE(newShapeInfo , _workspace, shapeInfoLength, Nd4jLong);
     memcpy(newShapeInfo, _shapeInfo, shapeInfoLength*sizeof(Nd4jLong));
 
-    NDArray<T> newArr(_buffer, newShapeInfo, _workspace);
+    NDArray newArr(_buffer, newShapeInfo, _workspace);
     newArr._isShapeAlloc = true;
     newArr._isBuffAlloc  = false;
 
@@ -1387,16 +1336,15 @@ NDArray<T> NDArray<T>::transp() const {
 
 ////////////////////////////////////////////////////////////////////////
 // method performs transpose operation based on this array and store result in target, this array remains unaffected 
-    template <typename T>
-    void NDArray<T>::transpose(NDArray<T>& target) const {
+    void NDArray::transpose(NDArray& target) const {
         
-        auto correctShape = ShapeUtils<T>::evalTranspShapeInfo(*this, _workspace);
+        auto correctShape = ShapeUtils::evalTranspShapeInfo(*this, _workspace);
         if(!shape::equalsStrict(correctShape, target.getShapeInfo()))
             throw std::runtime_error("NDArray::transpose method: the shapeInfo of target array is wrong !");
 
     // check whether target has allocated (its own) buffer
     if (target._isBuffAlloc) 
-        RELEASE(target._buffer, target._workspace);
+        RELEASE(reinterpret_cast<int8_t *>(target._buffer), target._workspace);
 
     target._buffer = _buffer;
     // don't forget to indicate that memory for new array was allocated
@@ -1409,57 +1357,20 @@ NDArray<T> NDArray<T>::transp() const {
 
 ////////////////////////////////////////////////////////////////////////
 // This method applies in-place transpose to this array, so this array becomes transposed 
-template <typename T>
-    void NDArray<T>::transposei() {
+    void NDArray::transposei() {
         std::vector<int> perm;
         for (int e = this->rankOf() - 1; e >= 0; e--)
             perm.emplace_back(e);
 
         this->permutei(perm);
-
-
-        /*
-    int *rearrange = new int[rankOf()];
-    int cnt = 0;
-    for (int d = rankOf() - 1; d >= 0; d--) {
-        rearrange[cnt++] = d;
     }
 
-    int *newShapeBuffer;
-    int sLen = rankOf() * 2 + 4;  
-    if (!_isBuffAlloc) {
-        // if we're going for transpose - we'll have to detach this array from original one
-        _isBuffAlloc = true;
-        T *newBuffer = new T[lengthOf()];
-        memcpy(newBuffer, _buffer, sizeOfT() * lengthOf());
-        _buffer = newBuffer;
-    }
-    else if(!_isShapeAlloc) {
-        _isShapeAlloc = true;
-        newShapeBuffer = new int[sLen];
-        memcpy(newShapeBuffer, _shapeInfo, sizeof(int) * sLen);
-    }
-    else {
-        newShapeBuffer = _shapeInfo;
-    }
-
-    shape::doPermuteShapeInfo(newShapeBuffer, rearrange);
-
-    // fixme: this is bad
-    newShapeBuffer[sLen - 2] = 1;
-    _shapeInfo = newShapeBuffer;
-    delete []rearrange;
-        */
-}
-
-    template<typename T>
-    bool NDArray<T>::equalsTo(NDArray<T> &other, T eps) const {
+    bool NDArray::equalsTo(NDArray &other, double eps) const {
         return equalsTo(&other, eps);
     }
 
-// This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
-    template<typename T>
-    bool NDArray<T>::equalsTo(const NDArray<T> *other, T eps) const {
+    // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
+    bool NDArray::equalsTo(const NDArray *other, double eps) const {
 
         if (lengthOf() != other->lengthOf()) {
             auto t = lengthOf();
@@ -1476,8 +1387,7 @@ template <typename T>
         T *extras = new T[1]{eps};
 
         // we don't need extraparams for this op
-        T val = NativeOpExcutioner<T>::execReduce3Scalar(4, _buffer, _shapeInfo, extras, other->_buffer,
-                                                         other->_shapeInfo);
+        double val = NativeOpExcutioner::execReduce3Scalar(4, _buffer, _shapeInfo, extras, other->_buffer, other->_shapeInfo);
 
         delete[] extras;
 
@@ -1489,8 +1399,7 @@ template <typename T>
 
 
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
-    void NDArray<T>::addRowVector(const NDArray<T> *row, NDArray<T>* target) const {
+    void NDArray::addRowVector(const NDArray *row, NDArray *target) const {
         if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->lengthOf())
             throw std::invalid_argument("NDArray::addRowVector: wrong arguments !");
 
@@ -1500,14 +1409,11 @@ template<typename T>
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-        NativeOpExcutioner<T>::execBroadcast(0, _buffer, _shapeInfo, row->_buffer, row->_shapeInfo, target->getBuffer(), target->getShapeInfo(),
-                                             dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
-                                             tad->tadOnlyShapeInfo, tad->tadOffsets);
+        NativeOpExcutioner::execBroadcast(nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, row->_buffer, row->_shapeInfo, target->getBuffer(), target->getShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, tad->tadOnlyShapeInfo, tad->tadOffsets);
 }
 
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
-    void NDArray<T>::subRowVector(const NDArray<T> *row, NDArray<T>* target) const {
+    void NDArray::subRowVector(const NDArray *row, NDArray * target) const {
         if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
             throw std::invalid_argument("NDArray::subRowVector: wrong arguments !");
 
@@ -1517,14 +1423,11 @@ template<typename T>
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-        NativeOpExcutioner<T>::execBroadcast(1, _buffer, _shapeInfo, row->_buffer, row->_shapeInfo, target->getBuffer(), target->getShapeInfo(),
-                                             dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
-                                             tad->tadOnlyShapeInfo, tad->tadOffsets);
+        NativeOpExcutioner::execBroadcast(nd4j::broadcast::Ops::Subtract, _buffer, _shapeInfo, row->_buffer, row->_shapeInfo, target->getBuffer(), target->getShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, tad->tadOnlyShapeInfo, tad->tadOffsets);
 }
 
 //////////////////////////////////////////////////////////////////////////
-    template<typename T>
-    void NDArray<T>::mulRowVector(const NDArray<T> *row, NDArray<T>* target) const {
+    void NDArray::mulRowVector(const NDArray *row, NDArray *target) const {
         if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
             throw std::invalid_argument("NDArray::divRowVector: wrong arguments !");
 
@@ -1534,15 +1437,11 @@ template<typename T>
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-        NativeOpExcutioner<T>::execBroadcast(2, _buffer, _shapeInfo, row->_buffer, row->_shapeInfo, target->getBuffer(), target->getShapeInfo(),
-                                             dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
-                                             tad->tadOnlyShapeInfo, tad->tadOffsets);
-
+        NativeOpExcutioner::execBroadcast(nd4j::broadcast::Ops::Multiply, _buffer, _shapeInfo, row->_buffer, row->_shapeInfo, target->getBuffer(), target->getShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, tad->tadOnlyShapeInfo, tad->tadOffsets);
     }
 
 //////////////////////////////////////////////////////////////////////////
-    template<typename T>
-    void NDArray<T>::divRowVector(const NDArray<T> *row, NDArray<T>* target) const {
+    void NDArray::divRowVector(const NDArray *row, NDArray *target) const {
         if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
             throw std::invalid_argument("NDArray::divRowVector: wrong arguments !");
 
@@ -1552,7 +1451,7 @@ template<typename T>
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-        NativeOpExcutioner<T>::execBroadcast(3, _buffer, _shapeInfo, row->_buffer, row->_shapeInfo, target->getBuffer(), target->getShapeInfo(),
+        NativeOpExcutioner::execBroadcast(nd4j::broadcast::Divide, _buffer, _shapeInfo, row->_buffer, row->_shapeInfo, target->getBuffer(), target->getShapeInfo(),
                                              dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
                                              tad->tadOnlyShapeInfo, tad->tadOffsets);
 
@@ -1560,8 +1459,7 @@ template<typename T>
 
 //////////////////////////////////////////////////////////////////////////
 // This method adds given row to all rows in this NDArray, this array becomes affected
-    template<typename T>
-    void NDArray<T>::addiRowVector(const NDArray<T> *row) {
+    void NDArray::addiRowVector(const NDArray *row) {
     if (rankOf() != 2 || !row->isRowVector() || columns() != row->lengthOf())
         throw std::invalid_argument("NDArray::addiRowVector: wrong arguments !");
 
@@ -1571,15 +1469,14 @@ template<typename T>
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-        NativeOpExcutioner<T>::execBroadcast(0, _buffer, _shapeInfo, row->_buffer, row->_shapeInfo, _buffer, _shapeInfo,
+        NativeOpExcutioner::execBroadcast(nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, row->_buffer, row->_shapeInfo, _buffer, _shapeInfo,
                                              dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
                                              tad->tadOnlyShapeInfo, tad->tadOffsets);
     }
 
 
 //////////////////////////////////////////////////////////////////////////
-    template<typename T>
-    void NDArray<T>::addColumnVector(const NDArray<T> *column, NDArray<T>* target) const {
+    void NDArray::addColumnVector(const NDArray *column, NDArray *target) const {
         if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !column->isColumnVector() || rows() != column->lengthOf())
             throw std::invalid_argument("NDArray::addColumnVector: wrong arguments !");
 
@@ -1589,15 +1486,14 @@ template<typename T>
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-        NativeOpExcutioner<T>::execBroadcast(0, _buffer, _shapeInfo, column->_buffer, column->_shapeInfo, target->getBuffer(), target->getShapeInfo(),
+        NativeOpExcutioner::execBroadcast(nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, column->_buffer, column->_shapeInfo, target->getBuffer(), target->getShapeInfo(),
                                              dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
                                              tad->tadOnlyShapeInfo, tad->tadOffsets);
 }
 
 //////////////////////////////////////////////////////////////////////////
 // This method adds given column to all columns in this NDArray, this array becomes affected
-    template<typename T>
-    void NDArray<T>::addiColumnVector(const NDArray<T> *column) {
+    void NDArray::addiColumnVector(const NDArray *column) {
         if (rankOf() != 2 || !column->isColumnVector() || rows() != column->lengthOf())
             throw std::invalid_argument("NDArray::addiColumnVector: wrong arguments !");
 
@@ -1607,15 +1503,14 @@ template<typename T>
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-        NativeOpExcutioner<T>::execBroadcast(0, _buffer, _shapeInfo, column->_buffer, column->_shapeInfo, _buffer, _shapeInfo,
+        NativeOpExcutioner::execBroadcast(nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, column->_buffer, column->_shapeInfo, _buffer, _shapeInfo,
                                              dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
                                              tad->tadOnlyShapeInfo, tad->tadOffsets);
     }
 
 //////////////////////////////////////////////////////////////////////////
 // This method multiplies each column of this array by given argument-column, this array becomes affected
-    template<typename T>
-    void NDArray<T>::muliColumnVector(const NDArray<T> *column) {
+    void NDArray::muliColumnVector(const NDArray *column) {
         if (rankOf() != 2 || !column->isColumnVector() || rows() != column->lengthOf())
             throw std::invalid_argument("NDArray::muliColumnVector: wrong arguments !");
 
@@ -1625,77 +1520,70 @@ template<typename T>
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-        NativeOpExcutioner<T>::execBroadcast(2, _buffer, _shapeInfo, column->_buffer, column->_shapeInfo, _buffer, _shapeInfo,
+        NativeOpExcutioner::execBroadcast(nd4j::broadcast::Ops::Multiply, _buffer, _shapeInfo, column->_buffer, column->_shapeInfo, _buffer, _shapeInfo,
                                              dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
                                              tad->tadOnlyShapeInfo, tad->tadOffsets);
     }
 
-
-    template<typename T>
-    template<typename OpName>
-    void NDArray<T>::applyScalar(T scalar, NDArray<T>* target, T *extraParams) const {
+    template <typename T>
+    void NDArray::applyScalar(nd4j::scalar::Ops op, T scalar, NDArray *target, void *extraParams) const {
+        auto temp = NDArray::scalar<T>(scalar, this->_workspace);
 
         if (target == nullptr)
-            functions::scalar::ScalarTransform<T>::template transform<OpName>(this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, scalar, extraParams);
+            NativeOpExcutioner::execScalar(op, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, temp->buffer(), temp->shapeInfo(), extraParams);
         else
-            functions::scalar::ScalarTransform<T>::template transform<OpName>(this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, scalar, extraParams);
+            NativeOpExcutioner::execScalar(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, temp->buffer(), temp->shapeInfo(), extraParams);
+
+        delete temp;
     }
 
-    template<typename T>
-    template<typename OpName>
-
-    void NDArray<T>::applyScalar(NDArray<T>& scalar, NDArray<T>* target, T *extraParams) const {
+    void NDArray::applyScalar(nd4j::scalar::Ops op, NDArray& scalar, NDArray* target, void *extraParams) const {
         if (!scalar.isScalar()) {
             throw std::runtime_error("Operand is not a scalar!");
         }
 
-        applyScalar<OpName>(scalar.getScalar(0), target, extraParams);
+        if (target == nullptr)
+            NativeOpExcutioner::execScalar(op, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, scalar.buffer(), scalar.shapeInfo(), extraParams);
+        else
+            NativeOpExcutioner::execScalar(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, scalar.buffer(), scalar.shapeInfo(), extraParams);
     }
 
 
 //////////////////////////////////////////////////////////////////////////
-// calculate strides 
-template <typename T>
-    void NDArray<T>::updateStrides(const char order) {
-	
-	shape::updateStrides(_shapeInfo, order);
-}
+    // calculate strides
+    void NDArray::updateStrides(const char order) {
+    	shape::updateStrides(_shapeInfo, order);
+    }
 
 //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length 
-template <typename T>
-    bool NDArray<T>::reshapei(const char order, const std::initializer_list<Nd4jLong>& shape) {
+    bool NDArray::reshapei(const char order, const std::initializer_list<Nd4jLong>& shape) {
         std::vector<Nd4jLong> vShape(shape);
         return reshapei(order, vShape);
-}
+    }
 
-template <typename T>
-bool NDArray<T>::reshapei(const std::initializer_list<Nd4jLong>& shape) {
-    return reshapei('c', shape);
-}	
+    bool NDArray::reshapei(const std::initializer_list<Nd4jLong>& shape) {
+        return reshapei('c', shape);
+    }
 
-template <typename T>
-bool NDArray<T>::reshapei(const std::vector<Nd4jLong>& shape) {
-    return reshapei('c', shape);
-}
+    bool NDArray::reshapei(const std::vector<Nd4jLong>& shape) {
+        return reshapei('c', shape);
+    }
 
 //////////////////////////////////////////////////////////////////////////
-    template <typename T>
-    void NDArray<T>::enforce(const std::initializer_list<Nd4jLong> &dimensions, char order) {
+    void NDArray::enforce(const std::initializer_list<Nd4jLong> &dimensions, char order) {
         std::vector<Nd4jLong> dims(dimensions);
         enforce(dims, order);
     }
 
-    template <typename T>
-    void NDArray<T>::enforce(std::vector<Nd4jLong> &dimensions, char o) {
-
+    void NDArray::enforce(std::vector<Nd4jLong> &dimensions, char o) {
         Nd4jLong prod = 1;
         for (int e = 0; e < dimensions.size(); e++)
             prod *= dimensions[e];
 
         if (prod != this->lengthOf()) {
-            std::string current = ShapeUtils<T>::shapeAsString(this);
-            std::string enforced = ShapeUtils<T>::shapeAsString(dimensions);
+            std::string current = ShapeUtils::shapeAsString(this);
+            std::string enforced = ShapeUtils::shapeAsString(dimensions);
             nd4j_printf("Can't enforce new shape, lengths mismatch. Original shape: %s; Requested shape: %s\n", current.c_str(), enforced.c_str());
             throw std::runtime_error("Incompatible shape");
         }
@@ -1719,8 +1607,7 @@ bool NDArray<T>::reshapei(const std::vector<Nd4jLong>& shape) {
 
 //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length 
-template <typename T>
-    bool NDArray<T>::reshapei(const char order, const std::vector<Nd4jLong>& cshape) {
+    bool NDArray::reshapei(const char order, const std::vector<Nd4jLong>& cshape) {
 
     // check firstly whether cshape is identical to shape of array, if yes then reshape is unnecessary 
     if(order == ordering() && rankOf() == cshape.size()) {
@@ -1808,10 +1695,10 @@ template <typename T>
         else
             shape::shapeBufferFortran(shape.size(), shape.data(), shapeInfoNew);
 
-        T *newBuffer;
-        ALLOCATE(newBuffer, _workspace, this->lengthOf(), T);
+        int8_t *newBuffer;
+        ALLOCATE(newBuffer, _workspace, this->lengthOf(), int8_t);
 
-        functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Copy<T>>(newBuffer, shapeInfoNew, this->_buffer, this->_shapeInfo, newBuffer, shapeInfoNew, nullptr);
+        NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Ops::Copy, newBuffer, shapeInfoNew, this->_buffer, this->_shapeInfo, newBuffer, shapeInfoNew, nullptr);
 
         if (_isBuffAlloc)
             RELEASE(_buffer, _workspace);
@@ -1831,8 +1718,7 @@ template <typename T>
 }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename T>
-    Nd4jLong NDArray<T>::argMax(std::initializer_list<int> dimensions) {
+    Nd4jLong NDArray::argMax(std::initializer_list<int> dimensions) {
         if (dimensions.size() == 0) {
             Nd4jLong max = 0;
             T mv = -MAX_FLOAT;
@@ -1849,38 +1735,34 @@ template <typename T>
             throw std::runtime_error("Not implemented yet");
 }
 
-//////////////////////////////////////////////////////////////////////////
-// create new array with corresponding order and shape, new array will point to the same _buffer as this array
-template <typename T>
-NDArray<T>* NDArray<T>::reshape(const char order, const std::vector<Nd4jLong>& shape) const {
-	int shapeInfoLength = shape::shapeInfoLength(rankOf());
-	Nd4jLong* newShapeInfo = nullptr;
+    //////////////////////////////////////////////////////////////////////////
+    // create new array with corresponding order and shape, new array will point to the same _buffer as this array
+    NDArray* NDArray::reshape(const char order, const std::vector<Nd4jLong>& shape) const {
+	    int shapeInfoLength = shape::shapeInfoLength(rankOf());
+	    Nd4jLong* newShapeInfo = nullptr;
 
-	ALLOCATE(newShapeInfo , _workspace, shapeInfoLength, Nd4jLong);
-	memcpy(newShapeInfo, _shapeInfo, shapeInfoLength*sizeof(Nd4jLong));
+	    ALLOCATE(newShapeInfo , _workspace, shapeInfoLength, Nd4jLong);
+	    memcpy(newShapeInfo, _shapeInfo, shapeInfoLength*sizeof(Nd4jLong));
 
-	NDArray<T>* newArr = new NDArray<T>(_buffer, newShapeInfo, _workspace);
-	newArr->_isShapeAlloc = true;
-	newArr->_isBuffAlloc  = false;
-	newArr->reshapei(order, shape);
+	    auto newArr = new NDArray(_buffer, newShapeInfo, _workspace);
+	    newArr->_isShapeAlloc = true;
+	    newArr->_isBuffAlloc  = false;
+	    newArr->reshapei(order, shape);
 
-	return newArr;
-}
+	    return newArr;
+    }
 
-//////////////////////////////////////////////////////////////////////////
-// change an array by repeating it the number of times given by reps.
-template <typename T>
-void NDArray<T>::tilei(const std::vector<Nd4jLong>& reps) {
+    //////////////////////////////////////////////////////////////////////////
+    // change an array by repeating it the number of times given by reps.
+    void NDArray::tilei(const std::vector<Nd4jLong>& reps) {
 
-    *this = this->tile(reps);
-	
-}
+        *this = this->tile(reps);
+    }
 
 
-//////////////////////////////////////////////////////////////////////////
-// change an array by repeating it the number of times given by reps.
-template <typename T>
-NDArray<T> NDArray<T>::tile(const std::vector<Nd4jLong>& reps) const {
+    //////////////////////////////////////////////////////////////////////////
+    // change an array by repeating it the number of times given by reps.
+    NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
     
     int dim = reps.size();  
     int product = 1;
@@ -1892,7 +1774,7 @@ NDArray<T> NDArray<T>::tile(const std::vector<Nd4jLong>& reps) const {
     int rankOld = rankOf();
     int diff = rankOld - dim;
     if(product==1) {        // in this case 2 possibilities are present: just reshape or nothing to do
-        NDArray<T> result(*this);
+        NDArray result(*this);
         if(diff < 0) {      // reshape to higher dimension          
             std::vector<Nd4jLong> shapeNew = reps;               // need to have unities at first "diff" positions of new shape
             memcpy(&shapeNew[-diff], result._shapeInfo+1, rankOld * sizeof(Nd4jLong));   // put old shape numbers at rest of positions
@@ -1902,12 +1784,12 @@ NDArray<T> NDArray<T>::tile(const std::vector<Nd4jLong>& reps) const {
     }   
     
     // evaluate shapeInfo for resulting array
-    auto newShapeInfo = ShapeUtils<T>::evalTileShapeInfo(*this, reps, _workspace);
+    auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, _workspace);
     // create new buffer, in any case the memory amount new buffer points to is bigger then those for old _buffer   
-    T* newBuff = nullptr;
-    ALLOCATE(newBuff, _workspace, shape::length(newShapeInfo), T);
+    int8_t * newBuff = nullptr;
+    ALLOCATE(newBuff, _workspace, shape::length(newShapeInfo), int8_t);
     // assign new shape and new buffer to resulting array
-    NDArray<T> result(newBuff, newShapeInfo, _workspace);
+    NDArray result(newBuff, newShapeInfo, _workspace);
     result._isShapeAlloc = true;
     result._isBuffAlloc = true;
 
@@ -1934,88 +1816,84 @@ NDArray<T> NDArray<T>::tile(const std::vector<Nd4jLong>& reps) const {
     return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
-// change an array by repeating it the number of times given by reps.
-template <typename T>
-void NDArray<T>::tile(const std::vector<Nd4jLong>& reps, NDArray<T>& target) const {
+    //////////////////////////////////////////////////////////////////////////
+    // change an array by repeating it the number of times given by reps.
+    void NDArray::tile(const std::vector<Nd4jLong>& reps, NDArray& target) const {
         
-    // evaluate true tile shapeInfo for comparison with target shapeInfo
-    auto newShapeInfo = ShapeUtils<T>::evalTileShapeInfo(*this, reps, _workspace);
-    if(!shape::equalsSoft(newShapeInfo, target.getShapeInfo()))  {
-        delete []newShapeInfo;    
-        throw std::runtime_error("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
-    }
-    RELEASE(newShapeInfo, _workspace);
+        // evaluate true tile shapeInfo for comparison with target shapeInfo
+        auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, _workspace);
+        if(!shape::equalsSoft(newShapeInfo, target.getShapeInfo()))  {
+            delete []newShapeInfo;
+            throw std::runtime_error("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
+        }
+        RELEASE(newShapeInfo, _workspace);
 
-    // fill newBuff, loop through all elements of newBuff 
-    // looping through _buffer goes automatically by means of getSubArrayIndex applying
-    const int ews = target.ews();
-    const int targetLen = target.lengthOf();
-    T* targetBuff = target.getBuffer();
-    if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
+        // fill newBuff, loop through all elements of newBuff
+        // looping through _buffer goes automatically by means of getSubArrayIndex applying
+        const int ews = target.ews();
+        const int targetLen = target.lengthOf();
+        auto targetBuff = target.getBuffer();
+        if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for(Nd4jLong i=0;  i<targetLen; ++i)
-            targetBuff[i] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
-    }
-    else if(target.ordering() == 'c' && ews > 1) {
+            for(Nd4jLong i=0;  i<targetLen; ++i)
+                targetBuff[i] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
+        }
+        else if(target.ordering() == 'c' && ews > 1) {
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for(int i=0;  i<targetLen; ++i)
-            targetBuff[i*ews] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
-    }
-    else {
-        Nd4jLong idx[MAX_RANK];
-        auto targetShape     = target.shapeOf();
-        auto targetStrides   = target.stridesOf();
-        const auto targetRank = target.rankOf();
+            for(int i=0;  i<targetLen; ++i)
+                targetBuff[i*ews] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
+        }
+        else {
+            Nd4jLong idx[MAX_RANK];
+            auto targetShape     = target.shapeOf();
+            auto targetStrides   = target.stridesOf();
+            const auto targetRank = target.rankOf();
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(idx)
-        for(int i=0;  i<targetLen; ++i) {
-            shape::ind2subC(targetRank, targetShape, i, targetLen, idx);
-            targetBuff[ shape::getOffset(0, targetShape, targetStrides, idx, targetRank) ] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
+            for(int i=0;  i<targetLen; ++i) {
+                shape::ind2subC(targetRank, targetShape, i, targetLen, idx);
+                targetBuff[ shape::getOffset(0, targetShape, targetStrides, idx, targetRank) ] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
+            }
         }
     }
-}
 
-//////////////////////////////////////////////////////////////////////////
-template <typename T>
-void NDArray<T>::tile(NDArray<T>& target) const {
-        
-    if(rankOf() > target.rankOf())
-        throw std::runtime_error("NDArray::tile method - rank of target array must be bigger or equal to the rank of this array !");
+    //////////////////////////////////////////////////////////////////////////
+    void NDArray::tile(NDArray& target) const {
+        if(rankOf() > target.rankOf())
+            throw std::runtime_error("NDArray::tile method - rank of target array must be bigger or equal to the rank of this array !");
     
-    if(!ShapeUtils<T>::areShapesBroadcastable(*this, target))         
-        throw std::runtime_error("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
+        if(!ShapeUtils::areShapesBroadcastable(*this, target))
+            throw std::runtime_error("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
 
-    // fill newBuff, loop through all elements of newBuff 
-    // looping through _buffer goes automatically by means of getSubArrayIndex applying
-    const auto ews = target.ews();
-    const auto targetLen = target.lengthOf();
-    T* targetBuff = target.getBuffer();
-    if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
+        // fill newBuff, loop through all elements of newBuff
+        // looping through _buffer goes automatically by means of getSubArrayIndex applying
+        const auto ews = target.ews();
+        const auto targetLen = target.lengthOf();
+        auto targetBuff = target.getBuffer();
+        if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for(int i=0;  i<targetLen; ++i)
-            targetBuff[i] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
-    }
-    else if(target.ordering() == 'c' && ews > 1) {
+            for(int i=0;  i<targetLen; ++i)
+                targetBuff[i] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
+        }
+        else if(target.ordering() == 'c' && ews > 1) {
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for(int i=0;  i<targetLen; ++i)
-            targetBuff[i*ews] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
-    }
-    else {
-        Nd4jLong idx[MAX_RANK];
-        auto targetShape     = target.shapeOf();
-        auto targetStrides   = target.stridesOf();
-        const auto targetRank = target.rankOf();
+            for(int i=0;  i<targetLen; ++i)
+                targetBuff[i*ews] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
+        }
+        else {
+            Nd4jLong idx[MAX_RANK];
+            auto targetShape     = target.shapeOf();
+            auto targetStrides   = target.stridesOf();
+            const auto targetRank = target.rankOf();
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(idx)
-        for(int i=0;  i<targetLen; ++i) {
-            shape::ind2subC(targetRank, targetShape, i, targetLen, idx);
-            targetBuff[ shape::getOffset(0, targetShape, targetStrides, idx, targetRank) ] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
+            for(int i=0;  i<targetLen; ++i) {
+                shape::ind2subC(targetRank, targetShape, i, targetLen, idx);
+                targetBuff[ shape::getOffset(0, targetShape, targetStrides, idx, targetRank) ] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
+            }
         }
     }
-}
 
-//////////////////////////////////////////////////////////////////////////
-    template<typename T>
-    Nd4jLong NDArray<T>::sizeAt(const int dim) const {
+    //////////////////////////////////////////////////////////////////////////
+    Nd4jLong NDArray::sizeAt(const int dim) const {
         if (dim >= this->rankOf() || dim < -this->rankOf())
             throw std::runtime_error("Bad size index requested");
 
@@ -2026,91 +1904,71 @@ void NDArray<T>::tile(NDArray<T>& target) const {
     }
 
 
-//////////////////////////////////////////////////////////////////////////
-// create new  array by repeating it the number of times given by reps
-template<typename T>
-    NDArray<T>* NDArray<T>::repeat(int dimension, const std::vector<Nd4jLong>& repeats) const {
-
-    auto outShape = ShapeUtils<T>::evalRepeatShape(dimension, repeats, *this);
+    //////////////////////////////////////////////////////////////////////////
+    // create new  array by repeating it the number of times given by reps
+    NDArray* NDArray::repeat(int dimension, const std::vector<Nd4jLong>& repeats) const {
+        auto outShape = ShapeUtils<T>::evalRepeatShape(dimension, repeats, *this);
     
-    // the size of outShape == rank
-    int rank = rankOf();            // = outShape.size()
+        // the size of outShape == rank
+        int rank = rankOf();            // = outShape.size()
 
-    auto newShape = new Nd4jLong[rank];
-    for (int i = 0; i < rank; i++)
-        newShape[i] = outShape[i];
+        auto newShape = new Nd4jLong[rank];
+        for (int i = 0; i < rank; i++)
+            newShape[i] = outShape[i];
 
-    NDArray<T>* ret = new NDArray<T>('c', outShape, _workspace);
+        auto ret = new NDArray('c', outShape, _workspace);
 
-    auto repeatDelta = shape::prodLong(newShape, rank) / this->lengthOf();
-    auto numTads = this->tensorsAlongDimension({dimension});
-    for (int i = 0; i < numTads; i++) {
-        auto thisTensor = this->tensorAlongDimension(i, {dimension});
-        auto retTensor = ret->tensorAlongDimension(i, {dimension});
-        int retIdx = 0;
-        for (int k = 0; k < thisTensor->lengthOf(); k++) {
-            T s = thisTensor->getIndexedScalar(k);
-            for (int j = 0; j < repeatDelta; j++) {
-                retTensor->putIndexedScalar(retIdx++, s);
+        auto repeatDelta = shape::prodLong(newShape, rank) / this->lengthOf();
+        auto numTads = this->tensorsAlongDimension({dimension});
+        for (int i = 0; i < numTads; i++) {
+            auto thisTensor = this->tensorAlongDimension(i, {dimension});
+            auto retTensor = ret->tensorAlongDimension(i, {dimension});
+            int retIdx = 0;
+            for (int k = 0; k < thisTensor->lengthOf(); k++) {
+                T s = thisTensor->getIndexedScalar(k);
+                for (int j = 0; j < repeatDelta; j++) {
+                    retTensor->putIndexedScalar(retIdx++, s);
+                }
             }
+
+            delete thisTensor;
+            delete retTensor;
         }
 
-        delete thisTensor;
-        delete retTensor;
+        delete[] newShape;
+
+        return ret;
     }
 
-    delete[] newShape;
-
-    return ret;
-}
-
-//////////////////////////////////////////////////////////////////////////
-// fill array by repeating it the number of times given by reps
-    template<typename T>
-    void NDArray<T>::repeat(int dimension, NDArray<T>& target) const {
+    //////////////////////////////////////////////////////////////////////////
+    // fill array by repeating it the number of times given by reps
+    void NDArray::repeat(int dimension, NDArray& target) const {
     
-    Nd4jLong repeatDelta = shape::prodLong(target.shapeOf(), rankOf()) / this->lengthOf();
-    Nd4jLong numTads = this->tensorsAlongDimension({dimension});
-    for (int i = 0; i < numTads; i++) {
-        NDArray<T>* thisTensor = this->tensorAlongDimension(i, {dimension});
-        NDArray<T>* retTensor = target.tensorAlongDimension(i, {dimension});
-        int retIdx = 0;
-        for (int k = 0; k < thisTensor->lengthOf(); k++) {
-            T s = thisTensor->getIndexedScalar(k);
-            for (int j = 0; j < repeatDelta; j++) {
-                retTensor->putIndexedScalar(retIdx++, s);
+        Nd4jLong repeatDelta = shape::prodLong(target.shapeOf(), rankOf()) / this->lengthOf();
+        Nd4jLong numTads = this->tensorsAlongDimension({dimension});
+        for (int i = 0; i < numTads; i++) {
+            auto thisTensor = this->tensorAlongDimension(i, {dimension});
+            auto retTensor = target.tensorAlongDimension(i, {dimension});
+            int retIdx = 0;
+            for (int k = 0; k < thisTensor->lengthOf(); k++) {
+                T s = thisTensor->getIndexedScalar(k);
+                for (int j = 0; j < repeatDelta; j++) {
+                    retTensor->putIndexedScalar(retIdx++, s);
+                }
             }
+
+            delete thisTensor;
+            delete retTensor;
         }
-
-        delete thisTensor;
-        delete retTensor;
-    }
-}
-
-
-//////////////////////////////////////////////////////////////////////////
-template <typename T>
-bool NDArray<T>::permutei(const int* dimensions, const int rank) {
-
-    // check if current object is _shapeInfo owner
-    if (!_isShapeAlloc) {             // if _shapeInfo is not its own
-        _shapeInfo = ShapeUtils<T>::evalPermShapeInfo(dimensions, rank, *this, _workspace);
-        _isShapeAlloc = true;
-    } else {
-        if (!nonNull() || rank != rankOf())
-            throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: either array is nullptr or rank is not suitable!");
-        shape::doPermuteShapeInfo(_shapeInfo, dimensions);
     }
 
-    return true;
-}
 
-    template <typename T>
-    bool NDArray<T>::permutei(const Nd4jLong* dimensions, const int rank) {
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::permutei(const int* dimensions, const int rank) {
 
         // check if current object is _shapeInfo owner
         if (!_isShapeAlloc) {             // if _shapeInfo is not its own
-            _shapeInfo = ShapeUtils<T>::evalPermShapeInfo(dimensions, rank, *this, _workspace);
+            _shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _workspace);
             _isShapeAlloc = true;
         } else {
             if (!nonNull() || rank != rankOf())
@@ -2121,122 +1979,99 @@ bool NDArray<T>::permutei(const int* dimensions, const int rank) {
         return true;
     }
 
-//////////////////////////////////////////////////////////////////////////
-template <typename T>
-bool NDArray<T>::permutei(const std::initializer_list<int>& dimensions) {
-    std::vector<int> vec(dimensions);
-    return permutei(vec);
-}
+    bool NDArray::permutei(const Nd4jLong* dimensions, const int rank) {
 
-//////////////////////////////////////////////////////////////////////////
-template <typename T>
-bool NDArray<T>::permutei(const std::vector<int>& dimensions) {
-    return permutei(dimensions.data(), dimensions.size());
-}
+        // check if current object is _shapeInfo owner
+        if (!_isShapeAlloc) {             // if _shapeInfo is not its own
+            _shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _workspace);
+            _isShapeAlloc = true;
+        } else {
+            if (!nonNull() || rank != rankOf())
+                throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: either array is nullptr or rank is not suitable!");
+            shape::doPermuteShapeInfo(_shapeInfo, dimensions);
+        }
 
-//////////////////////////////////////////////////////////////////////////
-template <typename T>
-bool NDArray<T>::permutei(const std::initializer_list<Nd4jLong>& dimensions) {
-    std::vector<Nd4jLong> vec(dimensions);
-    std::vector<int> ivec(dimensions.size());
+        return true;
+    }
 
-    for (int e = 0; e < vec.size(); e++)
-        ivec[e] = vec[e];
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::permutei(const std::initializer_list<int>& dimensions) {
+        std::vector<int> vec(dimensions);
+        return permutei(vec);
+    }
 
-    return permutei(ivec);
-}
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::permutei(const std::vector<int>& dimensions) {
+        return permutei(dimensions.data(), dimensions.size());
+    }
 
-//////////////////////////////////////////////////////////////////////////
-template <typename T>
-bool NDArray<T>::permutei(const std::vector<Nd4jLong>& dimensions) {
-    std::vector<int> ivec(dimensions.size());
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::permutei(const std::initializer_list<Nd4jLong>& dimensions) {
+        std::vector<Nd4jLong> vec(dimensions);
+        std::vector<int> ivec(dimensions.size());
 
-    for (int e = 0; e < dimensions.size(); e++)
-        ivec[e] = dimensions[e];
+        for (int e = 0; e < vec.size(); e++)
+            ivec[e] = static_cast<int>(vec[e]);
 
-    return permutei(ivec.data(), ivec.size());
-}
+        return permutei(ivec);
+    }
 
-//////////////////////////////////////////////////////////////////////////
-template <typename T>
-NDArray<T>* NDArray<T>::permute(const int* dimensions, const int rank) const {
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::permutei(const std::vector<Nd4jLong>& dimensions) {
+        std::vector<int> ivec(dimensions.size());
 
-    // evaluate shapeInfo for output (permuted) array ret
-    auto shapeInfoNew = ShapeUtils<T>::evalPermShapeInfo(dimensions, rank, *this, _workspace);
-    // create array to be returned
-    NDArray<T>* ret = new NDArray<T>(_buffer, shapeInfoNew, _workspace);
-    // don't forget to indicate that memory for new array was allocated
-    ret->_isBuffAlloc = false;
-    ret->_isShapeAlloc = true;
-	ret->_isView = true;
+        for (int e = 0; e < dimensions.size(); e++)
+            ivec[e] = dimensions[e];
 
-    return ret;
-}
+        return permutei(ivec.data(), ivec.size());
+    }
 
-/////////////////////////////////////////////////////////////////////////
-    template <typename T>
-    NDArray<T>* NDArray<T>::permute(const Nd4jLong* dimensions, const int rank) const {
+    //////////////////////////////////////////////////////////////////////////
+    NDArray* NDArray::permute(const int* dimensions, const int rank) const {
+        // evaluate shapeInfo for output (permuted) array ret
+        auto shapeInfoNew = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _workspace);
+        // create array to be returned
+        auto ret = new NDArray(_buffer, shapeInfoNew, _workspace);
+        // don't forget to indicate that memory for new array was allocated
+        ret->_isBuffAlloc = false;
+        ret->_isShapeAlloc = true;
+	    ret->_isView = true;
+
+        return ret;
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    NDArray* NDArray::permute(const Nd4jLong* dimensions, const int rank) const {
         int tempDims[MAX_RANK];
         shape::convertT<Nd4jLong, int>(const_cast<Nd4jLong *>(dimensions), tempDims, rank);
         return permute(tempDims, rank);
     }
 
 
-//////////////////////////////////////////////////////////////////////////
-template <typename T>
-NDArray<T>* NDArray<T>::permute(const std::vector<int>& dimensions) const {
-    return permute(dimensions.data(), dimensions.size());
-}
+    //////////////////////////////////////////////////////////////////////////
+    NDArray* NDArray::permute(const std::vector<int>& dimensions) const {
+        return permute(dimensions.data(), dimensions.size());
+    }
 
-    template <typename T>
-    NDArray<T>* NDArray<T>::permute(const std::vector<Nd4jLong>& dimensions) const {
+    NDArray* NDArray::permute(const std::vector<Nd4jLong>& dimensions) const {
         return permute(dimensions.data(), dimensions.size());
     }
 
 
-//////////////////////////////////////////////////////////////////////////
-template <typename T>
-NDArray<T>* NDArray<T>::permute(const std::initializer_list<int>& dimensions) const {
-    std::vector<int> vec(dimensions);
-    return permute(vec);
-}
+    //////////////////////////////////////////////////////////////////////////
+    NDArray* NDArray::permute(const std::initializer_list<int>& dimensions) const {
+        std::vector<int> vec(dimensions);
+        return permute(vec);
+    }
 
-//////////////////////////////////////////////////////////////////////////
-template <typename T>
-NDArray<T>* NDArray<T>::permute(const std::initializer_list<Nd4jLong>& dimensions) const {
-    std::vector<Nd4jLong> vec(dimensions);
-    return permute(vec);
-}
+    //////////////////////////////////////////////////////////////////////////
+    NDArray* NDArray::permute(const std::initializer_list<Nd4jLong>& dimensions) const {
+        std::vector<Nd4jLong> vec(dimensions);
+        return permute(vec);
+    }
 
-
-
-
-//////////////////////////////////////////////////////////////////////////
-template <typename T>
-void NDArray<T>::permute(const int* dimensions, const int rank, NDArray<T>& target) const {
-
-    if (!nonNull() || !target.nonNull() || rank != rankOf() || rank != target.rankOf() )
-        throw std::runtime_error("NDArray<T>::permute method: either arrays are nullptr or ranks are not suitable!");
-
-    // check whether target has allocated (its own) buffer
-    if (target._isBuffAlloc) 
-        RELEASE(target._buffer, target._workspace);
-
-    auto shapeInfoNew = ShapeUtils<T>::evalPermShapeInfo(dimensions, rank, *this, target._workspace);
-
-    target._buffer = _buffer;
-    target._shapeInfo = shapeInfoNew;
-    // don't forget to indicate that memory for new array was allocated
-    target._isBuffAlloc = false;
-    target._isShapeAlloc = true;
-    //target._isView = true;
-
-}
-
-
-    template <typename T>
-    void NDArray<T>::permute(const Nd4jLong *dimensions, const int rank, NDArray<T>& target) const {
-
+    //////////////////////////////////////////////////////////////////////////
+    void NDArray::permute(const int* dimensions, const int rank, NDArray& target) const {
         if (!nonNull() || !target.nonNull() || rank != rankOf() || rank != target.rankOf() )
             throw std::runtime_error("NDArray<T>::permute method: either arrays are nullptr or ranks are not suitable!");
 
@@ -2244,7 +2079,25 @@ void NDArray<T>::permute(const int* dimensions, const int rank, NDArray<T>& targ
         if (target._isBuffAlloc)
             RELEASE(target._buffer, target._workspace);
 
-        auto shapeInfoNew = ShapeUtils<T>::evalPermShapeInfo(dimensions, rank, *this, target._workspace);
+        auto shapeInfoNew = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, target._workspace);
+
+        target._buffer = _buffer;
+        target._shapeInfo = shapeInfoNew;
+        // don't forget to indicate that memory for new array was allocated
+        target._isBuffAlloc = false;
+        target._isShapeAlloc = true;
+        //target._isView = true;
+    }
+
+    void NDArray::permute(const Nd4jLong *dimensions, const int rank, NDArray& target) const {
+        if (!nonNull() || !target.nonNull() || rank != rankOf() || rank != target.rankOf() )
+            throw std::runtime_error("NDArray<T>::permute method: either arrays are nullptr or ranks are not suitable!");
+
+        // check whether target has allocated (its own) buffer
+        if (target._isBuffAlloc)
+            RELEASE(target._buffer, target._workspace);
+
+        auto shapeInfoNew = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, target._workspace);
 
         target._buffer = _buffer;
         target._shapeInfo = shapeInfoNew;
@@ -2256,64 +2109,55 @@ void NDArray<T>::permute(const int* dimensions, const int rank, NDArray<T>& targ
     }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename T>
-void NDArray<T>::permute(const std::vector<int>& dimensions, NDArray<T>& target) const {
-    permute(dimensions.data(), dimensions.size(), target);
-}
-
-    template <typename T>
-    void NDArray<T>::permute(const std::vector<Nd4jLong>& dimensions, NDArray<T>& target) const {
+    void NDArray::permute(const std::vector<int>& dimensions, NDArray& target) const {
         permute(dimensions.data(), dimensions.size(), target);
     }
 
-//////////////////////////////////////////////////////////////////////////
-template<typename T>
-template<typename OpName>
-void NDArray<T>::applyBroadcast(std::initializer_list<int> dimensions, const NDArray<T>* tadArray, NDArray<T>* target, T* extraArgs) {
-    std::vector<int> vec(dimensions);
-    applyBroadcast<OpName>(vec, tadArray, target, extraArgs);
-}
-
-//////////////////////////////////////////////////////////////////////////
-template<typename T>
-template<typename OpName>
-void NDArray<T>::applyBroadcast(std::vector<int>& dimensions, const NDArray<T>* tadArray, NDArray<T>* target, T* extraArgs) {
-    if (dimensions.size() == 0)
-        return;
-
-    std::vector<int> copy(dimensions);
-
-    if (dimensions.size() > 1)
-        std::sort(copy.begin(), copy.end());
-
-    Nd4jLong tadLength = shape::tadLength(this->_shapeInfo, copy.data(), (int) copy.size());
-    if (tadLength != tadArray->lengthOf())
-       throw std::runtime_error("Tad length mismatch");
-
-    shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
-    tad.createTadOnlyShapeInfo();
-    tad.createOffsets();
-
-    NDArray<T>* result = target == nullptr ? this : target;
-
-    // TODO: eventually we want separate tads here
-    functions::broadcast::Broadcast<T>::template exec<OpName>(this->_buffer, this->_shapeInfo, tadArray->_buffer, tadArray->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
-}
-
-
-//////////////////////////////////////////////////////////////////////////
-template<typename T>
-template <typename OpName>
-void NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target, const bool checkTargetShape, T *extraArgs) const {
-
-    if(target == nullptr || other == nullptr)
-        throw std::runtime_error("NDArray::applyTrueBroadcast method: target or other = nullptr !");    
-
-    if (isScalar()) {        
-        target->assign(this);
-        target->template applyPairwiseTransform<OpName>(const_cast<NDArray<T>*>(other), extraArgs);
-        return;
+    void NDArray::permute(const std::vector<Nd4jLong>& dimensions, NDArray& target) const {
+        permute(dimensions.data(), dimensions.size(), target);
     }
+
+    //////////////////////////////////////////////////////////////////////////
+    void NDArray::applyBroadcast(nd4j::broadcast::Ops op, std::initializer_list<int> dimensions, const NDArray* tadArray, NDArray* target, void* extraArgs) {
+        std::vector<int> vec(dimensions);
+        applyBroadcast(op, vec, tadArray, target, extraArgs);
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    void NDArray::applyBroadcast(nd4j::broadcast::Ops op, std::vector<int>& dimensions, const NDArray* tadArray, NDArray* target, void* extraArgs) {
+        if (dimensions.size() == 0)
+            return;
+
+        std::vector<int> copy(dimensions);
+
+        if (dimensions.size() > 1)
+            std::sort(copy.begin(), copy.end());
+
+        Nd4jLong tadLength = shape::tadLength(this->_shapeInfo, copy.data(), (int) copy.size());
+        if (tadLength != tadArray->lengthOf())
+            throw std::runtime_error("Tad length mismatch");
+
+        shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
+        tad.createTadOnlyShapeInfo();
+        tad.createOffsets();
+
+        auto result = target == nullptr ? this : target;
+
+        // TODO: eventually we want separate tads here
+        NativeOpExcutioner::execBroadcast(op, this->_buffer, this->_shapeInfo, tadArray->_buffer, tadArray->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
+    }
+
+
+    //////////////////////////////////////////////////////////////////////////
+    void NDArray::applyTrueBroadcast(nd4j::broadcast::Ops op, const NDArray* other, NDArray* target, const bool checkTargetShape, void *extraArgs) const {
+        if(target == nullptr || other == nullptr)
+            throw std::runtime_error("NDArray::applyTrueBroadcast method: target or other = nullptr !");
+
+        if (isScalar()) {
+            target->assign(this);
+            target->applyPairwiseTransform(op, const_cast<NDArray*>(other), extraArgs);
+            return;
+        }
     if (other->isScalar()) {        
         this->template applyScalar<OpName>(other->getScalar(0), target, extraArgs);
         return;

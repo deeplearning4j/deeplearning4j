@@ -57,8 +57,8 @@ namespace nd4j {
 
         /**
         *  pointer on flattened data array in memory
-        */  
-        void *_buffer = nullptr;
+        */
+        int8_t* _buffer = nullptr;
 
         /**
         *  contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides, element-wise-stride, c-like or fortan-like order
@@ -73,7 +73,7 @@ namespace nd4j {
         /**
         *  alternative buffers for special computational devices (like GPUs for CUDA)
         */  
-        void* _bufferD = nullptr;
+        int8_t* _bufferD = nullptr;
         Nd4jLong *_shapeInfoD = nullptr;
 
         /**
@@ -524,9 +524,9 @@ namespace nd4j {
         *  scalar - input scalar
         *  target - where to store result
         *  extraParams - extra parameters for operation
-        */ 
-        void applyScalar(nd4j::scalar::Ops op, double scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
-        void applyScalar(nd4j::scalar::Ops op, Nd4jLong scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
+        */
+        template <typename T>
+        void applyScalar(nd4j::scalar::Ops op, T scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
 
         /** 
         *  apply a scalar operation to an array
