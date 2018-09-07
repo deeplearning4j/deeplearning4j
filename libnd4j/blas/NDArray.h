@@ -788,7 +788,7 @@ namespace nd4j {
         */
         NDArray* varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const;
 
-        NDArray* varianceAlongDimension(const bool biasCorrected, const std::initializer_list<int>& dimensions) const;
+        NDArray* varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::initializer_list<int>& dimensions) const;
 
         void varianceAlongDimension(nd4j::variance::Ops op, const NDArray* target, const bool biasCorrected, const std::vector<int>& dimensions);
 

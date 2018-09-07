@@ -920,7 +920,8 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     template<typename T>
     void NDArray::assign(const T value) {
         // just fire scalar
-        NativeOpExcutioner::execScalar(13, _buffer, _shapeInfo, _buffer, _shapeInfo, value, nullptr);
+        auto temp = NDArray::scalar(value, this->_workspace);
+        NativeOpExcutioner::execScalar(nd4j::scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, temp, temp->shapeInfo(), nullptr);
     }
 
     NDArray* NDArray::detach() {
@@ -2158,254 +2159,253 @@ NDArray NDArray::transp() const {
             target->applyPairwiseTransform(op, const_cast<NDArray*>(other), extraArgs);
             return;
         }
-    if (other->isScalar()) {        
-        this->template applyScalar<OpName>(other->getScalar(0), target, extraArgs);
-        return;
+        if (other->isScalar()) {
+            this->template applyScalar<OpName>(other->getScalar(0), target, extraArgs);
+            return;
+        }
+
+        const NDArray* min(nullptr), *max(nullptr);
+        if(this->rankOf() >= other->rankOf()) {
+            max = this;
+            min = other;
+        }
+        else {
+            max = other;
+            min = this;
+        }
+
+        if(checkTargetShape) {
+            Nd4jLong* newShapeInfo = nullptr;
+            if(!ShapeUtils::evalBroadcastShapeInfo(*max, *min, false, newShapeInfo, _workspace))          // the rank of target array must be equal to max->rankOf)()
+                throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
+            if(!shape::equalsSoft(target->getShapeInfo(), newShapeInfo))
+                throw std::runtime_error("NDArray::applyTrueBroadcast method: the shape of target array is wrong !");
+
+            // if workspace is not null - do not call delete.
+            if (_workspace == nullptr)
+                delete[] newShapeInfo;
+        }
+
+        // check whether max array has to be tiled
+        if(!max->isSameShape(target)) {
+            // evaluate repeating dimensions for tile operation
+            std::vector<Nd4jLong> repeatMax(max->rankOf());
+            for(int i = 1; i <= max->rankOf(); ++i)
+                repeatMax[i-1] = (target->_shapeInfo[i] / max->_shapeInfo[i]);
+            max->tile(repeatMax, *target);
+        }
+        else
+            target->assign(max);
+
+
+        // check whether min array has to be tiled
+        std::vector<Nd4jLong> repeatMin(min->rankOf());
+        int product = 1;
+        for(int i = min->rankOf(); i >=1 ; --i) {
+            repeatMin[i-1] = (target->_shapeInfo[target->rankOf() - min->rankOf() + i] / min->_shapeInfo[i]);
+            product *= repeatMin[i-1];
+        }
+
+        auto pMin = const_cast<NDArray *>(min);
+        if(product != 1 )
+            pMin = new NDArray(min->tile(repeatMin));
+
+        std::vector<int> sameDims = ShapeUtils::getDimsWithSameShape(target, pMin);
+
+        if(max == this) {
+            target->applyBroadcast(op, sameDims, pMin, nullptr, extraArgs);
+        }
+        else {
+            auto dimsToExclude = ShapeUtils::evalDimsToExclude(target->rankOf(), sameDims);
+            const auto numOfSubArrs = ShapeUtils::getNumOfSubArrs(target->_shapeInfo, dimsToExclude);
+        
+#pragma omp parallel for schedule(guided)
+            for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
+                auto targetSubArr = (*target)(i, dimsToExclude);
+                pMin->applyPairwiseTransform(op, &targetSubArr, &targetSubArr, extraArgs);
+            }
+        }
+
+        if(pMin != min)
+            delete pMin;
     }
 
-    const NDArray<T>* min(nullptr), *max(nullptr);
-    if(this->rankOf() >= other->rankOf()) {
-        max = this;
-        min = other;
-    }
-    else {
-        max = other;
-        min = this;
-    }
-
-    if(checkTargetShape) {
+//////////////////////////////////////////////////////////////////////////
+    NDArray* NDArray::applyTrueBroadcast(nd4j::broadcast::Ops op, const NDArray* other, void *extraArgs) const {
         Nd4jLong* newShapeInfo = nullptr;
-        if(!ShapeUtils<T>::evalBroadcastShapeInfo(*max, *min, false, newShapeInfo, _workspace))          // the rank of target array must be equal to max->rankOf)()
+        if(!ShapeUtils::evalBroadcastShapeInfo(*this, *other, true, newShapeInfo, _workspace))          // the rank of new array = max->rankOf)()
             throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
-        if(!shape::equalsSoft(target->getShapeInfo(), newShapeInfo))
-            throw std::runtime_error("NDArray::applyTrueBroadcast method: the shape of target array is wrong !");
+        auto result = new NDArray(newShapeInfo, false, this->_workspace);
 
         // if workspace is not null - do not call delete.
         if (_workspace == nullptr)
             delete[] newShapeInfo;
-    }
 
-    // check whether max array has to be tiled
-    if(!max->isSameShape(target)) {
-        // evaluate repeating dimensions for tile operation
-        std::vector<Nd4jLong> repeatMax(max->rankOf());
-        for(int i = 1; i <= max->rankOf(); ++i)
-            repeatMax[i-1] = (target->_shapeInfo[i] / max->_shapeInfo[i]);
-        max->tile(repeatMax, *target);
-    }
-    else
-        target->assign(max);
-
-
-    // check whether min array has to be tiled
-    std::vector<Nd4jLong> repeatMin(min->rankOf());
-    int product = 1;
-    for(int i = min->rankOf(); i >=1 ; --i) {
-        repeatMin[i-1] = (target->_shapeInfo[target->rankOf() - min->rankOf() + i] / min->_shapeInfo[i]);
-        product *= repeatMin[i-1];
-    }
-
-    NDArray<T>* pMin = const_cast<NDArray<T>*>(min);
-    if(product != 1 )
-        pMin = new NDArray<T>(min->tile(repeatMin));
-
-    std::vector<int> sameDims = ShapeUtils<T>::getDimsWithSameShape(target, pMin);
-
-    if(max == this) {        
-        target->template applyBroadcast<OpName>(sameDims, pMin, nullptr, extraArgs);
-    }
-    else {
-    
-        std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(target->rankOf(), sameDims);
-        const Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(target->_shapeInfo, dimsToExclude);
-        
-#pragma omp parallel for schedule(guided)
-        for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
-            
-            NDArray<T> targetSubArr = (*target)(i, dimsToExclude);
-            pMin->template applyPairwiseTransform<OpName>(&targetSubArr, &targetSubArr, extraArgs);
-        }
-    }
-
-    if(pMin != min)
-        delete pMin;
-}
-
-//////////////////////////////////////////////////////////////////////////
-template<typename T>
-template <typename OpName>
-NDArray<T>* NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, T *extraArgs) const {
-
-    Nd4jLong* newShapeInfo = nullptr;
-    if(!ShapeUtils<T>::evalBroadcastShapeInfo(*this, *other, true, newShapeInfo, _workspace))          // the rank of new array = max->rankOf)()
-        throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
-    auto result = new NDArray<T>(newShapeInfo, false, this->_workspace);
-
-    // if workspace is not null - do not call delete.
-    if (_workspace == nullptr)
-        delete[] newShapeInfo;
-
-    this->template applyTrueBroadcast<OpName>(other, result, false, extraArgs);
+        this->applyTrueBroadcast(op, other, result, false, extraArgs);
   
-    return result;
-}
+        return result;
+    }
 
 
-//////////////////////////////////////////////////////////////////////////
-template<typename T>
-template <typename OpName>
-NDArray<T> NDArray<T>::applyTrueBroadcast(const NDArray<T>& other, T *extraArgs) const {
+    //////////////////////////////////////////////////////////////////////////
+    NDArray NDArray::applyTrueBroadcast(nd4j::broadcast::Ops op, const NDArray& other, void *extraArgs) const {
+        auto pResult = this->applyTrueBroadcast(op, &other, extraArgs);
+        pResult->_isShapeAlloc = false;
+        pResult->_isBuffAlloc  = false;
 
-    NDArray<T>* pResult = this->template applyTrueBroadcast<OpName>(&other, extraArgs);
-    pResult->_isShapeAlloc = false;
-    pResult->_isBuffAlloc  = false;
-
-    NDArray<T> result(pResult->_buffer, pResult->_shapeInfo, _workspace);
-    result._isShapeAlloc = true;
-    result._isBuffAlloc  = true;
+        NDArray result(pResult->_buffer, pResult->_shapeInfo, _workspace);
+        result._isShapeAlloc = true;
+        result._isBuffAlloc  = true;
     
-    delete pResult;
+        delete pResult;
 
-    return result;
-}
-
-
-//////////////////////////////////////////////////////////////////////////
-// return array which is broadcasted from this and argument array  
-template<typename T>
-NDArray<T>* NDArray<T>::broadcast(const NDArray<T>& other) {	
-	// the orders must be the same
-	char order = ordering();
-	if(order != other.ordering())
-		throw std::runtime_error("Broadcast method: arrays have different orders!");
-	// recognize shapes with smaller and bigger rank
-	Nd4jLong* biggerShapeInfo = nullptr;
-	Nd4jLong* smallerShapeInfo = nullptr;
-	int smallerRank, biggerRank;
-	if (rankOf() > other.rankOf()) {
-		biggerShapeInfo = _shapeInfo;
-		biggerRank = _shapeInfo[0];
-		smallerShapeInfo = other._shapeInfo;
-		smallerRank = other._shapeInfo[0];
-	}
-	else {
-		biggerShapeInfo = other._shapeInfo;
-		biggerRank = other._shapeInfo[0];
-		smallerShapeInfo = _shapeInfo;
-		smallerRank = _shapeInfo[0];
-	}
-	// check shapes on consistency	
-	int diff = biggerRank - smallerRank;
-	for (int i = smallerRank; i<=1; --i)
-		if(biggerShapeInfo[diff+i] != smallerShapeInfo[i] && biggerShapeInfo[i] != 1 && smallerShapeInfo[i] != 1)
-			throw std::runtime_error("Broadcast method: arrays have incompatible shapes !");
-	// create and fill ret shapeInfo
-	auto shapeInfoNew = new Nd4jLong[shape::shapeInfoLength(biggerRank)];
-	memcpy(shapeInfoNew, biggerShapeInfo, shape::shapeInfoByteLength(biggerRank));
-	for (int i = smallerRank; i>=1; --i) 
-		if(shapeInfoNew[diff+i] == 1 || smallerShapeInfo[i] == 1) 
-			shapeInfoNew[diff+i] *= smallerShapeInfo[i];
-
-	NDArray<T>* ret = new NDArray<T>(shapeInfoNew, _workspace);
-	ret->updateStrides(order);
-	delete []shapeInfoNew;
-
-	return ret;
-}
+        return result;
+    }
 
 
-//////////////////////////////////////////////////////////////////////////
-// check whether array's rows (arg=0) or columns (arg=1) create orthogonal basis
-template<typename T>
-bool NDArray<T>::hasOrthonormalBasis(const int arg) {
+    //////////////////////////////////////////////////////////////////////////
+    // return array which is broadcasted from this and argument array
+    NDArray* NDArray::broadcast(const NDArray& other) {
+	    // the orders must be the same
+	    char order = ordering();
+	    if(order != other.ordering())
+		    throw std::runtime_error("Broadcast method: arrays have different orders!");
 
-	if(rankOf() !=2 )
-		throw std::runtime_error("NDArray::hasOrthBasis method: rank of ndarray is not equal 2 !");
+	    // recognize shapes with smaller and bigger rank
+	    Nd4jLong* biggerShapeInfo = nullptr;
+	    Nd4jLong* smallerShapeInfo = nullptr;
+	    int smallerRank, biggerRank;
+	    if (rankOf() > other.rankOf()) {
+		    biggerShapeInfo = _shapeInfo;
+		    biggerRank = shape::rank(_shapeInfo);
+		    smallerShapeInfo = other._shapeInfo;
+		    smallerRank = shape::rank(other._shapeInfo);
+	    }
+	    else {
+		    biggerShapeInfo = other._shapeInfo;
+		    biggerRank = shape::rank(other._shapeInfo);
+		    smallerShapeInfo = _shapeInfo;
+		    smallerRank = shape::rank(_shapeInfo);
+	    }
 
-	if(arg!=0  && arg!=1)
-		throw std::runtime_error("NDArray::hasOrthBasis method: input argument is not equal to 0 or 1 !");
+	    // check shapes on consistency
+	    int diff = biggerRank - smallerRank;
+	    for (int i = smallerRank; i<=1; --i)
+		    if(biggerShapeInfo[diff+i] != smallerShapeInfo[i] && biggerShapeInfo[i] != 1 && smallerShapeInfo[i] != 1)
+			    throw std::runtime_error("Broadcast method: arrays have incompatible shapes !");
 
-	const T eps = 1e-5f;
-	T dot = 0.f;
-	if(arg) {					// check whether columns create orthogonal basis
-		for(int j=0; j<columns()-1; ++j)
-			for(int k=j+1; k<columns(); ++k) {
-				for(int i=0; i<rows(); ++i)
-					dot += getScalar(i,j)*getScalar(i,k);
-				if(nd4j::math::nd4j_abs(dot) > eps )
-					return false;
-				dot = 0.f;
-			}
-		for(int j=0; j<columns(); ++j)	{	// check whether norm of column vector = 1
-			for(int i=0; i<rows(); ++i)
-				dot += getScalar(i,j)*getScalar(i,j);
-			if(dot != (T) 0.f && nd4j::math::nd4j_abs(nd4j::math::nd4j_sqrt<T>(dot) - (T) 1.f) > eps)
-				return false;
-			dot = 0.f;
-		}
-	}
-	else {						// check whether rows create orthogonal basis
-		for(int i=0; i<rows()-1; ++i)
-			for(int k=i+1; k<rows(); ++k) {
-				for(int j=0; j<columns(); ++j)
-					dot += getScalar(i,j)*getScalar(k,j);
-				if(nd4j::math::nd4j_abs(dot) > eps )
-					return false;
-				dot = (T) 0.f;
-			}
-		for(int i=0; i<rows(); ++i) {		// check whether norm of row vector = 1
-			for(int j=0; j<columns(); ++j)
-					dot += getScalar(i,j)*getScalar(i,j);
-			if(dot!= (T) 0.f && nd4j::math::nd4j_abs(nd4j::math::nd4j_sqrt<T>(dot) - (T) 1.f) > eps)
-				return false;
-			dot = 0.f;
-		}
-	}
-	return true;
-}
+		// create and fill ret shapeInfo
+	    auto shapeInfoNew = new Nd4jLong[shape::shapeInfoLength(biggerRank)];
+	    memcpy(shapeInfoNew, biggerShapeInfo, shape::shapeInfoByteLength(biggerRank));
+	    for (int i = smallerRank; i>=1; --i)
+		    if(shapeInfoNew[diff+i] == 1 || smallerShapeInfo[i] == 1)
+			    shapeInfoNew[diff+i] *= smallerShapeInfo[i];
 
-//////////////////////////////////////////////////////////////////////////
-// check whether array is identity matrix
-template<typename T>
-bool NDArray<T>::isIdentityMatrix() {
-	if(rankOf() !=2 || rows() != columns())
-		throw std::runtime_error("isIdentityMatrix method: matrix must be square and have rank = 2 !");
+	    auto ret = new NDArray(shapeInfoNew, _workspace);
+	    ret->updateStrides(order);
+	    delete []shapeInfoNew;
 
-	const T eps = 1e-5f;
-	for(int i=0; i<rows(); ++i)
-		if(nd4j::math::nd4j_abs(getScalar(i,i) - 1.f) > eps)
-			return false;
+    	return ret;
+    }
 
-	for(int i=0; i<rows(); ++i)
-		for(int j=0; j<columns(); ++j) {
-			if (i == j) continue;
-			if(nd4j::math::nd4j_abs(getScalar(i,j)) > eps)
-				return false;
-		}
-	return true;
-}
 
-//////////////////////////////////////////////////////////////////////////
-// check whether array is unitary matrix
-template<typename T>
-bool NDArray<T>::isUnitary() {
+    //////////////////////////////////////////////////////////////////////////
+    // check whether array's rows (arg=0) or columns (arg=1) create orthogonal basis
+    bool NDArray::hasOrthonormalBasis(const int arg) {
+	    if(rankOf() !=2 )
+		    throw std::runtime_error("NDArray::hasOrthBasis method: rank of ndarray is not equal 2 !");
 
-    if(rankOf() !=2 || rows() != columns())
-        throw std::runtime_error("isUnitary method: matrix must be square and have rank = 2 !");
+	    if(arg!=0  && arg!=1)
+		    throw std::runtime_error("NDArray::hasOrthBasis method: input argument is not equal to 0 or 1 !");
 
-    NDArray<T>* tr = this->transpose();
-    NDArray<T>* trMul = MmulHelper<T>::mmul(this, tr, nullptr, 1.f, 0.f);
+	    const double eps = 1e-5;
+        double dot = 0.f;
 
-    bool result = trMul->isIdentityMatrix();
-    delete tr;
-    delete trMul;
+        if(arg) {					// check whether columns create orthogonal basis
+		    for(int j=0; j<columns()-1; ++j)
+			    for(int k=j+1; k<columns(); ++k) {
+				    for(int i=0; i<rows(); ++i)
+					    dot += getScalar(i,j)*getScalar(i,k);
+
+				    if(nd4j::math::nd4j_abs(dot) > eps )
+					    return false;
+
+				    dot = 0.f;
+			    }
+
+			    for(int j=0; j<columns(); ++j)	{	// check whether norm of column vector = 1
+			        for(int i=0; i<rows(); ++i)
+				        dot += getScalar(i,j)*getScalar(i,j);
+			    if(dot != 0.f && nd4j::math::nd4j_abs(nd4j::math::nd4j_sqrt(dot) - 1.f) > eps)
+				    return false;
+
+			    dot = 0.f;
+		    }
+	    }
+	    else {						// check whether rows create orthogonal basis
+		    for(int i=0; i<rows()-1; ++i)
+			    for(int k=i+1; k<rows(); ++k) {
+				    for(int j=0; j<columns(); ++j)
+					    dot += getScalar(i,j)*getScalar(k,j);
+
+				    if(nd4j::math::nd4j_abs(dot) > eps )
+					    return false;
+
+				    dot = (T) 0.f;
+			    }
+
+		        for(int i=0; i<rows(); ++i) {		// check whether norm of row vector = 1
+			        for(int j=0; j<columns(); ++j)
+					    dot += getScalar(i,j)*getScalar(i,j);
+
+			        if(dot!= (T) 0.f && nd4j::math::nd4j_abs(nd4j::math::nd4j_sqrt<T>(dot) - (T) 1.f) > eps)
+				        return false;
+			        dot = 0.f;
+		        }
+	        }
+	    return true;
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    // check whether array is identity matrix
+    bool NDArray::isIdentityMatrix() {
+	    if(rankOf() !=2 || rows() != columns())
+		    throw std::runtime_error("isIdentityMatrix method: matrix must be square and have rank = 2 !");
+
+	    const double eps = 1e-5f;
+	    for(int i=0; i<rows(); ++i)
+		    if(nd4j::math::nd4j_abs(getScalar(i,i) - 1.f) > eps)
+			    return false;
+
+	    for(int i=0; i<rows(); ++i)
+		    for(int j=0; j<columns(); ++j) {
+			    if (i == j)
+			        continue;
+
+			    if(nd4j::math::nd4j_abs(getScalar(i,j)) > eps)
+				    return false;
+		    }
+    	return true;
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    // check whether array is unitary matrix
+    bool NDArray::isUnitary() {
+        if(rankOf() !=2 || rows() != columns())
+            throw std::runtime_error("isUnitary method: matrix must be square and have rank = 2 !");
+
+        auto tr = this->transpose();
+        auto trMul = MmulHelper::mmul(this, tr, nullptr, 1.f, 0.f);
+
+        bool result = trMul->isIdentityMatrix();
+        delete tr;
+        delete trMul;
     
-    return result;
-}
+        return result;
+    }
 
-////////////////////////////////////////////////////////////////////////
-    template<typename T>
-    NDArray<T>* NDArray<T>::subarray(IndicesList& idx, std::vector<Nd4jLong>& strides) const {
+    ////////////////////////////////////////////////////////////////////////
+    NDArray* NDArray::subarray(IndicesList& idx, std::vector<Nd4jLong>& strides) const {
         auto raw = subarray(idx);
 
         for (int e = 0; e < strides.size(); e++)
@@ -2415,12 +2415,11 @@ bool NDArray<T>::isUnitary() {
     }
 
     ////////////////////////////////////////////////////////////////////////
-    template<typename T>
-    NDArray<T>* NDArray<T>::subarray(IndicesList& idx) const {
+    NDArray* NDArray::subarray(IndicesList& idx) const {
         // scalar subarray edge case
         if (idx.isScalar()) {
             auto pnt = idx.at(0)->getIndices().at(0);
-            return new NDArray<T>('c', {1, 1}, {this->getScalar(pnt)});   
+            return new NDArray('c', {1, 1}, {this->getScalar(pnt)});
         }
 
         if (idx.size() != this->rankOf())
@@ -2458,15 +2457,14 @@ bool NDArray<T>::isUnitary() {
 
         //shape::printShapeInfoLinear(newShape);
 
-        auto result = new NDArray<T>(this->_buffer + offset, newShape, this->_workspace);
+        auto result = new NDArray(this->_buffer + offset, newShape, this->_workspace);
         result->_isShapeAlloc = true;
 
         return result;
     }
     
     ////////////////////////////////////////////////////////////////////////
-    template<typename T>
-    NDArray<T>* NDArray<T>::subarray(const std::initializer_list<NDIndex*>& idx) const {
+    NDArray* NDArray::subarray(const std::initializer_list<NDIndex*>& idx) const {
         if (idx.size() != this->rankOf())
             throw std::runtime_error("NDArray::subarray: number of indices should match the array rank");
 
@@ -2494,7 +2492,7 @@ bool NDArray<T>::isUnitary() {
             ++d;
         }
 
-        auto result = new NDArray<T>(this->_buffer + offset, newShape, this->_workspace);
+        auto result = new NDArray(this->_buffer + offset, newShape, this->_workspace);
         result->_isShapeAlloc = true;
 
         for (auto v: idx) {
@@ -2505,9 +2503,7 @@ bool NDArray<T>::isUnitary() {
     }
 
     ////////////////////////////////////////////////////////////////////////
-    template<typename T>
-    NDArray<T>* NDArray<T>::subarray(const Intervals& idx) const {
-
+    NDArray* NDArray::subarray(const Intervals& idx) const {
         if (idx.size() != this->rankOf())
             throw std::runtime_error("NDArray::subarray: number of indices should match the rank of array!");
 
@@ -2531,29 +2527,29 @@ bool NDArray<T>::isUnitary() {
             }
         }
 
-        auto result = new NDArray<T>(this->_buffer + offset, newShape, this->_workspace);
+        auto result = new NDArray(this->_buffer + offset, newShape, this->_workspace);
         result->_isShapeAlloc = true;
 
         return result;
     }
 
-    template <typename T>
-    NDArray<T>* NDArray<T>::cast(DataType dtype) {
+    NDArray* NDArray::cast(DataType dtype) {
         // TODO: to be implemented
         return nullptr;
     }
 
-    template <typename T>
-    void NDArray<T>::cast(NDArray<T>* target, DataType dtype) {
+    void NDArray::cast(NDArray* target, DataType dtype) {
         // TODO: to be implemented properly
         target->assign(this);
     }
 
-    template<typename T>
-    template<typename OpName>
-    void NDArray<T>::applyIndexReduce(const NDArray<T>* target, const std::vector<int>& dimensions, const T *extraParams) const {
+    void NDArray::applyIndexReduce(nd4j::indexreduce::Ops op, const NDArray* target, const std::vector<int>& dimensions, const void *extraParams) const {
+        if (target->dataType() != nd4j::DataType::DataType_INT64)
+            throw std::runtime_error("IndexReduce operations return INT64");
+
         if (target->isScalar()) {
-            target->_buffer[0] = functions::indexreduce::IndexReduce<T>::template execScalar<OpName>(_buffer, _shapeInfo, const_cast<T*>(extraParams));
+            //target->_buffer[0] = functions::indexreduce::IndexReduce<T>::template execScalar<OpName>(_buffer, _shapeInfo, const_cast<T*>(extraParams));
+            reinterpret_cast<Nd4jLong *>(target->_buffer)[0] = NativeOpExcutioner::execIndexReduceScalar(op, _buffer, _shapeInfo, const_cast<void *>(extraParams));
         } else {
             std::vector<int> copy(dimensions);
             if (dimensions.size() > 1)
@@ -2563,33 +2559,34 @@ bool NDArray<T>::isUnitary() {
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
 
-            functions::indexreduce::IndexReduce<T>::template exec<OpName>(_buffer, _shapeInfo, const_cast<T*>(extraParams), target->_buffer,
+            NativeOpExcutioner::execIndexReduce(op, _buffer, _shapeInfo, const_cast<void *>(extraParams),
+                                                                          reinterpret_cast<Nd4jLong *>(target->_buffer),
                                                                           target->_shapeInfo, copy.data(), copy.size(),
                                                                           tad.tadOnlyShapeInfo, tad.tadOffsets);
         }
     }
     ////////////////////////////////////////////////////////////////////////
     // reduce dimensions in this array relying on index operations
-    template<typename T>
-    template<typename OpName>
-    NDArray<T>* NDArray<T>::applyIndexReduce(const std::vector<int>& dimensions, const T* extraParams ) const {
-        
+    NDArray* NDArray::applyIndexReduce(nd4j::indexreduce::Ops op,const std::vector<int>& dimensions, const void* extraParams ) const {
+
         std::vector<int> copy(dimensions);
         if (dimensions.size() > 1)
             std::sort(copy.begin(), copy.end());
 
-        auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
-        NDArray<T>* result = new NDArray<T>(newShape, _workspace);
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
+        auto result = new NDArray(newShape, _workspace);
         RELEASE(newShape, _workspace);
 
-        if(rankOf() == copy.size())
-            result->_buffer[0] = functions::indexreduce::IndexReduce<T>::template execScalar<OpName>(_buffer, _shapeInfo, const_cast<T*>(extraParams));
-        else {
+        if (rankOf() == copy.size()) {
+            const auto res = NativeOpExcutioner::execIndexReduceScalar(op, _buffer, _shapeInfo, const_cast<void *>(extraParams));
+            result->assign(res);
+        } else {
             shape::TAD tad(_shapeInfo, copy.data(), copy.size());
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
-        
-            functions::indexreduce::IndexReduce<T>::template exec<OpName>(_buffer, _shapeInfo, const_cast<T*>(extraParams), result->_buffer,
+
+            NativeOpExcutioner::execIndexReduce(op, _buffer, _shapeInfo, const_cast<void *>(extraParams),
+                                                                    reinterpret_cast<Nd4jLong *>(result->_buffer),
                                                                     result->_shapeInfo, copy.data(), copy.size(),
                                                                     tad.tadOnlyShapeInfo, tad.tadOffsets);
         }
@@ -2599,9 +2596,7 @@ bool NDArray<T>::isUnitary() {
 
     ////////////////////////////////////////////////////////////////////////
     // apply reduce3 operations to this and other array, return result in new output array
-    template<typename T>
-    template<typename OpName>
-    NDArray<T>* NDArray<T>::applyReduce3(const NDArray<T>* other, const T* extraParams) const {
+    NDArray* NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, const void* extraParams) const {
         // check shapes consistency
         if(!isSameShape(other))
             throw std::runtime_error("NDArray::applyReduce3 method: the shapes of array must be the same !");
@@ -2613,9 +2608,10 @@ bool NDArray<T>::isUnitary() {
         newShape[2] = 1;    // set second dimension (scalar)
         shape::updateStrides(newShape, 'c');
         // create output array (scalar)
-        auto result = new NDArray<T>(newShape, _workspace);
+        auto result = new NDArray(newShape, _workspace);
         RELEASE(newShape, _workspace);
         // create temporary array of extra parameters if array extraParams is empty (==nullptr)
+     /*
         T* extraParamsVals = nullptr;
         if(extraParams == nullptr) {
             extraParamsVals = new T[3] {(T) 0.0, (T) 0.0, (T) 0.0};
@@ -2623,17 +2619,15 @@ bool NDArray<T>::isUnitary() {
         }
         
         result->_buffer[0] = functions::reduce3::Reduce3<T>::template execScalar<OpName>(_buffer, _shapeInfo, const_cast<T*>(extraParams), other->_buffer, other->_shapeInfo);        
-        
-        delete []extraParamsVals;
 
+        delete []extraParamsVals;
+     */
         return result;
     }
     
     ////////////////////////////////////////////////////////////////////////
     // apply reduce3 (execAll) operations to this and other array, return result in new output array
-    template<typename T>
-    template<typename OpName>
-    NDArray<T>*  NDArray<T>::applyAllReduce3(const NDArray<T>* other, const std::vector<int>& dimensions, const T* extraParams) const {
+    NDArray*  NDArray::applyAllReduce3(nd4j::reduce3::Ops op, const NDArray *other, const std::vector<int>& dimensions, const void* extraParams) const {
         // be careful, copy array may undergo changes (sort, transformation of negative dimensions to positive, duplicates removing )
         std::vector<int> copy(dimensions);
         shape::checkDimensions(rankOf(), copy);
@@ -2663,16 +2657,16 @@ bool NDArray<T>::isUnitary() {
         newShape[2] = numTadsY;
         shape::updateStrides(newShape, 'c');
         // create output array
-        NDArray<T>* result = new NDArray<T>(newShape, _workspace);
+        auto result = new NDArray(newShape, _workspace);
         RELEASE(newShape, _workspace);
         // create temporary array of extra parameters if array extraParams is empty (==nullptr)
-        T* extraParamsVals = nullptr;
+        double* extraParamsVals = nullptr;
         if(extraParams == nullptr) {
-            extraParamsVals = new T[3] {(T) 0.0, (T) 0.0, (T) 0.0};
+            extraParamsVals = new double[3] { 0.0, 0.0, 0.0};
             extraParams = extraParamsVals;  
         }
         // perform calculations
-        functions::reduce3::Reduce3<T>::template execAll<OpName>(_buffer, _shapeInfo, const_cast<T*>(extraParams),
+        NativeOpExcutioner::execReduce3All(op, _buffer, _shapeInfo, const_cast<void *>(extraParams),
                                                                  other->_buffer, other->_shapeInfo, result->_buffer,result->_shapeInfo,
                                                                  copy.data(), copy.size(), tadX.tadOnlyShapeInfo, tadX.tadOffsets, tadY.tadOnlyShapeInfo, tadY.tadOffsets);
         delete []extraParamsVals;
@@ -2681,26 +2675,24 @@ bool NDArray<T>::isUnitary() {
  
     ////////////////////////////////////////////////////////////////////////
     // apply reduce3 (exec) operations to this and other array, return result in new output array
-    template<typename T>
-    template<typename OpName>
-    NDArray<T>* NDArray<T>::applyReduce3(const NDArray<T>* other, const std::vector<int>& dimensions, const T* extraParams) const {
+    NDArray* NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, const std::vector<int>& dimensions, const void* extraParams) const {
         
         std::vector<int> copy(dimensions);
         shape::checkDimensions(rankOf(), copy);
         shape::checkDimensions(other->rankOf(), copy);               
 
-        auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
-        NDArray<T>* result = new NDArray<T>(newShape, _workspace);
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
+        auto result = new NDArray(newShape, _workspace);
         RELEASE(newShape, _workspace);
         // create temporary array of extra parameters if array extraParams is empty (==nullptr)
-        T* extraParamsVals = nullptr;
+        double* extraParamsVals = nullptr;
         if(extraParams == nullptr) {
-            extraParamsVals = new T[3] {(T) 0.0, (T) 0.0, (T) 0.0};
+            extraParamsVals = new double[3] {0.0, 0.0, 0.0};
             extraParams = extraParamsVals;  
         }
         // perform calculations
         if(rankOf() == copy.size() && other->rankOf() == copy.size())
-            result->_buffer[0] = functions::reduce3::Reduce3<T>::template execScalar<OpName>(_buffer, _shapeInfo, const_cast<T*>(extraParams), other->_buffer, other->_shapeInfo);
+            reinterpret_cast<double *>(result->_buffer)[0] = NativeOpExcutioner::execReduce3Scalar(op, _buffer, _shapeInfo, const_cast<void *>(extraParams), other->_buffer, other->_shapeInfo);
         else {
             shape::TAD tadX(_shapeInfo, copy.data(), copy.size());
             tadX.createTadOnlyShapeInfo();
@@ -2710,9 +2702,9 @@ bool NDArray<T>::isUnitary() {
             tadY.createTadOnlyShapeInfo();
             tadY.createOffsets();        
         
-            functions::reduce3::Reduce3<T>::template exec<OpName>(_buffer, _shapeInfo, const_cast<T*>(extraParams),
+            NativeOpExcutioner::execReduce3(op, _buffer, _shapeInfo, const_cast<void *>(extraParams),
                                                                  other->_buffer, other->_shapeInfo, result->_buffer,result->_shapeInfo,
-                                                                 copy.data(), copy.size(), tadX.tadOnlyShapeInfo, tadX.tadOffsets);
+                                                                 copy.data(), copy.size());
         }
         
         delete []extraParamsVals;
@@ -2720,60 +2712,46 @@ bool NDArray<T>::isUnitary() {
     }
 
     ////////////////////////////////////////////////////////////////////////
-    template<typename T>
-    template<typename OpName>
-    NDArray<T>* NDArray<T>::varianceAlongDimension(const bool biasCorrected, const std::vector<int>& dimensions) const {
-    
+    NDArray* NDArray::varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const {
         std::vector<int> copy(dimensions);
         if (copy.size() > 1)
             std::sort(copy.begin(), copy.end());
             
-        auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
-        NDArray<T>* result = new NDArray<T>(newShape, _workspace);
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
+        auto result = new NDArray(newShape, _workspace);
         RELEASE(newShape, _workspace);        
         
         if(rankOf() == copy.size() || copy.empty())
-            result->_buffer[0] = functions::summarystats::SummaryStatsReduce<T>::template execScalar<OpName>(biasCorrected, _buffer, _shapeInfo, nullptr);
+            reinterpret_cast<double *>(result->_buffer)[0] = NativeOpExcutioner::execSummaryStatsScalar(op, _buffer, _shapeInfo, nullptr, biasCorrected);
         else
-            functions::summarystats::SummaryStatsReduce<T>::template exec<OpName>(biasCorrected, _buffer, _shapeInfo, nullptr,
-                                                                              result->_buffer, result->_shapeInfo, copy.data(), copy.size());
-        return result;    
-    
+            NativeOpExcutioner::execSummaryStats(op, _buffer, _shapeInfo, nullptr, result->_buffer, result->_shapeInfo, copy.data(), copy.size(), biasCorrected);
+
+        return result;
     }
     
     ////////////////////////////////////////////////////////////////////////
-    template<typename T>
-    template<typename OpName>
-    NDArray<T>* NDArray<T>::varianceAlongDimension(const bool biasCorrected, const std::initializer_list<int>& dimensions) const {
-    
-        return varianceAlongDimension<OpName>(biasCorrected, std::vector<int>(dimensions));
+    NDArray* NDArray::varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::initializer_list<int>& dimensions) const {
+            return varianceAlongDimension(op, biasCorrected, std::vector<int>(dimensions));
     }
 
-    template<typename T>
-    template<typename OpName>
-    void NDArray<T>::varianceAlongDimension(const NDArray<T> *target, const bool biasCorrected, const std::vector<int>& dimensions) {
+    void NDArray::varianceAlongDimension(nd4j::variance::Ops op, const NDArray *target, const bool biasCorrected, const std::vector<int>& dimensions) {
         std::vector<int> copy(dimensions);
         if (copy.size() > 1)
             std::sort(copy.begin(), copy.end());
 
         if(rankOf() == copy.size() || copy.empty())
-            target->_buffer[0] = functions::summarystats::SummaryStatsReduce<T>::template execScalar<OpName>(biasCorrected, _buffer, _shapeInfo, nullptr);
+            reinterpret_cast<double *>(target->_buffer)[0] = NativeOpExcutioner::execSummaryStatsScalar(op, _buffer, _shapeInfo, nullptr, biasCorrected);
         else
-            functions::summarystats::SummaryStatsReduce<T>::template exec<OpName>(biasCorrected, _buffer, _shapeInfo, nullptr,
-                                                                                  target->_buffer, target->_shapeInfo, copy.data(), copy.size());
-
+            NativeOpExcutioner::execSummaryStats(op, _buffer, _shapeInfo, nullptr, target->_buffer, target->_shapeInfo, copy.data(), copy.size(), biasCorrected);
     }
 
-    template<typename T>
-    template<typename OpName>
-    void NDArray<T>::varianceAlongDimension(const NDArray<T> *target, const bool biasCorrected, const std::initializer_list<int>& dimensions) {
-         varianceAlongDimension<OpName>(target, biasCorrected, std::vector<int>(dimensions));
+    void NDArray::varianceAlongDimension(nd4j::variance::Ops op,const NDArray *target, const bool biasCorrected, const std::initializer_list<int>& dimensions) {
+         varianceAlongDimension(op, target, biasCorrected, std::vector<int>(dimensions));
     }
 
     ////////////////////////////////////////////////////////////////////////
     // operator returns sub-array with buffer pointing at this->_buffer + certain offset
-    template<typename T>
-    NDArray<T> NDArray<T>::operator()(const std::vector<Nd4jLong>& idx, bool keepUnitiesInShape)  const {
+    NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, bool keepUnitiesInShape)  const {
 
         const int rank = rankOf();
         Nd4jLong *newShape;
@@ -2799,7 +2777,7 @@ bool NDArray<T>::isUnitary() {
             }
         }
 
-        NDArray<T> result(_buffer + offset, newShape, _workspace);
+        NDArray result(_buffer + offset, newShape, _workspace);
         result._isShapeAlloc = true;
 
         if(!keepUnitiesInShape) {
@@ -2814,7 +2792,7 @@ bool NDArray<T>::isUnitary() {
             // if(nonUnitDims.size() != result.rankOf())
             //     result.reshapei(nonUnitDims);
 
-            std::vector<Nd4jLong> nonUnitDims = ShapeUtils<T>::evalDimsWithoutUnities(newShape);
+            std::vector<Nd4jLong> nonUnitDims = ShapeUtils::evalDimsWithoutUnities(newShape);
             if(nonUnitDims.size() != result.rankOf())
                 result.reshapei(nonUnitDims);
         }
@@ -2822,39 +2800,38 @@ bool NDArray<T>::isUnitary() {
         return result;
     }
 
-////////////////////////////////////////////////////////////////////////
-template<typename T>
-NDArray<T> NDArray<T>::operator()(const Nd4jLong subArrIdx, const std::vector<int>& dimsToExclude, bool keepUnitiesInShape)  const {
-
-    std::vector<Nd4jLong> idxRanges(2 * rankOf());        
+    ////////////////////////////////////////////////////////////////////////
+    NDArray NDArray::operator()(const Nd4jLong subArrIdx, const std::vector<int>& dimsToExclude, bool keepUnitiesInShape)  const {
+        std::vector<Nd4jLong> idxRanges(2 * rankOf());
         
-    ShapeUtils<T>::evalIdxRangesForSubArr(subArrIdx, _shapeInfo, dimsToExclude, idxRanges.data());
+        ShapeUtils::evalIdxRangesForSubArr(subArrIdx, _shapeInfo, dimsToExclude, idxRanges.data());
 
-    return (*this)(idxRanges, keepUnitiesInShape);
-}
-      
-////////////////////////////////////////////////////////////////////////
-// addition operator array + array
-template<typename T>
-NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
-
-    if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
-        NDArray<T> result(this->_shapeInfo, this->_workspace);        
-        functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Add<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
-        return result;
+        return (*this)(idxRanges, keepUnitiesInShape);
     }
+      
+    ////////////////////////////////////////////////////////////////////////
+    // addition operator array + array
+    NDArray NDArray::operator+(const NDArray& other) const {
+        if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
+            NDArray result(this->_shapeInfo, this->_workspace);
+            NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Add, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
+            return result;
+        }
 
-    return this->template applyTrueBroadcast<simdOps::Add<T>>(other);
-
-}
+        return this->applyTrueBroadcast(nd4j::broadcast::Add, other);
+    }
 
     ////////////////////////////////////////////////////////////////////////
     // addition operator array + scalar
-    template<typename T>
-    NDArray<T> NDArray<T>::operator+(const T scalar) const {
+    template <typename T>
+    NDArray NDArray::operator+(const T scalar) const {
 
-        NDArray<T> result(this->_shapeInfo, this->_workspace);
-        functions::scalar::ScalarTransform<T>::template transform<simdOps::Add<T>>(this->_buffer, this->_shapeInfo, result._buffer, result._shapeInfo, scalar, nullptr);
+        auto tmp = NDArray::scalar(scalar);
+
+        NDArray result(this->_shapeInfo, this->_workspace);
+        NativeOpExcutioner::execScalar(nd4j::scalar::Add, this->_buffer, this->_shapeInfo, result._buffer, result._shapeInfo, tmp->buffer(), tmp->shapeInfo(), nullptr);
+
+        delete tmp;
 
         return result;
     }
@@ -2865,13 +2842,15 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     // NDArray<T> operator+(const T scalar, const NDArray<T>& arr) {
     //     return arr + scalar;
     // }
-    ND4J_EXPORT NDArray<float16> operator+(const float16 scalar, const NDArray<float16>& arr) {
+    ND4J_EXPORT NDArray operator+(const float16 scalar, const NDArray& arr) {
         return arr + scalar;        
     }
-    ND4J_EXPORT NDArray<float> operator+(const float scalar, const NDArray<float>& arr) {
+
+    ND4J_EXPORT NDArray operator+(const float scalar, const NDArray& arr) {
         return arr + scalar;        
     }
-    ND4J_EXPORT NDArray<double> operator+(const double scalar, const NDArray<double>& arr) {
+
+    ND4J_EXPORT NDArray operator+(const double scalar, const NDArray& arr) {
         return arr + scalar;        
     }
 
