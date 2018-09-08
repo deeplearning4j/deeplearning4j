@@ -22,6 +22,7 @@ import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.DoubleIndexer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.LongIndexer;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.blas.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -121,24 +122,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         this.order = order;
     }
 
-    //input arrays must have same number of dimensions
-    protected static void validateConcat(int dimension, INDArray... arrs) {
-        if (arrs[0].isScalar()) {
-            for (int i = 1; i < arrs.length; i++)
-                if (!arrs[i].isScalar())
-                    throw new IllegalArgumentException("All arrays must have same dimensions");
-        } else {
-            int dims = arrs[0].shape().length;
-            long[] shape = ArrayUtil.removeIndex(arrs[0].shape(), dimension);
-            for (int i = 1; i < arrs.length; i++) {
-                assert Arrays.equals(shape, ArrayUtil.removeIndex(arrs[i].shape(), dimension));
-                assert arrs[i].shape().length == dims;
-            }
-        }
-
-
-    }
-
     /**
      * Sets the order. Primarily for testing purposes
      *
@@ -146,9 +129,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public void setOrder(char order) {
-        assert order == 'c' || order == 'f' : "Order specified must be either c or f";
+        Preconditions.checkArgument(order == 'c' || order == 'f', "Order specified must be either c or f: got %s", String.valueOf(order));
         this.order = order;
-
     }
 
     @Override
@@ -284,15 +266,13 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray bilinearProducts(INDArray curr, INDArray in) {
-        assert curr.shape().length == 3;
+        Preconditions.checkArgument(curr.rank() == 3, "Argument 'curr' must be rank 3. Got input with rank: %s", curr.rank());
         if (in.columns() != 1) {
             throw new AssertionError("Expected a column vector");
         }
         if (in.rows() != curr.size(curr.shape().length - 1)) {
             throw new AssertionError("Number of rows in the input does not match number of columns in tensor");
         }
-
-
         if (curr.size(curr.shape().length - 2) != curr.size(curr.shape().length - 1)) {
             throw new AssertionError("Can only perform this operation on a SimpleTensor with square slices");
         }

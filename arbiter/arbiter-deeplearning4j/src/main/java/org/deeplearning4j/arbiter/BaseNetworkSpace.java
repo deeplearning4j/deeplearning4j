@@ -313,6 +313,8 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
         private EarlyStoppingConfiguration earlyStoppingConfiguration;
         private int numEpochs = 1;
 
+        protected boolean validateOutputLayerConfig = true;
+
         public T seed(long seed) {
             this.seed = seed;
             return (T) this;
@@ -510,19 +512,35 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
             return (T) this;
         }
 
+        /**
+         * @deprecated backprop(boolean) and pretrain(boolean) are no longer used
+         */
+        @Deprecated
         public T backprop(boolean backprop) {
             return backprop(new FixedValue<>(backprop));
         }
 
+        /**
+         * @deprecated backprop(boolean) and pretrain(boolean) are no longer used
+         */
+        @Deprecated
         public T backprop(ParameterSpace<Boolean> backprop) {
             this.backprop = backprop;
             return (T) this;
         }
 
+        /**
+         * @deprecated backprop(boolean) and pretrain(boolean) are no longer used
+         */
+        @Deprecated
         public T pretrain(boolean pretrain) {
             return pretrain(new FixedValue<>(pretrain));
         }
 
+        /**
+         * @deprecated backprop(boolean) and pretrain(boolean) are no longer used
+         */
+        @Deprecated
         public T pretrain(ParameterSpace<Boolean> pretrain) {
             this.pretrain = pretrain;
             return (T) this;
@@ -579,6 +597,11 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
 
         public T constrainAllParams(ParameterSpace<List<LayerConstraint>> constraints){
             this.allParamConstraints = constraints;
+            return (T) this;
+        }
+
+        public T validateOutputLayerConfig(boolean validate){
+            this.validateOutputLayerConfig = validate;
             return (T) this;
         }
 

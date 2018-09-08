@@ -24,8 +24,10 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -120,9 +122,9 @@ public class PolicyTest {
     @Test
     public void testACPolicy() throws Exception {
         ComputationGraph cg = new ComputationGraph(new NeuralNetConfiguration.Builder().seed(444).graphBuilder().addInputs("input")
-                .addLayer("output", new OutputLayer.Builder().nOut(1).build(), "input").setOutputs("output").build());
+                .addLayer("output", new OutputLayer.Builder().nOut(1).lossFunction(LossFunctions.LossFunction.XENT).activation(Activation.SIGMOID).build(), "input").setOutputs("output").build());
         MultiLayerNetwork mln = new MultiLayerNetwork(new NeuralNetConfiguration.Builder().seed(555).list()
-                .layer(0, new OutputLayer.Builder().nOut(1).build()).build());
+                .layer(0, new OutputLayer.Builder().nOut(1).lossFunction(LossFunctions.LossFunction.XENT).activation(Activation.SIGMOID).build()).build());
 
         ACPolicy policy = new ACPolicy(new DummyAC(cg));
         assertNotNull(policy.rd);

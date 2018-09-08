@@ -17,6 +17,7 @@
 package org.nd4j.linalg.ops.transforms;
 
 import lombok.NonNull;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ScalarOp;
@@ -1100,7 +1101,7 @@ public class Transforms {
      * @return The result of raising <i>in</i> to the <i>n</i>th power.
      */
     public static INDArray mpow(INDArray in, int n, boolean dup) {
-        assert in.rows() == in.columns();
+        Preconditions.checkState(in.isMatrix() && in.isSquare(), "Input must be a square matrix: got input with shape %s", in.shape());
         if (n == 0) {
             if (dup)
                 return Nd4j.eye(in.rows());
