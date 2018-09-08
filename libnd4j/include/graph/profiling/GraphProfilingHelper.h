@@ -27,10 +27,9 @@
 
 namespace nd4j {
     namespace graph {
-        template <typename T>
         class GraphProfilingHelper {
         public:
-            static GraphProfile* profile(Graph<T> *graph, int iterations);
+            static GraphProfile* profile(Graph *graph, int iterations);
         };
     }
 }
