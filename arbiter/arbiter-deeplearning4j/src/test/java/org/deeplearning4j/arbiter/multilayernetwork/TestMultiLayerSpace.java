@@ -96,8 +96,9 @@ public class TestMultiLayerSpace {
                                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
                                         .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(2,
                                                         new OutputLayer.Builder().lossFunction(LossFunction.MCXENT)
-                                                                        .nIn(10).nOut(5).build())
-                                        .backprop(true).pretrain(false).build();
+                                                                .activation(Activation.SOFTMAX).nIn(10).nOut(5).build())
+
+                                        .build();
 
         MultiLayerSpace mls =
                         new MultiLayerSpace.Builder()
@@ -105,8 +106,8 @@ public class TestMultiLayerSpace {
                                         .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10).build(),
                                                         new FixedValue<>(2)) //2 identical layers
                                         .addLayer(new OutputLayerSpace.Builder().lossFunction(LossFunction.MCXENT)
-                                                        .nIn(10).nOut(5).build())
-                                        .backprop(true).pretrain(false).build();
+                                                .activation(Activation.SOFTMAX)
+                                                        .nIn(10).nOut(5).build()).build();
 
         int nParams = mls.numParameters();
         assertEquals(0, nParams);
@@ -126,9 +127,9 @@ public class TestMultiLayerSpace {
                         .updater(new Sgd(0.005)).seed(12345).list()
                         .layer(0, new DenseLayer.Builder().l1Bias(0.6).nIn(10).nOut(10).build())
                         .layer(1, new DenseLayer.Builder().l2Bias(0.7).constrainBias(new UnitNormConstraint()).nIn(10).nOut(10).build()).layer(2,
-                        new OutputLayer.Builder().lossFunction(LossFunction.MCXENT)
+                        new OutputLayer.Builder().lossFunction(LossFunction.MCXENT).activation(Activation.SOFTMAX)
                                 .nIn(10).nOut(5).build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         MultiLayerSpace mls =
                 new MultiLayerSpace.Builder()
@@ -138,9 +139,9 @@ public class TestMultiLayerSpace {
                         .updater(new Sgd(0.005)).seed(12345)
                         .addLayer(new DenseLayerSpace.Builder().l1Bias(new ContinuousParameterSpace(0,1)).nIn(10).nOut(10).build())
                         .addLayer(new DenseLayerSpace.Builder().l2Bias(0.7).constrainBias(new UnitNormConstraint()).nIn(10).nOut(10).build())
-                        .addLayer(new OutputLayerSpace.Builder().lossFunction(LossFunction.MCXENT)
+                        .addLayer(new OutputLayerSpace.Builder().lossFunction(LossFunction.MCXENT).activation(Activation.SOFTMAX)
                                 .nIn(10).nOut(5).build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         int nParams = mls.numParameters();
         assertEquals(1, nParams);
@@ -174,14 +175,14 @@ public class TestMultiLayerSpace {
                         new NeuralNetConfiguration.Builder().updater(new Sgd(0.005)).seed(12345).list()
                                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
                                         .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(2,
-                                                        new OutputLayer.Builder().lossFunction(lossFunction).nIn(10)
-                                                                        .nOut(5).build())
-                                        .backprop(true).pretrain(false).build();
+                                                        new OutputLayer.Builder().lossFunction(lossFunction)
+                                                                .activation(Activation.SOFTMAX).nIn(10).nOut(5).build())
+                                        .build();
 
         MultiLayerSpace mls = new MultiLayerSpace.Builder().updater(new Sgd(0.005)).seed(12345)
                         .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10).build(), new FixedValue<>(2)) //2 identical layers
-                        .addLayer(new OutputLayerSpace.Builder().iLossFunction(lossFunction).nIn(10).nOut(5).build())
-                        .backprop(true).pretrain(false).build();
+                        .addLayer(new OutputLayerSpace.Builder().iLossFunction(lossFunction).activation(Activation.SOFTMAX).nIn(10).nOut(5).build())
+                        .build();
 
         int nParams = mls.numParameters();
         assertEquals(0, nParams);
@@ -295,8 +296,8 @@ public class TestMultiLayerSpace {
         MultiLayerConfiguration expected = new NeuralNetConfiguration.Builder().updater(new Sgd(0.005)).seed(12345).list()
                         .layer(0, new GravesLSTM.Builder().nIn(10).nOut(10).build())
                         .layer(1, new GlobalPoolingLayer.Builder().poolingType(PoolingType.SUM).pnorm(7).build())
-                        .layer(2, new OutputLayer.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5).build())
-                        .backprop(true).pretrain(false).build();
+                        .layer(2, new OutputLayer.Builder().lossFunction(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(10).nOut(5).build())
+                        .build();
 
         MultiLayerSpace mls =
                         new MultiLayerSpace.Builder().updater(new Sgd(0.005)).seed(12345)
@@ -304,8 +305,9 @@ public class TestMultiLayerSpace {
                                         .addLayer(new GlobalPoolingLayerSpace.Builder().poolingType(PoolingType.SUM)
                                                         .pNorm(7).build())
                                         .addLayer(new OutputLayerSpace.Builder().lossFunction(LossFunction.MCXENT)
+                                                .activation(Activation.SOFTMAX)
                                                         .nIn(10).nOut(5).build())
-                                        .backprop(true).pretrain(false).build();
+                                        .build();
 
         int nParams = mls.numParameters();
         assertEquals(0, nParams);
@@ -412,7 +414,7 @@ public class TestMultiLayerSpace {
                         .addLayer(new OutputLayerSpace.Builder()
                                         .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(10)
                                         .activation(Activation.SOFTMAX).build())
-                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).backprop(true).pretrain(false).build();
+                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
 
         DataProvider dataProvider = new TestDataSetProvider();
@@ -468,7 +470,7 @@ public class TestMultiLayerSpace {
                                                                         .lossFunction(new LossMSE(Nd4j.create(
                                                                                         new double[] {1, 2, 3, 4, 5})))
                                                                         .nIn(10).nOut(5).build())
-                                        .backprop(true).pretrain(false).build();
+                                        .build();
 
         MultiLayerSpace mls =
                         new MultiLayerSpace.Builder().updater(new Sgd(0.005)).seed(12345)
@@ -478,7 +480,7 @@ public class TestMultiLayerSpace {
                                                         .iLossFunction(new LossMSE(
                                                                         Nd4j.create(new double[] {1, 2, 3, 4, 5})))
                                                         .nIn(10).nOut(5).build())
-                                        .backprop(true).pretrain(false).build();
+                                        .build();
 
         int nParams = mls.numParameters();
         assertEquals(0, nParams);
@@ -502,7 +504,7 @@ public class TestMultiLayerSpace {
                         .seed(12345)
                         .layer(new Bidirectional(new LSTMLayerSpace.Builder()
                                 .nIn(10).nOut(10).build()))
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         DL4JConfiguration conf = mls.getValue(new double[0]);
         MultiLayerConfiguration c2 = conf.getMultiLayerConfiguration();
@@ -544,9 +546,10 @@ public class TestMultiLayerSpace {
                                 .build())
                         .layer(new OutputLayerSpace.Builder().nOut(secondLayerSize)
                                 .updater(new AdamSpace(secondLayerLR))
+                                .activation(Activation.SOFTMAX)
                                 .build())
                         .setInputType(InputType.feedForward(10))
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         int nParams = mls.numParameters();
         assertEquals(2, nParams);
@@ -582,10 +585,10 @@ public class TestMultiLayerSpace {
                         .seed(12345)
                         .layer(new DenseLayerSpace.Builder().nOut(10)
                                 .build())
-                        .layer(new OutputLayerSpace.Builder().nOut(10)
+                        .layer(new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
                                 .build())
                         .setInputType(InputType.feedForward(10))
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         int nParams = mls.numParameters();
         assertEquals(1, nParams);
@@ -651,9 +654,9 @@ public class TestMultiLayerSpace {
                         .dropOut(new ContinuousParameterSpace(0.4,0.6))
                         .build())
                 .addLayer(new GlobalPoolingLayerSpace.Builder().dropOut(new ContinuousParameterSpace(0.4,0.6)).build())
-                .addLayer(new OutputLayerSpace.Builder().nIn(10).nOut(5).build())
+                .addLayer(new OutputLayerSpace.Builder().activation(Activation.SOFTMAX).nIn(10).nOut(5).build())
                 .setInputType(InputType.convolutional(28, 28, 1))
-                .backprop(true).pretrain(false).build();
+                .build();
 
         int nParams = mls.numParameters();
         List<ParameterSpace> l = LeafUtils.getUniqueObjects(mls.collectLeaves());
@@ -679,9 +682,9 @@ public class TestMultiLayerSpace {
                         .dropOut(new ContinuousParameterSpace(0.4,0.6))
                         .build())
                 .addLayer(new DropoutLayerSpace.Builder().dropOut(new ContinuousParameterSpace(0.4,0.6)).build())
-                .addLayer(new OutputLayerSpace.Builder().nIn(10).nOut(5).build())
+                .addLayer(new OutputLayerSpace.Builder().activation(Activation.SOFTMAX).nIn(10).nOut(5).build())
                 .setInputType(InputType.convolutional(28, 28, 1))
-                .backprop(true).pretrain(false).build();
+                .build();
 
         int nParams = mls.numParameters();
         List<ParameterSpace> l = LeafUtils.getUniqueObjects(mls.collectLeaves());
