@@ -187,9 +187,6 @@ namespace nd4j {
              */
             Graph* cloneWithProxy();
 
-            template <typename N>
-            Graph* asT();
-
             /**
              * This method removes reference to VariableSpace from this Graph
              */

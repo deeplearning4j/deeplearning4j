@@ -23,24 +23,21 @@
 
 namespace nd4j {
     namespace graph {
-        template<typename T>
-        std::vector<nd4j::graph::Variable<T> *> * nd4j::graph::VariableSpace<T>::getExternalVariables() {
+        std::vector<nd4j::graph::Variable *> * nd4j::graph::VariableSpace::getExternalVariables() {
             return &_external;
         }
 
-        template <typename T>
-        nd4j::graph::Stash<T>* nd4j::graph::VariableSpace<T>::getStash() {
+        nd4j::graph::Stash* nd4j::graph::VariableSpace::getStash() {
             return &_stash;
         }
 
-        template <typename T>
-        nd4j::graph::VariableSpace<T>* nd4j::graph::VariableSpace<T>::clone() {
-            auto result = new VariableSpace<T>();
+        nd4j::graph::VariableSpace* nd4j::graph::VariableSpace::clone() {
+            auto result = new VariableSpace();
 
             for (auto const& x : _paired) {
                 std::pair<int, int> pair(x.first.first, x.first.second);
 
-                Variable<T>* clonedVar = x.second->clone();
+                Variable* clonedVar = x.second->clone();
 
                 result->injectVariable(pair, clonedVar);
             }
@@ -48,29 +45,27 @@ namespace nd4j {
             return result;
         }
 
-        template<typename T>
-        void VariableSpace<T>::setWorkspace(nd4j::memory::Workspace *workspace) {
+        void VariableSpace::setWorkspace(nd4j::memory::Workspace *workspace) {
             //_workspace = *workspace;
         }
 
-        template <typename T>
-        template <typename N>
-        nd4j::graph::VariableSpace<N>* nd4j::graph::VariableSpace<T>::asT() {
-            auto result = new VariableSpace<N>();
+        
+        nd4j::graph::VariableSpace* nd4j::graph::VariableSpace::asT() {
+            auto result = new VariableSpace();
 
             for (auto const& x : _paired) {
                 std::pair<int, int> pair(x.first.first, x.first.second);
 
-                Variable<N>* clonedVar = x.second->template asT<N>();
+                //Variable* clonedVar = x.second->template asT<N>();
 
-                result->injectVariable(pair, clonedVar);
+                //result->injectVariable(pair, clonedVar);
             }
 
             return result;
         }
 
-        template <typename T>
-        void nd4j::graph::VariableSpace<T>::injectVariable(std::pair<int, int> &pair, Variable<T>* variable) {
+        
+        void nd4j::graph::VariableSpace::injectVariable(std::pair<int, int> &pair, Variable* variable) {
             if (pair.second == 0) {
                 if (pair.first < 0)
                     this->_variables[pair.first] = variable;
@@ -86,34 +81,28 @@ namespace nd4j {
             this->_handles->push_back(variable);
         }
 
-        template <typename T>
-        std::vector<nd4j::graph::Variable<T>*> * nd4j::graph::VariableSpace<T>::getPlaceholders() {
+        std::vector<nd4j::graph::Variable*> * nd4j::graph::VariableSpace::getPlaceholders() {
             return &_placeholders;
         }
 
-        template <typename T>
-        int nd4j::graph::VariableSpace<T> ::numberOfPlaceholders() {
+        int nd4j::graph::VariableSpace ::numberOfPlaceholders() {
             return _placeholders.size();
         }
 
-        template <typename T>
-        bool nd4j::graph::VariableSpace<T>::hasVariable(std::string *symbol) {
+        bool nd4j::graph::VariableSpace::hasVariable(std::string *symbol) {
             return _symbolic.count(*symbol) == 1;
         }
 
-        template <typename T>
-        nd4j::graph::Variable<T> * nd4j::graph::VariableSpace<T>::getVariable(std::string *symbol) {
+        nd4j::graph::Variable * nd4j::graph::VariableSpace::getVariable(std::string *symbol) {
             return _symbolic.at(*symbol);
         }
 
-        template <typename T>
-        bool nd4j::graph::VariableSpace<T>::hasVariable(int id, int index) {
+        bool nd4j::graph::VariableSpace::hasVariable(int id, int index) {
             std::pair<int, int> pair(id, index);
             return hasVariable(pair);
         }
 
-        template <typename T>
-        bool VariableSpace<T>::hasExternalVariable(int id) {
+        bool VariableSpace::hasExternalVariable(int id) {
             if (!hasVariable(id))
                 return false;
 
@@ -121,8 +110,7 @@ namespace nd4j {
             return var->isExternal();
         }
 
-        template <typename T>
-        bool VariableSpace<T>::hasExternalVariable(std::pair<int,int>& pair) {
+        bool VariableSpace::hasExternalVariable(std::pair<int,int>& pair) {
             if (!hasVariable(pair))
                 return false;
 
@@ -130,8 +118,7 @@ namespace nd4j {
             return var->isExternal();
         }
 
-        template <typename T>
-        bool VariableSpace<T>::hasExternalVariable(std::string *symbol) {
+        bool VariableSpace::hasExternalVariable(std::string *symbol) {
             if (!hasVariable(symbol))
                 return false;
 
@@ -139,14 +126,12 @@ namespace nd4j {
             return var->isExternal();
         }
 
-        template <typename T>
-        nd4j::graph::Variable<T> * nd4j::graph::VariableSpace<T>::getVariable(int id, int index) {
+        nd4j::graph::Variable * nd4j::graph::VariableSpace::getVariable(int id, int index) {
             std::pair<int, int> pair(id, index);
             return getVariable(pair);
         }
 
-        template <typename T>
-        nd4j::graph::Variable<T> * nd4j::graph::VariableSpace<T>::getVariable(std::pair<int, int>& pair) {
+        nd4j::graph::Variable * nd4j::graph::VariableSpace::getVariable(std::pair<int, int>& pair) {
 //            if (pair.first == 0)
 //                throw "0 requested";
 
@@ -166,39 +151,32 @@ namespace nd4j {
             return nullptr;
         }
 
-        template <typename T>
-        bool nd4j::graph::VariableSpace<T>::hasVariable(int id) {
+        bool nd4j::graph::VariableSpace::hasVariable(int id) {
             return _variables.count(id) == 1 || _temporary.count(id) == 1;
         }
 
-        template <typename T>
-        bool nd4j::graph::VariableSpace<T>::hasVariable(std::pair<int,int>& id) {
+        bool nd4j::graph::VariableSpace::hasVariable(std::pair<int,int>& id) {
             return _paired.count(id) > 0;
         }
 
-        template <typename T>
-        void nd4j::graph::VariableSpace<T>::putOutputVariable(Variable<T> *variable) {
+        void nd4j::graph::VariableSpace::putOutputVariable(Variable *variable) {
             //putVariable(_auto_counter--, variable);
             putVariable(variable->id(), variable);
         }
 
-        template <typename T>
-        int nd4j::graph::VariableSpace<T>::externalEntries() {
+        int nd4j::graph::VariableSpace::externalEntries() {
             return _external.size();
         }
 
-        template <typename T>
-        int nd4j::graph::VariableSpace<T>::internalEntries() {
+        int nd4j::graph::VariableSpace::internalEntries() {
             return _internal.size();
         }
 
-        template <typename T>
-        int nd4j::graph::VariableSpace<T>::totalEntries() {
+        int nd4j::graph::VariableSpace::totalEntries() {
             return externalEntries() + internalEntries();
         }
 
-        template <typename T>
-        Nd4jLong nd4j::graph::VariableSpace<T>::externalMemory() {
+        Nd4jLong nd4j::graph::VariableSpace::externalMemory() {
             Nd4jLong size = 0;
             for (auto n: _external) {
                 size += n->getNDArray()->memoryFootprint();
@@ -207,9 +185,8 @@ namespace nd4j {
             return size;
         }
 
-        template <typename T>
-        std::vector<Variable<T>*> VariableSpace<T>::getVariables() {
-            std::vector<Variable<T>*> result;
+        std::vector<Variable*> VariableSpace::getVariables() {
+            std::vector<Variable*> result;
 
             for (auto v: _internal)
                 result.emplace_back(v);
@@ -220,8 +197,7 @@ namespace nd4j {
             return result;
         }
 
-        template <typename T>
-        Nd4jLong nd4j::graph::VariableSpace<T>::internalMemory() {
+        Nd4jLong nd4j::graph::VariableSpace::internalMemory() {
             Nd4jLong size = 0;
             for (auto n: _internal) {
                 size += n->getNDArray()->memoryFootprint();
@@ -230,41 +206,35 @@ namespace nd4j {
             return size;
         }
 
-        template <typename T>
-        Nd4jLong nd4j::graph::VariableSpace<T>::totalMemory() {
+        Nd4jLong nd4j::graph::VariableSpace::totalMemory() {
             return externalMemory() + internalMemory();
         }
 
-        template <typename T>
-        void nd4j::graph::VariableSpace<T>::putVariable(std::pair<int,int>& pair, NDArray<T> *array) {
-            auto variable = new Variable<T>(array, nullptr, pair.first, pair.second);
+        void nd4j::graph::VariableSpace::putVariable(std::pair<int,int>& pair, NDArray *array) {
+            auto variable = new Variable(array, nullptr, pair.first, pair.second);
             this->putVariable(pair, variable);
         }
 
-        template <typename T>
-        void nd4j::graph::VariableSpace<T>::putVariable(int node, int idx, NDArray<T> *array) {
+        void nd4j::graph::VariableSpace::putVariable(int node, int idx, NDArray *array) {
             std::pair<int, int> pair(node, idx);
             this->putVariable(pair, array);
         }
 
-        template <typename T>
-        void nd4j::graph::VariableSpace<T>::putVariable(int node, int idx, Variable<T> *variable) {
+        void nd4j::graph::VariableSpace::putVariable(int node, int idx, Variable *variable) {
             std::pair<int, int> pair(node, idx);
             this->putVariable(pair, variable);
         }
 
-        template <typename T>
-        void nd4j::graph::VariableSpace<T>::silentPutVariable(std::pair<int,int>& pair, Variable<T> *variable) {
+        void nd4j::graph::VariableSpace::silentPutVariable(std::pair<int,int>& pair, Variable *variable) {
             _varmap.lock();
 
-            //std::pair<std::pair<int, int>, nd4j::graph::Variable<T> *> p(pair, variable);
+            //std::pair<std::pair<int, int>, nd4j::graph::Variable *> p(pair, variable);
             _paired[pair] = variable;
 
             _varmap.unlock();
         }
 
-        template <typename T>
-        void nd4j::graph::VariableSpace<T>::putVariable(std::pair<int,int>& pair, Variable<T> *variable) {
+        void nd4j::graph::VariableSpace::putVariable(std::pair<int,int>& pair, Variable *variable) {
             silentPutVariable(pair, variable);
 
             if (variable->isPlaceholder())
@@ -286,13 +256,11 @@ namespace nd4j {
             }
         }
 
-        template <typename T>
-        void VariableSpace<T>::trackList(nd4j::NDArrayList<T>* list) {
+        void VariableSpace::trackList(nd4j::NDArrayList* list) {
             _lists.emplace_back(list);
         }
 
-        template <typename T>
-        void nd4j::graph::VariableSpace<T>::putVariable(int id, Variable<T> *variable) {
+        void nd4j::graph::VariableSpace::putVariable(int id, Variable *variable) {
             // we don't want to add variables more then once
             if (_variables.count(id) > 0 || _temporary.count(id) > 0) {
                 // nd4j_verbose("Trying to update variable for node_%i\n", id);
@@ -318,7 +286,7 @@ namespace nd4j {
             variable->setId(id);
 
             if (variable->getName() != nullptr && variable->getName()->length() != 0) {
-                //std::pair<std::string, nd4j::graph::Variable<T> *> pair(*(variable->getName()), variable);
+                //std::pair<std::string, nd4j::graph::Variable *> pair(*(variable->getName()), variable);
                 _symbolic[*(variable->getName())] = variable;
             }
 
@@ -346,14 +314,12 @@ namespace nd4j {
             }
         }
 
-        template <typename T>
-        void nd4j::graph::VariableSpace<T>::putVariable(int id, NDArray<T> *array) {
-            auto *var = new nd4j::graph::Variable<T>(array);
+        void nd4j::graph::VariableSpace::putVariable(int id, NDArray *array) {
+            auto *var = new nd4j::graph::Variable(array);
             this->putVariable(id, var);
         }
 
-        template <typename T>
-        nd4j::graph::Variable<T> * nd4j::graph::VariableSpace<T>::getVariable(int id) {
+        nd4j::graph::Variable * nd4j::graph::VariableSpace::getVariable(int id) {
 //            _varmap.lock();
 
             if (id < 0) {
@@ -369,21 +335,18 @@ namespace nd4j {
             }
         }
 
-        template <typename T>
-        nd4j::memory::Workspace * nd4j::graph::VariableSpace<T>::workspace() {
+        nd4j::memory::Workspace * nd4j::graph::VariableSpace::workspace() {
             return &_workspace;
         }
 
-        template <typename T>
-        std::vector<Variable<T>*>* nd4j::graph::VariableSpace<T>::handles() {
+        std::vector<Variable*>* nd4j::graph::VariableSpace::handles() {
             return _handles;
         }
 
 /*
  * FIXME: this thing have nice chances to become backend-specific!
  */
-        template <typename T>
-        nd4j::graph::VariableSpace<T>::~VariableSpace() {
+        nd4j::graph::VariableSpace::~VariableSpace() {
             // loop through variables and release them
             for (auto p: *_handles) {
                 delete p;
@@ -408,14 +371,13 @@ namespace nd4j {
             }
         }
 
-        template <typename T>
-        VariableSpace<T>& VariableSpace<T>::operator=(const VariableSpace<T>& other) {
+        VariableSpace& VariableSpace::operator=(const VariableSpace& other) {
             if (this == &other) return *this;
 
             for (auto const& x : other._paired) {
                 std::pair<int, int> pair(x.first.first, x.first.second);
 
-                Variable<T>* clonedVar = x.second->clone();
+                Variable* clonedVar = x.second->clone();
 
                 if (pair.second == 0) {
                     if (pair.first < 0)
@@ -435,8 +397,7 @@ namespace nd4j {
             return *this;
         }
 
-        template <typename T>
-        void VariableSpace<T>::replaceVariable(Variable<T> *variable) {
+        void VariableSpace::replaceVariable(Variable *variable) {
             bool replaced = false;
             // trying name first
             if (variable->getName() != nullptr && !variable->getName()->empty()) {
@@ -467,55 +428,32 @@ namespace nd4j {
             }
         }
 
-        template <typename T>
-        void VariableSpace<T>::dropVariable(std::pair<int,int> &pair) {
+        void VariableSpace::dropVariable(std::pair<int,int> &pair) {
             dropVariable(pair.first, pair.second);
         }
 
-        template <typename T>
-        void VariableSpace<T>::dropVariable(int id, int idx) {
+        void VariableSpace::dropVariable(int id, int idx) {
 
         }
 
-        template <typename T>
-        void VariableSpace<T>::setRNG(nd4j::random::RandomBuffer* rng) {
+        void VariableSpace::setRNG(nd4j::random::RandomBuffer* rng) {
             _rng = rng;
         }
 
-        template <typename T>
-        nd4j::random::RandomBuffer* VariableSpace<T>::getRNG() {
+        nd4j::random::RandomBuffer* VariableSpace::getRNG() {
             return _rng;
         }
 
-        template <typename T>
-        void VariableSpace<T>::setFlowPath(FlowPath* flow) {
+        void VariableSpace::setFlowPath(FlowPath* flow) {
             _flow = flow;
         }
 
-        template <typename T>
-        FlowPath* VariableSpace<T>::flowPath() {
+        FlowPath* VariableSpace::flowPath() {
             return _flow;
         }
 
-        template <typename T>
-        VariableSpace<T>::VariableSpace() {
-            _handles = new std::vector<Variable<T> *>;
+        VariableSpace::VariableSpace() {
+            _handles = new std::vector<Variable *>;
         }
-
-        template class ND4J_EXPORT VariableSpace<float>;
-        template class ND4J_EXPORT VariableSpace<float16>;
-        template class ND4J_EXPORT VariableSpace<double>;
-
-        template VariableSpace<float>* VariableSpace<float>::asT<float>();
-        template VariableSpace<float16>* VariableSpace<float>::asT<float16>();
-        template VariableSpace<double>* VariableSpace<float>::asT<double>();
-
-        template VariableSpace<float>* VariableSpace<float16>::asT<float>();
-        template VariableSpace<float16>* VariableSpace<float16>::asT<float16>();
-        template VariableSpace<double>* VariableSpace<float16>::asT<double>();
-
-        template VariableSpace<float>* VariableSpace<double>::asT<float>();
-        template VariableSpace<float16>* VariableSpace<double>::asT<float16>();
-        template VariableSpace<double>* VariableSpace<double>::asT<double>();
     }
 }

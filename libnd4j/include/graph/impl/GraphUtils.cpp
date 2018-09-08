@@ -34,8 +34,7 @@
 namespace nd4j {
 namespace graph {
 
-bool 
-GraphUtils::filterOperations(GraphUtils::OpList& ops) {
+bool GraphUtils::filterOperations(GraphUtils::OpList& ops) {
     bool modified = false;
 
     std::vector<OpDescriptor> filtered(ops);
@@ -62,8 +61,7 @@ GraphUtils::filterOperations(GraphUtils::OpList& ops) {
     return modified;
 }
 
-std::string 
-GraphUtils::makeCommandLine(GraphUtils::OpList& ops) {
+std::string GraphUtils::makeCommandLine(GraphUtils::OpList& ops) {
     std::string res;
 
     if (!ops.empty()) {

@@ -30,7 +30,7 @@ namespace nd4j {
             explicit VariableProxy(VariableSpace* reference);
             ~VariableProxy();
 
-            virtual VariableSpace& operator=(const VariableSpace<T>& other);
+            virtual VariableSpace& operator=(const VariableSpace& other);
 
             virtual int numberOfPlaceholders();
             virtual std::vector<Variable*>* getPlaceholders();
@@ -53,7 +53,7 @@ namespace nd4j {
             virtual nd4j::graph::Variable *getVariable(std::pair<int,int>& pair);
             virtual nd4j::graph::Variable *getVariable(std::string *symbol);
 
-            virtual std::vector<Variable<T>*> getVariables();
+            virtual std::vector<Variable*> getVariables();
 
             virtual void putVariable(std::pair<int,int>& pair, NDArray *array);
             virtual void putVariable(std::pair<int,int>& pair, Variable *variable);

@@ -34,8 +34,7 @@ namespace nd4j {
             return std::pair<Nd4jLong, Nd4jLong>(pair->first(), pair->second());
         }
 
-        template<typename T>
-        NDArray<T> *FlatUtils::fromFlatArray(const nd4j::graph::FlatArray *flatArray) {
+        NDArray* FlatUtils::fromFlatArray(const nd4j::graph::FlatArray *flatArray) {
             auto rank = static_cast<int>(flatArray->shape()->Get(0));
             auto newShape = new Nd4jLong[shape::shapeInfoLength(rank)];
             memcpy(newShape, flatArray->shape()->data(), shape::shapeInfoByteLength(rank));
@@ -43,24 +42,20 @@ namespace nd4j {
             // empty arrays is special case, nothing to restore here
             if (shape::isEmpty(newShape)) {
                 delete[] newShape;
-                return NDArray<T>::createEmpty();
+                // FIXME: probably should be not a static float
+                return NDArray::empty<float>(nullptr);
             }
 
             auto length = shape::length(newShape);
-            auto newBuffer = new T[length];
+            auto newBuffer = new int8_t[length];
             auto dtype = DataTypeUtils::fromFlatDataType(flatArray->dtype());
 
-            DataTypeConversions<T>::convertType(newBuffer, (void *)flatArray->buffer()->data(), dtype, ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()),  length);
+            DataTypeConversions<double>::convertType(newBuffer, (void *)flatArray->buffer()->data(), dtype, ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()),  length);
 
-            auto array = new NDArray<T>(newBuffer, newShape);
+            auto array = new NDArray(newBuffer, newShape);
             array->triggerAllocationFlag(true, true);
 
             return array;
         }
-
-
-        template NDArray<float> *FlatUtils::fromFlatArray<float>(const nd4j::graph::FlatArray *flatArray);
-        template NDArray<float16> *FlatUtils::fromFlatArray<float16>(const nd4j::graph::FlatArray *flatArray);
-        template NDArray<double> *FlatUtils::fromFlatArray<double>(const nd4j::graph::FlatArray *flatArray);
     }
 }

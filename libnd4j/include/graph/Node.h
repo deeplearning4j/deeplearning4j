@@ -164,7 +164,7 @@ namespace nd4j {
             ContextPrototype* getContextPrototype();
             bool hasBlockAttached();
 
-            void setCustomOp(nd4j::ops::DeclarableOp<T> *customOp = nullptr);
+            void setCustomOp(nd4j::ops::DeclarableOp *customOp = nullptr);
             nd4j::ops::DeclarableOp* getCustomOp();
             bool hasCustomOp();
 
@@ -191,11 +191,6 @@ namespace nd4j {
             // clone Node
             Node* clone();
 
-            // change Node data type
-            template <typename N>
-            Node* asT();
-
-            template <typename N>
             FORCEINLINE void pullValues(Node *other) {
 
                 if (this->_protoContext != nullptr)
@@ -230,7 +225,7 @@ namespace nd4j {
 
             }
 
-            static nd4j::ops::DeclarableOp* buildOpByType(OpType opType, int numInputs, int numIArgs, int numTArgs, int opNum, T scalar);
+            static nd4j::ops::DeclarableOp* buildOpByType(OpType opType, int numInputs, int numIArgs, int numTArgs, int opNum, double scalar);
         };
     }
 }

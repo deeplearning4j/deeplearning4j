@@ -24,15 +24,12 @@
 
 namespace nd4j {
 namespace graph {
-
-    template <typename T>
-    GraphState<T>::GraphState(Nd4jLong id) {
+    GraphState::GraphState(Nd4jLong id) {
         _id = id;
-        _graph = new Graph<T>(nullptr, &_variableSpace);
+        _graph = new Graph(nullptr, &_variableSpace);
     };
 
-    template <typename T>
-    GraphState<T>::~GraphState() {
+    GraphState::~GraphState() {
         // stupid. we should get rid of pointers here i think. no need to bother
         for (const auto &v: _scopes) {
             v.second->forgetNodes();
@@ -45,19 +42,17 @@ namespace graph {
         delete _graph;
     };
 
-    template <typename T>
-    Nd4jStatus GraphState<T>::registerScope(int scopeId) {
-        auto scope = new Scope<T>(scopeId);
+    Nd4jStatus GraphState::registerScope(int scopeId) {
+        auto scope = new Scope(scopeId);
         _scopes[scopeId] = scope;
 
-        auto scopeWrapper = new Node<T>(OpType_LOGIC, 10, scopeId);
+        auto scopeWrapper = new Node(OpType_LOGIC, 10, scopeId);
         _graph->addNode(scopeWrapper);
 
         return Status::OK();
     };
 
-    template <typename T>
-    Nd4jStatus GraphState<T>::forgetScope(int scopeId) {
+    Nd4jStatus GraphState::forgetScope(int scopeId) {
         if (_scopes.count(scopeId) > 0)
             _scopes.erase(scopeId);
         else
@@ -67,15 +62,14 @@ namespace graph {
     };
 
 #ifndef __JAVACPP_HACK__
-    template <typename T>
-    Nd4jStatus GraphState<T>::attachOpToScope(int scopeId, int nodeId, DeclarableOp<T> *op, ArgumentsList inputs) {
+    Nd4jStatus GraphState::attachOpToScope(int scopeId, int nodeId, DeclarableOp *op, ArgumentsList inputs) {
         if (_scopes.count(scopeId) == 0)
             return Status::THROW("GraphState: can't attach op to unknown scope");
         
         auto scope = _scopes[scopeId];
         
         // creating new Node
-        auto node = new Node<T>(OpType_CUSTOM, 0, nodeId);
+        auto node = new Node(OpType_CUSTOM, 0, nodeId);
         node->setCustomOp(op);
         node->setScopeInfo(scopeId);
 
@@ -87,7 +81,7 @@ namespace graph {
             // it should have it's numerical and symbolic ID
 
             if (!_variableSpace.hasVariable(p.first(), p.second())) {
-                auto var = new Variable<T>();
+                auto var = new Variable();
                 var->setId(p.first(), p.second());
                 _variableSpace.putVariable(p.first(), p.second(), var);
             }
@@ -103,13 +97,11 @@ namespace graph {
         return Status::OK();
     };
 
-    template <typename T>
-    Graph<T>* GraphState<T>::graph() {
+    Graph* GraphState::graph() {
         return _graph;
     }
 
-    template <typename T>
-    Scope<T>* GraphState<T>::getScope(int scopeId) {
+    Scope* GraphState::getScope(int scopeId) {
         if (_scopes.count(scopeId) == 0) {
             nd4j_printf("GraphState: Unknown scope requested %i\n", scopeId);
             return nullptr;
@@ -118,16 +110,14 @@ namespace graph {
         return _scopes[scopeId];
     }
 #endif
-
-    template <typename T>
-    Nd4jStatus GraphState<T>::defineReturn(int scopeId, int nodeId, ArgumentsList args) {
+    Nd4jStatus GraphState::defineReturn(int scopeId, int nodeId, ArgumentsList args) {
         if (_scopes.count(scopeId) == 0)
             return Status::THROW("GraphState: can't attach op to unknown scope");
 
         auto scope = _scopes[scopeId];
 
         // creating new Node for RETURN
-        auto node = new Node<T>(OpType_LOGIC, 40, nodeId);
+        auto node = new Node(OpType_LOGIC, 40, nodeId);
         node->setScopeInfo(scopeId);
 
         // mapping inputs here
@@ -138,7 +128,7 @@ namespace graph {
             // it should have it's numerical and symbolic ID
 
             if (!_variableSpace.hasVariable(p.first(), p.second())) {
-                auto var = new Variable<T>();
+                auto var = new Variable();
                 var->setId(p.first(), p.second());
                 _variableSpace.putVariable(p.first(), p.second(), var);
             }
@@ -156,29 +146,21 @@ namespace graph {
         return Status::OK();
     }
 
-    template <typename T>
-    bool GraphState<T>::hasScope(int scopeId) {
+    bool GraphState::hasScope(int scopeId) {
         return _scopes.count(scopeId) > 0;
     }
 
-    template <typename T>
-    VariableSpace<T>* GraphState<T>::variableSpace() {
+    VariableSpace* GraphState::variableSpace() {
         return &_variableSpace;
     };
 
-    template <typename T>
-    Nd4jLong GraphState<T>::id() {
+    Nd4jLong GraphState::id() {
         return _id;
     }
 
-    template <typename T>
-    Nd4jStatus GraphState<T>::attachOpToScope(int scopeId, Nd4jLong opNum, int type, ArgumentsList inputs) {
+    Nd4jStatus GraphState::attachOpToScope(int scopeId, Nd4jLong opNum, int type, ArgumentsList inputs) {
         // we should use OpRegistrator here, to create Node and push it to specific scope
         return Status::OK();
     }
-
-    template class ND4J_EXPORT GraphState<float>;
-    template class ND4J_EXPORT GraphState<double>;
-    template class ND4J_EXPORT GraphState<float16>;
 }
 }

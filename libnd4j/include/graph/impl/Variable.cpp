@@ -28,10 +28,9 @@
 namespace nd4j {
     namespace graph {
 
-        template <typename T>
         template <typename N>
-        Variable<N>* Variable<T>::asT() {
-            auto result = new Variable<N>(this->isPlaceholder());
+        Variable* Variable::asT() {
+            auto result = new Variable(this->isPlaceholder());
 
             result->markExternal(this->_external);
             result->setId(this->_id);
@@ -40,7 +39,7 @@ namespace nd4j {
             result->setIndex(this->_index);
 
             if (this->_ndarray != nullptr)
-                result->setNDArray(this->_ndarray->template asT<N>());
+                result->setNDArray(this->_ndarray->template asT());
 
             // FIXME: add support for ArrayList
             if (this->_list != nullptr) {
@@ -51,9 +50,8 @@ namespace nd4j {
             return result;
         }
 
-        template <typename T>
-        nd4j::graph::Variable<T>* nd4j::graph::Variable<T>::clone() {
-            auto result = new Variable<T>(this->isPlaceholder());
+        nd4j::graph::Variable* nd4j::graph::Variable::clone() {
+            auto result = new Variable(this->isPlaceholder());
             result->_external = this->_external;
             result->_id = this->_id;
             result->_readOnly = this->_readOnly;
@@ -69,58 +67,47 @@ namespace nd4j {
             return result;
         }
 
-        template <typename T>
-        void nd4j::graph::Variable<T>::setIndex(int index) {
+        void nd4j::graph::Variable::setIndex(int index) {
             _index = index;
         }
 
-        template <typename T>
-        bool nd4j::graph::Variable<T>::hasNDArray() {
+        bool nd4j::graph::Variable::hasNDArray() {
             return _variableType == VariableType::NDARRAY && _ndarray != nullptr;
         }
 
-        template <typename T>
-        void nd4j::graph::Variable<T>::setVariableType(VariableType variableType) {
+        void nd4j::graph::Variable::setVariableType(VariableType variableType) {
             _variableType = variableType;
         }
 
-        template <typename T>
-        bool nd4j::graph::Variable<T>::hasNDArrayList() {
+        bool nd4j::graph::Variable::hasNDArrayList() {
             return _variableType == VariableType::ARRAY_LIST && _list != nullptr;
         }
 
-        template <typename T>
-        bool nd4j::graph::Variable<T>::isPlaceholder() {
+        bool nd4j::graph::Variable::isPlaceholder() {
             return _placeholder;
         }
 
-        template <typename T>
-        std::string * nd4j::graph::Variable<T>::getName() {
+        std::string * nd4j::graph::Variable::getName() {
             return &_name;
         }
 
-        template <typename T>
-        void nd4j::graph::Variable<T>::setName(std::string *name) {
+        void nd4j::graph::Variable::setName(std::string *name) {
             _name = *name;
         }
 
-        template <typename T>
-        int nd4j::graph::Variable<T>::id() {
+        int nd4j::graph::Variable::id() {
             return _id;
         }
 
-        template <typename T>
-        int nd4j::graph::Variable<T>::index() {
+        int nd4j::graph::Variable::index() {
             return _index;
         }
 
-        template <typename T>
-        void nd4j::graph::Variable<T>::setId(int id) {
+        void nd4j::graph::Variable::setId(int id) {
             _id = id;
         }
 
-        template <typename T>
-        bool nd4j::graph::Variable<T>::isEmpty() {
+        bool nd4j::graph::Variable::isEmpty() {
             if (_variableType == VariableType::NDARRAY) 
                 return _ndarray == nullptr || !_ndarray->nonNull();
             else if (_variableType == VariableType::ARRAY_LIST)
@@ -129,35 +116,29 @@ namespace nd4j {
             return false;
         }
 
-        template <typename T>
-        bool nd4j::graph::Variable<T>::isExternal() {
+        bool nd4j::graph::Variable::isExternal() {
             return _external;
         }
 
-        template <typename T>
-        bool nd4j::graph::Variable<T>::isReadOnly() {
+        bool nd4j::graph::Variable::isReadOnly() {
             return _readOnly;
         }
 
-        template <typename T>
-        void nd4j::graph::Variable<T>::markExternal(bool reallyExternal) {
+        void nd4j::graph::Variable::markExternal(bool reallyExternal) {
             this->_external = reallyExternal;
         }
 
-        template <typename T>
-        void nd4j::graph::Variable<T>::markRemovable(bool reallyRemovable) {
+        void nd4j::graph::Variable::markRemovable(bool reallyRemovable) {
             if (!reallyRemovable)
                 nd4j_debug("","");
             this->_removable = reallyRemovable;
         }
 
-        template <typename T>
-        void nd4j::graph::Variable<T>::markReadOnly(bool reallyReadOnly) {
+        void nd4j::graph::Variable::markReadOnly(bool reallyReadOnly) {
             this->_readOnly = reallyReadOnly;
         }
 
-        template <typename T>
-        nd4j::NDArray<T> * nd4j::graph::Variable<T>::getNDArray() {
+        nd4j::NDArray * nd4j::graph::Variable::getNDArray() {
             if (_variableType != VariableType::NDARRAY) {
                 nd4j_debug("Variable[%i:%i/<%s>] is has [%s] type, but NDArray was requested\n", this->_id, this->_index, this->_name.c_str(), EnumUtils::_VariableTypeToString(_variableType));
             }
@@ -165,38 +146,37 @@ namespace nd4j {
             return this->_ndarray;
         }
 
-        template <typename T>
-        nd4j::NDArrayList<T> * nd4j::graph::Variable<T>::getNDArrayList() {
+        nd4j::NDArrayList * nd4j::graph::Variable::getNDArrayList() {
             if (_variableType != VariableType::ARRAY_LIST) {
                 nd4j_debug("Variable[%i:%i/<%s>] is has [%s] type, but NDArrayList was requested\n", this->_id, this->_index, this->_name.c_str(), EnumUtils::_VariableTypeToString(_variableType));
             }
             return this->_list;
         }
 
-        template <typename T>
-        bool Variable<T>::isRemovable() {
+        
+        bool Variable::isRemovable() {
             return _removable;
         }
 
-        template <typename T>
-        void nd4j::graph::Variable<T>::setNDArrayList(nd4j::NDArrayList<T> * list) {
+        
+        void nd4j::graph::Variable::setNDArrayList(nd4j::NDArrayList * list) {
             this->_variableType = VariableType::ARRAY_LIST;
             this->_list = list;
         }
 
-        template <typename T>
-        void nd4j::graph::Variable<T>::setNDArray(nd4j::NDArray<T> * array) {
+        
+        void nd4j::graph::Variable::setNDArray(nd4j::NDArray * array) {
             this->_variableType = VariableType::NDARRAY;
             this->_ndarray = array;
         }
 
-        template <typename T>
-        VariableType nd4j::graph::Variable<T>::variableType() {
+        
+        VariableType nd4j::graph::Variable::variableType() {
             return _variableType;
         }
 
-        template <typename T>
-        nd4j::graph::Variable<T>::Variable(const nd4j::graph::FlatVariable *flatVariable) {
+        
+        nd4j::graph::Variable::Variable(const nd4j::graph::FlatVariable *flatVariable) {
             auto vid = flatVariable->id();
             this->_id = vid->first();
             this->_index = vid->second();
@@ -207,11 +187,11 @@ namespace nd4j {
             _external = true;
             _readOnly = false;
 
-            T *buffer = nullptr;
+            int8_t *buffer = nullptr;
 
             if (flatVariable->ndarray() != nullptr) {
                  auto ar = flatVariable->ndarray();
-                _ndarray = nd4j::graph::FlatUtils::fromFlatArray<T>(ar);
+                _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
                 _ndarray->triggerAllocationFlag(true, true);
             } else if (flatVariable->shape() != nullptr) {
                 int shapeLen = flatVariable->shape()->Length();
@@ -228,7 +208,7 @@ namespace nd4j {
                     shape[i] = shapeInfo.at(i + 1);
                 }
 
-                _ndarray = new NDArray<T>((char) shapeInfo.at(shapeInfo.size() - 1), shape);
+                _ndarray = new NDArray((char) shapeInfo.at(shapeInfo.size() - 1), shape);
             } else {
                 nd4j_printf("Either shape or NDArray should be defined in FlatResult variable\n","");
                 throw std::runtime_error("Empty variable");
@@ -257,21 +237,21 @@ namespace nd4j {
                 // TODO: we want to have variable datatype, so in future we should replace explicit conversion with simple migration
                 auto flatBuf = (void *) flatVariable->buffer()->data();
 
-                DataTypeConversions<T>::convertType(buffer, flatBuf, dtype, bufLen);
+                DataTypeConversions::convertType(buffer, flatBuf, dtype, bufLen);
             }
             */
 
-            //_ndarray = new NDArray<T>(buffer, shape);
+            //_ndarray = new NDArray(buffer, shape);
             _variableType = VariableType::NDARRAY;
         }
 
-        template <typename T>
-        nd4j::graph::Variable<T>::Variable(bool placeholder) {
+        
+        nd4j::graph::Variable::Variable(bool placeholder) {
             _placeholder = placeholder;
         }
 
-        template <typename T>
-        nd4j::graph::Variable<T>::Variable(NDArray<T> *array, const char *name ) {
+        
+        nd4j::graph::Variable::Variable(NDArray *array, const char *name ) {
             _ndarray = array;
 
             _external = false;
@@ -284,28 +264,28 @@ namespace nd4j {
                 _variableType = VariableType::NDARRAY;
         }
 
-        template <typename T>
-        nd4j::graph::Variable<T>::Variable(NDArray<T> *array, const char *name, int id, int idx) : Variable(array, name) {
+        
+        nd4j::graph::Variable::Variable(NDArray *array, const char *name, int id, int idx) : Variable(array, name) {
             _id = id;
             _index = idx;
         }
 
-        template <typename T>
-        nd4j::graph::Variable<T>::~Variable() {
+        
+        nd4j::graph::Variable::~Variable() {
             //nd4j_printf("Removing variable [%i:%i]\n", _id, _index);
             if (_variableType == VariableType::NDARRAY)
                 if (_ndarray != nullptr && _removable)
                     delete _ndarray;
         }
 
-        template <typename T>
-        void Variable<T>::setId(int id, int idx) {
+        
+        void Variable::setId(int id, int idx) {
             _id = id;
             _index = idx;
         }
 
-        template <typename T>
-        flatbuffers::Offset<FlatVariable> Variable<T>::asFlatVariable(flatbuffers::FlatBufferBuilder &builder) {
+        
+        flatbuffers::Offset<FlatVariable> Variable::asFlatVariable(flatbuffers::FlatBufferBuilder &builder) {
             if (this->hasNDArray()) {
                 auto array = this->getNDArray();
                 auto fShape = builder.CreateVector(array->getShapeInfoAsFlatVector());
@@ -326,22 +306,5 @@ namespace nd4j {
                 return CreateFlatVariable(builder, fVid, stringId, 0, fArray);
             }
         }
-
-        template class ND4J_EXPORT Variable<float>;
-        template class ND4J_EXPORT Variable<float16>;
-        template class ND4J_EXPORT Variable<double>;
-
-
-        template Variable<float>* Variable<float>::asT<float>();
-        template Variable<float16>* Variable<float>::asT<float16>();
-        template Variable<double>* Variable<float>::asT<double>();
-
-        template Variable<float>* Variable<float16>::asT<float>();
-        template Variable<float16>* Variable<float16>::asT<float16>();
-        template Variable<double>* Variable<float16>::asT<double>();
-
-        template Variable<float>* Variable<double>::asT<float>();
-        template Variable<float16>* Variable<double>::asT<float16>();
-        template Variable<double>* Variable<double>::asT<double>();
     }
 }
