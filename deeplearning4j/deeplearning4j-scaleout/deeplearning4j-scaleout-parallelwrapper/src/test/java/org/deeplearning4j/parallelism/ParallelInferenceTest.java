@@ -756,7 +756,7 @@ public class ParallelInferenceTest {
 
         boolean passed = false;
         int cnt0 = 0;
-        for (val m:modelsBefore) {
+        for (val m : modelsBefore) {
             // model can be null for some of the workers yet, due to race condition
             if (m != null) {
                 assertEquals("Failed at model [" + cnt0 + "]", net.params(), m.params());
