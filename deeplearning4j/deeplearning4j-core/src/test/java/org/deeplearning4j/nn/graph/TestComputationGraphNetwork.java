@@ -32,22 +32,25 @@ import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.dropout.GaussianNoise;
 import org.deeplearning4j.nn.conf.graph.*;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.preprocessor.*;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.GraphIndices;
-import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.multilayer.MultiLayerTest;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.AfterClass;
@@ -70,7 +73,6 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -1736,5 +1738,77 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 //            System.out.println(s + "\t" + allowed);
             assertEquals(s, exp.get(s), allowed);
         }
+    }
+
+
+    @Test
+    public void testCompGraphDropoutOutputLayers(){
+        //https://github.com/deeplearning4j/deeplearning4j/issues/6326
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .dropOut(0.8)
+                .graphBuilder()
+                .addInputs("in1", "in2")
+                .addVertex("merge", new MergeVertex(), "in1", "in2")
+                .addLayer("lstm",
+                        new Bidirectional(Bidirectional.Mode.CONCAT, new LSTM.Builder()
+                                .nIn(10).nOut(5)
+                                .activation(Activation.TANH)
+                                .dropOut(new GaussianNoise(0.05))
+                                .build())
+                        ,"merge")
+                .addLayer("out1",
+                        new RnnOutputLayer.Builder().activation(Activation.SOFTMAX)
+                                .lossFunction(LossFunctions.LossFunction.MCXENT).nIn(10)
+                                .nOut(6).build(),
+                        "lstm")
+                .addLayer("out2",
+                        new RnnOutputLayer.Builder().activation(Activation.SOFTMAX)
+                                .lossFunction(LossFunctions.LossFunction.MCXENT).nIn(10)
+                                .nOut(4).build(),
+                        "lstm")
+                .setOutputs("out1", "out2").build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        INDArray[] features = new INDArray[]{Nd4j.create(1, 5, 5), Nd4j.create(1, 5, 5)};
+        INDArray[] labels = new INDArray[]{Nd4j.create(1, 6, 5), Nd4j.create(1, 4, 5)};
+        MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(features, labels);
+        net.fit(mds);
+    }
+
+    @Test
+    public void testCompGraphDropoutOutputLayers2(){
+        //https://github.com/deeplearning4j/deeplearning4j/issues/6326
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .dropOut(0.8)
+                .graphBuilder()
+                .addInputs("in1", "in2")
+                .addVertex("merge", new MergeVertex(), "in1", "in2")
+                .addLayer("dense",
+                        new DenseLayer.Builder()
+                                .nIn(10).nOut(5)
+                                .activation(Activation.TANH)
+                                .dropOut(new GaussianNoise(0.05))
+                                .build(),"merge")
+                .addLayer("out1",
+                        new OutputLayer.Builder().activation(Activation.SOFTMAX)
+                                .lossFunction(LossFunctions.LossFunction.MCXENT).nIn(5)
+                                .nOut(6).build(),
+                        "dense")
+                .addLayer("out2",
+                        new OutputLayer.Builder().activation(Activation.SOFTMAX)
+                                .lossFunction(LossFunctions.LossFunction.MCXENT).nIn(5)
+                                .nOut(4).build(),
+                        "dense")
+                .setOutputs("out1", "out2").build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        INDArray[] features = new INDArray[]{Nd4j.create(1, 5), Nd4j.create(1, 5)};
+        INDArray[] labels = new INDArray[]{Nd4j.create(1, 6), Nd4j.create(1, 4)};
+        MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(features, labels);
+        net.fit(mds);
     }
 }

@@ -136,7 +136,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
 
         INDArray output = net.output(inEmbedding);
 
-        assert Arrays.equals(new long[]{batchSize, nOut, inputLength}, output.shape());
+        assertArrayEquals(new long[]{batchSize, nOut, inputLength}, output.shape());
     }
 
     @Test
