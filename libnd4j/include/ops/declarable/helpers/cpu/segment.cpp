@@ -770,12 +770,21 @@ namespace helpers {
     template <typename T>
     int segmentMeanFunctorBP(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* gradOut, NDArray<T>* output) {
         int numClasses = output->sizeAt(0);
+        std::map<Nd4jLong, Nd4jLong> classCount;//(numClasses);
+
+        for (Nd4jLong count = 0; count < numClasses; ++count) {
+            classCount[count] = 0;
+        }
+
+        for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
+            classCount[static_cast<Nd4jLong>(indices->getScalar(e))] ++;
+        }
+
         // if input is a vector: (as if in doc sample)
-        int idx = static_cast<int>((*indices)(0.));
         if (input->isVector()) {
             for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
                 Nd4jLong classNum = static_cast<Nd4jLong>(indices->getScalar(e));
-                (*output)(e) = (*gradOut)(classNum) / T(input->lengthOf());
+                (*output)(e) = (*gradOut)(classNum) / T(classCount[classNum]);
             }
         }
         else {
@@ -799,7 +808,7 @@ namespace helpers {
                 NDArray<T>* currentGradOut = listOfGradOuts->at(classNum);
 //#pragma omp parallel for
                 for (int e = 0; e < current->lengthOf(); e++) {
-                    (*currentOut)(e) = (*currentGradOut)(e) / T(current->lengthOf());
+                    (*currentOut)(e) = (*currentGradOut)(e) / T(classCount[classNum]);
                 }
             }
         }
