@@ -24,7 +24,7 @@
 namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
-void GradCheck::fillGradArrays(const LossFunc loss, const std::vector<NDArray<double>*>& gradArrs) {
+void GradCheck::fillGradArrays(const LossFunc loss, const std::vector<NDArray*>& gradArrs) {
 
 	const int numInGradArrs = gradArrs.size();
 
@@ -49,7 +49,7 @@ void GradCheck::fillGradArrays(const LossFunc loss, const std::vector<NDArray<do
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool GradCheck::checkGrad(ops::DeclarableOp<double>& opFF, ops::DeclarableOp<double>& opBP, const OpArgsHolder<double>& argsHolderFF, const OpArgsHolder<double>& argsHolderBP, 
+bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, const OpArgsHolder<double>& argsHolderFF, const OpArgsHolder<double>& argsHolderBP,
 	                      const std::vector<bool>& whatArrsToCheck, const std::vector<double>& idxRange, const LossFunc loss ) {
 
 	const int numInArrsFF     = argsHolderFF.getNumInArrs();						// also numInArrsFF = number of output arrays in opBP

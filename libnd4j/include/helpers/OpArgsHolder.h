@@ -26,12 +26,11 @@
 
 namespace nd4j {
  
-template<typename T>
 class OpArgsHolder {
 
 private: 
-	std::vector<NDArray<T>*> _inArrs = std::vector<NDArray<T>*>();
-    std::vector<T>           _tArgs  = std::vector<T>();
+	std::vector<NDArray*> _inArrs = std::vector<NDArray*>();
+    std::vector<double>           _tArgs  = std::vector<T>();
     std::vector<Nd4jLong>    _iArgs  = std::vector<Nd4jLong>();
 
     int _numInArrs = _inArrs.size();
@@ -44,10 +43,10 @@ public:
 
 	OpArgsHolder() = delete;
 
-    OpArgsHolder(const std::vector<NDArray<T>*>& inArrs, const std::vector<T>& tArgs = std::vector<T>(), const std::vector<Nd4jLong>& iArgs = std::vector<Nd4jLong>())
+    OpArgsHolder(const std::vector<NDArray*>& inArrs, const std::vector<double>& tArgs = std::vector<double>(), const std::vector<Nd4jLong>& iArgs = std::vector<Nd4jLong>())
     			: _inArrs(inArrs), _tArgs(tArgs), _iArgs(iArgs) { }
 
-    const std::vector<NDArray<T>*>& getInArrs() const
+    const std::vector<NDArray*>& getInArrs() const
     {return _inArrs; }
 
     const std::vector<T>& getTArgs() const
@@ -68,7 +67,7 @@ public:
     int getNumIArgs() const
     {return _numIArgs; }
 
-    OpArgsHolder<T> createArgsHolderForBP(const std::vector<NDArray<T>*>& inGradArrs, const bool isInPlace = false) const;
+    OpArgsHolder<T> createArgsHolderForBP(const std::vector<NDArray*>& inGradArrs, const bool isInPlace = false) const;
 
     ~OpArgsHolder() noexcept; 
     

@@ -14,36 +14,39 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
+ //
 // Created by raver on 9/2/2018.
 //
 
-#ifndef LIBND4J_NUMBER_H
-#define LIBND4J_NUMBER_H
-
-#include <pointercast.h>
-#include <types/float16.h>
+#include <types/Number.h>
 
 namespace nd4j {
-    class Number {
-    protected:
-        Number() = default;
-    public:
-        ~Number() = default;
+    Number::Number(int8_t* buffer, nd4j::DataType type) {
+        _buffer = buffer;
+        _type = type;
+    }
 
-        template <typename T>
-        T asT();
+    template <>
+    Number::Number(const float value) {
+        _storage._float = value;
+        _type = DataType_FLOAT;
+    }
 
+    template <>
+    Number::Number(const double value) {
+        _storage._double = value;
+        _type = DataType_DOUBLE;
+    }
 
-        virtual double asDoubleValue() = 0;
-        virtual float asFloatValue() = 0;
-        virtual float16 asHalfValue() = 0;
-        virtual int asInt32Value() = 0;
-        virtual int16_t asInt16Value() = 0;
-        virtual int8_t asInt8Value() = 0;
-        virtual bool asBoolValue() = 0;
-    };
+    template <>
+    Number::Number(const int value) {
+        _storage._int = value;
+        _type = DataType_INT32;
+    }
+
+    template <>
+    Number::Number(const Nd4jLong value) {
+        _storage._long = value;
+        _type = DataType_INT64;
+    }
 }
-
-
-#endif //DEV_TESTS_NUMBER_H

@@ -25,9 +25,6 @@
 #include <curand.h>
 #endif
 
-#define MAX_INT 2147483647
-#define MAX_UINT 18446744073709551615LLU
-
 #include <helpers/helper_generator.h>
 
 #ifndef __CUDACC__
