@@ -63,7 +63,13 @@ namespace nd4j {
         }
 
         CUSTOM_OP_IMPL(segment_prod_bp, 3, 2, false, 0, 0) {
-            return helpers::segmentProdFunctorBP(INPUT_VARIABLE(0), INPUT_VARIABLE(1), INPUT_VARIABLE(2), OUTPUT_VARIABLE(0));
+            auto input = INPUT_VARIABLE(0);
+            auto indices = INPUT_VARIABLE(1);
+            auto gradOut = INPUT_VARIABLE(2);
+            auto output = OUTPUT_VARIABLE(0);
+            auto outIndices = OUTPUT_VARIABLE(1);
+            outIndices->assign(indices);
+            return helpers::segmentProdFunctorBP(input, indices, gradOut, output);
         }
 
         DECLARE_SHAPE_FN(segment_prod_bp){
