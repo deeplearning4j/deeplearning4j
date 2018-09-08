@@ -19,19 +19,15 @@
 //
 
 #include <graph/execution/LogicScope.h>
+#include <Status.h>
 
 
 namespace nd4j {
     namespace graph {
-        template <typename T>
-        Nd4jStatus LogicScope<T>::processNode(Graph<T> *graph, Node<T> *node) {
+        Nd4jStatus LogicScope::processNode(Graph *graph, Node *node) {
             // this op is basically no-op
             // we just know it exists
-            return ND4J_STATUS_OK;
+            return nd4j::Status::OK();
         }
-
-        template class ND4J_EXPORT LogicScope<float>;
-        template class ND4J_EXPORT LogicScope<float16>;
-        template class ND4J_EXPORT LogicScope<double>;
     }
 }

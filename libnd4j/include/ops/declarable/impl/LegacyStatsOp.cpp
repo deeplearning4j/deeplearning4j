@@ -24,8 +24,7 @@
 
 namespace nd4j {
     namespace ops {
-        template <typename T>
-        Nd4jStatus LegacyStatsOp<T>::validateAndExecute(Context<T> &block) {
+        Nd4jStatus LegacyStatsOp::validateAndExecute(Context &block) {
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
@@ -39,7 +38,7 @@ namespace nd4j {
 
             if (block.getIArguments()->size() == 1 || (block.getIArguments()->size() == 2 && INT_ARG(1) == MAX_INT)) {
                 // scalar
-                T res = NativeOpExcutioner<T>::execSummaryStatsScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(),  biasCorrected);
+                T res = NativeOpExcutioner::execSummaryStatsScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(),  biasCorrected);
                 z->putScalar(0, res);
             } else {
                 // dimensions for TAD
@@ -54,7 +53,7 @@ namespace nd4j {
 
                 REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions requuired for reduction!");
 
-                NativeOpExcutioner<T>::execSummaryStats(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), biasCorrected);
+                NativeOpExcutioner::execSummaryStats(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), biasCorrected);
             }
 
             STORE_RESULT(*z);
@@ -62,18 +61,15 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        template <typename T>
-        LegacyStatsOp<T>::LegacyStatsOp() : LegacyOp<T>::LegacyOp(1) {
+        LegacyStatsOp::LegacyStatsOp() : LegacyOp::LegacyOp(1) {
             //
         }
 
-        template <typename T>
-        LegacyStatsOp<T>::LegacyStatsOp(int opNum) : LegacyOp<T>::LegacyOp(1, opNum) {
+        LegacyStatsOp::LegacyStatsOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
             //
         }
 
-        template <typename T>
-        LegacyOp<T>* LegacyStatsOp<T>::clone() {
+        LegacyOp* LegacyStatsOp::clone() {
             return new LegacyStatsOp(this->_opNum);
         }
 
@@ -81,8 +77,7 @@ namespace nd4j {
         *   For all reductions rules are simple: either you return scalar, or you return reduced NDArray.
         *   It solely depends on input shape, and requested dimensions
         */
-        template <typename T>
-        ShapeList *LegacyStatsOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
+        ShapeList *LegacyStatsOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
             auto inShape = inputShape->at(0);
 
             Nd4jLong *newShape;
@@ -99,19 +94,15 @@ namespace nd4j {
                 newShape[7] = 99;
             } else {
                 // in this case we're building proper shape for reduction
-                auto array = new NDArray<T>(nullptr, inShape, block.getWorkspace());
+                auto array = new NDArray(nullptr, inShape, block.getWorkspace());
                 array->triggerAllocationFlag(false, false);
 
-                newShape = ShapeUtils<T>::evalReduceShapeInfo('c', *block.getIArguments(), *array, false, true);
+                newShape = ShapeUtils::evalReduceShapeInfo('c', *block.getIArguments(), *array, false, true);
 
                 delete array;
             }
 
             return SHAPELIST(newShape);
         }
-
-        template class ND4J_EXPORT LegacyStatsOp<float>;
-        template class ND4J_EXPORT LegacyStatsOp<double>;
-        template class ND4J_EXPORT LegacyStatsOp<float16>;
     }
 }

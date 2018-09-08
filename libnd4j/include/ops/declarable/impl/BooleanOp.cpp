@@ -24,21 +24,18 @@
 
 namespace nd4j {
     namespace ops {
-        template <typename T>
-        BooleanOp<T>::BooleanOp(const char *name, int numInputs, bool scalar) : DeclarableOp<T>::DeclarableOp(name, numInputs, scalar) {
+        BooleanOp::BooleanOp(const char *name, int numInputs, bool scalar) : DeclarableOp::DeclarableOp(name, numInputs, scalar) {
             //
         }
 
-        template <typename T>
-        BooleanOp<T>::~BooleanOp() {
+        BooleanOp::~BooleanOp() {
             //
         }
 
         /**
         * Output shape of any BooleanOp is ALWAYS scalar
         */
-        template <typename T>
-        ShapeList *BooleanOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
+        ShapeList *BooleanOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
             Nd4jLong *shapeNew;
             ALLOCATE(shapeNew, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
             shapeNew[0] = 2;
@@ -53,8 +50,7 @@ namespace nd4j {
             return SHAPELIST(shapeNew);
         }
 
-        template <typename T>
-        bool BooleanOp<T>::evaluate(nd4j::graph::Context<T> &block) {
+        bool BooleanOp::evaluate(nd4j::graph::Context &block) {
             // check if scalar or not
 
             // validation?
@@ -76,14 +72,12 @@ namespace nd4j {
             }
         }
 
-        template <typename T>
-        bool BooleanOp<T>::evaluate(std::initializer_list<nd4j::NDArray<T> *> args) {
-            std::vector<nd4j::NDArray<T> *> vec(args);
+        bool BooleanOp::evaluate(std::initializer_list<nd4j::NDArray *> args) {
+            std::vector<nd4j::NDArray *> vec(args);
             return this->evaluate(vec);
         }
 
-        template <typename T>
-        bool BooleanOp<T>::prepareOutputs(Context<T>& ctx) {
+        bool BooleanOp::prepareOutputs(Context& ctx) {
 
             auto variableSpace = ctx.getVariableSpace();
 
@@ -91,12 +85,12 @@ namespace nd4j {
                 std::pair<int, int> pair(ctx.nodeId(), e);
 
                 if (!variableSpace->hasVariable(pair))
-                    variableSpace->putVariable(pair, new Variable<T>());
+                    variableSpace->putVariable(pair, new Variable());
 
-                Variable<T>* var = ctx.variable(pair);
+                auto var = ctx.variable(pair);
 
                 if (var->getNDArray() == nullptr) {
-                    var->setNDArray(new NDArray<T>('c', {1, 1}, ctx.getWorkspace()));
+                    var->setNDArray(new NDArray('c', {1, 1}, ctx.getWorkspace()));
                     var->markRemovable(true);
                 }
             }
@@ -104,8 +98,7 @@ namespace nd4j {
             return true;
         }
 
-        template <typename T>
-        Nd4jStatus nd4j::ops::BooleanOp<T>::execute(Context<T>* block)  {
+        Nd4jStatus nd4j::ops::BooleanOp::execute(Context* block)  {
 
             // basic validation: ensure inputs are set
             REQUIRE_OK(this->validateNonEmptyInput(*block));
@@ -127,7 +120,7 @@ namespace nd4j {
             // basically we're should be putting 0.0 as FALSE, and any non-0.0 value will be treated as TRUE
             std::pair<int,int> p(block->nodeId(), 0);
             auto var = block->variable(p);
-            var->getNDArray()->putScalar(0, status == ND4J_STATUS_TRUE ? (T) 1.0f : (T) 0.0f);
+            var->getNDArray()->putScalar(0, status == ND4J_STATUS_TRUE ?  1.0f : 0.0f);
 
             if (status == ND4J_STATUS_FALSE || status == ND4J_STATUS_TRUE)
                 return ND4J_STATUS_OK;
@@ -136,29 +129,23 @@ namespace nd4j {
             return ND4J_STATUS_KERNEL_FAILURE;
         }
 
-        template <typename T>
-        bool BooleanOp<T>::evaluate(std::vector<nd4j::NDArray<T> *> &args) {
-            VariableSpace<T> variableSpace;
+        bool BooleanOp::evaluate(std::vector<nd4j::NDArray *> &args) {
+            VariableSpace variableSpace;
 
             int cnt = -1;
             std::vector<int> in;
             for (auto v: args) {
-                auto var = new Variable<T>(v);
+                auto var = new Variable(v);
                 var->markRemovable(false);
                 in.push_back(cnt);
                 variableSpace.putVariable(cnt--, var);
             }
 
-            Context<T> block(1, &variableSpace, false);
+            Context block(1, &variableSpace, false);
             block.fillInputs(in);
 
             return this->evaluate(block);
         }
-
-
-        template class ND4J_EXPORT BooleanOp<float>;
-        template class ND4J_EXPORT BooleanOp<float16>;
-        template class ND4J_EXPORT BooleanOp<double>;
     }
 }
 

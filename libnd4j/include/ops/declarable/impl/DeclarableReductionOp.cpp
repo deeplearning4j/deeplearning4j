@@ -25,19 +25,16 @@
 
 namespace nd4j {
     namespace ops {
-        template <typename T>
-        DeclarableReductionOp<T>::DeclarableReductionOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs) : nd4j::ops::DeclarableOp<T>(numInputs, numOutputs, opName, allowsInplace, tArgs, iArgs) {
+        DeclarableReductionOp::DeclarableReductionOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs) : nd4j::ops::DeclarableOp(numInputs, numOutputs, opName, allowsInplace, tArgs, iArgs) {
             //
         }
 
-        template <typename T>
-        DeclarableReductionOp<T>::~DeclarableReductionOp()  {
+        DeclarableReductionOp::~DeclarableReductionOp()  {
             //
         }
 
 
-        template <typename T>
-        nd4j::ShapeList* DeclarableReductionOp<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block)  {
+        nd4j::ShapeList* DeclarableReductionOp::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block)  {
            // int numDims = INT_ARG(0);
             std::vector<int> dims;
             for (int e = 0; e < block.getIArguments()->size(); e++)
@@ -69,13 +66,9 @@ namespace nd4j {
             Nd4jLong tadLength = shape::tadLength(inputShape->at(0), dims.data(), dims.size());
             Nd4jLong numTads = shape::length(inputShape->at(0)) /  tadLength;
 
-            auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', dims, inputShape->at(0), false, true, block.getWorkspace());
+            auto newShape = ShapeUtils::evalReduceShapeInfo('c', dims, inputShape->at(0), false, true, block.getWorkspace());
 
             return SHAPELIST(newShape);
         }
-
-        template class ND4J_EXPORT DeclarableReductionOp<float>;
-        template class ND4J_EXPORT DeclarableReductionOp<float16>;
-        template class ND4J_EXPORT DeclarableReductionOp<double>;
     }
 }

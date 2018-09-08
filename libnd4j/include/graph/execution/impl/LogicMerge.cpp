@@ -23,8 +23,7 @@
 
 namespace nd4j {
     namespace graph {
-        template<typename T>
-        Nd4jStatus LogicMerge<T>::processNode(Graph<T> *graph, Node<T> *node) {
+        Nd4jStatus LogicMerge::processNode(Graph *graph, Node *node) {
             // at merge node only one of inputs exist if that's just switch and other node isn't LogicNextItration
             auto __variableSpace = graph->getVariableSpace();
             auto __flowPath = __variableSpace->flowPath();
@@ -61,11 +60,11 @@ namespace nd4j {
                     nd4j_debug("Node_%i: propagating second input\n", node->id());
                     auto var = __variableSpace->getVariable(inputAddr1);
 
-                    Variable<T> *lvar = nullptr;
+                    Variable *lvar = nullptr;
                     if (__variableSpace->hasVariable(node->id(), 0))
                         lvar = __variableSpace->getVariable(node->id(), 0);
                     else
-                        lvar = new Variable<T>(nullptr, node->getName()->c_str(), node->id(), 0);
+                        lvar = new Variable(nullptr, node->getName()->c_str(), node->id(), 0);
 
 //                    if (lvar->hasNDArray())
 //                        delete lvar->getNDArray();
@@ -84,11 +83,11 @@ namespace nd4j {
                     nd4j_debug("Node_%i: propagating first input\n", node->id());
                     auto var = __variableSpace->getVariable(inputAddr0);
 
-                    Variable<T> *lvar = nullptr;
+                    Variable *lvar = nullptr;
                     if (__variableSpace->hasVariable(node->id(), 0))
                         lvar = __variableSpace->getVariable(node->id(), 0);
                     else
-                        lvar = new Variable<T>(nullptr, node->getName()->c_str(), node->id(), 0);
+                        lvar = new Variable(nullptr, node->getName()->c_str(), node->id(), 0);
 
 //                    if (lvar->hasNDArray())
 //                        delete lvar->getNDArray();
@@ -110,11 +109,11 @@ namespace nd4j {
                         if (!var->hasNDArray())
                             continue;
 
-                        Variable<T> *lvar = nullptr;
+                        Variable *lvar = nullptr;
                         if (__variableSpace->hasVariable(node->id(), 0))
                             lvar = __variableSpace->getVariable(node->id(), 0);
                         else
-                            lvar = new Variable<T>(nullptr, node->getName()->c_str(), node->id(), 0);
+                            lvar = new Variable(nullptr, node->getName()->c_str(), node->id(), 0);
 
                         if (lvar->hasNDArray())
                             delete lvar->getNDArray();
@@ -131,10 +130,5 @@ namespace nd4j {
 
             return Status::OK();
         }
-
-
-        template class ND4J_EXPORT LogicMerge<float>;
-        template class ND4J_EXPORT LogicMerge<float16>;
-        template class ND4J_EXPORT LogicMerge<double>;
     }
 }

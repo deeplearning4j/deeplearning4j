@@ -21,12 +21,12 @@
 #include <graph/execution/LogicConditional.h>
 #include <GraphExecutioner.h>
 #include <graph/execution/LogicReturn.h>
+#include <Status.h>
 
 
 namespace nd4j {
     namespace graph {
-        template <typename T>
-        Nd4jStatus LogicConditional<T>::processNode(Graph<T> *graph, Node<T> *node) {
+        Nd4jStatus LogicConditional::processNode(Graph *graph, Node *node) {
             auto __variableSpace = graph->getVariableSpace();
 
             auto size = node->input()->size();
@@ -35,7 +35,7 @@ namespace nd4j {
             for (int e = 0; e < size - 3; e++) {
                 std::pair<int, int> pair(node->id(), e);
                 if (!__variableSpace->hasVariable(pair)) {
-                    __variableSpace->putVariable(pair, new Variable<T>(nullptr, nullptr, node->id(), e));
+                    __variableSpace->putVariable(pair, new Variable(nullptr, nullptr, node->id(), e));
                 }
 
                 auto va = node->input()->at(e);
@@ -60,7 +60,7 @@ namespace nd4j {
             auto scopeCondition = graph->scopeById(scopeConditionIndex);
             int lastNode = 0;
             for (auto v: *scopeCondition->nodes()) {
-                GraphExecutioner<T>::executeFlatNode(graph, v, __variableSpace);
+                GraphExecutioner::executeFlatNode(graph, v, __variableSpace);
                 lastNode = v->id();
             }
 
@@ -72,23 +72,23 @@ namespace nd4j {
             bool isReturn = false;
 
             // now we're executing one of the scopes, depending on condition evaluation
-            if (result->getScalar(0) == (T) 0.0f) {
+            if (result->getScalar(0) ==  0.0f) {
                 auto scopeFalse = graph->scopeById(scopeFalseIndex);
                 lastNode = 0;
                 int nodes = scopeFalse->nodes()->size();
                 for (int e = 0; e < nodes - 1; e++) {
                     auto v = scopeFalse->nodes()->at(e);
-                    GraphExecutioner<T>::executeFlatNode(graph, v, __variableSpace);
+                    GraphExecutioner::executeFlatNode(graph, v, __variableSpace);
                     lastNode = v->id();
                 }
 
                 // last node is either return or just last op
-                Node<T> *node = scopeFalse->nodes()->at(nodes -1);
+                auto *node = scopeFalse->nodes()->at(nodes -1);
                 if (node->opType() == OpType_LOGIC && node->opNum() == 40) {
                     isReturn = true;
-                    LogicReturn<T>::processNode(graph, node);
+                    LogicReturn::processNode(graph, node);
                 } else {
-                    GraphExecutioner<T>::executeFlatNode(graph, node, __variableSpace);
+                    GraphExecutioner::executeFlatNode(graph, node, __variableSpace);
                     lastNode = node->id();
                 }
             } else {
@@ -97,17 +97,17 @@ namespace nd4j {
                 int nodes = scopeTrue->nodes()->size();
                 for (int e = 0; e < nodes - 1; e++) {
                     auto v = scopeTrue->nodes()->at(e);
-                    GraphExecutioner<T>::executeFlatNode(graph, v, __variableSpace);
+                    GraphExecutioner::executeFlatNode(graph, v, __variableSpace);
                     lastNode = v->id();
                 }
 
                 // last node is either return or just last op
-                Node<T> *node = scopeTrue->nodes()->at(nodes -1);
+                auto node = scopeTrue->nodes()->at(nodes -1);
                 if (node->opType() == OpType_LOGIC && node->opNum() == 40) {
                     isReturn = true;
-                    LogicReturn<T>::processNode(graph, node);
+                    LogicReturn::processNode(graph, node);
                 } else {
-                    GraphExecutioner<T>::executeFlatNode(graph, node, __variableSpace);
+                    GraphExecutioner::executeFlatNode(graph, node, __variableSpace);
                     lastNode = node->id();
                 }
             }
@@ -120,7 +120,7 @@ namespace nd4j {
                     std::pair<int, int> pairNew(node->id(), e);
                     if (__variableSpace->hasVariable(pair)) {
                         auto array = __variableSpace->getVariable(pair)->getNDArray();
-                        auto newVar = new Variable<T>(array);
+                        auto newVar = new Variable(array);
                         newVar->setId(lastNode, e);
                         newVar->markRemovable(false);
 
@@ -130,11 +130,7 @@ namespace nd4j {
                 }
             }
 
-            return ND4J_STATUS_OK;
+            return nd4j::Status::OK();
         }
-
-        template class ND4J_EXPORT LogicConditional<float>;
-        template class ND4J_EXPORT LogicConditional<float16>;
-        template class ND4J_EXPORT LogicConditional<double>;
     }
 }

@@ -34,31 +34,30 @@
 
 namespace nd4j {
     namespace graph {
-        template <typename T>
-        Nd4jStatus LogicExecutor<T>::processNode(Graph<T> *graph, Node<T> *node) {
+        Nd4jStatus LogicExecutor::processNode(Graph *graph, Node *node) {
             switch (node->opNum()) {
                 case 0:
-                    return LogicWhile<T>::processNode(graph, node);
+                    return LogicWhile::processNode(graph, node);
                 case 10:
-                    return LogicScope<T>::processNode(graph, node);
+                    return LogicScope::processNode(graph, node);
                 case 20:
-                    return LogicConditional<T>::processNode(graph, node);
+                    return LogicConditional::processNode(graph, node);
                 case 30:
-                    return LogicSwitch<T>::processNode(graph, node);
+                    return LogicSwitch::processNode(graph, node);
                 case 40:
-                    return LogicReturn<T>::processNode(graph, node);
+                    return LogicReturn::processNode(graph, node);
                 case 50:
-                    return LogicExpose<T>::processNode(graph, node);
+                    return LogicExpose::processNode(graph, node);
                 case 60:
-                    return LogicMerge<T>::processNode(graph, node);
+                    return LogicMerge::processNode(graph, node);
                 case 70:
-                    return LogicLoopCond<T>::processNode(graph, node);
+                    return LogicLoopCond::processNode(graph, node);
                 case 80:
-                    return LogicNextIeration<T>::processNode(graph, node);
+                    return LogicNextIeration::processNode(graph, node);
                 case 90:
-                    return LogicExit<T>::processNode(graph, node);
+                    return LogicExit::processNode(graph, node);
                 case 100:
-                    return LogicEnter<T>::processNode(graph, node);
+                    return LogicEnter::processNode(graph, node);
             }
 
             if (node->getName() == nullptr) {
@@ -68,9 +67,5 @@ namespace nd4j {
             }
             return ND4J_STATUS_BAD_INPUT;
         }
-
-        template class ND4J_EXPORT LogicExecutor<float>;
-        template class ND4J_EXPORT LogicExecutor<float16>;
-        template class ND4J_EXPORT LogicExecutor<double>;
     }
 }

@@ -24,7 +24,7 @@ nd4j::ops::OpTuple::OpTuple(const char *opName) {
     _opName = opName;
 }
 
-nd4j::ops::OpTuple::OpTuple(const char *opName, std::initializer_list<nd4j::NDArray<float> *> &&inputs, std::initializer_list<float> &&tArgs, std::initializer_list<Nd4jLong> &&iArgs) {
+nd4j::ops::OpTuple::OpTuple(const char *opName, std::initializer_list<nd4j::NDArray<float> *> &&inputs, std::initializer_list<double> &&tArgs, std::initializer_list<Nd4jLong> &&iArgs) {
     _opName = opName;
     _inputs = inputs;
     _iArgs = iArgs;
@@ -36,17 +36,17 @@ nd4j::ops::OpTuple::~OpTuple() {
         delete v;
 }
 
-nd4j::ops::OpTuple *nd4j::ops::OpTuple::addInput(nd4j::NDArray<float> *array) {
+nd4j::ops::OpTuple *nd4j::ops::OpTuple::addInput(nd4j::NDArray *array) {
     _inputs.emplace_back(array);
     return this;
 }
 
-nd4j::ops::OpTuple *nd4j::ops::OpTuple::addOutput(nd4j::NDArray<float> *array) {
+nd4j::ops::OpTuple *nd4j::ops::OpTuple::addOutput(nd4j::NDArray *array) {
     _outputs.emplace_back(array);
     return this;
 }
 
-nd4j::ops::OpTuple *nd4j::ops::OpTuple::setTArgs(std::initializer_list<float> tArgs) {
+nd4j::ops::OpTuple *nd4j::ops::OpTuple::setTArgs(std::initializer_list<double> tArgs) {
     _tArgs = tArgs;
     return this;
 }

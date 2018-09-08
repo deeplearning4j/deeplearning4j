@@ -25,25 +25,19 @@
 
 namespace nd4j {
     namespace ops {
-
-
-        template <typename T>
-        LegacyIndexReduceOp<T>::LegacyIndexReduceOp() : LegacyOp<T>::LegacyOp(1){
+        LegacyIndexReduceOp::LegacyIndexReduceOp() : LegacyOp::LegacyOp(1){
             //
         }
 
-        template <typename T>
-        LegacyIndexReduceOp<T>::LegacyIndexReduceOp(int opNum) : LegacyOp<T>::LegacyOp(1, opNum) {
+        LegacyIndexReduceOp::LegacyIndexReduceOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
             //
         }
 
-        template <typename T>
-        LegacyOp<T>* LegacyIndexReduceOp<T>::clone() {
+        LegacyOp* LegacyIndexReduceOp::clone() {
             return new LegacyIndexReduceOp(this->_opNum);
         }
 
-        template <typename T>
-        ShapeList *LegacyIndexReduceOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
+        ShapeList *LegacyIndexReduceOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
             auto inShape = inputShape->at(0);
 
             Nd4jLong *newShape;
@@ -60,10 +54,10 @@ namespace nd4j {
                 newShape[7] = 99;
             } else {
                 // in this case we're building proper shape for reduction
-                auto array = new NDArray<T>(nullptr, inShape, block.getWorkspace());
+                auto array = new NDArray(nullptr, inShape, block.getWorkspace());
                 array->triggerAllocationFlag(false, false);
 
-                newShape = ShapeUtils<T>::evalReduceShapeInfo('c', *block.getIArguments(), *array, false, true, block.workspace());
+                newShape = ShapeUtils::evalReduceShapeInfo('c', *block.getIArguments(), *array, false, true, block.workspace());
 
                 delete array;
             }
@@ -75,8 +69,7 @@ namespace nd4j {
         *   For all reductions rules are simple: either you return scalar, or you return reduced NDArray.
         *   It solely depends on input shape, and requested dimensions
         */
-        template <typename T>
-        Nd4jStatus LegacyIndexReduceOp<T>::validateAndExecute(Context<T> &block) {
+        Nd4jStatus LegacyIndexReduceOp::validateAndExecute(Context &block) {
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
@@ -88,7 +81,7 @@ namespace nd4j {
                 if (block.getIArguments()->size() == 0 ||
                     (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT)) {
                     // scalar
-                    T res = NativeOpExcutioner<T>::execIndexReduceScalar(opNum, x->getBuffer(), x->getShapeInfo(),
+                    Nd4jLong res = NativeOpExcutioner::execIndexReduceScalar(opNum, x->getBuffer(), x->getShapeInfo(),
                                                                          block.getTArguments()->data());
                     z->putScalar(0, res);
                 } else {
@@ -105,7 +98,7 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    NativeOpExcutioner<T>::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);                }
+                    NativeOpExcutioner::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);                }
             } else {
                 // TF mode
                 auto indices = INPUT_VARIABLE(1);
@@ -131,7 +124,7 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    NativeOpExcutioner<T>::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    NativeOpExcutioner::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
                 }
             }
 
@@ -139,9 +132,5 @@ namespace nd4j {
 
             return Status::OK();
         }
-
-        template class ND4J_EXPORT LegacyIndexReduceOp<float>;
-        template class ND4J_EXPORT LegacyIndexReduceOp<double>;
-        template class ND4J_EXPORT LegacyIndexReduceOp<float16>;
     }
 }

@@ -25,9 +25,7 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
-
-    template <typename T>
-    NDArrayList<T>::NDArrayList(int height, bool expandable) {
+    NDArrayList::NDArrayList(int height, bool expandable) {
         _expandable = expandable;
         _elements.store(0);
         _counter.store(0);
@@ -37,8 +35,7 @@ namespace nd4j {
         //nd4j_printf("\nCreating NDArrayList\n","");
     }
 
-    template <typename T>
-    NDArrayList<T>::~NDArrayList() {
+    NDArrayList::~NDArrayList() {
         //nd4j_printf("\nDeleting NDArrayList: [%i]\n", _chunks.size());
         for (auto const& v : _chunks)
             delete v.second;
@@ -46,13 +43,11 @@ namespace nd4j {
         _chunks.clear();
     }
 
-    template <typename T>
-    NDArray<T>* NDArrayList<T>::read(int idx) {
+    NDArray* NDArrayList::read(int idx) {
         return readRaw(idx)->dup();
     }
 
-    template <typename T>
-    NDArray<T>* NDArrayList<T>::readRaw(int idx) {
+    NDArray* NDArrayList::readRaw(int idx) {
         if (_chunks.count(idx) < 1) {
             nd4j_printf("Non-existent chunk requested: [%i]\n", idx);
             throw std::runtime_error("Bad index");
@@ -61,8 +56,7 @@ namespace nd4j {
         return _chunks[idx];
     }
 
-    template <typename T>
-    Nd4jStatus NDArrayList<T>::write(int idx, NDArray<T>* array) {
+    Nd4jStatus NDArrayList::write(int idx, NDArray* array) {
         if (_chunks.count(idx) == 0)
             _elements++;
         else {
@@ -92,16 +86,14 @@ namespace nd4j {
         return ND4J_STATUS_OK;
     }
 
-    template <typename T>
-    int NDArrayList<T>::counter() {
+    int NDArrayList::counter() {
         return _counter++;
     }
 
-    template <typename T>
-    void NDArrayList<T>::unstack(NDArray<T>* array, int axis) {
+    void NDArrayList::unstack(NDArray* array, int axis) {
         _axis = axis;
         std::vector<int> args({axis});
-        std::vector<int> newAxis = ShapeUtils<T>::convertAxisToTadTarget(array->rankOf(), args);
+        auto newAxis = ShapeUtils::convertAxisToTadTarget(array->rankOf(), args);
         auto result = array->allTensorsAlongDimension(newAxis);
         for (int e = 0; e < result->size(); e++) {
             auto chunk = result->at(e)->dup(array->ordering());
@@ -110,17 +102,15 @@ namespace nd4j {
         delete result;
     }
 
-    template <typename T>
-    NDArray<T>* NDArrayList<T>::stack() {
+    NDArray* NDArrayList::stack() {
         // FIXME: this is bad for perf, but ok as poc
-        nd4j::ops::concat<T> op;
-        std::vector<NDArray<T>*> inputs;
-        std::vector<T> targs;
+        nd4j::ops::concat op;
+        std::vector<NDArray*> inputs;
+        std::vector<double> targs;
         std::vector<Nd4jLong> iargs({0});
 
         for (int e = 0; e < _elements.load(); e++)
             inputs.emplace_back(_chunks[e]);
-
 
         iargs.push_back(_axis);
 
@@ -133,57 +123,49 @@ namespace nd4j {
         return array;
     }
 
-    template <typename T>
-    std::pair<int,int>& NDArrayList<T>::id() {
+    std::pair<int,int>& NDArrayList::id() {
         return _id;
     }
 
-    template <typename T>
-    std::string& NDArrayList<T>::name() {
+    std::string& NDArrayList::name() {
         return _name;
     }
 
-    template <typename T>
-    nd4j::memory::Workspace* NDArrayList<T>::workspace() {
+    nd4j::memory::Workspace* NDArrayList::workspace() {
         return _workspace;
     }
 
-    template <typename T>
-    int NDArrayList<T>::elements() {
+    int NDArrayList::elements() {
         return _elements.load();
     }
 
-    template <typename T>
-    int NDArrayList<T>::height() {
+    int NDArrayList::height() {
         if (_height != 0)
             return _height;
         else
             return (int) _chunks.size();
     }
 
-    template <typename T>
-    bool NDArrayList<T>::isWritten(int index) {
+    bool NDArrayList::isWritten(int index) {
         if (_chunks.count(index) > 0)
             return true;
         else
             return false;
     }
 
-    template <typename T>
-    NDArray<T> *NDArrayList<T>::pick(std::initializer_list<int> indices) {
+    NDArray* NDArrayList::pick(std::initializer_list<int> indices) {
         std::vector<int> idcs(indices);
         return pick(idcs);
     }
 
-    template <typename T>
-    NDArray<T> *NDArrayList<T>::pick(std::vector<int> &indices) {
+    NDArray* NDArrayList::pick(std::vector<int> &indices) {
         std::vector<Nd4jLong> shape(_shape);
 
         //shape.insert(shape.begin() + _axis, indices.size());
         shape[_axis] = indices.size();
         // do we have to enforce C order here?
-        auto array = new NDArray<T>('c', shape, _workspace);
-        std::vector<int> axis = ShapeUtils<T>::convertAxisToTadTarget(shape.size(), {_axis});
+        auto array = new NDArray('c', shape, _workspace);
+        std::vector<int> axis = ShapeUtils::convertAxisToTadTarget(shape.size(), {_axis});
         auto tads = array->allTensorsAlongDimension(axis);
 
         // just for lulz
@@ -196,9 +178,8 @@ namespace nd4j {
         return array;
     }
 
-    template <typename T>
-    NDArrayList<T>* NDArrayList<T>::clone() {
-        NDArrayList<T>* list = new NDArrayList<T>(_height, _expandable);
+    NDArrayList* NDArrayList::clone() {
+        auto list = new NDArrayList(_height, _expandable);
         list->_axis = _axis;
         list->_id.first = _id.first;
         list->_id.second = _id.second;
@@ -212,8 +193,7 @@ namespace nd4j {
         return list;
     }
 
-    template <typename T>
-    bool NDArrayList<T>::equals(NDArrayList<T>& other) {
+    bool NDArrayList::equals(NDArrayList& other) {
         if (_axis != other._axis)
             return false;
 
@@ -233,8 +213,4 @@ namespace nd4j {
 
         return true;
     }
-
-    template class ND4J_EXPORT NDArrayList<float>;
-    template class ND4J_EXPORT NDArrayList<float16>;
-    template class ND4J_EXPORT NDArrayList<double>;
 }

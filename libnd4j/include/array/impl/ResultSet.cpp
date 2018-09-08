@@ -22,16 +22,15 @@
 #include <graph/FlatUtils.h>
 
 namespace nd4j {
-    template <typename T>
-    ResultSet<T>::ResultSet(const nd4j::graph::FlatResult* result) {
+    ResultSet::ResultSet(const nd4j::graph::FlatResult* result) {
         if (result != nullptr) {
             for (int e = 0; e < result->variables()->size(); e++) {
                 auto var = result->variables()->Get(e);
 
-                NDArray<T>* array;
+                NDArray* array;
 
                 if (var->ndarray() != nullptr) {
-                    array = nd4j::graph::FlatUtils::fromFlatArray<T>(var->ndarray());
+                    array = nd4j::graph::FlatUtils::fromFlatArray(var->ndarray());
                 } else if (var->shape() != nullptr) {
                     std::vector<Nd4jLong> shapeInfo;
                     for (int i = 0; i < var->shape()->size(); i++) {
@@ -44,7 +43,7 @@ namespace nd4j {
                         shape.emplace_back(shapeInfo.at(i + 1));
                     }
 
-                    array = new NDArray<T>((char) shapeInfo.at(shapeInfo.size() - 1), shape);
+                    array = new NDArray((char) shapeInfo.at(shapeInfo.size() - 1), shape);
                 } else {
                     nd4j_printf("Either shape or NDArray should be defined in FlatResult variable\n","");
                     throw std::runtime_error("Empty variable");
@@ -56,50 +55,38 @@ namespace nd4j {
         }
     }
 
-    template <typename T>
-    ResultSet<T>::~ResultSet() {
+    ResultSet::~ResultSet() {
         if (_removable)
             for (auto v: _content)
                 delete v;
     }
 
-    template <typename T>
-    void ResultSet<T>::setNonRemovable() {
+    void ResultSet::setNonRemovable() {
         _removable = false;
     }
 
-    template <typename T>
-    int ResultSet<T>::size() {
+    int ResultSet::size() {
         return (int) _content.size();
     }
 
-    template <typename T>
-    nd4j::NDArray<T>* ResultSet<T>::at(unsigned long idx) {
+    nd4j::NDArray* ResultSet::at(unsigned long idx) {
         return _content.at(idx);
     }
 
-    template <typename T>
-    void ResultSet<T>::push_back(nd4j::NDArray<T> *array) {
+    void ResultSet::push_back(nd4j::NDArray *array) {
         _content.emplace_back(array);
     }
 
-    template <typename T>
-    Nd4jStatus ResultSet<T>::status() {
+    Nd4jStatus ResultSet::status() {
         return _status;
     }
 
-    template <typename T>
-    void ResultSet<T>::setStatus(Nd4jStatus status) {
+    void ResultSet::setStatus(Nd4jStatus status) {
         _status = status;
     }
 
-    template <typename T>
-    void ResultSet<T>::purge() {
+    void ResultSet::purge() {
         _content.clear();
     }
-
-    template class ND4J_EXPORT ResultSet<float>;
-    template class ND4J_EXPORT ResultSet<float16>;
-    template class ND4J_EXPORT ResultSet<double>;
 }
 

@@ -25,29 +25,25 @@
 
 namespace nd4j {
     namespace ops {
-        template <typename T>
-        LegacyTransformOp<T>::LegacyTransformOp() : LegacyOp<T>::LegacyOp(1) {
+        LegacyTransformOp::LegacyTransformOp() : LegacyOp::LegacyOp(1) {
             // just a no-op
         }
 
-        template <typename T>
-        LegacyTransformOp<T>::LegacyTransformOp(int opNum) : LegacyOp<T>::LegacyOp(1, opNum) {
+        LegacyTransformOp::LegacyTransformOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
             // just a no-op
         }
 
-        template <typename T>
-        LegacyOp<T>* LegacyTransformOp<T>::clone() {
+        LegacyOp* LegacyTransformOp::clone() {
             return new LegacyTransformOp(this->_opNum);
         }
 
-        template <typename T>
-        Nd4jStatus LegacyTransformOp<T>::validateAndExecute(Context<T> &block) {
+        Nd4jStatus LegacyTransformOp::validateAndExecute(Context &block) {
             auto input = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            NativeOpExcutioner<T>::execTransform(opNum, input->getBuffer(), input->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data(), nullptr, nullptr);
+            NativeOpExcutioner::execTransform(opNum, input->getBuffer(), input->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data(), nullptr, nullptr);
 
             STORE_RESULT(*z);
 
@@ -59,8 +55,7 @@ namespace nd4j {
         * But these ops already have CustomOp implementations.
         *
         */
-        template <typename T>
-        ShapeList *LegacyTransformOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
+        ShapeList *LegacyTransformOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
             auto inShape = inputShape->at(0);
 
             Nd4jLong *newShape;
@@ -68,10 +63,5 @@ namespace nd4j {
 
             return SHAPELIST(newShape);
         }
-
-
-        template class ND4J_EXPORT LegacyTransformOp<float>;
-        template class ND4J_EXPORT LegacyTransformOp<double>;
-        template class ND4J_EXPORT LegacyTransformOp<float16>;
     }
 }

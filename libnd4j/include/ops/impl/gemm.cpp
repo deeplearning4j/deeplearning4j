@@ -21,6 +21,7 @@
 
 #include <gemm.h>
 #include <op_boilerplate.h>
+#include <types/types.h>
 
 namespace nd4j {
     namespace blas {
@@ -134,13 +135,7 @@ namespace nd4j {
                 delete[] aT;
         }
 
-
-        template class ND4J_EXPORT GEMM<float>;
-        template class ND4J_EXPORT GEMM<float16>;
-        template class ND4J_EXPORT GEMM<double>;
-
-        template class ND4J_EXPORT GEMV<float>;
-        template class ND4J_EXPORT GEMV<float16>;
-        template class ND4J_EXPORT GEMV<double>;
+        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT GEMV, , LIBND4J_TYPES);
+        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT GEMM, , LIBND4J_TYPES);
     }
 }

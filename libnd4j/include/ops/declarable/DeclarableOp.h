@@ -89,8 +89,8 @@ namespace nd4j {
              * @param numOutput
              * @param array
              */
-            void overwriteResult(Context<T>& block, int outputIdx, NDArray<T>* array);
-            void overwriteResult(Context<T>& block, int outputIdx, NDArrayList<T>* list);
+            void overwriteResult(Context& block, int outputIdx, NDArray* array);
+            void overwriteResult(Context& block, int outputIdx, NDArrayList* list);
 
             /*
             * This method attaches array to specific Variable, identified by node ID and outputNumber (which is output index for multi-output operations)

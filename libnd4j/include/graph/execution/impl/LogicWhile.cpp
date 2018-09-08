@@ -22,12 +22,12 @@
 #include <graph/execution/LogicReturn.h>
 #include <GraphExecutioner.h>
 #include <graph/execution/LogicExecutor.h>
+#include <Status.h>
 
 
 namespace nd4j {
     namespace graph {
-        template <typename T>
-        Nd4jStatus LogicWhile<T>::processNode(Graph<T> *graph, Node<T> *node) {
+        Nd4jStatus LogicWhile::processNode(Graph *graph, Node *node) {
             auto __variableSpace = graph->getVariableSpace();
 
             nd4j_debug("Starting on WHILE loop: [%i]\n", node->id());
@@ -43,7 +43,7 @@ namespace nd4j {
             for (int e = 0; e < inputs - 2; e++) {
                 std::pair<int, int> pair(node->id(), e);
                 if (!__variableSpace->hasVariable(pair)) {
-                    __variableSpace->putVariable(pair, new Variable<T>(nullptr, nullptr, node->id(), e));
+                    __variableSpace->putVariable(pair, new Variable(nullptr, nullptr, node->id(), e));
                 }
 
                 auto va = node->input()->at(e);
@@ -73,14 +73,14 @@ namespace nd4j {
                 // we're running condition scope first
                 nd4j_debug("While [%i]: got [%i] ops in condition scope [%i]\n", node->id(), scope->nodes()->size(), scopeConditionIndex);
 
-                for (Node<T>* v: *scope->nodes()) {
+                for (Node* v: *scope->nodes()) {
                     //v->getBlock()->updateVariables();
                     if (v->opType() == OpType_LOGIC) {
                         nd4j_debug("Falling back to logic\n","");
-                        LogicExecutor<T>::processNode(graph, v);
+                        LogicExecutor::processNode(graph, v);
                     } else {
                         nd4j_debug("Op [<%s>]\n", v->getName()->c_str());
-                        Nd4jStatus status = GraphExecutioner<T>::executeFlatNode(graph, v, __variableSpace);
+                        Nd4jStatus status = GraphExecutioner::executeFlatNode(graph, v, __variableSpace);
                         if (status != ND4J_STATUS_OK)
                             return status;
                     }
@@ -108,15 +108,15 @@ namespace nd4j {
                     int e = 0;
                     nd4j_debug("While [%i] got [%i] ops in body scope [%i]\n", node->id(), scopeBody->nodes()->size(), scopeBodyIndex);
                     for (; e < scopeBody->nodes()->size() - 1; e++) {
-                        Node<T>* v = scopeBody->nodes()->at(e);
+                        Node* v = scopeBody->nodes()->at(e);
 
                         if (v->opType() == OpType_LOGIC) {
                             nd4j_debug("Falling back to logic\n","");
-                            LogicExecutor<T>::processNode(graph, v);
+                            LogicExecutor::processNode(graph, v);
                         } else {
                             nd4j_debug("Op [<%s>]\n", v->getName()->c_str());
                             //v->getBlock()->updateVariables();
-                            Nd4jStatus status = GraphExecutioner<T>::executeFlatNode(graph, v, __variableSpace);
+                            Nd4jStatus status = GraphExecutioner::executeFlatNode(graph, v, __variableSpace);
                             if (status != ND4J_STATUS_OK)
                                 return status;
                         }
@@ -125,8 +125,8 @@ namespace nd4j {
                     }
 
                     // now execute return statement
-                    Node<T>* ret = scopeBody->nodes()->at(e);
-                    LogicReturn<T>::processNode(graph, ret);
+                    Node* ret = scopeBody->nodes()->at(e);
+                    LogicReturn::processNode(graph, ret);
                 }
 
                 breaker++;
@@ -138,11 +138,7 @@ namespace nd4j {
                 return ND4J_STATUS_KERNEL_FAILURE;
             }
 
-            return ND4J_STATUS_OK;
+            return nd4j::Status::OK();
         }
-
-        template class ND4J_EXPORT LogicWhile<float>;
-        template class ND4J_EXPORT LogicWhile<float16>;
-        template class ND4J_EXPORT LogicWhile<double>;
     }
 }

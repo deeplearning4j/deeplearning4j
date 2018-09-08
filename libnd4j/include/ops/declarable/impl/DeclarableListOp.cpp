@@ -26,19 +26,17 @@
 
 namespace nd4j {
     namespace ops {
-        template <typename T>
-        DeclarableListOp<T>::~DeclarableListOp() {
+        DeclarableListOp::~DeclarableListOp() {
             //
         }
 
-        template <typename T>
-        DeclarableListOp<T>::DeclarableListOp(int numInputs, int numOutputs, const char* opName, int tArgs, int iArgs) : DeclarableOp<T>::DeclarableOp(numInputs, numOutputs, opName, false, tArgs, iArgs) {
+        DeclarableListOp::DeclarableListOp(int numInputs, int numOutputs, const char* opName, int tArgs, int iArgs) : DeclarableOp::DeclarableOp(numInputs, numOutputs, opName, false, tArgs, iArgs) {
             // This kind of operations work with sets: NDArrayList
             this->getOpDescriptor()->setInputType(InputType_NUMERIC_SET);
         }
 /*
         template <typename T>
-        void DeclarableListOp<T>::execute(Block<T>& block)  {
+        void DeclarableListOp::execute(Block& block)  {
             //
         }
 */
@@ -50,8 +48,7 @@ namespace nd4j {
          * @param block
          * @return
          */
-        template <typename T>
-        ShapeList* DeclarableListOp<T>::calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context<T>& block) {
+        ShapeList* DeclarableListOp::calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block) {
             // TODO: ensure this method isn't ever called
 
             std::vector<Nd4jLong> shape({1, 1});
@@ -62,22 +59,19 @@ namespace nd4j {
             return SHAPELIST(newShape);
         }
 
-        template <typename T>
-        nd4j::NDArray<T>* nd4j::ops::DeclarableListOp<T>::getZ(Context<T>& block, int inputId) {
+        nd4j::NDArray* nd4j::ops::DeclarableListOp::getZ(Context& block, int inputId) {
             //nd4j_printf("wow\n","");
             return nullptr;
         }
 
-        template <typename T>
-        ResultSet<T>* DeclarableListOp<T>::execute(NDArrayList<T>* list, std::initializer_list<NDArray<T>*> inputs, std::initializer_list<T> tArgs, std::initializer_list<int> iArgs) {
-            std::vector<NDArray<T>*> ins(inputs);
-            std::vector<T> tas(tArgs);
+        ResultSet* DeclarableListOp::execute(NDArrayList* list, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
+            std::vector<NDArray*> ins(inputs);
+            std::vector<double> tas(tArgs);
             std::vector<int> ias(iArgs);
             return this->execute(list, ins, tas, ias);
         }
 
-        template <typename T>
-        Nd4jStatus DeclarableListOp<T>::execute(Context<T>* block) {
+        Nd4jStatus DeclarableListOp::execute(Context* block) {
             if (block == nullptr)
                 throw std::invalid_argument("Block is NULL");
 
@@ -100,9 +94,8 @@ namespace nd4j {
             return status;
         }
 
-        template <typename T>
-        ResultSet<T>* DeclarableListOp<T>::execute(NDArrayList<T>* list, std::vector<NDArray<T>*>& inputs, std::vector<T>& tArgs, std::vector<int>& iArgs) {
-            VariableSpace<T> varSpace;
+        ResultSet* DeclarableListOp::execute(NDArrayList* list, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs) {
+            VariableSpace varSpace;
             int nodeId = 119;
 
             // should be never used in practice, since in-graph NDArrayList should have id set
@@ -112,7 +105,7 @@ namespace nd4j {
                 if (list->id().first == 0)
                     list->id().first = -1;
 
-                auto listVar = new Variable<T>(nullptr, nullptr, -119, 0);
+                auto listVar = new Variable(nullptr, nullptr, -119, 0);
                 listVar->setNDArrayList(list);
                 varSpace.putVariable(-1, listVar);
                 in.push_back(-1);
@@ -121,13 +114,13 @@ namespace nd4j {
 
 
             for (auto v: inputs) {
-                auto var = new Variable<T>(v);
+                auto var = new Variable(v);
                 var->markRemovable(false);
                 in.push_back(cnt);
                 varSpace.putVariable(cnt--, var);
             }
 
-            Context<T> block(1, &varSpace, false);
+            Context block(1, &varSpace, false);
             block.fillInputs(in);
 
             for (int e = 0; e < tArgs.size(); e++)
@@ -139,7 +132,7 @@ namespace nd4j {
 
 
             Nd4jStatus result = this->validateAndExecute(block);
-            auto res = new ResultSet<T>();
+            auto res = new ResultSet();
             res->setStatus(result);
 
             for (int e = 0; e < 65536; e++) {
@@ -156,9 +149,5 @@ namespace nd4j {
 
             return res;
         }
-
-        template class ND4J_EXPORT DeclarableListOp<float>;
-        template class ND4J_EXPORT DeclarableListOp<float16>;
-        template class ND4J_EXPORT DeclarableListOp<double>;
     }
 }

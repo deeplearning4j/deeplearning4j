@@ -21,15 +21,15 @@
 #include <pointercast.h>
 #include <graph/execution/LogicSwitch.h>
 #include <GraphExecutioner.h>
+#include <Status.h>
 
 namespace nd4j {
     namespace graph {
-        template <typename T>
-        Nd4jStatus LogicSwitch<T>::processNode(Graph<T>* graph, Node<T>* node) {
+        Nd4jStatus LogicSwitch::processNode(Graph* graph, Node* node) {
             auto __variableSpace = graph->getVariableSpace();
             auto __flowPath = __variableSpace->flowPath();
 
-            Context<T> ctx(node->getContextPrototype(), __variableSpace);
+            Context ctx(node->getContextPrototype(), __variableSpace);
 
             // this can be either  our format, or compatible format.
             if (graph->hasScope(node->input()->at(0).first)) {
@@ -41,7 +41,7 @@ namespace nd4j {
                 auto scopeCondition = graph->scopeById(scopeConditionIndex);
                 int lastNode = 0;
                 for (auto v: *scopeCondition->nodes()) {
-                    GraphExecutioner<T>::executeFlatNode(graph, v, __variableSpace);
+                    GraphExecutioner::executeFlatNode(graph, v, __variableSpace);
                     lastNode = v->id();
                 }
 
@@ -54,10 +54,10 @@ namespace nd4j {
                 std::pair<int, int> pair1(node->id(), 1);
 
                 if (!__variableSpace->hasVariable(pair0))
-                    __variableSpace->putVariable(pair0, new Variable<T>(nullptr, nullptr, node->id(), 0));
+                    __variableSpace->putVariable(pair0, new Variable(nullptr, nullptr, node->id(), 0));
 
                 if (!__variableSpace->hasVariable(pair1))
-                    __variableSpace->putVariable(pair1, new Variable<T>(nullptr, nullptr, node->id(), 1));
+                    __variableSpace->putVariable(pair1, new Variable(nullptr, nullptr, node->id(), 1));
 
                 if (result->getScalar(0) == (T) 0.0f) {
                     __flowPath->markBranch(node->id(), 0);
@@ -82,12 +82,12 @@ namespace nd4j {
                 std::pair<int, int> pair1(node->id(), 1);
 
                 if (!__variableSpace->hasVariable(pair0))
-                    __variableSpace->putVariable(pair0, new Variable<T>(nullptr, nullptr, node->id(), 0));
+                    __variableSpace->putVariable(pair0, new Variable(nullptr, nullptr, node->id(), 0));
 
                 if (!__variableSpace->hasVariable(pair1))
-                    __variableSpace->putVariable(pair1, new Variable<T>(nullptr, nullptr, node->id(), 1));
+                    __variableSpace->putVariable(pair1, new Variable(nullptr, nullptr, node->id(), 1));
 
-                if (boolean->getScalar(0) == (T) 0.0) {
+                if (boolean->getScalar(0) ==  0.0) {
                     // false
                     nd4j_debug("Node_%i: FALSE branch active\n", node->id());
                     __flowPath->markBranch(node->id(), 0);
@@ -102,11 +102,7 @@ namespace nd4j {
                 }
             }
 
-            return ND4J_STATUS_OK;
+            return nd4j::Status::OK();
         };
-
-        template class ND4J_EXPORT LogicSwitch<float>;
-        template class ND4J_EXPORT LogicSwitch<float16>;
-        template class ND4J_EXPORT LogicSwitch<double>;
     }
 }

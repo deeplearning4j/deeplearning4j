@@ -25,23 +25,19 @@
 
 namespace nd4j {
     namespace ops {
-        template <typename T>
-        LegacyRandomOp<T>::LegacyRandomOp() : LegacyOp<T>::LegacyOp(1) {
+        LegacyRandomOp::LegacyRandomOp() : LegacyOp::LegacyOp(1) {
             // just a no-op
         }
 
-        template <typename T>
-        LegacyRandomOp<T>::LegacyRandomOp(int opNum) : LegacyOp<T>::LegacyOp(1, opNum) {
+        LegacyRandomOp::LegacyRandomOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
             // just a no-op
         }
 
-        template <typename T>
-        LegacyOp<T>* LegacyRandomOp<T>::clone() {
+        LegacyOp* LegacyRandomOp::clone() {
             return new LegacyRandomOp(this->_opNum);
         }
 
-        template <typename T>
-        Nd4jStatus LegacyRandomOp<T>::validateAndExecute(Context<T> &block) {
+        Nd4jStatus LegacyRandomOp::validateAndExecute(Context &block) {
             REQUIRE_TRUE(block.getRNG() != nullptr, 0, "RNG should be provided for LegacyRandomOp, but got NULL instead at node_%i", block.nodeId())
 
             auto input = INPUT_VARIABLE(0);
@@ -87,9 +83,9 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = (Nd4jLong) input->getScalar(e);
 
-                    auto z = new NDArray<T>('c', shape, block.getWorkspace());
+                    auto z = new NDArray('c', shape, block.getWorkspace());
 
-                    RandomLauncher<T>::fillUniform(block.getRNG(), z, from, to);
+                    RandomLauncher::fillUniform(block.getRNG(), z, from, to);
 
                     OVERWRITE_RESULT(z);
                 }
@@ -112,7 +108,7 @@ namespace nd4j {
                     if (!block.isInplace())
                         z->assign(input);
 
-                    RandomLauncher<T>::applyDropOut(block.getRNG(), z, prob);
+                    RandomLauncher::applyDropOut(block.getRNG(), z, prob);
                 }
                 break;
                 case 2: {
@@ -133,7 +129,7 @@ namespace nd4j {
                     if (!block.isInplace())
                         z->assign(input);
                         
-                    RandomLauncher<T>::applyInvertedDropOut(block.getRNG(), z, prob);
+                    RandomLauncher::applyInvertedDropOut(block.getRNG(), z, prob);
                 }
                 break;
                 case 6: {
@@ -160,9 +156,9 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = (Nd4jLong) input->getScalar(e);
 
-                    auto z = new NDArray<T>('c', shape, block.getWorkspace());
+                    auto z = new NDArray('c', shape, block.getWorkspace());
 
-                    RandomLauncher<T>::fillGaussian(block.getRNG(), z, mean, stdev);
+                    RandomLauncher::fillGaussian(block.getRNG(), z, mean, stdev);
 
                     OVERWRITE_RESULT(z);
                 }
@@ -187,9 +183,9 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = (Nd4jLong) input->getScalar(e);
 
-                    auto z = new NDArray<T>('c', shape, block.getWorkspace());
+                    auto z = new NDArray('c', shape, block.getWorkspace());
 
-                    RandomLauncher<T>::fillBernoulli(block.getRNG(), z, prob);
+                    RandomLauncher::fillBernoulli(block.getRNG(), z, prob);
 
                     OVERWRITE_RESULT(z);
                 }
@@ -219,9 +215,9 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = (Nd4jLong) input->getScalar(e);
 
-                    auto z = new NDArray<T>('c', shape, block.getWorkspace());
+                    auto z = new NDArray('c', shape, block.getWorkspace());
 
-                    RandomLauncher<T>::fillBinomial(block.getRNG(), z, trials, prob);
+                    RandomLauncher::fillBinomial(block.getRNG(), z, trials, prob);
 
                     OVERWRITE_RESULT(z);
                 }
@@ -250,9 +246,9 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = (Nd4jLong) input->getScalar(e);
 
-                    auto z = new NDArray<T>('c', shape, block.getWorkspace());
+                    auto z = new NDArray('c', shape, block.getWorkspace());
 
-                    RandomLauncher<T>::fillLogNormal(block.getRNG(), z, mean, stdev);
+                    RandomLauncher::fillLogNormal(block.getRNG(), z, mean, stdev);
 
                     OVERWRITE_RESULT(z);
                 }
@@ -281,9 +277,9 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = (Nd4jLong) input->getScalar(e);
 
-                    auto z = new NDArray<T>('c', shape, block.getWorkspace());
+                    auto z = new NDArray('c', shape, block.getWorkspace());
 
-                    RandomLauncher<T>::fillTruncatedNormal(block.getRNG(), z, mean, stdev);
+                    RandomLauncher::fillTruncatedNormal(block.getRNG(), z, mean, stdev);
 
                     OVERWRITE_RESULT(z);
                 }
@@ -318,7 +314,7 @@ namespace nd4j {
                     if (!block.isInplace())
                         z->assign(input);
                         
-                    RandomLauncher<T>::applyAlphaDropOut(block.getRNG(), z, prob, a, b, pa);
+                    RandomLauncher::applyAlphaDropOut(block.getRNG(), z, prob, a, b, pa);
                 }
                 break;
                 default: {
@@ -335,8 +331,7 @@ namespace nd4j {
         * But these ops already have CustomOp implementations.
         *
         */
-        template <typename T>
-        ShapeList *LegacyRandomOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
+        ShapeList *LegacyRandomOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
             auto inShape = inputShape->at(0);
 
             Nd4jLong *newShape;
@@ -345,24 +340,21 @@ namespace nd4j {
             return SHAPELIST(newShape);
         }
 
-        template <typename T>
-        Nd4jStatus LegacyRandomOp<T>::execute(Context<T>* block) {
-            return DeclarableOp<T>::execute(block);
+        Nd4jStatus LegacyRandomOp::execute(Context* block) {
+            return DeclarableOp::execute(block);
         }
 
-        template <typename T>
-        nd4j::ResultSet<T>*  LegacyRandomOp<T>::execute(nd4j::random::RandomBuffer* rng, std::initializer_list<NDArray<T>*> inputs, std::initializer_list<T> tArgs, std::initializer_list<int> iArgs, bool isInplace) {
-            std::vector<NDArray<T>*> ins(inputs);
-            std::vector<T> tas(tArgs);
+        nd4j::ResultSet*  LegacyRandomOp::execute(nd4j::random::RandomBuffer* rng, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs, bool isInplace) {
+            std::vector<NDArray*> ins(inputs);
+            std::vector<double> tas(tArgs);
             std::vector<int> ias(iArgs);
             return this->execute(rng, ins, tas, ias, isInplace);
         }
 
-        template <typename T>
-        nd4j::ResultSet<T>*  LegacyRandomOp<T>::execute(nd4j::random::RandomBuffer* rng, std::vector<NDArray<T>*>& inputs, std::vector<T>& tArgs, std::vector<int>& iArgs, bool isInplace) {
-            VariableSpace<T> variableSpace;
-            auto arrayList = new ResultSet<T>();
-            //ResultSet<T> arrayList;
+        nd4j::ResultSet*  LegacyRandomOp::execute(nd4j::random::RandomBuffer* rng, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs, bool isInplace) {
+            VariableSpace variableSpace;
+            auto arrayList = new ResultSet();
+            //ResultSet arrayList;
 
             if (isInplace)
                 arrayList->setNonRemovable();
@@ -373,13 +365,13 @@ namespace nd4j {
                 if (v == nullptr)
                     continue;
 
-                auto var = new Variable<T>(v);
+                auto var = new Variable(v);
                 var->markRemovable(false);
                 in.push_back(cnt);
                 variableSpace.putVariable(cnt--, var);
             }
 
-            Context<T> block(1, &variableSpace, false);
+            Context block(1, &variableSpace, false);
             block.setRNG(rng);
             block.fillInputs(in);
             block.markInplace(isInplace);
@@ -414,9 +406,5 @@ namespace nd4j {
 
             return arrayList;
         }
-
-        template class ND4J_EXPORT LegacyRandomOp<float>;
-        template class ND4J_EXPORT LegacyRandomOp<double>;
-        template class ND4J_EXPORT LegacyRandomOp<float16>;
     }
 }

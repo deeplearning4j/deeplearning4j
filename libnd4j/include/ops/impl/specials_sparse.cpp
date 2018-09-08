@@ -27,6 +27,7 @@
 #include <omp.h>
 #endif
 #include <types/float16.h>
+#include <types/types.h>
 
 namespace nd4j {
     namespace sparse {
@@ -216,9 +217,6 @@ namespace nd4j {
 #endif
         }
 
-
-        template class ND4J_EXPORT SparseUtils<float>;
-        template class ND4J_EXPORT SparseUtils<float16>;
-        template class ND4J_EXPORT SparseUtils<double>;
+        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT SparseUtils, , LIBND4J_TYPES);
     }
 }
