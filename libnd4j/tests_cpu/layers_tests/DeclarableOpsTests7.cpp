@@ -699,6 +699,29 @@ TEST_F(DeclarableOpsTests7, TestSegmentMax_2) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestSegmentMaxBP_2) {
+    NDArray<double> x('c', {4, 4}, {1.8, 2.5, 4., 9., 2.1, 2.4, 3., 9., 2.1, 2.1, 0.7, 0.1,3., 4.2, 2.2, 1.  });
+    NDArray<double> idx({0.0, 0.0, 1.0, 2.0});
+    NDArray<double> eps('c', {3, 4}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.});
+//    NDArray<double> exp('c', {3, 4}, {2.1, 2.5, 4.0, 9.0,2.1, 2.1, 0.7, 0.1,3., 4.2, 2.2, 1.});
+    NDArray<double> exp('c', {4, 4}, {0., 2., 3., 4., 1., 0., 0., 4., 5., 6., 7., 8., 9., 10., 11., 12.});
+
+    //{ 2.1, 2.5,  4.,  9., 2.1, 2.1, 0.7, 0.1, 3.,  4.2, 2.2, 1.}
+
+    nd4j::ops::segment_max_bp<double> op;
+
+    auto result = op.execute({&x, &idx, &eps}, {}, {});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_EQ(result->size(), 2);
+    //exp.printIndexedBuffer("BP Max Expect");
+    //result->at(0)->printIndexedBuffer("BP Max Output");
+//    exp.printShapeInfo("Exp Shape");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestSegmentMax_3) {
     NDArray<double> x('c', {4, 4, 4}, {
      91. ,  82. ,  37. ,  64. ,55.1,  46.4,  73. ,  28. ,119.1,  12.1, 112.7,  13.1,14. , 114.2,  16.2, 117. ,51. ,  42. ,  67. ,   24.,15.1,  56.4,  93. ,   28.,

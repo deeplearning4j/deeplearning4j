@@ -693,7 +693,31 @@ namespace helpers {
             }
         }
         else {
+            std::vector<int> restDims(input->rankOf() - 1);
+//#pragma omp parallel for
+            for (int e = 1; e < input->rankOf(); e++)
+                restDims[e - 1] = e;
 
+            std::unique_ptr<ResultSet<T>> listOfBPTensors(tempRes->allTensorsAlongDimension(restDims));
+            std::unique_ptr<ResultSet<T>> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
+            std::unique_ptr<ResultSet<T>> listOfTensors(input->allTensorsAlongDimension(restDims));
+            std::unique_ptr<ResultSet<T>> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+
+            //int numOfClasses = tempRes->sizeAt(0); // number of classes
+            //std::vector<std::pair<NDArray<T>*, int>> outputs(numOfClasses);
+
+            int pos = 0;
+            for (int i = 0; i < indices->lengthOf(); i++) {
+                Nd4jLong classNum = static_cast<Nd4jLong>((*indices)(i));
+                NDArray<T>* current = listOfTensors->at(i);
+                NDArray<T>* currentOut = listOfOutTensors->at(i);
+                NDArray<T>* currentGradOut = listOfGradOuts->at(classNum);
+//#pragma omp parallel for
+                for (int e = 0; e < current->lengthOf(); e++) {
+                    if (nd4j::math::nd4j_abs(listOfBPTensors->at(classNum)->getScalar(e) - current->getScalar(e)) < T(1.e-5))
+                        (*currentOut)(e) = (*currentGradOut)(e);
+                }
+            }
         }
         return ND4J_STATUS_OK;
         delete tempRes;
@@ -712,7 +736,31 @@ namespace helpers {
             }
         }
         else {
+            std::vector<int> restDims(input->rankOf() - 1);
+//#pragma omp parallel for
+            for (int e = 1; e < input->rankOf(); e++)
+                restDims[e - 1] = e;
 
+            std::unique_ptr<ResultSet<T>> listOfBPTensors(tempRes->allTensorsAlongDimension(restDims));
+            std::unique_ptr<ResultSet<T>> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
+            std::unique_ptr<ResultSet<T>> listOfTensors(input->allTensorsAlongDimension(restDims));
+            std::unique_ptr<ResultSet<T>> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+
+            //int numOfClasses = tempRes->sizeAt(0); // number of classes
+            //std::vector<std::pair<NDArray<T>*, int>> outputs(numOfClasses);
+
+            int pos = 0;
+            for (int i = 0; i < indices->lengthOf(); i++) {
+                Nd4jLong classNum = static_cast<Nd4jLong>((*indices)(i));
+                NDArray<T>* current = listOfTensors->at(i);
+                NDArray<T>* currentOut = listOfOutTensors->at(i);
+                NDArray<T>* currentGradOut = listOfGradOuts->at(classNum);
+//#pragma omp parallel for
+                for (int e = 0; e < current->lengthOf(); e++) {
+                    if (nd4j::math::nd4j_abs(listOfBPTensors->at(classNum)->getScalar(e) - current->getScalar(e)) < T(1.e-5))
+                        (*currentOut)(e) = (*currentGradOut)(e);
+                }
+            }
         }
         delete tempRes;
         return ND4J_STATUS_OK;
@@ -732,39 +780,28 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+//#pragma omp parallel for
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
-            ResultSet<T>* listOfTensors = input->allTensorsAlongDimension(restDims);
-            ResultSet<T>* listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
-            int numOfClasses = output->sizeAt(0); // number of classes
-            std::vector<std::pair<NDArray<T>*, int>> outputs(numOfClasses);
-            NDArray<T>* meanT = listOfOutTensors->at(idx);
-            T count = T(1.f);
-            NDArray<T>* meanV = meanT->dup();
-            meanV->assign(listOfTensors->at(0));
+            std::unique_ptr<ResultSet<T>> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
+            std::unique_ptr<ResultSet<T>> listOfTensors(input->allTensorsAlongDimension(restDims));
+            std::unique_ptr<ResultSet<T>> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+
+            //int numOfClasses = tempRes->sizeAt(0); // number of classes
+            //std::vector<std::pair<NDArray<T>*, int>> outputs(numOfClasses);
+
+            int pos = 0;
+            for (int i = 0; i < indices->lengthOf(); i++) {
+                Nd4jLong classNum = static_cast<Nd4jLong>((*indices)(i));
+                NDArray<T>* current = listOfTensors->at(i);
+                NDArray<T>* currentOut = listOfOutTensors->at(i);
+                NDArray<T>* currentGradOut = listOfGradOuts->at(classNum);
 //#pragma omp parallel for
-            for (int i = 1; i < indices->lengthOf(); i++) {
-                if (static_cast<int>((*indices)(i)) == idx) {
-                    for (int e = 0; e < meanT->lengthOf(); e++) {
-                        (*meanV)(e) += (*listOfTensors->at(i))(e);
-                    }
-                    count += T(1.f);
+                for (int e = 0; e < current->lengthOf(); e++) {
+                    (*currentOut)(e) = (*currentGradOut)(e) / T(current->lengthOf());
                 }
-                else {
-                    //meanT->assign(meanV);
-                    meanV->template applyScalar<simdOps::Divide<T>>(count, meanT);
-                    idx = static_cast<int>((*indices)(i));
-                    meanT = listOfOutTensors->at(idx);
-                    meanV->assign(listOfTensors->at(i));
-                    count = T(1.f);
-                }
-                meanV->template applyScalar<simdOps::Divide<T>>(count, meanT);
             }
-            delete meanV;
-            delete listOfTensors;
-            delete listOfOutTensors;
         }
         return ND4J_STATUS_OK;
     }
@@ -782,30 +819,25 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+//#pragma omp parallel for
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
-            ResultSet<T>* listOfTensors = input->allTensorsAlongDimension(restDims);
-            ResultSet<T>* listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
-            int numOfClasses = output->sizeAt(0); // number of classes
-            std::vector<std::pair<NDArray<T>*, int>> outputs(numOfClasses);
-            NDArray<T>* sumT = listOfOutTensors->at(idx);
+            std::unique_ptr<ResultSet<T>> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
+            std::unique_ptr<ResultSet<T>> listOfTensors(input->allTensorsAlongDimension(restDims));
+            std::unique_ptr<ResultSet<T>> listOfOutTensors(output->allTensorsAlongDimension(restDims));
 
+            int pos = 0;
             for (int i = 0; i < indices->lengthOf(); i++) {
-                if (static_cast<int>((*indices)(i)) == idx) {
-                    for (int e = 0; e < sumT->lengthOf(); e++) {
-                        (*sumT)(e) += (*listOfTensors->at(i))(e);
-                    }
-                }
-                else {
-                    idx = static_cast<int>((*indices)(i));
-                    sumT = listOfOutTensors->at(idx);
-                    sumT->assign(listOfTensors->at(i));
+                Nd4jLong classNum = static_cast<Nd4jLong>((*indices)(i));
+                NDArray<T>* current = listOfTensors->at(i);
+                NDArray<T>* currentOut = listOfOutTensors->at(i);
+                NDArray<T>* currentGradOut = listOfGradOuts->at(classNum);
+//#pragma omp parallel for
+                for (int e = 0; e < current->lengthOf(); e++) {
+                    (*currentOut)(e) = (*currentGradOut)(e);
                 }
             }
-            delete listOfTensors;
-            delete listOfOutTensors;
         }
         return ND4J_STATUS_OK;
     }
@@ -822,12 +854,30 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+//#pragma omp parallel for
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
+
+            std::unique_ptr<ResultSet<T>> listOfBPTensors(tempRes->allTensorsAlongDimension(restDims));
+            std::unique_ptr<ResultSet<T>> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
             std::unique_ptr<ResultSet<T>> listOfTensors(input->allTensorsAlongDimension(restDims));
             std::unique_ptr<ResultSet<T>> listOfOutTensors(output->allTensorsAlongDimension(restDims));
 
+            //int numOfClasses = tempRes->sizeAt(0); // number of classes
+            //std::vector<std::pair<NDArray<T>*, int>> outputs(numOfClasses);
+
+            int pos = 0;
+            for (int i = 0; i < indices->lengthOf(); i++) {
+                Nd4jLong classNum = static_cast<Nd4jLong>((*indices)(i));
+                NDArray<T>* current = listOfTensors->at(i);
+                NDArray<T>* currentOut = listOfOutTensors->at(i);
+                NDArray<T>* currentGradOut = listOfGradOuts->at(classNum);
+                auto currentFFOut = listOfBPTensors->at(classNum);
+//#pragma omp parallel for
+                for (int e = 0; e < current->lengthOf(); e++) {
+                    (*currentOut)(e) = (*currentFFOut)(e) * (*currentGradOut)(e) / (*current)(e);
+                }
+            }
         }
         delete tempRes;
         return ND4J_STATUS_OK;
