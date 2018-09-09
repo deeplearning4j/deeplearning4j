@@ -149,6 +149,12 @@ namespace nd4j {
         template <typename T>
         static NDArray* create(const char order, const std::vector<Nd4jLong> &shape, nd4j::memory::Workspace* workspace);
 
+        template <typename T>
+        static NDArray* p(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace);
+
+        template <typename T>
+        static NDArray v(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace);
+
 
 #ifndef __JAVACPP_HACK__
         // this method only available out of javacpp
