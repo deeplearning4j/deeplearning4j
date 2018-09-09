@@ -30,9 +30,8 @@ namespace ops  {
 
 ////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(thresholdedrelu, 1, 1, true, 0, 0) {
-    
-    NDArray<T>* input  = INPUT_VARIABLE(0);    
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto input  = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
 
     const T theta = block.getTArguments()->size() == 0 ? static_cast<T>(1) : T_ARG(0);
 
@@ -48,11 +47,10 @@ CONFIGURABLE_OP_IMPL(thresholdedrelu, 1, 1, true, 0, 0) {
 
 ////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(thresholdedrelu_bp, 2, 1, true, 0, 0) {
+    auto input = INPUT_VARIABLE(0);
+    auto dLdO  = INPUT_VARIABLE(1);
     
-    NDArray<T>* input = INPUT_VARIABLE(0);
-    NDArray<T>* dLdO  = INPUT_VARIABLE(1);
-    
-    NDArray<T>* dLdI = OUTPUT_VARIABLE(0);
+    auto dLdI = OUTPUT_VARIABLE(0);
 
     const T theta = block.getTArguments()->size() == 0 ? static_cast<T>(1) : T_ARG(0);
 

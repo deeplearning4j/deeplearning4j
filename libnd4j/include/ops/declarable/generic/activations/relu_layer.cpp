@@ -23,9 +23,9 @@
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(relu_layer, 3, 1, false, 0, 0) {
-            NDArray<T>* x = INPUT_VARIABLE(0);
-            NDArray<T>* w = INPUT_VARIABLE(1);
-            NDArray<T>* b = INPUT_VARIABLE(2);
+            auto x = INPUT_VARIABLE(0);
+            auto w = INPUT_VARIABLE(1);
+            auto b = INPUT_VARIABLE(2);
 
             REQUIRE_TRUE(x->isMatrix(), 0, "relu_layer: x argument should be a 2D tensor, but got rank %i instead!", x->rankOf());
             REQUIRE_TRUE(w->isMatrix(), 0, "relu_layer: weights argument should be a 2D tensor, but got rank %i instead!", w->rankOf());
@@ -35,23 +35,23 @@ namespace nd4j {
                 x->sizeAt(1), w->sizeAt(0));
 
             
-            NDArray<T>* output = OUTPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
             T bound = (T)0.f;
             //nd4j_printf("Matrix x(%ix%i), Matrix w(%ix%i), b(1x%i)\n", x->sizeAt(0), x->sizeAt(1), w->sizeAt(0), w->sizeAt(1), b->lengthOf());
 
-            nd4j::ops::xw_plus_b<T> op;
-            std::unique_ptr<ResultSet<T>> result(op.execute({x, w, b}, {}, {}));
-            
-            REQUIRE_TRUE(ND4J_STATUS_OK == result->status(), 0, "relu_layer: xw_plus_b op failed on input data.");
-            NDArray<T>* xw = result->at(0);
-            xw->template applyTransform<simdOps::RELU<T>>(output, &bound);
+            nd4j::ops::xw_plus_b op;
+            std::unique_ptr<ResultSet> result(op.execute({x, w, b}, {}, {}));
+            REQUIRE_TRUE(Status::OK() == result->status(), 0, "relu_layer: xw_plus_b op failed on input data.");
+
+            auto xw = result->at(0);
+            xw->applyTransform(nd4j::transform::RELU, output, &bound);
 
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(relu_layer) {
-            auto outputShape = ShapeUtils<T>::matrixProductShape(inputShape->at(0), inputShape->at(1), false, false, block.getWorkspace()); 
+            auto outputShape = ShapeUtils::matrixProductShape(inputShape->at(0), inputShape->at(1), false, false, block.getWorkspace());
             
             return SHAPELIST(outputShape);
         }

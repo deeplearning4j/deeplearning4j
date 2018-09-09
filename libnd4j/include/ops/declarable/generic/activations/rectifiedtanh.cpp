@@ -29,15 +29,15 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
-            input->template applyTransform<simdOps::RectifiedTanh<T>>(output, nullptr);
+            input->applyTransform(nd4j::transform::RectifiedTanh, output, nullptr);
             STORE_RESULT(output);
             
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         CONFIGURABLE_OP_IMPL(rectifiedtanh_bp, 2, 1, true, 0, 0) {
-            NDArray<T>* input = INPUT_VARIABLE(0);
-            NDArray<T>* epsilon = INPUT_VARIABLE(1);
+            auto input = INPUT_VARIABLE(0);
+            auto epsilon = INPUT_VARIABLE(1);
 
             auto z = OUTPUT_VARIABLE(0);
 
@@ -47,7 +47,7 @@ namespace nd4j {
 
             input->applyPairwiseLambda(epsilon, lambda, z);  
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
     }
 }

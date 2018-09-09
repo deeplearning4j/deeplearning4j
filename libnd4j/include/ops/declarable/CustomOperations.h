@@ -41,6 +41,7 @@
 #include <dll.h>
 #include <Status.h>
 #include <helpers/ArrayUtils.h>
+#include <helpers/ShapeBuilders.h>
 
 
 namespace nd4j {

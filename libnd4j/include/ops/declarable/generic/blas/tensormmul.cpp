@@ -28,10 +28,10 @@
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(tensormmul, 2, 1, false, 0, -1) {
-            NDArray<T>* a = INPUT_VARIABLE(0);
-            NDArray<T>* b = INPUT_VARIABLE(1);
+            auto a = INPUT_VARIABLE(0);
+            auto b = INPUT_VARIABLE(1);
 
-            NDArray<T>* c = OUTPUT_VARIABLE(0);                // 
+            auto c = OUTPUT_VARIABLE(0);                //
 
             // building axes
             int axe0_size = INT_ARG(0);
@@ -46,12 +46,12 @@ namespace nd4j {
             nd4j_verbose("axe0: %i; axe1: %i;\n", axes_0.size(), axes_1.size());
 
             // nd4j::MmulHelper<T>::tensorDot(a, b, c, axes_0, axes_1);
-            NDArray<T>* result = nd4j::MmulHelper<T>::tensorDot(a, b, axes_0, axes_1);
+            auto result = nd4j::MmulHelper<T>::tensorDot(a, b, axes_0, axes_1);
             *c = *result;
 
             STORE_RESULT(*c);
             delete result;  
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(tensordot, tensormmul);
 
@@ -73,7 +73,7 @@ namespace nd4j {
             // evaluate shapes 
             std::vector<int> permutAt, permutBt;
             std::vector<Nd4jLong> shapeAt, shapeBt;
-            auto outShape = nd4j::ShapeUtils<T>::evalShapeForTensorDot(aShapeInfo, bShapeInfo, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
+            auto outShape = nd4j::ShapeUtils::evalShapeForTensorDot(aShapeInfo, bShapeInfo, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
             
             int rank = outShape.size();
 

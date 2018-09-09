@@ -29,15 +29,15 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
-            input->template applyTransform<simdOps::ELU<T>>(output, nullptr);
+            input->applyTransform(nd4j::transform::ELU, output, nullptr);
             STORE_RESULT(output);
 
             return ND4J_STATUS_OK;
         }
 
         CONFIGURABLE_OP_IMPL(elu_bp, 2, 1, true, 0, 0) {
-            NDArray<T>* input = INPUT_VARIABLE(0);
-            NDArray<T>* epsilon = INPUT_VARIABLE(1);
+            auto input = INPUT_VARIABLE(0);
+            auto epsilon = INPUT_VARIABLE(1);
 
             auto z = OUTPUT_VARIABLE(0);
 

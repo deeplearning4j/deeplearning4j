@@ -26,19 +26,19 @@
 namespace nd4j {
     namespace ops {
         CONFIGURABLE_OP_IMPL(softsign, 1, 1, true, 0, 0) {
-            NDArray<T> *first = INPUT_VARIABLE(0);
-            auto z = this->getZ(block);
+            auto first = INPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
 
-            first->template applyTransform<simdOps::SoftSign<T>>(z, nullptr);
+            first->applyTransform(nd4j::transform::SoftSign, z, nullptr);
 
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         CONFIGURABLE_OP_IMPL(softsign_bp, 2, 1, true, 0, 0) {
-            NDArray<T>* input = INPUT_VARIABLE(0);
-            NDArray<T>* epsilon = INPUT_VARIABLE(1);
+            auto input = INPUT_VARIABLE(0);
+            auto epsilon = INPUT_VARIABLE(1);
 
             auto z = OUTPUT_VARIABLE(0);
 
@@ -49,7 +49,7 @@ namespace nd4j {
 
             input->applyPairwiseLambda(epsilon, lambda, z);  
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(SoftsignGrad, softsign_bp);
     }

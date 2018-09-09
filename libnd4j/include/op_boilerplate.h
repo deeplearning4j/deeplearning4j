@@ -1231,60 +1231,26 @@
 #define REGISTER_H(NAME)
 #else
 #define REGISTER_H(NAME)  template <typename OpName>  \
-                        struct __registratorFloat_##NAME {\
-                            __registratorFloat_##NAME() {\
+                        struct __registrator_##NAME {\
+                            __registrator_##NAME() {\
                                 OpName *ptr = new OpName(); \
-                                OpRegistrator::getInstance()->registerOperationFloat(ptr); \
-                                OpTracker::getInstance()->storeOperation(OpType_CUSTOM, *ptr->getOpDescriptor());\
+                                OpRegistrator::getInstance()->registerOperation(ptr); \
                             }\
                         };\
-                        template <typename OpName>  \
-                        struct __registratorHalf_##NAME {\
-                            __registratorHalf_##NAME() {\
-                                OpName *ptr = new OpName(); \
-                                OpRegistrator::getInstance()->registerOperationHalf(ptr); \
-                            }\
-                        };\
-                        template <typename OpName>  \
-                        struct __registratorDouble_##NAME {\
-                            __registratorDouble_##NAME() {\
-                                OpName *ptr = new OpName(); \
-                                OpRegistrator::getInstance()->registerOperationDouble(ptr); \
-                            }\
-                        };\
-                        static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME; \
-                        static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME; \
-                        static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
+                        static nd4j::ops::__registrator_##NAME<NAME> zzz_register_opd_##NAME;
 #endif
 
 #ifdef __JAVACPP_HACK__
 #define REGISTER_C(NAME)
 #elif defined(LIBND4J_ALL_OPS)
-#define REGISTER_C(NAME)  template <typename OpName>  \
-                        struct __registratorFloat_##NAME {\
-                            __registratorFloat_##NAME() {\
+#define REGISTER_C(NAME)   template <typename OpName>  \
+                        struct __registrator_##NAME {\
+                            __registrator_##NAME() {\
                                 OpName *ptr = new OpName(); \
-                                OpRegistrator::getInstance()->registerOperationFloat(ptr); \
-                                OpTracker::getInstance()->storeOperation(OpType_CUSTOM, *ptr->getOpDescriptor());\
+                                OpRegistrator::getInstance()->registerOperation(ptr); \
                             }\
                         };\
-                        template <typename OpName>  \
-                        struct __registratorHalf_##NAME {\
-                            __registratorHalf_##NAME() {\
-                                OpName *ptr = new OpName(); \
-                                OpRegistrator::getInstance()->registerOperationHalf(ptr); \
-                            }\
-                        };\
-                        template <typename OpName>  \
-                        struct __registratorDouble_##NAME {\
-                            __registratorDouble_##NAME() {\
-                                OpName *ptr = new OpName(); \
-                                OpRegistrator::getInstance()->registerOperationDouble(ptr); \
-                            }\
-                        };\
-                        static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME; \
-                        static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME; \
-                        static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
+                        static nd4j::ops::__registrator_##NAME<NAME> zzz_register_opd_##NAME;
 #else
 #define REGISTER_C(NAME)
 #endif
@@ -1354,49 +1320,20 @@
                                                 Nd4jStatus nd4j::ops::NAME::validateAndExecute(nd4j::graph::Context& block)
 
 
-#define DECLARE_SYN(NAME, ORIGINAL)         \
-template <typename OpName>  \
-struct __registratorSynonymFloat_##NAME {\
-    __registratorSynonymFloat_##NAME(const char *name, const char *oname) {\
-        auto ptr = reinterpret_cast<OpName *>(OpRegistrator::getInstance()->getOperationFloat(oname)); \
-        if (ptr == nullptr) { \
-            std::string newName(name); \
-            std::string oldName(oname); \
-            OpRegistrator::getInstance()->updateMSVC(nd4j::ops::HashHelper::getInstance()->getLongHash(newName), oldName);\
-            return;\
-        }\
-        OpRegistrator::getInstance()->registerOperationFloat(name, ptr);\
-    }\
-};\
-template <typename OpName>  \
-struct __registratorSynonymHalf_##NAME {\
-    __registratorSynonymHalf_##NAME(const char *name, const char *oname) {\
-        auto ptr = reinterpret_cast<OpName *>(OpRegistrator::getInstance()->getOperationHalf(oname)); \
-        if (ptr == nullptr) { \
-            std::string newName(name); \
-            std::string oldName(oname); \
-            OpRegistrator::getInstance()->updateMSVC(nd4j::ops::HashHelper::getInstance()->getLongHash(newName), oldName);\
-            return;\
-        }\
-        OpRegistrator::getInstance()->registerOperationHalf(name, ptr);\
-    }\
-};\
-template <typename OpName>  \
-struct __registratorSynonymDouble_##NAME {\
-    __registratorSynonymDouble_##NAME(const char *name, const char *oname) {\
-        auto ptr = reinterpret_cast<OpName *>(OpRegistrator::getInstance()->getOperationDouble(oname)); \
-        if (ptr == nullptr) { \
-            std::string newName(name); \
-            std::string oldName(oname); \
-            OpRegistrator::getInstance()->updateMSVC(nd4j::ops::HashHelper::getInstance()->getLongHash(newName), oldName);\
-            return;\
-        }\
-        OpRegistrator::getInstance()->registerOperationDouble(name, ptr);\
-    }\
-};\
-                                        static nd4j::ops::__registratorSynonymFloat_##NAME<ORIGINAL<float>> zzz_register_opf_##NAME(#NAME, #ORIGINAL); \
-                                        static nd4j::ops::__registratorSynonymHalf_##NAME<ORIGINAL<float16>> zzz_register_oph_##NAME(#NAME, #ORIGINAL); \
-                                        static nd4j::ops::__registratorSynonymDouble_##NAME<ORIGINAL<double>> zzz_register_opd_##NAME(#NAME, #ORIGINAL)
+#define DECLARE_SYN(NAME, ORIGINAL) template <typename OpName>  \
+                                    struct __registratorSynonym_##NAME {\
+                                        __registratorSynonym_##NAME(const char *name, const char *oname) {\
+                                            auto ptr = reinterpret_cast<OpName *>(OpRegistrator::getInstance()->getOperation(oname)); \
+                                            if (ptr == nullptr) { \
+                                                std::string newName(name); \
+                                                std::string oldName(oname); \
+                                                OpRegistrator::getInstance()->updateMSVC(nd4j::ops::HashHelper::getInstance()->getLongHash(newName), oldName);\
+                                                return;\
+                                            }\
+                                            OpRegistrator::getInstance()->registerOperation(name, ptr);\
+                                            }\
+                                        };\
+                                        static nd4j::ops::__registratorSynonym_##NAME<ORIGINAL> zzz_register_opd_##NAME(#NAME, #ORIGINAL)
 
 #define DECLARE_DIVERGENT_OP(NAME, NIN, NOUT, INPLACEABLE)  class NAME: public nd4j::ops::DeclarableOp { \
                                                             public:\
@@ -1444,7 +1381,7 @@ struct __registratorSynonymDouble_##NAME {\
                                                                                     } \
                                                                                     return shapeList; \
                                                                                 } \
-                                                                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Context& block)
+                                                                                Nd4jStatus nd4j::ops::NAME::validateAndExecute(Context& block)
 
 #define DECLARE_REDUCTION_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)        class NAME: public nd4j::ops::DeclarableReductionOp { \
                                                                                 public:\
@@ -1485,7 +1422,7 @@ struct __registratorSynonymDouble_##NAME {\
 
 #define BROADCASTABLE_OP_IMPL(NAME, TARGS, IARGS)                               NAME::NAME(): nd4j::ops::BroadcastableOp(#NAME, TARGS, IARGS) { }; \
                                                                                 REGISTER_C(NAME) \
-                                                                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context& block)
+                                                                                Nd4jStatus nd4j::ops::NAME::validateAndExecute(nd4j::graph::Context& block)
 
 
 #define DECLARE_DEVICE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)

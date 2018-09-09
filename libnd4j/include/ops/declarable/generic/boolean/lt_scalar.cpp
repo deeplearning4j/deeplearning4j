@@ -29,8 +29,8 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
 
-            nd4j_debug("Comparing [%f] to [%f]\n", x->getScalar(0), y->getScalar(0));
-            if (x->getScalar(0) < y->getScalar(0))
+            nd4j_debug("Comparing [%f] to [%f]\n", x->getScalar<float>(0), y->getScalar<float>(0));
+            if (x->getScalar<float>(0) < y->getScalar<float>(0))
                 return ND4J_STATUS_TRUE;
             else
                 return ND4J_STATUS_FALSE;

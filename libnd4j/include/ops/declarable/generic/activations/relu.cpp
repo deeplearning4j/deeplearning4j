@@ -26,19 +26,19 @@
 namespace nd4j {
     namespace ops {
         CONFIGURABLE_OP_IMPL(relu, 1, 1, true, 1, 0) {
-            NDArray<T> *first = INPUT_VARIABLE(0);
-            auto z = this->getZ(block);
+            auto first = INPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
 
-            first->template applyTransform<simdOps::RELU<T>>(z, &block.getTArguments()->at(0));
+            first->applyTransform(nd4j::transform::RELU, z, &block.getTArguments()->at(0));
 
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         CONFIGURABLE_OP_IMPL(relu_bp, 2, 1, true, 0, 0) {
-            NDArray<T>* input = INPUT_VARIABLE(0);
-            NDArray<T>* epsilon = INPUT_VARIABLE(1);
+            auto input = INPUT_VARIABLE(0);
+            auto epsilon = INPUT_VARIABLE(1);
 
             auto z = OUTPUT_VARIABLE(0);
 
@@ -48,7 +48,7 @@ namespace nd4j {
 
             input->applyPairwiseLambda(epsilon, lambda, z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(ReluGrad, relu_bp);
     }

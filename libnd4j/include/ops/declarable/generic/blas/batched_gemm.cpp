@@ -60,9 +60,9 @@ namespace nd4j {
             auto alpha = INPUT_VARIABLE(0);
             auto beta = INPUT_VARIABLE(1);
 
-            std::vector<NDArray<T>*> vA(batchSize);
-            std::vector<NDArray<T>*> vB(batchSize);
-            std::vector<NDArray<T>*> vC(batchSize);
+            std::vector<NDArray*> vA(batchSize);
+            std::vector<NDArray*> vB(batchSize);
+            std::vector<NDArray*> vC(batchSize);
 
             for(int e = 0; e < batchSize; e++) {
                 vA[e] = INPUT_VARIABLE(e+2);

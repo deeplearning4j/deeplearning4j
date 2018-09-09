@@ -30,10 +30,9 @@ namespace nd4j {
 namespace ops  {
 
 CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
-    
-    NDArray<T> *x = INPUT_VARIABLE(0);
-    NDArray<T> *y = INPUT_VARIABLE(1);
-    NDArray<T> *z = OUTPUT_VARIABLE(0);    
+    auto x = INPUT_VARIABLE(0);
+    auto y = INPUT_VARIABLE(1);
+    auto z = OUTPUT_VARIABLE(0);
 
     const int iSize  = (int) block.getIArguments()->size();   
           int transX = iSize > 0 ? INT_ARG(0) : 0;
@@ -110,9 +109,9 @@ DECLARE_SHAPE_FN(matmul) {
         transY = !temp;
     }
 
-    std::vector<Nd4jLong> zShapeOnly = ShapeUtils<T>::evalShapeForMatmul(xShapeInfo, yShapeInfo, transX, transY);
+    std::vector<Nd4jLong> zShapeOnly = ShapeUtils::evalShapeForMatmul(xShapeInfo, yShapeInfo, transX, transY);
 
-    return SHAPELIST( ShapeUtils<T>::createShapeInfo('f', zShapeOnly, block.getWorkspace()) );    
+    return SHAPELIST( ShapeBuilders::createShapeInfo('f', zShapeOnly, block.getWorkspace()) );
 }
 
 }

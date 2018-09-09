@@ -29,8 +29,10 @@ namespace nd4j {
         CUSTOM_OP_IMPL(crelu, 1, 1, false, 0, 0) {
             auto x = INPUT_VARIABLE(0);
 
+            REQUIRE_TRUE(x->isR(), 0, "CRELU: input must be real type");
+
             auto tmp = x->dup();
-            tmp->template applyTransform<simdOps::Neg<T>>();
+            tmp->applyTransform(nd4j::transform::Neg, nullptr, nullptr);
 
             auto z = OUTPUT_VARIABLE(0);
 
@@ -38,14 +40,14 @@ namespace nd4j {
             // NDArrayFactory<T>::concat({x, tmp}, -1, z);
 
             // TODO: make this configurable?
-            T threshold = (T) 0.0f;
-            z->template applyTransform<simdOps::RELU<T>>(&threshold);
+            double threshold = 0.0;
+            z->applyTransform(nd4j::transform::RELU, &threshold);
 
             STORE_RESULT(z);
 
             delete tmp;
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(crelu) {
@@ -72,7 +74,7 @@ namespace nd4j {
             auto epsilon = OUTPUT_VARIABLE(0);
 
             // at first step we build fwd activation
-            nd4j::ops::crelu<T> op;
+            nd4j::ops::crelu op;
             auto tmpResult = op.execute({input}, {}, {}); 
             if (tmpResult->status() != ND4J_STATUS_OK)
                 return tmpResult->status();
@@ -86,7 +88,7 @@ namespace nd4j {
             actv->applyPairwiseLambda(epsilonNext, lambda);
 
             // now we split updated array into 2 chunks along last dimension
-            nd4j::ops::concat_bp<T> opc;
+            nd4j::ops::concat_bp opc;
             auto dec = opc.execute({input, input, actv}, {},{-1});
             if (dec->status() != ND4J_STATUS_OK)
                 return dec->status();
@@ -95,7 +97,7 @@ namespace nd4j {
             auto pos = dec->at(0);
             auto neg = dec->at(1);
 
-            pos->template applyPairwiseTransform<simdOps::Subtract<T>>(neg, epsilon, nullptr);
+            pos->applyPairwiseTransform(nd4j::pairwise::Subtract, neg, epsilon, nullptr);
 
             delete tmpResult;
             delete dec;

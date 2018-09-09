@@ -29,11 +29,10 @@ namespace ops  {
 
 ////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(relu6, 1, 1, true, 1, 0) {
-    
-    NDArray<T>* input  = INPUT_VARIABLE(0);
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto input  = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
 
-    input->template applyTransform<simdOps::RELU6<T>>(output, &T_ARG(0));
+    input->applyTransform(nd4j::transform::RELU6, output, &T_ARG(0));
     
     return Status::OK();
 }
@@ -41,13 +40,11 @@ CONFIGURABLE_OP_IMPL(relu6, 1, 1, true, 1, 0) {
 
 ////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(relu6_bp, 2, 1, true, 0, 0) {
-    
-    NDArray<T>* input = INPUT_VARIABLE(0);
-    NDArray<T>* gradO = INPUT_VARIABLE(1);
-    NDArray<T>* gradI = OUTPUT_VARIABLE(0);
+    auto input = INPUT_VARIABLE(0);
+    auto gradO = INPUT_VARIABLE(1);
+    auto gradI = OUTPUT_VARIABLE(0);
     
     auto derivative = LAMBDA_TT(inp, grad) {
-        
         if((T)0. < inp && inp < (T)6.)
             return grad;                    // derivative = 1
         else 

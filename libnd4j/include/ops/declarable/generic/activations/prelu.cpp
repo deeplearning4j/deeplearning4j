@@ -32,10 +32,9 @@ namespace ops  {
 
 ////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
-    
-    NDArray<T>* input  = INPUT_VARIABLE(0);
-    NDArray<T>* alpha  = INPUT_VARIABLE(1);
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto input  = INPUT_VARIABLE(0);
+    auto alpha  = INPUT_VARIABLE(1);
+    auto output = OUTPUT_VARIABLE(0);
 
     std::vector<int> sharedAxes = *block.getIArguments();
     
@@ -78,13 +77,12 @@ CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
 
 ////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
+    auto input = INPUT_VARIABLE(0);
+    auto alpha = INPUT_VARIABLE(1);
+    auto dLdO  = INPUT_VARIABLE(2);
     
-    NDArray<T>* input = INPUT_VARIABLE(0);
-    NDArray<T>* alpha = INPUT_VARIABLE(1);
-    NDArray<T>* dLdO  = INPUT_VARIABLE(2);
-    
-    NDArray<T>* dLdI = OUTPUT_VARIABLE(0);
-    NDArray<T>* dLdA = OUTPUT_VARIABLE(1);
+    auto dLdI = OUTPUT_VARIABLE(0);
+    auto dLdA = OUTPUT_VARIABLE(1);
 
     std::vector<int> sharedAxes = *block.getIArguments();
     

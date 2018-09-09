@@ -26,11 +26,11 @@
 namespace nd4j {
     namespace ops {
         OP_IMPL(identity, 1, 1, true) {
-            NDArray<T> *first = INPUT_VARIABLE(0);
+            auto first = INPUT_VARIABLE(0);
             auto z = this->getZ(block);
 
             // just for lulz
-            first->template applyTransform<simdOps::Identity<T>>(z, nullptr);
+            first->applyTransform(nd4j::transform::Identity, z, nullptr);
 
             STORE_RESULT(*z);
 
@@ -40,7 +40,7 @@ namespace nd4j {
 
 
         OP_IMPL(identity_bp, 2, 1, true) {
-            NDArray<T> *first = INPUT_VARIABLE(0);
+            auto first = INPUT_VARIABLE(0);
             auto epsilon = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
