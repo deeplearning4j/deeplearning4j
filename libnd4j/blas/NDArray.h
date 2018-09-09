@@ -1103,20 +1103,23 @@ namespace nd4j {
         *  returns array element with given index from linear buffer
         *  i - element index in array
         */
-        FORCEINLINE NDArray getScalar(const Nd4jLong i) const;
+        template <typename T>
+        T getScalar(const Nd4jLong i) const;
 
         /** 
         *  returns array element with given index, takes into account offset between elements (element-wise-stride)
         *  i - element index in array
         */
-        FORCEINLINE NDArray getIndexedScalar(const Nd4jLong i) const;
+        template <typename T>
+        T getIndexedScalar(const Nd4jLong i) const;
         
         /** 
         *  returns element with given indexes from 2D array 
         *  i - number of row 
         *  j - number of column
         */
-        FORCEINLINE NDArray getScalar(const Nd4jLong i, const Nd4jLong j) const;
+        template <typename T>
+        T getScalar(const Nd4jLong i, const Nd4jLong j) const;
 
         /** 
         *  returns element with given indexes from 3D array 
@@ -1124,22 +1127,26 @@ namespace nd4j {
         *  j - width
         *  k - depth
         */
-        FORCEINLINE NDArray getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
+        template <typename T>
+        T getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
         
         /** 
         *  assigns given scalar to array element by given index, takes into account offset between elements (element-wise-stride)
         *  i - element index in array
         *  value - scalar value to assign
         */
-        FORCEINLINE void putIndexedScalar(const Nd4jLong i, const double value);
-        FORCEINLINE void putIndexedScalar(const Nd4jLong i, const NDArray value);
+        template <typename T>
+        void putIndexedScalar(const Nd4jLong i, const T value);
+
+        void putIndexedScalar(const Nd4jLong i, const NDArray value);
 
         /** 
         *  assigns given scalar to array element by given index, regards array buffer as linear
         *  i - element index in array
         *  value - scalar value to assign
         */
-        FORCEINLINE void putScalar(const Nd4jLong i, const double value);
+        template <typename T>
+        void putScalar(const Nd4jLong i, const T value);
 
         /** 
         *  assigns given scalar to 2D array element by given indexes
@@ -1147,7 +1154,8 @@ namespace nd4j {
         *  j - number of row
         *  value - scalar value to assign
         */
-        FORCEINLINE void putScalar(const Nd4jLong i, const Nd4jLong j, const double value);
+        template <typename T>
+        void putScalar(const Nd4jLong i, const Nd4jLong j, const T value);
 
         /** 
         *  assigns given scalar to 3D array element by given indexes
@@ -1156,7 +1164,8 @@ namespace nd4j {
         *  k - depth
         *  value - scalar value to assign
         */
-        FORCEINLINE void putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const double value);
+        template <typename T>
+        void putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const T value);
 
         /**
         *  returns true if array is 2D
@@ -1186,59 +1195,59 @@ namespace nd4j {
         /**
         *  inline accessing operator for matrix, i - absolute index        
         */
-        FORCEINLINE NDArray operator()(const Nd4jLong i) const;
+        //FORCEINLINE NDArray operator()(const Nd4jLong i) const;
 
         /**
         *  inline modifying operator for matrix, i - absolute index        
         */
-        FORCEINLINE NDArray& operator()(const Nd4jLong i);
+        //FORCEINLINE NDArray& operator()(const Nd4jLong i);
 
         /**
         *  inline accessing operator for 2D array, i - row, j - column
         */
-        FORCEINLINE NDArray operator()(const Nd4jLong i, const Nd4jLong j) const;
+        //FORCEINLINE NDArray operator()(const Nd4jLong i, const Nd4jLong j) const;
 
         /**
         *  inline modifying operator for 2D array, i - row, j - column
         */
-        FORCEINLINE NDArray& operator()(const Nd4jLong i, const Nd4jLong j);
+        //FORCEINLINE NDArray& operator()(const Nd4jLong i, const Nd4jLong j);
 
         /**
         *  inline accessing operator for 3D array, i - height, j - width, k - depth
         */
-        FORCEINLINE NDArray operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
+        //FORCEINLINE NDArray operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
 
         /**
         *  inline modifying operator for 3D array, i - height, j - width, k - depth
         */ 
-        FORCEINLINE NDArray& operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k);
+        //FORCEINLINE NDArray& operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k);
 
         /**
         *  inline modifying operator for 4D array, i - height, j - width, k - depth
         */ 
-        FORCEINLINE NDArray& operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w);
+        //FORCEINLINE NDArray& operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w);
 
         /**
         *  inline accessing operator for 4D array, i - height, j - width, k - depth
         */
-        FORCEINLINE NDArray operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) const;
+        //FORCEINLINE NDArray operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) const;
 
         /**
         *  inline modifying operator for ND array
         *  idx - array with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
         */ 
-        FORCEINLINE NDArray& operator()(const Nd4jLong* idx);
+        //FORCEINLINE NDArray& operator()(const Nd4jLong* idx);
 
         /**
         *  inline accessing operator for ND array
         *  idx - array with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
         */
-        FORCEINLINE NDArray operator()(const Nd4jLong* idx) const;
+        //FORCEINLINE NDArray operator()(const Nd4jLong* idx) const;
 
 
 
-        template <typename T2>
-        FORCEINLINE std::vector<T2> asVectorT();
+        template <typename T>
+        std::vector<T> asVectorT();
 
 
         FORCEINLINE bool isAttached();
@@ -1255,192 +1264,158 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////
 ///// IMLEMENTATION OF INLINE METHODS ///// 
 //////////////////////////////////////////////////////////////////////////
+    bool NDArray::isAttached() {
+        return this->_workspace != nullptr;
+    }
 
-template <typename T2>
- std::vector<T2> NDArray::asVectorT() {
-    std::vector<T2> result(this->lengthOf());
+    //////////////////////////////////////////////////////////////////////////
+    void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
+        if(_isShapeAlloc && _workspace == nullptr)
+            delete []_shapeInfo;
 
-#pragma omp parallel for simd
-    for (int e = 0; e < this->lengthOf(); e++)
-        result[e] = this->getIndexedScalar(e);
+        _shapeInfo = shapeInfo;
+        _isShapeAlloc = false;
 
-    return result;
-}
+        if (shapeInfo != nullptr)
+            this->_length = shape::length(shapeInfo);
+    }
 
- bool NDArray::isAttached() {
-    return this->_workspace != nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-
- void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
-    if(_isShapeAlloc && _workspace == nullptr)
-        delete []_shapeInfo;
-
-    _shapeInfo = shapeInfo;
-    _isShapeAlloc = false;
-
-    if (shapeInfo != nullptr)
-        this->_length = shape::length(shapeInfo);
-}
-
-//////////////////////////////////////////////////////////////////////////
-
- void NDArray::setBuffer(void* buffer) {
-    if(_isBuffAlloc && _workspace == nullptr)
-        delete []_buffer;
+    //////////////////////////////////////////////////////////////////////////
+    void NDArray::setBuffer(void* buffer) {
+        if(_isBuffAlloc && _workspace == nullptr)
+            delete []_buffer;
  
-    _buffer = reinterpret_cast<int8_t *>(buffer);
-    _isBuffAlloc = false;
-}
+        _buffer = reinterpret_cast<int8_t *>(buffer);
+        _isBuffAlloc = false;
+    }
 
-//////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
+    void NDArray::triggerAllocationFlag(bool bufferAllocated, bool shapeAllocated) {
+        _isBuffAlloc = bufferAllocated;
+        _isShapeAlloc = shapeAllocated;
+    }
 
- void NDArray::triggerAllocationFlag(bool bufferAllocated, bool shapeAllocated) {
-  
-    _isBuffAlloc = bufferAllocated;
-    _isShapeAlloc = shapeAllocated;
-}
+    //////////////////////////////////////////////////////////////////////////
+    char NDArray::ordering() const {
+        return shape::order(_shapeInfo);
+    }
 
-//////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::isView() {
+        return _isView;
+    }
 
- char NDArray::ordering() const {
-    return shape::order(_shapeInfo);
-}
+    //////////////////////////////////////////////////////////////////////////
+    Nd4jLong* NDArray::shapeOf() const {
+        return shape::shapeOf(_shapeInfo);
+    }
 
-//////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
+    Nd4jLong* NDArray::stridesOf() const {
+        return shape::stride(_shapeInfo);
+    }
 
- bool NDArray::isView() {
+    //////////////////////////////////////////////////////////////////////////
+    int NDArray::rankOf() const {
+        if (isEmpty())
+            return 0;
 
-    return _isView;
-}
+        return shape::rank(_shapeInfo);
+    }
 
-//////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
+    Nd4jLong NDArray::lengthOf() const {
+        return _length;
+    }
 
- Nd4jLong* NDArray::shapeOf() const {
-    
-    return shape::shapeOf(_shapeInfo);
-}
+    //////////////////////////////////////////////////////////////////////////
+    Nd4jLong NDArray::rows() const {
+        if (this->rankOf() == 1)
+            return 1;
 
-//////////////////////////////////////////////////////////////////////////
+        if (this->rankOf() > 2)
+            throw std::runtime_error("Array with rank > 2 can't have rows");
 
-Nd4jLong* NDArray::stridesOf() const {
-    
-    return shape::stride(_shapeInfo);
-}
+        return shapeOf()[0];
+    }
 
-//////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
+    Nd4jLong NDArray::columns() const {
+        if (this->rankOf() == 1)
+            return this->lengthOf();
 
-int NDArray::rankOf() const {
-    if (isEmpty())
-        return 0;
+        if (this->rankOf() > 2)
+            throw std::runtime_error("Array with rank > 2 can't have columns");
 
-    return shape::rank(_shapeInfo);
-}
+        return shapeOf()[1];
+    }
 
-//////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
 
-Nd4jLong NDArray::lengthOf() const {
-    return _length;
-}
+    int NDArray::sizeOfT() const {
+        return DataTypeUtils::sizeOf(this->dataType());
+    }
 
-//////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
+    Nd4jLong NDArray::ews() const {
+        if (this->isEmpty() || this->rankOf() == 0)
+            return 1;
 
-Nd4jLong NDArray::rows() const {
-    if (this->rankOf() == 1)
-        return 1;
+        return shape::elementWiseStride(_shapeInfo);
+    }
 
-    if (this->rankOf() > 2)
-        throw std::runtime_error("Array with rank > 2 can't have rows");
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::nonNull() const {
+        if (isEmpty())
+            return true;
 
-    return shapeOf()[0];
-}
+        return this->_buffer != nullptr && this->_shapeInfo != nullptr;
+    }
 
-//////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::isMatrix() const {
+        if (isEmpty())
+            return false;
 
-Nd4jLong NDArray::columns() const {
-    if (this->rankOf() == 1)
-        return this->lengthOf();
+        return shape::isMatrix(this->_shapeInfo);
+    }
 
-    if (this->rankOf() > 2)
-        throw std::runtime_error("Array with rank > 2 can't have columns");
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::isVector() const {
+        if (isEmpty())
+            return false;
 
-    return shapeOf()[1];
-}
+        return !isScalar() && shape::isVector(this->_shapeInfo);
+    }
 
-//////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::isColumnVector() const {
+        if (isEmpty())
+            return false;
 
-int NDArray::sizeOfT() const {
-    return DataTypeUtils::sizeOf(this->dataType());
-}
+        return !isScalar() && shape::isColumnVector(this->_shapeInfo);
+    }
 
-//////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::isRowVector() const {
+        if (isEmpty())
+            return false;
 
-Nd4jLong NDArray::ews() const {
-    if (this->isEmpty() || this->rankOf() == 0)
-        return 1;
+        // 1D edge case
+        if (shape::rank(this->_shapeInfo) == 1)
+            return true;
 
-    return shape::elementWiseStride(_shapeInfo);
-}
+        return !isScalar() && shape::isRowVector(this->_shapeInfo);
+    }
 
-//////////////////////////////////////////////////////////////////////////
-
- bool NDArray::nonNull() const {
-    if (isEmpty())
-        return true;
-
-    return this->_buffer != nullptr && this->_shapeInfo != nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-
- bool NDArray::isMatrix() const {
-    if (isEmpty())
-        return false;
-
-    return shape::isMatrix(this->_shapeInfo);
-}
-
-//////////////////////////////////////////////////////////////////////////
-
- bool NDArray::isVector() const {
-    if (isEmpty())
-        return false;
-
-    return !isScalar() && shape::isVector(this->_shapeInfo);
-}
-
-//////////////////////////////////////////////////////////////////////////
-
- bool NDArray::isColumnVector() const {
-    if (isEmpty())
-        return false;
-
-    return !isScalar() && shape::isColumnVector(this->_shapeInfo);
-}
-
-//////////////////////////////////////////////////////////////////////////
-
- bool NDArray::isRowVector() const {
-    if (isEmpty())
-        return false;
-
-    // 1D edge case
-    if (shape::rank(this->_shapeInfo) == 1)
-        return true;
-
-    return !isScalar() && shape::isRowVector(this->_shapeInfo);
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-bool NDArray::isScalar() const {
-    return shape::isScalar(this->_shapeInfo);
-}
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::isScalar() const {
+        return shape::isScalar(this->_shapeInfo);
+    }
 
 //////////////////////////////////////////////////////////////////////////
 // accessing operator for matrix, i - absolute index
-
+/*
 NDArray NDArray::operator()(const Nd4jLong i) const {
 
     if (i >= shape::length(_shapeInfo))
@@ -1470,10 +1445,10 @@ NDArray NDArray::operator()(const Nd4jLong i) const {
         return result;
     }
 }
-
+*/
 //////////////////////////////////////////////////////////////////////////
 // modifying operator for matrix, i - absolute index
-
+/*
 NDArray& NDArray::operator()(const Nd4jLong i) {
     if (i >= shape::length(_shapeInfo))
             throw std::invalid_argument("NDArray::operator(i): input index is out of array length !");
@@ -1503,11 +1478,11 @@ NDArray& NDArray::operator()(const Nd4jLong i) {
         result.triggerAllocationFlag(false, true);
         return result;
     }    
-}
+}*/
 
 //////////////////////////////////////////////////////////////////////////
 // accessing operator for 2D matrix, i - row, j - column
-
+/*
 NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j) const {
     
     if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
@@ -1522,10 +1497,10 @@ NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j) const {
     result.triggerAllocationFlag(false, true);
     return result;
 }
-
+*/
 //////////////////////////////////////////////////////////////////////////
 // modifying operator for 2D matrix, i - row, j - column
-
+/*
 NDArray& NDArray::operator()(const Nd4jLong  i, const Nd4jLong j) {
     if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
        throw std::invalid_argument("NDArray::operator(i,j): one of input indexes is out of array length or rank!=2 !");
@@ -1540,10 +1515,11 @@ NDArray& NDArray::operator()(const Nd4jLong  i, const Nd4jLong j) {
     //FIXME: bad, will crash!
     return result;
 }
+*/
 
 //////////////////////////////////////////////////////////////////////////
 // accessing operator for 3D array, i - row, j - column
-
+/*
 NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
     
     if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || j >= shapeOf()[2])
@@ -1557,10 +1533,11 @@ NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k
     result.triggerAllocationFlag(false, true);
     return result;
 }
+*/
 
 //////////////////////////////////////////////////////////////////////////
 // modifying operator for 3D array
-
+/*
 NDArray& NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) {
     
     if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
@@ -1576,8 +1553,8 @@ NDArray& NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong 
     //FIXME: bad, will crash!
     return result;
 }
-
-
+*/
+/*
 NDArray NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) const {
     
     if (rankOf() != 4 || t >= shapeOf()[0] || u >= shapeOf()[1] || v >= shapeOf()[2] || w >= shapeOf()[3])
@@ -1591,8 +1568,8 @@ NDArray NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v
     result.triggerAllocationFlag(false, true);
     return result;
 }
-
-
+*/
+/*
 NDArray& NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) {
     
     if (rankOf() != 4 || t >= shapeOf()[0] || u >= shapeOf()[1] || v >= shapeOf()[2] || w >= shapeOf()[3])
@@ -1607,9 +1584,9 @@ NDArray& NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong 
     result.triggerAllocationFlag(false, true);
     return result;
 }
-
+*/
 //////////////////////////////////////////////////////////////////////////
-
+/*
 NDArray NDArray::operator()(const Nd4jLong* idx) const {
 
     for(int i = 0; i < rankOf(); ++i)    
@@ -1623,9 +1600,9 @@ NDArray NDArray::operator()(const Nd4jLong* idx) const {
     result.triggerAllocationFlag(false, true);
     return result;
 }
-
+*/
 //////////////////////////////////////////////////////////////////////////
-
+/*
 NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
     for(int i = 0; i < rankOf(); ++i)    
@@ -1641,123 +1618,67 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
     // FIXME
     return result;
 }
+*/
 
-//////////////////////////////////////////////////////////////////////////
-// Return value from linear buffer
 
-NDArray NDArray::getScalar(const Nd4jLong i) const {
-    return (*this)(i);
-}
+    //////////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////////
-
-NDArray NDArray::getIndexedScalar(const Nd4jLong i) const {
-    return (*this)(i); 
-}
-
-//////////////////////////////////////////////////////////////////////////
-// Returns value from 2D matrix by coordinates/indexes         
-
-NDArray NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const {
-    return (*this)(i, j);
-}
-
-//////////////////////////////////////////////////////////////////////////
-// returns value from 3D tensor by coordinates        
-
-NDArray NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
-    return (*this)(i, j, k);
-}
-
-//////////////////////////////////////////////////////////////////////////
-
- void NDArray::putIndexedScalar(const Nd4jLong i, const NDArray value) {
-     (*this)(i) = value;
- }
-
-//////////////////////////////////////////////////////////////////////////
-// This method sets value in linear buffer to position i        
-
-void NDArray::putScalar(const Nd4jLong i, const double value) {
-    (*this)(i) = value;
-}
-
-//////////////////////////////////////////////////////////////////////////
-// This method sets value in 2D matrix to position i, j         
-
- void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const double value) {
-     (*this)(i,j) = value;
- }
-
-//////////////////////////////////////////////////////////////////////////
-// This method sets value in 3D matrix to position i,j,k        
-
- void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const double value) {
-     (*this)(i,j,k) = value;
- }
-
-//////////////////////////////////////////////////////////////////////////
-
-Nd4jLong  NDArray::memoryFootprint() {
-    Nd4jLong size = this->lengthOf() * this->sizeOfT();
-    size += shape::shapeInfoByteLength(this->rankOf());
-    return size;
-}
-
-//////////////////////////////////////////////////////////////////////////
-// still the definition of inline function must be in header file
-
-bool NDArray::isSameShape(const std::vector<Nd4jLong>& shape) const{    
-    if (this->isScalar() && shape.size() == 1 && shape[0] == 0)
-        return true;
-    if (this->rankOf() != (int) shape.size())
-        return false;
-    for (int e = 0; e < this->rankOf(); e++) {
-        if (this->shapeOf()[e] != shape.at(e) && shape.at(e) != -1)
-            return false;
+    Nd4jLong  NDArray::memoryFootprint() {
+        Nd4jLong size = this->lengthOf() * this->sizeOfT();
+        size += shape::shapeInfoByteLength(this->rankOf());
+        return size;
     }
-    return true;
-}
 
-//////////////////////////////////////////////////////////////////////////
- bool NDArray::isSameShape(const NDArray *other) const {
-    if (this->isEmpty() != other->isEmpty())
-        return false;
+    //////////////////////////////////////////////////////////////////////////
+    // still the definition of inline function must be in header file
+    bool NDArray::isSameShape(const std::vector<Nd4jLong>& shape) const{
+        if (this->isScalar() && shape.size() == 1 && shape[0] == 0)
+            return true;
+        if (this->rankOf() != (int) shape.size())
+            return false;
+        for (int e = 0; e < this->rankOf(); e++) {
+            if (this->shapeOf()[e] != shape.at(e) && shape.at(e) != -1)
+                return false;
+        }
+        return true;
+    }
 
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::isSameShape(const NDArray *other) const {
+        if (this->isEmpty() != other->isEmpty())
+            return false;
 
-    return isSameShape(std::vector<Nd4jLong>(other->_shapeInfo+1, other->_shapeInfo+1+other->_shapeInfo[0]));
-}
+        return isSameShape(std::vector<Nd4jLong>(other->_shapeInfo+1, other->_shapeInfo+1+other->_shapeInfo[0]));
+    }
 
-//////////////////////////////////////////////////////////////////////////
- bool NDArray::isSameShape(NDArray &other) const {
-    return isSameShape(&other);
-}
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::isSameShape(NDArray &other) const {
+        return isSameShape(&other);
+    }
 
-//////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::isSameShape(const std::initializer_list<Nd4jLong>& other) const {
+        return isSameShape(std::vector<Nd4jLong>(other));
+    }
 
- bool NDArray::isSameShape(const std::initializer_list<Nd4jLong>& other) const {
-    return isSameShape(std::vector<Nd4jLong>(other));
-}
+    //////////////////////////////////////////////////////////////////////////
+    // returns true if these two NDArrays have same _shapeInfo
+    // still the definition of inline function must be in header file
 
-//////////////////////////////////////////////////////////////////////////
-// returns true if these two NDArrays have same _shapeInfo
-// still the definition of inline function must be in header file
+    bool NDArray::isSameShapeStrict(const NDArray *other) const {
+        return shape::equalsStrict(_shapeInfo, other->_shapeInfo);
+    }
 
-bool NDArray::isSameShapeStrict(const NDArray *other) const {
-  return shape::equalsStrict(_shapeInfo, other->_shapeInfo);
-}
+    bool NDArray::isEmpty() const {
+        return ArrayOptions::arrayType(this->getShapeInfo()) == ArrayType::EMPTY;
+    }
 
-bool NDArray::isEmpty() const {
-    return ArrayOptions::arrayType(this->getShapeInfo()) == ArrayType::EMPTY;
-}
+    bool NDArray::operator ==(const NDArray &other) const {
+        if (!this->isSameShape(&other))
+            return false;
 
-bool NDArray::operator ==(const NDArray &other) const {
-    if (!this->isSameShape(&other))
-        return false;
-
-    return this->equalsTo(&other);
-}
-
+        return this->equalsTo(&other);
+    }
 }
 
 #endif

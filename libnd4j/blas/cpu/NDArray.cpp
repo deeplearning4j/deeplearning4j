@@ -92,7 +92,7 @@ namespace nd4j {
         // FIXME: we want to avoid put/get indexed scalars here really
 #pragma omp parallel for
         for (int e = 0; e < l; e++) {
-            result->putIndexedScalar(e, this->getScalar(e));
+            result->putIndexedScalar(e, this->getScalar<T>(e));
         }
 
         return result;
@@ -2365,6 +2365,17 @@ NDArray NDArray::transp() const {
 	    return true;
     }
 
+    template <typename T>
+    std::vector<T> NDArray::asVectorT() {
+        std::vector<T> result(this->lengthOf());
+
+#pragma omp parallel for simd
+        for (int e = 0; e < this->lengthOf(); e++)
+            result[e] = this->getIndexedScalar<T>(e);
+
+        return result;
+    }
+
     //////////////////////////////////////////////////////////////////////////
     // check whether array is identity matrix
     bool NDArray::isIdentityMatrix() {
@@ -2401,6 +2412,60 @@ NDArray NDArray::transp() const {
         delete trMul;
     
         return result;
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+// Return value from linear buffer
+    template <typename T>
+    T NDArray::getScalar(const Nd4jLong i) const {
+        return (*this)(i);
+    }
+
+//////////////////////////////////////////////////////////////////////////
+    template <typename T>
+    T NDArray::getIndexedScalar(const Nd4jLong i) const {
+        return (*this)(i);
+    }
+
+//////////////////////////////////////////////////////////////////////////
+// Returns value from 2D matrix by coordinates/indexes
+    template <typename T>
+    T NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const {
+        return (*this)(i, j);
+    }
+
+//////////////////////////////////////////////////////////////////////////
+// returns value from 3D tensor by coordinates
+    template <typename T>
+    T NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
+        return (*this)(i, j, k);
+    }
+
+//////////////////////////////////////////////////////////////////////////
+    void NDArray::putIndexedScalar(const Nd4jLong i, const NDArray value) {
+        (*this)(i) = value;
+    }
+
+//////////////////////////////////////////////////////////////////////////
+// This method sets value in linear buffer to position i
+    template <typename T>
+    void NDArray::putScalar(const Nd4jLong i, const T value) {
+        (*this)(i) = value;
+    }
+
+//////////////////////////////////////////////////////////////////////////
+// This method sets value in 2D matrix to position i, j
+
+    template <typename T>
+    void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const T value) {
+        (*this)(i,j) = value;
+    }
+
+//////////////////////////////////////////////////////////////////////////
+// This method sets value in 3D matrix to position i,j,k
+    template <typename T>
+    void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const T value) {
+        (*this)(i,j,k) = value;
     }
 
     ////////////////////////////////////////////////////////////////////////
