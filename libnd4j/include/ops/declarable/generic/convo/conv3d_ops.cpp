@@ -28,17 +28,16 @@ namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(conv3d, 2, 1, false, 0, 7) {
             // cubic convo
-
-            NDArray<T> *input = INPUT_VARIABLE(0);
-            NDArray<T> *weights = INPUT_VARIABLE(1);
-            NDArray<T> *bias = nullptr;
+            auto input = INPUT_VARIABLE(0);
+            auto weights = INPUT_VARIABLE(1);
+            NDArray *bias = nullptr;
             if (block.width() == 3)
                 bias = INPUT_VARIABLE(2);
 
             if (input->rankOf() != 5)
                 return ND4J_STATUS_BAD_DIMENSIONS;
 
-            NDArray<T>* output = OUTPUT_VARIABLE(0);                
+            auto output = OUTPUT_VARIABLE(0);
 
             bool biasUsed = INT_ARG(0) != 0 && bias != nullptr;
             // TODO: change width/height order  height/width
@@ -52,8 +51,8 @@ namespace nd4j {
 
             REQUIRE_TRUE(!(pT != 0 || pW != 0 || pH != 0), 0, "Padding isn't supported on CPU backend O_o");
             
-            std::unique_ptr<ResultSet<T>> batchIn(input->allExamples());
-            std::unique_ptr<ResultSet<T>> batchOut(output->allExamples());
+            std::unique_ptr<ResultSet> batchIn(input->allExamples());
+            std::unique_ptr<ResultSet> batchOut(output->allExamples());
 
             // FIXME: helpers should be used here
             for (int e = 0; e < batchIn->size(); e++) {
@@ -61,7 +60,7 @@ namespace nd4j {
                 auto tadOut = batchOut->at(e);
 
                 if (biasUsed) {
-                    std::unique_ptr<ResultSet<T>> outputBlock(tadOut->allExamples());
+                    std::unique_ptr<ResultSet> outputBlock(tadOut->allExamples());
                     for (int i = 0; i < bias->lengthOf(); i++) {
                         auto oB = outputBlock->at(i);
                         oB->assign(bias->getScalar(i));
@@ -125,7 +124,7 @@ namespace nd4j {
         //////////////////////////////////////////////////////////////////////////
         CONFIGURABLE_OP_IMPL(conv3d_bp, 3, 1, false, 0, 7) {
 
-            return ND4J_STATUS_OK;
+            return Status::THROW("CONV3D_BP: Not implemented yet");
         }
     }
 }

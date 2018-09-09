@@ -30,12 +30,11 @@ namespace ops  {
 
 
 CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 4) {
+    auto input   = INPUT_VARIABLE(0);                                    // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW)
+    auto weights = INPUT_VARIABLE(1);                                    // [kW, iC, oC] (NWC) or [oC, iC, kW] (NCW)
+    auto bias    = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
 
-    NDArray<T> *input   = INPUT_VARIABLE(0);                                    // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW)
-    NDArray<T> *weights = INPUT_VARIABLE(1);                                    // [kW, iC, oC] (NWC) or [oC, iC, kW] (NCW)
-    NDArray<T> *bias    = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
-
-    NDArray<T> *output  = OUTPUT_VARIABLE(0);                                   // [bS, oW, oC] (NWC) or [bS, oC, oW] (NCW)
+    auto output  = OUTPUT_VARIABLE(0);                                   // [bS, oW, oC] (NWC) or [bS, oC, oW] (NCW)
 
     int kW = INT_ARG(0);                                                        // filter(kernel) width
     int sW = INT_ARG(1);                                                        // strides width
@@ -77,9 +76,9 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 4) {
         reshapeForWeights = {weights->sizeAt(0),weights->sizeAt(1),1, weights->sizeAt(2)};              // [oC, iC, kW] -> [oC, iC, 1, kW]
     }
 
-    NDArray<T>* inputReshaped   = input  ->reshape(input->ordering(),   reshapeForInput);
-    NDArray<T>* outputReshaped  = output ->reshape(output->ordering(),  reshapeForOutput);
-    NDArray<T>* weightsReshaped = weights->reshape(weights->ordering(), reshapeForWeights);
+    auto inputReshaped   = input  ->reshape(input->ordering(),   reshapeForInput);
+    auto outputReshaped  = output ->reshape(output->ordering(),  reshapeForOutput);
+    auto weightsReshaped = weights->reshape(weights->ordering(), reshapeForWeights);
 
     ConvolutionUtils<T>::conv2d({inputReshaped, weightsReshaped, bias}, outputReshaped, {1,kW,  1,sW,  0,pW,  1,1,  isSameMode,  isNCW});
 
@@ -120,8 +119,8 @@ DECLARE_SHAPE_FN(conv1d) {
     int iC = inputShapeInfo[indIOioC+1];                   // input channels
     int oC = weightsShapeInfo[indWoC+1];                 // output channels
 
-    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({iC,oC,kW,  1,indWoC,indWkW}));
-    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(weightsShapeInfo), 0, "CUSTOM CONV1D OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weightsShapeInfo).c_str());
+    std::string expectedWeightsShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({iC,oC,kW,  1,indWoC,indWkW}));
+    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weightsShapeInfo), 0, "CUSTOM CONV1D OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weightsShapeInfo).c_str());
     if (biasShapeInfo)
         REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0, "CUSTOM CONV1D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));
 
@@ -151,15 +150,14 @@ DECLARE_SHAPE_FN(conv1d) {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 4) {
+    auto input   = INPUT_VARIABLE(0);                                                // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW)
+    auto weights = INPUT_VARIABLE(1);                                                // [kW, iC, oC] (NWC) or [oC, iC, kW] (NCW)
+    auto bias    = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]
+    auto gradO   = block.width() > 3 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(2);        // [bS, oW, oC] (NWC) or [bS, oC, oW] (NCW), epsilon_next
 
-    NDArray<T> *input   = INPUT_VARIABLE(0);                                                // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW)
-    NDArray<T> *weights = INPUT_VARIABLE(1);                                                // [kW, iC, oC] (NWC) or [oC, iC, kW] (NCW)
-    NDArray<T> *bias    = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]
-    NDArray<T> *gradO   = block.width() > 3 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(2);        // [bS, oW, oC] (NWC) or [bS, oC, oW] (NCW), epsilon_next
-
-    NDArray<T> *gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW), epsilon
-    NDArray<T> *gradW = OUTPUT_VARIABLE(1);                                                 // [kW, iC, oC] (NWC) or [oC, iC, kW] (NCW)
-    NDArray<T> *gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
+    auto gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW), epsilon
+    auto gradW = OUTPUT_VARIABLE(1);                                                 // [kW, iC, oC] (NWC) or [oC, iC, kW] (NCW)
+    auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
 
     int kW = INT_ARG(0);                                                        // filter(kernel) width
     int sW = INT_ARG(1);                                                        // strides width
@@ -187,10 +185,10 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 4) {
     int trueoH, trueoW;          // true output height, width
     ConvolutionUtils<T>::calcOutSizePool2D(trueoH,trueoW, 1,kW, 1,sW, 0,pW, 1,1, 1,iW, isSameMode);
 
-    std::string expectedGradOShape   = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({bS,oC,trueoW,  0,indIOioC,indIiW}));
-    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({oC,iC,kW,  indWoC,1,indWkW}));
-    REQUIRE_TRUE(expectedGradOShape == ShapeUtils<T>::shapeAsString(gradO), 0,  "CUSTOM CONV1D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils<T>::shapeAsString(gradO).c_str());
-    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(weights), 0, "CUSTOM CONV1D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weights).c_str());
+    std::string expectedGradOShape   = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({bS,oC,trueoW,  0,indIOioC,indIiW}));
+    std::string expectedWeightsShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({oC,iC,kW,  indWoC,1,indWkW}));
+    REQUIRE_TRUE(expectedGradOShape == ShapeUtils::shapeAsString(gradO), 0,  "CUSTOM CONV1D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils<T>::shapeAsString(gradO).c_str());
+    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weights), 0, "CUSTOM CONV1D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weights).c_str());
     if(bias)
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM CONV1D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
 
@@ -206,11 +204,11 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 4) {
         reshapeForWeights = {weights->sizeAt(0),weights->sizeAt(1), 1, weights->sizeAt(2)};             // [oC, iC, kW] -> [oC, iC, 1, kW]
     }
 
-    NDArray<T>* inputReshaped   = input  ->reshape(input->ordering(),  reshapeForInput);
-    NDArray<T>* gradIReshaped   = gradI  ->reshape(gradI->ordering(),  reshapeForInput);
-    NDArray<T>* gradOReshaped   = gradO  ->reshape(gradO->ordering(),  reshapeForGradO);
-    NDArray<T>* weightsReshaped = weights->reshape(weights->ordering(),reshapeForWeights);
-    NDArray<T>* gradWReshaped   = gradW  ->reshape(gradW->ordering(),  reshapeForWeights);
+    auto inputReshaped   = input  ->reshape(input->ordering(),  reshapeForInput);
+    auto gradIReshaped   = gradI  ->reshape(gradI->ordering(),  reshapeForInput);
+    auto gradOReshaped   = gradO  ->reshape(gradO->ordering(),  reshapeForGradO);
+    auto weightsReshaped = weights->reshape(weights->ordering(),reshapeForWeights);
+    auto gradWReshaped   = gradW  ->reshape(gradW->ordering(),  reshapeForWeights);
 
     ConvolutionUtils<T>::conv2dBP({inputReshaped, weightsReshaped, bias, gradOReshaped}, {gradIReshaped, gradWReshaped, gradB}, {1,kW,  1,sW,  0,pW,  1,1,  isSameMode,  isNCW});
 
@@ -258,10 +256,10 @@ DECLARE_SHAPE_FN(conv1d_bp) {
     int trueoH, trueoW;          // true output height, width
     ConvolutionUtils<T>::calcOutSizePool2D(trueoH,trueoW, 1,kW, 1,sW, 0,pW, 1,1, 1,iW, isSameMode);
 
-    std::string expectedGradOShape   = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({bS,oC,trueoW,  0,indIOioC,indIiW}));
-    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({oC,iC,kW,  indWoC,1,indWkW}));
-    REQUIRE_TRUE(expectedGradOShape == ShapeUtils<T>::shapeAsString(gradOShapeInfo), 0,  "CUSTOM CONV1D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils<T>::shapeAsString(gradOShapeInfo).c_str());
-    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(weightsShapeInfo), 0, "CUSTOM CONV1D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weightsShapeInfo).c_str());
+    std::string expectedGradOShape   = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({bS,oC,trueoW,  0,indIOioC,indIiW}));
+    std::string expectedWeightsShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({oC,iC,kW,  indWoC,1,indWkW}));
+    REQUIRE_TRUE(expectedGradOShape == ShapeUtils::shapeAsString(gradOShapeInfo), 0,  "CUSTOM CONV1D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils<T>::shapeAsString(gradOShapeInfo).c_str());
+    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weightsShapeInfo), 0, "CUSTOM CONV1D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weightsShapeInfo).c_str());
     if(biasShapeInfo)
         REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0, "CUSTOM CONV1D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));
 
