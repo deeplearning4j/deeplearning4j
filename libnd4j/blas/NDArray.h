@@ -58,13 +58,22 @@ namespace nd4j {
          * @param value
          */
         template <typename T, typename Y>
-        void templatedSet(void *buffer, const Nd4jLong *indices, Y value);
+        void templatedSet(void *buffer, const Nd4jLong *indices, void *value);
+
+        template <typename T, typename Y>
+        void templatedSet(void *buffer, const Nd4jLong xOffset, void *value);
 
         template <typename T>
         void templatedSwap(void *xBuffer, void *yBuffer, Nd4jLong length);
 
         template <typename T>
         void templatedAssign(void *xBuffer, Nd4jLong xOffset, void *yBuffer, Nd4jLong yOffset) const;
+
+        template <typename T, typename R>
+        R templatedGet(void *buffer, Nd4jLong index) const;
+
+        template <typename T, typename R>
+        R templatedGet(void *buffer, Nd4jLong *indices) const;
     protected:
 
        /**
@@ -1146,6 +1155,12 @@ namespace nd4j {
         */
         template <typename T>
         T getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
+
+        /**
+        *  returns element with given indexes from DD array
+        */
+        template <typename T>
+        T getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
         
         /** 
         *  assigns given scalar to array element by given index, takes into account offset between elements (element-wise-stride)
@@ -1155,7 +1170,7 @@ namespace nd4j {
         template <typename T>
         void putIndexedScalar(const Nd4jLong i, const T value);
 
-        void putIndexedScalar(const Nd4jLong i, const NDArray value);
+        void putIndexedScalar(const Nd4jLong i, const NDArray& value);
 
         /** 
         *  assigns given scalar to array element by given index, regards array buffer as linear

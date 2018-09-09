@@ -819,7 +819,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
                 res->_shapeInfo = shape::shapeBuffer(rank, shapeOf);
 
             res->_length = shape::length(res->_shapeInfo);
-            res->_buffer =  new T[this->_length];
+            res->_buffer =  new int8_t[res->_length * res->sizeOfT()];
         } else {
             res->_shapeInfo = reinterpret_cast<Nd4jLong*>(res->_workspace->allocateBytes(shape::shapeInfoByteLength(rank)));
 
@@ -859,7 +859,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
             shapeOf[cnt++] = item;
 
         _workspace = workspace;
-        _buffer = buffer;
+        _buffer = reinterpret_cast<int8_t *>(buffer);
 
         if (workspace == nullptr) {
             if (order == 'f')
@@ -1070,11 +1070,20 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
     template <typename T, typename Y>
-    void NDArray::templatedSet(void *buffer, const Nd4jLong *indices, Y value) {
+    void NDArray::templatedSet(void *buffer, const Nd4jLong *indices, void *value) {
         auto t = reinterpret_cast<T *>(buffer);
+        auto y = *(reinterpret_cast<Y *>(value));
 
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), indices, rankOf());
-        t[xOffset] = static_cast<T>(value);
+        t[xOffset] = static_cast<T>(y);
+    }
+
+    template <typename T, typename Y>
+    void NDArray::templatedSet(void *buffer, const Nd4jLong offset, void *value) {
+        auto t = reinterpret_cast<T *>(buffer);
+        auto y = *(reinterpret_cast<Y *>(value));
+
+        t[offset] = static_cast<T>(y);
     }
 
     template <typename T>
@@ -1101,7 +1110,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
 
-            NativeOpExcutioner::execReduce(op, this->getBuffer(), this->getShapeInfo(), nullptr, result->getBuffer(), result->getShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets)
+            NativeOpExcutioner::execReduce(op, this->getBuffer(), this->getShapeInfo(), nullptr, result->getBuffer(), result->getShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
         }
 
         return result;
@@ -1125,7 +1134,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
 
-            NativeOpExcutioner::execReduce(op, this->getBuffer(), this->getShapeInfo(), nullptr, result.getBuffer(), result.getShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets)
+            NativeOpExcutioner::execReduce(op, this->getBuffer(), this->getShapeInfo(), nullptr, result.getBuffer(), result.getShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
             /*
             functions::reduce::ReduceFunction<T>::template exec<OpName>(_buffer, _shapeInfo, nullptr, result._buffer,
                                                                         result._shapeInfo, copy.data(), copy.size(),
@@ -1157,7 +1166,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
 
-            NativeOpExcutioner::execReduce(op, this->getBuffer(), this->getShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets)
+            NativeOpExcutioner::execReduce(op, this->getBuffer(), this->getShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
             /*
             functions::reduce::ReduceFunction<T>::template exec<OpName>(_buffer, _shapeInfo, extras, target->_buffer,
                                                                         target->_shapeInfo, copy.data(), copy.size(),
@@ -2236,7 +2245,7 @@ NDArray NDArray::transp() const {
             return;
         }
         if (other->isScalar()) {
-            this->template applyScalar<OpName>(other->getScalar(0), target, extraArgs);
+            this->applyScalar(op, *other, target, extraArgs);
             return;
         }
 
@@ -2495,39 +2504,75 @@ NDArray NDArray::transp() const {
 // Return value from linear buffer
     template <typename T>
     T NDArray::getScalar(const Nd4jLong i) const {
-        return (*this)(i);
+        return getIndexedScalar<T>(i);
     }
 
 //////////////////////////////////////////////////////////////////////////
     template <typename T>
     T NDArray::getIndexedScalar(const Nd4jLong i) const {
-        return (*this)(i);
+        auto xType = this->dataType();
+        // return (*this)(i);
+        BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, i), LIBND4J_TYPES);
     }
 
 //////////////////////////////////////////////////////////////////////////
 // Returns value from 2D matrix by coordinates/indexes
     template <typename T>
     T NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const {
-        return (*this)(i, j);
+        if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
+            throw std::invalid_argument("NDArray::operator(i,j): one of input indexes is out of array length or rank!=2 !");
+
+        auto xType = this->dataType();
+        Nd4jLong coords[2] = {i, j};
+        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+        //return (*this)(i, j);
+        BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
     }
 
 //////////////////////////////////////////////////////////////////////////
 // returns value from 3D tensor by coordinates
     template <typename T>
     T NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
-        return (*this)(i, j, k);
+        //return (*this)(i, j, k);
+        if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || j >= shapeOf()[2])
+            throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=3 !");
+
+        auto xType = this->dataType();
+        Nd4jLong coords[3] = {i, j, k};
+        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+        BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
+    }
+
+    // returns value from 3D tensor by coordinates
+    template <typename T>
+    T NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const {
+        //return (*this)(i, j, k);
+        if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || j >= shapeOf()[2] || l >= shapeOf()[3])
+            throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=4 !");
+
+        auto xType = this->dataType();
+        Nd4jLong coords[4] = {i, j, k, l};
+        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+        BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
     }
 
 //////////////////////////////////////////////////////////////////////////
-    void NDArray::putIndexedScalar(const Nd4jLong i, const NDArray value) {
-        (*this)(i) = value;
+    void NDArray::putIndexedScalar(const Nd4jLong i, const NDArray& value) {
+        if (!value.isScalar())
+            throw std::invalid_argument("NDArray::putIndexedScalar: value must be scalar (all out of sudden!)");
+
+        auto xType = this->dataType();
+        auto yType = value.dataType();
+        BUILD_DOUBLE_SELECTOR(xType, yType, templatedSet, (this->_buffer, i, value._buffer), LIBND4J_TYPES, LIBND4J_TYPES);
     }
 
 //////////////////////////////////////////////////////////////////////////
 // This method sets value in linear buffer to position i
     template <typename T>
     void NDArray::putScalar(const Nd4jLong i, const T value) {
-        (*this)(i) = value;
+        auto xType = this->dataType();
+
+        BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, i, &value), LIBND4J_TYPES);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2535,14 +2580,23 @@ NDArray NDArray::transp() const {
 
     template <typename T>
     void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const T value) {
-        (*this)(i,j) = value;
+        //(*this)(i,j) = value;
+
+        auto xType = this->dataType();
+        Nd4jLong coords[2] = {i, j};
+        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+        BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, xOffset, &value), LIBND4J_TYPES);
     }
 
 //////////////////////////////////////////////////////////////////////////
 // This method sets value in 3D matrix to position i,j,k
     template <typename T>
     void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const T value) {
-        (*this)(i,j,k) = value;
+        //(*this)(i,j,k) = value;
+        auto xType = this->dataType();
+        Nd4jLong coords[3] = {i, j, k};
+        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+        BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, xOffset, &value), LIBND4J_TYPES);
     }
 
     ////////////////////////////////////////////////////////////////////////
