@@ -48,8 +48,25 @@ namespace nd4j {
     */
 
     class ND4J_EXPORT NDArray {
-    
+    private:
+        /**
+         * This method applies given value to the buffer, wrt templates
+         * @tparam T
+         * @tparam Y
+         * @param buffer
+         * @param indices
+         * @param value
+         */
+        template <typename T, typename Y>
+        void templatedSet(void *buffer, const Nd4jLong *indices, Y value);
+
+        template <typename T>
+        void templatedSwap(void *xBuffer, void *yBuffer, Nd4jLong length);
+
+        template <typename T>
+        void templatedAssign(void *xBuffer, Nd4jLong xOffset, void *yBuffer, Nd4jLong yOffset) const;
     protected:
+
        /**
        *  if true then array doesn't own buffer and simply points to another's buffer
        */                  
@@ -95,20 +112,6 @@ namespace nd4j {
         template<typename T>
         std::string toStringValue(T value);
 
-        /**
-         * This method applies given value to the buffer, wrt templates
-         * @tparam T
-         * @tparam Y
-         * @param buffer
-         * @param indices
-         * @param value
-         */
-        template <typename T, typename Y>
-        void templatedSet(void *buffer, const Nd4jLong *indices, Y value);
-
-
-        template <typename T>
-        void templatedSwap(void *xBuffer, void *yBuffer, Nd4jLong length);
     public:
         template <typename T>
         static NDArray* empty(nd4j::memory::Workspace* workspace = nullptr);
@@ -1208,6 +1211,30 @@ namespace nd4j {
         *  returns true if array is scalar
         */
         FORCEINLINE bool isScalar() const;
+
+        /**
+         * This method returns true if value is from Integer space
+         * @return
+         */
+        bool isZ() const;
+
+        /**
+         * This method returns true if array is from Real space
+         * @return
+         */
+        bool isR() const;
+
+        /**
+         * This method returns true if array is from Boolean space
+         * @return
+         */
+        bool isB() const;
+
+        /**
+         * This method returns true if array contains Complex numbers
+         * @return
+         */
+        bool isC() const;
 
         /**
         *  inline accessing operator for matrix, i - absolute index        

@@ -145,6 +145,33 @@ namespace nd4j {
         return res;
     }
 
+    template <typename T>
+    void NDArray::templatedAssign(void *xBuffer, Nd4jLong xOffset, void *yBuffer, Nd4jLong yOffset) const {
+        auto x = reinterpret_cast<T *>(xBuffer);
+        auto y = reinterpret_cast<T *>(yBuffer);
+
+        x[xOffset] = y[yOffset];
+    }
+
+    bool NDArray::isC() const {
+        // TODO: this method must be implemented once we add support for complex numbers
+        return false;
+    }
+
+    bool NDArray::isR() const {
+        auto xType = ArrayOptions::dataType(this->_shapeInfo);
+        return xType == DataType_FLOAT || xType == DataType_HALF || xType == DataType_DOUBLE || xType == DataType_FLOAT8;
+    }
+
+    bool NDArray::isZ() const {
+        // TODO: decide if we really want to exclude Bool here
+        return !isC() && !isR() && !isB();
+    }
+
+    bool NDArray::isB() const {
+        return ArrayOptions::dataType(this->_shapeInfo) == DataType_BOOL;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     template <typename T>
     NDArray* NDArray::scalar(T scalar, nd4j::memory::Workspace* workspace) {
@@ -803,7 +830,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
             res->_length = shape::length(res->_shapeInfo);
 
-            res->_buffer = res->_workspace->allocateBytes(res->_length * res->sizeOfT());
+            res->_buffer = reinterpret_cast<int8_t *>(res->_workspace->allocateBytes(res->_length * res->sizeOfT()));
         }
 
         memset(res->_buffer, 0, res->sizeOfT() * res->_length);
@@ -1735,9 +1762,9 @@ NDArray NDArray::transp() const {
     Nd4jLong NDArray::argMax(std::initializer_list<int> dimensions) {
         if (dimensions.size() == 0) {
             Nd4jLong max = 0;
-            T mv = -MAX_FLOAT;
+            auto mv = -DataTypeUtils::max<float>();
             for (Nd4jLong e = 0; e < this->lengthOf(); e++) {
-                T val = this->getScalar(e);
+                auto val = this->getScalar<float>(e);
                 if (mv < val) {
                     mv = val;
                     max = e;
@@ -1747,7 +1774,7 @@ NDArray NDArray::transp() const {
             return max;
         } else
             throw std::runtime_error("Not implemented yet");
-}
+    }
 
     //////////////////////////////////////////////////////////////////////////
     // create new array with corresponding order and shape, new array will point to the same _buffer as this array
@@ -1777,58 +1804,62 @@ NDArray NDArray::transp() const {
     //////////////////////////////////////////////////////////////////////////
     // change an array by repeating it the number of times given by reps.
     NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
-    
-    int dim = reps.size();  
-    int product = 1;
-    for(const auto& item : reps)
-        product *= item;
-    if(product == 0)
-        throw std::runtime_error("NDArray::tile method: one of the elements in reps array is zero !");
+        int dim = reps.size();
+        int product = 1;
+        for(const auto& item : reps)
+            product *= item;
+        if(product == 0)
+            throw std::runtime_error("NDArray::tile method: one of the elements in reps array is zero !");
 
-    int rankOld = rankOf();
-    int diff = rankOld - dim;
-    if(product==1) {        // in this case 2 possibilities are present: just reshape or nothing to do
-        NDArray result(*this);
-        if(diff < 0) {      // reshape to higher dimension          
-            std::vector<Nd4jLong> shapeNew = reps;               // need to have unities at first "diff" positions of new shape
-            memcpy(&shapeNew[-diff], result._shapeInfo+1, rankOld * sizeof(Nd4jLong));   // put old shape numbers at rest of positions
-            result.reshapei(ordering(), shapeNew);
-        }       
-        return result;             // nothing to do, if diff >= 0 -> identity tile 
-    }   
-    
-    // evaluate shapeInfo for resulting array
-    auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, _workspace);
-    // create new buffer, in any case the memory amount new buffer points to is bigger then those for old _buffer   
-    int8_t * newBuff = nullptr;
-    ALLOCATE(newBuff, _workspace, shape::length(newShapeInfo), int8_t);
-    // assign new shape and new buffer to resulting array
-    NDArray result(newBuff, newShapeInfo, _workspace);
-    result._isShapeAlloc = true;
-    result._isBuffAlloc = true;
-
-    // fill newBuff, loop through all elements of newBuff 
-    // looping through _buffer goes automatically by means of getSubArrayIndex applying
-    const auto resultLen = result.lengthOf();
-    if(result.ordering() == 'c') {           //  ews == 1 always here
-#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for(int i=0;  i<resultLen; ++i)
-            newBuff[i] = (*this)(shape::subArrayIndex(newShapeInfo, _shapeInfo, i));
-    }
-    else {
-        Nd4jLong idx[MAX_RANK];
-        auto resultShape   = result.shapeOf();
-        auto resultStrides = result.stridesOf();
-        const auto resultRank = result.rankOf();
-#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(idx)
-        for(int i=0;  i<resultLen; ++i) {
-            shape::ind2subC(resultRank, resultShape, i, resultLen, idx);
-            newBuff[ shape::getOffset(0, resultShape, resultStrides, idx, resultRank) ] = (*this)(shape::subArrayIndex(newShapeInfo, _shapeInfo, i));
+        int rankOld = rankOf();
+        int diff = rankOld - dim;
+        if(product==1) {        // in this case 2 possibilities are present: just reshape or nothing to do
+            NDArray result(*this);
+            if(diff < 0) {      // reshape to higher dimension
+                std::vector<Nd4jLong> shapeNew = reps;               // need to have unities at first "diff" positions of new shape
+                memcpy(&shapeNew[-diff], result._shapeInfo+1, rankOld * sizeof(Nd4jLong));   // put old shape numbers at rest of positions
+                result.reshapei(ordering(), shapeNew);
+            }
+            return result;             // nothing to do, if diff >= 0 -> identity tile
         }
-    }
+    
+        // evaluate shapeInfo for resulting array
+        auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, _workspace);
+        // create new buffer, in any case the memory amount new buffer points to is bigger then those for old _buffer
+        int8_t * newBuff = nullptr;
+        ALLOCATE(newBuff, _workspace, shape::length(newShapeInfo), int8_t);
+        // assign new shape and new buffer to resulting array
+        NDArray result(newBuff, newShapeInfo, _workspace);
+        result._isShapeAlloc = true;
+        result._isBuffAlloc = true;
+
+        // fill newBuff, loop through all elements of newBuff
+        // looping through _buffer goes automatically by means of getSubArrayIndex applying
+        const auto resultLen = result.lengthOf();
+        auto xType = this->dataType();
+        if(result.ordering() == 'c') {           //  ews == 1 always here
+#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+            for(Nd4jLong i=0;  i<resultLen; ++i) {
+                auto yOffset = shape::subArrayIndex(newShapeInfo, _shapeInfo, i);
+                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, i, this->_buffer, yOffset), LIBND4J_TYPES);
+            }
+        }
+        else {
+            Nd4jLong idx[MAX_RANK];
+            auto resultShape   = result.shapeOf();
+            auto resultStrides = result.stridesOf();
+            const auto resultRank = result.rankOf();
+#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(idx)
+            for(int i=0;  i<resultLen; ++i) {
+                shape::ind2subC(resultRank, resultShape, i, resultLen, idx);
+                auto xOffset = shape::getOffset(0, resultShape, resultStrides, idx, resultRank);
+                auto yOffset = shape::subArrayIndex(newShapeInfo, _shapeInfo, i);
+                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, xOffset, this->_buffer, yOffset), LIBND4J_TYPES);
+            }
+        }
               
-    return result;
-}
+        return result;
+    }
 
     //////////////////////////////////////////////////////////////////////////
     // change an array by repeating it the number of times given by reps.
@@ -1847,15 +1878,20 @@ NDArray NDArray::transp() const {
         const int ews = target.ews();
         const int targetLen = target.lengthOf();
         auto targetBuff = target.getBuffer();
+        auto xType = this->dataType();
         if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-            for(Nd4jLong i=0;  i<targetLen; ++i)
-                targetBuff[i] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
+            for(Nd4jLong i=0;  i<targetLen; ++i) {
+                auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
+                BUILD_SINGLE_SELECTOR(xType, templatedAssign, (targetBuff, i, this->_buffer, yOffset), LIBND4J_TYPES);
+            }
         }
         else if(target.ordering() == 'c' && ews > 1) {
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-            for(int i=0;  i<targetLen; ++i)
-                targetBuff[i*ews] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
+            for(int i=0;  i<targetLen; ++i) {
+                auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
+                BUILD_SINGLE_SELECTOR(xType, templatedAssign, (targetBuff, i * ews, this->_buffer, yOffset), LIBND4J_TYPES);
+            }
         }
         else {
             Nd4jLong idx[MAX_RANK];
@@ -1865,7 +1901,9 @@ NDArray NDArray::transp() const {
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(idx)
             for(int i=0;  i<targetLen; ++i) {
                 shape::ind2subC(targetRank, targetShape, i, targetLen, idx);
-                targetBuff[ shape::getOffset(0, targetShape, targetStrides, idx, targetRank) ] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
+                auto xOffset = shape::getOffset(0, targetShape, targetStrides, idx, targetRank);
+                auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
+                BUILD_SINGLE_SELECTOR(xType, templatedAssign, (targetBuff, xOffset, this->_buffer, yOffset), LIBND4J_TYPES);
             }
         }
     }
@@ -1883,15 +1921,20 @@ NDArray NDArray::transp() const {
         const auto ews = target.ews();
         const auto targetLen = target.lengthOf();
         auto targetBuff = target.getBuffer();
+        auto xType = this->dataType();
         if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-            for(int i=0;  i<targetLen; ++i)
-                targetBuff[i] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
+            for (int i = 0; i < targetLen; ++i) {
+                auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
+                BUILD_SINGLE_SELECTOR(xType, templatedAssign, (targetBuff, i, this->_buffer, yOffset), LIBND4J_TYPES);
+            }
         }
         else if(target.ordering() == 'c' && ews > 1) {
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-            for(int i=0;  i<targetLen; ++i)
-                targetBuff[i*ews] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
+            for(int i=0;  i<targetLen; ++i) {
+                auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
+                BUILD_SINGLE_SELECTOR(xType, templatedAssign, (targetBuff, i * ews, this->_buffer, yOffset), LIBND4J_TYPES);
+            }
         }
         else {
             Nd4jLong idx[MAX_RANK];
@@ -1901,7 +1944,9 @@ NDArray NDArray::transp() const {
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(idx)
             for(int i=0;  i<targetLen; ++i) {
                 shape::ind2subC(targetRank, targetShape, i, targetLen, idx);
-                targetBuff[ shape::getOffset(0, targetShape, targetStrides, idx, targetRank) ] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
+                auto xOffset = shape::getOffset(0, targetShape, targetStrides, idx, targetRank);
+                auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
+                BUILD_SINGLE_SELECTOR(xType, templatedAssign, (targetBuff, xOffset, this->_buffer, yOffset), LIBND4J_TYPES);
             }
         }
     }
@@ -1921,7 +1966,7 @@ NDArray NDArray::transp() const {
     //////////////////////////////////////////////////////////////////////////
     // create new  array by repeating it the number of times given by reps
     NDArray* NDArray::repeat(int dimension, const std::vector<Nd4jLong>& repeats) const {
-        auto outShape = ShapeUtils<T>::evalRepeatShape(dimension, repeats, *this);
+        auto outShape = ShapeUtils::evalRepeatShape(dimension, repeats, *this);
     
         // the size of outShape == rank
         int rank = rankOf();            // = outShape.size()
@@ -1938,10 +1983,19 @@ NDArray NDArray::transp() const {
             auto thisTensor = this->tensorAlongDimension(i, {dimension});
             auto retTensor = ret->tensorAlongDimension(i, {dimension});
             int retIdx = 0;
-            for (int k = 0; k < thisTensor->lengthOf(); k++) {
-                T s = thisTensor->getIndexedScalar(k);
-                for (int j = 0; j < repeatDelta; j++) {
-                    retTensor->putIndexedScalar(retIdx++, s);
+            if (isR()) {
+                for (int k = 0; k < thisTensor->lengthOf(); k++) {
+                    auto s = thisTensor->getIndexedScalar<double>(k);
+                    for (int j = 0; j < repeatDelta; j++) {
+                        retTensor->putIndexedScalar<double>(retIdx++, s);
+                    }
+                }
+            } else {
+                for (int k = 0; k < thisTensor->lengthOf(); k++) {
+                    auto s = thisTensor->getIndexedScalar<Nd4jLong>(k);
+                    for (int j = 0; j < repeatDelta; j++) {
+                        retTensor->putIndexedScalar<Nd4jLong>(retIdx++, s);
+                    }
                 }
             }
 
@@ -1964,10 +2018,19 @@ NDArray NDArray::transp() const {
             auto thisTensor = this->tensorAlongDimension(i, {dimension});
             auto retTensor = target.tensorAlongDimension(i, {dimension});
             int retIdx = 0;
-            for (int k = 0; k < thisTensor->lengthOf(); k++) {
-                T s = thisTensor->getIndexedScalar(k);
-                for (int j = 0; j < repeatDelta; j++) {
-                    retTensor->putIndexedScalar(retIdx++, s);
+            if (isR()) {
+                for (int k = 0; k < thisTensor->lengthOf(); k++) {
+                    auto s = thisTensor->getIndexedScalar<double>(k);
+                    for (int j = 0; j < repeatDelta; j++) {
+                        retTensor->putIndexedScalar<double>(retIdx++, s);
+                    }
+                }
+            } else {
+                for (int k = 0; k < thisTensor->lengthOf(); k++) {
+                    auto s = thisTensor->getIndexedScalar<Nd4jLong>(k);
+                    for (int j = 0; j < repeatDelta; j++) {
+                        retTensor->putIndexedScalar<Nd4jLong>(retIdx++, s);
+                    }
                 }
             }
 
@@ -3603,8 +3666,9 @@ NDArray NDArray::transp() const {
         return allTensorsAlongDimension(dimensions);
     }
 
-    BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, void *value), LIBND4J_TYPES, LIBND4J_TYPES);
+    //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);
 
+    BUILD_SINGLE_TEMPLATE(template void NDArray::templatedAssign, (void *xBuffer, Nd4jLong xOffset, void *yBuffer, Nd4jLong yOffset) const, LIBND4J_TYPES);
 /*
 
 template NDArray<float>* NDArray<float>::asT<float>();

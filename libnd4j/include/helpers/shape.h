@@ -1008,7 +1008,7 @@ namespace shape {
 
 
     // return absolute index of array min, min is sub-array of max, index to be returned is min index and corresponds to maxIdx of max array
-    ND4J_EXPORT _CUDA_HD Nd4jLong subArrayIndex(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int maxIdx);
+    ND4J_EXPORT _CUDA_H Nd4jLong subArrayIndex(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int maxIdx);
 
     ND4J_EXPORT _CUDA_HD void shapeScalar(Nd4jLong* const buffer);
 
@@ -4080,28 +4080,25 @@ template <typename T>
 
 
 
-// return absolute index of array min, min is sub-array of max, index to be returned is min's index and corresponds to maxIdx of max array 
-INLINEDEF _CUDA_H Nd4jLong subArrayIndex(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int maxIdx) {
+    // return absolute index of array min, min is sub-array of max, index to be returned is min's index and corresponds to maxIdx of max array
+    INLINEDEF _CUDA_H Nd4jLong subArrayIndex(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int maxIdx) {
+        const auto rankMax = shape::rank(maxShapeInfo);
+        const auto rankMin = shape::rank(minShapeInfo);
 
-    const int rankMax = maxShapeInfo[0];
-    const int rankMin = minShapeInfo[0];
+        Nd4jLong idxPerRank[MAX_RANK];
+        ind2subC(rankMax, const_cast<Nd4jLong *>(maxShapeInfo)+1, const_cast<int&>(maxIdx), idxPerRank);
 
-    auto* idxPerRank = new Nd4jLong[rankMax];
-    ind2subC(rankMax, const_cast<Nd4jLong *>(maxShapeInfo)+1, const_cast<int&>(maxIdx), idxPerRank);
+        Nd4jLong minIdx = 0;
+        for(int i = 0; i < rankMin; ++i) {
+            if(minShapeInfo[rankMin - i] == 1 || idxPerRank[rankMax - i - 1] == 0)
+                continue;
+            if(idxPerRank[rankMax - i - 1] >= minShapeInfo[rankMin - i])
+                idxPerRank[rankMax - i - 1] %= minShapeInfo[rankMin - i];
+            minIdx += idxPerRank[rankMax - i - 1] * stride(const_cast<Nd4jLong*>(minShapeInfo))[rankMin - i - 1];
+        }
 
-    Nd4jLong minIdx = 0;
-    for(int i = 0; i < rankMin; ++i) {
-        if(minShapeInfo[rankMin - i] == 1 || idxPerRank[rankMax - i - 1] == 0)
-            continue;
-        if(idxPerRank[rankMax - i - 1] >= minShapeInfo[rankMin - i])
-            idxPerRank[rankMax - i - 1] %= minShapeInfo[rankMin - i];
-        minIdx += idxPerRank[rankMax - i - 1] * stride(const_cast<Nd4jLong*>(minShapeInfo))[rankMin - i - 1];
+        return minIdx;
     }
-
-    delete[] idxPerRank;
-
-    return minIdx;
-}
 
 
     INLINEDEF _CUDA_HD void shapeScalar(Nd4jLong* const buffer) {
