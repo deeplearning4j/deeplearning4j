@@ -27,11 +27,11 @@
 namespace nd4j {
     namespace ops {
         BROADCASTABLE_OP_IMPL(floordiv, 0, 0) {
-            NDArray<T> *x = INPUT_VARIABLE(0);
-            NDArray<T> *y = INPUT_VARIABLE(1);
-            NDArray<T> *z = OUTPUT_VARIABLE(0);
+            auto x = INPUT_VARIABLE(0);
+            auto y = INPUT_VARIABLE(1);
+            auto z = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::FloorDiv<T>>(x, y, z);
+            auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::CUSTOM(scalar::FloorDiv, pairwise::FloorDiv, broadcast::FloorDiv), x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z) {
@@ -50,8 +50,8 @@ namespace nd4j {
             auto gradX = OUTPUT_VARIABLE(0);
             auto gradY = OUTPUT_VARIABLE(1);
 
-            gradY->assign((T) 0.0f);
-            gradX->assign((T) 0.0f);
+            gradY->assign(0.0f);
+            gradX->assign(0.0f);
 
             return Status::OK();
         }

@@ -39,8 +39,8 @@ CUSTOM_OP_IMPL(meshgrid, -1, -1, false, 0, 0) {
 
     bool swapFirst2Dims = block.getIArguments()->size() > 0 ? (bool)INT_ARG(0) : true;
 
-    std::vector<NDArray<T>*> inArrs(rank);
-    std::vector<NDArray<T>*> outArrs(rank);
+    std::vector<NDArray*> inArrs(rank);
+    std::vector<NDArray*> outArrs(rank);
 
     for(int i = 0; i < rank; ++i) {        
         inArrs[i]  = INPUT_VARIABLE(i);
@@ -55,7 +55,6 @@ CUSTOM_OP_IMPL(meshgrid, -1, -1, false, 0, 0) {
 
 
 DECLARE_SHAPE_FN(meshgrid) {
-
     bool swapFirst2Dims = block.getIArguments()->size() > 0 ? (bool)INT_ARG(0) : true;
     
     int rank = block.width();

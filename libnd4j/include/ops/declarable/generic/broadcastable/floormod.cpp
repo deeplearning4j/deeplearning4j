@@ -29,16 +29,16 @@ namespace nd4j {
         BROADCASTABLE_OP_IMPL(floormod, 0, 0) {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
-            auto z = this->getZ(block);
+            auto z = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::FloorMod<T>>(x, y, z);
+            auto tZ = BroadcastHelper::broadcastApply(BROADCAST(FloorMod), x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z) {
                 OVERWRITE_RESULT(tZ);
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         CUSTOM_OP_IMPL(floormod_bp, 3, 2, false, 0, 0) {
@@ -49,11 +49,11 @@ namespace nd4j {
             auto gradX = OUTPUT_VARIABLE(0);
             auto gradY = OUTPUT_VARIABLE(1);
             gradX->assign(epsNext);
-            nd4j::ops::floormod<T> op;
-            std::unique_ptr<ResultSet<T>> tmpResult(op.execute({x, y}, {}, {})); 
+            nd4j::ops::floormod op;
+            std::unique_ptr<ResultSet> tmpResult(op.execute({x, y}, {}, {}));
 
             if (gradY->rankOf() == gradX->rankOf())
-                epsNext->template applyPairwiseTransform<simdOps::Multiply<T>>(tmpResult->at(0), gradY, nullptr);
+                epsNext->applyPairwiseTransform(pairwise::Multiply, tmpResult->at(0), gradY, nullptr);
             else // epsNext is greater than gradY
             {
                 for (Nd4jLong e = 0; e < gradY->lengthOf(); e++)

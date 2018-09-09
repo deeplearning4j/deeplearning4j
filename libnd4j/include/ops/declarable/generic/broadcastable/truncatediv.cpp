@@ -28,14 +28,14 @@ namespace nd4j {
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::TruncateDiv<T>>(x, y, z);
+            auto tZ = BroadcastHelper::broadcastApply(BROADCAST(TruncateDiv), x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z) {
                 OVERWRITE_RESULT(tZ);
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
     }
 }

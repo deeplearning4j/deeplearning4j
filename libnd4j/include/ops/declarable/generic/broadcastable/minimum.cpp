@@ -32,7 +32,7 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Min<T>>(x, y, z);
+            auto tZ = BroadcastHelper::broadcastApply(BROADCAST(MinPairwise),x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z) {
@@ -75,8 +75,11 @@ namespace nd4j {
                 };
 
                 // scalar case
-                T tmp = epsNext->template reduceNumber<simdOps::Sum<T>>();
-                gradY->assign( x <= y ? tmp : (T) 0.0f);
+                auto tmp = epsNext->reduceNumber(reduce::Sum);
+                if (x <= y)
+                    gradY->assign(tmp);
+                else
+                    gradY->assign(0.0f);
                 
                 epsNext->applyPairwiseLambda(x, lambdaS, gradX);
             } else {
@@ -94,18 +97,18 @@ namespace nd4j {
                 epsNext->applyTriplewiseLambda(preX, preY, lambdaX, preX);
                 epsNext->applyTriplewiseLambda(preX, preY, lambdaY, preY);
 
-                auto axisX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
-                auto axisY = ShapeUtils<T>::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
+                auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
+                auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
                 if (axisX.size() > 0) {
-                    auto sum = preX->template reduceAlongDimension<simdOps::Sum<T>>(axisX);
+                    auto sum = preX->reduceAlongDimension(reduce::Sum, axisX);
                     gradX->assign(sum);
                     delete sum;
                 } else 
                     gradX->assign(preX);
 
                 if (axisY.size() > 0) {
-                    auto sum = preY->template reduceAlongDimension<simdOps::Sum<T>>(axisY);
+                    auto sum = preY->reduceAlongDimension(reduce::Sum, axisY);
                     gradY->assign(sum);
                     delete sum;
                 } else

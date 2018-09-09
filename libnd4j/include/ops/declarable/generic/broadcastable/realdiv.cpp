@@ -29,16 +29,16 @@ namespace nd4j {
         BROADCASTABLE_OP_IMPL(realdiv, 0, 0) {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
-            auto z = this->getZ(block);
+            auto z = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Divide<T>>(x, y, z);
+            auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Divide(), x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z) {
                 OVERWRITE_RESULT(tZ);
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(RealDiv, realdiv);
 

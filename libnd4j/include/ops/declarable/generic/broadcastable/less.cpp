@@ -23,11 +23,11 @@
 namespace nd4j {
     namespace ops {
         BROADCASTABLE_OP_IMPL(less, 0, 0) {
-            NDArray<T> *x = INPUT_VARIABLE(0);
-            NDArray<T> *y = INPUT_VARIABLE(1);
-            NDArray<T> *z = OUTPUT_VARIABLE(0);
+            auto x = INPUT_VARIABLE(0);
+            auto y = INPUT_VARIABLE(1);
+            auto z = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::LessThan<T>>(x, y, z);
+            auto tZ = BroadcastHelper::broadcastApply(BROADCAST(LessThan), x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z) {

@@ -29,17 +29,17 @@ namespace nd4j {
         BROADCASTABLE_OP_IMPL(reversedivide, 0, 0) {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
-            auto z = this->getZ(block);
+            auto z = OUTPUT_VARIABLE(0);
 
             // auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::ReverseDivide<T>>(x, y, z);
-            x->template applyTrueBroadcast<simdOps::ReverseDivide<T>>(y, z, true);
+            x->applyTrueBroadcast(BROADCAST(ReverseDivide), y, z, true);
             // if (tZ == nullptr)
             //     return ND4J_STATUS_KERNEL_FAILURE;
             // else if (tZ != z) {
             //     OVERWRITE_RESULT(tZ);
             // }
 
-			return ND4J_STATUS_OK;
+			return Status::OK();
         }
         DECLARE_SYN(RDiv, reversedivide);
 
@@ -76,8 +76,8 @@ namespace nd4j {
                     return _e * -_y / (_x * _x);
                 };
 
-                T tmp = epsNext->template reduceNumber<simdOps::Sum<T>>();
-                T tmpX = x->template reduceNumber<simdOps::Sum<T>>();
+                auto tmp = epsNext->reduceNumber(reduce::Sum);
+                auto tmpX = x->reduceNumber(reduce::Sum);
                 gradY->assign(tmp / tmpX);
                 
                 epsNext->applyPairwiseLambda(x, lambdaXS, gradX);
@@ -86,22 +86,22 @@ namespace nd4j {
 
                 auto preY = (*epsNext) / (*x);
 
-                NDArray<T> negY(*y);
-                y->template applyTransform<simdOps::Neg<T>>(&negY);
+                NDArray negY(*y);
+                y->applyTransform(transform::Neg, &negY);
                 auto preX = *epsNext * negY / ((*x) * (*x));
 
-                auto axisX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
-                auto axisY = ShapeUtils<T>::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
+                auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
+                auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
                 if (axisX.size() > 0) {
-                    auto sum = preX.template reduceAlongDimension<simdOps::Sum<T>>(axisX);
+                    auto sum = preX.reduceAlongDimension(reduce::Sum, axisX);
                     gradX->assign(sum);
                     delete sum;
                 } else 
                     gradX->assign(preX);
 
                 if (axisY.size() > 0) {
-                    auto sum = preY.template reduceAlongDimension<simdOps::Sum<T>>(axisY);
+                    auto sum = preY.reduceAlongDimension(reduce::Sum, axisY);
                     gradY->assign(sum);
                     delete sum;
                 } else

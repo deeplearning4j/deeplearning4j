@@ -29,16 +29,16 @@ namespace nd4j {
         BROADCASTABLE_OP_IMPL(reversemod, 0, 0) {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
-            auto z = this->getZ(block);
+            auto z = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::ReverseMod<T>>(x, y, z);
+            auto tZ = BroadcastHelper::broadcastApply(BROADCAST(ReverseMod), x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else  if (tZ != z) {
                 OVERWRITE_RESULT(tZ);
             }
 
-			return ND4J_STATUS_OK;
+			return Status::OK();
         }
 
 
@@ -51,8 +51,8 @@ namespace nd4j {
             auto gradX = OUTPUT_VARIABLE(0);
             auto gradY = OUTPUT_VARIABLE(1);
 
-            gradY->assign((T) 0.0f);
-            gradX->assign((T) 0.0f);
+            gradY->assign(0.0f);
+            gradX->assign(0.0f);
 
             return Status::OK();
         }

@@ -27,19 +27,19 @@
 namespace nd4j {
     namespace ops {
         BROADCASTABLE_OP_IMPL(squaredsubtract, 0, 0) {
-            NDArray<T> *x = INPUT_VARIABLE(0);
-            NDArray<T> *y = INPUT_VARIABLE(1);
-            NDArray<T> *z = OUTPUT_VARIABLE(0);
+            auto x = INPUT_VARIABLE(0);
+            auto y = INPUT_VARIABLE(1);
+            auto z = OUTPUT_VARIABLE(0);
 
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::SquaredSubtract<T>>(x, y, z);
+            auto tZ = BroadcastHelper::broadcastApply(BROADCAST(SquaredSubtract), x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z) {
                 OVERWRITE_RESULT(tZ);
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(squareddifference, squaredsubtract);
 
@@ -96,18 +96,18 @@ namespace nd4j {
                 epsNext->applyTriplewiseLambda(x, y, lambdaX, preX);
                 epsNext->applyTriplewiseLambda(x, y, lambdaY, preY);
 
-                auto axisX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
-                auto axisY = ShapeUtils<T>::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
+                auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
+                auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
                 if (axisX.size() > 0) {
-                    auto sum = preX->template reduceAlongDimension<simdOps::Sum<T>>(axisX);
+                    auto sum = preX->reduceAlongDimension(reduce::Sum, axisX);
                     gradX->assign(sum);
                     delete sum;
                 } else 
                     gradX->assign(preX);
 
                 if (axisY.size() > 0) {
-                    auto sum = preY->template reduceAlongDimension<simdOps::Sum<T>>(axisY);
+                    auto sum = preY->reduceAlongDimension(reduce::Sum, axisY);
                     gradY->assign(sum);
                     delete sum;
                 } else

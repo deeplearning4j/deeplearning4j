@@ -27,18 +27,18 @@
 namespace nd4j {
     namespace ops {
         BROADCASTABLE_OP_IMPL(mod, 0, 0) {
-            NDArray<T> *x = INPUT_VARIABLE(0);
-            NDArray<T> *y = INPUT_VARIABLE(1);
-            NDArray<T> *z = this->getZ(block);
+            auto x = INPUT_VARIABLE(0);
+            auto y = INPUT_VARIABLE(1);
+            auto z = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Mod<T>>(x, y, z);
+            auto tZ = BroadcastHelper::broadcastApply(BROADCAST(Mod), x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z) {
                 OVERWRITE_RESULT(tZ);
             }
 
-			return ND4J_STATUS_OK;
+			return Status::OK();
         }
 
         CUSTOM_OP_IMPL(mod_bp, 3, 2, false, 0, 0) {
@@ -50,8 +50,8 @@ namespace nd4j {
             auto gradX = OUTPUT_VARIABLE(0);
             auto gradY = OUTPUT_VARIABLE(1);
 
-            gradY->assign((T) 0.0f);
-            gradX->assign((T) 0.0f);
+            gradY->assign(0.0f);
+            gradX->assign(0.0f);
 
             return Status::OK();
         }

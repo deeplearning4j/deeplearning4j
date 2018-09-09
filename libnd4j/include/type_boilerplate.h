@@ -231,4 +231,6 @@
 #define _RANDOMDOUBLE2(A, B, C, D, E, F) A<D,F>B;
 #define RANDOMDOUBLE2(A, B, C, D) EVALUATING_PASTE(_RAND, OMDOUBLE2(A, B, UNPAREN(C), UNPAREN(D)))
 
+#define BROADCAST(NAME) nd4j::BroadcastOpsTuple::CUSTOM(nd4j::scalar::NAME, nd4j::pairwise::NAME, nd4j::broadcast::NAME)
+
 #endif //TESTS_CPU_TYPE_BOILERPLATE_H
