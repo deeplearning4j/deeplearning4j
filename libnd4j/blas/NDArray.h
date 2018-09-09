@@ -94,7 +94,21 @@ namespace nd4j {
 
         template<typename T>
         std::string toStringValue(T value);
-    
+
+        /**
+         * This method applies given value to the buffer, wrt templates
+         * @tparam T
+         * @tparam Y
+         * @param buffer
+         * @param indices
+         * @param value
+         */
+        template <typename T, typename Y>
+        void templatedSet(void *buffer, const Nd4jLong *indices, Y value);
+
+
+        template <typename T>
+        void templatedSwap(void *xBuffer, void *yBuffer, Nd4jLong length);
     public:
         template <typename T>
         static NDArray* empty(nd4j::memory::Workspace* workspace = nullptr);
@@ -975,8 +989,8 @@ namespace nd4j {
         *      'u' - fill up, mathematically this corresponds to lower triangular matrix 
         *      'l' - fill down, mathematically this corresponds to upper triangular matrix
         */
-        void setValueInDiagMatrix(const double& value, const int diag, const char direction);
-        void setValueInDiagMatrix(const Nd4jLong& value, const int diag, const char direction);
+        template <typename T>
+        void setValueInDiagMatrix(const T& value, const int diag, const char direction);
 
 		/**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
@@ -1166,6 +1180,9 @@ namespace nd4j {
         */
         template <typename T>
         void putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const T value);
+
+        template <typename T>
+        void putScalar(const Nd4jLong* indices, const T value);
 
         /**
         *  returns true if array is 2D

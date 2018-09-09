@@ -258,7 +258,7 @@ namespace nd4j {
             limit = this->lengthOf();
 
         for (Nd4jLong e = 0; e < limit; e++) {
-            os << toStringValue(this->getIndexedScalar(e));
+            os << toStringValue(this->getIndexedScalar<float>(e));
 
             if (e < limit - 1)
                 os << ", ";
@@ -629,7 +629,7 @@ NDArray::NDArray(NDArray&& other) noexcept {
 
 ////////////////////////////////////////////////////////////////////////
     void NDArray::setSpecialBuffers(void * buffer, Nd4jLong *shape) {
-        _bufferD = buffer;
+        _bufferD = reinterpret_cast<int8_t *>(buffer);
         _shapeInfoD = shape;
     }
 
@@ -709,7 +709,7 @@ NDArray& NDArray::operator=(const T scalar) {
 
 
 void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool releaseExisting ) {
-    this->_buffer = buffer;
+    this->_buffer = reinterpret_cast<int8_t *>(buffer);
     this->_shapeInfo = shapeInfo;
 
     if (releaseExisting) {
@@ -1031,15 +1031,29 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
     bool NDArray::hasNaNs() {
-        return static_cast<int>(this->template reduceNumber<simdOps::IsNan<T>>()) > 0;
+        return this->reduceNumber(nd4j::reduce::IsNan, nullptr).getScalar<int>(0) > 0;
     }
 
     bool NDArray::hasInfs() {
-        return static_cast<int>(this->template reduceNumber<simdOps::IsInf<T>>()) > 0;
+        return this->reduceNumber(nd4j::reduce::IsInf, nullptr).getScalar<int>(0) > 0;
     }
 
     bool NDArray::isFinite() {
-        return static_cast<int>(this->template reduceNumber<simdOps::IsInfOrNan<T>>()) == 0;
+        return this->reduceNumber(nd4j::reduce::IsInfOrNan, nullptr).getScalar<int>(0) == 0;
+    }
+
+    template <typename T, typename Y>
+    void NDArray::templatedSet(void *buffer, const Nd4jLong *indices, Y value) {
+        auto t = reinterpret_cast<T *>(buffer);
+
+        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), indices, rankOf());
+        t[xOffset] = static_cast<T>(value);
+    }
+
+    template <typename T>
+    void NDArray::putScalar(const Nd4jLong* indices, const T value) {
+        auto xType = this->dataType();
+        BUILD_SINGLE_SELECTOR(xType, templatedSet,(this->_buffer, indices, value), LIBND4J_TYPES);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1257,7 +1271,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         else
             printf("[");
         for (Nd4jLong e = 0; e < limit; e++) {
-            printf("%f", this->getIndexedScalar(e));
+            printf("%f", this->getIndexedScalar<float>(e));
             if (e < limit - 1)
                 printf(", ");
         }
@@ -2324,7 +2338,7 @@ NDArray NDArray::transp() const {
 		    for(int j=0; j<columns()-1; ++j)
 			    for(int k=j+1; k<columns(); ++k) {
 				    for(int i=0; i<rows(); ++i)
-					    dot += getScalar(i,j)*getScalar(i,k);
+					    dot += getScalar<double>(i,j)*getScalar<double>(i,k);
 
 				    if(nd4j::math::nd4j_abs(dot) > eps )
 					    return false;
@@ -2334,7 +2348,7 @@ NDArray NDArray::transp() const {
 
 			    for(int j=0; j<columns(); ++j)	{	// check whether norm of column vector = 1
 			        for(int i=0; i<rows(); ++i)
-				        dot += getScalar(i,j)*getScalar(i,j);
+				        dot += getScalar<double>(i,j)*getScalar<double>(i,j);
 			    if(dot != 0.f && nd4j::math::nd4j_abs(nd4j::math::nd4j_sqrt(dot) - 1.f) > eps)
 				    return false;
 
@@ -2345,21 +2359,21 @@ NDArray NDArray::transp() const {
 		    for(int i=0; i<rows()-1; ++i)
 			    for(int k=i+1; k<rows(); ++k) {
 				    for(int j=0; j<columns(); ++j)
-					    dot += getScalar(i,j)*getScalar(k,j);
+					    dot += getScalar<double>(i,j)*getScalar<double>(k,j);
 
 				    if(nd4j::math::nd4j_abs(dot) > eps )
 					    return false;
 
-				    dot = (T) 0.f;
+				    dot = 0.;
 			    }
 
 		        for(int i=0; i<rows(); ++i) {		// check whether norm of row vector = 1
 			        for(int j=0; j<columns(); ++j)
-					    dot += getScalar(i,j)*getScalar(i,j);
+					    dot += getScalar<double>(i,j)*getScalar<double>(i,j);
 
-			        if(dot!= (T) 0.f && nd4j::math::nd4j_abs(nd4j::math::nd4j_sqrt<T>(dot) - (T) 1.f) > eps)
+			        if(dot!= 0. && nd4j::math::nd4j_abs(nd4j::math::nd4j_sqrt<double>(dot) - 1.) > eps)
 				        return false;
-			        dot = 0.f;
+			        dot = 0.;
 		        }
 	        }
 	    return true;
@@ -2384,7 +2398,7 @@ NDArray NDArray::transp() const {
 
 	    const double eps = 1e-5f;
 	    for(int i=0; i<rows(); ++i)
-		    if(nd4j::math::nd4j_abs(getScalar(i,i) - 1.f) > eps)
+		    if(nd4j::math::nd4j_abs(getScalar<double>(i,i) - 1.f) > eps)
 			    return false;
 
 	    for(int i=0; i<rows(); ++i)
@@ -2392,7 +2406,7 @@ NDArray NDArray::transp() const {
 			    if (i == j)
 			        continue;
 
-			    if(nd4j::math::nd4j_abs(getScalar(i,j)) > eps)
+			    if(nd4j::math::nd4j_abs(getScalar<double>(i,j)) > eps)
 				    return false;
 		    }
     	return true;
@@ -3196,8 +3210,25 @@ NDArray NDArray::transp() const {
             _buffer[i*offset] = 1.;
     }
 
+    template <typename T>
+    void NDArray::templatedSwap(void *xBuffer, void *yBuffer, Nd4jLong length) {
+        auto x = reinterpret_cast<T *>(xBuffer);
+        auto y = reinterpret_cast<T *>(yBuffer);
+
+#pragma omp parallel for simd schedule(static)
+        for (int i = 0; i < length; ++i) {
+            auto temp = x[i];
+            x[i] = y[i];
+            y[i] = temp;
+        }
+    }
+
     ////////////////////////////////////////////////////////////////////////
     void NDArray::swapUnsafe(NDArray& other) {
+        auto xType = this->dataType();
+
+        if (xType != other.dataType())
+            throw std::runtime_error("NDArray::swapUnsage method: both arrays must have the same data type");
         
         if(_buffer == nullptr || other._buffer == nullptr)
             throw std::runtime_error("NDArray::swapUnsafe method: input array should not be empty!");
@@ -3208,13 +3239,7 @@ NDArray NDArray::transp() const {
         if(lengthOf() != other.lengthOf())
             throw std::runtime_error("NDArray::swapUnsafe method: input arrays should have the same length!");
 
-
-#pragma omp parallel for schedule(static)
-        for (int i = 0; i < lengthOf(); ++i) {
-            auto temp = (*this)(i);
-            (*this)(i) = other(i);
-            other(i) = temp;            
-        }
+        BUILD_SINGLE_SELECTOR(xType, templatedSwap, (this->_buffer, other.buffer(), this->lengthOf()), LIBND4J_TYPES);
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -3267,29 +3292,30 @@ NDArray NDArray::transp() const {
     }
 
     ////////////////////////////////////////////////////////////////////////
+    template<typename T>
     void NDArray::setValueInDiagMatrix(const T& value, const int diag, const char direction) {
         if(rankOf() != 2)
            throw std::string("NDArray::setValueInDiagMatrix method: array must have rank = 2, but got " + toStringValue(rankOf()) + " instead !");
 
-        const int rows = sizeAt(0);
-        const int cols = sizeAt(1);
+        const auto rows = sizeAt(0);
+        const auto cols = sizeAt(1);
         
         switch(direction) {
             
             case 'u':                           // fill upper triangular block
 #pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
-                for(int i = 0; i < rows; ++i)
-                    for(int j = 0; j < cols; ++j)
+                for(Nd4jLong i = 0; i < rows; ++i)
+                    for(Nd4jLong j = 0; j < cols; ++j)
                         if (i + diag <= j)
-                            (*this)(i, j) = value;
+                            putScalar<T>(i, j) = value;
                 break;
 
             case 'l':                           // fill lower triangular block
 #pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
-                for(int i = 0; i < rows; ++i)
-                    for(int j = 0; j < cols; ++j)
+                for(Nd4jLong i = 0; i < rows; ++i)
+                    for(Nd4jLong j = 0; j < cols; ++j)
                         if (i + diag >= j)
-                            (*this)(i, j) = value;
+                            putScalar<T>(i, j) = value;
                 break;
             default:
                 throw std::string("NDArray::setValueInDiagMatrix method: wrong value of direction argument, expected is 'u' or 'l', but got " + std::string(1,direction) + " instead !");
@@ -3577,6 +3603,7 @@ NDArray NDArray::transp() const {
         return allTensorsAlongDimension(dimensions);
     }
 
+    BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, void *value), LIBND4J_TYPES, LIBND4J_TYPES);
 
 /*
 
