@@ -38,7 +38,7 @@ namespace nd4j {
 
         class Node {
         protected:
-            DataType _dataType;
+            nd4j::DataType _dataType;
             OpType _opType;
             ContextPrototype* _protoContext = nullptr;
             Nd4jLong _opNum;
@@ -99,7 +99,7 @@ namespace nd4j {
 
             bool equals(Node *other);
 
-            DataType dataType();
+            nd4j::DataType dataType();
             ContextPrototype *protoContext();
             OpType opType();
             Nd4jLong opNum();

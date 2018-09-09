@@ -47,10 +47,10 @@ namespace nd4j {
             }
 
             auto length = shape::length(newShape);
-            auto newBuffer = new int8_t[length];
             auto dtype = DataTypeUtils::fromFlatDataType(flatArray->dtype());
+            auto newBuffer = new int8_t[length * DataTypeUtils::sizeOf(dtype)];
 
-            DataTypeConversions<double>::convertType(newBuffer, (void *)flatArray->buffer()->data(), dtype, ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()),  length);
+            BUILD_SINGLE_SELECTOR(dtype, DataTypeConversions, ::convertType(newBuffer, (void *)flatArray->buffer()->data(), dtype, ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()),  length), LIBND4J_TYPES);
 
             auto array = new NDArray(newBuffer, newShape);
             array->triggerAllocationFlag(true, true);

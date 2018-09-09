@@ -103,7 +103,7 @@ namespace nd4j {
                             shapesMap.insert(pairShape);
 
                             if (!block->isInplace() && !node->isInplace())
-                                result += shape::length(newShape) * sizeof(T);
+                                result += shape::length(newShape) * DataTypeUtils::sizeOfElement(node->dataType());
 
                             shapes.push_back(newShape);
                         }
@@ -127,7 +127,7 @@ namespace nd4j {
                             shapesMap.insert(pairShape);
 
                             if (!node->isInplace())
-                                result += shape::length(newShape) * sizeof(T);
+                                result += shape::length(newShape) * DataTypeUtils::sizeOfElement(node->dataType());
 
                             shapes.push_back(newShape);
                         } else {
@@ -142,7 +142,7 @@ namespace nd4j {
                             shapesMap.insert(pairShape);
 
                             if (!node->isInplace())
-                                result += shape::length(newShape) * sizeof(T);
+                                result += shape::length(newShape) * DataTypeUtils::sizeOfElement(node->dataType());
 
                             shapes.push_back(newShape);
                         }
@@ -188,7 +188,7 @@ namespace nd4j {
 
                         shapesMap.insert(pairShape);
 
-                        result += shape::length(newShape) * sizeof(T);
+                        result += shape::length(newShape) * DataTypeUtils::sizeOfElement(node->dataType());
 
                         shapes.push_back(newShape);
                     } else if (node->getOpClass() == OpClass_MULTIPLICATOR) {

@@ -61,6 +61,7 @@ namespace nd4j {
 
             Variable* clone();
 
+            template <typename N>
             Variable* asT();
 
             bool hasNDArray();

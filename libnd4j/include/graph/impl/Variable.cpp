@@ -39,12 +39,12 @@ namespace nd4j {
             result->setIndex(this->_index);
 
             if (this->_ndarray != nullptr)
-                result->setNDArray(this->_ndarray->template asT());
+                result->setNDArray(this->_ndarray->template asT<N>());
 
             // FIXME: add support for ArrayList
             if (this->_list != nullptr) {
                 nd4j_printf("ArrayList not supported yet\n", "");
-                throw std::runtime_error("ArrayList not supported yet");
+                throw std::runtime_error("ArrayList not supported yet for asT");
             }
 
             return result;

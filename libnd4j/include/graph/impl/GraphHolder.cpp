@@ -54,7 +54,7 @@ namespace nd4j {
         }
 
         Graph* GraphHolder::pullGraph(Nd4jLong graphId) {
-            if (!this->hasGraph<float>(graphId)) {
+            if (!this->hasGraph(graphId)) {
                 nd4j_printf("GraphHolder doesn't have graph stored for [%lld]\n", graphId);
                 throw std::runtime_error("Bad argument");
             }

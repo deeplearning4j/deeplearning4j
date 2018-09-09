@@ -294,7 +294,7 @@ namespace nd4j {
             return &_scope_name;
         }
 
-        nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar, std::initializer_list tArgs, std::initializer_list<int> iArgs) {
+        nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
             this->_opType = opType;
             this->_id = id;
             this->_opNum = opNum;
@@ -392,7 +392,7 @@ namespace nd4j {
 
             if (node != nullptr) {
                 this->_id = node->id();
-                this->_dataType = node->dataType();
+                this->_dataType = DataTypeUtils::fromFlatDataType(node->dataType());
                 this->_opNum = node->opNum();
                 this->_opType = node->opType();
 
@@ -431,9 +431,9 @@ namespace nd4j {
 
 
                 if (node->extraParams() != nullptr && node->extraParams()->size() > 0) {
-                    _extraParams = new T[node->extraParams()->size()];
+                    _extraParams = new double[node->extraParams()->size()];
                     for (int e = 0; e < (int) node->extraParams()->size(); e++) {
-                        _extraParams[e] = static_cast(node->extraParams()->Get(e));
+                        _extraParams[e] = static_cast<double>(node->extraParams()->Get(e));
                     }
                 }
 
@@ -472,7 +472,7 @@ namespace nd4j {
 
                         if (node->extraParams() != nullptr && node->extraParams()->size() > 0)
                             for (int e = 0; e < (int) node->extraParams()->size(); e++) {
-                                block->getTArguments()->emplace_back(static_cast(node->extraParams()->Get(e)));
+                                block->getTArguments()->emplace_back(static_cast<double>(node->extraParams()->Get(e)));
                             }
 
                         this->setContextPrototype(block);
@@ -492,7 +492,7 @@ namespace nd4j {
 
                         if (node->extraParams() != nullptr && node->extraParams()->size() > 0)
                             for (int e = 0; e < (int) node->extraParams()->size(); e++) {
-                                block->getTArguments()->emplace_back(static_cast(node->extraParams()->Get(e)));
+                                block->getTArguments()->emplace_back(static_cast<double>(node->extraParams()->Get(e)));
                             }
 
                         this->setContextPrototype(block);
@@ -521,7 +521,7 @@ namespace nd4j {
 
                         if (node->extraParams() != nullptr)
                             for (uint32_t e = 0; e < node->extraParams()->size(); e++)
-                                block->getTArguments()->emplace_back(static_cast(node->extraParams()->Get(e)));
+                                block->getTArguments()->emplace_back(static_cast<double>(node->extraParams()->Get(e)));
 
                         this->setContextPrototype(block);
 
@@ -532,7 +532,7 @@ namespace nd4j {
             }
         }
 
-        DataType Node::dataType() {
+        nd4j::DataType Node::dataType() {
             return _dataType;
         }
 
@@ -578,7 +578,7 @@ namespace nd4j {
             return false;
         }
 
-        nd4j::ops::DeclarableOp* nd4j::graph::Node::buildOpByType(OpType opType, int numInputs,  int numIArgs, int numTArgs, int opNum, T scalar) {
+        nd4j::ops::DeclarableOp* nd4j::graph::Node::buildOpByType(OpType opType, int numInputs,  int numIArgs, int numTArgs, int opNum, double scalar) {
             switch (opType) {
                 case OpType_PAIRWISE:
                     return new nd4j::ops::LegacyPairwiseTransformOp(opNum);

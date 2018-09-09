@@ -33,7 +33,8 @@ namespace nd4j {
     template <typename T>
     class DataTypeConversions {
     public:
-        static FORCEINLINE void convertType(T* buffer, void* src, DataType dataType, ByteOrder order, Nd4jLong length) {
+        static FORCEINLINE void convertType(void* vbuffer, void* src, DataType dataType, ByteOrder order, Nd4jLong length) {
+            auto buffer = reinterpret_cast<T *>(vbuffer);
             bool isBe = BitwiseUtils::isBE();
             bool canKeep = (isBe && order == ByteOrder::BE) || (!isBe && order == ByteOrder::LE);
 
