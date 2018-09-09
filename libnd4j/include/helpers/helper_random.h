@@ -117,7 +117,7 @@ namespace nd4j {
              * @return
              */
             inline _CUDA_D T nextT() {
-                return (T) nextUInt() / (T) MAX_UINT;
+                return (T) nextUInt() / (T) nd4j::DataTypeUtils::max<Nd4jULong>();
             }
 
             /**
@@ -150,7 +150,7 @@ namespace nd4j {
              *  relative methods are made as workaround for lock-free concurrent execution
              */
             inline _CUDA_D int relativeInt(Nd4jLong index) {
-                return (int) (relativeUInt(index) % ((unsigned int) MAX_INT + 1));
+                return (int) (relativeUInt(index) % (nd4j::DataTypeUtils::max<uint32_t>() + 1));
             }
 
             /**
@@ -190,8 +190,8 @@ namespace nd4j {
             inline _CUDA_D T relativeT(Nd4jLong index) {
                 if (sizeof(T) < 4) {
                     // FIXME: this is fast hack for short types, like fp16. This should be improved.
-                    return (T)((float) relativeUInt(index) / (float) MAX_UINT);
-                } else return (T) relativeUInt(index) / (T) MAX_UINT;
+                    return (T)((float) relativeUInt(index) / (float) nd4j::DataTypeUtils::max<uint32_t>());
+                } else return (T) relativeUInt(index) / (T) nd4j::DataTypeUtils::max<uint32_t>();
             }
 
             /**

@@ -74,6 +74,9 @@ namespace nd4j {
 
         template <typename T, typename R>
         R templatedGet(void *buffer, Nd4jLong *indices) const;
+
+        template <typename T>
+        void* templatedPointerShift(void *buffer, Nd4jLong offset) const;
     protected:
 
        /**
@@ -130,6 +133,8 @@ namespace nd4j {
 
         template <typename T>
         static NDArray* valueOf(const std::vector<Nd4jLong>& shape, const T value, const char order = 'c');
+
+        static NDArray* valueOf(const std::vector<Nd4jLong>& shape, const NDArray& value, const char order = 'c');
 
         template <typename T>
         static NDArray* linspace(const T from, const T to, const Nd4jLong numElements);

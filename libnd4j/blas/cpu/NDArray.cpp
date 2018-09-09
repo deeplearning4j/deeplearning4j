@@ -785,7 +785,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         result->_length = shape::length(result->_shapeInfo);
 
         if (result->_length != data.size()) {
-            nd4j_printf("Data size [%i] doesn't match shape length [%i]\n", data.size(), shape::length(_shapeInfo));
+            nd4j_printf("Data size [%i] doesn't match shape length [%i]\n", data.size(), shape::length(result->_shapeInfo));
             throw std::runtime_error("Data size doesn't match shape");
         }
 
@@ -1332,7 +1332,9 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
         // shape::printShapeInfoLinear(tad.tadOnlyShapeInfo);
 
-        T* buffer = this->_buffer + tad.tadOffsets[index];
+        void *buffer = nullptr;//this->_buffer + tad.tadOffsets[index];
+        auto xType = this->dataType();
+        BUILD_SINGLE_SELECTOR(xType, buffer = templatedPointerShift, (this->_buffer, tad.tadOffsets[index]), LIBND4J_TYPES);
 
         Nd4jLong* shapeInfo;
         if (_workspace == nullptr) {
@@ -1435,7 +1437,7 @@ NDArray NDArray::transp() const {
         } else if (!shape::equalsSoft(_shapeInfo, other->_shapeInfo))
             return false;
 
-        T *extras = new T[1]{eps};
+        double *extras = new double[1]{eps};
 
         // we don't need extraparams for this op
         double val = NativeOpExcutioner::execReduce3Scalar(4, _buffer, _shapeInfo, extras, other->_buffer, other->_shapeInfo);
@@ -2242,11 +2244,13 @@ NDArray NDArray::transp() const {
 
         if (isScalar()) {
             target->assign(this);
-            target->applyPairwiseTransform(op, const_cast<NDArray*>(other), extraArgs);
+            // FIXME: uncomment
+            //target->applyPairwiseTransform(op, const_cast<NDArray*>(other), extraArgs);
             return;
         }
         if (other->isScalar()) {
-            this->applyScalar(op, *other, target, extraArgs);
+            // FIXME: uncomment
+            //this->applyScalar(op, *other, target, extraArgs);
             return;
         }
 
@@ -2308,7 +2312,8 @@ NDArray NDArray::transp() const {
 #pragma omp parallel for schedule(guided)
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
                 auto targetSubArr = (*target)(i, dimsToExclude);
-                pMin->applyPairwiseTransform(op, &targetSubArr, &targetSubArr, extraArgs);
+                // FIXME: uncomment
+                //pMin->applyPairwiseTransform(op, &targetSubArr, &targetSubArr, extraArgs);
             }
         }
 

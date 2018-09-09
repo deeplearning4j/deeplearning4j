@@ -69,7 +69,7 @@ namespace nd4j {
             /**
              * This method executes this Op, and defined for most of individual ops separately
              */
-            virtual Nd4jStatus validateAndExecute(Context<T>& block) = 0;
+            virtual Nd4jStatus validateAndExecute(Context& block) = 0;
 
 
             /**

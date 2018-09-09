@@ -30,7 +30,7 @@ class OpArgsHolder {
 
 private: 
 	std::vector<NDArray*> _inArrs = std::vector<NDArray*>();
-    std::vector<double>           _tArgs  = std::vector<T>();
+    std::vector<double>           _tArgs  = std::vector<double>();
     std::vector<Nd4jLong>    _iArgs  = std::vector<Nd4jLong>();
 
     int _numInArrs = _inArrs.size();
@@ -49,7 +49,7 @@ public:
     const std::vector<NDArray*>& getInArrs() const
     {return _inArrs; }
 
-    const std::vector<T>& getTArgs() const
+    const std::vector<double>& getTArgs() const
     {return _tArgs; }
 
     const std::vector<Nd4jLong>& getIArgs() const
@@ -67,7 +67,7 @@ public:
     int getNumIArgs() const
     {return _numIArgs; }
 
-    OpArgsHolder<T> createArgsHolderForBP(const std::vector<NDArray*>& inGradArrs, const bool isInPlace = false) const;
+    OpArgsHolder createArgsHolderForBP(const std::vector<NDArray*>& inGradArrs, const bool isInPlace = false) const;
 
     ~OpArgsHolder() noexcept; 
     

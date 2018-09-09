@@ -67,7 +67,7 @@ namespace ops  {
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void ConvolutionUtils<T>::avgPool3DBP(NDArray<T>& gradO, NDArray<T>& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const bool count_include_pad) {
+void ConvolutionUtils<T>::avgPool3DBP(NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const bool count_include_pad) {
     
     T* pO = gradO.getBuffer();
     T* pI = gradI.getBuffer();
@@ -142,7 +142,7 @@ void ConvolutionUtils<T>::avgPool3DBP(NDArray<T>& gradO, NDArray<T>& gradI, cons
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void ConvolutionUtils<T>::avgPool3D(NDArray<T>& input, NDArray<T>& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const bool count_include_pad) {
+void ConvolutionUtils<T>::avgPool3D(NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const bool count_include_pad) {
 
     T* in  = input.getBuffer();
     T* out = output.getBuffer();
@@ -477,15 +477,15 @@ void ConvolutionUtils<T>::avgPool3D(NDArray<T>& input, NDArray<T>& output, const
 
 //////////////////////////////////////////////////////////////////////////
         template<typename T>
-        Nd4jStatus ConvolutionUtils<T>::conv3Dmv(NDArray<T>* r_, T beta, T alpha, NDArray<T>* t_, NDArray<T>* k_,
+        Nd4jStatus ConvolutionUtils<T>::conv3Dmv(NDArray* r_, T beta, T alpha, NDArray* t_, NDArray* k_,
                                        Nd4jLong sdepth, Nd4jLong srow, Nd4jLong scol, const char *vf, const char *xc) {
 
             Nd4jLong nInputPlane, nInputDepth, nInputRows, nInputCols;
             Nd4jLong nKernelDepth, nKernelRows, nKernelCols;
             Nd4jLong nOutputPlane, nOutputDepth, nOutputRows, nOutputCols;
             Nd4jLong istride0, kstride0, kstride1;
-            NDArray<T> *input;
-            NDArray<T> *kernel;
+            NDArray *input;
+            NDArray *kernel;
             T* input_data;
             T* weight_data;
             T* output_data;
@@ -722,14 +722,14 @@ void ConvolutionUtils<T>::getSizesAndIndexesConv2d(const bool isNCHW, const Nd4j
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void ConvolutionUtils<T>::getSizesAndIndexesConv2d(const bool isNCHW, const NDArray<T>& input, const NDArray<T>& output, int& bS, int& iC, int& iH, int& iW, int& oC, int& oH, int& oW, int& indIOioC, int& indIiH, int& indWiC, int& indWoC, int& indWkH, int& indOoH) {
+void ConvolutionUtils<T>::getSizesAndIndexesConv2d(const bool isNCHW, const NDArray& input, const NDArray& output, int& bS, int& iC, int& iH, int& iW, int& oC, int& oH, int& oW, int& indIOioC, int& indIiH, int& indWiC, int& indWoC, int& indWkH, int& indOoH) {
 
     getSizesAndIndexesConv2d(isNCHW, input.getShapeInfo(), output.getShapeInfo(), bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
 }
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void ConvolutionUtils<T>::getSizesAndIndexesConv3d(const bool isNCDHW, const NDArray<T>& input, const NDArray<T>& output, int& bS, int& iC, int& iD, int& iH, int& iW, int& oC, int& oD, int& oH, int& oW, int& indIOioC, int& indIOioD, int& indWiC, int& indWoC, int& indWkD) {
+void ConvolutionUtils<T>::getSizesAndIndexesConv3d(const bool isNCDHW, const NDArray& input, const NDArray& output, int& bS, int& iC, int& iD, int& iH, int& iW, int& oC, int& oD, int& oH, int& oW, int& indIOioC, int& indIOioD, int& indWiC, int& indWoC, int& indWkD) {
     
     // input   [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
     // weights [kD, kH, kW, iC, oC] (NDHWC) or [oC, iC, kD, kH, kW] (NCDHW)    
@@ -756,11 +756,11 @@ void ConvolutionUtils<T>::getSizesAndIndexesConv3d(const bool isNCDHW, const NDA
  
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void ConvolutionUtils<T>::conv2d(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* output, const std::vector<int>& intArgs) {
+void ConvolutionUtils<T>::conv2d(const std::vector<NDArray*>& inArrs, NDArray* output, const std::vector<int>& intArgs) {
 
-    NDArray<T> *input   = inArrs[0];                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    NDArray<T> *weights = inArrs[1];                                    // [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)
-    NDArray<T> *bias    = inArrs[2];                                    // [oC]
+    NDArray *input   = inArrs[0];                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    NDArray *weights = inArrs[1];                                    // [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)
+    NDArray *bias    = inArrs[2];                                    // [oC]
     
     // output [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
                                          
@@ -790,7 +790,7 @@ void ConvolutionUtils<T>::conv2d(const std::vector<NDArray<T>*>& inArrs, NDArray
     if(isSameMode)                       // SAME        
         ConvolutionUtils<T>::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-    NDArray<T> columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->getWorkspace());        
+    NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->getWorkspace());        
 
     //----- calculation of output -----//
     std::vector<T> extrasIm2Col({(T) kH, (T) kW, (T) sH, (T) sW, (T) pH, (T) pW, (T) dH, (T) dW, (T)0.f, (T)0.f});
@@ -807,16 +807,16 @@ void ConvolutionUtils<T>::conv2d(const std::vector<NDArray<T>*>& inArrs, NDArray
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void ConvolutionUtils<T>::conv2dBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs, const std::vector<int>& intArgs) {
+void ConvolutionUtils<T>::conv2dBP(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const std::vector<int>& intArgs) {
 
-    NDArray<T> *input   = inArrs[0];                        // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    NDArray<T> *weights = inArrs[1];                        // [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)
-    NDArray<T> *bias    = inArrs[2];                        // [oC]
-    NDArray<T> *gradO   = inArrs[3];                        // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
+    NDArray *input   = inArrs[0];                        // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    NDArray *weights = inArrs[1];                        // [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)
+    NDArray *bias    = inArrs[2];                        // [oC]
+    NDArray *gradO   = inArrs[3];                        // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
     
-    NDArray<T> *gradI = outArrs[0];                         // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
-    NDArray<T> *gradW = outArrs[1];                         // [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)
-    NDArray<T> *gradB = outArrs[2];                         // [oC]
+    NDArray *gradI = outArrs[0];                         // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
+    NDArray *gradW = outArrs[1];                         // [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)
+    NDArray *gradB = outArrs[2];                         // [oC]
                                      
     int kH = intArgs[0];                                                        // filter(kernel) height
     int kW = intArgs[1];                                                        // filter(kernel) width
@@ -852,7 +852,7 @@ void ConvolutionUtils<T>::conv2dBP(const std::vector<NDArray<T>*>& inArrs, const
         calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
     
-    NDArray<T> columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->getWorkspace());
+    NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->getWorkspace());
     
     // ----- calculation of gradW ----- // 
     if(gradW) {
@@ -883,11 +883,11 @@ void ConvolutionUtils<T>::conv2dBP(const std::vector<NDArray<T>*>& inArrs, const
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void ConvolutionUtils<T>::depthwiseConv2d(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* output, const std::vector<int>& intArgs) {
+void ConvolutionUtils<T>::depthwiseConv2d(const std::vector<NDArray*>& inArrs, NDArray* output, const std::vector<int>& intArgs) {
 
-    NDArray<T> *input   = inArrs[0];                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    NDArray<T> *weights = inArrs[1];                                    // [kH, kW, iC, mC] (NHWC) or [mC, iC, kH, kW] (NCHW)
-    NDArray<T> *bias    = inArrs[2];                                    // [oC] = iC*mC
+    NDArray *input   = inArrs[0];                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    NDArray *weights = inArrs[1];                                    // [kH, kW, iC, mC] (NHWC) or [mC, iC, kH, kW] (NCHW)
+    NDArray *bias    = inArrs[2];                                    // [oC] = iC*mC
     
     // output is [bS, oH, oW, iC*mC] (NHWC) or [bS, iC*mC, oH, oW] (NCHW)        
                                      
@@ -926,8 +926,8 @@ void ConvolutionUtils<T>::depthwiseConv2d(const std::vector<NDArray<T>*>& inArrs
     if(isSameMode)                       // SAME        
         ConvolutionUtils<T>::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-    NDArray<T> columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->getWorkspace());                
-    NDArray<T>* outputReshaped = output->reshape(output->ordering(), outReShape);
+    NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->getWorkspace());                
+    NDArray* outputReshaped = output->reshape(output->ordering(), outReShape);
     std::vector<T> extrasIm2Col({(T) kH, (T) kW, (T) sH, (T) sW, (T) pH, (T) pW, (T) dH, (T) dW, (T)0.f, (T)0.f});
 
     input->template applyTransform<simdOps::Im2col<T>>(&columns, extrasIm2Col.data());                                 // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]    
@@ -944,16 +944,16 @@ void ConvolutionUtils<T>::depthwiseConv2d(const std::vector<NDArray<T>*>& inArrs
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void ConvolutionUtils<T>::depthwiseConv2dBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs, const std::vector<int>& intArgs) {
+void ConvolutionUtils<T>::depthwiseConv2dBP(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const std::vector<int>& intArgs) {
 
-    NDArray<T> *input   = inArrs[0];                            // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW)
-    NDArray<T> *weights = inArrs[1];                            // [kH, kW, iC, mC] (NDHWC) or [mC, iC, kH, kW] (NCDHW)
-    NDArray<T> *bias    = inArrs[2];                            // [oC] = [iC*mC]
-    NDArray<T> *gradO   = inArrs[3];                            // [bS, oH, oW, oC] (NDHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
+    NDArray *input   = inArrs[0];                            // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW)
+    NDArray *weights = inArrs[1];                            // [kH, kW, iC, mC] (NDHWC) or [mC, iC, kH, kW] (NCDHW)
+    NDArray *bias    = inArrs[2];                            // [oC] = [iC*mC]
+    NDArray *gradO   = inArrs[3];                            // [bS, oH, oW, oC] (NDHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
     
-    NDArray<T> *gradI = outArrs[0];                             // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW), epsilon
-    NDArray<T> *gradW = outArrs[1];                             // [kH, kW, iC, mC] (NDHWC) or [mC, iC, kH, kW] (NCDHW)
-    NDArray<T> *gradB = outArrs[2];                             // [oC]        
+    NDArray *gradI = outArrs[0];                             // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW), epsilon
+    NDArray *gradW = outArrs[1];                             // [kH, kW, iC, mC] (NDHWC) or [mC, iC, kH, kW] (NCDHW)
+    NDArray *gradB = outArrs[2];                             // [oC]        
                                      
     int kH = intArgs[0];                                                        // filter(kernel) height
     int kW = intArgs[1];                                                        // filter(kernel) width
@@ -993,8 +993,8 @@ void ConvolutionUtils<T>::depthwiseConv2dBP(const std::vector<NDArray<T>*>& inAr
     if(isSameMode)                       // SAME        
         ConvolutionUtils<T>::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-    NDArray<T>  columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->getWorkspace());        
-    NDArray<T>* gradOreshaped = gradO->reshape(gradO->ordering(), gradOreShape);
+    NDArray  columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->getWorkspace());        
+    NDArray* gradOreshaped = gradO->reshape(gradO->ordering(), gradOreShape);
     std::vector<T> extrasIm2Col({(T) kH, (T) kW, (T) sH, (T) sW, (T) pH, (T) pW, (T) dH, (T) dW, (T)0.f, (T)0.f});
     std::vector<T> extrasCol2Im({(T) sH, (T) sW, (T) pH, (T) pW, (T) iH, (T) iW, (T) dH, (T) dW});
     
@@ -1026,12 +1026,12 @@ void ConvolutionUtils<T>::depthwiseConv2dBP(const std::vector<NDArray<T>*>& inAr
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void ConvolutionUtils<T>::sconv2d(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* output, const std::vector<int>& intArgs) {
+void ConvolutionUtils<T>::sconv2d(const std::vector<NDArray*>& inArrs, NDArray* output, const std::vector<int>& intArgs) {
 
-    NDArray<T> *input        = inArrs[0];                                           // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
-    NDArray<T> *weightsDepth = inArrs[1];                                           // [kH, kW, iC, mC]  (NHWC) or [mC, iC, kH, kW]  (NCHW)
-    NDArray<T> *weightsPoint = inArrs[2];                                           // [1, 1, iC*mC, oC] (NHWC) or [oC, iC*mC, 1, 1] (NCHW)
-    NDArray<T> *bias         = inArrs[3];                                           // [oC], oC = iC*mC if weightsPoint=nullptr
+    NDArray *input        = inArrs[0];                                           // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
+    NDArray *weightsDepth = inArrs[1];                                           // [kH, kW, iC, mC]  (NHWC) or [mC, iC, kH, kW]  (NCHW)
+    NDArray *weightsPoint = inArrs[2];                                           // [1, 1, iC*mC, oC] (NHWC) or [oC, iC*mC, 1, 1] (NCHW)
+    NDArray *bias         = inArrs[3];                                           // [oC], oC = iC*mC if weightsPoint=nullptr
     
     // output is [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW]  (NCHW)
 
@@ -1051,9 +1051,9 @@ void ConvolutionUtils<T>::sconv2d(const std::vector<NDArray<T>*>& inArrs, NDArra
     ConvolutionUtils<T>::getSizesAndIndexesConv2d(isNCHW, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWmC, indWkH, indOoH);    
     mC = weightsDepth->sizeAt(indWmC);                      // channels multiplier
 
-    NDArray<T>* outputDepth = output;
+    NDArray* outputDepth = output;
     if(weightsPoint)                        // if pointwise convolution is expected
-        outputDepth = new NDArray<T>(output->ordering(), !isNCHW ? std::vector<Nd4jLong>({bS, oH, oW, iC*mC}) : std::vector<Nd4jLong>({bS, iC*mC, oH, oW}));    
+        outputDepth = new NDArray(output->ordering(), !isNCHW ? std::vector<Nd4jLong>({bS, oH, oW, iC*mC}) : std::vector<Nd4jLong>({bS, iC*mC, oH, oW}));    
 
     // ----- perform depthwise convolution (if weightsPoint is absent then oC = iC*mC) ----- //    
     ConvolutionUtils<T>::depthwiseConv2d({input, weightsDepth, weightsPoint ? nullptr : bias}, outputDepth, {kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW});                                   
@@ -1069,7 +1069,7 @@ void ConvolutionUtils<T>::sconv2d(const std::vector<NDArray<T>*>& inArrs, NDArra
 //////////////////////////////////////////////////////////////////////////
 // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]        
 template <typename T>
-void ConvolutionUtils<T>::vol2col(NDArray<T>& volume, NDArray<T>& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
+void ConvolutionUtils<T>::vol2col(NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
 
     const Nd4jLong bS = volume.sizeAt(0);
     const Nd4jLong iC = volume.sizeAt(1);
@@ -1170,7 +1170,7 @@ else
 //////////////////////////////////////////////////////////////////////////
 // [bS, iC, kD, kH, kW, oD, oH, oW] is de-convoluted to [bS, iC, iD, iH, iW]
 template <typename T>
-void ConvolutionUtils<T>::col2vol(NDArray<T>& columns, NDArray<T>& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
+void ConvolutionUtils<T>::col2vol(NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
 
     const Nd4jLong bS = volume.sizeAt(0);
     const Nd4jLong iC = volume.sizeAt(1);
@@ -1270,7 +1270,7 @@ else
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void ConvolutionUtils<T>::upsampling2d(const NDArray<T>& input, NDArray<T>& output, const int factorH, const int factorW, const bool isNCHW) {
+void ConvolutionUtils<T>::upsampling2d(const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW) {
     // input  has shape [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC) 
     // output has shape [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
     
@@ -1306,7 +1306,7 @@ void ConvolutionUtils<T>::upsampling2d(const NDArray<T>& input, NDArray<T>& outp
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void ConvolutionUtils<T>::upsampling3d(const NDArray<T>& input, NDArray<T>& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
+void ConvolutionUtils<T>::upsampling3d(const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
     // input  has shape [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC) 
     // output has shape [bS, iC, factorD*iD, factorH*iH, factorW*iW ] (NCDHW) or [bS, factorD*iD, factorH*iH, factorW*iW, iC] (NDHWC)
     std::vector<Nd4jLong> indIn  = {0,0,  0,0,  0,0,  0,0,  0,0};
@@ -1346,7 +1346,7 @@ void ConvolutionUtils<T>::upsampling3d(const NDArray<T>& input, NDArray<T>& outp
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void ConvolutionUtils<T>::upsampling2dBP(const NDArray<T>& gradO, NDArray<T>& gradI, const bool isNCHW) {
+void ConvolutionUtils<T>::upsampling2dBP(const NDArray& gradO, NDArray& gradI, const bool isNCHW) {
     // gradO has shape [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
     // gradI has shape [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)     
     std::vector<Nd4jLong> indIn  = {0,0,  0,0,  0,0,  0,0};
@@ -1363,7 +1363,7 @@ void ConvolutionUtils<T>::upsampling2dBP(const NDArray<T>& gradO, NDArray<T>& gr
         for(int iw = 0; iw < gradI.sizeAt(dimIH+1); ++iw) {
             indIn[j0] = ih; indIn[j1] = ih+1; 
             indIn[j2] = iw; indIn[j3] = iw+1; 
-            NDArray<T> subGradI = gradI(indIn);
+            NDArray subGradI = gradI(indIn);
 
             for(int fh = 0; fh < factorH; ++fh) {
                 for(int fw = 0; fw < factorW; ++fw) {                    
@@ -1384,7 +1384,7 @@ void ConvolutionUtils<T>::upsampling2dBP(const NDArray<T>& gradO, NDArray<T>& gr
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void ConvolutionUtils<T>::upsampling3dBP(const NDArray<T>& gradO, NDArray<T>& gradI, const bool isNCDHW) {
+void ConvolutionUtils<T>::upsampling3dBP(const NDArray& gradO, NDArray& gradI, const bool isNCDHW) {
     // input  has shape [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC) 
     // output has shape [bS, iC, factorD*iD, factorH*iH, factorW*iW ] (NCDHW) or [bS, factorD*iD, factorH*iH, factorW*iW, iC] (NDHWC)
     std::vector<Nd4jLong> indIn  = {0,0,  0,0,  0,0,  0,0,  0,0};
@@ -1404,7 +1404,7 @@ void ConvolutionUtils<T>::upsampling3dBP(const NDArray<T>& gradO, NDArray<T>& gr
                 indIn[j0] = id; indIn[j1] = id+1;
                 indIn[j2] = ih; indIn[j3] = ih+1;
                 indIn[j4] = iw; indIn[j5] = iw+1;
-                NDArray<T> subGradI = gradI(indIn);
+                NDArray subGradI = gradI(indIn);
 
             for(int fd = 0; fd < factorD; ++fd) {
                 for(int fh = 0; fh < factorH; ++fh) {
@@ -1427,7 +1427,7 @@ void ConvolutionUtils<T>::upsampling3dBP(const NDArray<T>& gradO, NDArray<T>& gr
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void ConvolutionUtils<T>::maxPool2d(NDArray<T>* input, NDArray<T>* output, const std::vector<int>& params, NDArray<T>* indices) {
+void ConvolutionUtils<T>::maxPool2d(NDArray* input, NDArray* output, const std::vector<int>& params, NDArray* indices) {
 
     int kH = params[0];
     int kW = params[1];
@@ -1467,7 +1467,7 @@ void ConvolutionUtils<T>::maxPool2d(NDArray<T>* input, NDArray<T>* output, const
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const T* extraParams) {
+void ConvolutionUtils<T>::pooling2d(NDArray& input, NDArray& output, const T* extraParams) {
     // input is  [bS, iC, iH, iW]
     // output is [bS, iC, oH, oW]
     T* out = output.getBuffer();
@@ -1649,7 +1649,7 @@ void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void ConvolutionUtils<T>::pooling3d(NDArray<T>& input, NDArray<T>& output, const T* extraParams) {
+void ConvolutionUtils<T>::pooling3d(NDArray& input, NDArray& output, const T* extraParams) {
     // input is  [bS, iC, iD, iH, iW]
     // output is [bS, iC, oD, oH, oW]
     T* out = output.getBuffer();
@@ -1876,7 +1876,7 @@ void ConvolutionUtils<T>::pooling3d(NDArray<T>& input, NDArray<T>& output, const
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void ConvolutionUtils<T>::pooling2dBP(NDArray<T>& input, NDArray<T>& gradO, NDArray<T>& gradI, const T* extraParams) {
+void ConvolutionUtils<T>::pooling2dBP(NDArray& input, NDArray& gradO, NDArray& gradI, const T* extraParams) {
     // input [bS, iC, iH, iW]
     // gradI [bS, iC, iH, iW] -> gradI is output in this function
     // gradO [bS, iC, oH, oW]    
@@ -2070,7 +2070,7 @@ void ConvolutionUtils<T>::pooling2dBP(NDArray<T>& input, NDArray<T>& gradO, NDAr
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void ConvolutionUtils<T>::pooling3dBP(NDArray<T>& input, NDArray<T>& gradO, NDArray<T>& gradI, const T* extraParams) {
+void ConvolutionUtils<T>::pooling3dBP(NDArray& input, NDArray& gradO, NDArray& gradI, const T* extraParams) {
     // input [bS, iC, iD, iH, iW]
     // gradI [bS, iC, iD, iH, iW] -> gradI is output in this function
     // gradO [bS, iC, oD, oH, oW]    
