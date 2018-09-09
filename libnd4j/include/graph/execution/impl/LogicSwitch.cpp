@@ -59,7 +59,7 @@ namespace nd4j {
                 if (!__variableSpace->hasVariable(pair1))
                     __variableSpace->putVariable(pair1, new Variable(nullptr, nullptr, node->id(), 1));
 
-                if (result->getScalar(0) == (T) 0.0f) {
+                if (result->getScalar<int>(0) == 0) {
                     __flowPath->markBranch(node->id(), 0);
                     __variableSpace->getVariable(pair0)->setNDArray(input->getNDArray());
                     __variableSpace->getVariable(pair0)->markRemovable(false);
@@ -87,7 +87,7 @@ namespace nd4j {
                 if (!__variableSpace->hasVariable(pair1))
                     __variableSpace->putVariable(pair1, new Variable(nullptr, nullptr, node->id(), 1));
 
-                if (boolean->getScalar(0) ==  0.0) {
+                if (boolean->getScalar<int>(0) ==  0) {
                     // false
                     nd4j_debug("Node_%i: FALSE branch active\n", node->id());
                     __flowPath->markBranch(node->id(), 0);

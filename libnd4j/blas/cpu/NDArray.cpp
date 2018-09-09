@@ -2238,7 +2238,7 @@ NDArray NDArray::transp() const {
 
 
     //////////////////////////////////////////////////////////////////////////
-    void NDArray::applyTrueBroadcast(nd4j::broadcast::Ops op, const NDArray* other, NDArray* target, const bool checkTargetShape, void *extraArgs) const {
+    void NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape, void *extraArgs) const {
         if(target == nullptr || other == nullptr)
             throw std::runtime_error("NDArray::applyTrueBroadcast method: target or other = nullptr !");
 
@@ -2303,7 +2303,7 @@ NDArray NDArray::transp() const {
         std::vector<int> sameDims = ShapeUtils::getDimsWithSameShape(target, pMin);
 
         if(max == this) {
-            target->applyBroadcast(op, sameDims, pMin, nullptr, extraArgs);
+            target->applyBroadcast(op.b, sameDims, pMin, nullptr, extraArgs);
         }
         else {
             auto dimsToExclude = ShapeUtils::evalDimsToExclude(target->rankOf(), sameDims);
@@ -2312,8 +2312,7 @@ NDArray NDArray::transp() const {
 #pragma omp parallel for schedule(guided)
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
                 auto targetSubArr = (*target)(i, dimsToExclude);
-                // FIXME: uncomment
-                //pMin->applyPairwiseTransform(op, &targetSubArr, &targetSubArr, extraArgs);
+                pMin->applyPairwiseTransform(op.p, &targetSubArr, &targetSubArr, extraArgs);
             }
         }
 
@@ -2322,7 +2321,7 @@ NDArray NDArray::transp() const {
     }
 
 //////////////////////////////////////////////////////////////////////////
-    NDArray* NDArray::applyTrueBroadcast(nd4j::broadcast::Ops op, const NDArray* other, void *extraArgs) const {
+    NDArray* NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, void *extraArgs) const {
         Nd4jLong* newShapeInfo = nullptr;
         if(!ShapeUtils::evalBroadcastShapeInfo(*this, *other, true, newShapeInfo, _workspace))          // the rank of new array = max->rankOf)()
             throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
@@ -2339,7 +2338,7 @@ NDArray NDArray::transp() const {
 
 
     //////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::applyTrueBroadcast(nd4j::broadcast::Ops op, const NDArray& other, void *extraArgs) const {
+    NDArray NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray& other, void *extraArgs) const {
         auto pResult = this->applyTrueBroadcast(op, &other, extraArgs);
         pResult->_isShapeAlloc = false;
         pResult->_isBuffAlloc  = false;
@@ -3021,7 +3020,7 @@ NDArray NDArray::transp() const {
             return result;
         }
 
-        return this->applyTrueBroadcast(nd4j::broadcast::Add, other);
+        return this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), other);
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -3108,9 +3107,9 @@ NDArray NDArray::transp() const {
             Nd4jLong *bShape = nullptr;
             auto p = ShapeUtils::evalBroadcastShapeInfo(this, &other, true, bShape, this->_workspace);
             if (shape::shapeEquals(this->shapeInfo(), bShape))
-                this->applyTrueBroadcast(nd4j::broadcast::Add, &other, this, true);
+                this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), &other, this, true);
             else
-                *this = this->applyTrueBroadcast(nd4j::broadcast::Add, other);
+                *this = this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), other);
 
             RELEASE(bShape, this->_workspace);
         }
@@ -3123,9 +3122,9 @@ NDArray NDArray::transp() const {
             Nd4jLong *bShape = nullptr;
             auto p = ShapeUtils::evalBroadcastShapeInfo(this, &other, true, bShape, this->_workspace);
             if (shape::shapeEquals(this->shapeInfo(), bShape))
-                this->applyTrueBroadcast(nd4j::broadcast::Subtract, &other, this, true);
+                this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &other, this, true);
             else
-                *this = this->applyTrueBroadcast(nd4j::broadcast::Subtract, other);
+                *this = this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), other);
 
             RELEASE(bShape, this->_workspace);
         }
@@ -3154,7 +3153,7 @@ NDArray NDArray::transp() const {
             return result;
         }
 
-        return this->applyTrueBroadcast(nd4j::broadcast::Subtract, other);
+        return this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), other);
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -3188,7 +3187,7 @@ NDArray NDArray::transp() const {
             return result;
         }
 
-        return this->applyTrueBroadcast(nd4j::broadcast::Multiply, other);
+        return this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), other);
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -3216,9 +3215,9 @@ NDArray NDArray::transp() const {
             Nd4jLong *bShape = nullptr;
             auto p = ShapeUtils::evalBroadcastShapeInfo(this, &other, true, bShape, this->_workspace);
             if (shape::shapeEquals(this->shapeInfo(), bShape))
-                this->applyTrueBroadcast(nd4j::broadcast::Multiply, &other, this, true);
+                this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), &other, this, true);
             else
-                *this = this->applyTrueBroadcast(nd4j::broadcast::Multiply, other);
+                *this = this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), other);
 
             RELEASE(bShape, this->_workspace);
         }
@@ -3245,7 +3244,7 @@ NDArray NDArray::transp() const {
             return result;
         }
 
-        return this->applyTrueBroadcast(nd4j::broadcast::Divide, other);
+        return this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), other);
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -3275,9 +3274,9 @@ NDArray NDArray::transp() const {
             Nd4jLong *bShape = nullptr;
             auto p = ShapeUtils::evalBroadcastShapeInfo(this, &other, true, bShape, this->_workspace);
             if (shape::shapeEquals(this->shapeInfo(), bShape))
-                this->applyTrueBroadcast(nd4j::broadcast::Divide, &other, this, true);
+                this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &other, this, true);
             else
-                *this = this->applyTrueBroadcast(nd4j::broadcast::Divide, other);
+                *this = this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), other);
 
             RELEASE(bShape, this->_workspace);
         }

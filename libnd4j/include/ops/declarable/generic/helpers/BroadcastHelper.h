@@ -48,7 +48,7 @@ namespace nd4j {
                 } else if (x->isScalar() && y->isScalar()) { // x->isScalar() && y->isScalar()
 				    x->applyScalar(op.s, y, z, nullptr);
 			    } else if (ShapeUtils::areShapesBroadcastable(*x, *y)) {
-                    x->applyTrueBroadcast(op.b, y, z, true, extraArgs);
+                    x->applyTrueBroadcast(op, y, z, true, extraArgs);
                     return z;
                 } else {
                     auto sx = ShapeUtils::shapeAsString(x);

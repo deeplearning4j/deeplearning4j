@@ -33,6 +33,7 @@
 #include <array/ResultSet.h>
 #include <helpers/ShapeBuilders.h>
 #include <op_enums.h>
+#include <ops/BroadcastOpsTuple.h>
 
 
 namespace nd4j {
@@ -546,9 +547,9 @@ namespace nd4j {
         *  other - input array 
         *  extraParams - extra parameters for operation
         */                       
-        NDArray applyTrueBroadcast(nd4j::broadcast::Ops op, const NDArray& other, void *extraArgs = nullptr) const;
+        NDArray applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray& other, void *extraArgs = nullptr) const;
 
-        NDArray* applyTrueBroadcast(nd4j::broadcast::Ops op, const NDArray* other, void *extraArgs = nullptr) const;
+        NDArray* applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, void *extraArgs = nullptr) const;
 
         /**
         *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
@@ -557,7 +558,7 @@ namespace nd4j {
         *  checkTargetShape - if true check whether target shape is suitable for broadcasting
         *  extraParams - extra parameters for operation
         */
-        void applyTrueBroadcast(nd4j::broadcast::Ops op, const NDArray* other, NDArray* target, const bool checkTargetShape = true, void *extraArgs = nullptr) const;
+        void applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape = true, void *extraArgs = nullptr) const;
 
         /** 
         *  apply a scalar operation to an array

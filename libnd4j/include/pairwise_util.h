@@ -30,8 +30,10 @@
 #define omp_get_max_threads() 1
 #define omp_set_num_threads(threads)
 #endif
-#include <pairwise_util.h>
+
+#include <templatemath.h>
 #include <pointercast.h>
+#include <op_boilerplate.h>
 #include <dll.h>
 #include <nd4jmemset.h>
 #ifdef _OPENMP
@@ -356,14 +358,11 @@ inline void quickSort(StridePermutation *arr, int elements) {
  * Returns 0 on success, -1 on failure.
  */
 template <typename X, typename Y>
-#ifdef __CUDACC__
-__host__ __device__
-#endif
-int PrepareTwoRawArrayIter(int ndim, Nd4jLong *shape,
+int _CUDA_HD PrepareTwoRawArrayIter(int ndim, Nd4jLong *shape,
                            X *dataA, Nd4jLong *stridesA,
-                           X *dataB, Nd4jLong *stridesB,
+                           Y *dataB, Nd4jLong *stridesB,
                            int *out_ndim, Nd4jLong *outShape,
-                           Y **out_dataA, Nd4jLong *outStridesA,
+                           X **out_dataA, Nd4jLong *outStridesA,
                            Y **out_dataB, Nd4jLong *outStridesB) {
     int i;
 

@@ -46,7 +46,7 @@ namespace nd4j {
                 varOut->getNDArray()->assign(varIn->getNDArray());
 
                 if (Environment::getInstance()->isDebugAndVerbose())
-                    nd4j_debug("In after: [%f]; Out after: [%f]\n", varIn->getNDArray()->meanNumber(), varOut->getNDArray()->meanNumber());
+                    nd4j_debug("In after: [%f]; Out after: [%f]\n", varIn->getNDArray()->meanNumber().getScalar<float>(0), varOut->getNDArray()->meanNumber().getScalar<float>(0));
             }
 
             return nd4j::Status::OK();

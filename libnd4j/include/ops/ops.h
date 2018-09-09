@@ -3004,7 +3004,7 @@ namespace simdOps {
         }
 
         op_def static X op(X d1, Y d2, X *extraParams) {
-            return (d1 == d2) ? static_cast<X>(0.0f) :  static_cast<X>(1.0f);
+            return (d1 == static_cast<X>(d2)) ? static_cast<X>(0.0f) :  static_cast<X>(1.0f);
         }
 
         op_def static void aggregateExtraParams(X *extraParamsTotal, X *extraParamsLocal) {
