@@ -701,22 +701,23 @@ template<typename T>
 void ConvolutionUtils<T>::getSizesAndIndexesConv2d(const bool isNCHW, const Nd4jLong* inShapeInfo, const Nd4jLong* outShapeInfo, int& bS, int& iC, int& iH, int& iW, int& oC, int& oH, int& oW, int& indIOioC, int& indIiH, int& indWiC, int& indWoC, int& indWkH, int& indOoH) {
 
     // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    // weights [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)
+    // weights [kH, kW, iC, oC] always
     // output  [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
+    indWiC = 2; indWoC = 3; 
 
     if(!isNCHW) {
-        indIOioC = 3; indIiH = 1; indWkH = 0; indOoH = 1; indWoC = 3; indWiC = 2;
+        indIOioC = 3; indIiH = 1; indWkH = 0; indOoH = 1; 
     }
     else {        
-        indIOioC = 1; indIiH = 2; indWkH = 2; indOoH = 2; indWoC = 0; indWiC = 1;              
+        indIOioC = 1; indIiH = 2; indWkH = 2; indOoH = 2;
     }    
 
     bS = inShapeInfo[1];                          // batch size
-    iC = inShapeInfo[indIOioC+1];                   // input channels        
-    iH = inShapeInfo[indIiH+1];                     // input height
+    iC = inShapeInfo[indIOioC+1];                 // input channels        
+    iH = inShapeInfo[indIiH+1];                   // input height
     iW = inShapeInfo[indIiH+2];                   // input width
-    oC = outShapeInfo[indIOioC+1];                  // output channels
-    oH = outShapeInfo[indOoH+1];                    // output height
+    oC = outShapeInfo[indIOioC+1];                // output channels
+    oH = outShapeInfo[indOoH+1];                  // output height
     oW = outShapeInfo[indOoH+2];                  // output width    
 }
 
