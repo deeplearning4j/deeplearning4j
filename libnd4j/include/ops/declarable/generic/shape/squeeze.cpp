@@ -42,7 +42,7 @@ namespace nd4j {
             else if (block.width() > 1) {
                 auto a = INPUT_VARIABLE(1);
                 for (int e = 0; e < a->lengthOf(); e++) {
-                    int _a = (int) a->getScalar(e);
+                    int _a = a->getScalar<int>(e);
                     
                     if (_a < 0)
                         _a += input->rankOf();
@@ -52,8 +52,8 @@ namespace nd4j {
             }
 
             if (input->rankOf() == 0 || (input->rankOf() == 1 && input->lengthOf() == 1)) {
-                output->assign(input->buffer()[0]);
-                return ND4J_STATUS_OK;
+                output->assign(input);
+                return Status::OK();
             }
 
             std::vector<Nd4jLong> shape;
@@ -78,7 +78,7 @@ namespace nd4j {
                 delete tmp;
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(squeeze) {
@@ -113,7 +113,7 @@ namespace nd4j {
             else if (block.width() > 1) {
                 auto a = INPUT_VARIABLE(1);
                 for (int e = 0; e < a->lengthOf(); e++) {
-                    int _a = (int) a->getScalar(e);
+                    int _a = a->getScalar<int>(e);
                     
                     if (_a < 0)
                         _a += rank;

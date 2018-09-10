@@ -31,9 +31,9 @@ namespace ops {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(gather_nd, 2, 1, false, 0, 0) {
 
-	NDArray<T>* input   = INPUT_VARIABLE(0);
-    NDArray<T>* indices = INPUT_VARIABLE(1);
-    NDArray<T>* output  = OUTPUT_VARIABLE(0);
+	auto input   = INPUT_VARIABLE(0);
+    auto indices = INPUT_VARIABLE(1);
+    auto output  = OUTPUT_VARIABLE(0);
 
     const int rankIn = input->rankOf();
     const int rankInd = indices->rankOf();    

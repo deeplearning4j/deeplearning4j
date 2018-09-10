@@ -32,16 +32,16 @@ namespace ops  {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 
-    NDArray<T>* input    = INPUT_VARIABLE(0);
-    NDArray<T>* paddings = INPUT_VARIABLE(1);
-    NDArray<T>* output   = OUTPUT_VARIABLE(0);
+    auto input    = INPUT_VARIABLE(0);
+    auto paddings = INPUT_VARIABLE(1);
+    auto output   = OUTPUT_VARIABLE(0);
     std::vector<int>* argI = block.getIArguments();
 
     const int rank =  input->rankOf();    	
 
 	// input validation
-	std::string expectedPaddingsShape = ShapeUtils<T>::shapeAsString({rank, 2});        
-	std::string currentPaddingsShape  = ShapeUtils<T>::shapeAsString(paddings);        
+	std::string expectedPaddingsShape = ShapeUtils::shapeAsString({rank, 2});
+	std::string currentPaddingsShape  = ShapeUtils::shapeAsString(paddings);
 	REQUIRE_TRUE(expectedPaddingsShape == currentPaddingsShape, 0, "PAD op: wrong shape of paddings array, expected is %s, but got %s instead !", expectedPaddingsShape.c_str(), currentPaddingsShape.c_str());
 	T padValue = T(0.f);
 	// in case of REFLECT and SYMMETRIC modes paddings must obey additional shape requirements 
@@ -72,12 +72,12 @@ DECLARE_SHAPE_FN(pad) {
 
 	// check shape of paddings 
 	auto inputShapeInfo = inputShape->at(0);
-    NDArray<T>* paddings = INPUT_VARIABLE(1);
+    auto paddings = INPUT_VARIABLE(1);
     const int rank =  inputShapeInfo[0];    	
 
     // paddings validation
-    std::string expectedPaddingsShape = ShapeUtils<T>::shapeAsString({rank, 2});        
-	std::string currentPaddingsShape  = ShapeUtils<T>::shapeAsString(paddings);
+    std::string expectedPaddingsShape = ShapeUtils::shapeAsString({rank, 2});
+	std::string currentPaddingsShape  = ShapeUtils::shapeAsString(paddings);
 	REQUIRE_TRUE(expectedPaddingsShape == currentPaddingsShape, 0, "PAD op: wrong shape of paddings array, expected is %s, but got %s instead !", expectedPaddingsShape.c_str(), currentPaddingsShape.c_str());
 		
 	Nd4jLong* outShapeInfo = nullptr;

@@ -30,8 +30,8 @@ namespace ops  {
 ////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(invert_permutation, 1, 1, false, 0, 0) {
     
-    NDArray<T>* input = INPUT_VARIABLE(0);
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto input = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
 
     REQUIRE_TRUE(input->isVector(), 0 , "INVERT_PERMUTATION op: input array must be vector, but got shape %s instead !", ShapeUtils<T>::shapeAsString(input).c_str());
     

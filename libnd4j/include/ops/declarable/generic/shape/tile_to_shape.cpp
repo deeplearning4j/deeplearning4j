@@ -62,10 +62,10 @@ namespace ops {
 
         auto gradX = OUTPUT_VARIABLE(0);
 
-        auto axisX = ShapeUtils<T>::evalBroadcastBackwardAxis(input->shapeInfo(), epsNext->shapeInfo());
+        auto axisX = ShapeUtils::evalBroadcastBackwardAxis(input->shapeInfo(), epsNext->shapeInfo());
 
         if (!axisX.empty()) {
-            auto sum = epsNext->template reduceAlongDimension<simdOps::Sum<T>>(axisX);
+            auto sum = epsNext->reduceAlongDimension(reduce::Sum, axisX);
             gradX->assign(sum);
             delete sum;
         } else

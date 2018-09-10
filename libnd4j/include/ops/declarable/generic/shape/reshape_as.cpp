@@ -30,17 +30,17 @@ namespace nd4j {
     //////////////////////////////////////////////////////////////////////////
     CUSTOM_OP_IMPL(reshapeas, 2, 1, true, 0, 0) {
     
-        NDArray<T> *x = INPUT_VARIABLE(0);
-        NDArray<T> *y = INPUT_VARIABLE(1);
+        auto x = INPUT_VARIABLE(0);
+        auto y = INPUT_VARIABLE(1);
 
-        NDArray<T>* z = OUTPUT_VARIABLE(0);
+        auto z = OUTPUT_VARIABLE(0);
         std::vector<Nd4jLong> shapeNew(y->shapeOf(), y->shapeOf() + y->rankOf());
         char order = y->ordering();
 
         if (x->reshapei(order, shapeNew)) {
             *z = *x;
             STORE_RESULT(*z);
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         return ND4J_STATUS_BAD_INPUT;

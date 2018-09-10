@@ -29,11 +29,11 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
-            x->template applyTransform<simdOps::Log1p<T>>(z, nullptr);
+            x->applyTransform(transform::Log1p, z, nullptr);
 
             STORE_RESULT(z);
             
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(log1p, Log1p);
     }

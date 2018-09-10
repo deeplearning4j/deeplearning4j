@@ -94,15 +94,15 @@ namespace nd4j {
                 std::vector<Nd4jLong> shapeNew(s->lengthOf());
 
                 for (int e = 0; e < (int) s->lengthOf(); e++) {
-                    auto dim = static_cast<Nd4jLong>(s->getScalar(e));
+                    auto dim = s->getScalar<Nd4jLong >(e);
                     if (dim == -1){
                         long shapeLength = 1;
                         for(int e2 = 0; e2 < e; e2++){
-                            shapeLength *= static_cast<Nd4jLong>(s->getScalar(e2));
+                            shapeLength *= s->getScalar<Nd4jLong>(e2);
                         }
                         for(int e2 = e + 1; e2 < (int) s->lengthOf(); e2++){
-                            REQUIRE_TRUE(static_cast<Nd4jLong>(s->getScalar(e2)) != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
-                            shapeLength *= static_cast<Nd4jLong>(s->getScalar(e2));
+                            REQUIRE_TRUE(s->getScalar<Nd4jLong>(e2) != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
+                            shapeLength *= s->getScalar<Nd4jLong>(e2);
                         }
                         long realShape = x->lengthOf() / shapeLength;
                         shapeNew[e] = realShape;
@@ -197,21 +197,21 @@ namespace nd4j {
                     REQUIRE_TRUE(x->lengthOf() == 1, 0, "Reshape: new length doesn't match existing array");
 
 
-                    return SHAPELIST(ShapeUtils<T>::createScalarShapeInfo(block.getWorkspace()));
+                    return SHAPELIST(ShapeBuilders::createScalarShapeInfo(block.getWorkspace()));
                 }
 
                 std::vector<Nd4jLong> shapeNew(y->lengthOf());
 
                 for (int e = 0; e < (int) y->lengthOf(); e++) {
-                    auto dim = (long)y->getIndexedScalar(e);
+                    auto dim = y->getIndexedScalar<Nd4jLong>(e);
                     if (dim == -1){
                         long shapeLength = 1;
                         for(int e2 = 0; e2 < e; e2++){
-                            shapeLength *= (long)y->getIndexedScalar(e2);
+                            shapeLength *= y->getIndexedScalar<Nd4jLong>(e2);
                         }
                         for(int e2 = e + 1; e2 < (int)y->lengthOf(); e2++){
-                            REQUIRE_TRUE((int)y->getIndexedScalar(e2) != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
-                            shapeLength *= (long)y->getIndexedScalar(e2);
+                            REQUIRE_TRUE(y->getIndexedScalar<Nd4jLong>(e2) != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
+                            shapeLength *= y->getIndexedScalar<Nd4jLong>(e2);
                         }
                         long realShape = shape::length(inp) / shapeLength;
                         shapeNew[e] = realShape;

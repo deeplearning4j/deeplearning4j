@@ -32,7 +32,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
 
     // first of all take into account possible presence of empty arrays
     // also if scalar is present -> copy its value to vector with length=1
-    std::vector<NDArray<T>*> nonEmptyArrs;
+    std::vector<NDArray*> nonEmptyArrs;
     std::vector<int> arrsToDelete;
     int index = 0;
     for(int i = 0; i < block.width(); ++i) {
@@ -40,7 +40,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
         if(!INPUT_VARIABLE(i)->isEmpty()) {
             
             if(INPUT_VARIABLE(i)->rankOf() == 0) {
-                NDArray<T>* vec = new NDArray<T>('c', {1}, block.getWorkspace());
+                auto vec = new NDArray('c', {1}, block.getWorkspace());
                 (*vec)(0.) = (*INPUT_VARIABLE(i))(0.);
                 nonEmptyArrs.push_back(vec);
                 arrsToDelete.push_back(index);
@@ -55,7 +55,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
     const int numOfArrs = nonEmptyArrs.size();    
     REQUIRE_TRUE(numOfArrs > 0, 0, "CONCAT op: at least one input array must be non-empty!");
 
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
     
     const int rank = nonEmptyArrs[0]->rankOf();     //  look up to first non-empty array
 

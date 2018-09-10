@@ -30,8 +30,8 @@ namespace ops {
 
 CUSTOM_OP_IMPL(tile, 1, 1, false, 0, -2) {
     
-    NDArray<T>* input  = INPUT_VARIABLE(0);
-    NDArray<T>* output = OUTPUT_VARIABLE(0);    
+    auto input  = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
     
     const int inRank = input->rankOf();
     std::vector<Nd4jLong> reps;
@@ -42,7 +42,7 @@ CUSTOM_OP_IMPL(tile, 1, 1, false, 0, -2) {
     } 
     else if (block.width() > 1)  {
         
-        NDArray<T>* reps_vector = INPUT_VARIABLE(1);
+        auto reps_vector = INPUT_VARIABLE(1);
         REQUIRE_TRUE(reps_vector->lengthOf() == inRank, 0, "TILE op: repeats vector length should be equal to input rank, but got %i and %i correspondingly !", reps_vector->lengthOf(), inRank);
 
         reps = reps_vector->template asVectorT<Nd4jLong>();
@@ -69,7 +69,7 @@ DECLARE_SHAPE_FN(tile) {
     } 
     else if (block.width() > 1)  {
         
-        NDArray<T>* reps_vector = INPUT_VARIABLE(1);
+        auto reps_vector = INPUT_VARIABLE(1);
         REQUIRE_TRUE(reps_vector->lengthOf() == inRank, 0, "TILE op: repeats vector length should be equal to input rank, but got %i and %i correspondingly !", reps_vector->lengthOf(), inRank);
         reps = reps_vector->template asVectorT<Nd4jLong>();
     }
@@ -96,9 +96,9 @@ DECLARE_SHAPE_FN(tile) {
 ////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(tile_bp, 1, 1, false, 0, -2) {
     
-    NDArray<T>* input = INPUT_VARIABLE(0);
-    NDArray<T>* gradO = INPUT_VARIABLE(1);
-    NDArray<T>* gradI = OUTPUT_VARIABLE(0);    
+    auto input = INPUT_VARIABLE(0);
+    auto gradO = INPUT_VARIABLE(1);
+    auto gradI = OUTPUT_VARIABLE(0);
     
     const int inRank = input->rankOf();
 
@@ -112,7 +112,7 @@ CUSTOM_OP_IMPL(tile_bp, 1, 1, false, 0, -2) {
     } 
     else if (block.width() > 1)  {
         
-        NDArray<T>* reps_vector = INPUT_VARIABLE(1);
+        auto reps_vector = INPUT_VARIABLE(1);
         REQUIRE_TRUE(reps_vector->lengthOf() == inRank, 0, "TILE_BP op: repeats vector length should be equal to input rank, but got %i and %i correspondingly !", reps_vector->lengthOf(), inRank);
 
         reps = reps_vector->template asVectorT<Nd4jLong>();
@@ -145,7 +145,7 @@ DECLARE_SHAPE_FN(tile_bp) {
     } 
     else if (block.width() > 1)  {
         
-        NDArray<T>* reps_vector = INPUT_VARIABLE(1);
+        auto reps_vector = INPUT_VARIABLE(1);
         REQUIRE_TRUE(reps_vector->lengthOf() == inRank, 0, "TILE_BP op: repeats vector length should be equal to input rank, but got %i and %i correspondingly !", reps_vector->lengthOf(), inRank);
         reps = reps_vector->template asVectorT<Nd4jLong>();
     }

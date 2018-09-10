@@ -35,12 +35,12 @@ namespace nd4j {
             auto xO = OUTPUT_VARIABLE(0);
             auto yO = OUTPUT_VARIABLE(1);
 
-            x->template applyScalar<simdOps::Add<T>>(1.0, xO, nullptr);
-            y->template applyScalar<simdOps::Add<T>>(2.0, yO, nullptr);
+            x->applyScalar(scalar::Add, 1.0, xO, nullptr);
+            y->applyScalar(scalar::Add, 2.0, yO, nullptr);
 
             STORE_2_RESULTS(*xO, *yO);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(TestOp2i2o, testop2i2o);
     }

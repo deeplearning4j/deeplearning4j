@@ -29,10 +29,10 @@ namespace ops {
 
 CUSTOM_OP_IMPL(mirror_pad, 2, 1, false, 0, 1) {
 
-    NDArray<T>* input    = INPUT_VARIABLE(0);
-    NDArray<T>* paddings = INPUT_VARIABLE(1);
+    auto input    = INPUT_VARIABLE(0);
+    auto paddings = INPUT_VARIABLE(1);
     
-    NDArray<T>* output  = OUTPUT_VARIABLE(0);
+    auto output  = OUTPUT_VARIABLE(0);
 
     const int mode = INT_ARG(0);    // 0 - REFLECT, else - SYMMETRIC
     const int includeBorder = mode ? 0 : 1;
@@ -56,8 +56,8 @@ CUSTOM_OP_IMPL(mirror_pad, 2, 1, false, 0, 1) {
 
 DECLARE_SHAPE_FN(mirror_pad) {
 
-    NDArray<T>* input    = INPUT_VARIABLE(0);
-    NDArray<T>* paddings = INPUT_VARIABLE(1);
+    auto input    = INPUT_VARIABLE(0);
+    auto paddings = INPUT_VARIABLE(1);
 
     const int rank = input->rankOf() ? input->rankOf() : 1;                 // if scalar is input then vector is output
     const int includeBorder = static_cast<bool>(INT_ARG(0)) ? 0 : 1;        // 0 - REFLECT, else - SYMMETRIC

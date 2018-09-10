@@ -29,9 +29,9 @@ namespace ops  {
 
 OP_IMPL(random_shuffle, 1, 1, true) {
     
-    NDArray<T>* input  = INPUT_VARIABLE(0);
+    auto input  = INPUT_VARIABLE(0);
     const bool isInplace = block.isInplace();
-    NDArray<T>* output = isInplace ? nullptr : OUTPUT_VARIABLE(0);
+    auto output = isInplace ? nullptr : OUTPUT_VARIABLE(0);
 
     nd4j::random::RandomBuffer* rng = block.getRNG();   
     

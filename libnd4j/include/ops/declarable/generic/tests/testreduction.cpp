@@ -29,7 +29,7 @@ namespace nd4j {
             auto z = OUTPUT_VARIABLE(0);
 
             STORE_RESULT(*z);
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
     }
 }

@@ -52,7 +52,7 @@ namespace ops {
             if (w == 2 && a == 0) {
                 auto axis = INPUT_VARIABLE(1);
                 for (int e = 0; e < axis->lengthOf(); e++) {
-                    auto ax = static_cast<int>(axis->getScalar(e));
+                    auto ax = axis->getScalar<int>(e);
                     if (ax < 0)
                         ax += x->rankOf();
 
@@ -72,7 +72,7 @@ namespace ops {
                 if (!block.isInplace())
                     output->assign(x);
 
-                return ND4J_STATUS_OK;
+                return Status::OK();
             }
 
             if(block.isInplace()) {		// in-place
@@ -93,7 +93,7 @@ namespace ops {
 
     DECLARE_SHAPE_FN(transpose) {
         if (block.width() == 1) {
-            auto outputShapeInfo = ShapeUtils<T>::evalTranspShapeInfo(*INPUT_VARIABLE(0), block.workspace());
+            auto outputShapeInfo = ShapeUtils::evalTranspShapeInfo(*INPUT_VARIABLE(0), block.workspace());
             return SHAPELIST(outputShapeInfo);
         } else {
             // this is basically permute mode
@@ -109,13 +109,13 @@ namespace ops {
                 shapeList->push_back(newshape);
             } else if (arguments->size() > 0 || inputShape->size() > 1) {
                 auto axis = arguments->size() > 0 ? *arguments : (INPUT_VARIABLE(1))->template asVectorT<int>();
-                auto outputShapeInfo = ShapeUtils<T>::evalPermShapeInfo(axis.data(), axis.size(), *INPUT_VARIABLE(0), block.workspace());
+                auto outputShapeInfo = ShapeUtils::evalPermShapeInfo(axis.data(), axis.size(), *INPUT_VARIABLE(0), block.workspace());
                 shapeList->push_back(outputShapeInfo);
             } else if (inputShape->size() == 2) {
                 // dead end
                 auto axis = INPUT_VARIABLE(1);
                 auto axisV = axis->template asVectorT<Nd4jLong>();
-                auto newshape = ShapeUtils<T>::evalPermShapeInfo(axisV.data(), axisV.size(), *INPUT_VARIABLE(0), block.workspace());
+                auto newshape = ShapeUtils::evalPermShapeInfo(axisV.data(), axisV.size(), *INPUT_VARIABLE(0), block.workspace());
 
                 shapeList->push_back(newshape);
             } else {
@@ -123,7 +123,7 @@ namespace ops {
                 for (int e = rank - 1; e >= 0; e--)
                     arguments->emplace_back(e);
 
-                auto outputShapeInfo = ShapeUtils<T>::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0), block.workspace());
+                auto outputShapeInfo = ShapeUtils::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0), block.workspace());
                 shapeList->push_back(outputShapeInfo);
             }
 

@@ -26,14 +26,14 @@
 namespace nd4j {
     namespace ops {
         OP_IMPL(Floor, 1, 1, true) {
-            NDArray<T> *first = INPUT_VARIABLE(0);
-            auto z = this->getZ(block);
+            auto first = INPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
 
-            first->template applyTransform<simdOps::Floor<T>>(z, nullptr);
+            first->applyTransform(transform::Floor, z, nullptr);
 
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(floor, Floor);
     }

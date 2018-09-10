@@ -32,8 +32,8 @@ CUSTOM_OP_IMPL(clip_by_global_norm, 1, 2, true, 1, 0) {
     T globalNorm = 0; //sqrt(sum([l2norm(t)**2 for t in t_list]))
 
     for (int e = 0; e < block.width(); e++) {
-        NDArray<T>* input = INPUT_VARIABLE(e);
-        T l2norm = input->template reduceNumber<simdOps::Norm2<T>>();
+        auto input = INPUT_VARIABLE(e);
+        auto l2norm = input->reduceNumber(reduce::Norm2);
         globalNorm += l2norm * l2norm;
     }
 
@@ -43,8 +43,8 @@ CUSTOM_OP_IMPL(clip_by_global_norm, 1, 2, true, 1, 0) {
 
     for (int e = 0; e < block.width(); e++) {
         // all-reduce
-        NDArray<T>* input = INPUT_VARIABLE(e);
-        NDArray<T>* output = OUTPUT_VARIABLE(e);
+        auto input = INPUT_VARIABLE(e);
+        auto output = OUTPUT_VARIABLE(e);
 
         if (globalNorm <= clipNorm) {
             output->assign(input);
@@ -71,7 +71,7 @@ DECLARE_SHAPE_FN(clip_by_global_norm) {
         shapeList->push_back(newShape);
     }
 
-    shapeList->push_back(ShapeUtils<T>::createScalarShapeInfo(block.workspace()));
+    shapeList->push_back(ShapeBuilders::createScalarShapeInfo(block.workspace()));
     return shapeList;
 }
 

@@ -30,7 +30,7 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////
 // here iArgs is int vector of ordered set of dimensions to be permuted
         CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
-            NDArray<T> *x = INPUT_VARIABLE(0);
+            auto x = INPUT_VARIABLE(0);
 
             bool replace = false;
 
@@ -38,7 +38,7 @@ namespace nd4j {
             if (block.width() == 2 && arguments->size() == 0) {
                 auto axis = INPUT_VARIABLE(1);
                 for (int e = 0; e < axis->lengthOf(); e++) {
-                    int ax = (int) axis->getScalar(e);
+                    int ax = axis->getScalar<int>(e);
                     if (ax < 0)
                         ax += x->rankOf();
 
@@ -58,7 +58,7 @@ namespace nd4j {
                 if (!block.isInplace())
                     output->assign(x);
 
-                return ND4J_STATUS_OK;
+                return Status::OK();
             }
 
             if(block.isInplace()) {		// in-place
@@ -66,7 +66,7 @@ namespace nd4j {
                 STORE_RESULT(x);
             } else {	
                 if (!replace) {			// not-in-place        
-                    NDArray<T>* output = OUTPUT_VARIABLE(0);
+                    auto output = OUTPUT_VARIABLE(0);
                     // nd4j_printv("permute shape", *arguments);
                     auto result = x->permute(*arguments);
                     output->assign(result);
@@ -79,7 +79,7 @@ namespace nd4j {
                     OVERWRITE_RESULT(output);
                 }           
             }
-        return ND4J_STATUS_OK;
+        return Status::OK();
         }
 
         DECLARE_SHAPE_FN(permute) {
@@ -94,7 +94,7 @@ namespace nd4j {
                 newshape[3] = 99;
                 shapeList->push_back(newshape);
             } else if (inputShape->size() == 1 && arguments->size() > 0) {
-                auto outputShapeInfo = ShapeUtils<T>::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0), block.workspace());
+                auto outputShapeInfo = ShapeUtils::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0), block.workspace());
                 shapeList->push_back(outputShapeInfo);
             } else if (inputShape->size() == 2) {
                 // dead end
@@ -106,7 +106,7 @@ namespace nd4j {
                 for (int e = rank - 1; e >= 0; e--)
                     arguments->emplace_back(e);
 
-                auto outputShapeInfo = ShapeUtils<T>::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0), block.workspace());
+                auto outputShapeInfo = ShapeUtils::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0), block.workspace());
                 shapeList->push_back(outputShapeInfo);
             }
     

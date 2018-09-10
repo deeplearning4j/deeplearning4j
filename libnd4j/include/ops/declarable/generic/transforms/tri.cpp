@@ -28,7 +28,7 @@ namespace ops  {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(tri, -2, 1, false, 0, 1) {
 	
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
 
     const int diag = block.getIArguments()->size() > 2 ? INT_ARG(2) : 0;
 

@@ -29,8 +29,8 @@ namespace ops  {
 
 CONFIGURABLE_OP_IMPL(clipbyavgnorm, 1, 1, true, 1, 0) {
 
-    NDArray<T>* input  = INPUT_VARIABLE(0);
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto input  = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
 
     const T clipNorm = T_ARG(0);
     const bool isInplace = block.isInplace();

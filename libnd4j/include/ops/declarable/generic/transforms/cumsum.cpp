@@ -58,7 +58,7 @@ CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, 2) {
         nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(input, output, dims, exclusive, reverse);
     }
     
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
 CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, 2) {
@@ -107,7 +107,7 @@ CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, 2) {
             nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(gradOut->buffer(), gradOut->shapeInfo(), output->buffer(), output->shapeInfo(), true, false);
     }
         
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
     DECLARE_SHAPE_FN(cumsum_bp) {

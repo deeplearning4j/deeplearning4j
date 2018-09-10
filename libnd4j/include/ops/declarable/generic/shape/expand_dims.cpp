@@ -30,15 +30,14 @@ namespace nd4j {
             auto output = OUTPUT_VARIABLE(0);
 
             if (input->isScalar()) {
-                output->assign(input->getScalar(0));
-                return ND4J_STATUS_OK;
+                output->assign(input);
+                return Status::OK();
             }
 
-            auto axis = block.numI() > 0 ? INT_ARG(0) : static_cast<int>(INPUT_VARIABLE(1)->getScalar(0));
+            auto axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->getScalar<int>(0);
 
             if (axis < 0)
                 axis += input->rankOf() + 1;
-
 
             REQUIRE_TRUE(axis >= 0 && axis <= input->rankOf()+1, 0, "ExpandDims: axis should be in range of 0...%i in this case, but got %i instead", input->rankOf() + 1, axis);
 
@@ -55,7 +54,7 @@ namespace nd4j {
 
             STORE_RESULT(output);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(expand_dims) {
@@ -83,7 +82,7 @@ namespace nd4j {
             auto x_rank = shape::rank(inShape);
             char order = shape::order(inShape);
 
-            auto axis = block.numI() > 0 ? INT_ARG(0) : static_cast<int>(INPUT_VARIABLE(1)->getScalar(0));
+            auto axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->getScalar<int>(0);
 
             if (axis < 0)
                 axis += x_rank + 1;

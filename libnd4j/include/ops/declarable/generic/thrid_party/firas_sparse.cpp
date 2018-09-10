@@ -63,22 +63,22 @@ namespace nd4j {
                 sparse2dense.insert(pair);
             }
 
-            std::unique_ptr<ResultSet<T>> rows(x->allTensorsAlongDimension({1}));
+            std::unique_ptr<ResultSet> rows(x->allTensorsAlongDimension({1}));
 
 #pragma omp parallel for schedule(dynamic) proc_bind(close)
             for (int r = 0; r < batchSize; r++) {
                 auto row = rows->at(r);
 
                 for (int e = 0; e < numColumns; e += 2) {
-                    int idx = row->getIndexedScalar(e);
+                    int idx = row->getIndexedScalar<int>(e);
                     if (idx < 0)
                         break;
 
                     int denseIdx = sparse2dense.at(idx);
 
 
-                    T value = row->getIndexedScalar(e + 1);
-                    T current = z->getScalar(r, denseIdx);
+                    float value = row->getIndexedScalar<float>(e + 1);
+                    float current = z->getScalar<float>(r, denseIdx);
                     z->putScalar(r, denseIdx, value + current);
                 }
             }
@@ -86,7 +86,7 @@ namespace nd4j {
 
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(firas_sparse) {

@@ -55,7 +55,7 @@ namespace nd4j {
                 nd4j::ops::helpers::_prefix<T, simdOps::Multiply<T>>(input, output, dims, exclusive, reverse);
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         CUSTOM_OP_IMPL(cumprod_bp, 2, 1, false, 0, 2) {
@@ -80,10 +80,10 @@ namespace nd4j {
             }
 
             nd4j::ops::helpers::_prefix<T, simdOps::Multiply<T>>(input, output, dims, exclusive, reverse);
-            std::unique_ptr<NDArray<T>> val(output->dup());
+            std::unique_ptr<NDArray> val(output->dup());
  
-            gradOut->template applyPairwiseTransform<simdOps::Multiply<T>>(output, val.get(), nullptr);
-            val->template applyPairwiseTransform<simdOps::Divide<T>>(input, val.get(), nullptr);
+            gradOut->applyPairwiseTransform(pairwise::Multiply, output, val.get(), nullptr);
+            val->applyPairwiseTransform(pairwise::Divide, input, val.get(), nullptr);
             if (!exclusive && !reverse) {
                 if (dims.size())
                     nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val.get(), output, dims, true, false);

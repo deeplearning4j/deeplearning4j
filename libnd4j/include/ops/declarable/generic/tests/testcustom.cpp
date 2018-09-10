@@ -32,7 +32,7 @@ namespace nd4j {
             //new NDArray<T>('c', {100, 100});
 
             STORE_RESULT(*z);
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SHAPE_FN(testcustom) {
             // this test op will just return back original shape doubled

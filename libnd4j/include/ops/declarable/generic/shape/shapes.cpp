@@ -34,7 +34,7 @@ namespace nd4j {
                     z->putIndexedScalar(i, x->sizeAt(i));
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         };
         DECLARE_SYN(shape_n, shapes_of);
 
