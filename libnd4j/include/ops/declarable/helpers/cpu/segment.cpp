@@ -719,8 +719,8 @@ namespace helpers {
                 }
             }
         }
-        return ND4J_STATUS_OK;
         delete tempRes;
+        return ND4J_STATUS_OK;    
     }
 
     // segmen min
