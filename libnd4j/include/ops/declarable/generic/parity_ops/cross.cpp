@@ -45,7 +45,7 @@ namespace ops {
             helpers::_crossBatched(a, b, o);
         }
 
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
 }
 }

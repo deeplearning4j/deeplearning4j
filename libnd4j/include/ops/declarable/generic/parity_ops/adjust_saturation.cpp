@@ -38,9 +38,11 @@ namespace ops {
         else if (block.width() > 1) {
             auto _d = INPUT_VARIABLE(1);
             if (!_d->isScalar()) {
-                auto str = ShapeUtils<T>::shapeAsString(_d);
+                auto str = ShapeUtils::shapeAsString(_d);
                 REQUIRE_TRUE(_d->isScalar(), 0, "AdjustSaturation: delta should be scalar NDArray, but got %s instead", str.c_str());
             }
+
+            delta = _d->getScalar<double>(0);
         }
 
         bool isNHWC = false;
@@ -51,9 +53,10 @@ namespace ops {
 
         REQUIRE_TRUE(numChannels == 3, 0, "AdjustSaturation: this operation expects image with 3 channels (R, G, B), but got % instead", numChannels);
 
+        // FIXME: delta should be NDArray scalar
         helpers::_adjust_saturation(input, output, delta, isNHWC);
 
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
 }
 }

@@ -28,14 +28,13 @@
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(broadcast_dynamic_shape, 2, 1, false, 0, 0) {
-
-            NDArray<T>* x_shape = INPUT_VARIABLE(0);
-            NDArray<T>* y_shape = INPUT_VARIABLE(1);
+            auto x_shape = INPUT_VARIABLE(0);
+            auto y_shape = INPUT_VARIABLE(1);
             
             REQUIRE_TRUE(x_shape->isVector(), 0, "broadcast_dynamic_shape: The first argument should be a vector");
             REQUIRE_TRUE(y_shape->isVector(), 0, "broadcast_dynamic_shape: The second argument should be a vector");
 
-            NDArray<T>* output = OUTPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
      
             return helpers::bdsFunctor(x_shape, y_shape, output);
         }

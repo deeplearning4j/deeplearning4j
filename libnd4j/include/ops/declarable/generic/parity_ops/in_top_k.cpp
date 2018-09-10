@@ -28,10 +28,10 @@
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(in_top_k, 2, 1, true, 0, 1) {
-            NDArray<T>* predictions = INPUT_VARIABLE(0);
-            NDArray<T>* target = INPUT_VARIABLE(1);
+            auto predictions = INPUT_VARIABLE(0);
+            auto target = INPUT_VARIABLE(1);
 
-            NDArray<T>* result = OUTPUT_VARIABLE(0);
+            auto result = OUTPUT_VARIABLE(0);
             REQUIRE_TRUE(block.numI() > 0, 0, "in_top_k: Parameter k is needed to be set");
             REQUIRE_TRUE(predictions->sizeAt(0) == target->sizeAt(0), 0, "in_top_k: The predictions and target should have equal number of columns");
             REQUIRE_TRUE(predictions->rankOf() == 2, 0, "in_top_k: The predictions array shoud have rank 2, but %i given", predictions->rankOf());

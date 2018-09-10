@@ -30,10 +30,10 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(dropout, 1, 1, true, 1, 1) {
-    NDArray<T>* input   = INPUT_VARIABLE(0); // lookup param
+    auto input = INPUT_VARIABLE(0); // lookup param
 
-    NDArray<T>* reduceShape = nullptr; // this param is optional
-    NDArray<T>* output  = OUTPUT_VARIABLE(0); // 
+    NDArray *reduceShape = nullptr; // this param is optional
+    auto output  = OUTPUT_VARIABLE(0); //
     
     int seed = INT_ARG(0);
     
@@ -41,11 +41,11 @@ CONFIGURABLE_OP_IMPL(dropout, 1, 1, true, 1, 1) {
     if (block.width() > 1)
         reduceShape = INPUT_VARIABLE(1);
 
-    REQUIRE_TRUE(probValue > T(0.f) && probValue <= T(1.f), 0, "dropout: Probability should be with range 0 to 1.");
+    REQUIRE_TRUE(probValue > 0.f && probValue <= 1.f, 0, "dropout: Probability should be with range 0 to 1.");
 
-    if (probValue == T(1.0)) {
+    if (probValue == 1.0f) {
         *output = *input;
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
     nd4j::random::RandomBuffer* rng = block.getRNG();
     

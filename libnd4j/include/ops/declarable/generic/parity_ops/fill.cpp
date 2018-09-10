@@ -41,7 +41,7 @@ namespace nd4j {
             for (int e = 0; e < shapeArray->lengthOf(); e++)
                 shape[e] = static_cast<Nd4jLong>((*shapeArray)(e));
 
-            auto result = NDArray<T>::valueOf(shape, scalar, 'c');
+            auto result = NDArray::valueOf(shape, scalar, 'c');
 
             OUTPUT_VARIABLE(0)->assign(result);
             STORE_RESULT(result);

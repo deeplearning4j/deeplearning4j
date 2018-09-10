@@ -27,9 +27,9 @@
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(moments, 1, 2, false, 0, -2) {
-            NDArray<T>* input = INPUT_VARIABLE(0);
-            NDArray<T>* means = OUTPUT_VARIABLE(0);
-            NDArray<T>* variances = OUTPUT_VARIABLE(1);
+            auto input = INPUT_VARIABLE(0);
+            auto means = OUTPUT_VARIABLE(0);
+            auto variances = OUTPUT_VARIABLE(1);
 
             std::vector<int> axis = *block.getIArguments();
             const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
@@ -50,10 +50,10 @@ namespace nd4j {
             }
 
             std::vector<int>& dims = axis;
-            input->template varianceAlongDimension<simdOps::SummaryStatsVariance<T>>(variances, false, axis);
-            input->template reduceAlongDimension<simdOps::Mean<T>>(means, axis, keepDims);
+            input->varianceAlongDimension(variance::SummaryStatsVariance, variances, false, axis);
+            input->reduceAlongDimension(reduce::Mean, means, axis, keepDims);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(moments) {
@@ -65,7 +65,7 @@ namespace nd4j {
                 auto axisVector = INPUT_VARIABLE(1);
 
                 for (int e = 0; e < axisVector->lengthOf(); e++) {
-                    int ca = (int) axisVector->getScalar(e);
+                    int ca = axisVector->getScalar<int>(e);
                     if (ca < 0)
                         ca += input->rankOf();
 
@@ -76,8 +76,8 @@ namespace nd4j {
             //std::vector<int> dims = ShapeUtils<T>::convertAxisToTadTarget(input->rankOf(), {axis});
             const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
     
-            auto meanShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, keepDims, false, block.workspace());
-            auto varianceShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, keepDims, false, block.workspace());
+            auto meanShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, keepDims, false, block.workspace());
+            auto varianceShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, keepDims, false, block.workspace());
             return SHAPELIST(meanShape, varianceShape); 
         }
     }

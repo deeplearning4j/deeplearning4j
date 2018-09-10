@@ -29,8 +29,7 @@ namespace nd4j {
 namespace ops {
 
 CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
-
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
 
     const int numInArrs = block.width();
     const int numTArgs  = block.getTArguments()->size();

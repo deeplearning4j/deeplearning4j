@@ -30,13 +30,11 @@ namespace nd4j {
             auto output = OUTPUT_VARIABLE(0);
 
             REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
-            int numZeros = 0;
 
-            T sum = input->template reduceNumber<simdOps::SquaredNorm<T>>();
-            sum /= 2;
+            auto sum = input->reduceNumber(reduce::SquaredNorm) / 2;
             (*output)(0.) = sum;
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SHAPE_FN(l2_loss) {
             Nd4jLong *newShape;

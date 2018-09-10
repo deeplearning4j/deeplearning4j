@@ -28,9 +28,8 @@ namespace nd4j {
 namespace ops {
 
     CONFIGURABLE_OP_IMPL(log_poison_loss, 2, 1, true, 0, 0) {
-
-        NDArray<T>* targets = INPUT_VARIABLE(0);
-        NDArray<T>* input = INPUT_VARIABLE(1);
+        auto targets = INPUT_VARIABLE(0);
+        auto input = INPUT_VARIABLE(1);
         bool computeFullLoss = false;
 
         if (block.numI() > 0)
@@ -38,11 +37,11 @@ namespace ops {
         
         REQUIRE_TRUE(targets->isSameShape(input), 0, "log_poison_loss: The shape of both input params should be equal.");
 
-        NDArray<T>* output = OUTPUT_VARIABLE(0);
+        auto output = OUTPUT_VARIABLE(0);
         if (!computeFullLoss)
-            targets->template applyPairwiseTransform<simdOps::LogPoisonLoss<T>>(input, output, nullptr);
+            targets->applyPairwiseTransform(pairwise::LogPoisonLoss, input, output, nullptr);
         else
-            targets->template applyPairwiseTransform<simdOps::LogPoisonLossFull<T>>(input, output, nullptr);
+            targets->applyPairwiseTransform(pairwise::LogPoisonLossFull, input, output, nullptr);
 
         return ND4J_STATUS_OK;
     }

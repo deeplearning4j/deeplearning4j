@@ -31,9 +31,9 @@ namespace nd4j {
 
             REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
 
-            output->putScalar(0, (T) input->rankOf());
+            output->assign(static_cast<Nd4jLong>(input->rankOf()));
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SHAPE_FN(rank) {
             Nd4jLong *newShape;

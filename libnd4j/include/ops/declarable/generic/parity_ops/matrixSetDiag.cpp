@@ -28,11 +28,10 @@ namespace nd4j {
 namespace ops  {
 
 CONFIGURABLE_OP_IMPL(matrix_set_diag, 2, 1, false, 0, 0) {
+    auto input    = INPUT_VARIABLE(0);
+    auto diagonal = INPUT_VARIABLE(1);
 
-    NDArray<T>* input    = INPUT_VARIABLE(0);
-    NDArray<T>* diagonal = INPUT_VARIABLE(1);
-
-    NDArray<T>* output   = OUTPUT_VARIABLE(0);
+    auto output   = OUTPUT_VARIABLE(0);
 
     REQUIRE_TRUE(diagonal->rankOf() == input->rankOf()-1, 0, "MATRIX_SET_DIAG op: rank of diagonal array must be smaller by one compared to rank of input array, but got %i and %i correspondingly !", diagonal->rankOf(), input->rankOf());
 
@@ -44,7 +43,7 @@ CONFIGURABLE_OP_IMPL(matrix_set_diag, 2, 1, false, 0, 0) {
 
     helpers::matrixSetDiag(input, diagonal, output);
 
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
 DECLARE_SYN(MatrixSetDiag, matrix_set_diag);

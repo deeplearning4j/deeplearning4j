@@ -29,15 +29,14 @@ namespace ops  {
 
 
 CUSTOM_OP_IMPL(parallel_stack, -1, 1, false, 0, 0) {
-	
-	NDArray<T>* input  = INPUT_VARIABLE(0);
-	NDArray<T>* output = OUTPUT_VARIABLE(0);
+	auto input  = INPUT_VARIABLE(0);
+	auto output = OUTPUT_VARIABLE(0);
 	
 	// check whether shapes of all input array are the same				
 	for (int i = 0; i < (int) block.width() - 1; ++i)
 		REQUIRE_TRUE(shape::equalsSoft((INPUT_VARIABLE(i))->getShapeInfo(), (INPUT_VARIABLE(i+1))->getShapeInfo()), 0, "PARALLEL_STACK op: the shapes of all input arrays must be the same !");
  	 	
- 	std::vector<NDArray<T>*> inArrs(block.width());
+ 	std::vector<NDArray*> inArrs(block.width());
  	for(int i = 0; i < block.width(); ++i)
 		inArrs[i] = INPUT_VARIABLE(i);
 	

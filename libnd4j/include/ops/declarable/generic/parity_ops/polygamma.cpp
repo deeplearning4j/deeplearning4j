@@ -28,11 +28,10 @@ namespace nd4j {
 namespace ops  {
 
 CONFIGURABLE_OP_IMPL(polygamma, 2, 1, false, 0, 0) {
+    auto n = INPUT_VARIABLE(0);
+    auto x = INPUT_VARIABLE(1);
 
-    NDArray<T>* n = INPUT_VARIABLE(0);
-    NDArray<T>* x = INPUT_VARIABLE(1);
-
-    NDArray<T>* output   = OUTPUT_VARIABLE(0);
+    auto output   = OUTPUT_VARIABLE(0);
 
     REQUIRE_TRUE(n->isSameShape(x), 0, "POLYGAMMA op: two input arrays n and x must have the same shapes, but got n=%s and x=%s instead !", ShapeUtils<T>::shapeAsString(n).c_str(), ShapeUtils<T>::shapeAsString(x).c_str());
 
@@ -44,7 +43,7 @@ CONFIGURABLE_OP_IMPL(polygamma, 2, 1, false, 0, 0) {
     }
 
     *output = helpers::polyGamma<T>(*n, *x);
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
 DECLARE_SYN(polyGamma, polygamma);

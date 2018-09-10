@@ -34,15 +34,15 @@ namespace nd4j {
 
             auto labels = INPUT_VARIABLE(0);
             auto predictions = INPUT_VARIABLE(1);
-            NDArray<T>* weights = nullptr;
+            NDArray *weights = nullptr;
             if(block.width() > 2){
                 weights = INPUT_VARIABLE(2);
                 REQUIRE_TRUE(weights->isSameShape(predictions),0, "CONFUSION_MATRIX: Weights and predictions should have equal shape");
             }
             auto output = OUTPUT_VARIABLE(0);
 
-            int minPrediction = predictions->template reduceNumber<simdOps::Min<T>>();
-            int minLabel = labels->template reduceNumber<simdOps::Min<T>>();
+            int minPrediction = predictions->reduceNumber(reduce::Min).getScalar<int>(0);
+            int minLabel = labels->reduceNumber(reduce::Min).getScalar<int>(0);
 
             REQUIRE_TRUE(minLabel >=0, 0, "CONFUSION_MATRIX: Labels contains negative values !");
             REQUIRE_TRUE(minPrediction >=0, 0, "CONFUSION_MATRIX: Predictions contains negative values !");
@@ -52,11 +52,10 @@ namespace nd4j {
 
             helpers::confusionFunctor(labels, predictions, weights, output);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(confusion_matrix) {
-
             auto labels = INPUT_VARIABLE(0);
             auto predictions = INPUT_VARIABLE(1);
 
@@ -66,8 +65,8 @@ namespace nd4j {
                 numClasses = INT_ARG(0);
             }
             else  {
-                int maxPrediction = predictions->template reduceNumber<simdOps::Max<T>>();
-                int maxLabel = labels->template reduceNumber<simdOps::Max<T>>();
+                int maxPrediction = predictions->reduceNumber(reduce::Max).getScalar<int>(0);
+                int maxLabel = labels->reduceNumber(reduce::Max).getScalar<int>(0);
                 numClasses = (maxPrediction >= maxLabel) ?  maxPrediction+1 : maxLabel+1;
             }
 

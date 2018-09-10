@@ -27,13 +27,12 @@ namespace nd4j {
     namespace ops {
         OP_IMPL(biasadd, 2, 1, true) {
             //REQUIRE_OK(this->validateInput2D(block));
-
-            NDArray<T> *input = INPUT_VARIABLE(0);
-            NDArray<T> *bias = INPUT_VARIABLE(1);
+            auto input = INPUT_VARIABLE(0);
+            auto bias = INPUT_VARIABLE(1);
 
             REQUIRE_TRUE(bias->isRowVector(), 0, "Bias array should be a vector");
 
-            NDArray<T> *z = OUTPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
 
             if (input->isMatrix())
                 input->addRowVector(bias, z);
@@ -51,7 +50,7 @@ namespace nd4j {
 
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(bias_add, biasadd);
 

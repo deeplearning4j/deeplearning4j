@@ -25,7 +25,6 @@ namespace ops {
 #if NOT_EXCLUDED(OP_reduce_dot_bp)
 
     DECLARE_SHAPE_FN(reduce_dot_bp) {    
-
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
     
         Nd4jLong* outShapeInfo1;// = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims);
@@ -37,7 +36,6 @@ namespace ops {
     }
 
     CUSTOM_OP_IMPL(reduce_dot_bp, 3, 2, false, 0, 0) {
-
             auto inputX = INPUT_VARIABLE(0);
             auto inputY = INPUT_VARIABLE(1);
             auto epsilon = INPUT_VARIABLE(2);
@@ -50,16 +48,16 @@ namespace ops {
             //REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_sum_bp: The second param shape should be the same as result shape.");
             if (epsilon->isScalar()) {
                 output1->assign(epsilon);
-                output1->template applyPairwiseTransform<simdOps::Multiply<T>>(inputY, output1, nullptr);
+                output1->applyPairwiseTransform(pairwise::Multiply, inputY, output1, nullptr);
                 output2->assign(epsilon);
-                output2->template applyPairwiseTransform<simdOps::Multiply<T>>(inputX, output2, nullptr);
+                output2->applyPairwiseTransform(pairwise::Multiply, inputX, output2, nullptr);
             }
             else {
                 auto axes = *block.getIArguments();
                 helpers::reduceDotBP(inputX, inputY, epsilon, output1, output2, axes);
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
     }
 #endif
 

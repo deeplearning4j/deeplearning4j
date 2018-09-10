@@ -28,9 +28,9 @@ namespace nd4j {
         OP_IMPL(ones_as, 1, 1, false) {
             auto output = OUTPUT_VARIABLE(0);
 
-            *output = static_cast<T>(1.f);
+            output->assign(1L);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
     }
 }

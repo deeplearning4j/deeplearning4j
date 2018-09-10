@@ -28,8 +28,8 @@ namespace nd4j {
 namespace ops  {
 		
 		CUSTOM_OP_IMPL(diag_part, 1, 1, false, 0, 0) {
-			NDArray<T>* input  = INPUT_VARIABLE(0);
-    		NDArray<T>* output = OUTPUT_VARIABLE(0);
+			auto input  = INPUT_VARIABLE(0);
+    		auto output = OUTPUT_VARIABLE(0);
 
     		const int inRank = input->rankOf();
     
@@ -48,7 +48,7 @@ namespace ops  {
     			++j;
     		}
     
-		    return ND4J_STATUS_OK;
+		    return Status::OK();
 		}
 		DECLARE_SYN(DiagPart, diag_part);
 

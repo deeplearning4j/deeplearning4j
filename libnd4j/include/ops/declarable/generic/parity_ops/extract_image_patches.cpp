@@ -24,8 +24,8 @@
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(extract_image_patches, 1, 1, false, 0, 7) {
-            NDArray<T>* input = INPUT_VARIABLE(0);
-            NDArray<T>* output = OUTPUT_VARIABLE(0);
+            auto input = INPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
             int ksizeRows = INT_ARG(0);
             int ksizeCols = INT_ARG(1);
             int kstrideRows = INT_ARG(2);
@@ -41,7 +41,7 @@ namespace nd4j {
             else {
                 helpers::extractPatches(input, output, ksizeRows, ksizeCols, kstrideRows, kstrideCols, krateRows, krateCols, isSame);
             }
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(extract_image_patches) {

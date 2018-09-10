@@ -28,10 +28,9 @@
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(bincount, 1, 1, false, 0, 0) {
-
-            NDArray<T>* values = INPUT_VARIABLE(0);
+            auto values = INPUT_VARIABLE(0);
             
-            NDArray<T>* weights = nullptr;
+            NDArray *weights = nullptr;
             if (block.width() > 1) {
                 weights = INPUT_VARIABLE(1);
                 REQUIRE_TRUE(values->isSameShape(weights), 0, "bincount: the input and weights shapes should be equals");
@@ -47,12 +46,12 @@ namespace nd4j {
                     maxLength = nd4j::math::nd4j_min(maxLength, INT_ARG(1));
             }
 
-            NDArray<T>* result = OUTPUT_VARIABLE(0);
-            result->assign((T)0.0);
+            auto result = OUTPUT_VARIABLE(0);
+            result->assign(0.0f);
              
             helpers::adjustWeights(values, weights, result, minLength, maxLength);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(bincount) {

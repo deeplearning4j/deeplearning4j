@@ -25,15 +25,14 @@
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(matrix_diag, 1, 1, false, 0, 0) {
-            NDArray<T>* input  = INPUT_VARIABLE(0);
-            NDArray<T>* output = OUTPUT_VARIABLE(0);
+            auto input  = INPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
 
             REQUIRE_TRUE(!input->isScalar(), 0, "CUSTOM_OP matrix_diag: input array must be at list a vector, but scalar was given!");
             return helpers::matrixDiag(input, output);
         }
 
         DECLARE_SHAPE_FN(matrix_diag) {
-
             Nd4jLong* outShapeInfo = nullptr;
             auto in = inputShape->at(0);
             int inRank = shape::rank(in);

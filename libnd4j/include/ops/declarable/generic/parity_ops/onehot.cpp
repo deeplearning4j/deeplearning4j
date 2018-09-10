@@ -41,7 +41,7 @@ namespace nd4j {
             if (block.numI() > 1) {
                 depth = INT_ARG(1);
             } else if (block.width() > 1) {
-                depth = static_cast<int>(INPUT_VARIABLE(1)->getScalar(0));
+                depth = INPUT_VARIABLE(1)->getScalar<int>(0);
             }
 
             REQUIRE_TRUE(depth > 0, 0, "OneHot: depth must be positive value");
@@ -64,13 +64,13 @@ namespace nd4j {
             if (axis < 0)
                 axis = output->rankOf() + axis;
 
-            auto vec = ShapeUtils<T>::convertAxisToTadTarget(input->rankOf(), {axis});
+            auto vec = ShapeUtils::convertAxisToTadTarget(input->rankOf(), {axis});
             auto tads = output->allTensorsAlongDimension({axis});
             for (int e = 0; e < tads->size(); e++) {
                 auto tad = tads->at(e);
                 tad->assign(off);
 
-                int idx = (int) input->getScalar(e);
+                int idx = input->getScalar<int>(e);
                 if (idx < 0 || idx >= tad->lengthOf())
                     continue;
 
@@ -94,7 +94,7 @@ namespace nd4j {
              if (block.numI() > 1) {
                 depth = INT_ARG(1);
             } else if (block.width() > 1) {
-                depth = static_cast<int>(INPUT_VARIABLE(1)->getScalar(0));
+                depth = INPUT_VARIABLE(1)->getScalar<int>(0);
             }
 
             REQUIRE_TRUE(depth > 0, 0, "OneHot: depth must be positive value");
@@ -109,7 +109,7 @@ namespace nd4j {
                 ALLOCATE(shape, block.getWorkspace(), rank, Nd4jLong);
                 memcpy(shape, shape::shapeOf(inShape), rank * sizeof(Nd4jLong));
 
-                ShapeUtils<T>::insertDimension(rank, shape, axis, depth);
+                ShapeUtils::insertDimension(rank, shape, axis, depth);
                 shape::shapeBuffer(rank, shape, newShape);
 
                 RELEASE(shape, block.getWorkspace());

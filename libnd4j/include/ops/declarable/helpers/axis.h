@@ -26,8 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    void adjustAxis(NDArray<T>* input, NDArray<T>* axisVector, std::vector<int>& output);
+    void adjustAxis(NDArray* input, NDArray* axisVector, std::vector<int>& output);
 
 
     void adjustAxis(Nd4jLong *inputShape, std::vector<int> &axisVector);

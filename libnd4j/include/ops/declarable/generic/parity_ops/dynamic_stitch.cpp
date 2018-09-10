@@ -34,12 +34,12 @@ namespace ops {
             " both indeces and data lists with same length.");
         numOfData /= 2;
 
-        NDArray<T>* output = OUTPUT_VARIABLE(0);
-        std::vector<NDArray<T>*> inputs(numOfData);
-        std::vector<NDArray<T>*> indices(numOfData);
+        auto output = OUTPUT_VARIABLE(0);
+        std::vector<NDArray*> inputs(numOfData);
+        std::vector<NDArray*> indices(numOfData);
         for (int e = 0; e < numOfData; e++) {
-            NDArray<T> *data = INPUT_VARIABLE(numOfData + e);
-            NDArray<T> *index = INPUT_VARIABLE(e);
+            auto data = INPUT_VARIABLE(numOfData + e);
+            auto index = INPUT_VARIABLE(e);
             inputs[e] = data;
             indices[e] = index;
         }
@@ -48,14 +48,13 @@ namespace ops {
     }
 
     DECLARE_SHAPE_FN(dynamic_stitch) {
-
         int maxValue = 0;
         auto numOfData = block.width();
         numOfData /= 2; // only index part it's needed to review
         auto restShape = inputShape->at(numOfData);
         auto firstShape = inputShape->at(0);
         for(int i = 0; i < numOfData; i++) {
-            NDArray<T>* input = INPUT_VARIABLE(i);
+            auto input = INPUT_VARIABLE(i);
             
             for (int e = 0; e < input->lengthOf(); ++e) {
                 if (T(maxValue) < (*input)(e))
