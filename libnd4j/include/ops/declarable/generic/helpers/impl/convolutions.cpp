@@ -730,7 +730,7 @@ void ConvolutionUtils<T>::getSizesAndIndexesConv2d(const bool isNCHW, const Nd4j
     // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     // weights [kH, kW, iC, oC] always
     // output  [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
-    indWiC = 2; indWoC = 3; indWkH = 0;
+    indWkH = 0; indWiC = 2; indWoC = 3; 
 
     if(!isNCHW) {
         indIOioC = 3; indIiH = 1; indOoH = 1; 
@@ -763,11 +763,12 @@ void ConvolutionUtils<T>::getSizesAndIndexesConv3d(const bool isNCDHW, const NDA
     // weights [kD, kH, kW, iC, oC] (NDHWC) or [oC, iC, kD, kH, kW] (NCDHW)    
     // output  [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW)
 
+    indWkD = 0; indWiC = 3; indWoC = 4;
     if(!isNCDHW) {
-        indIOioC = 4; indIOioD = 1; indWkD = 0; indWoC = 4; indWiC = 3; 
+        indIOioC = 4; indIOioD = 1; 
     }
     else {        
-        indIOioC = 1; indIOioD = 2; indWkD = 2; indWoC = 0; indWiC = 1;
+        indIOioC = 1; indIOioD = 2;
     }    
 
     bS = input.sizeAt(0);                          // batch size

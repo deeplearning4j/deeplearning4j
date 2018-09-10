@@ -89,7 +89,7 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
 DECLARE_SHAPE_FN(deconv2d) {
 
     auto inputShapeInfo   = inputShape->at(0);                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    auto weightsShapeInfo = inputShape->at(1);                                    // [kH, kW, oC, iC] (NHWC) or [iC, oC, kH, kW] (NCHW)
+    auto weightsShapeInfo = inputShape->at(1);                                    // [kH, kW, oC, iC] always
     auto biasShapeInfo    = block.width() > 2 ? inputShape->at(2) : nullptr;      // [oC]
 
     const int rank = 4;

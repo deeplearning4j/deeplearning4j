@@ -1473,6 +1473,8 @@ TEST_F(ConvolutionTests, conv3d_bp_test3) {
     input = 2.;
     weights.linspace(0.1, 0.1);
     gradO.linspace(0.01, 0.01);    
+    weights.permutei({2, 3, 4, 1, 0});
+    expGradW.permutei({2, 3, 4, 1, 0});
 
     nd4j::ops::conv3dnew_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &weights, &bias, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
@@ -1766,7 +1768,7 @@ TEST_F(ConvolutionTests, conv3d_test4) {
     int dataFormat =  0;             // 1-NDHWC, 0-NCDHW
 
     NDArray<float> input   ('c', {bS, iC, iD, iH, iW});
-    NDArray<float> weights ('c', {oC, iC, kD, kH, kW});
+    NDArray<float> weights ('c', {kD, kH, kW, iC, oC});
     NDArray<float> expected('c', {2, 3, 2, 2, 2});
     input = 2.;
     weights = 0.5;
@@ -1791,7 +1793,7 @@ TEST_F(ConvolutionTests, conv3d_test5) {
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW    
 
     NDArray<float> input   ('c', {bS, iC, iD, iH, iW});
-    NDArray<float> weights ('c', {oC, iC, kD, kH, kW});
+    NDArray<float> weights ('c', {kD, kH, kW, iC, oC});
     NDArray<float> bias    ('c', {oC});
     NDArray<float> expected('c', {2, 3, 2, 2, 2});
 
@@ -1821,7 +1823,7 @@ TEST_F(ConvolutionTests, conv3d_test6) {
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW    
 
     NDArray<float> input   ('c', {bS, iC, iD, iH, iW});
-    NDArray<float> weights ('c', {oC, iC, kD, kH, kW});
+    NDArray<float> weights ('c', {kD, kH, kW, iC, oC});
     NDArray<float> bias    ('c', {oC},{1,2,3});
     NDArray<float> expected('c', {2, 3, 2, 2, 2},{49., 49.,49., 49., 49., 49.,49., 49., 50., 50.,50., 50., 50., 50.,50., 50., 
                                                   51., 51.,51., 51., 51., 51.,51., 51., 49., 49.,49., 49., 49., 49.,49., 49., 
@@ -1858,6 +1860,7 @@ TEST_F(ConvolutionTests, conv3d_test7) {
                                                   698. , 698. , 698. , 698. ,1159.8,1159.8,1159.8,1159.8,1159.8,1159.8,1159.8,1159.8});
     input = 2.;
     weights.linspace(0.1, 0.1);
+    weights.permutei({2, 3, 4, 1, 0});
     
     nd4j::ops::conv3dnew<float> op;
     ResultSet<float>* results = op.execute({&input, &weights, &bias}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
@@ -1886,7 +1889,8 @@ TEST_F(ConvolutionTests, conv3d_test8) {
                                                   696. , 696. , 696. , 696. , 696. , 696. , 696. , 696. ,1156.8,1156.8,1156.8,1156.8,1156.8,1156.8,1156.8,1156.8});
     input = 2.;
     weights.linspace(0.1, 0.1);
-    
+    weights.permutei({2, 3, 4, 1, 0});
+
     nd4j::ops::conv3dnew<float> op;
     ResultSet<float>* results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
     NDArray<float>* output = results->at(0);
@@ -2065,7 +2069,7 @@ TEST_F(ConvolutionTests, conv3d_test11) {
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
     NDArray<float> input   ('c', {bS, iC, iD, iH, iW});
-    NDArray<float> weights ('c', {oC, iC, kD, kH, kW});
+    NDArray<float> weights ('c', {kD, kH, kW, iC, oC});
     
     input = 2.;
     weights = 1.;
@@ -2088,7 +2092,7 @@ TEST_F(ConvolutionTests, conv3d_test12) {
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
     NDArray<float> input   ('c', {bS, iC, iD, iH, iW});
-    NDArray<float> weights ('c', {oC, iC, kD, kH, kW});
+    NDArray<float> weights ('c', {kD, kH, kW, iC, oC});
     NDArray<float> expected('c', {bS, oC, oD, oH, oW});
     
     input = 2.;
