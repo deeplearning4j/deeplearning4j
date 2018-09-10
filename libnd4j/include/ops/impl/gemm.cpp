@@ -117,7 +117,7 @@ namespace nd4j {
             auto y = reinterpret_cast<Y *>(vY);
             auto z = reinterpret_cast<Z *>(vZ);
 
-            auto aT = TRANS == CblasTrans ? reinterpret_cast<X *>(nd4j::blas::transpose(CblasColMajor, CblasRowMajor, M, N, x)) : x;
+            auto aT = TRANS == CblasTrans ? reinterpret_cast<X *>(nd4j::blas::transpose<X>(CblasColMajor, CblasRowMajor, M, N, reinterpret_cast<void *>(x))) : x;
 
 #pragma omp parallel for proc_bind(close)
             for (int r = 0; r < M; r++) {
