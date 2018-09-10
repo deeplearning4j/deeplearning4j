@@ -101,6 +101,32 @@ namespace nd4j {
         #endif
 
         /**
+         * 3D deconvolution implementation
+         * 
+         * IntArgs:
+         * 0:  filter(kernel) depth
+         * 1:  filter(kernel) height
+         * 2:  filter(kernel) width
+         * 3:  strides depth
+         * 4:  strides height
+         * 5:  strides width
+         * 6:  paddings depth
+         * 7:  paddings height
+         * 8:  paddings width
+         * 9:  dilations depth
+         * 10: dilations height
+         * 11: dilations width
+         * 12: same mode: 0 false, 1 true
+         * 13: data format (optional): 0-NDHWC, 1-NCDHW, default is 1
+         */
+
+        #if NOT_EXCLUDED(OP_deconv3d)
+        DECLARE_CUSTOM_OP(deconv3d, 2, 1, false, 0, 13);
+        DECLARE_CUSTOM_OP(deconv3d_bp, 3, 2, false, 0, 13);
+        #endif
+
+
+        /**
          * This op implements max pooling for convolution networks.
          * Expected Input: 4D array, NCHW format.
          *

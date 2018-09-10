@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 //
-// Created by george@skymind.io on 2/21/2018.
+// Created by george@skymind.io on 9/6/2018.
 //
 
 #include <ops/declarable/CustomOperations.h>
@@ -23,7 +23,7 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(unsorted_segment_min, 2, 1, false, 0, 0) {
+        CUSTOM_OP_IMPL(unsorted_segment_min, 2, 1, false, 0, 1) {
             NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* idxSegments = INPUT_VARIABLE(1);
             NDArray<T>* segmentedOutput = OUTPUT_VARIABLE(0);
@@ -59,6 +59,23 @@ namespace nd4j {
 
             return SHAPELIST(outputShape);
         }
+
+        CUSTOM_OP_IMPL(unsorted_segment_min_bp, 3, 2, false, 0, 1) {
+            return helpers::unsortedSegmentMinFunctorBP(INPUT_VARIABLE(0), INPUT_VARIABLE(1), INPUT_VARIABLE(2), INT_ARG(0), OUTPUT_VARIABLE(0));
+        }
+
+        DECLARE_SHAPE_FN(unsorted_segment_min_bp){
+            Nd4jLong* in = inputShape->at(0);
+            Nd4jLong* inIdx = inputShape->at(1);
+
+            Nd4jLong* outShape;
+            Nd4jLong* outIndex;
+            COPY_SHAPE(in, outShape);
+            COPY_SHAPE(inIdx, outIndex);
+            return SHAPELIST(outShape, outIndex);
+
+        }
+
     }
 
 }

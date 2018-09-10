@@ -1643,6 +1643,47 @@ TEST_F(DeclarableOpsTests5, EmbeddingLookup_2) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests5, EmbeddingLookup_3) {
+
+
+    NDArray<float> y('c', {3,2}, {5.f, 4.f, 4.f, 5.f, 3.f, 3.f});
+    NDArray<float> exp('c', {6, 3, 3}, {
+                6, 20, 11,    21, 12, 22,    13, 23, 14,
+                5, 20, 11,    21, 12, 22,    13, 23, 14,
+                5, 20, 11,    21, 12, 22,    13, 23, 14,
+                6, 20, 11,    21, 12, 22,    13, 23, 14,
+                4, 20, 11,    21, 12, 22,    13, 23, 14,
+                4, 20, 11,    21, 12, 22,    13, 23, 14 });
+
+    // y.printShapeInfo("y shape");
+    // y.printIndexedBuffer("y buffer");
+    NDArray<float> p1('c', {3,3}, {1, 20, 11, 21, 12, 22, 13, 23, 14});
+    NDArray<float> p2('c', {3,3}, {2, 20, 11, 21, 12, 22, 13, 23, 14});
+    NDArray<float> p3('c', {3,3}, {3, 20, 11, 21, 12, 22, 13, 23, 14});
+    NDArray<float> p4('c', {3,3}, {4, 20, 11, 21, 12, 22, 13, 23, 14});
+    NDArray<float> p5('c', {3,3}, {5, 20, 11, 21, 12, 22, 13, 23, 14});
+    NDArray<float> p6('c', {3,3}, {6, 20, 11, 21, 12, 22, 13, 23, 14});
+    NDArray<float> p7('c', {3,3}, {7, 20, 11, 21, 12, 22, 13, 23, 14});
+    NDArray<float> p8('c', {3,3}, {8, 20, 11, 21, 12, 22, 13, 23, 14});
+
+//    res = tf.nn.embedding_lookup((p1, p2, p3, p4, p5, p6, p7), ids, 'mod')
+
+    nd4j::ops::embedding_lookup<float> op;
+    ResultSet<float> *result = op.execute({&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &y}, {}, {1});
+    NDArray<float>* output = result->at(0);
+    // x.printShapeInfo("Input");
+    // output->printIndexedBuffer("Output");
+    // exp.printShapeInfo("Expected");
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_TRUE(exp.isSameShape(output));
+    // output->printIndexedBuffer("Output");
+    // exp.printIndexedBuffer("Expect");
+
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests5, DynamicPartition_1) {
     
     NDArray<float> x('c', {3, 4, 2}, {10, 20, 11, 21, 12, 22, 

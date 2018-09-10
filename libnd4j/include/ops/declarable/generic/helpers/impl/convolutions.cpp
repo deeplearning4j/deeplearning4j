@@ -695,6 +695,33 @@ void ConvolutionUtils<T>::avgPool3D(NDArray<T>& input, NDArray<T>& output, const
             }
         }
        
+//////////////////////////////////////////////////////////////////////////
+        template<typename T>
+        void ConvolutionUtils<T>::calcOutSizeDeconv3D(int& oD, int& oH, int& oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int iD, const int iH, const int iW, const int isSameMode) {
+            
+            if (isSameMode) {
+                oD = sD * iD;
+                oH = sH * iH;
+                oW = sW * iW;
+            } 
+            else {
+                int ekD, ekH, ekW;
+                if (dD == 1 && dH == 1 && dW == 1) {
+                    ekD = kD;
+                    ekH = kH;
+                    ekW = kW;
+                } else {
+                    ekD = kD + (kD - 1) * (dD - 1);
+                    ekH = kH + (kH - 1) * (dH - 1);
+                    ekW = kW + (kW - 1) * (dW - 1);
+                }
+
+                oD = sD * (iD - 1) + ekD - 2 * pD;
+                oH = sH * (iH - 1) + ekH - 2 * pH;
+                oW = sW * (iW - 1) + ekW - 2 * pW;
+            }
+        }
+
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
