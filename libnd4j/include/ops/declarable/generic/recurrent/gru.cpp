@@ -30,15 +30,14 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(gru, 5, 1, false, 0, 0) {
-
-    NDArray<T>* x  = INPUT_VARIABLE(0);                    // input [time x bS x inSize]
-    NDArray<T>* h0 = INPUT_VARIABLE(1);                    // initial cell output (at time step = 0) [bS x numUnits] 
+    auto x  = INPUT_VARIABLE(0);                    // input [time x bS x inSize]
+    auto h0 = INPUT_VARIABLE(1);                    // initial cell output (at time step = 0) [bS x numUnits]
     
-    NDArray<T>* Wx  = INPUT_VARIABLE(2);                   // input-to-hidden  weights, [inSize x 3*numUnits] 
-    NDArray<T>* Wh  = INPUT_VARIABLE(3);                   // hidden-to-hidden weights, [numUnits x 3*numUnits] 
-    NDArray<T>* b   = INPUT_VARIABLE(4);                   // biases, [3*numUnits] 
+    auto Wx  = INPUT_VARIABLE(2);                   // input-to-hidden  weights, [inSize x 3*numUnits]
+    auto Wh  = INPUT_VARIABLE(3);                   // hidden-to-hidden weights, [numUnits x 3*numUnits]
+    auto b   = INPUT_VARIABLE(4);                   // biases, [3*numUnits]
     
-    NDArray<T>* h   =  OUTPUT_VARIABLE(0);                 // cell outputs [time x bS x numUnits], that is per each time step            
+    auto h   =  OUTPUT_VARIABLE(0);                 // cell outputs [time x bS x numUnits], that is per each time step
 
     const int rank     = x->rankOf();              // = 3    
     const int time     = x->sizeAt(0);
@@ -46,14 +45,14 @@ CUSTOM_OP_IMPL(gru, 5, 1, false, 0, 0) {
     const int inSize   = x->sizeAt(2);
     const int numUnits = h0->sizeAt(1);    
 
-    const std::string h0Shape        = ShapeUtils<T>::shapeAsString(h0); 
-    const std::string h0CorrectShape = ShapeUtils<T>::shapeAsString({bS, numUnits});
-    const std::string wxShape        = ShapeUtils<T>::shapeAsString(Wx); 
-    const std::string wxCorrectShape = ShapeUtils<T>::shapeAsString({inSize, 3*numUnits}); 
-    const std::string whShape        = ShapeUtils<T>::shapeAsString(Wh); 
-    const std::string whCorrectShape = ShapeUtils<T>::shapeAsString({numUnits, 3*numUnits}); 
-    const std::string bShape         = ShapeUtils<T>::shapeAsString(b); 
-    const std::string bCorrectShape  = ShapeUtils<T>::shapeAsString({3*numUnits});    
+    const std::string h0Shape        = ShapeUtils::shapeAsString(h0);
+    const std::string h0CorrectShape = ShapeUtils::shapeAsString({bS, numUnits});
+    const std::string wxShape        = ShapeUtils::shapeAsString(Wx);
+    const std::string wxCorrectShape = ShapeUtils::shapeAsString({inSize, 3*numUnits});
+    const std::string whShape        = ShapeUtils::shapeAsString(Wh);
+    const std::string whCorrectShape = ShapeUtils::shapeAsString({numUnits, 3*numUnits});
+    const std::string bShape         = ShapeUtils::shapeAsString(b);
+    const std::string bCorrectShape  = ShapeUtils::shapeAsString({3*numUnits});
     
     REQUIRE_TRUE(h0Shape == h0CorrectShape, 0, "GRU operation: wrong shape of previous cell output array, expected is %s, but got %s instead !", h0CorrectShape.c_str(), h0Shape.c_str()); 
     REQUIRE_TRUE(wxShape == wxCorrectShape, 0, "GRU operation: wrong shape of input-to-hidden weights array, expected is %s, but got %s instead !", wxCorrectShape.c_str(), wxShape.c_str()); 
@@ -69,27 +68,26 @@ CUSTOM_OP_IMPL(gru, 5, 1, false, 0, 0) {
 
 
 DECLARE_SHAPE_FN(gru) {    
+    const auto xShapeInfo  = inputShape->at(0);                     // input [time x bS x inSize]
+    const auto h0ShapeInfo = inputShape->at(1);                     // initial cell output [bS x numUnits], that is at time step t=0
+    const auto WxShapeInfo = inputShape->at(2);                     // input-to-hidden weights, [inSize   x 3*numUnits]
+    const auto WhShapeInfo = inputShape->at(3);                     // hidden-to-hidden weights, [numUnits x 3*numUnits]
+    const auto bShapeInfo  = inputShape->at(4);                     // biases, [3*numUnits]
 
-    const Nd4jLong* xShapeInfo  = inputShape->at(0);                     // input [time x bS x inSize]
-    const Nd4jLong* h0ShapeInfo = inputShape->at(1);                     // initial cell output [bS x numUnits], that is at time step t=0
-    const Nd4jLong* WxShapeInfo = inputShape->at(2);                     // input-to-hidden weights, [inSize   x 3*numUnits] 
-    const Nd4jLong* WhShapeInfo = inputShape->at(3);                     // hidden-to-hidden weights, [numUnits x 3*numUnits]     
-    const Nd4jLong* bShapeInfo  = inputShape->at(4);                     // biases, [3*numUnits] 
+    const int rank     = shape::rank(xShapeInfo);              // = 3
+    const auto time     = xShapeInfo[1];
+    const auto bS       = xShapeInfo[2];
+    const auto inSize   = xShapeInfo[3];
+    const auto numUnits = h0ShapeInfo[2];
 
-    const int rank     = xShapeInfo[0];              // = 3    
-    const int time     = xShapeInfo[1];
-    const int bS       = xShapeInfo[2];
-    const int inSize   = xShapeInfo[3];
-    const int numUnits = h0ShapeInfo[2];    
-
-    const std::string h0Shape        = ShapeUtils<T>::shapeAsString(h0ShapeInfo); 
-    const std::string h0CorrectShape = ShapeUtils<T>::shapeAsString({bS, numUnits});
-    const std::string wxShape        = ShapeUtils<T>::shapeAsString(WxShapeInfo); 
-    const std::string wxCorrectShape = ShapeUtils<T>::shapeAsString({inSize, 3*numUnits}); 
-    const std::string whShape        = ShapeUtils<T>::shapeAsString(WhShapeInfo); 
-    const std::string whCorrectShape = ShapeUtils<T>::shapeAsString({numUnits, 3*numUnits}); 
-    const std::string bShape         = ShapeUtils<T>::shapeAsString(bShapeInfo); 
-    const std::string bCorrectShape  = ShapeUtils<T>::shapeAsString({3*numUnits});    
+    const std::string h0Shape        = ShapeUtils::shapeAsString(h0ShapeInfo);
+    const std::string h0CorrectShape = ShapeUtils::shapeAsString({bS, numUnits});
+    const std::string wxShape        = ShapeUtils::shapeAsString(WxShapeInfo);
+    const std::string wxCorrectShape = ShapeUtils::shapeAsString({inSize, 3*numUnits});
+    const std::string whShape        = ShapeUtils::shapeAsString(WhShapeInfo);
+    const std::string whCorrectShape = ShapeUtils::shapeAsString({numUnits, 3*numUnits});
+    const std::string bShape         = ShapeUtils::shapeAsString(bShapeInfo);
+    const std::string bCorrectShape  = ShapeUtils::shapeAsString({3*numUnits});
     
     REQUIRE_TRUE(h0Shape == h0CorrectShape, 0, "GRU operation: wrong shape of previous cell output array, expected is %s, but got %s instead !", h0CorrectShape.c_str(), h0Shape.c_str()); 
     REQUIRE_TRUE(wxShape == wxCorrectShape, 0, "GRU operation: wrong shape of input-to-hidden weights array, expected is %s, but got %s instead !", wxCorrectShape.c_str(), wxShape.c_str()); 
