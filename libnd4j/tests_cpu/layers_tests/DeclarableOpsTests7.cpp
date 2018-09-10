@@ -664,6 +664,21 @@ TEST_F(DeclarableOpsTests7, TestSegmentMax_1) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestSegmentMaxBP_1) {
+    NDArray<double> x({1.8,   2.5,  4.,  9., 2.1, 2.4, 3.,   9., 2.1, 2.1, 0.7, 0.1,  3., 4.2, 2.2, 1.});
+    NDArray<double> idx({0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 2.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0});
+    NDArray<double> exp({0., 1., 0., 2., 0., 0., 3., 4., 0., 0.,0., 0., 0., 5., 0.,0.});
+    NDArray<double> eps('c', {5});
+    nd4j::ops::segment_max_bp<double> op;
+    eps.linspace(1);
+    auto result = op.execute({&x, &idx, &eps}, {}, {});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestSegmentMax_2) {
     NDArray<double> x('c', {4, 4}, {1.8, 2.5,  4.,  9.,2.1, 2.4,  3.,  9.,2.1, 2.1, 0.7, 0.1,3., 4.2, 2.2, 1.  });
     NDArray<double> idx({0.0, 0.0, 1.0, 2.0});
@@ -677,6 +692,29 @@ TEST_F(DeclarableOpsTests7, TestSegmentMax_2) {
     ASSERT_EQ(result->status(), Status::OK());
     ASSERT_EQ(result->size(), 1);
 //    exp.printIndexedBuffer("Expect");
+//    exp.printShapeInfo("Exp Shape");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestSegmentMaxBP_2) {
+    NDArray<double> x('c', {4, 4}, {1.8, 2.5, 4., 9., 2.1, 2.4, 3., 9., 2.1, 2.1, 0.7, 0.1,3., 4.2, 2.2, 1.  });
+    NDArray<double> idx({0.0, 0.0, 1.0, 2.0});
+    NDArray<double> eps('c', {3, 4}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.});
+//    NDArray<double> exp('c', {3, 4}, {2.1, 2.5, 4.0, 9.0,2.1, 2.1, 0.7, 0.1,3., 4.2, 2.2, 1.});
+    NDArray<double> exp('c', {4, 4}, {0., 2., 3., 4., 1., 0., 0., 4., 5., 6., 7., 8., 9., 10., 11., 12.});
+
+    //{ 2.1, 2.5,  4.,  9., 2.1, 2.1, 0.7, 0.1, 3.,  4.2, 2.2, 1.}
+
+    nd4j::ops::segment_max_bp<double> op;
+
+    auto result = op.execute({&x, &idx, &eps}, {}, {});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_EQ(result->size(), 2);
+    //exp.printIndexedBuffer("BP Max Expect");
+    //result->at(0)->printIndexedBuffer("BP Max Output");
 //    exp.printShapeInfo("Exp Shape");
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
@@ -823,6 +861,26 @@ TEST_F(DeclarableOpsTests7, TestSegmentMin_1) {
 
     auto result = op.execute({&x, &idx}, {}, {});
     ASSERT_EQ(result->status(), Status::OK());
+
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestSegmentMinBP_1) {
+    NDArray<double>   x({1.8, 2.5,  4.,  9., 2.1, 2.4,  3.,  9., 2.1, 2.1, 0.7, 0.1, 3., 4.2,  2.2, 1.});
+    NDArray<double> idx({0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 2.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0});
+    NDArray<double> exp({ 1.,   0.,  0., 0.,  2.,   0.,  3.,  0.,  4.,  4.,  0., 5.,  0.,  0.,  0.,  0.});
+    NDArray<double> eps('c', {5});
+    eps.linspace(1);
+    nd4j::ops::segment_min_bp<double> op;
+
+    auto result = op.execute({&x, &idx, &eps}, {}, {});
+    ASSERT_EQ(result->status(), Status::OK());
+    //result->at(0)->printIndexedBuffer("Output1");
+    //exp.printIndexedBuffer("Expecte");
+
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
     delete result;
@@ -842,6 +900,28 @@ TEST_F(DeclarableOpsTests7, TestSegmentMin_2) {
     ASSERT_EQ(result->status(), Status::OK());
     ASSERT_EQ(result->size(), 1);
 //    exp.printIndexedBuffer("Expect");
+//    exp.printShapeInfo("Exp Shape");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestSegmentMinBP_2) {
+    NDArray<double> x('c', {4, 4}, {1.8, 2.5,  4.,  9.,2.1, 2.4,  3.,  9.,2.1, 2.1, 0.7, 0.1,3., 4.2, 2.2, 1.});
+    NDArray<double> idx({0.0, 0.0, 1.0, 2.0});
+    NDArray<double> eps('c', {3, 4}, {1., 2., 3. , 4., 5., 6., 7., 8., 9., 10., 11., 12.});
+    NDArray<double> exp('c', {4, 4}, {1., 0.,  0.,  4., 0., 2.,  3.,  4., 5., 6., 7., 8., 9., 10., 11., 12.});
+
+    //{ 2.1, 2.5,  4.,  9., 2.1, 2.1, 0.7, 0.1, 3.,  4.2, 2.2, 1.}
+
+    nd4j::ops::segment_min_bp<double> op;
+
+    auto result = op.execute({&x, &idx, &eps}, {}, {});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_EQ(result->size(), 2);
+//    exp.printIndexedBuffer("Expect");
+//    result->at(0)->printIndexedBuffer("Output");
 //    exp.printShapeInfo("Exp Shape");
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
@@ -1044,6 +1124,27 @@ TEST_F(DeclarableOpsTests7, TestSegmentMean_2) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestSegmentMeanBP_2) {
+    NDArray<double> x('c', {4, 4}, {1.8, 2.5,  4.,  9.,2.1, 2.4,  3.,  9.,2.1, 2.1, 0.7, 0.1,3., 4.2, 2.2, 1.});
+    NDArray<double> idx({0.0, 0.0, 1.0, 2.0});
+    NDArray<double> eps('c', {3, 4});
+    NDArray<double> exp('c', {4, 4}, { 0.5, 1., 1.5, 2.,  0.5, 1., 1.5, 2., 5., 6., 7., 8., 9., 10., 11., 12.});
+    eps.linspace(1);
+
+    nd4j::ops::segment_mean_bp<double> op;
+
+    auto result = op.execute({&x, &idx, &eps}, {}, {});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_EQ(result->size(), 2);
+//    exp.printIndexedBuffer("Expect");
+//    result->at(0)->printIndexedBuffer("Output");
+//    exp.printShapeInfo("Exp Shape");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestSegmentMean_3) {
     NDArray<double> x('c', {4, 4, 4}, {
      91. ,  82. ,  37. ,  64. ,55.1,  46.4,  73. ,  28. ,119.1,  12.1, 112.7,  13.1,14. , 114.2,  16.2, 117. ,51. ,  42. ,  67. ,   24.,15.1,  56.4,  93. ,   28.,
@@ -1112,6 +1213,22 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMean_1) {
     nd4j::ops::unsorted_segment_mean<double> op;
 
     auto result = op.execute({&x, &idx}, {}, {5});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestSegmentMeanBP_1) {
+    NDArray<double> x({1.8, 2.5,4.,  9., 2.1, 2.4,3.,9., 2.1, 2.1,0.7, 0.1, 3., 4.2, 2.2, 1.});
+    NDArray<double> idx({0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 2.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0});
+    NDArray<double> eps({1.,      2.,     3.,        4.,       5.});
+    NDArray<double> exp({1./2.,  1./2., 2./4., 2./4., 2./4., 2./4, 3., 4./3., 4./3., 4./3.,
+                         5./6., 5./6., 5./6., 5./6., 5./6., 5./6.});
+    nd4j::ops::segment_mean_bp<double> op;
+
+    auto result = op.execute({&x, &idx, &eps}, {}, {});
     ASSERT_EQ(result->status(), Status::OK());
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
@@ -1310,6 +1427,21 @@ TEST_F(DeclarableOpsTests7, TestSegmentSum_1) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestSegmentSumBP_1) {
+    NDArray<double> x({1.8, 2.5,4.,  9., 2.1, 2.4,3.,9., 2.1, 2.1,0.7, 0.1, 3., 4.2, 2.2, 1.    });
+    NDArray<double> idx({0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 2.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0});
+    NDArray<double> eps({1.,  2.,  3.,  4.,  5.});
+    NDArray<double> exp({ 1.,  1.,  2.,  2.,  2.,  2.,  3.,  4.,  4.,  4.,  5.,  5.,  5.,  5.,  5.,  5.});
+    nd4j::ops::segment_sum_bp<double> op;
+
+    auto result = op.execute({&x, &idx, &eps}, {}, {});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestSegmentSum_2) {
     NDArray<double> x('c', {4, 4}, {1.8, 2.5,  4.,  9.,2.1, 2.4,  3.,  9.,2.1, 2.1, 0.7, 0.1,3., 4.2, 2.2, 1.    });
     NDArray<double> idx({0.0, 0.0, 1.0, 2.0});
@@ -1320,6 +1452,26 @@ TEST_F(DeclarableOpsTests7, TestSegmentSum_2) {
     auto result = op.execute({&x, &idx}, {}, {});
     ASSERT_EQ(result->status(), Status::OK());
     ASSERT_EQ(result->size(), 1);
+//    exp.printIndexedBuffer("Expect");
+//    exp.printShapeInfo("Exp Shape");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestSegmentSumBP_2) {
+    NDArray<double> x('c', {4, 4}, {1.8, 2.5,  4.,  9.,2.1, 2.4,  3.,  9.,2.1, 2.1, 0.7, 0.1,3., 4.2, 2.2, 1.    });
+    NDArray<double> idx({0.0, 0.0, 1.0, 2.0});
+    NDArray<double> exp('c', {4, 4}, {1. , 2.,  3.,  4., 1. , 2., 3.,  4., 5.,  6., 7., 8., 9., 10., 11., 12.});
+    NDArray<double> eps('c', {3, 4});
+    eps.linspace(1);
+
+    nd4j::ops::segment_sum_bp<double> op;
+
+    auto result = op.execute({&x, &idx, &eps}, {}, {});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_EQ(result->size(), 2);
 //    exp.printIndexedBuffer("Expect");
 //    exp.printShapeInfo("Exp Shape");
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
@@ -1482,7 +1634,7 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentSum_4) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestSegmentProd_1) {
-    NDArray<double> x({1.8, 2.5,4.,  9., 2.1, 2.4,3.,9., 2.1, 2.1,0.7, 0.1, 3., 4.2, 2.2, 1.});
+    NDArray<double> x({1.8, 2.5, 4.,  9., 2.1, 2.4,3.,9., 2.1, 2.1,0.7, 0.1, 3., 4.2, 2.2, 1.});
     NDArray<double> idx({0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 2.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0});
     NDArray<double> exp({4.5,    181.44,     3.,      39.69,     1.9404});
 
@@ -1490,6 +1642,24 @@ TEST_F(DeclarableOpsTests7, TestSegmentProd_1) {
 
     auto result = op.execute({&x, &idx}, {}, {});
     ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestSegmentProdBP_1) {
+    NDArray<double> x({  1.8, 2.5,  4.,  9., 2.1, 2.4,  3.,  9., 2.1, 2.1, 0.7, 0.1,  3., 4.2, 2.2, 1.});
+    NDArray<double> idx({0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 2.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0});
+    NDArray<double> eps({1.,    2.,     3.,      4.,     5.});
+    NDArray<double> exp({2.5, 1.8, 90.72, 40.32, 172.8, 151.2, 3., 17.64, 75.6, 75.6, 13.86, 97.02, 3.234, 2.31, 4.41, 9.702});
+    nd4j::ops::segment_prod_bp<double> op;
+
+    auto result = op.execute({&x, &idx, &eps}, {}, {});
+    ASSERT_EQ(result->status(), Status::OK());
+    //result->at(0)->printIndexedBuffer("ProdBP Output");
+    //exp.printIndexedBuffer("ProdBP Expect");
+
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
     delete result;
@@ -1509,6 +1679,31 @@ TEST_F(DeclarableOpsTests7, TestSegmentProd_2) {
     auto result = op.execute({&x, &idx}, {}, {});
     ASSERT_EQ(result->status(), Status::OK());
     ASSERT_EQ(result->size(), 1);
+//    exp.printIndexedBuffer("Expect");
+//    exp.printShapeInfo("Exp Shape");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestSegmentProdBP_2) {
+    NDArray<double> x('c', {4, 4}, {
+            1.8, 2.5,  4.,  9.,
+            2.1, 2.4,  3.,  9.,
+            2.1, 2.1, 0.7, 0.1,
+            3., 4.2, 2.2, 1.    });
+    NDArray<double> idx({0.0, 0.0, 1.0, 2.0});
+    NDArray<double> eps('c', {3, 4});
+    NDArray<double> exp('c', {4, 4}, {2.1, 4.8,  9.,  36., 1.8, 5., 12., 36., 5., 6., 7., 8., 9., 10., 11., 12.});
+
+    //{ 2.1, 2.5,  4.,  9., 2.1, 2.1, 0.7, 0.1, 3.,  4.2, 2.2, 1.}
+    eps.linspace(1);
+    nd4j::ops::segment_prod_bp<double> op;
+
+    auto result = op.execute({&x, &idx, &eps}, {}, {});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_EQ(result->size(), 2);
 //    exp.printIndexedBuffer("Expect");
 //    exp.printShapeInfo("Exp Shape");
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
