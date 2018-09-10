@@ -25,11 +25,21 @@
 
 #define DATA_TYPES \
         (DATA_FLOAT, float) ,\
-        (DATA_DOUBLE, double) ,\
-        (DATA_HALF, float16)
+        (DATA_DOUBLE, double)
+
+#define Y_TYPES \
+        (DATA_INT8, int8_t) ,\
+        (DATA_INT16, int16_t) 
+
+#define Z_TYPES \
+        (DATA_UINT8, uint8_t) ,\
+        (DATA_UINT16, uint16_t)
 
 
-BUILD_TRIPLE_TEMPLATE(functionName, (signature), DATA_TYPES, DATA_TYPES, DATA_TYPES)
+BUILD_TRIPLE_SELECTOR(xType, yType, zType, functionName, (signature), DATA_TYPES, Y_TYPES, Z_TYPES)
+
+
+//BUILD_TRIPLE_TEMPLATE(functionName, (signature), DATA_TYPES, DATA_TYPES, DATA_TYPES)
 
 //BUILD_ENUMERATION(DATA_TYPES)
 
