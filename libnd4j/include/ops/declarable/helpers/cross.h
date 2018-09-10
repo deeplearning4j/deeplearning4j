@@ -23,8 +23,8 @@
 namespace nd4j {
 namespace ops {
 namespace helpers {
-    template <typename T>
-    void FORCEINLINE _cross(NDArray<T> *a, NDArray<T> *b, NDArray<T> *o) {
+    template <typename X, typename Y, typename Z>
+    void FORCEINLINE _cross(NDArray *a, NDArray *b, NDArray *o) {
         auto a0 = a->getScalar(0);
         auto a1 = a->getScalar(1);
         auto a2 = a->getScalar(2);
@@ -38,8 +38,7 @@ namespace helpers {
         o->putScalar(2, a0 * b1 - a1 * b0);
     }
 
-    template <typename T>
-    void FORCEINLINE _crossBatched(NDArray<T> *a, NDArray<T> *b, NDArray<T> *o) {
+    void FORCEINLINE _crossBatched(NDArray *a, NDArray *b, NDArray *o) {
         auto _a = a->reshape(a->ordering(), {-1, 3});
         auto _b = b->reshape(b->ordering(), {-1, 3});
         auto _o = o->reshape(o->ordering(), {-1, 3});
@@ -50,7 +49,7 @@ namespace helpers {
 
         int tads = tadsA->size();
 
-        #pragma omp parallel for simd schedule(static)
+#pragma omp parallel for simd schedule(static)
         for (int e = 0; e < tads; e++) {
             auto a_ = tadsA->at(e);
             auto b_ = tadsB->at(e);

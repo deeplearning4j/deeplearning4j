@@ -27,23 +27,17 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    bool segmentIndicesValidate(NDArray<T>* indices, T& expected, T& output);
+    bool segmentIndicesValidate(NDArray* indices, T& expected, T& output);
 
-    template <typename T>
-    void segmentMaxFunctor(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* output);
+    void segmentMaxFunctor(NDArray* input, NDArray* indices, NDArray* output);
 
-    template <typename T>
-    void segmentMinFunctor(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* output);
+    void segmentMinFunctor(NDArray* input, NDArray* indices, NDArray* output);
 
-    template <typename T>
-    void segmentMeanFunctor(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* output);
+    void segmentMeanFunctor(NDArray* input, NDArray* indices, NDArray* output);
 
-    template <typename T>
-    void segmentSumFunctor(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* output);
+    void segmentSumFunctor(NDArray* input, NDArray* indices, NDArray* output);
 
-    template <typename T>
-    void segmentProdFunctor(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* output);
+    void segmentProdFunctor(NDArray* input, NDArray* indices, NDArray* output);
 
 }
 }

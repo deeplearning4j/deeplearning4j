@@ -27,10 +27,9 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    int uniqueCount(NDArray<T>* input);
-    template <typename T>
-    int uniqueFunctor(NDArray<T>* input, NDArray<T>* values, NDArray<T>* indices, NDArray<T>* counts);
+    Nd4jLong uniqueCount(NDArray* input);
+
+    Nd4jLong uniqueFunctor(NDArray* input, NDArray* values, NDArray* indices, NDArray* counts);
 
 }
 }

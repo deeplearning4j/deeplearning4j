@@ -26,8 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* shape, NDArray<T>* output, int seed);
+    int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray* input, NDArray* shape, NDArray* output, int seed);
 
 }
 }

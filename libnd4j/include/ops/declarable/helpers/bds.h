@@ -26,8 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    int bdsFunctor(NDArray<T>* x_shape, NDArray<T>* y_shape, NDArray<T>* output);
+    int bdsFunctor(NDArray* x_shape, NDArray* y_shape, NDArray* output);
 }
 }
 }

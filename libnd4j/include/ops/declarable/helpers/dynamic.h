@@ -27,16 +27,14 @@ namespace nd4j {
     namespace ops {
         namespace helpers {
 
+            void dynamicPartitionFunctor(NDArray const* input, NDArray const* indices, std::vector<NDArray*>& outputList);
+
+            int dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray* output);
             template <typename T>
-            void dynamicPartitionFunctor(NDArray<T> const* input, NDArray<T> const* indices, std::vector<NDArray<T>*>& outputList);
+            void dynamicPartitionFunctorBP(NDArray const* input, NDArray const* indices, std::vector<NDArray*> const& gradientInputList, std::vector<NDArray*>& outputList);
 
             template <typename T>
-            int dynamicStitchFunctor(std::vector<NDArray<T>*> const& inputs, std::vector<NDArray<T>*> const& indices, NDArray<T>* output);
-            template <typename T>
-            void dynamicPartitionFunctorBP(NDArray<T> const* input, NDArray<T> const* indices, std::vector<NDArray<T>*> const& gradientInputList, std::vector<NDArray<T>*>& outputList);
-
-            template <typename T>
-            int dynamicStitchFunctorBP(std::vector<NDArray<T>*> const& inputs, std::vector<NDArray<T>*> const& indices, NDArray<T> const* gradientInput, std::vector<NDArray<T>*>& outputList);
+            int dynamicStitchFunctorBP(std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray const* gradientInput, std::vector<NDArray*>& outputList);
         }
     }
 }

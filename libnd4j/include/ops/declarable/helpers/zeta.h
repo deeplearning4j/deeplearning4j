@@ -30,8 +30,7 @@ namespace helpers {
 
 
 	// calculate the Hurwitz zeta function for arrays
-    template <typename T>
-    NDArray<T> zeta(const NDArray<T>& x, const NDArray<T>& q);
+    NDArray zeta(const NDArray& x, const NDArray& q);
 
     // calculate the Hurwitz zeta function for scalars
 	template <typename T>

@@ -29,7 +29,7 @@ namespace helpers {
 
 	// be careful: outVector must have c-order and ews = 1 !!!
 	template <typename T>
-	void range(const T& start, const T& delta, NDArray<T>& outVector);
+	void range(const T& start, const T& delta, NDArray& outVector);
 
 }
 }

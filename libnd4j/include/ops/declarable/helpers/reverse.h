@@ -28,15 +28,11 @@ namespace ops     {
 namespace helpers {
 
 	template <typename T>
-	void reverseArray(T* inArr, Nd4jLong *inShapeBuffer, T *result, Nd4jLong *zShapeBuffer, int numOfElemsToReverse = 0);
+	void reverseArray(void* inArr, Nd4jLong *inShapeBuffer, void *result, Nd4jLong *zShapeBuffer, int numOfElemsToReverse = 0);
 
-	
-	template <typename T>
-	void reverseSequence(const NDArray<T>* input, const NDArray<T>* seqLengths, NDArray<T>* output, int seqDim, const int batchDim);
+	void reverseSequence(const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim);
 
-
-	template<typename T>
-	void reverse(const NDArray<T>* input, NDArray<T>* output, const std::vector<int>* intArgs, bool isLegacy);
+	void reverse(const NDArray* input, NDArray* output, const std::vector<int>* intArgs, bool isLegacy);
 
     
 

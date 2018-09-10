@@ -28,8 +28,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    NDArray<T> betaInc(const NDArray<T>& a, const NDArray<T>& b, const NDArray<T>& x);
+    NDArray betaInc(const NDArray& a, const NDArray& b, const NDArray& x);
     
 
 }

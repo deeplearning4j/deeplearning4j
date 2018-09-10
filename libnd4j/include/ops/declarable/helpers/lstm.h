@@ -29,10 +29,10 @@ namespace helpers {
 
 
 	template <typename T>
-	void lstmCell(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs, const std::vector<T>& params);
+	void lstmCell(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const std::vector<double>& params);
 
 	template <typename T>
-	void lstmTimeLoop(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs, const std::vector<T>& params);
+	void lstmTimeLoop(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const std::vector<double>& params);
 	
     
 

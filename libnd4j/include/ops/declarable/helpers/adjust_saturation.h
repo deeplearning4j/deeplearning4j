@@ -111,7 +111,7 @@ namespace helpers {
     }
 
     template <typename T>
-    void _adjust_saturation(NDArray<T> *input, NDArray<T> *output, T delta, bool isNHWC);
+    void _adjust_saturation(NDArray *input, NDArray *output, T delta, bool isNHWC);
 }
 }
 }

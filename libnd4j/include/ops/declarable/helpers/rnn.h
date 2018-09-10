@@ -28,11 +28,9 @@ namespace ops     {
 namespace helpers {
 
 
-	template <typename T>
-	void rnnCell(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* ht);
+	void rnnCell(const std::vector<NDArray*>& inArrs, NDArray* ht);
 
-	template <typename T>
-	void rnnTimeLoop(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* h, NDArray<T>* hFinal);	    
+	void rnnTimeLoop(const std::vector<NDArray*>& inArrs, NDArray* h, NDArray* hFinal);
 
 }
 }

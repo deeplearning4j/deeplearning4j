@@ -28,10 +28,7 @@ namespace nd4j    {
 namespace ops     {
 namespace helpers {
 
-
-	template <typename T>
-	void sparseSoftmaxCrossEntropyLossWithLogits(const NDArray<T>& labels, const NDArray<T>& logits, NDArray<T>& output);
-
+	void sparseSoftmaxCrossEntropyLossWithLogits(const NDArray& labels, const NDArray& logits, NDArray& output);
 
 }
 }

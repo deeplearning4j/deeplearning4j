@@ -48,11 +48,11 @@ namespace nd4j {
          };
 
 
-         int FORCEINLINE nd4j::blas::linearIndexC(int rows, int cols, int r, int c) {
+         int FORCEINLINE linearIndexC(int rows, int cols, int r, int c) {
              return (r * cols + c);
          }
 
-         int FORCEINLINE nd4j::blas::linearIndexF(int rows, int cols, int r, int c) {
+         int FORCEINLINE linearIndexF(int rows, int cols, int r, int c) {
              return (c * rows + r);
          }
 

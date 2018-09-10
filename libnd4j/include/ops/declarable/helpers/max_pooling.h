@@ -26,8 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    void maxPoolingFunctor(NDArray<T>* input, NDArray<T>* values, std::vector<int> const& params, NDArray<T>* indices);
+    void maxPoolingFunctor(NDArray* input, NDArray* values, std::vector<int> const& params, NDArray* indices);
 }
 }
 }

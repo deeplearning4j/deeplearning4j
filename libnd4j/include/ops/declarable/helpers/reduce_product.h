@@ -26,8 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    void reduceProductBP(NDArray<T>* input, NDArray<T>* epsilon, NDArray<T>* tempProd, NDArray<T>* output, std::vector<int> const& axes);
+    void reduceProductBP(NDArray* input, NDArray* epsilon, NDArray* tempProd, NDArray* output, std::vector<int> const& axes);
 
 }
 }

@@ -26,8 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    void diagFunctor(NDArray<T> const* input, NDArray<T>* output);
+    void diagFunctor(NDArray const* input, NDArray* output);
 
 }
 }

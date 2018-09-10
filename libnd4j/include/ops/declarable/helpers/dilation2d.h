@@ -23,8 +23,8 @@
 namespace nd4j {
 namespace ops {
 namespace helpers {
-    template <typename T>
-    void _dilation2d(NDArray<T> *input, NDArray<T> *weights, NDArray<T> *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left);
+
+    void _dilation2d(NDArray *input, NDArray *weights, NDArray *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left);
 
     FORCEINLINE Nd4jStatus _outputSize(int input_size, int filter_size, int dilation_rate, int stride, bool isSameMode, int *output_size, int *padding_before, int *padding_after) {
         if (stride <= 0)

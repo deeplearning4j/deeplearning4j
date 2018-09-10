@@ -28,8 +28,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    void percentile(const NDArray<T>& input, NDArray<T>& output, std::vector<int>& axises, const T q, const int interpolation);
+    void percentile(const NDArray& input, NDArray& output, std::vector<int>& axises, const double q, const int interpolation);
     
 
 }

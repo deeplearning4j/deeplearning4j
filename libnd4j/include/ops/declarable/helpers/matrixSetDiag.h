@@ -28,8 +28,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    void matrixSetDiag(const NDArray<T>* input, const NDArray<T>* diagonal, NDArray<T>* output);
+    void matrixSetDiag(const NDArray* input, const NDArray* diagonal, NDArray* output);
     
 
 }

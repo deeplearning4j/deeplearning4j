@@ -39,7 +39,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
     auto result = reinterpret_cast<T *>(vresult);
 
     std::vector<Nd4jLong> iArgs = {dimension};
-    std::vector<T> tArgs;
+    std::vector<double> tArgs;
     std::vector<NDArray*> inputs(numArrays);
     std::vector<NDArray*> outputs(1);
 

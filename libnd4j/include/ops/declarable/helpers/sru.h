@@ -28,11 +28,9 @@ namespace ops     {
 namespace helpers {
 
 
-	template <typename T>
-	void sruCell(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs);
+	void sruCell(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs);
 
-	template <typename T>
-	void sruTimeLoop(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs);
+	void sruTimeLoop(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs);
 	
     
 
