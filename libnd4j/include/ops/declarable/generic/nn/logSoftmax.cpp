@@ -29,9 +29,8 @@ namespace ops {
 
 
 CONFIGURABLE_OP_IMPL(log_softmax, 1, 1, true, 0, 0) {
-    
-    NDArray<T>* input  = INPUT_VARIABLE(0);
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto input  = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
     
     const int rank = input->rankOf();
     const int dim  = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
@@ -46,10 +45,9 @@ CONFIGURABLE_OP_IMPL(log_softmax, 1, 1, true, 0, 0) {
             *output = 0.;
     }
     else {
-        
-        NDArray<T> exponents = input->template transform<simdOps::Exp<T>>();
-        NDArray<T> sumAlongDim = exponents.template reduceAlongDims<simdOps::Sum<T>>({dim}, true);
-        output->assign( *input - sumAlongDim.template transform<simdOps::Log<T>>() );
+        auto exponents = input->transform(transform::Exp);
+        auto sumAlongDim = exponents.reduceAlongDims(reduce::Sum, {dim}, true);
+        output->assign( *input - sumAlongDim.transform(transform::Log) );
     }
     
     return Status::OK();
@@ -57,10 +55,9 @@ CONFIGURABLE_OP_IMPL(log_softmax, 1, 1, true, 0, 0) {
 
 
 CONFIGURABLE_OP_IMPL(log_softmax_bp, 2, 1, true, 0, 0) {
-    
-    NDArray<T>* input = INPUT_VARIABLE(0);
-    NDArray<T>* gradO = INPUT_VARIABLE(1);
-    NDArray<T>* gradI = OUTPUT_VARIABLE(0);    
+    auto input = INPUT_VARIABLE(0);
+    auto gradO = INPUT_VARIABLE(1);
+    auto gradI = OUTPUT_VARIABLE(0);
 
     const int rank = input->rankOf();
     const int dim  = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
@@ -69,7 +66,7 @@ CONFIGURABLE_OP_IMPL(log_softmax_bp, 2, 1, true, 0, 0) {
 
     helpers::softmax(*input, *gradI, dim);
         
-    gradI->assign( *gradO - (*gradI * *gradO).template reduceAlongDims<simdOps::Sum<T>>({dim}, true) );
+    gradI->assign( *gradO - (*gradI * *gradO).reduceAlongDims(reduce::Sum, {dim}, true) );
 
     return Status::OK();
 }

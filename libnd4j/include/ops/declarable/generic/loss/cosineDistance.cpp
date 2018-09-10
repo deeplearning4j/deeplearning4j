@@ -30,11 +30,10 @@ namespace ops  {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
-
-  	NDArray<T>* predictions = INPUT_VARIABLE(0);
-    NDArray<T>* weights 	= INPUT_VARIABLE(1);
-    NDArray<T>* labels     	= INPUT_VARIABLE(2);
-    NDArray<T>* output      = OUTPUT_VARIABLE(0);
+  	auto predictions = INPUT_VARIABLE(0);
+    auto weights 	= INPUT_VARIABLE(1);
+    auto labels     	= INPUT_VARIABLE(2);
+    auto output      = OUTPUT_VARIABLE(0);
 
     int reductionMode = INT_ARG(0);			// 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
     int dim = INT_ARG(1);					// axis, dimension should be reduced to unity along this axis
@@ -54,16 +53,16 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
             REQUIRE_TRUE(!( (i != dim && weights->shapeOf()[i] != labels->shapeOf()[i] && weights->shapeOf()[i] != 1) || (i == dim && weights->shapeOf()[i] != 1)), 0, "COSINE_DISTANCE_LOSS OP: shape of weights array %s is not broadcastable to labels array shape %s !", ShapeUtils<T>::shapeAsString(weights).c_str(), ShapeUtils<T>::shapeAsString(labels).c_str());
 
 	// perform weights broadcasting/tile to output if needed	
-	NDArray<T>* weightsBroad = weights;	
+	auto weightsBroad = weights;
 	if(!weights->isScalar() && !weights->isSameShape(output)) {
 		// evaluate repeat dimensions for tile operation
 		std::vector<Nd4jLong> reps;
 		for(int i = 0; i < output->rankOf(); ++i)
 			reps.emplace_back(labels->shapeOf()[i] / weights->shapeOf()[i]);
-		weightsBroad = new NDArray<T>(weights->tile(reps));
+		weightsBroad = new NDArray(weights->tile(reps));
 	}
 		
-	NDArray<T> weightedLosses = (T)1. - ((*predictions) * (*labels)).template reduceAlongDims<simdOps::Sum<T>>({dim}, true);
+	NDArray weightedLosses = 1.f - ((*predictions) * (*labels)).reduceAlongDims(reduce::Sum, {dim}, true);
 
  	// multiply weightedLosses on weights
  	if(weights->isScalar())
@@ -79,7 +78,7 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
 			break;
 		
 		case 1: {											// 1 - "weighted_sum", output is scalar and equal to sum of all elements of weightedLosses array
-			(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>();
+			(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum);
 			break;
 		}
 		case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of weightedLosses array divided by sum of all elements of weightsBroad array
@@ -87,12 +86,12 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
 			if (weights->isScalar())
 				sum = (*weights)(0.) * weightedLosses.lengthOf();
 			else 
-				sum = weightsBroad->template reduceNumber<simdOps::Sum<T>>();
+				sum = weightsBroad->reduceNumber(reduce::Sum);
 			
 			if (sum == (T)0.)
 				(*output)(0.) = (T)0.;
 			else 
-				(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>() / sum;
+				(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum) / sum;
 			break;
 		}
 		case 3: {											// 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
@@ -110,7 +109,7 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
 			if (numOfNonZeroWeights == 0)
 				(*output)(0.) = (T)0.;
 			else 
-				(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>() / numOfNonZeroWeights;
+				(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum) / numOfNonZeroWeights;
 			break;
 		}
 	}
@@ -121,7 +120,7 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
     if(weightsBroad != weights)
     	delete weightsBroad;
 	
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
 
@@ -150,7 +149,7 @@ DECLARE_SHAPE_FN(cosine_distance_loss) {
     }
     else {							// in this case output has the same shape as labels reduced  by dim axis    	
     	std::vector<int> dimensions = {dim};
-    	outShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(shape::order(labelsShapeInfo), dimensions, labelsShapeInfo, true, false, block.getWorkspace());
+    	outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(labelsShapeInfo), dimensions, labelsShapeInfo, true, false, block.getWorkspace());
     }
     
     return SHAPELIST(outShapeInfo);    

@@ -29,11 +29,10 @@ namespace ops  {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
-
-  	NDArray<T>* predictions = INPUT_VARIABLE(0);
-    NDArray<T>* weights     = INPUT_VARIABLE(1);
-    NDArray<T>* labels      = INPUT_VARIABLE(2);
-    NDArray<T>* output      = OUTPUT_VARIABLE(0);
+  	auto predictions = INPUT_VARIABLE(0);
+    auto weights     = INPUT_VARIABLE(1);
+    auto labels      = INPUT_VARIABLE(2);
+    auto output      = OUTPUT_VARIABLE(0);
 
     int reductionMode = INT_ARG(0);			// 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
     T delta = T_ARG(0);
@@ -48,21 +47,21 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
         	REQUIRE_TRUE(!(weights->shapeOf()[i] != labels->shapeOf()[i] && weights->shapeOf()[i] != 1), 0, "HUBER_LOSS OP: shape of weights array %s is not broadcastable to labels array shape %s !", ShapeUtils<T>::shapeAsString(weights).c_str(), ShapeUtils<T>::shapeAsString(labels).c_str());
     
 	// perform weights broadcasting/tile to labels if needed	
-	NDArray<T>* weightsBroad = weights;	
+	auto weightsBroad = weights;
 	if(!weights->isScalar() && !weights->isSameShape(predictions)) {
 		// evaluate repeat dimensions for tile operation
 		std::vector<Nd4jLong> reps;
 		for(int i = 0; i < labels->rankOf(); ++i)
 			reps.emplace_back(labels->shapeOf()[i] / weights->shapeOf()[i]);
-		weightsBroad = new NDArray<T>(weights->tile(reps));
+		weightsBroad = new NDArray(weights->tile(reps));
 	}
 
-	NDArray<T> error = *predictions - *labels;
-	error.template applyTransform<simdOps::Abs<T>>();
-	NDArray<T> quadratic(error.getShapeInfo(), block.getWorkspace());
-	error.template applyScalar<simdOps::Min<T>>(delta, &quadratic);	
+	auto error = *predictions - *labels;
+	error.applyTransform(transform::Abs, nullptr, nullptr);
+	NDArray quadratic(error.getShapeInfo(), block.getWorkspace());
+	error.applyScalar(scalar::MinPairwise, delta, &quadratic);
  
-    NDArray<T> weightedLosses = quadratic*quadratic*(T)0.5 + (error - quadratic)*delta;
+    NDArray weightedLosses = quadratic*quadratic*(T)0.5 + (error - quadratic)*delta;
 
     // multiply weightedLosses on weights
  	if(weights->isScalar())
@@ -77,7 +76,7 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
 			break;
 		
 		case 1: {											// 1 - "weighted_sum", output is scalar and equal to sum of all elements of weightedLosses array
-			(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>();
+			(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum);
 			break;
 		}
 		case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of weightedLosses array divided by sum of all elements of weightsBroad array
@@ -85,12 +84,12 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
 			if (weights->isScalar())
 				sum = (*weights)(0.) * weightedLosses.lengthOf();
 			else 
-				sum = weightsBroad->template reduceNumber<simdOps::Sum<T>>();
+				sum = weightsBroad->reduceNumber(reduce::Sum);
 			
 			if (sum == (T)0.)
 				(*output)(0.) = (T)0.;
 			else 
-				(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>() / sum;
+				(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum) / sum;
 			break;
 		}
 		case 3: {											// 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
@@ -108,7 +107,7 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
 			if (numOfNonZeroWeights == 0)
 				(*output)(0.) = (T)0.;
 			else 
-				(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>() / numOfNonZeroWeights;
+				(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum) / numOfNonZeroWeights;
 			break;
 		}
 		
@@ -119,7 +118,7 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
     if(weightsBroad != weights)
     	delete weightsBroad;
 	
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
 

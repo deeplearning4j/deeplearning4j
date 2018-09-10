@@ -31,9 +31,8 @@ namespace ops  {
 
 //////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(upsampling2d, 1, 1, false, 0, 2) {
-
-    NDArray<T>* input  = INPUT_VARIABLE(0);             // [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)
-    NDArray<T>* output = OUTPUT_VARIABLE(0);            // [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
+    auto input  = INPUT_VARIABLE(0);             // [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)
+    auto output = OUTPUT_VARIABLE(0);            // [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
 
     const int factorH = INT_ARG(0);
     const int factorW = INT_ARG(1);
@@ -87,8 +86,8 @@ DECLARE_SHAPE_FN(upsampling2d) {
 CUSTOM_OP_IMPL(upsampling2d_bp, 2, 1, false, 0, 0) {
 
     // NDArray<T>* input = INPUT_VARIABLE(0);             // [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)
-    NDArray<T>* gradO = INPUT_VARIABLE(1);             // [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
-    NDArray<T>* gradI = OUTPUT_VARIABLE(0);            // [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)
+    auto gradO = INPUT_VARIABLE(1);             // [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
+    auto gradI = OUTPUT_VARIABLE(0);            // [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)
 
     const int isNCHW  = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;       // 1-NCHW,  0-NHWC
 

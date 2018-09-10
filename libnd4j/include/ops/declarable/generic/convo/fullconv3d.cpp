@@ -28,12 +28,11 @@ namespace nd4j {
     namespace ops {
         //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(fullconv3d, 5, 1, false, 0, 13) {
-
-            NDArray<T> *input = INPUT_VARIABLE(0);
-            NDArray<T> *weights = INPUT_VARIABLE(1);
-            NDArray<T> *bias = INPUT_VARIABLE(2);
-            NDArray<T> *columns = INPUT_VARIABLE(3);
-            NDArray<T> *ones = INPUT_VARIABLE(4);
+            auto input = INPUT_VARIABLE(0);
+            auto weights = INPUT_VARIABLE(1);
+            auto bias = INPUT_VARIABLE(2);
+            auto columns = INPUT_VARIABLE(3);
+            auto ones = INPUT_VARIABLE(4);
 
             REQUIRE_TRUE(weights->rankOf() == 5, 0, "Weights should be 5D, got %i instead", weights->rankOf());
             REQUIRE_TRUE(input->rankOf() == 5, 0, "Input should be 5D, got %i instead", input->rankOf());
@@ -75,7 +74,7 @@ namespace nd4j {
                                  "dilationT: %d dilationH: %d dilationW: %d",
                          aT, aH, aW, dT, dH, dW, dilationT, dilationH, dilationW);
 
-            NDArray<T> *output = this->getZ(block);
+            auto output = this->getZ(block);
 
             const int nInputPlane  = weights->shapeOf()[0];
             const int nOutputPlane = weights->shapeOf()[1];
@@ -94,8 +93,8 @@ namespace nd4j {
 
             REQUIRE_TRUE(output->isSameShape({ (int) batchSize, (int)nOutputPlane, (int)outputDepth, (int)outputHeight, (int)outputWidth}), 0, "Output should have shape of [%i, %i, %i, %i, %i], but got [%i, %i, %i, %i, %i] instead", (int) batchSize, (int)nOutputPlane, (int)outputDepth, (int)outputHeight, (int)outputWidth, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3), output->sizeAt(4));
 
-            std::unique_ptr<ResultSet<T>> inputs(input->allExamples());
-            std::unique_ptr<ResultSet<T>> outputs(output->allExamples());
+            std::unique_ptr<ResultSet> inputs(input->allExamples());
+            std::unique_ptr<ResultSet> outputs(output->allExamples());
             for (int e = 0; e < batchSize; e++) {
                 auto tadIn = inputs->at(e);
                 auto tadOut = outputs->at(e);
@@ -138,12 +137,11 @@ namespace nd4j {
 
             STORE_RESULT(*output);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SHAPE_FN(fullconv3d) {
-
-            Nd4jLong* input = inputShape->at(0);
-            Nd4jLong* weights = inputShape->at(1);
+            auto input = inputShape->at(0);
+            auto weights = inputShape->at(1);
 
             // strides
             int dT = INT_ARG(0);
@@ -198,20 +196,19 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(fullconv3d_bp, 5, 1, false, 0, 13) {
-
-            NDArray<T> *input = INPUT_VARIABLE(0);
-            NDArray<T> *gradNext = INPUT_VARIABLE(1);
-            NDArray<T> *weights = INPUT_VARIABLE(2);
-            NDArray<T> *finput = INPUT_VARIABLE(3);
+            auto input = INPUT_VARIABLE(0);
+            auto gradNext = INPUT_VARIABLE(1);
+            auto weights = INPUT_VARIABLE(2);
+            auto finput = INPUT_VARIABLE(3);
 
             // not used
-            NDArray<T> *fgradInput = INPUT_VARIABLE(4);
+            auto fgradInput = INPUT_VARIABLE(4);
 
 
             REQUIRE_TRUE(weights->rankOf() == 5, 0, "Weights should be 5D, got %i instead", weights->rankOf());
             REQUIRE_TRUE(input->rankOf() == 5, 0, "Input should be 5D, got %i instead", input->rankOf());
 
-            NDArray<T> *output = this->getZ(block);
+            auto output = OUTPUT_VARIABLE(0);
 
             int dT = INT_ARG(0);
             int dW = INT_ARG(1);
@@ -248,11 +245,11 @@ namespace nd4j {
             output->assign(0.0);
 
             // FIXME: non-inplace reshape!!!!
-            NDArray<T> *gradColumns;
+            NDArray *gradColumns;
             //auto gradColumns = finput->reshape('c', {nOutputPlane*kW*kH*kT, inputDepth*inputHeight*inputWidth });
 
-            std::unique_ptr<ResultSet<T>> tadsNext(gradNext->allExamples());
-            std::unique_ptr<ResultSet<T>> tadsOutput(output->allExamples());
+            std::unique_ptr<ResultSet> tadsNext(gradNext->allExamples());
+            std::unique_ptr<ResultSet> tadsOutput(output->allExamples());
             for (int e = 0; e < tadsNext->size(); e++) {
                 auto tadNext = tadsNext->at(e);
                 auto tadOutput = tadsOutput->at(e);
@@ -297,17 +294,16 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(fullconv3d_grad, 4, 2, false, 1, 13) {
-
-            NDArray<T> *input = INPUT_VARIABLE(0);
-            NDArray<T> *epsilon = INPUT_VARIABLE(1);
-            NDArray<T> *columns = INPUT_VARIABLE(2);
-            NDArray<T> *ones = INPUT_VARIABLE(3);
+            auto input = INPUT_VARIABLE(0);
+            auto epsilon = INPUT_VARIABLE(1);
+            auto columns = INPUT_VARIABLE(2);
+            auto ones = INPUT_VARIABLE(3);
 
             REQUIRE_TRUE(input->rankOf() == epsilon->rankOf(), 0, "Rank of input (%i) & epsilon (%i) should be equal", input->rankOf(), epsilon->rankOf());
             REQUIRE_TRUE(input->sizeAt(0) == epsilon->sizeAt(0), 1, "Batch size should be equal for input and epsilon");
 
-            NDArray<T> *gradWeight = this->getZ(block);
-            NDArray<T> *gradBias = this->getZ(block, 1);
+            auto gradWeight = OUTPUT_VARIABLE(0);
+            auto gradBias = OUTPUT_VARIABLE(1);
 
             REQUIRE_TRUE(gradBias->sizeAt(0) == gradWeight->sizeAt(1), 0, "Bias shape mismatch");
 
@@ -350,8 +346,8 @@ namespace nd4j {
 
             ones->assign(1.0);
 
-            std::unique_ptr<ResultSet<T>> tadsInput(input->allExamples());
-            std::unique_ptr<ResultSet<T>> tadsEpsilon(epsilon->allExamples());
+            std::unique_ptr<ResultSet> tadsInput(input->allExamples());
+            std::unique_ptr<ResultSet> tadsEpsilon(epsilon->allExamples());
 
             for (int e = 0; e < tadsInput->size(); e++) {
                 auto tadInput = tadsInput->at(e);
@@ -396,7 +392,7 @@ namespace nd4j {
 
             STORE_2_RESULTS(*gradWeight, *gradBias);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SHAPE_FN(fullconv3d_grad) {
             auto list = SHAPELIST();

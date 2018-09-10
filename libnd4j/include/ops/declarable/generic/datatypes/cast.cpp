@@ -42,21 +42,19 @@ namespace nd4j {
                 output->assign(input);
             
             STORE_RESULT(output);
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(Cast, cast);
 
         DECLARE_SHAPE_FN(cast) {
             auto inShape = inputShape->at(0);
 
-            int it = INT_ARG(0);
+            auto it = INT_ARG(0);
             DataType newType = DataTypeUtils::fromInt(it);
 
-            // FIXME: remove memcpy here
             Nd4jLong *newShape;
             COPY_SHAPE(inShape, newShape);
-
-            // TODO: put sign of dtype into shapeinfo?
+            ArrayOptions::setDataType(newShape, newType);
 
             return SHAPELIST(newShape);
         }

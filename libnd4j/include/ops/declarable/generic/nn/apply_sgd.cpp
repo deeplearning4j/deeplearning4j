@@ -50,7 +50,7 @@ namespace nd4j {
 
             parameters->applyPairwiseLambda(gradients, lambda, Z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(ApplyGradientDescent, apply_sgd);
     }

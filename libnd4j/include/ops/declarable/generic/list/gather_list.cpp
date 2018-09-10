@@ -46,10 +46,10 @@ namespace nd4j {
                 }
             }
 
-            auto result = new NDArray<T>('c', shape);
+            auto result = new NDArray('c', shape);
             int skipPosition = 0;
             for (int e = 0; e < indices->lengthOf(); e++) {
-                auto idx = static_cast<int>(indices->getIndexedScalar(e));
+                auto idx = indices->getIndexedScalar<int>(e);
                 auto array = list->readRaw(idx);
                 
                 IndicesList indicesList;
@@ -67,11 +67,9 @@ namespace nd4j {
                 delete subarray;
             }
 
-
             OVERWRITE_RESULT(result);
-    
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(TensorArrayGatherV3, gather_list);
         DECLARE_SYN(tensorarraygatherv3, gather_list);

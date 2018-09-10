@@ -35,7 +35,7 @@ namespace nd4j {
 
                 Nd4jStatus result = list->write(idx, input->dup());
 
-                auto res = NDArray<T>::scalar(list->counter());
+                auto res = NDArray::scalar(list->counter(), block.workspace());
                 OVERWRITE_RESULT(res);
 
                 return result;
@@ -45,9 +45,9 @@ namespace nd4j {
 
                 REQUIRE_TRUE(idx->isScalar(), 0, "Index should be Scalar");
 
-                Nd4jStatus result = list->write(idx->getScalar(0), input->dup());
+                Nd4jStatus result = list->write(idx->getScalar<int>(0), input->dup());
 
-                auto res = NDArray<T>::scalar(list->counter());
+                auto res = NDArray::scalar(list->counter(), block.workspace());
                 OVERWRITE_RESULT(res);
 
                 return result;

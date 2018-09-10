@@ -29,11 +29,10 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
-
-  	NDArray<T>* logits  = INPUT_VARIABLE(0);
-    NDArray<T>* weights = INPUT_VARIABLE(1);
-    NDArray<T>* labels  = INPUT_VARIABLE(2);
-    NDArray<T>* output  = OUTPUT_VARIABLE(0);
+ 	auto logits  = INPUT_VARIABLE(0);
+    auto weights = INPUT_VARIABLE(1);
+    auto labels  = INPUT_VARIABLE(2);
+    auto output  = OUTPUT_VARIABLE(0);
 
     int reductionMode = INT_ARG(0);			// 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
     T labelsSmoothing = T_ARG(0);
@@ -48,24 +47,24 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
         	REQUIRE_TRUE(!(weights->shapeOf()[i] != labels->shapeOf()[i] && weights->shapeOf()[i] != 1), 0, "SIGM_CROSS_ENTROPY_LOSS OP: shape of weights array %s is not broadcastable to labels array shape %s !", ShapeUtils<T>::shapeAsString(weights).c_str(), ShapeUtils<T>::shapeAsString(labels).c_str());
     
 	// perform weights broadcasting/tile to labels if needed	
-	NDArray<T>* weightsBroad = weights;	
+	auto weightsBroad = weights;
 	if(!weights->isScalar() && !weights->isSameShape(logits)) {
 		// evaluate repeat dimensions for tile operation
 		std::vector<Nd4jLong> reps;
 		for(int i = 0; i < labels->rankOf(); ++i)
 			reps.emplace_back(labels->shapeOf()[i] / weights->shapeOf()[i]);
-		weightsBroad = new NDArray<T>(weights->tile(reps));
+		weightsBroad = new NDArray(weights->tile(reps));
 	}	
 	
 	// If labelsSmoothing is nonzero, smooth the labels towards 1/2:
-	NDArray<T>* newLabels = labels;
+	auto newLabels = labels;
 	if(labelsSmoothing != (T)0.) {
 		auto smooth = LAMBDA_T(value, labelsSmoothing) { return value * ((T)1. - labelsSmoothing) + (T)(0.5) * labelsSmoothing; };
-    	newLabels = new NDArray<T>(*labels);
+    	newLabels = new NDArray(*labels);
     	newLabels->applyLambda(smooth);  
 	}
 	
-	NDArray<T> weightedLosses(newLabels->getShapeInfo(), block.getWorkspace());
+	NDArray weightedLosses(newLabels->getShapeInfo(), block.getWorkspace());
 	auto sigm_cross_entropy_lossWithLogits = LAMBDA_TT(x, z) { return nd4j::math::nd4j_max(x, (T)0.) - x * z + nd4j::math::nd4j_log((T)1. + nd4j::math::nd4j_exp(-nd4j::math::nd4j_abs(x))); };	
 	logits->applyPairwiseLambda(newLabels, sigm_cross_entropy_lossWithLogits, &weightedLosses);
 
@@ -82,7 +81,7 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
 			break;
 		
 		case 1: {											// 1 - "weighted_sum", output is scalar and equal to sum of all elements of weightedLosses array
-			(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>();
+			(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum);
 			break;
 		}
 		case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of weightedLosses array divided by sum of all elements of weightsBroad array
@@ -90,12 +89,12 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
 			if (weights->isScalar())
 				sum = (*weights)(0.) * weightedLosses.lengthOf();
 			else 
-				sum = weightsBroad->template reduceNumber<simdOps::Sum<T>>();
+				sum = weightsBroad->reduceNumber(reduce::Sum);
 			
 			if (sum == (T)0.)
 				(*output)(0.) = (T)0.;
 			else 
-				(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>() / sum;
+				(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum) / sum;
 			break;
 		}
 		case 3: {											// 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
@@ -113,7 +112,7 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
 			if (numOfNonZeroWeights == 0)
 				(*output)(0.) = (T)0.;
 			else 
-				(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>() / numOfNonZeroWeights;
+				(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum) / numOfNonZeroWeights;
 			break;
 		}
 	}
@@ -126,7 +125,7 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
     if(newLabels != labels)
     	delete newLabels;
 	
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
 

@@ -28,11 +28,10 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(hinge_loss, 3, 1, false, 0, 1) {
-
-  	NDArray<T>* logits  = INPUT_VARIABLE(0);
-    NDArray<T>* weights = INPUT_VARIABLE(1);
-    NDArray<T>* labels  = INPUT_VARIABLE(2);
-    NDArray<T>* output  = OUTPUT_VARIABLE(0);
+  	auto logits  = INPUT_VARIABLE(0);
+    auto weights = INPUT_VARIABLE(1);
+    auto labels  = INPUT_VARIABLE(2);
+    auto output  = OUTPUT_VARIABLE(0);
 
     // input validation
     // labels and logits must have the same shapes 
@@ -47,17 +46,17 @@ CUSTOM_OP_IMPL(hinge_loss, 3, 1, false, 0, 1) {
     int reductionMode = INT_ARG(0);			// 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
     
 	// perform weights broadcasting/tile to labels if needed	
-	NDArray<T>* weightsBroad = weights;	
+	auto weightsBroad = weights;
 	if(!weights->isScalar() && !weights->isSameShape(logits)) {
 		// evaluate repeat dimensions for tile operation
 		std::vector<Nd4jLong> reps;
 		for(int i = 0; i < labels->rankOf(); ++i)
 			reps.emplace_back(labels->shapeOf()[i] / weights->shapeOf()[i]);
-		weightsBroad = new NDArray<T>(weights->tile(reps));
+		weightsBroad = new NDArray(weights->tile(reps));
 	}
 
 	 // We first need to convert binary labels to -1/1 labels (as floats)
-	NDArray<T> weightedLosses = (T)1. - ((*labels)*(T)2. - (T)1.)*(*logits);
+	NDArray weightedLosses = 1.f - ((*labels)* 2.f - 1.f)*(*logits);
 	auto relu = LAMBDA_T(value) { return value > (T)0. ? value : (T)0.; };
     weightedLosses.applyLambda(relu);
     // multiply weightedLosses on weights
@@ -74,7 +73,7 @@ CUSTOM_OP_IMPL(hinge_loss, 3, 1, false, 0, 1) {
 			break;
 		
 		case 1: {											// 1 - "weighted_sum", output is scalar and equal to sum of all elements of weightedLosses array
-			(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>();
+			(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum);
 			break;
 		}
 		case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of weightedLosses array divided by sum of all elements of weightsBroad array
@@ -82,12 +81,12 @@ CUSTOM_OP_IMPL(hinge_loss, 3, 1, false, 0, 1) {
 			if (weights->isScalar())
 				sum = (*weights)(0.) * weightedLosses.lengthOf();
 			else 
-				sum = weightsBroad->template reduceNumber<simdOps::Sum<T>>();
+				sum = weightsBroad->reduceNumber(reduce::Sum);
 			
 			if (sum == (T)0.)
 				(*output)(0.) = (T)0.;
 			else 
-				(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>() / sum;
+				(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum) / sum;
 			break;
 		}
 		case 3: {											// 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
@@ -105,7 +104,7 @@ CUSTOM_OP_IMPL(hinge_loss, 3, 1, false, 0, 1) {
 			if (numOfNonZeroWeights == 0)
 				(*output)(0.) = (T)0.;
 			else 
-				(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>() / numOfNonZeroWeights;
+				(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum) / numOfNonZeroWeights;
 			break;
 		}		
 			
@@ -117,7 +116,7 @@ CUSTOM_OP_IMPL(hinge_loss, 3, 1, false, 0, 1) {
     if(weightsBroad != weights)
     	delete weightsBroad;
 	
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
 

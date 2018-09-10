@@ -35,7 +35,7 @@ namespace nd4j {
 
             OVERWRITE_RESULT(result);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(TensorArrayConcatV3, stack_list);
         DECLARE_SYN(tensorarrayconcatv3, stack_list);

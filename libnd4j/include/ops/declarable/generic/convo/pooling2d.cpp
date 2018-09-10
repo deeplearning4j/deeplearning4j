@@ -27,8 +27,7 @@
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(pooling2d, 1, 1, false, 0, 11) {
-
-            NDArray<T> *x = INPUT_VARIABLE(0);
+            auto x = INPUT_VARIABLE(0);
             REQUIRE_TRUE(x->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", x->rankOf());
             std::vector<int> argI = *(block.getIArguments());				// 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode; 9 - pooling mode; 10 - divisor extraParam0 for pnorm case
             auto z = this->getZ(block);
@@ -158,7 +157,7 @@ namespace nd4j {
                 }
             }
             delete[] im2colShapeInfo;
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(Pooling2D, pooling2d);
 

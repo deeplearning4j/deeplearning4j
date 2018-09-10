@@ -29,11 +29,10 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(absolute_difference_loss, 3, 1, false, 0, 1) {
-
-  	NDArray<T>* predictions = INPUT_VARIABLE(0);
-    NDArray<T>* weights 	= INPUT_VARIABLE(1);
-    NDArray<T>* labels     	= INPUT_VARIABLE(2);
-    NDArray<T>* output      = OUTPUT_VARIABLE(0);
+  	auto predictions = INPUT_VARIABLE(0);
+    auto weights 	= INPUT_VARIABLE(1);
+    auto labels     	= INPUT_VARIABLE(2);
+    auto output      = OUTPUT_VARIABLE(0);
 
     // input validation
     REQUIRE_TRUE(labels->isSameShape(predictions), 0, "ABSOLUTE_DIFFERENCE_LOSS OP: labels and predictions arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils<T>::shapeAsString(labels).c_str(), ShapeUtils<T>::shapeAsString(predictions).c_str());    
@@ -47,18 +46,18 @@ CUSTOM_OP_IMPL(absolute_difference_loss, 3, 1, false, 0, 1) {
     int reductionMode = INT_ARG(0);			// 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
     
 	// perform weights broadcasting/tile to labels if needed	
-	NDArray<T>* weightsBroad = weights;	
+	auto weightsBroad = weights;
 	if(!weights->isScalar() && !weights->isSameShape(predictions)) {
 		// evaluate repeat dimensions for tile operation
 		std::vector<Nd4jLong> reps;
 		for(int i = 0; i < labels->rankOf(); ++i)
 			reps.emplace_back(labels->shapeOf()[i] / weights->shapeOf()[i]);
-		weightsBroad = new NDArray<T>(weights->tile(reps));
+		weightsBroad = new NDArray(weights->tile(reps));
 	}
 
 	// perform subtraction (predictions - labels) and apply abs
 	auto absDiffr = LAMBDA_TT(p, l) { return nd4j::math::nd4j_abs(p - l); };
-    NDArray<T> weightedLosses(labels->getShapeInfo(), block.getWorkspace());
+    NDArray weightedLosses(labels->getShapeInfo(), block.getWorkspace());
  	predictions->applyPairwiseLambda(labels, absDiffr, &weightedLosses);
  	// multiply weightedLosses on weights
  	if(weights->isScalar())
@@ -82,12 +81,12 @@ CUSTOM_OP_IMPL(absolute_difference_loss, 3, 1, false, 0, 1) {
 			if (weights->isScalar())
 				sum = (*weights)(0.) * weightedLosses.lengthOf();
 			else 
-				sum = weightsBroad->template reduceNumber<simdOps::Sum<T>>();
+				sum = weightsBroad->reduceNumber(reduce::Sum);
 			
 			if (sum == (T)0.)
 				(*output)(0.) = (T)0.;
 			else 
-				(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>() / sum;
+				(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum) / sum;
 			break;
 		}
 		case 3: {											// 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
@@ -105,7 +104,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss, 3, 1, false, 0, 1) {
 			if (numOfNonZeroWeights == 0)
 				(*output)(0.) = (T)0.;
 			else 
-				(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>() / numOfNonZeroWeights;
+				(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum) / numOfNonZeroWeights;
 			break;
 		}
 	}
@@ -116,7 +115,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss, 3, 1, false, 0, 1) {
     if(weightsBroad != weights)
     	delete weightsBroad;
 	
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
 

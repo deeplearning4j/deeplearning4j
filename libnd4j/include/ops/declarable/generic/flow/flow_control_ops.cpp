@@ -39,7 +39,7 @@ namespace nd4j {
             //STORE_2_RESULTS(*input, *input);
 
             // but we'll ensure only one node is active, and other is disabled
-            if (condition->getScalar(0) == (T) 0.0f) {
+            if (condition->getScalar<int>(0) == 0) {
                 block.setBranch(0);
                 this->storeResult(block, 0, input->dup());
             } else {
@@ -47,7 +47,7 @@ namespace nd4j {
                 this->storeResult(block, 1, *input->dup());
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(switch, Switch);
         DECLARE_SYN(if, Switch);

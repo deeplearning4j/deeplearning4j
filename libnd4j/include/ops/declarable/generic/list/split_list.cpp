@@ -27,9 +27,9 @@
 namespace nd4j {
     namespace ops {
         LIST_OP_IMPL(split_list, 2, 1, 0, -2) {
-            NDArrayList<T> *list = nullptr;
-            NDArray<T>* array = nullptr;
-            NDArray<T>* sizes = nullptr;
+            NDArrayList *list = nullptr;
+            NDArray *array = nullptr;
+            NDArray *sizes = nullptr;
 
             bool hasList = false;
 
@@ -41,7 +41,7 @@ namespace nd4j {
             } else {
                 array = INPUT_VARIABLE(0);
                 sizes = INPUT_VARIABLE(1);
-                list = new NDArrayList<T>(sizes->lengthOf(), false);
+                list = new NDArrayList(sizes->lengthOf(), false);
                 block.trackList(list);
             }
 
@@ -49,7 +49,7 @@ namespace nd4j {
             //nd4j_debug("Sizes length: %i\n", sizes->lengthOf());
             int cnt = 0;
             for (int e = 0; e < sizes->lengthOf(); e++) {
-                int c_size = (int) sizes->getIndexedScalar(e);
+                int c_size = sizes->getIndexedScalar<int>(e);
                 IndicesList indices;
 
                 //nd4j_debug("Slice start: [%i]; Slice size: [%i]\n", cnt, c_size);
@@ -80,7 +80,7 @@ namespace nd4j {
                 OVERWRITE_RESULT(list);
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(TensorArraySplitV3, split_list);
         DECLARE_SYN(tensorarraysplitv3, split_list);

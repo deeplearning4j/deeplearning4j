@@ -101,10 +101,10 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(avgpool3d_bp, 2, 1, true, 0, 11) {
-            NDArray<T> *input = INPUT_VARIABLE(0);
-            NDArray<T> *gradNext = INPUT_VARIABLE(1);
+            auto input = INPUT_VARIABLE(0);
+            auto gradNext = INPUT_VARIABLE(1);
 
-            NDArray<T> *output = this->getZ(block);
+            auto output = OUTPUT_VARIABLE(0);
 
             REQUIRE_TRUE(input->rankOf() == 5, 0, "Input should be 5D, got %i instead", input->rankOf());
 
@@ -153,9 +153,8 @@ namespace nd4j {
 
         //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(avgpool3d, 1, 1, true, 0, 11) {
-
-            NDArray<T> *input = INPUT_VARIABLE(0);
-            NDArray<T> *output = OUTPUT_VARIABLE(0);
+            auto input = INPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
 
             REQUIRE_TRUE(input->rankOf() == 5, 0, "Input should be 5D, got %i instead", input->rankOf());
 
@@ -237,13 +236,12 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(maxpool3d, 1, 2, true, 0, 13) {
+            auto input = INPUT_VARIABLE(0);
 
-            NDArray<T> *input = INPUT_VARIABLE(0);
-
-            NDArray<T> *output = OUTPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
 
             // FIXME: we want to stash this one
-            NDArray<T> *indices = OUTPUT_VARIABLE(1);
+            auto indices = OUTPUT_VARIABLE(1);
 
             REQUIRE_TRUE(input->sizeOfT() > 2, 0, "MaxPool3D can't be used in HALF precision")
             REQUIRE_TRUE(input->rankOf() == 5, 0, "Input should be 5D, got rank %i instead", input->rankOf());
@@ -329,7 +327,7 @@ namespace nd4j {
 
             REQUIRE_TRUE(otime >= 1 && owidth >= 1 && oheight >= 1, 0, "Output size is too small: [%i, %i, %i]", otime, oheight, owidth);
 
-            NDArray<T>* _input;
+            NDArray* _input;
             if (!input->isContiguous())
                 _input = input->dup(input->ordering());
             else
@@ -361,7 +359,7 @@ namespace nd4j {
 
             STORE_RESULT(*output);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(MaxPool3D, maxpool3d);
         DECLARE_SYN(MaxPool3d, maxpool3d);
@@ -435,12 +433,11 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(maxpool3d_bp, 3, 1, true, 0, 13) {
+            auto input = INPUT_VARIABLE(0);
+            auto gradNext = INPUT_VARIABLE(1);
+            auto indices = INPUT_VARIABLE(2);
 
-            NDArray<T> *input = INPUT_VARIABLE(0);
-            NDArray<T> *gradNext = INPUT_VARIABLE(1);
-            NDArray<T> *indices = INPUT_VARIABLE(2);
-
-            NDArray<T> *output = this->getZ(block);
+            auto output = this->getZ(block);
 
             REQUIRE_TRUE(input->rankOf() == 5, 0, "Input should be 5D, got %i instead", input->rankOf());
             REQUIRE_TRUE(indices->isSameShape(input), 1, "Indices should have the same dimensionality as input");
@@ -531,7 +528,7 @@ namespace nd4j {
 
             STORE_RESULT(*output);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SHAPE_FN(maxpool3d_bp) {
             // output shape equals to input shape, all out of sudden

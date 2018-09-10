@@ -27,14 +27,13 @@ namespace nd4j {
 namespace ops {
 
 CUSTOM_OP_IMPL(fused_batch_norm, 3, 1, false, 0, 2) {
+    auto x      = INPUT_VARIABLE(0);                 // [bS,iH,iW,iD] (NHWC) or [bS,iD,iH,iW] (NCHW)
+    auto scale  = INPUT_VARIABLE(1);                 // [iD]
+    auto offset = INPUT_VARIABLE(2);                 // [iD]
 
-    NDArray<T>* x      = INPUT_VARIABLE(0);                 // [bS,iH,iW,iD] (NHWC) or [bS,iD,iH,iW] (NCHW)
-    NDArray<T>* scale  = INPUT_VARIABLE(1);                 // [iD]
-    NDArray<T>* offset = INPUT_VARIABLE(2);                 // [iD]
-
-    NDArray<T>* y = OUTPUT_VARIABLE(0);                     // [bS,iH,iW,iD] (NHWC) or [bS,iD,iH,iW] (NCHW)
-    NDArray<T>* batchMean = OUTPUT_VARIABLE(1);             // [iD]
-    NDArray<T>* batchVar  = OUTPUT_VARIABLE(2);             // [iD]
+    auto y = OUTPUT_VARIABLE(0);                     // [bS,iH,iW,iD] (NHWC) or [bS,iD,iH,iW] (NCHW)
+    auto batchMean = OUTPUT_VARIABLE(1);             // [iD]
+    auto batchVar  = OUTPUT_VARIABLE(2);             // [iD]
 
     const bool dataFormat = (bool)INT_ARG(0);               // 0->NHWC, 1->NCHW
     const bool isTraining = (bool)INT_ARG(1);    
@@ -57,7 +56,7 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 1, false, 0, 2) {
     REQUIRE_TRUE(scale->rankOf() == 1  && scale->sizeAt(0)  == iD, 0, "CUSTOM_OP fused_batch_norm: wrong shape of input scale array, expected is [%i], but got %s instead", iD, ShapeUtils<T>::shapeAsString(scale).c_str());
     REQUIRE_TRUE(offset->rankOf() == 1 && offset->sizeAt(0) == iD, 0, "CUSTOM_OP fused_batch_norm: wrong shape of input offset array, expected is [%i], but got %s instead", iD, ShapeUtils<T>::shapeAsString(offset).c_str());
 
-    NDArray<T>* mean(nullptr), *variance(nullptr);
+    NDArray *mean(nullptr), *variance(nullptr);
     if(!isTraining){
         mean     = INPUT_VARIABLE(3);   
         variance = INPUT_VARIABLE(4);   
@@ -67,8 +66,8 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 1, false, 0, 2) {
     else {
         REQUIRE_TRUE(block.width() == 3, 0, "CUSTOM_OP fused_batch_norm: when isTraining=true then number of input arrays must be equal to 3, but got %i instead !", block.width());   
         std::vector<Nd4jLong> shape = {iD};
-        mean = new NDArray<T>(scale->ordering(), shape, block.getWorkspace());
-        variance = new NDArray<T>(scale->ordering(), shape, block.getWorkspace());        
+        mean = new NDArray(scale->ordering(), shape, block.getWorkspace());
+        variance = new NDArray(scale->ordering(), shape, block.getWorkspace());
     }
 
     T epsilon;
@@ -78,7 +77,7 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 1, false, 0, 2) {
         epsilon = 0.001;
     
     const int restSize = x->lengthOf() / iD;    
-    NDArray<T> xAffected(x->ordering(), {restSize, iD}, block.getWorkspace());
+    NDArray xAffected(x->ordering(), {restSize, iD}, block.getWorkspace());
     xAffected.assign(x);
 
     const int restSizeMinusOne = (restSize > 1) ? (restSize - 1) : 1;
@@ -86,7 +85,7 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 1, false, 0, 2) {
     const T restSizeAdjust = (T)restSize / restSizeMinusOne;
 
     if(isTraining) {
-        NDArray<T>* sum = xAffected.sum({0});
+        auto sum = xAffected.sum({0});
         mean->assign((*sum) * restSizeInv);
         *batchMean = *mean;
         delete sum;
@@ -97,8 +96,8 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 1, false, 0, 2) {
     xAffected -= *mean;
 
     if(isTraining) {        
-        T power = 2.;
-        NDArray<T>* sum = xAffected.template transform<simdOps::Pow<T>>(&power).sum({0});
+        int power = 2;
+        auto sum = xAffected.applyScalar(scalar::Pow, power).sum({0});
         variance->assign((*sum) * restSizeInv);
         *batchVar  = (*variance) * restSizeAdjust;
         delete sum;
@@ -106,7 +105,7 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 1, false, 0, 2) {
     else 
         *batchVar  = 0.;      
 
-    y->assign( xAffected * (*variance + epsilon).template transform<simdOps::RSqrt<T>>() * (*scale) + (*offset) );    
+    y->assign( xAffected * (*variance + epsilon).transform(transform::RSqrt) * (*scale) + (*offset) );
 
     if(isTraining) {
         delete mean;

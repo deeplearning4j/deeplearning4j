@@ -28,11 +28,11 @@ namespace nd4j {
         LIST_OP_IMPL(size_list, 1, 1, 0, 0) {
             auto list = INPUT_LIST(0);
 
-            auto result = NDArray<T>::scalar((T) list->height());
+            auto result = NDArray::scalar(list->height(), block.workspace());
 
             OVERWRITE_RESULT(result);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(TensorArraySizeV3, size_list);
         DECLARE_SYN(tensorarraysizev3, size_list);

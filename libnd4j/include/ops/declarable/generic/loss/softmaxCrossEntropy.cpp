@@ -29,11 +29,10 @@ namespace ops  {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
-
-  	NDArray<T>* logits  = INPUT_VARIABLE(0);
-    NDArray<T>* weights = INPUT_VARIABLE(1);
-    NDArray<T>* labels  = INPUT_VARIABLE(2);
-    NDArray<T>* output  = OUTPUT_VARIABLE(0);
+  	auto logits  = INPUT_VARIABLE(0);
+    auto weights = INPUT_VARIABLE(1);
+    auto labels  = INPUT_VARIABLE(2);
+    auto output  = OUTPUT_VARIABLE(0);
 
     int reductionMode = INT_ARG(0);			// 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
     T labelsSmoothing = T_ARG(0);
@@ -48,37 +47,37 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
         	REQUIRE_TRUE(!(weights->shapeOf()[i] != output->shapeOf()[i] && weights->shapeOf()[i] != 1 && !output->isScalar()), 0, "SOFTMAX_CROSS_ENTROPY_LOSS OP: shape of weights array %s is not broadcastable to output array shape %s !", ShapeUtils<T>::shapeAsString(weights).c_str(), ShapeUtils<T>::shapeAsString(output).c_str());
 
 	// If label_smoothing is nonzero, smooth the labels towards 1/num_classes: new_onehot_labels = onehot_labels * (1 - label_smoothing) + label_smoothing / num_classes
-	NDArray<T>* newLabels = labels;
+	auto newLabels = labels;
 	if(labelsSmoothing != (T)0.) {
 		T numClasses = (T)labels->sizeAt(1);
 		auto smooth = LAMBDA_T(value, labelsSmoothing, numClasses) { return value * ((T)1. - labelsSmoothing) + labelsSmoothing/numClasses; };
-    	newLabels = new NDArray<T>(*labels);
+    	newLabels = new NDArray(*labels);
     	newLabels->applyLambda(smooth);  
 	}	
 		
 	std::vector<int> dimensions = {-1};
 	// Find the max in each batch, resulting in a tensor of shape [batch]
-	NDArray<T> logitsMax = logits->template reduceAlongDims<simdOps::Max<T>>(dimensions, true);
+	auto logitsMax = logits->reduceAlongDims(reduce::Max, dimensions, true);
 	// Subtract the max in batch b from every element in batch b, broadcasts along the batch dimension.
-	NDArray<T> shiftedLogits = *logits - logitsMax;
+	auto shiftedLogits = *logits - logitsMax;
 	// exp(logits - max_logits)
-	NDArray<T> expShiftedLogits = shiftedLogits.template transform<simdOps::Exp<T>>();
+	auto expShiftedLogits = shiftedLogits.transform(transform::Exp);
 	// sum_{class} (exp(logits - max_logits))
-	NDArray<T> sumExp = expShiftedLogits.template reduceAlongDims<simdOps::Sum<T>>(dimensions, true);	
+	auto sumExp = expShiftedLogits.reduceAlongDims(reduce::Sum, dimensions, true);
 	// log(sum(exp(logits - max_logits)))
-	NDArray<T> logSumExp = sumExp.template transform<simdOps::Log<T>>();
+	auto logSumExp = sumExp.transform(transform::Log);
 	// sum(-labels *((logits - max_logits) - log(sum(exp(logits - max_logits))))) along classes
 	// The subtraction broadcasts along the batch dimension
-	NDArray<T> weightedLosses = ((-*newLabels)*(shiftedLogits - logSumExp)).template reduceAlongDims<simdOps::Sum<T>>(dimensions);
+	NDArray weightedLosses = ((-*newLabels)*(shiftedLogits - logSumExp)).template reduceAlongDims<simdOps::Sum<T>>(dimensions);
 	
 	// perform weights broadcasting/tile to weightedLosses if it is necessary
-	NDArray<T>* weightsBroad = weights;	
+	auto weightsBroad = weights;
 	if(!weights->isScalar() && !weights->isSameShape(&weightedLosses)) {
 		// evaluate repeat dimensions for tile operation
 		std::vector<Nd4jLong> reps(weightedLosses.rankOf());
 		for(int i = 0; i < reps.size(); ++i)
 			reps[i] = weightedLosses.shapeOf()[i] / weights->shapeOf()[i];
-		weightsBroad = new NDArray<T>(weights->tile(reps));
+		weightsBroad = new NDArray(weights->tile(reps));
 	}	
 
     // multiply weightedLosses on weights
@@ -94,7 +93,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 			break;
 		
 		case 1: {											// 1 - "weighted_sum", output is scalar and equal to sum of all elements of weightedLosses array
-			(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>();
+			(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum);
 			break;
 		}
 		case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of weightedLosses array divided by sum of all elements of weightsBroad array
@@ -102,12 +101,12 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 			if (weights->isScalar())
 				sum = (*weights)(0.) * weightedLosses.lengthOf();
 			else 
-				sum = weightsBroad->template reduceNumber<simdOps::Sum<T>>();
+				sum = weightsBroad->reduceNumber(reduce::Sum);
 			
 			if (sum == (T)0.)
 				(*output)(0.) = (T)0.;
 			else 
-				(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>() / sum;
+				(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum) / sum;
 			break;
 		}
 		case 3: {											// 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
@@ -125,7 +124,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 			if (numOfNonZeroWeights == 0)
 				(*output)(0.) = (T)0.;
 			else 
-				(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>() / numOfNonZeroWeights;
+				(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum) / numOfNonZeroWeights;
 			break;
 		}
 	}

@@ -1355,7 +1355,7 @@
                                                                 } \
                                                                 return shapeList; \
                                                             } \
-                                                            Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context& block)
+                                                            Nd4jStatus nd4j::ops::NAME::validateAndExecute(nd4j::graph::Context& block)
 
 #define DECLARE_CONFIGURABLE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)     class NAME: public nd4j::ops::DeclarableOp { \
                                                                                 public:\

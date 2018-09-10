@@ -26,8 +26,8 @@
 namespace nd4j {
     namespace ops {
         CONFIGURABLE_OP_IMPL(ismax, 1, 1, true, 0, -1) {
-            NDArray<T>* x = INPUT_VARIABLE(0);
-            NDArray<T>* z = OUTPUT_VARIABLE(0);
+            auto x = INPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
             std::vector<int> dimensions = *(block.getIArguments());			// argI
 
             // FIXME: this should be moved to helpers!

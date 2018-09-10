@@ -27,7 +27,7 @@ namespace nd4j {
     namespace ops {
         LIST_OP_IMPL(read_list, 1, 1, 0, 0) {
             auto list = INPUT_LIST(0);
-            NDArray<T> * result = nullptr;
+            NDArray *result = nullptr;
 
             REQUIRE_TRUE(list->height() > 0, 0, "ReadList: number of elements in list should be positive prior to Read call");
 
@@ -42,7 +42,7 @@ namespace nd4j {
 
                 REQUIRE_TRUE(vec->isScalar(), 0, "ReadList: index operand should be a scalar");
                 
-                auto index = (int) vec->getScalar(0);
+                auto index = vec->getScalar<int>(0);
 
                 REQUIRE_TRUE(list->isWritten(index), 0, "ReadList: requested index [%i] wasn't written yet", index);
 
@@ -53,7 +53,7 @@ namespace nd4j {
 
             OVERWRITE_RESULT(result);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(TensorArrayReadV3, read_list);
         DECLARE_SYN(tensorarrayreadv3, read_list);
