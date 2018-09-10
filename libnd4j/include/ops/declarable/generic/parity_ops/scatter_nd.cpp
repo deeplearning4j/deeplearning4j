@@ -28,12 +28,11 @@ namespace nd4j {
 namespace ops  {
 
 CUSTOM_OP_IMPL(scatter_nd, 3, 1, false, 0, 0) {
-    
-    NDArray<T>* indices = INPUT_VARIABLE(0);
-    NDArray<T>* updates = INPUT_VARIABLE(1);
-    NDArray<T>* shape   = INPUT_VARIABLE(2);
+    auto indices = INPUT_VARIABLE(0);
+    auto updates = INPUT_VARIABLE(1);
+    auto shape   = INPUT_VARIABLE(2);
 
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
 
     const int indRank   = indices->rankOf();
     const int updRank   = updates->rankOf();
@@ -44,8 +43,7 @@ CUSTOM_OP_IMPL(scatter_nd, 3, 1, false, 0, 0) {
     REQUIRE_TRUE(indices->sizeAt(-1) <= shapeRank, 0, "SCATTER_ND OP: last dimension of indices array must be <= rank of shape array, but got %i and %i correspondingly !", indices->sizeAt(-1), shapeRank);    
     REQUIRE_TRUE(updRank == (indRank + shapeLen - 2), 0, "SCATTER_ND OP: the equality updates_rank = (indices_rank + shape_length - 2) must be true for input arrays, but got instead: updates_rank = %i, indices_rank = %i, shape_length = %i !", updRank, indRank, shapeLen);
 
-    std::vector<T> outShapeT = shape->getBufferAsVector();
-    std::vector<Nd4jLong> outShape(std::begin(outShapeT), std::end(outShapeT));
+    std::vector<Nd4jLong> outShape = shape->getBufferAsVector<Nd4jLong>();
     std::vector<Nd4jLong> updShape = updates->getShapeAsVector();
     std::vector<Nd4jLong> indShape = indices->getShapeAsVector();    
     std::vector<Nd4jLong> expectedUpdShape(std::begin(indShape), std::end(indShape) - 1);     
@@ -56,7 +54,7 @@ CUSTOM_OP_IMPL(scatter_nd, 3, 1, false, 0, 0) {
     if(output->ews() == 1)
         memset(output->getBuffer(), 0, output->lengthOf() * sizeof(T));
     else 
-        *output = static_cast<T>(0);
+        *output = 0;
 
     ScatterHelper<T>::template scatterND<simdOps::Copy<T>>(*indices, *updates, *output);
 

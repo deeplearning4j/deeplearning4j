@@ -331,10 +331,10 @@ namespace nd4j {
                 REQUIRE_TRUE(v_begin->lengthOf() == v_end->lengthOf(), 0, "StridedSlice: Length of begin/end should match, but got %i vs %i instead", (int) v_begin->lengthOf(), (int) v_end->lengthOf());
 
                 for (int e = 0; e < v_begin->lengthOf(); e++)
-                    begin.emplace_back((int) v_begin->getIndexedScalar(e));
+                    begin.emplace_back(v_begin->getIndexedScalar<int>(e));
 
                 for (int e = 0; e < v_end->lengthOf(); e++)
-                    end.emplace_back((int) v_end->getIndexedScalar(e));
+                    end.emplace_back(v_end->getIndexedScalar<int>(e));
 
                 if (block.width() >= 4) {
                     auto v_stride = INPUT_VARIABLE(3);
@@ -342,7 +342,7 @@ namespace nd4j {
                     REQUIRE_TRUE(v_stride->lengthOf() == v_begin->lengthOf(), 0, "StridedSlice: Length of begin/end/stride should match, but got %i vs %i vs %i instead", (int) v_begin->lengthOf(), (int) v_end->lengthOf(), (int) v_stride->lengthOf());
 
                     for (int e = 0; e < v_stride->lengthOf(); e++)
-                        strides.emplace_back((int) v_stride->getIndexedScalar(e));
+                        strides.emplace_back(v_stride->getIndexedScalar<int>(e));
                 } else {
                     for (int e = 0; e < v_begin->lengthOf(); e++)
                         strides.emplace_back(1);
@@ -405,9 +405,10 @@ namespace nd4j {
                 for (int e = 5; e < block.getIArguments()->size(); e++)
                     args.emplace_back(INT_ARG(e));
 
-                ShapeUtils<T>::copyVectorPart(begin, args, elements, 0);
-                ShapeUtils<T>::copyVectorPart(end, args, elements, elements);
-                ShapeUtils<T>::copyVectorPart(strides, args, elements, elements * 2);
+                // FIXME: propably template required here
+                ShapeUtils::copyVectorPart(begin, args, elements, 0);
+                ShapeUtils::copyVectorPart(end, args, elements, elements);
+                ShapeUtils::copyVectorPart(strides, args, elements, elements * 2);
             }
 
             REQUIRE_TRUE(begin.size() > 0 && end.size() > 0 && strides.size() > 0, 0, "Strided_Slice: empty arguments");
@@ -483,10 +484,10 @@ namespace nd4j {
                 REQUIRE_TRUE(v_begin->lengthOf() == v_end->lengthOf(), 0, "StridedSliceBP: Length of begin/end should match, but got %i vs %i instead", (int) v_begin->lengthOf(), (int) v_end->lengthOf());
 
                 for (int e = 0; e < v_begin->lengthOf(); e++)
-                    begin.emplace_back((int) v_begin->getIndexedScalar(e));
+                    begin.emplace_back(v_begin->getIndexedScalar<int>(e));
 
                 for (int e = 0; e < v_end->lengthOf(); e++)
-                    end.emplace_back((int) v_end->getIndexedScalar(e));
+                    end.emplace_back(v_end->getIndexedScalar<int>(e));
 
                 if (block.width() >= 4) {
                     auto v_stride = INPUT_VARIABLE(3);
@@ -494,7 +495,7 @@ namespace nd4j {
                     REQUIRE_TRUE(v_stride->lengthOf() == v_begin->lengthOf(), 0, "StridedSliceBP: Length of begin/end/stride should match, but got %i vs %i vs %i instead", (int) v_begin->lengthOf(), (int) v_end->lengthOf(), (int) v_stride->lengthOf());
 
                     for (int e = 0; e < v_stride->lengthOf(); e++)
-                        strides.emplace_back((int) v_stride->getIndexedScalar(e));
+                        strides.emplace_back(v_stride->getIndexedScalar<int>(e));
                 } else {
                     for (int e = 0; e < v_begin->lengthOf(); e++)
                         strides.emplace_back(1);

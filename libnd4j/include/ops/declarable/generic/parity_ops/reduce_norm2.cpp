@@ -26,17 +26,17 @@ namespace ops {
 #if NOT_EXCLUDED(OP_reduce_norm2)
 
     CUSTOM_OP_IMPL(reduce_norm2, 1, 1, false, 0, 0) {
-        NDArray<T>* input = INPUT_VARIABLE(0);
-        NDArray<T>* output = OUTPUT_VARIABLE(0);
+        auto input = INPUT_VARIABLE(0);
+        auto output = OUTPUT_VARIABLE(0);
         std::vector<int> axes = *block.getIArguments();
 
         for(const auto& item : axes)
             REQUIRE_TRUE(item > -input->shapeInfo()[0] || item <input->shapeInfo()[0], 0, "REDUCE_MEAN OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
 
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-        input->template reduceAlongDimension<simdOps::Norm2<T>>(output, axes, keepDims);
+        input->reduceAlongDimension(reduce::Norm2, output, axes, keepDims);
 
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
 
     DECLARE_SHAPE_FN(reduce_norm2) {    
@@ -71,7 +71,7 @@ namespace ops {
             T keepDimsT = (keepDims?T(1.f):T(0.f));
 
             // at first step we build fwd activation
-            nd4j::ops::reduce_norm2<T> op;
+            nd4j::ops::reduce_norm2 op;
             std::vector<Nd4jLong> axes;// = *block.getIArguments();
 
             if (block.numI() > 0) {
@@ -80,12 +80,12 @@ namespace ops {
             }
             std::vector<T> tVec(1);
             tVec[0] = (keepDims?T(1.0):T(0.0));
-            std::vector<NDArray<T>*> inputVec({input});
-            std::unique_ptr<ResultSet<T>> tmpResult(op.execute(inputVec, tVec, axes, false)); 
-            if (tmpResult->status() != ND4J_STATUS_OK)
+            std::vector<NDArray*> inputVec({input});
+            std::unique_ptr<ResultSet> tmpResult(op.execute(inputVec, tVec, axes, false));
+            if (tmpResult->status() != Status::OK())
                 return tmpResult->status();
 
-            NDArray<T>* tempNorm2 = tmpResult->at(0);
+            auto tempNorm2 = tmpResult->at(0);
 
 
             if (tempNorm2->isScalar()) {
@@ -98,7 +98,7 @@ namespace ops {
                 std::vector<int> axesList = *block.getIArguments();
                 helpers::reduceNorm2BP(input, epsilon, tempNorm2, output, axesList);
             }
-            return ND4J_STATUS_OK;
+            return Status::OK();
     }
 #endif
 

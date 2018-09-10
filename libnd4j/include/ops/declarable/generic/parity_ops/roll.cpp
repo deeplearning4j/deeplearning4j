@@ -28,9 +28,8 @@ namespace nd4j {
 namespace ops {
 
     CONFIGURABLE_OP_IMPL(roll, 1, 1, true, 0, 1) {
-
-        NDArray<T>* output = OUTPUT_VARIABLE(0);
-        NDArray<T>* input = INPUT_VARIABLE(0);
+        auto output = OUTPUT_VARIABLE(0);
+        auto input = INPUT_VARIABLE(0);
         bool shiftIsLinear = true;
         //std::vector<int> axes(input->rankOf());
         int shift = INT_ARG(0);

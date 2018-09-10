@@ -70,7 +70,7 @@ namespace nd4j {
             // ScatterHelper<T>::template scatterApply<simdOps::Copy<T>>(output, indices, updates);        
             ScatterHelper<T>::template scatter<simdOps::Copy<T>>(*indices, *updates, *output);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(ScatterUpdate, scatter_upd);
     }

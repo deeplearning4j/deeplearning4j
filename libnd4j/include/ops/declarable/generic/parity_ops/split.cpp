@@ -27,7 +27,7 @@
 namespace nd4j {
 namespace ops {
     CUSTOM_OP_IMPL(split, 1, -1, false, 0, 1) {
-        NDArray<T> *input = nullptr;
+        NDArray *input = nullptr;
         int num_splits = INT_ARG(0);
 
         // axis is 0 by default
@@ -41,10 +41,10 @@ namespace ops {
 
             if (a->isScalar()) {
                 // axis goes first
-                axis = a->getScalar(0);
+                axis = a->getScalar<int>(0);
                 input = b;
             } else if (b->isScalar()) {
-                axis = b->getScalar(0);
+                axis = b->getScalar<int>(0);
                 input = a;
             }
         }
@@ -80,7 +80,7 @@ namespace ops {
 
 
 
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
 
     DECLARE_SHAPE_FN(split) {
@@ -99,11 +99,11 @@ namespace ops {
             if (shape::isScalar(shape0)) {
                 input = shape1;
                 auto _a = INPUT_VARIABLE(0);
-                axis = _a->getScalar(0);
+                axis = _a->getScalar<int>(0);
             } else if (shape::isScalar(shape1)) {
                 input = shape0;
                 auto _a = INPUT_VARIABLE(1);
-                axis = _a->getScalar(0);
+                axis = _a->getScalar<int>(0);
             }
         }
 

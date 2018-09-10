@@ -28,11 +28,11 @@
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(top_k, 1, 2, false, 0, -2) {
-            NDArray<T>* x = INPUT_VARIABLE(0);
+            auto x = INPUT_VARIABLE(0);
             int k = 1;// from params
             bool needSort = true;
-            NDArray<T>* values = OUTPUT_VARIABLE(0);
-            NDArray<T>* indeces = OUTPUT_VARIABLE(1);
+            auto values = OUTPUT_VARIABLE(0);
+            auto indeces = OUTPUT_VARIABLE(1);
             if (block.numI() > 0) {
                 if (block.numI() > 1) {
                 k = INT_ARG(0);

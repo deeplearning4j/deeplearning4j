@@ -26,13 +26,11 @@
 namespace nd4j {
     namespace ops {
         OP_IMPL(zeros_as, 1, 1, false) {
-            // auto input = INPUT_VARIABLE(0);
-
             auto out = OUTPUT_VARIABLE(0);
 
-            *out = static_cast<T>(0.f);
+            *out = 0.f;
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(zeroslike, zeros_as);
         DECLARE_SYN(zeros_like, zeros_as);

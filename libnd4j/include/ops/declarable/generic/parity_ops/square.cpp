@@ -29,8 +29,8 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
-            T extras = static_cast<T>(2.0f);
-            input->template applyTransform<simdOps::Pow<T>>(output, &extras);
+            int extras = 2;
+            input->applyScalar(scalar::Pow, extras, output);
 
             return Status::OK();
         }

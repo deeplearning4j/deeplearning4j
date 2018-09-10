@@ -27,11 +27,10 @@
 namespace nd4j {
     namespace ops {
         CONFIGURABLE_OP_IMPL(zeta, 2, 1, false, 0, 0) {
+            auto x = INPUT_VARIABLE(0);
+            auto q = INPUT_VARIABLE(1);
 
-            NDArray<T>* x = INPUT_VARIABLE(0);
-            NDArray<T>* q = INPUT_VARIABLE(1);
-
-            NDArray<T>* output   = OUTPUT_VARIABLE(0);
+            auto output   = OUTPUT_VARIABLE(0);
 
             REQUIRE_TRUE(x->isSameShape(q), 0, "ZETA op: two input arrays must have the same shapes, bot got x=%s and q=%s !", ShapeUtils<T>::shapeAsString(x).c_str(), ShapeUtils<T>::shapeAsString(q).c_str());
 
@@ -46,7 +45,7 @@ namespace nd4j {
 
             *output = helpers::zeta<T>(*x, *q);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(Zeta, zeta);
     }

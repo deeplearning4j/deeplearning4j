@@ -31,9 +31,9 @@ namespace nd4j {
 
             REQUIRE_TRUE(output->isScalar(), 0, "Size output should be scalar");
 
-            output->putScalar(0, (T) input->lengthOf());
+            output->assign(input->lengthOf());
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SHAPE_FN(size) {
             Nd4jLong *newShape;

@@ -34,11 +34,10 @@ namespace nd4j {
 //            for (int e = 0; e < input->lengthOf(); e++)
 //                if ((*input)(e) == T(0))
 //                    numZeros++;
-            T fraction = input->template reduceNumber<simdOps::CountZero<T>>();//((T)(0) + numZeros) / input->lengthOf();
-            fraction /= input->lengthOf();
-            output->putScalar(0, fraction);
+            auto fraction = input->reduceNumber(reduce::CountZero) / input->lengthOf();//((T)(0) + numZeros) / input->lengthOf();
+            output->assign(fraction);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SHAPE_FN(zero_fraction) {
             Nd4jLong *newShape;

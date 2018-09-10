@@ -28,12 +28,11 @@ namespace nd4j {
 namespace ops  {
 
 OP_IMPL(scatter_nd_add, 3, 1, true) {
-    
-    NDArray<T>* input   = INPUT_VARIABLE(0);
-    NDArray<T>* indices = INPUT_VARIABLE(1);
-    NDArray<T>* updates = INPUT_VARIABLE(2);
+    auto input   = INPUT_VARIABLE(0);
+    auto indices = INPUT_VARIABLE(1);
+    auto updates = INPUT_VARIABLE(2);
 
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
 
     const int inRank  = input->rankOf();
     const int indRank = indices->rankOf();

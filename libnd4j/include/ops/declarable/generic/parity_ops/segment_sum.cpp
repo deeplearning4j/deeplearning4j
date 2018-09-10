@@ -24,9 +24,9 @@
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(segment_sum, 2, 1, false, 0, 0) {
-            NDArray<T>* input = INPUT_VARIABLE(0);
-            NDArray<T>* idxSegments = INPUT_VARIABLE(1);
-            NDArray<T>* segmentedOutput = OUTPUT_VARIABLE(0);
+            auto input = INPUT_VARIABLE(0);
+            auto idxSegments = INPUT_VARIABLE(1);
+            auto segmentedOutput = OUTPUT_VARIABLE(0);
             REQUIRE_TRUE(idxSegments->isVector(), 0, "segment_sum: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
             REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "segment_sum: segment indexes array length should be equal to the input first dimension, but %i != %i.", idxSegments->lengthOf(), input->sizeAt(0));
 
@@ -41,8 +41,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(segment_sum) {
-
-            NDArray<T>* idxVector = INPUT_VARIABLE(1);
+            auto idxVector = INPUT_VARIABLE(1);
 
             auto in = inputShape->at(0);
             int outRank = shape::rank(in);

@@ -71,7 +71,7 @@ namespace nd4j {
             // ScatterHelper<T>::template scatterApply<simdOps::Subtract<T>>(output, indices, updates);        
             ScatterHelper<T>::template scatter<simdOps::Subtract<T>>(*indices, *updates, *output);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(ScatterSub, scatter_sub);
     }

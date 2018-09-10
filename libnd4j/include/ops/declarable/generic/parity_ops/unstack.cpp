@@ -55,7 +55,7 @@ namespace nd4j {
 
             delete tads;
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(unpack, unstack);
         

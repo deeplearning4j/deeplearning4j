@@ -31,7 +31,7 @@ namespace nd4j {
             auto values = OUTPUT_VARIABLE(0);
             auto indices = OUTPUT_VARIABLE(1);
 
-            return helpers::uniqueFunctor(x, values, indices,  (NDArray<T>*)nullptr);
+            return helpers::uniqueFunctor(x, values, indices,  (NDArray*)nullptr);
         }
 
         DECLARE_SHAPE_FN(unique) {
@@ -71,10 +71,10 @@ namespace nd4j {
         }
 
         CUSTOM_OP_IMPL(unique_with_counts, 1, 3, false, 0, 0) {
-            NDArray<T>* input = INPUT_VARIABLE(0);
-            NDArray<T>* values = OUTPUT_VARIABLE(0);
-            NDArray<T>* indices = OUTPUT_VARIABLE(1);
-            NDArray<T>* counts = OUTPUT_VARIABLE(2);
+            auto input = INPUT_VARIABLE(0);
+            auto values = OUTPUT_VARIABLE(0);
+            auto indices = OUTPUT_VARIABLE(1);
+            auto counts = OUTPUT_VARIABLE(2);
 
             return helpers::uniqueFunctor(input, values, indices, counts);
         }

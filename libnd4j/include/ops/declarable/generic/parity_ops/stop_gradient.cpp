@@ -26,12 +26,12 @@
 namespace nd4j {
     namespace ops {
         OP_IMPL(stop_gradient, 1, 1, true) {
-            NDArray<T>* x = INPUT_VARIABLE(0);
-            NDArray<T>* out = OUTPUT_VARIABLE(0);
+            auto x = INPUT_VARIABLE(0);
+            auto out = OUTPUT_VARIABLE(0);
             // just for lulz
-            x->template applyTransform<simdOps::Identity<T>>(out, nullptr);
+            x->applyTransform(transform::Identity, out, nullptr);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(StopGradient, stop_gradient);
     }

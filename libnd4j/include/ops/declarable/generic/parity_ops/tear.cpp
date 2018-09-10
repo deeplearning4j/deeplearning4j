@@ -46,7 +46,7 @@ namespace nd4j {
 
             delete tads;
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SHAPE_FN(tear) {
             auto inShape = inputShape->at(0);
