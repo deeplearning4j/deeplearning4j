@@ -107,8 +107,8 @@ template<typename T>
 		math_def inline T nd4j_copysign(T val1, T val2);
 
 //#ifndef __CUDACC__
-        template<typename T>
-        math_def inline T nd4j_dot(T *x, T *y, int length);
+        template<typename X, typename Y, typename Z>
+        math_def inline Z nd4j_dot(X *x, Y *y, int length);
 //#endif
 
 		template<typename T>
@@ -307,7 +307,7 @@ template<typename T>
         }
 
 //#ifndef __CUDACC__
-
+/*
         template<>
         math_def inline float16 nd4j_dot<float16>(float16 *x, float16 *y, int length) {
             float16 dot = (float16) 0.0f;
@@ -319,12 +319,13 @@ template<typename T>
 
             return dot;
         }
+        */
 
-		template<typename T>
-        math_def inline T nd4j_dot(T *x, T *y, int length) {
-            T dot = (T) 0.0f;
+		template<typename X, typename Y, typename Z>
+        math_def inline Z nd4j_dot(X *x, Y *y, int length) {
+            Z dot = (Z)0.0f;
 
-#pragma omp simd reduction(+:dot)
+//#pragma omp simd reduction(+:dot)
 			for(int e = 0; e < length; e++) {
 				dot += x[e] * y[e];
 			}

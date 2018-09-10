@@ -303,10 +303,9 @@ nd4j::NDArray<T>* MmulHelper<T>::mmulNxN(nd4j::NDArray<T>* A, nd4j::NDArray<T>* 
 
 //////////////////////////////////////////////////////////////////////////////
 // static
-template<typename T>
-nd4j::NDArray<T>* MmulHelper<T>::mmulMxM(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C , 
-    T alpha, T beta) {
-    nd4j::NDArray<T>* result = C;
+template<typename X, typename Y, typename Z>
+nd4j::NDArray* MmulHelper::mmulMxM(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C , T alpha, T beta) {
+    nd4j::NDArray* result = C;
     bool needAllocA = false;
     bool needAllocB = false;
     if (A->isView()) {
@@ -331,21 +330,21 @@ nd4j::NDArray<T>* MmulHelper<T>::mmulMxM(nd4j::NDArray<T>* A, nd4j::NDArray<T>* 
     N = cShape[1]; // c.columns
     K = aShape[1]; // a.columns
     rOrder = 'f'; //aOrder;
-    nd4j::NDArray<T>* pA = nullptr;
-    nd4j::NDArray<T>* pB = nullptr;
-    nd4j::NDArray<T>* pC = nullptr;;
-    nd4j::NDArray<T>* tA;
-    nd4j::NDArray<T>* tB;
-    nd4j::NDArray<T>* tC = result; 
+    nd4j::NDArray* pA = nullptr;
+    nd4j::NDArray* pB = nullptr;
+    nd4j::NDArray* pC = nullptr;;
+    nd4j::NDArray* tA;
+    nd4j::NDArray* tB;
+    nd4j::NDArray* tC = result;
     
     if (needAllocA) {
-        tA = new nd4j::NDArray<T>(A->getBuffer(), A->getShapeInfo(), A->getWorkspace());
+        tA = new nd4j::NDArray(A->getBuffer(), A->getShapeInfo(), A->getWorkspace());
         nd4j_verbose("Matrix A was recreated from view.\n", "");
     }
     else 
         tA = A; 
     if (needAllocB) {
-        tB = new nd4j::NDArray<T>(B->getBuffer(), B->getShapeInfo(), B->getWorkspace());
+        tB = new nd4j::NDArray(B->getBuffer(), B->getShapeInfo(), B->getWorkspace());
         nd4j_verbose("Matrix B was recreated from view.\n", "");
     }
     else 
@@ -380,16 +379,22 @@ nd4j::NDArray<T>* MmulHelper<T>::mmulMxM(nd4j::NDArray<T>* A, nd4j::NDArray<T>* 
     ldc = pC->rows();
     transA = (pA->ordering() == 'c'? CblasTrans:CblasNoTrans);
     transB = (pB->ordering() == 'c' ? CblasTrans:CblasNoTrans);
+
+    auto xType = A->dataType();
+    auto yType = B->dataType();
+    auto zType = C->dataType();
+
     // we'll use platform-specific gemm here eventually. maybe tomorrow.
     // TODO: put proper _gemm here
-    if (BlasHelper::getInstance()->template hasGEMM<T>()) {
+    if (xType == yType && yType == zType && BlasHelper::getInstance()->template hasGEMM<X>()) {
         nd4j_debug("Using provided GEMM pointer\n","");
-        if (sizeof(T) == 4)
+        if (xType == DataType_FLOAT)
             BlasHelper::getInstance()->sgemm()(CblasColMajor, transA, transB, M, N, K, (float) alpha, reinterpret_cast<float *>(pA->getBuffer()), lda, reinterpret_cast<float *>(pB->getBuffer()), ldb, (float) beta, reinterpret_cast<float *>(pC->getBuffer()), ldc);
-        else if (sizeof(T) == 8)
+        else if (xType == DataType_DOUBLE)
             BlasHelper::getInstance()->dgemm()(CblasColMajor, transA, transB, M, N, K, (double) alpha, reinterpret_cast<double *>(pA->getBuffer()), lda, reinterpret_cast<double *>(pB->getBuffer()), ldb, (double) beta, reinterpret_cast<double *>(pC->getBuffer()), ldc);
-        else
-            nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, pA->getBuffer(), lda, pB->getBuffer(), ldb, beta, pC->getBuffer(), ldc);
+        else {
+            BUILD_TRIPLE_SELECTOR(xType, yType, zType, nd4j::blas::GEMM, ::op(rOrder, transA, transB, M, N, K, alpha, pA->getBuffer(), lda, pB->getBuffer(), ldb, beta, pC->getBuffer(), ldc), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+        }
     } else {
         nd4j_debug("mmulMxM: Using fallback GEMM impl\n","");
        

@@ -23,32 +23,39 @@
 
 #include <cblas.h>
 #include <templatemath.h>
+#include <op_boilerplate.h>
 
 
 namespace nd4j {
      namespace blas {
-
-
-
-
-        template <typename T>
-        class GEMM {
-        protected:
-            static inline int linearIndexC(int rows, int cols, int r, int c);
-            static inline int linearIndexF(int rows, int cols, int r, int c);
-            static T* transpose(int orderSource, int orderTarget, int rows, int cols, T *source);
-
-
-        public:
-            static void op(int Order, int TransA, int TransB, int M, int N, int K, T alpha, T *A, int lda, T *B, int ldb, T beta, T *C, int ldc);
-        };
-
          template <typename T>
-         class GEMV : public nd4j::blas::GEMM<T>{
+         static void * transpose(int orderSource, int orderTarget, int rows, int cols, void *source);
 
+         static inline int linearIndexC(int rows, int cols, int r, int c);
+         static inline int linearIndexF(int rows, int cols, int r, int c);
+
+         template <typename X, typename Y, typename Z>
+         class GEMM {
+         protected:
          public:
-             static void op(int TRANS, int M, int N, T alpha, T* A, int lda, T* X, int incx, T beta, T* Y, int incy );
+             static void op(int Order, int TransA, int TransB, int M, int N, int K, double alpha, void *A, int lda, void *B, int ldb, double beta, void *C, int ldc);
          };
+
+         template <typename X, typename Y, typename Z>
+         class GEMV : public nd4j::blas::GEMM<X, Y, Z>{
+         public:
+             static void op(int TRANS, int M, int N, double alpha, void* vA, int lda, void* vX, int incx, double beta, void* vY, int incy );
+         };
+
+
+         int FORCEINLINE nd4j::blas::linearIndexC(int rows, int cols, int r, int c) {
+             return (r * cols + c);
+         }
+
+         int FORCEINLINE nd4j::blas::linearIndexF(int rows, int cols, int r, int c) {
+             return (c * rows + r);
+         }
+
     }
 }
 
