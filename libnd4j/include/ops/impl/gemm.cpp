@@ -20,25 +20,15 @@
 //
 
 #include <gemm.h>
-#include <op_boilerplate.h>
 #include <types/types.h>
 
 namespace nd4j {
     namespace blas {
 
         template <typename T>
-        int FORCEINLINE GEMM<T>::linearIndexC(int rows, int cols, int r, int c) {
-            return (r * cols + c);
-        }
-
-        template <typename T>
-        int FORCEINLINE GEMM<T>::linearIndexF(int rows, int cols, int r, int c) {
-            return (c * rows + r);
-        }
-
-        template <typename T>
-        T* GEMM<T>::transpose(int orderSource, int orderTarget, int rows, int cols, T *source) {
-            T *ret = new T[rows * cols];
+        void* transpose(int orderSource, int orderTarget, int rows, int cols, void *vsource) {
+            auto ret = new T[rows * cols];
+            auto source = reinterpret_cast<T *>(vsource);
 
             // handle transpose in parallel
 #pragma omp parallel for proc_bind(close)
@@ -54,28 +44,32 @@ namespace nd4j {
             return ret;
         }
 
-        template <typename T>
-        void GEMM<T>::op(int Order, int TransA, int TransB,
+        template <typename X, typename Y, typename Z>
+        void GEMM<X, Y, Z>::op(int Order, int TransA, int TransB,
                        int M, int N, int K,
-                       T alpha,
-                       T *A, int lda,
-                       T *B, int ldb,
-                       T beta,
-                       T *C, int ldc) {
+                       double alpha,
+                       void *vA, int lda,
+                       void *vB, int ldb,
+                       double beta,
+                       void *vC, int ldc) {
+
+            auto A = reinterpret_cast<X *>(vA);
+            auto B = reinterpret_cast<Y *>(vB);
+            auto C = reinterpret_cast<Z *>(vC);
 
             bool transAFlag = TransA == CblasTrans;
             bool transBFlag = TransB == CblasTrans;
 
-            if (beta == (T) 0.0f) {
+            if (beta == 0.0) {
                 int length = M*N;
                 if (length <= 8192) {
 #pragma omp simd
                     for (int r = 0; r < length; r++)
-                        C[r] = (T) 0.0f;
+                        C[r] = static_cast<Z>(0.0f);
                 } else {
 #pragma omp parallel for simd
                     for (int r = 0; r < length; r++)
-                        C[r] = (T) 0.0f;
+                        C[r] = static_cast<Z>(0.0f);
                 }
             }
 
@@ -85,57 +79,60 @@ namespace nd4j {
                 for (int c = 0; c < N; c++) {
                     int zIdx = linearIndexF(M, N, r, c);
 
-                    T dot = (T) 0.0f;
+                    Z dot = static_cast<Z>(0.0f);
 
-                    if (alpha != (T) 0.0f) {
+                    if (alpha != 0.0) {
                         int bIdx; // = linearIndexF(K, N, 0, c);
                         int aIdx;
 
                         for (int k = 0; k < K; k++) {
                             aIdx = (transAFlag ? linearIndexC(M, K, r, k) : linearIndexF(M, K, r, k));
                             bIdx = (transBFlag ? linearIndexC(K, N, k, c) : linearIndexF(K,N, k, c));
-                            dot += alpha * A[aIdx] * B[bIdx];//A[aIdx]nd4j::math::nd4j_dot<T>(aX, bX, K) * alpha;
+                            dot += static_cast<Z>(alpha) * static_cast<Z>(A[aIdx]) * static_cast<Z>(B[bIdx]);//A[aIdx]nd4j::math::nd4j_dot<T>(aX, bX, K) * alpha;
                         }
                     }
 
-                    if (beta != (T) 0.0f) {
-                        C[zIdx] = dot + beta * C[zIdx];
+                    if (beta != 0.0) {
+                        C[zIdx] = static_cast<Z>(dot + beta * C[zIdx]);
                     } else {
-                        C[zIdx] = dot;
+                        C[zIdx] = static_cast<Z>(dot);
                     }
                 }
             }
         }
 
 
-        template<typename T>
-        void GEMV<T>::op(int TRANS, int M, int N,
-                       T alpha,
-                       T* A,
-                       int lda,
-                       T* X,
-                       int incx,
-                       T beta,
-                       T* Y,
-                       int incy ) {
+        template<typename X, typename Y, typename Z>
+        void GEMV<X, Y, Z>::op(int TRANS, int M, int N,
+                               double alpha,
+                               void * vX,
+                               int lda,
+                               void* vY,
+                               int incx,
+                               double beta,
+                               void* vZ,
+                               int incy ) {
 
-            T *aT = TRANS == CblasTrans ? GEMM<T>::transpose(CblasColMajor, CblasRowMajor, M, N, A) : A;
+            auto x = reinterpret_cast<X *>(vX);
+            auto y = reinterpret_cast<Y *>(vY);
+            auto z = reinterpret_cast<Z *>(vZ);
+
+            auto aT = TRANS == CblasTrans ? reinterpret_cast<X *>(nd4j::blas::transpose(CblasColMajor, CblasRowMajor, M, N, x)) : x;
 
 #pragma omp parallel for proc_bind(close)
             for (int r = 0; r < M; r++) {
-                int aIdx = GEMM<T>::linearIndexC(M, N, r, 0);
-                T *aX = aT + aIdx;
+                int aIdx = linearIndexC(M, N, r, 0);
+                auto aX = aT + aIdx;
 
-
-                T dot = nd4j::math::nd4j_dot<T>(aX, X, lda) * alpha;
-                Y[r] =  beta == (T) 0.0f ? dot : dot + beta * Y[r];
+                auto dot = nd4j::math::nd4j_dot<X, Y, Z>(aX, y, lda) * alpha;
+                z[r] =  beta == 0.0f ? dot : dot + beta * z[r];
             }
 
             if (TRANS == CblasTrans)
                 delete[] aT;
         }
 
-        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT GEMV, , LIBND4J_TYPES);
-        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT GEMM, , LIBND4J_TYPES);
+        BUILD_TRIPLE_TEMPLATE(template class ND4J_EXPORT GEMV, , LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+        BUILD_TRIPLE_TEMPLATE(template class ND4J_EXPORT GEMM, , LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
     }
 }

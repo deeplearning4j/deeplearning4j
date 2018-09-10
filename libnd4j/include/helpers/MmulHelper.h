@@ -29,10 +29,13 @@ namespace nd4j {
     private:
         // helpers for helper 
         // multiptication N-dimensions tensor on other N-dimensions one
+        template <typename X, typename Y, typename Z>
         static nd4j::NDArray* mmulNxN(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C, double alpha = 1.0, double beta = 0.0);
         // multiptication Matrix to vector
+        template <typename X, typename Y, typename Z>
         static nd4j::NDArray* mmulMxV(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C, double alpha = 1.0, double beta = 0.0);
         // multiptication Matrix to Matrix
+        template <typename X, typename Y, typename Z>
         static nd4j::NDArray* mmulMxM(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C, double alpha = 1.0, double beta = 0.0);
 
     public:
