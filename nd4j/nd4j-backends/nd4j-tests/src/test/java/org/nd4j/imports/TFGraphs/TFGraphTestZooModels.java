@@ -76,7 +76,7 @@ public class TFGraphTestZooModels {
 
                 if(filename.endsWith(".pb")) {
                     modelFile = localFile;
-                } else if(filename.endsWith(".tar.gz")){
+                } else if(filename.endsWith(".tar.gz") || filename.endsWith(".tgz")){
                     List<String> files = ArchiveUtils.tarGzListFiles(localFile);
                     String toExtract = null;
                     for(String f : files){
