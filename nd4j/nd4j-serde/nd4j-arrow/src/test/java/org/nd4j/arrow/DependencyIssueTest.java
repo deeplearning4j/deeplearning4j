@@ -1,5 +1,6 @@
 package org.nd4j.arrow;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.FieldVector;
@@ -10,12 +11,14 @@ import org.apache.arrow.vector.dictionary.DictionaryProvider;
 import org.apache.arrow.vector.ipc.ArrowFileWriter;
 import org.apache.arrow.vector.types.FloatingPointPrecision;
 import org.apache.arrow.vector.types.pojo.*;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.lang.reflect.Method;
 import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,6 +28,28 @@ import java.util.List;
  * See: https://github.com/deeplearning4j/deeplearning4j/issues/6372
  */
 public class DependencyIssueTest {
+
+    @BeforeClass
+    public static void before(){
+        Class<?> c = FlatBufferBuilder.class;
+        ClassLoader cl = ArrowSerdeTest.class.getClassLoader();
+        System.out.println("FlatBufferBuilder location: " + cl.getResource("com/google/flatbuffers/FlatBufferBuilder.class"));
+        Method[] methods = c.getDeclaredMethods();
+        System.out.println("FlatBufferBuilder Methods:");
+        for(Method m : methods){
+            Class<?>[] paramTypes = m.getParameterTypes();
+            System.out.print("  - " + m.getName() + "(");
+            boolean first = true;
+            for(Class<?> p : paramTypes){
+                if(!first){
+                    System.out.print(",");
+                }
+                System.out.print(p.getSimpleName());
+                first = false;
+            }
+            System.out.println(")");
+        }
+    }
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
