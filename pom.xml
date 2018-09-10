@@ -234,7 +234,7 @@
 
         <jackson-asl.version>1.9.13</jackson-asl.version>
         <asm.version>5.1</asm.version>
-        <arrow.version>0.9.0</arrow.version>
+        <arrow.version>0.10.0</arrow.version>
         <avro.version>1.7.7</avro.version>
         <curator.version>2.8.0</curator.version>
         <guice.version>4.0</guice.version>
@@ -350,7 +350,6 @@
         <javax.ws.rs.version>2.0</javax.ws.rs.version>
         <guava.version>20.0</guava.version>
         <jetbrains-annotations.version>13.0</jetbrains-annotations.version>
-        <fbs.version>1.2.0-3f79e055</fbs.version>
         <threadly.version>4.10.0</threadly.version>
 
         <flatbuffers.version>1.9.0</flatbuffers.version>

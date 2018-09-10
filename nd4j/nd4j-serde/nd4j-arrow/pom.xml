@@ -79,10 +79,19 @@
             <artifactId>jackson-datatype-joda</artifactId>
             <version>${spark2.jackson.version}</version>
         </dependency>
+
+        <!-- Arrow dependencies - minus FlatBuffers. More recent FlatBuffers pulled in via nd4j-api -->
+        <!-- TODO Arrow 0.11 should replace com.vlkan:flatbuffers with official flatbuffers dependency, at which point this exclusion can be removed -->
         <dependency>
             <groupId>org.apache.arrow</groupId>
             <artifactId>arrow-vector</artifactId>
             <version>${arrow.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.vlkan</groupId>
+                    <artifactId>flatbuffers</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.arrow</groupId>
@@ -93,6 +102,23 @@
             <groupId>org.apache.arrow</groupId>
             <artifactId>arrow-format</artifactId>
             <version>${arrow.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.vlkan</groupId>
+                    <artifactId>flatbuffers</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+            <version>${bytebuddy.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy-agent</artifactId>
+            <version>${bytebuddy.version}</version>
         </dependency>
     </dependencies>
 
