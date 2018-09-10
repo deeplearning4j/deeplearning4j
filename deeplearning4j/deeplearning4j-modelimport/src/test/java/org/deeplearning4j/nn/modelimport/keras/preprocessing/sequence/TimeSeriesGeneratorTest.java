@@ -22,6 +22,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
+import static org.junit.Assert.assertEquals;
+
 public class TimeSeriesGeneratorTest {
 
     @Test
@@ -43,14 +45,14 @@ public class TimeSeriesGeneratorTest {
         TimeSeriesGenerator gen = new TimeSeriesGenerator(data, targets, length,
                 samplingRate, stride, startIndex, endIndex, shuffle, reverse, batchSize);
 
-        assert gen.getLength() == length;
-        assert gen.getStartIndex() == startIndex + length;
-        assert gen.isReverse() == reverse;
-        assert gen.isShuffle() == shuffle;
-        assert gen.getEndIndex() == endIndex;
-        assert gen.getBatchSize() == batchSize;
-        assert gen.getSamplingRate() == samplingRate;
-        assert gen.getStride() == stride;
+        assertEquals(length, gen.getLength());
+        assertEquals(startIndex + length, gen.getStartIndex());
+        assertEquals(reverse, gen.isReverse());
+        assertEquals(shuffle, gen.isShuffle());
+        assertEquals(endIndex, gen.getEndIndex());
+        assertEquals(batchSize, gen.getBatchSize());
+        assertEquals(samplingRate, gen.getSamplingRate());
+        assertEquals(stride, gen.getStride());
 
         Pair<INDArray, INDArray> next = gen.next(0);
     }

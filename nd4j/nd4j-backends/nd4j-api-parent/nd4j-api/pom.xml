@@ -139,19 +139,19 @@
         <!-- Note that this is a super minimal version of flatbuffers used by apache arrow.
         We use this one as so as not to clash with their version.-->
 
+        <!--
         <dependency>
             <groupId>com.vlkan</groupId>
             <artifactId>flatbuffers</artifactId>
             <version>${fbs.version}</version>
         </dependency>
+-->
 
-        <!--
         <dependency>
             <groupId>com.google.flatbuffers</groupId>
             <artifactId>flatbuffers-java</artifactId>
-            <version>1.9.0</version>
+            <version>${flatbuffers.version}</version>
         </dependency>
-        -->
 
         <!-- Note that this is shaded flatbuffers, see the protoc declaration above
         mentioning java-shaded as the type for why we use this instead of google's (mainly due ot other systems packaging

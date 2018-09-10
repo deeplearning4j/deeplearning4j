@@ -20,6 +20,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -240,6 +241,17 @@ public class NDArrayIndex implements INDArrayIndex {
         return new NDArrayIndexAll(true);
     }
 
+    /**
+     * Returns an instance of {@link SpecifiedIndex}.
+     * Note that SpecifiedIndex works differently than the other indexing options, in that it always returns a copy
+     * of the (subset of) the underlying array, for get operations. This means that INDArray.get(..., indices(x,y,z), ...)
+     * will be a copy of the relevant subset of the array.
+     * @param indices Indices to get
+     */
+    public static INDArrayIndex indices(long... indices){
+        return new SpecifiedIndex(indices);
+    }
+
 
     /**
      * Represents adding a new dimension
@@ -313,6 +325,8 @@ public class NDArrayIndex implements INDArrayIndex {
                         IntervalIndex intervalIndex = (IntervalIndex) intendedIndexes[i];
                         ret[i] = new SpecifiedIndex(ArrayUtil.range(intervalIndex.begin, intervalIndex.end(),
                                         intervalIndex.stride()));
+                    } else if(intendedIndexes[i] instanceof PointIndex){
+                        ret[i] = intendedIndexes[i];
                     }
                 }
             }
@@ -644,7 +658,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * @return the interval
      */
     public static INDArrayIndex interval(int begin, int stride, int end, boolean inclusive) {
-        assert begin <= end : "Beginning index in range must be less than end";
+        Preconditions.checkArgument(begin <= end, "Beginning index (%s) in range must be less than or equal to end (%s)", begin, end);
         INDArrayIndex index = new IntervalIndex(inclusive, stride);
         index.init(begin, end);
         return index;
@@ -653,7 +667,7 @@ public class NDArrayIndex implements INDArrayIndex {
 
 
     public static INDArrayIndex interval(long begin, long stride, long end,long max, boolean inclusive) {
-        assert begin <= end : "Beginning index in range must be less than end";
+        Preconditions.checkArgument(begin <= end, "Beginning index (%s) in range must be less than or equal to end (%s)", begin, end);
         INDArrayIndex index = new IntervalIndex(inclusive, stride);
         index.init(begin, end);
         return index;
@@ -661,7 +675,7 @@ public class NDArrayIndex implements INDArrayIndex {
 
 
     public static INDArrayIndex interval(long begin, long stride, long end, boolean inclusive) {
-        assert begin <= end : "Beginning index in range must be less than end";
+        Preconditions.checkArgument(begin <= end, "Beginning index (%s) in range must be less than or equal to end (%s)", begin, end);
         INDArrayIndex index = new IntervalIndex(inclusive, stride);
         index.init(begin, end);
         return index;

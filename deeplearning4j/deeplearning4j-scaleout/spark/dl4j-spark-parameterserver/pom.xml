@@ -17,13 +17,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>spark_2.10</artifactId>
+        <artifactId>spark_2.11</artifactId>
         <groupId>org.deeplearning4j</groupId>
         <version>1.0.0_spark_1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>dl4j-spark-parameterserver_2.10</artifactId>
+    <artifactId>dl4j-spark-parameterserver_2.11</artifactId>
     <packaging>jar</packaging>
 
     <name>dl4j-spark-parameterserver</name>
@@ -40,12 +40,12 @@
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-parameter-server-node_2.10</artifactId>
+            <artifactId>nd4j-parameter-server-node_2.11</artifactId>
             <version>${nd4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>dl4j-spark_2.10</artifactId>
+            <artifactId>dl4j-spark_2.11</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -56,13 +56,13 @@
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-parallel-wrapper_2.10</artifactId>
+            <artifactId>deeplearning4j-parallel-wrapper_2.11</artifactId>
             <version>${nd4j.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_2.10</artifactId>
+            <artifactId>spark-core_2.11</artifactId>
             <version>${spark.version}</version>
             <scope>provided</scope>
         </dependency>

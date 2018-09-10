@@ -1378,6 +1378,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             int outNum = 0;
             for (String s : configuration.getNetworkOutputs()) {
                 GraphVertex gv = verticesMap.get(s);
+                if(gv instanceof LayerVertex) {
+                    //At this point: the input to the output layer might not be set on the layer itself - just the vertex
+                    LayerVertex lv = (LayerVertex) gv;
+                    lv.applyPreprocessorAndSetInput(workspaceMgr);
+                }
                 Layer vertexLayer = gv.getLayer();
                 if (vertexLayer instanceof FrozenLayerWithBackprop) {
                     vertexLayer = ((FrozenLayerWithBackprop) vertexLayer).getInsideLayer();
@@ -3585,7 +3590,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     private List<INDArray[]> getSubsetsForTbptt(int startTimeIdx, long endTimeIdx, INDArray[] inputs, INDArray[] labels,
                                                 INDArray[] featureMasks, INDArray[] labelMasks){
         INDArray[] newInputs = new INDArray[inputs.length];
-        INDArray[] newLabels = new INDArray[inputs.length];
+        INDArray[] newLabels = new INDArray[labels.length];
         INDArray[] newFeatureMasks = (featureMasks != null ? new INDArray[featureMasks.length] : null);
         INDArray[] newLabelMasks = (labelMasks != null ? new INDArray[labelMasks.length] : null);
 

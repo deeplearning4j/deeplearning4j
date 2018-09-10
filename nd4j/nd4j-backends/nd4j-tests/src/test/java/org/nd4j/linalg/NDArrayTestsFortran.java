@@ -81,10 +81,10 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     public void testScalarOps() throws Exception {
         INDArray n = Nd4j.create(Nd4j.ones(27).data(), new long[] {3, 3, 3});
         assertEquals(27d, n.length(), 1e-1);
-        n.checkDimensions(n.addi(Nd4j.scalar(1d)));
-        n.checkDimensions(n.subi(Nd4j.scalar(1.0d)));
-        n.checkDimensions(n.muli(Nd4j.scalar(1.0d)));
-        n.checkDimensions(n.divi(Nd4j.scalar(1.0d)));
+        n.addi(Nd4j.scalar(1d));
+        n.subi(Nd4j.scalar(1.0d));
+        n.muli(Nd4j.scalar(1.0d));
+        n.divi(Nd4j.scalar(1.0d));
 
         n = Nd4j.create(Nd4j.ones(27).data(), new long[] {3, 3, 3});
         assertEquals(27, n.sumNumber().doubleValue(), 1e-1);

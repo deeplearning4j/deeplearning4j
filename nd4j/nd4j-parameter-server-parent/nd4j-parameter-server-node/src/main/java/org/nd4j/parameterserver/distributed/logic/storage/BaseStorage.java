@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public abstract class BaseStorage implements Storage {
 
     private ConcurrentHashMap<Integer, INDArray> storage = new ConcurrentHashMap<>();

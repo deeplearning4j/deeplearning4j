@@ -231,10 +231,13 @@ elseif(CPU_BLAS)
         add_library(${LIBND4J_NAME}static STATIC $<TARGET_OBJECTS:nd4jobj>)
         add_library(${LIBND4J_NAME}       SHARED $<TARGET_OBJECTS:nd4jobj>)
     endif()
+
+    target_link_libraries(${LIBND4J_NAME} ${MKLDNN_LIBRARIES} ${OPENBLAS_LIBRARIES})
+
     if ("${LIBND4J_ALL_OPS}" AND "${LIBND4J_BUILD_MINIFIER}")
         message(STATUS "Building minifier...")
         add_executable(minifier ../minifier/minifier.cpp ../minifier/graphopt.cpp)
-        target_link_libraries(minifier ${LIBND4J_NAME}static)
+        target_link_libraries(minifier ${LIBND4J_NAME}static ${MKLDNN_LIBRARIES} ${OPENBLAS_LIBRARIES})
     endif()
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
@@ -248,13 +251,6 @@ elseif(CPU_BLAS)
             set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
             set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
         endif()
-    endif()
-
-    if(APPLE)
-        # We cannot use those to propagate C++ exceptions across shared libraries.
-        # SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static-libgcc -static-libstdc++")
-    elseif(MSYS)
-        SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static")
     endif()
 
     #install(TARGETS mySharedLib DESTINATION /some/full/path)

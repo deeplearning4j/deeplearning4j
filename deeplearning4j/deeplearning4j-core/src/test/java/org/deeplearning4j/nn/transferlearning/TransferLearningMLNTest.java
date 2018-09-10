@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.constraint.UnitNormConstraint;
+import org.deeplearning4j.nn.conf.distribution.ConstantDistribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -631,4 +632,36 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
         assertEquals(0.0, l.getL2(), 0.0);
     }
 
+
+    @Test
+    public void testTransferLearningSubsequent() {
+        final INDArray input = Nd4j.create(6,6,6,6);
+        final MultiLayerNetwork net = new MultiLayerNetwork(new NeuralNetConfiguration.Builder()
+                .weightInit(new ConstantDistribution(666))
+                .list()
+                .setInputType(InputType.inferInputTypes(input)[0])
+                .layer(new Convolution2D.Builder(3, 3).nOut(10).build())
+                .layer(new Convolution2D.Builder(1, 1).nOut(3).build())
+                .layer(new OutputLayer.Builder().nOut(2).lossFunction(LossFunctions.LossFunction.MSE)
+                        .build()).build());
+        net.init();
+
+        MultiLayerNetwork newGraph = new TransferLearning
+                .Builder(net)
+                .fineTuneConfiguration(new FineTuneConfiguration.Builder().build())
+                .nOutReplace(0, 7, new ConstantDistribution(333))
+                .nOutReplace(1, 3, new ConstantDistribution(111))
+                .removeLayersFromOutput(1)
+                .addLayer(new OutputLayer.Builder()
+                        .nIn(48).nOut(2)
+                        .lossFunction(LossFunctions.LossFunction.MSE)
+                        .build())
+                .setInputPreProcessor(2, new CnnToFeedForwardPreProcessor(4,4,3))
+                .build();
+        newGraph.init();
+
+        assertEquals("Incorrect # inputs", 7, newGraph.layerInputSize(1));
+
+        newGraph.output(input);
+    }
 }

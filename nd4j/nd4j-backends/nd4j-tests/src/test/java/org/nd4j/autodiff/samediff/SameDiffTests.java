@@ -1583,7 +1583,7 @@ public class SameDiffTests {
         sd.exec();
 
         for (int i = 0; i < 4; i++)
-            assert out.getArr().get(all(), NDArrayIndex.point(i), all(), all()).getDouble(0) == 1;
+            assertEquals(1, out.getArr().get(all(), NDArrayIndex.point(i), all(), all()).getInt(0));
 
     }
 

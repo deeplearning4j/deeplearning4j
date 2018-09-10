@@ -19,5 +19,6 @@ package org.nd4j.parameterserver.distributed.messages;
 /**
  * @author raver119@gmail.com
  */
+@Deprecated
 public interface DistributedMessage extends VoidMessage {
 }
