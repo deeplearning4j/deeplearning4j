@@ -703,13 +703,13 @@ void ConvolutionUtils<T>::getSizesAndIndexesConv2d(const bool isNCHW, const Nd4j
     // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     // weights [kH, kW, iC, oC] always
     // output  [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
-    indWiC = 2; indWoC = 3; 
+    indWiC = 2; indWoC = 3; indWkH = 0;
 
     if(!isNCHW) {
-        indIOioC = 3; indIiH = 1; indWkH = 0; indOoH = 1; 
+        indIOioC = 3; indIiH = 1; indOoH = 1; 
     }
     else {        
-        indIOioC = 1; indIiH = 2; indWkH = 2; indOoH = 2;
+        indIOioC = 1; indIiH = 2; indOoH = 2;
     }    
 
     bS = inShapeInfo[1];                          // batch size
@@ -760,7 +760,7 @@ template <typename T>
 void ConvolutionUtils<T>::conv2d(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* output, const std::vector<int>& intArgs) {
 
     NDArray<T> *input   = inArrs[0];                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    NDArray<T> *weights = inArrs[1];                                    // [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)
+    NDArray<T> *weights = inArrs[1];                                    // [kH, kW, iC, oC] always
     NDArray<T> *bias    = inArrs[2];                                    // [oC]
     
     // output [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
@@ -813,7 +813,7 @@ template <typename T>
 void ConvolutionUtils<T>::mkldnn_conv2d(MKLDNNStream<T> &stream, const std::vector<NDArray<T>*>& inArrs, NDArray<T>* output, const std::vector<int>& intArgs) {
 
     NDArray<T> *input   = inArrs[0];                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    NDArray<T> *weights = inArrs[1];                                    // [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)
+    NDArray<T> *weights = inArrs[1];                                    // [kH, kW, iC, oC] always
     NDArray<T> *bias    = inArrs[2];                                    // [oC]
 
     // output [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
@@ -848,7 +848,7 @@ void ConvolutionUtils<T>::mkldnn_conv2d(MKLDNNStream<T> &stream, const std::vect
 
         auto type = mkldnn::memory::data_type::f32;
         auto format = isNCHW ? mkldnn::memory::format::nchw : mkldnn::memory::format::nhwc;
-        auto formatw = isNCHW ? mkldnn::memory::format::oihw : mkldnn::memory::format::hwio;
+        auto formatw = mkldnn::memory::format::hwio;
         auto conv_src_md = mkldnn::memory::desc({ conv_src_tz }, type, format);
         auto conv_bias_md = mkldnn::memory::desc({ conv_bias_tz }, type, mkldnn::memory::format::x);
         auto conv_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
@@ -885,12 +885,12 @@ template <typename T>
 void ConvolutionUtils<T>::conv2dBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs, const std::vector<int>& intArgs) {
 
     NDArray<T> *input   = inArrs[0];                        // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    NDArray<T> *weights = inArrs[1];                        // [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)
+    NDArray<T> *weights = inArrs[1];                        // [kH, kW, iC, oC] always
     NDArray<T> *bias    = inArrs[2];                        // [oC]
     NDArray<T> *gradO   = inArrs[3];                        // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
     
     NDArray<T> *gradI = outArrs[0];                         // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
-    NDArray<T> *gradW = outArrs[1];                         // [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)
+    NDArray<T> *gradW = outArrs[1];                         // [kH, kW, iC, oC] always
     NDArray<T> *gradB = outArrs[2];                         // [oC]
                                      
     int kH = intArgs[0];                                                        // filter(kernel) height
@@ -908,20 +908,15 @@ void ConvolutionUtils<T>::conv2dBP(const std::vector<NDArray<T>*>& inArrs, const
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
     getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
 
-    std::vector<int> gradOaxesForDot, permutForGradW, permutForColumns;    
+    std::vector<int> gradOaxesForDot; 
 
     if(!isNCHW) {
         input = input->permute({0, 3, 1, 2});                                   // [bS, iH, iW, iC] -> [bS, iC, iH, iW]                        
         gradI = gradI->permute({0, 3, 1, 2});                                   // [bS, iH, iW, iC] -> [bS, iC, iH, iW]                        
         gradOaxesForDot  = {0, 1, 2};                                           // bS, oH, oW        
-        permutForGradW   = {2, 0, 1, 3};                                        // [kH, kW, iC, oC] -> [iC, kH, kW, oC]        
-        permutForColumns = {2, 3, 1, 0, 4, 5};                                  // [bS, iC, kH, kW, oH, oW] -> [kH, kW, iC, bS, oH, oW]
     }
-    else {
+    else
         gradOaxesForDot  = {0, 2, 3};                                           // bS, oH, oW
-        permutForGradW   = {1, 2, 3, 0};                                        // [oC, iC, kH, kW] -> [iC, kH, kW, oC]
-        permutForColumns = {1, 2, 3, 0, 4, 5};                                  // [bS, iC, kH, kW, oH, oW] -> [iC, kH, kW, bS, oH, oW]
-    }
     
     if(isSameMode)                       // SAME        
         calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
@@ -932,8 +927,8 @@ void ConvolutionUtils<T>::conv2dBP(const std::vector<NDArray<T>*>& inArrs, const
     // ----- calculation of gradW ----- // 
     if(gradW) {
         std::vector<T> extrasIm2Col({(T) kH, (T) kW, (T) sH, (T) sW, (T) pH, (T) pW, (T) dH, (T) dW, (T)0.f, (T)0.f});
-        input->template applyTransform<simdOps::Im2col<T>>(&columns, extrasIm2Col.data());                          // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]        
-        nd4j::MmulHelper<T>::tensorDot(&columns, gradO, gradW, {0,4,5}, gradOaxesForDot, permutForGradW);       // [bS, iC, kH, kW, oH, oW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, oC]
+        input->template applyTransform<simdOps::Im2col<T>>(&columns, extrasIm2Col.data());                    // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]        
+        nd4j::MmulHelper<T>::tensorDot(&columns, gradO, gradW, {0,4,5}, gradOaxesForDot, {2, 0, 1, 3});       // [bS, iC, kH, kW, oH, oW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, oC]
     }
 
     // ----- calculation of gradB ----- // 
@@ -946,7 +941,7 @@ void ConvolutionUtils<T>::conv2dBP(const std::vector<NDArray<T>*>& inArrs, const
     }
 
     //----- calculation of gradI -----//
-    nd4j::MmulHelper<T>::tensorDot(weights, gradO, &columns, {indWoC}, {indIOioC}, permutForColumns);       // [kH, kW, iC, oC]/[oC, iC, kH, kW]] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [kH, kW, iC, bS, oH, oW]/[iC, kH, kW, bS, oH, oW]
+    nd4j::MmulHelper<T>::tensorDot(weights, gradO, &columns, {indWoC}, {indIOioC}, {2, 3, 1, 0, 4, 5});       // [kH, kW, iC, oC]/[oC, iC, kH, kW]] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [kH, kW, iC, bS, oH, oW]
     std::vector<T> extrasCol2Im({(T) sH, (T) sW, (T) pH, (T) pW, (T) iH, (T) iW, (T) dH, (T) dW});
     columns.template applyTransform<simdOps::Col2Im<T>>(gradI, extrasCol2Im.data());                            // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
   
@@ -961,7 +956,7 @@ template <typename T>
 void ConvolutionUtils<T>::depthwiseConv2d(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* output, const std::vector<int>& intArgs) {
 
     NDArray<T> *input   = inArrs[0];                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    NDArray<T> *weights = inArrs[1];                                    // [kH, kW, iC, mC] (NHWC) or [mC, iC, kH, kW] (NCHW)
+    NDArray<T> *weights = inArrs[1];                                    // [kH, kW, iC, mC] always
     NDArray<T> *bias    = inArrs[2];                                    // [oC] = iC*mC
     
     // output is [bS, oH, oW, iC*mC] (NHWC) or [bS, iC*mC, oH, oW] (NCHW)        
@@ -972,7 +967,7 @@ void ConvolutionUtils<T>::depthwiseConv2d(const std::vector<NDArray<T>*>& inArrs
     int sW = intArgs[3];                                                        // strides width
     int pH = intArgs[4];                                                        // paddings height
     int pW = intArgs[5];                                                        // paddings width
-    int dH = intArgs[6];                                                        // dilations height
+    int dH = intArgs[6];                                                        // dilations height 
     int dW = intArgs[7];                                                        // dilations width
     int isSameMode = intArgs[8];                                                // 0-VALID, 1-SAME
     int isNCHW     = intArgs[9];                                                // 0-NCHW,  1-NHWC
@@ -983,19 +978,17 @@ void ConvolutionUtils<T>::depthwiseConv2d(const std::vector<NDArray<T>*>& inArrs
     mC = weights->sizeAt(indWmC);                           // channels multiplier
     
     std::vector<std::vector<Nd4jLong>> modifColumns = {{1,0,4,5,2,3}, {iC,bS*oH*oW,kH*kW}};  // [bS,iC,kH,kW,oH,oW] -> [iC,bS,oH,oW,kH,kW] -> [iC,bS*oH*oW,kH*kW]
-    std::vector<std::vector<Nd4jLong>> modifWeights, modifOutput;
+    std::vector<std::vector<Nd4jLong>> modifOutput;
     std::vector<Nd4jLong> outReShape;
 
     if(!isNCHW) {        
         input = input->permute({0, 3, 1, 2});                                           // [bS,iH,iW,iC]    -> [bS,iC,iH,iW] 
         outReShape = {bS, oH, oW, iC, mC};                                              // [bS,oH,oW,iC*mC] -> [bS,oH,oW,iC,mC]
         modifOutput = {{3,0,1,2,4},{iC, bS*oH*oW, mC}};                                 // [bS,oH,oW,iC,mC] -> [iC,bS,oH,oW,mC] -> [iC,bS*oH*oW,mC]
-        modifWeights = {{2,0,1,3},{iC,kH*kW,mC}};                                       // [kH,kW,iC,mC]    -> [iC,kH,kW,mC]    -> [iC,kH*kW,mC]
     }
     else {
         outReShape = {bS, iC, mC, oH, oW};                                              // [bS,iC*mC,oH,oW] -> [bS,iC,mC,oH,oW]
         modifOutput = {{1,0,3,4,2},{iC, bS*oH*oW, mC}};                                 // [bS,iC,mC,oH,oW] -> [iC,bS,oH,oW,mC] -> [iC,bS*oH*oW,mC]
-        modifWeights = {{1,2,3,0},{iC,kH*kW,mC}};                                       // [mC,iC,kH,kW]    -> [iC,kH,kW,mC]    -> [iC,kH*kW,mC]           
     }
 
     if(isSameMode)                       // SAME        
@@ -1006,7 +999,7 @@ void ConvolutionUtils<T>::depthwiseConv2d(const std::vector<NDArray<T>*>& inArrs
     std::vector<T> extrasIm2Col({(T) kH, (T) kW, (T) sH, (T) sW, (T) pH, (T) pW, (T) dH, (T) dW, (T)0.f, (T)0.f});
 
     input->template applyTransform<simdOps::Im2col<T>>(&columns, extrasIm2Col.data());                                 // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]    
-    nd4j::MmulHelper<T>::tensorDot(&columns, weights, outputReshaped, modifColumns, modifWeights, modifOutput);    // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
+    nd4j::MmulHelper<T>::tensorDot(&columns, weights, outputReshaped, modifColumns, {{2,0,1,3},{iC,kH*kW,mC}}, modifOutput);    // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
     
     if(bias)
         output->template applyBroadcast<simdOps::Add<T>>({indIOioC}, bias);
@@ -1022,12 +1015,12 @@ template <typename T>
 void ConvolutionUtils<T>::depthwiseConv2dBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs, const std::vector<int>& intArgs) {
 
     NDArray<T> *input   = inArrs[0];                            // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW)
-    NDArray<T> *weights = inArrs[1];                            // [kH, kW, iC, mC] (NDHWC) or [mC, iC, kH, kW] (NCDHW)
+    NDArray<T> *weights = inArrs[1];                            // [kH, kW, iC, mC] always
     NDArray<T> *bias    = inArrs[2];                            // [oC] = [iC*mC]
     NDArray<T> *gradO   = inArrs[3];                            // [bS, oH, oW, oC] (NDHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
     
     NDArray<T> *gradI = outArrs[0];                             // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW), epsilon
-    NDArray<T> *gradW = outArrs[1];                             // [kH, kW, iC, mC] (NDHWC) or [mC, iC, kH, kW] (NCDHW)
+    NDArray<T> *gradW = outArrs[1];                             // [kH, kW, iC, mC] always
     NDArray<T> *gradB = outArrs[2];                             // [oC]        
                                      
     int kH = intArgs[0];                                                        // filter(kernel) height
@@ -1047,7 +1040,7 @@ void ConvolutionUtils<T>::depthwiseConv2dBP(const std::vector<NDArray<T>*>& inAr
     mC = weights->sizeAt(indWmC);                           // channels multiplier    
 
     std::vector<std::vector<Nd4jLong>> modifColumns = {{1,2,3,0,4,5}, {iC, kH*kW, bS*oH*oW}};      // [bS,iC,kH,kW,oH,oW] -> [iC, kH*kW, bS*oH*oW]
-    std::vector<std::vector<Nd4jLong>> modifGradW, modifGradO1, modifGradO2;
+    std::vector<std::vector<Nd4jLong>> modifGradO1, modifGradO2;
     std::vector<Nd4jLong> gradOreShape;
 
     if(!isNCHW) {        
@@ -1056,13 +1049,11 @@ void ConvolutionUtils<T>::depthwiseConv2dBP(const std::vector<NDArray<T>*>& inAr
         gradOreShape = {bS, oH, oW, iC, mC};                                            // [bS,oH,oW,iC*mC] -> [bS,oH,oW,iC,mC]
         modifGradO1 = {{3,0,1,2,4},{iC, bS*oH*oW, mC}};                                 // [bS,oH,oW,iC,mC] -> [iC,bS,oH,oW,mC] -> [iC,bS*oH*oW,mC]
         modifGradO2 = {{3,0,1,2},{iC, mC, bS*oH*oW}};                                   // [bS,oH,oW,iC*mC] -> [iC*mC,bS,oH,oW] -> [iC,mC,bS*oH*oW]
-        modifGradW = {{2,0,1,3},{iC,kH*kW,mC}};                                         // [kH,kW,iC,mC]    -> [iC,kH,kW,mC]    -> [iC,kH*kW,mC]
     }
     else {
         gradOreShape = {bS, iC, mC, oH, oW};                                            // [bS,iC*mC,oH,oW] -> [bS,iC,mC,oH,oW]
         modifGradO1 = {{1,0,3,4,2},{iC, bS*oH*oW, mC}};                                 // [bS,iC,mC,oH,oW] -> [iC,bS,oH,oW,mC] -> [iC,bS*oH*oW,mC]
         modifGradO2 = {{1,0,2,3},{iC, mC, bS*oH*oW}};                                   // [bS,iC*mC,oH,oW] -> [iC*mC,bS,oH,oW] -> [iC,mC,bS*oH*oW]
-        modifGradW = {{1,2,3,0},{iC,kH*kW,mC}};                                         // [mC,iC,kH,kW]    -> [iC,kH,kW,mC]    -> [iC,kH*kW,mC]           
     }
 
     if(isSameMode)                       // SAME        
@@ -1075,7 +1066,7 @@ void ConvolutionUtils<T>::depthwiseConv2dBP(const std::vector<NDArray<T>*>& inAr
     
     // ----- calculation of gradW and gradB ----- //            
     input->template applyTransform<simdOps::Im2col<T>>(&columns, extrasIm2Col.data());                          // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]    
-    nd4j::MmulHelper<T>::tensorDot(&columns, gradOreshaped, gradW, modifColumns, modifGradO1, modifGradW);  // [iC, kW*kH, bS*oH*oW] x [iC, bS*oH*oW, mC] = [iC, kH*kW, mC]
+    nd4j::MmulHelper<T>::tensorDot(&columns, gradOreshaped, gradW, modifColumns, modifGradO1, {{2,0,1,3},{iC,kH*kW,mC}});  // [iC, kW*kH, bS*oH*oW] x [iC, bS*oH*oW, mC] = [iC, kH*kW, mC]
 
     // ----- calculation of gradB ----- //
     if(gradB) {        
@@ -1087,7 +1078,7 @@ void ConvolutionUtils<T>::depthwiseConv2dBP(const std::vector<NDArray<T>*>& inAr
     }
 
     //----- calculation of gradI -----//                
-    nd4j::MmulHelper<T>::tensorDot(weights, gradO, &columns, modifGradW, modifGradO2, modifColumns); // [iC, kH*kW, mC] x [iC, mC, bS*oH*oW] = [iC, kW*kH, bS*oH*oW]    
+    nd4j::MmulHelper<T>::tensorDot(weights, gradO, &columns, {{2,0,1,3},{iC,kH*kW,mC}}, modifGradO2, modifColumns); // [iC, kH*kW, mC] x [iC, mC, bS*oH*oW] = [iC, kW*kH, bS*oH*oW]    
     columns.template applyTransform<simdOps::Col2Im<T>>(gradI, extrasCol2Im.data());                     // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 
     if(!isNCHW) {        
@@ -1104,8 +1095,8 @@ template <typename T>
 void ConvolutionUtils<T>::sconv2d(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* output, const std::vector<int>& intArgs) {
 
     NDArray<T> *input        = inArrs[0];                                           // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
-    NDArray<T> *weightsDepth = inArrs[1];                                           // [kH, kW, iC, mC]  (NHWC) or [mC, iC, kH, kW]  (NCHW)
-    NDArray<T> *weightsPoint = inArrs[2];                                           // [1, 1, iC*mC, oC] (NHWC) or [oC, iC*mC, 1, 1] (NCHW)
+    NDArray<T> *weightsDepth = inArrs[1];                                           // [kH, kW, iC, mC]  always
+    NDArray<T> *weightsPoint = inArrs[2];                                           // [1, 1, iC*mC, oC] always
     NDArray<T> *bias         = inArrs[3];                                           // [oC], oC = iC*mC if weightsPoint=nullptr
     
     // output is [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW]  (NCHW)

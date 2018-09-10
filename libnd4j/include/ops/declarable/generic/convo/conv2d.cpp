@@ -106,12 +106,12 @@ DECLARE_SHAPE_FN(conv2d) {
     REQUIRE_TRUE(inputShapeInfo[0]   == rank, 0, "CUSTOM CONV2D OP: rank of input array must be equal to %i, but got %i instead !", rank, inputShapeInfo[0]);
     REQUIRE_TRUE(weightsShapeInfo[0] == rank, 0, "CUSTOM CONV2D OP: rank of weights array must be equal to %i, but got %i instead !", rank, weightsShapeInfo[0]);
 
-    int indIOioC, indIiH, indWkH, indWoC(3), indWiC(2);
+    int indIOioC, indIiH, indWoC(3);
     if(!isNCHW) {
-        indIOioC = 3; indIiH = 1; indWkH = 0;
+        indIOioC = 3; indIiH = 1;
     }
     else {        
-        indIOioC = 1; indIiH = 2; indWkH = 2;
+        indIOioC = 1; indIiH = 2;
     }    
 
     const int bS = inputShapeInfo[1];                            // batch size
@@ -223,12 +223,12 @@ DECLARE_SHAPE_FN(conv2d_bp) {
     const int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
     const int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // 0-NHWC, 1-NCHW    
 
-    int indIOioC, indIiH, indWkH, indOoH, indWoC(3), indWiC(2);
+    int indIOioC, indIiH, indOoH, indWoC(3);
     if(!isNCHW) {
-        indIOioC = 3; indIiH = 1; indWkH = 0; indOoH = 1;
+        indIOioC = 3; indIiH = 1; indOoH = 1;
     }
     else {        
-        indIOioC = 1; indIiH = 2; indWkH = 2; indOoH = 2;              
+        indIOioC = 1; indIiH = 2; indOoH = 2;              
     }    
 
     const int bS = inputShapeInfo[1];                            // batch size
@@ -335,12 +335,12 @@ DECLARE_SHAPE_FN(conv2d_input_bp) {
     const int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
     const int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // 0-NHWC, 1-NCHW    
 
-    int indIOioC, indIiH, indWkH, indWoC(3), indWiC(2), indOoH;
+    int indIOioC, indIiH, indWoC(3), indOoH;
     if(!isNCHW) {
-        indIOioC = 3; indIiH = 1; indWkH = 0; indOoH = 1;
+        indIOioC = 3; indIiH = 1; indOoH = 1;
     }
     else {        
-        indIOioC = 1; indIiH = 2; indWkH = 2; indOoH = 2;              
+        indIOioC = 1; indIiH = 2; indOoH = 2;              
     }    
 
     std::vector<Nd4jLong> gradIShape = INPUT_VARIABLE(0)->template asVectorT<Nd4jLong>();

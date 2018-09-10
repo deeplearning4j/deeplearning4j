@@ -54,13 +54,14 @@ TYPED_TEST(TypedConvolutionTests, TestConv2D_1) {
     TypeParam _expB[]{664.0, 700.0, 736.0, 344.0, 808.0, 844.0, 880.0, 408.0, 952.0, 988.0, 1024.0, 472.0, 1096.0, 1132.0, 1168.0, 536.0, 466.0, 480.0, 494.0, 220.0, 1528.0, 1628.0, 1728.0, 856.0, 1928.0, 2028.0, 2128.0, 1048.0, 2328.0, 2428.0, 2528.0, 1240.0, 2728.0, 2828.0, 2928.0, 1432.0, 1346.0, 1392.0, 1438.0, 700.0, 2392.0, 2556.0, 2720.0, 1368.0, 3048.0, 3212.0, 3376.0, 1688.0, 3704.0, 3868.0, 4032.0, 2008.0, 4360.0, 4524.0, 4688.0, 2328.0, 2226.0, 2304.0, 2382.0, 1180.0};
     Nd4jLong _expS[]{4, 1, 3, 5, 4, 60, 20, 4, 1, 0, 1, 99};
     auto input = new NDArray<TypeParam>('c', {bS, iC, iH, iW});
-    auto weights = new NDArray<TypeParam> ('c', {oC, iC, kH, kW});
+    auto weights = new NDArray<TypeParam> ('c', {oC, iC, kH, kW});    
 
     for (int e = 0; e < input->lengthOf(); e++)
         input->putScalar(e, e + 1);
 
     for (int e = 0; e < weights->lengthOf(); e++)
         weights->putScalar(e, e + 1);
+    weights->permutei({2,3,1,0});
 
     auto exp = new NDArray<TypeParam>(_expB, _expS);
     exp->triggerAllocationFlag(false, false);
@@ -258,6 +259,7 @@ TEST_F(ConvolutionTests, SeparableConv2D_FF_NoBias_1) {
     auto weights = new NDArray<float> ('c', {oC, iC, kY, kX});
     for (int e = 0; e < weights->lengthOf(); e++)
         weights->putScalar(e, e+1);
+    weights->permutei({2,3,1,0});
 
     auto variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, input);
@@ -315,6 +317,7 @@ TEST_F(ConvolutionTests, deconv2D_FF_NoBias_1) {
 
     input->linspace(1);
     weights->linspace(1);
+    weights->permutei({2,3,1,0});
 
     auto variableSpace = new VariableSpace<double>();
     variableSpace->putVariable(-1, input);
@@ -364,6 +367,7 @@ TEST_F(ConvolutionTests, conv2D_BP_Bias_1) {
     Nd4jLong _expWGradS[] = {4, 2, 1, 3, 3, 9, 9, 3, 1, 0, 1, 99};
     NDArray<double> expWGrad(_expWGradB, _expWGradS);
     expWGrad.triggerAllocationFlag(false, false);
+    expWGrad.permutei({2,3,1,0});
 
     double _expBGradB[] = {784.0, 1296.0};
     Nd4jLong _expBGradS[] = {2, 2, 1, 1, 1, 0, 1, 99};
@@ -383,6 +387,7 @@ TEST_F(ConvolutionTests, conv2D_BP_Bias_1) {
     input.linspace(1);
     weights.linspace(1);
     epsilonNext.linspace(1);
+    weights.permutei({2,3,1,0});
 
     nd4j::ops::conv2d_bp<double> op;
 
@@ -420,6 +425,7 @@ TEST_F(ConvolutionTests, conv2D_BP_NoBias_1) {
     Nd4jLong _expWGradS[] = {4, 2, 1, 3, 3, 9, 9, 3, 1, 0, 1, 99};
     NDArray<double> expWGrad(_expWGradB, _expWGradS);
     expWGrad.triggerAllocationFlag(false, false);
+    expWGrad.permutei({2,3,1,0});
 
     NDArray<double> input('c', {2, 1, 4, 4});
     NDArray<double> weights('c', {2, 1, 3, 3});
@@ -432,6 +438,7 @@ TEST_F(ConvolutionTests, conv2D_BP_NoBias_1) {
     input.linspace(1);
     weights.linspace(1);
     epsilonNext.linspace(1);
+    weights.permutei({2,3,1,0});
 
     nd4j::ops::conv2d_bp<double> op;
 
@@ -478,6 +485,8 @@ TYPED_TEST(TypedConvolutionTests, sconv2D_FF_NoBias_2) {
     input.linspace(1);
     weightsD.linspace(1);
     weightsP.linspace(1);
+    weightsD.permutei({2,3,1,0});
+    weightsP.permutei({2,3,1,0});
 
     weightsP.template applyScalar<simdOps::Divide<TypeParam>>(10000.0);
 
@@ -522,6 +531,8 @@ TEST_F(ConvolutionTests, sconv2D_FF_pointwise_1) {
     input.linspace(1);
     weightsD.linspace(1);
     weightsP.linspace(1);
+    weightsD.permutei({2,3,1,0});
+    weightsP.permutei({2,3,1,0});
 
     input.template applyScalar<simdOps::Divide<double>>(100.0);
     weightsD.template applyScalar<simdOps::Divide<double>>(100.0);
@@ -548,14 +559,16 @@ TEST_F(ConvolutionTests, sconv2D_FF_pointwise_1) {
 TEST_F(ConvolutionTests, sconv2D_BP_pointwise_1) {
     double _expGradWpB[] = {1603.7102981f,  10645.6278024f,   5975.4227995f,  17697.0903052f,    12133.6353024f,  26535.0528052f,   1779.221097f,   11795.5686029f,    6721.9835994f,  19904.0811062f,  13775.2461029f,  30123.0936062f,    1954.7318976f,  12945.5094033f,   7468.5443993f,  22111.071907f,    15416.8569033f,  33711.134407f,    2130.2426974f,  14095.4502038f,    8215.1051992f,  24318.0627081f,  17058.4677038f,  37299.1752081f,    2305.7534972f,  15245.3910042f,   8961.6659991f,  26525.0535091f,    18700.0785042f,  40887.2160091f,   2481.2642970f,  16395.3318047f,    9708.2267991f,  28732.0443100f,  20341.6893047f,  44475.2568100f,    2656.7750968f,  17545.2726051f,  10454.7875990f,  30939.0351110f,    21983.3001051f,  48063.2976110f,   2832.2858966f,  18695.2134056f,    11201.3483989f,  33146.0259119f,  23624.9109056f,  51651.3384119f,    3007.7966964f,  19845.1542060f,  11947.9091988f,  35353.0167129f,    25266.5217060f,  55239.3792129f,   3183.3074962f,  20995.095006f,    12694.4699987f,  37560.007513f,   26908.132506f,   58827.4200139};
     Nd4jLong _expGradWpS[] {4, 10, 6, 1, 1, 6, 1, 1, 1, 0, 1, 99};
-    NDArray<double> expGWP(_expGradWpB, _expGradWpS);
+    NDArray<double> expGWP(_expGradWpB, _expGradWpS);    
     expGWP.triggerAllocationFlag(false, false);
+    expGWP.permutei({2,3,1,0});
 
 
     double _expGradWdB[] = {2074.21032f, 2082.76104f, 2091.31176f, 2099.86248f, 2108.4132f, 2159.71752f, 2168.26824f, 2176.81896f, 2185.36968f, 2193.9204f, 2245.22472f, 2253.77544f, 2262.32616f, 2270.87688f, 2279.4276f, 2330.73192f, 2339.28264f, 2347.83336f, 2356.38408f, 2364.9348f, 2416.23912f, 2424.78984f, 2433.34056f, 2441.89128f, 2450.442f, 3112.99344f, 3122.06328f, 3131.13312f, 3140.20296f, 3149.2728f, 3203.69184f, 3212.76168f, 3221.83152f, 3230.90136f, 3239.9712f, 3294.39024f, 3303.46008f, 3312.52992f, 3321.59976f, 3330.6696f, 3385.08864f, 3394.15848f, 3403.22832f, 3412.29816f, 3421.368f, 3475.78704f, 3484.85688f, 3493.92672f, 3502.99656f, 3512.0664f, 4255.60056f, 4265.18952f, 4274.77848f, 4284.36744f, 4293.9564f, 4351.49016f, 4361.07912f, 4370.66808f, 4380.25704f, 4389.846f, 4447.37976f, 4456.96872f, 4466.55768f, 4476.14664f, 4485.7356f, 4543.26936f, 4552.85832f, 4562.44728f, 4572.03624f, 4581.6252f, 4639.15896f, 4648.74792f, 4658.33688f, 4667.92584f, 4677.5148f, 2140.10988f, 2148.92016f, 2157.73044f, 2166.54072f, 2175.351f, 2228.21268f, 2237.02296f, 2245.83324f, 2254.64352f, 2263.4538f, 2316.31548f, 2325.12576f, 2333.93604f, 2342.74632f, 2351.5566f, 2404.41828f, 2413.22856f, 2422.03884f, 2430.84912f, 2439.6594f, 2492.52108f, 2501.33136f, 2510.14164f, 2518.95192f, 2527.7622f, 3204.849f, 3214.1784f, 3223.5078f, 3232.8372f, 3242.1666f, 3298.143f, 3307.4724f, 3316.8018f, 3326.1312f, 3335.4606f, 3391.437f, 3400.7664f, 3410.0958f, 3419.4252f, 3428.7546f, 3484.731f, 3494.0604f, 3503.3898f, 3512.7192f, 3522.0486f, 3578.025f, 3587.3544f, 3596.6838f, 3606.0132f, 3615.3426f, 4373.41212f, 4383.26064f, 4393.10916f, 4402.95768f, 4412.8062f, 4471.89732f, 4481.74584f, 4491.59436f, 4501.44288f, 4511.2914f, 4570.38252f, 4580.23104f, 4590.07956f, 4599.92808f, 4609.7766f, 4668.86772f, 4678.71624f, 4688.56476f, 4698.41328f, 4708.2618f, 4767.35292f, 4777.20144f, 4787.04996f, 4796.89848f, 4806.747};
     Nd4jLong _expGradWdS[] = {4, 2, 3, 5, 5, 75, 25, 5, 1, 0, 1, 99};
     NDArray<double> expGWD(_expGradWdB, _expGradWdS);
     expGWD.triggerAllocationFlag(false, false);
+    expGWD.permutei({2,3,1,0});
 
 
     double _expEB[] = {5.0103f, 10.17147f, 15.48408f, 20.9487f, 26.5659f, 26.6832f, 21.65628f, 16.47507f, 11.139f, 5.6475f, 10.79727f, 21.90255f, 33.31698f, 45.0417f, 57.07785f, 57.3267f, 46.49334f, 35.34513f, 23.88093f, 12.0996f, 17.37801f, 35.22744f, 53.55f, 72.3474f, 91.62135f, 92.016f, 74.57958f, 56.66148f, 38.25999f, 19.3734f, 24.76962f, 50.18034f, 76.23444f, 102.9342f, 130.2819f, 130.8366f, 105.9834f, 80.47542f, 54.31038f, 27.486f, 32.9892f, 66.79545f, 101.4216f, 136.8705f, 173.145f, 173.874f, 140.7732f, 106.83825f, 72.0663f, 36.4545f, 33.8298f, 68.49375f, 103.9947f, 140.3355f, 177.519f, 178.248f, 144.3066f, 109.51395f, 73.8672f, 37.3635f, 28.85658f, 58.39302f, 88.6116f, 119.5146f, 151.1043f, 151.716f, 122.76444f, 93.11934f, 62.77842f, 31.7394f, 23.00409f, 46.52748f, 70.57188f, 95.139f, 120.23055f, 120.7107f, 97.6311f, 74.02194f, 49.88151f, 25.2081f, 16.25523f, 32.86293f, 49.82424f, 67.1403f, 84.81225f, 85.1466f, 68.83818f, 52.17045f, 35.14227f, 17.7525f, 8.5929f, 17.36517f, 26.31738f, 35.4501f, 44.7639f, 44.9382f, 36.31728f, 27.51357f, 18.5265f, 9.3555f, 8.63807f, 17.45032f, 26.43736f, 35.5998f, 44.93825f, 45.1399f, 36.46882f, 27.6199f, 18.59253f, 9.3861f, 18.18615f, 36.72737f, 55.62488f, 74.8799f, 94.49365f, 94.9122f, 76.65698f, 58.03937f, 39.05815f, 19.7121f, 28.66254f, 57.86775f, 87.61746f, 117.9135f, 148.7577f, 149.4084f, 120.63768f, 91.31331f, 61.43346f, 30.9963f, 40.08554f, 80.90806f, 122.47f, 164.7738f, 207.8219f, 208.72f, 168.48412f, 127.49662f, 85.75506f, 43.257f, 52.47345f, 105.8849f, 160.2374f, 215.534f, 271.77775f, 272.9385f, 220.2695f, 166.6442f, 112.05955f, 56.5125f, 53.82975f, 108.6158f, 164.3612f, 221.069f, 278.74225f, 279.903f, 225.8777f, 170.8778f, 114.90025f, 57.942f, 45.14002f, 91.0585f, 137.75788f, 185.2406f, 233.5091f, 234.4682f, 189.16564f, 143.06998f, 96.17878f, 48.4896f, 35.43048f, 71.45487f, 108.075f, 145.2927f, 183.1098f, 183.852f, 148.29504f, 112.13319f, 75.36462f, 37.9875f, 24.68283f, 49.76831f, 75.25766f, 101.1521f, 127.45285f, 127.9629f, 103.1927f, 78.01253f, 52.42117f, 26.4174f, 12.87877f, 25.96222f, 39.25096f, 52.7456f, 66.44675f, 66.7094f, 53.78542f, 40.6531f, 27.31183f, 13.761f, 12.59184f, 25.38317f, 38.37464f, 51.5669f, 64.9606f, 65.2566f, 52.61336f, 39.76673f, 26.71606f, 13.4607f, 26.23903f, 52.88419f, 79.93678f, 107.3981f, 135.26945f, 135.8777f, 109.53262f, 82.77361f, 55.59937f, 28.0086f, 40.96107f, 82.54206f, 124.74492f, 167.5716f, 211.02405f, 211.9608f, 170.83578f, 129.07914f, 86.68893f, 43.6632f, 56.77746f, 114.39578f, 172.85756f, 232.1654f, 292.3219f, 293.6034f, 236.60084f, 178.74182f, 120.02374f, 60.444f, 73.7077f, 148.48435f, 224.3332f, 301.2575f, 379.2605f, 380.903f, 306.9058f, 231.82015f, 155.6428f, 78.3705f, 75.6397f, 152.36785f, 230.1877f, 309.1025f, 389.1155f, 390.758f, 314.8288f, 237.79165f, 159.6433f, 80.3805f, 62.89546f, 126.67598f, 191.34416f, 256.9026f, 323.3539f, 324.7004f, 261.56684f, 197.53262f, 132.59514f, 66.7518f, 48.97887f, 98.63226f, 148.96212f, 199.9704f, 251.65905f, 252.6933f, 203.53098f, 153.68244f, 103.14573f, 51.9189f, 33.87043f, 68.19769f, 102.98308f, 138.2279f, 173.93345f, 174.6392f, 140.64322f, 106.18261f, 71.25607f, 35.8623f, 17.55064f, 35.33327f, 53.34854f, 71.5971f, 90.0796f, 90.4406f, 72.82556f, 54.97463f, 36.88716f, 18.5625f, 13.0455f, 26.44707f, 40.20528f, 54.3207f, 68.7939f, 68.9112f, 55.84908f, 42.42747f, 28.6458f, 14.5035f, 27.89367f, 56.50575f, 85.83738f, 115.8897f, 146.66385f, 146.9127f, 118.98294f, 90.32793f, 60.94653f, 30.8376f, 44.56161f, 90.21024f, 136.9476f, 184.7754f, 233.69535f, 234.09f, 189.46998f, 143.75268f, 96.93639f, 49.0194f, 63.06642f, 127.59474f, 193.58724f, 261.0462f, 329.9739f, 330.5286f, 267.3786f, 202.75302f, 136.64958f, 69.066f, 83.4252f, 168.69345f, 255.8076f, 344.7705f, 435.585f, 436.314f, 352.7772f, 267.38025f, 180.1203f, 90.9945f, 84.2658f, 170.39175f, 258.3807f, 348.2355f, 439.959f, 440.688f, 356.3106f, 270.05595f, 181.9212f, 91.9035f, 71.25738f, 144.01542f, 218.2764f, 294.0426f, 371.3163f, 371.928f, 300.57564f, 227.70894f, 153.32562f, 77.4234f, 56.34369f, 113.82228f, 172.43748f, 232.191f, 293.08455f, 293.5647f, 237.1455f, 179.58114f, 120.86991f, 61.0101f, 39.50763f, 79.77813f, 120.81264f, 162.6123f, 205.17825f, 205.5126f, 165.95178f, 125.62125f, 84.51987f, 42.6465f, 20.7321f, 41.84877f, 63.35058f, 85.2381f, 107.5119f, 107.6862f, 86.92608f, 65.77797f, 44.2413f, 22.3155f, 22.71767f, 45.82912f, 69.33496f, 93.2358f, 117.53225f, 117.7339f, 94.98322f, 71.8351f, 48.28893f, 24.3441f, 47.44335f, 95.68097f, 144.71408f, 194.5439f, 245.17165f, 245.5902f, 198.07778f, 149.76377f, 100.64695f, 50.7261f, 74.19534f, 149.59215f, 226.19226f, 303.9975f, 383.0097f, 383.6604f, 309.35688f, 233.84091f, 157.11066f, 79.1643f, 102.99194f, 207.59926f, 313.8244f, 421.6698f, 531.1379f, 532.036f, 428.89372f, 324.12142f, 217.71666f, 109.677f, 133.85145f, 269.7389f, 407.6654f, 547.634f, 689.64775f, 690.8085f, 556.7615f, 420.6602f, 282.50155f, 142.2825f, 135.20775f, 272.4698f, 411.7892f, 553.169f, 696.61225f, 697.773f, 562.3697f, 424.8938f, 285.34225f, 143.712f, 112.43842f, 226.5337f, 342.28828f, 459.7046f, 578.7851f, 579.7442f, 467.14324f, 352.87078f, 236.92438f, 119.3016f, 87.55128f, 176.35527f, 266.4138f, 357.7287f, 450.3018f, 451.044f, 363.36624f, 274.42479f, 184.21782f, 92.7435f, 60.52803f, 121.89791f, 184.11086f, 247.1681f, 311.07085f, 311.5809f, 250.9655f, 189.50093f, 127.18597f, 64.0194f, 31.35037f, 63.12502f, 95.32456f, 127.9496f, 161.00075f, 161.2634f, 129.86782f, 98.0443f, 65.79223f, 33.111f, 33.43584f, 67.30517f, 101.60864f, 136.3469f, 171.5206f, 171.8166f, 138.32936f, 104.40473f, 70.04206f, 35.2407f, 69.09703f, 139.06819f, 209.91478f, 281.6381f, 354.23945f, 354.8477f, 285.64462f, 215.55961f, 144.59137f, 72.7386f, 107.00307f, 215.32806f, 324.97692f, 435.9516f, 548.25405f, 549.1908f, 442.02378f, 333.52314f, 223.68693f, 112.5132f, 147.17346f, 296.12378f, 446.85356f, 599.3654f, 753.6619f, 754.9434f, 607.54484f, 458.35382f, 307.36774f, 154.584f, 189.6277f, 381.49435f, 575.6032f, 771.9575f, 970.5605f, 972.203f, 782.2858f, 590.11015f, 395.6728f, 198.9705f, 191.5597f, 385.37785f, 581.4577f, 779.8025f, 980.4155f, 982.058f, 790.2088f, 596.08165f, 399.6733f, 200.9805f, 157.97146f, 317.76398f, 479.38016f, 642.8226f, 808.0939f, 809.4404f, 651.23084f, 491.18462f, 329.29914f, 165.5718f, 122.04087f, 245.45826f, 370.25412f, 496.4304f, 623.98905f, 625.0233f, 502.79898f, 379.18644f, 254.18373f, 127.7889f, 83.74843f, 168.42169f, 254.02108f, 340.5479f, 428.00345f, 428.7092f, 344.83522f, 260.02861f, 174.28807f, 87.6123f, 43.07464f, 86.61527f, 130.62254f, 175.0971f, 220.0396f, 220.4006f, 177.26156f, 133.65263f, 89.57316f, 45.0225f };
@@ -574,6 +587,8 @@ TEST_F(ConvolutionTests, sconv2D_BP_pointwise_1) {
     weightsD.linspace(1);
     weightsP.linspace(1);
     epsilonNext.linspace(1);
+    weightsD.permutei({2,3,1,0});
+    weightsP.permutei({2,3,1,0});
 
     input.template applyScalar<simdOps::Divide<double>>(100.0);
     weightsD.template applyScalar<simdOps::Divide<double>>(100.0);
@@ -623,6 +638,8 @@ TEST_F(ConvolutionTests, TestSconvCrash_max_1) {
     weightsD.linspace(1);
     weightsP.linspace(1);
     bias.linspace(1);
+    weightsD.permutei({2,3,1,0});
+    weightsP.permutei({2,3,1,0});
 
     NDArray<double> expOutput('c', {3, 2, 8, 8});
 
@@ -809,10 +826,14 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_3) {
 }
 
 TEST_F(ConvolutionTests, TestSconvCrash_max_2) {
+
     NDArray<double> input('c', {3, 3, 16, 16});
     NDArray<double> weightsD('c', {1, 3, 2, 2});
     NDArray<double> weightsP('c', {2, 3, 1, 1});
     NDArray<double> bias('c', {1, 2});
+
+    weightsD.permutei({2,3,1,0});
+    weightsP.permutei({2,3,1,0});
 
     NDArray<double> epsilonNext('c', {3, 2, 14, 14});
 
@@ -839,6 +860,7 @@ TEST_F(ConvolutionTests, TestDeconv_bp_1) {
     double _expwb[] = { 160008.f,  203400.f,  191112.f,  246792.f,  222216.f,  290184.f,};
     NDArray<double> expGradW('c', {3, 2, 1, 1});
     expGradW.setBuffer(_expwb);
+    expGradW.permutei({2,3,1,0});
 
     double _expbb[] = {1944.f,  2712.f};
     NDArray<double> expGradB('c', {1, 2});
@@ -859,6 +881,7 @@ TEST_F(ConvolutionTests, TestDeconv_bp_1) {
     weights.linspace(1);
     bias.linspace(1);
     epsilon.linspace(1);
+    weights.permutei({2,3,1,0});
 
     nd4j::ops::deconv2d_bp<double> op;
 
@@ -940,6 +963,7 @@ TEST_F(ConvolutionTests, TestDeconv_ff_2) {
     input.linspace(1);
     weights.linspace(1);
     bias.linspace(1);
+    weights.permutei({2,3,1,0});
 
     nd4j::ops::deconv2d<double> op;
 
@@ -964,10 +988,12 @@ TEST_F(ConvolutionTests, Test_Conv1D_ff_1) {
     NDArray<double> expGW('c', {3, 2, 2}, {1415.0, 1520.0, 2045.0, 2150.0, 1865.0, 2020.0, 2795.0, 2950.0, 2315.0, 2520.0, 3545.0, 3750.0});
     NDArray<double> expGB('c', {1, 3}, {105.0, 155.0, 205.0});
 
+    expGW.permutei({2,1,0});
 
     input.linspace(1);
     weights.linspace(1);
     bias.linspace(1);
+    weights.permutei({2,1,0});
 
     nd4j::ops::conv1d<double> op;
     auto result_FF = op.execute({&input, &weights, &bias}, {}, {2, 1, 0, 0});
@@ -1011,6 +1037,7 @@ TEST_F(ConvolutionTests, Test_Conv1D_ff_2) {
 
     input.linspace(1);
     weights.linspace(1);
+    weights.permutei({2,1,0});
 
     nd4j::ops::conv1d<double> op;
     auto result = op.execute({&input, &weights}, {}, {2, 1, 0, 1});
@@ -1024,12 +1051,12 @@ TEST_F(ConvolutionTests, Test_Conv1D_ff_2) {
 
 TYPED_TEST(TypedConvolutionTests, Test_Conv2D_4_1) {
     NDArray<TypeParam> input('c', {1, 1, 1, 4});
-    NDArray<TypeParam> weights('c', {4, 1, 1, 1});
+    NDArray<TypeParam> weights('c', {1, 1, 1, 4});
     NDArray<TypeParam> exp('c', {1, 4, 1, 4}, {2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8.});
 
     weights.assign(2.0);
     input.linspace(1);
-    //weights.linspace(1);
+    //weights.linspace(1);        
 
     nd4j::ops::conv2d<TypeParam> op;
     auto result = op.execute({&input, &weights}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0});
@@ -1195,7 +1222,9 @@ TEST_F(ConvolutionTests, conv2d_bp_test3) {
 
     input = 2.;
     weights.linspace(0.1, 0.1);
-    gradO.linspace(0.01, 0.01);    
+    gradO.linspace(0.01, 0.01);
+    weights.permutei({2,3,1,0});    
+    expGradW.permutei({2,3,1,0});
 
     nd4j::ops::conv2d_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &weights, &bias, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
@@ -1295,6 +1324,7 @@ TYPED_TEST(TypedConvolutionTests, conv2d_test3) {
     
     input = 2.;
     weights.linspace(0.1, 0.1);
+    weights.permutei({2,3,1,0});    
 
     nd4j::ops::conv2d<TypeParam> op;
     ResultSet<TypeParam>* results = op.execute({&input, &weights, &bias}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
@@ -1537,13 +1567,14 @@ TEST_F(ConvolutionTests, depthwise_conv2d_test3) {
     int dataFormat  = 0;             // 1-NHWC, 0-NCHW    
 
     NDArray<double> input   ('c', {bS, iC, iH, iW});
-    NDArray<double> weights ('c', {mC, iC, kH, kW});
+    NDArray<double> weights ('c', {mC, iC, kH, kW}); 
     NDArray<double> biases  ('c', {iC*mC}, {1,2,3,4});
 
     
     NDArray<double> expOutput('c', {bS, oC, oH, oW},{5.2, 5.2, 5.2, 5.2,20.6,20.6,20.6,20.6,14.4,14.4,14.4,14.4,29.8,29.8,29.8,29.8, 5.2, 5.2, 5.2, 5.2,20.6,20.6,20.6,20.6,14.4,14.4,14.4,14.4,29.8,29.8,29.8,29.8});
     input = 2.;
     weights.linspace(0.1, 0.1);
+    weights.permutei({2,3,1,0});
 
     nd4j::ops::depthwise_conv2d<double> op;
     ResultSet<double>* results = op.execute({&input, &weights, &biases}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
@@ -2012,7 +2043,7 @@ TYPED_TEST(TypedConvolutionTests, conv2d_test4) {
     int dataFormat  = 0;             // 1-NHWC, 0-NCHW    
 
     NDArray<TypeParam> input   ('c', {bS, iC, iH, iW});
-    NDArray<TypeParam> weights ('c', {oC, iC, kH, kW});
+    NDArray<TypeParam> weights ('c', {kH, kW, iC, oC});
 
     input = 5.;
     weights = 3.;
@@ -2400,6 +2431,7 @@ TEST_F(ConvolutionTests, conv2D_input_BP_test1) {
 
     weights.linspace(1);
     epsilonNext.linspace(1);
+    weights.permutei({2,3,1,0});
 
     nd4j::ops::conv2d_input_bp<double> op;
 

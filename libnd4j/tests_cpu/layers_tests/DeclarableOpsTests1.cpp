@@ -2684,6 +2684,7 @@ TEST_F(DeclarableOpsTests1, CompactLaunchTests1) {
 
     input.linspace(1);
     weights.linspace(1);
+    weights.permutei({2,3,1,0});
 
     nd4j::ops::deconv2d<double> op;
     auto result = op.execute({&input, &weights}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0, 0});
@@ -2710,7 +2711,7 @@ TEST_F(DeclarableOpsTests1, CompactLaunchTests2) {
 
     input.linspace(1);
     weights.linspace(1);
-
+    weights.permutei({2,3,1,0});
 
     nd4j::ops::deconv2d<double> op;
     auto result = op.execute({&input, &weights}, {&z}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0, 0});
