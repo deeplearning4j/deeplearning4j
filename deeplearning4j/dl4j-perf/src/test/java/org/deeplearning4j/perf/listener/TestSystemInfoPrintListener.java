@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.io.File;
@@ -52,7 +53,7 @@ public class TestSystemInfoPrintListener {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .list()
-                .layer(new OutputLayer.Builder().nIn(4).nOut(3).build())
+                .layer(new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX).build())
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.eigen;
 
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.inverse.InvertMatrix;
@@ -67,8 +68,8 @@ public class Eigen {
      * @return a vector of eigenvalues L.
      */
     public static INDArray symmetricGeneralizedEigenvalues(INDArray A, INDArray B) {
-        assert A.rows() == A.columns();
-        assert B.rows() == B.columns();
+        Preconditions.checkArgument(A.isMatrix() && A.isSquare(), "Argument A must be a square matrix: has shape %s", A.shape());
+        Preconditions.checkArgument(B.isMatrix() && B.isSquare(), "Argument B must be a square matrix: has shape %s", B.shape());
         INDArray W = Nd4j.create(A.rows());
 
         A = InvertMatrix.invert(B, false).mmuli(A);
@@ -86,8 +87,8 @@ public class Eigen {
      * @return a vector of eigenvalues L.
      */
     public static INDArray symmetricGeneralizedEigenvalues(INDArray A, INDArray B, boolean calculateVectors) {
-        assert A.rows() == A.columns();
-        assert B.rows() == B.columns();
+        Preconditions.checkArgument(A.isMatrix() && A.isSquare(), "Argument A must be a square matrix: has shape %s", A.shape());
+        Preconditions.checkArgument(B.isMatrix() && B.isSquare(), "Argument B must be a square matrix: has shape %s", B.shape());
         INDArray W = Nd4j.create(A.rows());
         if (calculateVectors)
             A.assign(InvertMatrix.invert(B, false).mmuli(A));

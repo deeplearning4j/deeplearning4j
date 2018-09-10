@@ -25,6 +25,8 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
+
 
 /**
  * @author Max Pumperla
@@ -57,7 +59,7 @@ public class KerasMaskingTest {
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
         MaskZeroLayer layer = new KerasMasking(layerConfig).getMaskingLayer();
-        assert MASKING_VALUE == layer.getMaskingValue();
+        assertEquals(MASKING_VALUE, layer.getMaskingValue(), 0.0);
     }
 
 

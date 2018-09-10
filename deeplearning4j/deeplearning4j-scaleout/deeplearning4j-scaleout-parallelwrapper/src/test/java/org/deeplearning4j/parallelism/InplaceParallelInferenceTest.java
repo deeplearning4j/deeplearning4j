@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.parallelism.inference.InferenceMode;
 import org.deeplearning4j.parallelism.inference.LoadBalanceMode;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -37,8 +38,8 @@ public class InplaceParallelInferenceTest {
         val conf = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("in")
-                .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).build(), "in")
-                .layer("out1", new OutputLayer.Builder().nIn(nIn).nOut(6).build(), "in")
+                .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).activation(Activation.SOFTMAX).build(), "in")
+                .layer("out1", new OutputLayer.Builder().nIn(nIn).nOut(6).activation(Activation.SOFTMAX).build(), "in")
                 .setOutputs("out0", "out1")
                 .build();
 
@@ -64,9 +65,9 @@ public class InplaceParallelInferenceTest {
         val conf2 = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("in")
-                .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).build(), "in")
-                .layer("out1", new OutputLayer.Builder().nIn(nIn).nOut(6).build(), "in")
-                .layer("out2", new OutputLayer.Builder().nIn(nIn).nOut(8).build(), "in")
+                .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).activation(Activation.SOFTMAX).build(), "in")
+                .layer("out1", new OutputLayer.Builder().nIn(nIn).nOut(6).activation(Activation.SOFTMAX).build(), "in")
+                .layer("out2", new OutputLayer.Builder().nIn(nIn).nOut(8).activation(Activation.SOFTMAX).build(), "in")
                 .setOutputs("out0", "out1", "out2")
                 .build();
 
@@ -94,8 +95,8 @@ public class InplaceParallelInferenceTest {
         val conf = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("in")
-                .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).build(), "in")
-                .layer("out1", new OutputLayer.Builder().nIn(nIn).nOut(6).build(), "in")
+                .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).activation(Activation.SOFTMAX).build(), "in")
+                .layer("out1", new OutputLayer.Builder().nIn(nIn).nOut(6).activation(Activation.SOFTMAX).build(), "in")
                 .setOutputs("out0", "out1")
                 .build();
 
@@ -122,8 +123,8 @@ public class InplaceParallelInferenceTest {
         val conf = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("in")
-                .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).build(), "in")
-                .layer("out1", new OutputLayer.Builder().nIn(nIn).nOut(6).build(), "in")
+                .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).activation(Activation.SOFTMAX).build(), "in")
+                .layer("out1", new OutputLayer.Builder().nIn(nIn).nOut(6).activation(Activation.SOFTMAX).build(), "in")
                 .setOutputs("out0", "out1")
                 .build();
 
