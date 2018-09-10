@@ -204,7 +204,7 @@ public class TestJson {
                                         .addLayer("2", new OutputLayerSpace.Builder().iLossFunction(
                                                         LossFunctions.LossFunction.MCXENT.getILossFunction()).nIn(10)
                                                         .nOut(5).build(), "1")
-                                        .setOutputs("2").backprop(true).pretrain(false).build();
+                                        .setOutputs("2").build();
 
         String asJson = cgs.toJson();
         ComputationGraphSpace fromJson = ComputationGraphSpace.fromJson(asJson);

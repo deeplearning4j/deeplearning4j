@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -51,7 +52,7 @@ public class TestStatsListener {
                                             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                             .list().layer(0,
                                                             new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                                                            .nIn(4).nOut(3).build())
+                                                                    .activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
                                             .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
