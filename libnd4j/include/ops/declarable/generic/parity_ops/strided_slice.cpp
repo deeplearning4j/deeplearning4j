@@ -352,10 +352,10 @@ namespace nd4j {
             }            
 
             // validation of begin and start
-            std::vector<int> addAxes     = BitwiseUtils::valueBits(new_axis_mask);
-            std::vector<int> moveAxes    = BitwiseUtils::valueBits(shrink_axis_mask);
             std::vector<int> ignoreBegin = BitwiseUtils::valueBits(begin_mask);
             std::vector<int> ignoreEnd   = BitwiseUtils::valueBits(end_mask);
+            std::vector<int> addAxes     = BitwiseUtils::valueBits(new_axis_mask);
+            std::vector<int> moveAxes    = BitwiseUtils::valueBits(shrink_axis_mask);
             
             for (int dim = 0, b = 0, e = 0; dim < x->rankOf(); ++dim) {
 
@@ -436,10 +436,10 @@ namespace nd4j {
             REQUIRE_TRUE(begin.size() > 0 && end.size() > 0 && strides.size() > 0, 0, "Strided_Slice: empty arguments");
             
             // validation of begin and start
-            std::vector<int> addAxes     = BitwiseUtils::valueBits(new_axis_mask);
-            std::vector<int> moveAxes    = BitwiseUtils::valueBits(shrink_axis_mask);
             std::vector<int> ignoreBegin = BitwiseUtils::valueBits(begin_mask);
             std::vector<int> ignoreEnd   = BitwiseUtils::valueBits(end_mask);
+            std::vector<int> addAxes     = BitwiseUtils::valueBits(new_axis_mask);
+            std::vector<int> moveAxes    = BitwiseUtils::valueBits(shrink_axis_mask);
             
             for (int dim = 0, b = 0, e = 0; dim < inShape[0]; ++dim) {
 
@@ -550,10 +550,10 @@ namespace nd4j {
             }
 
             // validation of begin and start
-            std::vector<int> addAxes     = BitwiseUtils::valueBits(new_axis_mask);
-            std::vector<int> moveAxes    = BitwiseUtils::valueBits(shrink_axis_mask);
             std::vector<int> ignoreBegin = BitwiseUtils::valueBits(begin_mask);
             std::vector<int> ignoreEnd   = BitwiseUtils::valueBits(end_mask);
+            std::vector<int> addAxes     = BitwiseUtils::valueBits(new_axis_mask);
+            std::vector<int> moveAxes    = BitwiseUtils::valueBits(shrink_axis_mask);
             
             for (int dim = 0, b = 0, e = 0; dim < x->rankOf(); ++dim) {
 
