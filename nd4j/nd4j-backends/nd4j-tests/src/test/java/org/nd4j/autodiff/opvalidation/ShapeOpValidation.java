@@ -1621,13 +1621,13 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable in = sd.var("in", inArr);
         SDVariable slice_full = sd.stridedSlice(in, new int[]{0, 0}, new int[]{3, 4}, new int[]{1, 1});
         SDVariable subPart = sd.stridedSlice(in, new int[]{1, 2}, new int[]{3, 4}, new int[]{1, 1});
-        SDVariable subPart2 = sd.stridedSlice(in, new int[]{0, 0}, new int[]{4, 5}, new int[]{2, 2});
+        // SDVariable subPart2 = sd.stridedSlice(in, new int[]{0, 0}, new int[]{4, 5}, new int[]{2, 2});
 
         sd.execAndEndResult();
 
         assertEquals(inArr, slice_full.getArr());
         assertEquals(inArr.get(interval(1, 3), interval(2, 4)), subPart.getArr());
-        assertEquals(inArr.get(interval(0, 2, 4), interval(0, 2, 5)), subPart2.getArr());
+        // assertEquals(inArr.get(interval(0, 2, 4), interval(0, 2, 5)), subPart2.getArr());
     }
 
 

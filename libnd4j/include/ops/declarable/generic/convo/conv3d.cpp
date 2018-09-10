@@ -56,7 +56,7 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
     int isNCDHW  = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;       // 0-NDHWC, 1-NCDHW    
 
     int bS, iC, iD, iH, iW, oC, oD, oH, oW;                     // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-    int indIOioC, indIOioD, indWoC, indWiC, indWkD;       // corresponding indexes
+    int indIOioC, indIOioD, indWoC, indWiC, indWkD;             // corresponding indexes
     ConvolutionUtils<T>::getSizesAndIndexesConv3d(isNCDHW, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWiC, indWoC, indWkD);
 
     std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({iC,oC,kD,kH,kW,  indWiC,indWoC,indWkD,indWkD+1,indWkD+2}));            

@@ -160,13 +160,13 @@ DECLARE_SHAPE_FN(deconv2d) {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
 
-    NDArray<T> *input   = INPUT_VARIABLE(0);                                                // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW)
-    NDArray<T> *weights = INPUT_VARIABLE(1);                                                // [kH, kW, oC, iC] (NDHWC) or [iC, oC, kH, kW] (NCDHW)
+    NDArray<T> *input   = INPUT_VARIABLE(0);                                                // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    NDArray<T> *weights = INPUT_VARIABLE(1);                                                // [kH, kW, oC, iC] (NHWC) or [iC, oC, kH, kW] (NCHW)
     NDArray<T> *bias    = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]
-    NDArray<T> *gradO   = block.width() > 3 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(2);        // [bS, oH, oW, oC] (NDHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
+    NDArray<T> *gradO   = block.width() > 3 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(2);        // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
 
-    NDArray<T> *gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW), gradI
-    NDArray<T> *gradW = OUTPUT_VARIABLE(1);                                                 // [kH, kW, oC, iC] (NDHWC) or [iC, oC, kH, kW] (NCDHW)
+    NDArray<T> *gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), gradI
+    NDArray<T> *gradW = OUTPUT_VARIABLE(1);                                                 // [kH, kW, oC, iC] (NHWC) or [iC, oC, kH, kW] (NCHW)
     NDArray<T> *gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
 
     REQUIRE_TRUE(input->rankOf()   == 4, 0, "CUSTOM DECONV2D_BP OP: rank of input array must be equal to 4, but got %i instead !", input->rankOf());
@@ -221,7 +221,7 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
     // ----- calculation of gradW ----- //
     NDArray<T> columns(input->ordering(), {bS, oC, kH, kW, iH, iW}, block.getWorkspace());
     std::vector<T> extrasIm2Col({(T) kH, (T) kW, (T) sH, (T) sW, (T) pH, (T) pW, (T) dH, (T) dW, (T)0.f, (T)0.f});
-    gradO->template applyTransform<simdOps::Im2col<T>>(&columns, extrasIm2Col.data());                          // [bS, oC, oH, oW] is convoluted to [bS, oC, kH, kW, iH, iW]
+    gradO->template applyTransform<simdOps::Im2col<T>>(&columns, extrasIm2Col.data());                          // [bS, oC, oH, oW] is deconvoluted to [bS, oC, kH, kW, iH, iW]
     MmulHelper<T>::tensorDot(input, &columns, gradW, inputAxesForDot, {0, 4, 5}, permutForGradW);           // [bS, iC, iH, iW]/[bS, iH, iW, iC] x [bS, oC, kH, kW, iH, iW] = [iC, oC, kH, kW]
 
     // ----- calculation of gradB ----- //
@@ -241,10 +241,10 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
 
 DECLARE_SHAPE_FN(deconv2d_bp) {
 
-    auto inputShapeInfo   = inputShape->at(0);                                                // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW)
-    auto weightsShapeInfo = inputShape->at(1);                                                // [kH, kW, oC, iC] (NDHWC) or [iC, oC, kH, kW] (NCDHW)
-    Nd4jLong* biasShapeInfo    = block.width() > 3 ? inputShape->at(2) : nullptr;                  // [oC]
-    Nd4jLong* gradOShapeInfo   = block.width() > 3 ? inputShape->at(3) : inputShape->at(2);        // [bS, oH, oW, oC] (NDHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
+    auto inputShapeInfo   = inputShape->at(0);                                                // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    auto weightsShapeInfo = inputShape->at(1);                                                // [kH, kW, oC, iC] (NHWC) or [iC, oC, kH, kW] (NCHW)
+    Nd4jLong* biasShapeInfo    = block.width() > 3 ? inputShape->at(2) : nullptr;             // [oC]
+    Nd4jLong* gradOShapeInfo   = block.width() > 3 ? inputShape->at(3) : inputShape->at(2);   // [bS, oD, oH, oW, oC] (NHWC) or [bS, oC, oD, oH, oW] (NCHW), epsilon_next
 
     const int rank = 4;
     REQUIRE_TRUE(inputShapeInfo[0]   == rank, 0, "CUSTOM DECONV2D_BP OP: rank of input array must be equal to %i, but got %i instead !", rank, inputShapeInfo[0]);
