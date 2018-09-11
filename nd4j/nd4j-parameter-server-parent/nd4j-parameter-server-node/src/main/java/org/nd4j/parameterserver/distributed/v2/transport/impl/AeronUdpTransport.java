@@ -257,6 +257,31 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         }
     }
 
+    @Override
+    public void onRemap(String id) {
+        try {
+            aeronLock.lock();
+
+            log.info("Trying to disconnect failed node: [{}]", id);
+
+            if (remoteConnections.containsKey(id)) {
+                val v = remoteConnections.get(id);
+                try {
+                    v.getPublication().close();
+                } catch (Exception e) {
+                    // no-op
+                }
+
+                remoteConnections.remove(id);
+            }
+
+            log.info("Trying to add failed node back again: [{}]", id);
+            addConnection(id);
+        } finally {
+            aeronLock.unlock();
+        }
+    }
+
     protected void addConnection(@NonNull String ipAndPort) {
         try {
             aeronLock.lock();
@@ -418,6 +443,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             }
         }
     }
+
 
     protected void shutdownSilent() {
         // closing own connection

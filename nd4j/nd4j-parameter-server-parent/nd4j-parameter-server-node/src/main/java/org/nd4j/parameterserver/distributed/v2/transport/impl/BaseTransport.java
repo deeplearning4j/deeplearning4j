@@ -392,6 +392,9 @@ public abstract  class BaseTransport  implements Transport {
                 if (mesh.get().isKnownNode(message.getOriginatorId())) {
                     log.warn("Got request from known node [{}]. Remapping.", message.getOriginatorId());
 
+                    // notifying transport implementation about node reconnect
+                    onRemap(message.getOriginatorId());
+
                     mesh.get().remapNodeAndDownstreams(message.getOriginatorId());
                     // we say that this model has restarted
                     response.setRestart(true);
@@ -664,6 +667,11 @@ public abstract  class BaseTransport  implements Transport {
                 //
             }
         }
+    }
+
+    @Override
+    public void onRemap(String id) {
+        //
     }
 
     @Override

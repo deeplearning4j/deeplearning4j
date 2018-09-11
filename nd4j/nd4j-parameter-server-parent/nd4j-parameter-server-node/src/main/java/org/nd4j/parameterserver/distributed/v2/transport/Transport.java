@@ -136,6 +136,12 @@ public interface Transport {
     void onMeshUpdate(MeshOrganizer mesh);
 
     /**
+     * This method will be called upon remap request
+     * @param id
+     */
+    void onRemap(String id);
+
+    /**
      * This method returns total number of nodes known to this Transport
      * @return
      */
