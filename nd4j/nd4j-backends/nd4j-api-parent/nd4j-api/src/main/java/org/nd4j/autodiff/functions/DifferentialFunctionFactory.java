@@ -53,6 +53,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.*;
+import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
@@ -1599,20 +1600,40 @@ public class DifferentialFunctionFactory {
         return new SegmentMax(sameDiff(), data, segmentIds).outputVariable();
     }
 
+    public SDVariable[] segmentMaxBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+        return new SegmentMaxBp(sameDiff(), data, segmentIds, gradient).outputVariables();
+    }
+
     public SDVariable segmentMin(SDVariable data, SDVariable segmentIds){
         return new SegmentMin(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable[] segmentMinBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+        return new SegmentMinBp(sameDiff(), data, segmentIds, gradient).outputVariables();
     }
 
     public SDVariable segmentMean(SDVariable data, SDVariable segmentIds){
         return new SegmentMean(sameDiff(), data, segmentIds).outputVariable();
     }
 
+    public SDVariable[] segmentMeanBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+        return new SegmentMeanBp(sameDiff(), data, segmentIds, gradient).outputVariables();
+    }
+
     public SDVariable segmentProd(SDVariable data, SDVariable segmentIds){
         return new SegmentProd(sameDiff(), data, segmentIds).outputVariable();
     }
 
+    public SDVariable[] segmentProdBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+        return new SegmentProdBp(sameDiff(), data, segmentIds, gradient).outputVariables();
+    }
+
     public SDVariable segmentSum(SDVariable data, SDVariable segmentIds){
         return new SegmentSum(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable[] segmentSumBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+        return new SegmentSumBp(sameDiff(), data, segmentIds, gradient).outputVariables();
     }
 
     public SDVariable dilation2D(SDVariable df, SDVariable weights, int[] strides,

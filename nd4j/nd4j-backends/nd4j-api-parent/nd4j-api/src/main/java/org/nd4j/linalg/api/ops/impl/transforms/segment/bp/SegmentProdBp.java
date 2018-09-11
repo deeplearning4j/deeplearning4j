@@ -14,41 +14,28 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.segment;
+package org.nd4j.linalg.api.ops.impl.transforms.segment.bp;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-import java.util.Arrays;
-import java.util.List;
-
 /**
- * Segment max operation
+ * Segment product backprop operation
  *
  * @author Alex Black
  */
-public class SegmentMax extends DynamicCustomOp {
+public class SegmentProdBp extends DynamicCustomOp {
 
-    public SegmentMax(SameDiff sameDiff, SDVariable data, SDVariable segmentIds) {
-        super(null, sameDiff,  new SDVariable[] {data, segmentIds}, false);
+    public SegmentProdBp(SameDiff sameDiff, SDVariable data, SDVariable segmentIds, SDVariable gradient) {
+        super(null, sameDiff,  new SDVariable[] {data, segmentIds, gradient}, false);
     }
 
-    public SegmentMax(){ }
+    public SegmentProdBp(){ }
 
     @Override
     public String opName(){
-        return "segment_max";
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "SegmentMax";
-    }
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> gradients){
-        return Arrays.asList(f().segmentMaxBp(arg(0), arg(1), gradients.get(0)));
+        return "segment_prod_bp";
     }
 
 }

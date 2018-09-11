@@ -1246,8 +1246,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testSegmentOps(){
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6073
-
         INDArray s = Nd4j.create(new double[]{0,0,0,1,2,2,3,3}, new long[]{8});
         INDArray d = Nd4j.create(new double[]{5,1,7,2,3,4,1,3}, new long[]{8});
 
@@ -1256,40 +1254,43 @@ public class ShapeOpValidation extends BaseOpValidation {
         for(String op : new String[]{"max", "min", "mean", "prod", "sum"}) {
 
             SameDiff sd = SameDiff.create();
-            SDVariable vs = sd.var("s", s);
-            SDVariable vd = sd.var("d", d);
+            SDVariable data = sd.var("d", d);
+            SDVariable segments = sd.var("s", s);
 
             SDVariable sm;
             INDArray exp;
             switch (op){
                 case "max":
-                    sm = sd.f().segmentMax(vd, vs);
+                    sm = sd.f().segmentMax(data, segments);
                     exp = Nd4j.create(new double[]{7, 2, 4, 3});
                     break;
                 case "min":
-                    sm = sd.f().segmentMin(vd, vs);
+                    sm = sd.f().segmentMin(data, segments);
                     exp = Nd4j.create(new double[]{1, 2, 3, 1});
                     break;
                 case "mean":
-                    sm = sd.f().segmentMean(vd, vs);
+                    sm = sd.f().segmentMean(data, segments);
                     exp = Nd4j.create(new double[]{4.3333333333, 2, 3.5, 2});
                     break;
                 case "prod":
-                    sm = sd.f().segmentProd(vd, vs);
+                    sm = sd.f().segmentProd(data, segments);
                     exp = Nd4j.create(new double[]{35, 2, 12, 3});
                     break;
                 case "sum":
-                    sm = sd.f().segmentSum(vd, vs);
+                    sm = sd.f().segmentSum(data, segments);
                     exp = Nd4j.create(new double[]{13, 2, 7, 4});
                     break;
                 default:
                     throw new RuntimeException();
             }
 
+            SDVariable loss = sm.std(false);
+
             TestCase tc = new TestCase(sd)
                     .testName(op)
                     .expected(sm, exp)
-                    .gradientCheck(true);
+                    .gradientCheck(true)
+                    .gradCheckSkipVariables(segments.getVarName());
 
             String err = OpValidation.validate(tc);
             if(err != null)
