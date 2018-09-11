@@ -122,15 +122,20 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         Pair<INDArray, INDArray> p = preOutput4d(true, true, workspaceMgr);
         delta = afn.backprop(p.getFirst(), epsilon).getFirst();
 
+        //DL4J Deconv weights: [inputDepth, outputDepth, kH, kW]
+        //libnd4j weights: [kH, kW, oC, iC]
+        weights = weights.permute(2, 3, 1, 0);
+        INDArray weightGradViewOp = weightGradView.permute(2, 3, 1, 0);
+
         INDArray[] opInputs;
         INDArray[] opOutputs;
         if(layerConf().hasBias()){
             INDArray bias = getParamWithNoise(DeconvolutionParamInitializer.BIAS_KEY, true, workspaceMgr);
             opInputs = new INDArray[]{input, weights, bias, delta};
-            opOutputs = new INDArray[]{outEps, weightGradView, biasGradView};
+            opOutputs = new INDArray[]{outEps, weightGradViewOp, biasGradView};
         } else {
             opInputs = new INDArray[]{input, weights, delta};
-            opOutputs = new INDArray[]{outEps, weightGradView};
+            opOutputs = new INDArray[]{outEps, weightGradViewOp};
         }
         CustomOp op = DynamicCustomOp.builder("deconv2d_bp")
                 .addInputs(opInputs)
@@ -220,6 +225,10 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
                 kH, kW, strides[0], strides[1],
                 pad[0], pad[1], dilation[0], dilation[1], sameMode, 0   //Last arg: 0 for nchw
         };
+
+        //DL4J Deconv weights: [inputDepth, outputDepth, kH, kW]
+        //libnd4j weights: [kH, kW, oC, iC]
+        weights = weights.permute(2, 3, 1, 0);
 
         INDArray[] opInputs;
         if (layerConf().hasBias()) {
