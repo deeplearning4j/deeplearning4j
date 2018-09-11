@@ -20,7 +20,7 @@ from setuptools import find_packages
 
 
 setup(name='jumpy',
-      version='0.2.3',
+      version='0.2.4',
       description='Numpy and nd4j interop',
       long_description='Mapping of the numpy & nd4j array representations',
       author='Adam Gibson',
