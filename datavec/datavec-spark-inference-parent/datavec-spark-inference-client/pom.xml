@@ -44,7 +44,7 @@
         <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-spark-inference-server_2.11</artifactId>
-            <version>1.0.0_spark_1-SNAPSHOT</version>
+            <version>1.0.0_spark_2-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
         <dependency>
