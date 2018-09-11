@@ -384,9 +384,14 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                     log.warn("Upstream connection was closed: [{}]", id);
                     return;
                 }
-                case ADMIN_ACTION:
-                case NOT_CONNECTED:
+                case ADMIN_ACTION: {
+                        log.info("ADMIN_ACTION");
+                    }
+                case NOT_CONNECTED: {
+                        log.info("NOT_CONNECTED");
+                    }
                 case BACK_PRESSURED: {
+                    log.info("BACK_PRESSURED");
                     try {
                         // in case of backpressure we're just sleeping for a while, and message out again
                         Thread.sleep(voidConfiguration.getRetransmitTimeout());
