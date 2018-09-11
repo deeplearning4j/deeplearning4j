@@ -408,7 +408,7 @@ public abstract  class BaseTransport  implements Transport {
                 propagateMessageDirect(new MeshUpdateMessage(mesh.get()));
             } catch (Exception e) {
                 log.error("Wasn't able to propagate message from [{}]", id());
-                log.error("Exception: {}", e);
+                log.error("MeshUpdateMessage propagation failed:", e);
                 throw new RuntimeException(e);
             }
         } else if (message instanceof HandshakeResponse) {
@@ -480,7 +480,8 @@ public abstract  class BaseTransport  implements Transport {
             try {
                 propagateBroadcastableMessage((BroadcastableMessage) message, PropagationMode.BOTH_WAYS);
             } catch (Exception e) {
-                log.error("Wasn't able to propagate message from [{}]", id());
+                log.error("Wasn't able to propagate message [{}] from [{}]", message.getClass().getSimpleName(), message.getOriginatorId());
+                log.error("BroadcastableMessage propagation exception:", e);
                 throw new RuntimeException(e);
             }
         }
