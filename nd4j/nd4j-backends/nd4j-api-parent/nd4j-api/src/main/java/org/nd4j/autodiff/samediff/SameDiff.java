@@ -2479,7 +2479,7 @@ public class SameDiff {
      * 1D Convolution layer operation - Conv1d
      *
      * @param input        the input array/activations for the conv1d op
-     * @param weights      weights for conv1d op
+     * @param weights      weights for conv1d op - rank 3 array with values [kernelSize, inputChannels, outputChannels]
      * @param conv1DConfig the configuration
      * @return
      */
@@ -2492,7 +2492,7 @@ public class SameDiff {
      *
      * @param name         name of the operation in SameDiff
      * @param input        the inputs to conv1d
-     * @param weights      weights for conv1d op
+     * @param weights      weights for conv1d op - rank 3 array with values [kernelSize, inputChannels, outputChannels]
      * @param conv1DConfig the configuration
      * @return
      */
@@ -2532,9 +2532,7 @@ public class SameDiff {
      *
      * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
      *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param weights    Weights for the convolution operation. 4 dimensions.
-     *                   If layer input data is in NCHW format, weights should have format [outputChannels, inputChannels, kernelHeight, kernelWidth].
-     *                   If layer input data is in NHWC format, weight should have format [kernelHeight, kernelWidth, inputChannels, outputChannels]
+     * @param weights    Weights for the convolution operation. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, outputChannels]
      * @param config     Conv2DConfig configuration
      * @return result of conv2d op
      */
@@ -2548,9 +2546,7 @@ public class SameDiff {
      *
      * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
      *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param weights    Weights for the convolution operation. 4 dimensions.
-     *                   If layer input data is in NCHW format, weights should have format [outputChannels, inputChannels, kernelHeight, kernelWidth].
-     *                   If layer input data is in NHWC format, weight should have format [kernelHeight, kernelWidth, inputChannels, outputChannels]
+     * @param weights    Weights for the convolution operation. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, outputChannels]
      * @param bias       Optional 1D bias array with shape [outputChannels]. May be null.
      * @param config     Conv2DConfig configuration
      * @return result of conv2d op
@@ -2595,9 +2591,7 @@ public class SameDiff {
      *
      * @param layerInput   the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
      *                     (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param depthWeights depth-wise conv 2D weights. 4 dimensions.
-     *                     If layer input data is in NCHW format, weights should have format [outputChannels, inputChannels, kernelHeight, kernelWidth].
-     *                     If layer input data is in NHWC format, weight should have format [kernelHeight, kernelWidth, inputChannels, outputChannels]
+     * @param depthWeights Depth-wise conv2d weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
      * @param config       Conv2DConfig configuration
      * @return result of conv2d op
      */
@@ -2611,9 +2605,7 @@ public class SameDiff {
      *
      * @param layerInput   the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
      *                     (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param depthWeights depth-wise conv 2D weights. 4 dimensions.
-     *                     If layer input data is in NCHW format, weights should have format [outputChannels, inputChannels, kernelHeight, kernelWidth].
-     *                     If layer input data is in NHWC format, weight should have format [kernelHeight, kernelWidth, inputChannels, outputChannels]
+     * @param depthWeights Depth-wise conv2d weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
      * @param bias         Optional 1D bias array with shape [outputChannels]. May be null.
      * @param config       Conv2DConfig configuration
      * @return result of depthwise conv2d op
@@ -2663,12 +2655,9 @@ public class SameDiff {
      *
      * @param layerInput   the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
      *                     (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param depthWeights Depth weights, rank 4.
-     *                     If layer input is in NCHW format, depth weights should have format [outputChannels, depthMultiplier, kernelHeight, kernelWidth].
-     *                     If layer input is in NHWC format, depth weights should have format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
-     * @param pointWeights Point weights, rank 4.
-     *                     If layer input is in NCHW format, point weights should have format [outputChannels, inputChannels*depthMultiplier, 1, 1].
-     *                     If layer input is in NHWC format, point weights should have format [1, 1, inputChannels*depthMultiplier, outputChannels]
+     * @param depthWeights Separable conv2d depth weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
+     * @param pointWeights Point weights, rank 4 with format [1, 1, inputChannels*depthMultiplier, outputChannels]
+     *                     May be null
      * @param config       Conv2DConfig configuration
      * @return result of separable convolution 2d operation
      */
@@ -2683,12 +2672,9 @@ public class SameDiff {
      *
      * @param layerInput   the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
      *                     (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param depthWeights Depth weights, rank 4.
-     *                     If layer input is in NCHW format, depth weights should have format [outputChannels, depthMultiplier, kernelHeight, kernelWidth].
-     *                     If layer input is in NHWC format, depth weights should have format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
-     * @param pointWeights Point weights, rank 4.
-     *                     If layer input is in NCHW format, point weights should have format [outputChannels, inputChannels*depthMultiplier, 1, 1].
-     *                     If layer input is in NHWC format, point weights should have format [1, 1, inputChannels*depthMultiplier, outputChannels]
+     * @param depthWeights Separable conv2d depth weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
+     * @param pointWeights Point weights, rank 4 with format [1, 1, inputChannels*depthMultiplier, outputChannels]
+     *                     May be null
      * @param bias         Optional bias, rank 1 with shape [outputChannels]. May be null.
      * @param config       Conv2DConfig configuration
      * @return result of separable convolution 2d operation
@@ -2735,11 +2721,9 @@ public class SameDiff {
     /**
      * 2D deconvolution operation without bias
      *
-     * @param layerInput the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
-     *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param weights    Weights for the 2d deconvolution operation. 4 dimensions.
-     *                   If layer input data is in NCHW format, weights should have format [inputChannels, outputChannels, kernelHeight, kernelWidth].
-     *                   If layer input data is in NHWC format, weight should have format [kernelHeight, kernelWidth, outputChannels, inputChannels]
+     * @param layerInput     the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
+     *                       (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
+     * @param weights        Weights for the 2d deconvolution operation. 4 dimensions with format [inputChannels, outputChannels, kernelHeight, kernelWidth].
      * @param deconv2DConfig DeConv2DConfig configuration
      * @return result of deconv2d op
      */
@@ -2753,9 +2737,7 @@ public class SameDiff {
      *
      * @param layerInput     the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
      *                       (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param weights        Weights for the 2d deconvolution operation. 4 dimensions.
-     *                       If layer input data is in NCHW format, weights should have format [inputChannels, outputChannels, kernelHeight, kernelWidth].
-     *                       If layer input data is in NHWC format, weight should have format [kernelHeight, kernelWidth, outputChannels, inputChannels]
+     * @param weights        Weights for the 2d deconvolution operation. 4 dimensions with format [inputChannels, outputChannels, kernelHeight, kernelWidth].
      * @param bias           Optional 1D bias array with shape [outputChannels]. May be null.
      * @param deconv2DConfig DeConv2DConfig configuration
      * @return result of deconv2d op
@@ -2803,9 +2785,7 @@ public class SameDiff {
      * @param input        the input to average pooling 3d operation - 5d activations in NCDHW format
      *                     (shape [minibatch, channels, depth, height, width]) or NDHWC format
      *                     (shape [minibatch, depth, height, width, channels])
-     * @param weights      Weights for conv3d. Rank 5.
-     *                     If input data is in NCDHW fomat, weights should have shape [outputChannels, inputChannels, kernelDepth, kernelHeight, kernelWidth].
-     *                     If input data is in NDHWC fomat, weights should have shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
+     * @param weights      Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
      * @param conv3DConfig the configuration
      * @return Conv3d output variable
      */
@@ -2819,9 +2799,7 @@ public class SameDiff {
      * @param input        the input to average pooling 3d operation - 5d activations in NCDHW format
      *                     (shape [minibatch, channels, depth, height, width]) or NDHWC format
      *                     (shape [minibatch, depth, height, width, channels])
-     * @param weights      Weights for conv3d. Rank 5.
-     *                     If input data is in NCDHW fomat, weights should have shape [outputChannels, inputChannels, kernelDepth, kernelHeight, kernelWidth].
-     *                     If input data is in NDHWC fomat, weights should have shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
+     * @param weights      Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
      * @param bias         Optional 1D bias array with shape [outputChannels]. May be null.
      * @param conv3DConfig the configuration
      * @return Conv3d output variable
@@ -2837,9 +2815,7 @@ public class SameDiff {
      * @param input        the input to average pooling 3d operation - 5d activations in NCDHW format
      *                     (shape [minibatch, channels, depth, height, width]) or NDHWC format
      *                     (shape [minibatch, depth, height, width, channels])
-     * @param weights      Weights for conv3d. Rank 5.
-     *                     If input data is in NCDHW fomat, weights should have shape [outputChannels, inputChannels, kernelDepth, kernelHeight, kernelWidth].
-     *                     If input data is in NDHWC fomat, weights should have shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
+     * @param weights      Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
      * @param conv3DConfig the configuration
      * @return Conv3d output variable
      */
@@ -2854,9 +2830,7 @@ public class SameDiff {
      * @param input        the input to average pooling 3d operation - 5d activations in NCDHW format
      *                     (shape [minibatch, channels, depth, height, width]) or NDHWC format
      *                     (shape [minibatch, depth, height, width, channels])
-     * @param weights      Weights for conv3d. Rank 5.
-     *                     If input data is in NCDHW fomat, weights should have shape [outputChannels, inputChannels, kernelDepth, kernelHeight, kernelWidth].
-     *                     If input data is in NDHWC fomat, weights should have shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
+     * @param weights      Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
      * @param bias         Optional 1D bias array with shape [outputChannels]. May be null.
      * @param conv3DConfig the configuration
      * @return Conv3d output variable

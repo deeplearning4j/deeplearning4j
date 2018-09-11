@@ -27,10 +27,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
-import org.nd4j.imports.descriptors.properties.adapters.ConditionalFieldValueIntIndexArrayAdapter;
-import org.nd4j.imports.descriptors.properties.adapters.ConditionalFieldValueNDArrayShapeAdapter;
-import org.nd4j.imports.descriptors.properties.adapters.SizeThresholdIntArrayIntIndexAdpater;
-import org.nd4j.imports.descriptors.properties.adapters.StringEqualsAdapter;
+import org.nd4j.imports.descriptors.properties.adapters.*;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -156,10 +153,11 @@ public class DepthwiseConv2D extends DynamicCustomOp {
         val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
 
 
-        tfMappings.put("kH", new ConditionalFieldValueNDArrayShapeAdapter("NCHW", 0, 0, fields.get("dataFormat")));
-        tfMappings.put("kW", new ConditionalFieldValueNDArrayShapeAdapter("NCHW", 1, 1, fields.get("dataFormat")));
-        tfMappings.put("sH", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 2, 1, fields.get("dataFormat")));
-        tfMappings.put("sW", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 3, 2, fields.get("dataFormat")));
+        //TF uses [kH, kW, inC, outC] always for weights
+        tfMappings.put("kH", new NDArrayShapeAdapter(0));
+        tfMappings.put("kW", new NDArrayShapeAdapter(1));
+        tfMappings.put("sH", new NDArrayShapeAdapter(2));
+        tfMappings.put("sW", new NDArrayShapeAdapter(3));
         tfMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
         tfMappings.put("isNHWC", new StringEqualsAdapter("NHWC"));
 
