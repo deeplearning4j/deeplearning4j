@@ -1636,6 +1636,64 @@ public class DifferentialFunctionFactory {
         return new SegmentSumBp(sameDiff(), data, segmentIds, gradient).outputVariables();
     }
 
+
+    public SDVariable unsortedSegmentMax(SDVariable data, SDVariable segmentIds){
+        return new UnsortedSegmentMax(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable[] unsortedSegmentMaxBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+//        return new SegmentMaxBp(sameDiff(), data, segmentIds, gradient).outputVariables();
+        throw new UnsupportedOperationException();
+    }
+
+    public SDVariable unsortedSegmentMin(SDVariable data, SDVariable segmentIds){
+        return new UnsortedSegmentMin(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable[] unsortedSegmentMinBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+//        return new SegmentMinBp(sameDiff(), data, segmentIds, gradient).outputVariables();
+        throw new UnsupportedOperationException();
+    }
+
+    public SDVariable unsortedSegmentMean(SDVariable data, SDVariable segmentIds){
+        return new UnsortedSegmentMean(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable[] unsortedSegmentMeanBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+//        return new SegmentMeanBp(sameDiff(), data, segmentIds, gradient).outputVariables();
+        throw new UnsupportedOperationException();
+    }
+
+    public SDVariable unsortedSegmentProd(SDVariable data, SDVariable segmentIds){
+        return new UnsortedSegmentProd(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable[] unsortedSegmentProdBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+//        return new SegmentProdBp(sameDiff(), data, segmentIds, gradient).outputVariables();
+        throw new UnsupportedOperationException();
+    }
+
+    public SDVariable unsortedSegmentSum(SDVariable data, SDVariable segmentIds){
+        return new UnsortedSegmentSum(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable[] unsortedSegmentSumBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+//        return new UnsortedSegmentSumBp(sameDiff(), data, segmentIds, gradient).outputVariables();
+        throw new UnsupportedOperationException();
+    }
+
+    public SDVariable unsortedSegmentSqrtN(SDVariable data, SDVariable segmentIds){
+        return new UnsortedSegmentSqrtN(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable[] unsortedSegmentSqrtNBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+//        return new UnsortedSegmentSqrtN(sameDiff(), data, segmentIds).outputVariable();
+        throw new UnsupportedOperationException();
+    }
+
+
+
+
     public SDVariable dilation2D(SDVariable df, SDVariable weights, int[] strides,
                                  int[] rates, boolean isSameMode) {
         validateDifferentialFunctionsameDiff(df);
