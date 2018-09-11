@@ -99,6 +99,9 @@ public class Conv2D extends DynamicCustomOp {
 
     @Override
     public void setValueFor(Field target, Object value) {
+        if (config == null) {
+            config = Conv2DConfig.builder().build();
+        }
         config.setValueFor(target, value);
     }
 
@@ -139,8 +142,8 @@ public class Conv2D extends DynamicCustomOp {
         //TF uses [kH, kW, inC, outC] always for weights
         tfMappings.put("kH", new NDArrayShapeAdapter(0));
         tfMappings.put("kW", new NDArrayShapeAdapter(1));
-        tfMappings.put("sH", new NDArrayShapeAdapter(2));
-        tfMappings.put("sW", new NDArrayShapeAdapter(3));
+        tfMappings.put("sH", new IntArrayIntIndexAdpater(1));
+        tfMappings.put("sW", new IntArrayIntIndexAdpater(2));
         tfMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
         tfMappings.put("isNHWC", new StringEqualsAdapter("NHWC"));
 
