@@ -378,17 +378,22 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
             // if response != OK we must do something with response
             switch (status) {
-                case MAX_POSITION_EXCEEDED:
+                case MAX_POSITION_EXCEEDED: {
+                    log.warn("MaxPosition hit: [{}]", id);
+                    return;
+                }
                 case CLOSED: {
                     // TODO: here we should properly handle reconnection
-                    log.warn("Upstream connection was closed: [{}]", id);
+                    log.warn(" Connection was closed: [{}]", id);
                     return;
                 }
                 case ADMIN_ACTION: {
                         log.info("ADMIN_ACTION");
+                        return;
                     }
                 case NOT_CONNECTED: {
                         log.info("NOT_CONNECTED");
+                        return;
                     }
                 case BACK_PRESSURED: {
                     log.info("BACK_PRESSURED");
