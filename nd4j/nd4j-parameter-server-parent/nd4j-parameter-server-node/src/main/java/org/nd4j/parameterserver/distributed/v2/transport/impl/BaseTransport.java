@@ -368,7 +368,8 @@ public abstract  class BaseTransport  implements Transport {
         } else if (message instanceof INDArrayMessage) {
             // just forward message, but ONLY if it's not a Response message, since it's probably processed separately
             if (!(message instanceof ResponseMessage)) {
-                if (!historyHolder.isKnownMessageId(message.getMessageId())) {// we're not applying the same message twice
+                // we're not applying the same message twice
+                if (!historyHolder.isKnownMessageId(message.getMessageId())) {
                     forwardToParameterServer((INDArrayMessage) message);
                 }
             } else {
@@ -389,6 +390,8 @@ public abstract  class BaseTransport  implements Transport {
 
             synchronized (mesh) {
                 if (mesh.get().isKnownNode(message.getOriginatorId())) {
+                    log.warn("Got request from known node [{}]. Remapping.", message.getOriginatorId());
+
                     mesh.get().remapNodeAndDownstreams(message.getOriginatorId());
                     // we say that this model has restarted
                     response.setRestart(true);
@@ -404,6 +407,7 @@ public abstract  class BaseTransport  implements Transport {
             sendMessage(response, message.getOriginatorId());
 
             // update all other nodes with new mesh
+            // this message is called only from  spark driver context probably
             try {
                 propagateMessageDirect(new MeshUpdateMessage(mesh.get()));
             } catch (Exception e) {
@@ -478,7 +482,9 @@ public abstract  class BaseTransport  implements Transport {
         if (message instanceof BroadcastableMessage) {
             // here we should propagate message down
             try {
-                propagateBroadcastableMessage((BroadcastableMessage) message, PropagationMode.BOTH_WAYS);
+                // we propagate message ONLY if we've already received Mesh from master
+                if (numerOfNodes.get() > 0)
+                    propagateBroadcastableMessage((BroadcastableMessage) message, PropagationMode.BOTH_WAYS);
             } catch (Exception e) {
                 log.error("Wasn't able to propagate message [{}] from [{}]", message.getClass().getSimpleName(), message.getOriginatorId());
                 log.error("BroadcastableMessage propagation exception:", e);

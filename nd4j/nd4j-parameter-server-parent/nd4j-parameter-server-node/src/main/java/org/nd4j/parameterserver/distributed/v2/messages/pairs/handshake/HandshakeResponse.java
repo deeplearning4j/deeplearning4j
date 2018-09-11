@@ -38,5 +38,13 @@ public class HandshakeResponse extends BaseResponseMessage {
      */
     @Getter
     @Setter
-    @Builder.Default private boolean restart = false;
+    @Builder.Default
+    private boolean restart = false;
+
+    /**
+     * This method returns true if our node failed too many times, so it'll just enable bypass for the rest of data
+     */
+    @Getter
+    @Setter
+    private boolean dead = false;
 }

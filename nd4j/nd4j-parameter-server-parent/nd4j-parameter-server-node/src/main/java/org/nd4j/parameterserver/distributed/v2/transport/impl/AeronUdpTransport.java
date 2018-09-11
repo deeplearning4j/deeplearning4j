@@ -268,6 +268,17 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
             val v = aeron.addPublication(ipAndPort, voidConfiguration.getStreamId());
 
+            int cnt = 0;
+            while (!v.isConnected()) {
+                try {
+                    Thread.sleep(100);
+                    if (cnt ++ > 100)
+                        throw new ND4JIllegalStateException("Can't establish connection afet 10 seconds. Terminating...");
+                } catch (InterruptedException e) {
+                    //
+                }
+            }
+
             val hash = HashUtil.getLongHash(ipAndPort);
 
             val rc = RemoteConnection.builder()
