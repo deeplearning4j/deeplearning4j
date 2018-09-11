@@ -37,6 +37,7 @@
 #define MAX_DIMENSION 0x7fffffff
 #define MAX_NUM_THREADS  1024
 #define MAX_RANK 32
+#define MAX_SHAPEINFOLENGTH 2*MAX_RANK+4
 #define MAX_COORD 3
 #define PREALLOC_SIZE 33554432
 #ifdef __CUDACC__
@@ -440,7 +441,7 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD size_t shapeInfoByteLength(int rank);
 
-    ND4J_EXPORT _CUDA_HD size_t shapeInfoByteLength(Nd4jLong* shapeInfo);
+    ND4J_EXPORT _CUDA_HD size_t shapeInfoByteLength(const Nd4jLong* shapeInfo);
 
 /**
  * Returns the rank portion of
@@ -2593,7 +2594,7 @@ template <typename T>
         return (rank * 2 + 4) * sizeof(Nd4jLong);
     }
 
-    INLINEDEF _CUDA_HD size_t shapeInfoByteLength(Nd4jLong* shapeInfo) {
+    INLINEDEF _CUDA_HD size_t shapeInfoByteLength(const Nd4jLong* shapeInfo) {
         //FIXME magic numbers
         return shapeInfoByteLength((int) shapeInfo[0]);
     }
@@ -3810,8 +3811,8 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
     if(!strideDescendingCAscendingF(shapeInfo))
         return false;
 
-    Nd4jLong* defaultShapeInfo = new Nd4jLong[shape::length(shapeInfo)];
-    memcpy(defaultShapeInfo, shapeInfo, sizeof(Nd4jLong) * shape::length(shapeInfo));
+    Nd4jLong defaultShapeInfo[MAX_SHAPEINFOLENGTH];
+    memcpy(defaultShapeInfo, shapeInfo, shape::shapeInfoByteLength(shapeInfo));
     shape::updateStrides(defaultShapeInfo, shape::order(shapeInfo));
 
     bool result = true;
@@ -3820,8 +3821,7 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
             result = false;
             break;
         }
-
-    delete []defaultShapeInfo;
+ 
     return result;
 }
 
