@@ -20,6 +20,9 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * Unsorted segment mean operation
  *
@@ -27,8 +30,12 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
  */
 public class UnsortedSegmentMean extends DynamicCustomOp {
 
-    public UnsortedSegmentMean(SameDiff sameDiff, SDVariable data, SDVariable segmentIds) {
+    private int numSegments;
+
+    public UnsortedSegmentMean(SameDiff sameDiff, SDVariable data, SDVariable segmentIds, int numSegments) {
         super(null, sameDiff,  new SDVariable[] {data, segmentIds}, false);
+        this.numSegments = numSegments;
+        addIArgument(numSegments);
     }
 
     public UnsortedSegmentMean(){ }
@@ -41,6 +48,11 @@ public class UnsortedSegmentMean extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "UnsortedSegmentMean";
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> gradients){
+        return Arrays.asList(f().unsortedSegmentMeanBp(arg(0), arg(1), gradients.get(0)));
     }
 
 }

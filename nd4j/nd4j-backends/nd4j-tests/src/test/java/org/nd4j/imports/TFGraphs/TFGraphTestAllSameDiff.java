@@ -96,7 +96,7 @@ public class TFGraphTestAllSameDiff {
             "histogram_fixed_width/.*",
 
             //TODO need unsorted segment sum - then need to change libnd4j impl slightly (need to know format first)
-            "bincount/.*",
+//            "bincount/.*",
 
             //Crashing?
             "batchnorm/.*",

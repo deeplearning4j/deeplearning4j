@@ -20,6 +20,9 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * Unsorted segment min operation
  *
@@ -27,8 +30,12 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
  */
 public class UnsortedSegmentMin extends DynamicCustomOp {
 
-    public UnsortedSegmentMin(SameDiff sameDiff, SDVariable data, SDVariable segmentIds) {
+    private int numSegments;
+
+    public UnsortedSegmentMin(SameDiff sameDiff, SDVariable data, SDVariable segmentIds, int numSegments) {
         super(null, sameDiff,  new SDVariable[] {data, segmentIds}, false);
+        this.numSegments = numSegments;
+        addIArgument(numSegments);
     }
 
     public UnsortedSegmentMin(){ }
@@ -43,4 +50,8 @@ public class UnsortedSegmentMin extends DynamicCustomOp {
         return "UnsortedSegmentMin";
     }
 
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> gradients){
+        return Arrays.asList(f().unsortedSegmentMinBp(arg(0), arg(1), gradients.get(0)));
+    }
 }

@@ -4800,7 +4800,8 @@ public class SameDiff {
      * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
      * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
      * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)]<br>
-     * Note that the segment IDs must be sorted from smallest to largest segment. See {@link #unsortedSegmentMax(String, SDVariable, SDVariable)}
+     * Note that the segment IDs must be sorted from smallest to largest segment.
+     * See {@link #unsortedSegmentMax(String, SDVariable, SDVariable, int)}
      * for the same op without this sorted requirement
      *
      * @param name       Name of the output variable. May be null
@@ -4814,10 +4815,10 @@ public class SameDiff {
     }
 
     /**
-     * See {@link #unsortedSegmentMax(String, SDVariable, SDVariable)}
+     * See {@link #unsortedSegmentMax(String, SDVariable, SDVariable, int)}
      */
-    public SDVariable unsortedSegmentMax(SDVariable data, SDVariable segmentIds){
-        return unsortedSegmentMax(null, data, segmentIds);
+    public SDVariable unsortedSegmentMax(SDVariable data, SDVariable segmentIds, int numSegments){
+        return unsortedSegmentMax(null, data, segmentIds, numSegments);
     }
 
     /**
@@ -4827,13 +4828,14 @@ public class SameDiff {
      * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
      * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)]<br>
      *
-     * @param name       Name of the output variable
-     * @param data       Data (variable) to perform unsorted segment max on
-     * @param segmentIds Variable for the segment IDs
+     * @param name        Name of the output variable
+     * @param data        Data (variable) to perform unsorted segment max on
+     * @param segmentIds  Variable for the segment IDs
+     * @param numSegments Number of segments
      * @return Unsorted segment max output
      */
-    public SDVariable unsortedSegmentMax(String name, SDVariable data, SDVariable segmentIds){
-        SDVariable ret = f().unsortedSegmentMax(data, segmentIds);
+    public SDVariable unsortedSegmentMax(String name, SDVariable data, SDVariable segmentIds, int numSegments){
+        SDVariable ret = f().unsortedSegmentMax(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -4850,7 +4852,7 @@ public class SameDiff {
      * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
      * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)]<br>
      * Note that the segment IDs must be sorted from smallest to largest segment.
-     * See {@link #unsortedSegmentMin(String, SDVariable, SDVariable)} for the same op without this sorted requirement
+     * See {@link #unsortedSegmentMin(String, SDVariable, SDVariable, int)} for the same op without this sorted requirement
      *
      * @param name       Name of the output variable. May be null
      * @param data       Data to perform segment max on
@@ -4863,10 +4865,10 @@ public class SameDiff {
     }
 
     /**
-     * See {@link #unsortedSegmentMin(String, SDVariable, SDVariable)}
+     * See {@link #unsortedSegmentMin(String, SDVariable, SDVariable, int)}
      */
-    public SDVariable unsortedSegmentMin(SDVariable data, SDVariable segmentIds){
-        return unsortedSegmentMin(null, data, segmentIds);
+    public SDVariable unsortedSegmentMin(SDVariable data, SDVariable segmentIds, int numSegments){
+        return unsortedSegmentMin(null, data, segmentIds, numSegments);
     }
 
     /**
@@ -4876,13 +4878,14 @@ public class SameDiff {
      * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
      * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)]<br>
      *
-     * @param name       Name of the output variable
-     * @param data       Data (variable) to perform unsorted segment min on
-     * @param segmentIds Variable for the segment IDs
+     * @param name        Name of the output variable
+     * @param data        Data (variable) to perform unsorted segment min on
+     * @param segmentIds  Variable for the segment IDs
+     * @param numSegments Number of segments
      * @return Unsorted segment min output
      */
-    public SDVariable unsortedSegmentMin(String name, SDVariable data, SDVariable segmentIds){
-        SDVariable ret = f().unsortedSegmentMin(data, segmentIds);
+    public SDVariable unsortedSegmentMin(String name, SDVariable data, SDVariable segmentIds, int numSegments){
+        SDVariable ret = f().unsortedSegmentMin(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -4899,7 +4902,7 @@ public class SameDiff {
      * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
      * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
      * Note that the segment IDs must be sorted from smallest to largest segment.
-     * See {@link #unsortedSegmentMean(String, SDVariable, SDVariable)} for the same op without this sorted requirement
+     * See {@link #unsortedSegmentMean(String, SDVariable, SDVariable, int)} for the same op without this sorted requirement
      *
      * @param name       Name of the output variable. May be null
      * @param data       Data to perform segment max on
@@ -4912,10 +4915,10 @@ public class SameDiff {
     }
 
     /**
-     * See {@link #unsortedSegmentMean(String, SDVariable, SDVariable)}
+     * See {@link #unsortedSegmentMean(String, SDVariable, SDVariable, int)}
      */
-    public SDVariable unsortedSegmentMean(SDVariable data, SDVariable segmentIds){
-        return unsortedSegmentMean(null, data, segmentIds);
+    public SDVariable unsortedSegmentMean(SDVariable data, SDVariable segmentIds, int numSegments){
+        return unsortedSegmentMean(null, data, segmentIds, numSegments);
     }
 
     /**
@@ -4925,13 +4928,14 @@ public class SameDiff {
      * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
      * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
      *
-     * @param name       Name of the output variable
-     * @param data       Data (variable) to perform unsorted segment mean on
-     * @param segmentIds Variable for the segment IDs
+     * @param name        Name of the output variable
+     * @param data        Data (variable) to perform unsorted segment mean on
+     * @param segmentIds  Variable for the segment IDs
+     * @param numSegments Number of segments
      * @return Unsorted segment mean output
      */
-    public SDVariable unsortedSegmentMean(String name, SDVariable data, SDVariable segmentIds){
-        SDVariable ret = f().unsortedSegmentMean(data, segmentIds);
+    public SDVariable unsortedSegmentMean(String name, SDVariable data, SDVariable segmentIds, int numSegments){
+        SDVariable ret = f().unsortedSegmentMean(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -4961,10 +4965,10 @@ public class SameDiff {
     }
 
     /**
-     * See {@link #unsortedSegmentProd(String, SDVariable, SDVariable)}
+     * See {@link #unsortedSegmentProd(String, SDVariable, SDVariable, int)}
      */
-    public SDVariable unsortedSegmentProd(SDVariable data, SDVariable segmentIds){
-        return unsortedSegmentProd(null, data, segmentIds);
+    public SDVariable unsortedSegmentProd(SDVariable data, SDVariable segmentIds, int numSegments){
+        return unsortedSegmentProd(null, data, segmentIds, numSegments);
     }
 
     /**
@@ -4979,8 +4983,8 @@ public class SameDiff {
      * @param segmentIds Variable for the segment IDs
      * @return Unsorted segment product output
      */
-    public SDVariable unsortedSegmentProd(String name, SDVariable data, SDVariable segmentIds){
-        SDVariable ret = f().unsortedSegmentProd(data, segmentIds);
+    public SDVariable unsortedSegmentProd(String name, SDVariable data, SDVariable segmentIds, int numSegments){
+        SDVariable ret = f().unsortedSegmentProd(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -5010,10 +5014,10 @@ public class SameDiff {
     }
 
     /**
-     * See {@link #unsortedSegmentSum(String, SDVariable, SDVariable)}
+     * See {@link #unsortedSegmentSum(String, SDVariable, SDVariable, int)}
      */
-    public SDVariable unsortedSegmentSum(SDVariable data, SDVariable segmentIds){
-        return unsortedSegmentSum(null, data, segmentIds);
+    public SDVariable unsortedSegmentSum(SDVariable data, SDVariable segmentIds, int numSegments){
+        return unsortedSegmentSum(null, data, segmentIds, numSegments);
     }
 
     /**
@@ -5023,21 +5027,22 @@ public class SameDiff {
      * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
      * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)]<br>
      *
-     * @param name       Name of the output variable
-     * @param data       Data (variable) to perform unsorted segment sum on
-     * @param segmentIds Variable for the segment IDs
+     * @param name        Name of the output variable
+     * @param data        Data (variable) to perform unsorted segment sum on
+     * @param segmentIds  Variable for the segment IDs
+     * @param numSegments Number of segments
      * @return Unsorted segment sum output
      */
-    public SDVariable unsortedSegmentSum(String name, SDVariable data, SDVariable segmentIds){
-        SDVariable ret = f().unsortedSegmentSum(data, segmentIds);
+    public SDVariable unsortedSegmentSum(String name, SDVariable data, SDVariable segmentIds, int numSegments){
+        SDVariable ret = f().unsortedSegmentSum(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
-     * See {@link #unsortedSegmentSqrtN(String, SDVariable, SDVariable)}
+     * See {@link #unsortedSegmentSqrtN(String, SDVariable, SDVariable, int)}
      */
-    public SDVariable unsortedSegmentSqrtN(SDVariable data, SDVariable segmentIds){
-        return unsortedSegmentSqrtN(null, data, segmentIds);
+    public SDVariable unsortedSegmentSqrtN(SDVariable data, SDVariable segmentIds, int numSegments){
+        return unsortedSegmentSqrtN(null, data, segmentIds, numSegments);
     }
 
     /**
@@ -5051,8 +5056,8 @@ public class SameDiff {
      * @param segmentIds Variable for the segment IDs
      * @return Unsorted segment sqrtN output
      */
-    public SDVariable unsortedSegmentSqrtN(String name, SDVariable data, SDVariable segmentIds){
-        SDVariable ret = f().unsortedSegmentSqrtN(data, segmentIds);
+    public SDVariable unsortedSegmentSqrtN(String name, SDVariable data, SDVariable segmentIds, int numSegments){
+        SDVariable ret = f().unsortedSegmentSqrtN(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
 

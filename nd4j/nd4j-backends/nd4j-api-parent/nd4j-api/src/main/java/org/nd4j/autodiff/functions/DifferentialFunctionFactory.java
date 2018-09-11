@@ -1637,58 +1637,52 @@ public class DifferentialFunctionFactory {
     }
 
 
-    public SDVariable unsortedSegmentMax(SDVariable data, SDVariable segmentIds){
-        return new UnsortedSegmentMax(sameDiff(), data, segmentIds).outputVariable();
+    public SDVariable unsortedSegmentMax(SDVariable data, SDVariable segmentIds, int numSegments){
+        return new UnsortedSegmentMax(sameDiff(), data, segmentIds, numSegments).outputVariable();
     }
 
-    public SDVariable[] unsortedSegmentMaxBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
-//        return new SegmentMaxBp(sameDiff(), data, segmentIds, gradient).outputVariables();
-        throw new UnsupportedOperationException();
+    public SDVariable[] unsortedSegmentMaxBp(SDVariable data, SDVariable segmentIds, SDVariable gradient, int numSegments){
+        return new UnsortedSegmentMaxBp(sameDiff(), data, segmentIds, gradient, numSegments).outputVariables();
     }
 
-    public SDVariable unsortedSegmentMin(SDVariable data, SDVariable segmentIds){
-        return new UnsortedSegmentMin(sameDiff(), data, segmentIds).outputVariable();
+    public SDVariable unsortedSegmentMin(SDVariable data, SDVariable segmentIds, int numSegments){
+        return new UnsortedSegmentMin(sameDiff(), data, segmentIds, numSegments).outputVariable();
     }
 
-    public SDVariable[] unsortedSegmentMinBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
-//        return new SegmentMinBp(sameDiff(), data, segmentIds, gradient).outputVariables();
-        throw new UnsupportedOperationException();
+    public SDVariable[] unsortedSegmentMinBp(SDVariable data, SDVariable segmentIds, SDVariable gradient, int numSegments){
+        return new UnsortedSegmentMinBp(sameDiff(), data, segmentIds, gradient, numSegments).outputVariables();
     }
 
-    public SDVariable unsortedSegmentMean(SDVariable data, SDVariable segmentIds){
-        return new UnsortedSegmentMean(sameDiff(), data, segmentIds).outputVariable();
+    public SDVariable unsortedSegmentMean(SDVariable data, SDVariable segmentIds, int numSegments){
+        return new UnsortedSegmentMean(sameDiff(), data, segmentIds, numSegments).outputVariable();
     }
 
-    public SDVariable[] unsortedSegmentMeanBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
-//        return new SegmentMeanBp(sameDiff(), data, segmentIds, gradient).outputVariables();
-        throw new UnsupportedOperationException();
+    public SDVariable[] unsortedSegmentMeanBp(SDVariable data, SDVariable segmentIds, SDVariable gradient, int numSegments){
+        return new UnsortedSegmentMeanBp(sameDiff(), data, segmentIds, gradient, numSegments).outputVariables();
     }
 
-    public SDVariable unsortedSegmentProd(SDVariable data, SDVariable segmentIds){
-        return new UnsortedSegmentProd(sameDiff(), data, segmentIds).outputVariable();
+    public SDVariable unsortedSegmentProd(SDVariable data, SDVariable segmentIds, int numSegments){
+        return new UnsortedSegmentProd(sameDiff(), data, segmentIds, numSegments).outputVariable();
     }
 
-    public SDVariable[] unsortedSegmentProdBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
-//        return new SegmentProdBp(sameDiff(), data, segmentIds, gradient).outputVariables();
-        throw new UnsupportedOperationException();
+    public SDVariable[] unsortedSegmentProdBp(SDVariable data, SDVariable segmentIds, SDVariable gradient, int numSegments){
+        return new UnsortedSegmentProdBp(sameDiff(), data, segmentIds, gradient, numSegments).outputVariables();
     }
 
-    public SDVariable unsortedSegmentSum(SDVariable data, SDVariable segmentIds){
-        return new UnsortedSegmentSum(sameDiff(), data, segmentIds).outputVariable();
+    public SDVariable unsortedSegmentSum(SDVariable data, SDVariable segmentIds, int numSegments){
+        return new UnsortedSegmentSum(sameDiff(), data, segmentIds, numSegments).outputVariable();
     }
 
-    public SDVariable[] unsortedSegmentSumBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
-//        return new UnsortedSegmentSumBp(sameDiff(), data, segmentIds, gradient).outputVariables();
-        throw new UnsupportedOperationException();
+    public SDVariable[] unsortedSegmentSumBp(SDVariable data, SDVariable segmentIds, SDVariable gradient, int numSegments){
+        return new UnsortedSegmentSumBp(sameDiff(), data, segmentIds, gradient, numSegments).outputVariables();
     }
 
-    public SDVariable unsortedSegmentSqrtN(SDVariable data, SDVariable segmentIds){
-        return new UnsortedSegmentSqrtN(sameDiff(), data, segmentIds).outputVariable();
+    public SDVariable unsortedSegmentSqrtN(SDVariable data, SDVariable segmentIds, int numSegments){
+        return new UnsortedSegmentSqrtN(sameDiff(), data, segmentIds, numSegments).outputVariable();
     }
 
-    public SDVariable[] unsortedSegmentSqrtNBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
-//        return new UnsortedSegmentSqrtN(sameDiff(), data, segmentIds).outputVariable();
-        throw new UnsupportedOperationException();
+    public SDVariable[] unsortedSegmentSqrtNBp(SDVariable data, SDVariable segmentIds, SDVariable gradient, int numSegments){
+        return new UnsortedSegmentSqrtNBp(sameDiff(), data, segmentIds, gradient, numSegments).outputVariables();
     }
 
 

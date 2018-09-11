@@ -20,6 +20,9 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * Unsorted segment max operation
  *
@@ -27,8 +30,12 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
  */
 public class UnsortedSegmentMax extends DynamicCustomOp {
 
-    public UnsortedSegmentMax(SameDiff sameDiff, SDVariable data, SDVariable segmentIds) {
+    protected int numSegments;
+
+    public UnsortedSegmentMax(SameDiff sameDiff, SDVariable data, SDVariable segmentIds, int numSegments) {
         super(null, sameDiff,  new SDVariable[] {data, segmentIds}, false);
+        this.numSegments = numSegments;
+        addIArgument(numSegments);
     }
 
     public UnsortedSegmentMax(){ }
@@ -41,6 +48,11 @@ public class UnsortedSegmentMax extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "UnsortedSegmentMax";
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> gradients){
+        return Arrays.asList(f().unsortedSegmentMaxBp(arg(0), arg(1), gradients.get(0)));
     }
 
 }

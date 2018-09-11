@@ -14,44 +14,32 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.segment;
+package org.nd4j.linalg.api.ops.impl.transforms.segment.bp;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-import java.util.Arrays;
-import java.util.List;
-
 /**
- * Unsorted segment product operation
+ * Unsorted segment sqrt(n) backprop operation
  *
  * @author Alex Black
  */
-public class UnsortedSegmentProd extends DynamicCustomOp {
+public class UnsortedSegmentSqrtNBp extends DynamicCustomOp {
 
     private int numSegments;
 
-    public UnsortedSegmentProd(SameDiff sameDiff, SDVariable data, SDVariable segmentIds, int numSegments) {
-        super(null, sameDiff,  new SDVariable[] {data, segmentIds}, false);
+    public UnsortedSegmentSqrtNBp(SameDiff sameDiff, SDVariable data, SDVariable segmentIds, SDVariable gradient, int numSegments) {
+        super(null, sameDiff,  new SDVariable[] {data, segmentIds, gradient}, false);
         this.numSegments = numSegments;
         addIArgument(numSegments);
     }
 
-    public UnsortedSegmentProd(){ }
+    public UnsortedSegmentSqrtNBp(){ }
 
     @Override
     public String opName(){
-        return "unsorted_segment_prod";
+        return "unsorted_segment_sqrt_n_bp";
     }
 
-    @Override
-    public String tensorflowName() {
-        return "UnsortedSegmentProd";
-    }
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> gradients){
-        return Arrays.asList(f().unsortedSegmentProdBp(arg(0), arg(1), gradients.get(0)));
-    }
 }

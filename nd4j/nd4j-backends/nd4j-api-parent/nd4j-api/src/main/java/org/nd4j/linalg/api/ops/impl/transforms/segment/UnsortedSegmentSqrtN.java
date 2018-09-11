@@ -20,6 +20,9 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * Unsorted Sqrt(count) op
  *
@@ -27,8 +30,12 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
  */
 public class UnsortedSegmentSqrtN extends DynamicCustomOp {
 
-    public UnsortedSegmentSqrtN(SameDiff sameDiff, SDVariable data, SDVariable segmentIds) {
+    private int numSegments;
+
+    public UnsortedSegmentSqrtN(SameDiff sameDiff, SDVariable data, SDVariable segmentIds, int numSegments) {
         super(null, sameDiff,  new SDVariable[] {data, segmentIds}, false);
+        this.numSegments = numSegments;
+        addIArgument(numSegments);
     }
 
     public UnsortedSegmentSqrtN(){ }
@@ -43,4 +50,8 @@ public class UnsortedSegmentSqrtN extends DynamicCustomOp {
         return "UnsortedSegmentSqrtN";
     }
 
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> gradients){
+        return Arrays.asList(f().unsortedSegmentSqrtNBp(arg(0), arg(1), gradients.get(0)));
+    }
 }
