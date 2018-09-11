@@ -882,6 +882,16 @@ void ConvolutionUtils<T>::mkldnn_conv2d(MKLDNNStream<T> &stream, const std::vect
         auto conv_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
         auto conv_dst_md = mkldnn::memory::desc({ conv_dst_tz }, type, format);
 
+        conv_src_md.memory_format     = mkldnn_blocked;
+        conv_bias_md.memory_format    = mkldnn_blocked;
+        conv_weights_md.memory_format = mkldnn_blocked;
+        conv_dst_md.memory_format     = mkldnn_blocked;
+        
+        conv_src_md.layout_desc.blocking.strides[0]     = {input->stridesOf(0), input->stridesOf(1), input->stridesOf(2), input->stridesOf(3)};
+        conv_bias_md.layout_desc.blocking.strides[0]    = {bias->stridesOf(0), bias->stridesOf(1), bias->stridesOf(2), bias->stridesOf(3)};
+        conv_weights_md.layout_desc.blocking.strides[0] = {weights->stridesOf(0), weights->stridesOf(1), weights->stridesOf(2), weights->stridesOf(3)};
+        conv_dst_md.layout_desc.blocking.strides[0]     = {output->stridesOf(0), output->stridesOf(1), output->stridesOf(2), output->stridesOf(3)};
+
         auto conv_desc = bias != nullptr
                 ? convolution_forward::desc(prop_kind::forward,
                         convolution_direct, conv_src_md, conv_weights_md, conv_bias_md,

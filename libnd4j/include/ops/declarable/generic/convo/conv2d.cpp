@@ -64,14 +64,16 @@ CUSTOM_OP_IMPL(conv2d, 2, 1, false, 0, 9) {
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM CONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());                
 
 #ifdef HAVE_MKLDNN
-    if (shape::strideDescendingCAscendingF(input->getShapeInfo()) && shape::strideDescendingCAscendingF(weights->getShapeInfo()) && shape::strideDescendingCAscendingF(bias->getShapeInfo()) && shape::strideDescendingCAscendingF(weights->getShapeInfo()) 
-        && shape::strideDescendingCAscendingF(output->getShapeInfo()) && block.isUseMKLDNN() && MKLDNNStream<T>::isSupported()) {
+    // if (shape::areStridesDefault(input->getShapeInfo()) && shape::areStridesDefault(weights->getShapeInfo()) && shape::areStridesDefault(bias->getShapeInfo())
+    //     && shape::areStridesDefault(output->getShapeInfo()) && block.isUseMKLDNN() && MKLDNNStream<T>::isSupported()) {
+    if (block.isUseMKLDNN() && MKLDNNStream<T>::isSupported()) {
         if (block.getMKLDNNStream() == nullptr) {
             block.setMKLDNNStream(new MKLDNNStream<T>("conv2d"));
         }
         ConvolutionUtils<T>::mkldnn_conv2d(*block.getMKLDNNStream(), {input, weights, bias}, output, {kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW});
     } else {
 #endif
+        nd4j_debug("MKLDNN is not used !\n", 0);
         ConvolutionUtils<T>::conv2d({input, weights, bias}, output, {kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW});
 #ifdef HAVE_MKLDNN
     }
