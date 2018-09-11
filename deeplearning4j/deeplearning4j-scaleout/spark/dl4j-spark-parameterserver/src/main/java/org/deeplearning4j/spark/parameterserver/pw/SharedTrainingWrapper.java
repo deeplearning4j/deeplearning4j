@@ -434,7 +434,7 @@ public class SharedTrainingWrapper {
 
             isFirst.set(false);
 
-            log.debug("Master thread done...");
+            log.info("Master thread done...");
 
             INDArray updaterState = null;
             if (model instanceof ComputationGraph) {
@@ -455,7 +455,7 @@ public class SharedTrainingWrapper {
                 observer.get().waitTillDone();
                 //observer.get().wait();
 
-                log.debug("Feeder thread done...");
+                log.info("Feeder [{}] thread done...", Thread.currentThread().getName());
 
                 if(exceptionEncountered.get()){
                     //Propagate exception
