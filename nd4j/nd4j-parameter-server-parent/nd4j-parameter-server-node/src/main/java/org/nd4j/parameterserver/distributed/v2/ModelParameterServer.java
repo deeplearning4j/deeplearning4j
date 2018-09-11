@@ -160,6 +160,7 @@ public final class ModelParameterServer {
      * This method starts parameter server
      */
     public synchronized void launch() {
+        log.info("ModelParameterServer starts");
         if (launchLock.get())
             return;
 
