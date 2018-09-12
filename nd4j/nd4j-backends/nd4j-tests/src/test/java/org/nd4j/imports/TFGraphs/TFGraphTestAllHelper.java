@@ -130,6 +130,7 @@ public class TFGraphTestAllHelper {
         OpValidation.collectTensorflowImportCoverage(graph);
 
         if (!execType.equals(ExecuteWith.JUST_PRINT)) {
+            assertTrue("No predictions to validate", predictions.keySet().size() > 0);
             for (String outputNode : predictions.keySet()) {
                 INDArray nd4jPred = null;
                 INDArray tfPred = null;
@@ -162,7 +163,7 @@ public class TFGraphTestAllHelper {
                     assertTrue("Predictions do not match on " + modelName + ", node " + outputNode + " - precision " + precisionOverride, eq);
                 }
             }
-            log.info("\n\tTEST " + modelName + " PASSED...");
+            log.info("\n\tTEST {} PASSED with {} arrays compared...", modelName, predictions.keySet().size());
             log.info("\n========================================================\n");
         }
 

@@ -96,7 +96,7 @@ public class TFGraphTestAllSameDiff {
             "histogram_fixed_width/.*",
 
             //TODO need unsorted segment sum - then need to change libnd4j impl slightly (need to know format first)
-//            "bincount/.*",
+            "bincount/.*",
 
             //Crashing?
             "batchnorm/.*",
@@ -108,7 +108,10 @@ public class TFGraphTestAllSameDiff {
             "scatter_nd/.*",
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6312
-            "cnn1d_layers/channels_last_b1_k2_s1_d2_SAME",
+//            "cnn1d_layers/channels_last_b1_k2_s1_d2_SAME",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6421
+            "conv2d_transpose/.*",
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6311
             "embedding_lookup/.*",
