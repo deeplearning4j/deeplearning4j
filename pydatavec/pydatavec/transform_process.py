@@ -14,13 +14,15 @@
 # SPDX-License-Identifier: Apache-2.0
 ################################################################################
 
- 
+
 from collections import OrderedDict
 from .conditions import *
 from .schema import Schema
 
+
 def _dq(x):
     return "\"" + x.replace("\"", "\\\"") + "\""
+
 
 def _to_camel(x, first_upper=False):
     tokens = x.split('_')
@@ -29,7 +31,7 @@ def _to_camel(x, first_upper=False):
         for t in tokens:
             y += t[0].upper() + t[1:]
     else:
-        y=tokens[0]
+        y = tokens[0]
         for t in tokens[1:]:
             y += t[0].upper() + t[1:]
     return y
@@ -92,12 +94,13 @@ class TransformProcess(object):
         col_type = col_type[0].upper() + col_type[1:]
         if condition.name in ("InSet", "NotInSet"):
             code = "filter(ConditionFilter({}ColumnCondition({}, ConditionOp.{}, HashSet(Arrays.asList({})))))"
-            code  = code.format(col_type, _dq(col_name), condition.name, ','.join([_dq(x) for x in condition.set]))
+            code = code.format(col_type, _dq(col_name), condition.name, ','.join(
+                [_dq(x) for x in condition.set]))
         else:
             code = "filter(ConditionFilter({}ColumnCondition({}, ConditionOp.{}, {})"
-            code = code.format(col_type, _dq(col_name), condition.name, condition.value)
+            code = code.format(col_type, _dq(col_name),
+                               condition.name, condition.value)
         self.add_step("exec", code)
-
 
     def replace(self, column, value, condition):
         # there are 2 columns involved
@@ -110,10 +113,12 @@ class TransformProcess(object):
         column2_type = column2_type[0].upper() + column2_type[1:]
         if condition.name in ("InSet", "NotInSet"):
             code = "conditionalReplaceValueTransform({}, {}Writable({}), {}ColumnCondition({}, ConditionOp.{}, HashSet(Arrays.asList({}))))"
-            code = code.format(_dq(column), column1_type, value, column2_type, _dq(column2), condition.name, ','.join([_dq(x) for x in condition.set]))
+            code = code.format(_dq(column), column1_type, value, column2_type, _dq(
+                column2), condition.name, ','.join([_dq(x) for x in condition.set]))
         else:
             code = "conditionalReplaceValueTransform({}, {}Writable({}), {}ColumnCondition({}, ConditionOp.{}, {}))"
-            code = code.format(_dq(column), column1_type, value, column2_type, _dq(column2), condition.name, condition.value)
+            code = code.format(_dq(column), column1_type, value, column2_type, _dq(
+                column2), condition.name, condition.value)
         self.add_step("exec", code)
 
     def rename_column(self, column, new_name):
@@ -129,79 +134,101 @@ class TransformProcess(object):
 
     def string_to_time(self, column, format="YYY-MM-DD HH:mm:ss.SSS", time_zone="UTC"):
         self.final_schema.columns[column][0] = "DateTime"
-        self.add_step("exec", "stringToTimeTransform({}, {}, {})".format(_dq(column), _dq(format), "DateTimeZone." + time_zone))
+        self.add_step("exec", "stringToTimeTransform({}, {}, {})".format(
+            _dq(column), _dq(format), "DateTimeZone." + time_zone))
 
     def derive_column_from_time(self, source_column, new_column, field):
         code = 'transform(DeriveColumnsFromTimeTransformBuilder({}).addIntegerDerivedColumn({}, DateTimeFieldType.{}()).build())'
-        code = code.format(_dq(source_column), _dq(new_column), _to_camel(field))
+        code = code.format(_dq(source_column), _dq(
+            new_column), _to_camel(field))
         self.add_step("exec", code)
         self.final_schema.add_column("integer", new_column)
 
     def categorical_to_integer(self, column):
         if self.final_schema.columns[column][0] != 'categorical':
             raise Exception('Can not apply categorical_to_integer'
-            ' transform on column \"{}\" because it is not a categorcal column.'.format(column))
+                            ' transform on column \"{}\" because it is not a categorcal column.'.format(column))
         self.final_schema.columns[column][0] = 'integer'
         self.add_step('categoricalToInteger', column)
 
     def append_string(self, column, string):
         if self.final_schema.columns[column][0] != 'string':
-            raise Exception('Can not apply append_string transform to column {} because it is not a string column'.format(column))
+            raise Exception(
+                'Can not apply append_string transform to column {} because it is not a string column'.format(column))
         self.add_step('appendStringColumnTransform', column, string)
 
     def lower(self, column):
         if self.final_schema.columns[column][0] != 'string':
-            raise Exception('Can not apply lower transform to column {} because it is not a string column'.format(column))
-        self.add_step('exec', 'transform(ChangeCaseStringTransform({}, ChangeCaseStringTransformCaseType.LOWER))'.format(_dq(column)))
-        
+            raise Exception(
+                'Can not apply lower transform to column {} because it is not a string column'.format(column))
+        self.add_step(
+            'exec', 'transform(ChangeCaseStringTransform({}, ChangeCaseStringTransformCaseType.LOWER))'.format(_dq(column)))
+
     def upper(self, column):
         if self.final_schema.columns[column][0] != 'string':
-            raise Exception('Can not apply lower transform to column {} because it is not a string column'.format(column))
-        self.add_step('exec', 'transform(ChangeCaseStringTransform({}, ChangeCaseStringTransformCaseType.UPPER))'.format(_dq(column)))
+            raise Exception(
+                'Can not apply lower transform to column {} because it is not a string column'.format(column))
+        self.add_step(
+            'exec', 'transform(ChangeCaseStringTransform({}, ChangeCaseStringTransformCaseType.UPPER))'.format(_dq(column)))
 
     def concat(self, columns, new_column=None, delimiter=','):
         for column in columns:
             if self.final_schema.columns[column][0] != 'string':
-                raise Exception('Can not apply concat transform to column {} because it is not a string column'.format(column))
+                raise Exception(
+                    'Can not apply concat transform to column {} because it is not a string column'.format(column))
         if new_column is None:
             new_column = 'concat({})'.format(','.join(columns))
         if new_column in self.final_schema.columns:
-            raise Exception('Another column with name {} already exists.'.format(new_column))
+            raise Exception(
+                'Another column with name {} already exists.'.format(new_column))
         columns = [_dq(c) for c in columns]
         self.final_schema.add_string_column(new_column)
-        self.add_step('exec', 'transform(ConcatenateStringColumns({}, {}, Arrays.asList({})))'.format(_dq(new_column), _dq(delimiter), ', '.join(columns)))  
+        self.add_step('exec', 'transform(ConcatenateStringColumns({}, {}, Arrays.asList({})))'.format(
+            _dq(new_column), _dq(delimiter), ', '.join(columns)))
 
     def remove_white_spaces(self, column):
         if self.final_schema.columns[column][0] != 'string':
-            raise Exception('Can not apply remove_white_spaces transform to column {} because it is not a string column'.format(column))
-        self.add_step('exec', 'transform(RemoveWhiteSpaceTransform({}))'.format(_dq(column)))
+            raise Exception(
+                'Can not apply remove_white_spaces transform to column {} because it is not a string column'.format(column))
+        self.add_step(
+            'exec', 'transform(RemoveWhiteSpaceTransform({}))'.format(_dq(column)))
 
     def replace_empty_string(self, column, value):
         if self.final_schema.columns[column][0] != 'string':
-            raise Exception('Can not apply replace_empty_string transform to column {} because it is not a string column'.format(column))
-        self.add_step('exec', 'transform(ReplaceEmptyStringTransform({}, {}))'.format(_dq(column), _dq(value)))
- 
+            raise Exception(
+                'Can not apply replace_empty_string transform to column {} because it is not a string column'.format(column))
+        self.add_step('exec', 'transform(ReplaceEmptyStringTransform({}, {}))'.format(
+            _dq(column), _dq(value)))
+
     def replace_string(self, column, *args):
         if self.final_schema.columns[column][0] != 'string':
-            raise Exception('Can not apply replace_string transform to column {} because it is not a string column'.format(column))
+            raise Exception(
+                'Can not apply replace_string transform to column {} because it is not a string column'.format(column))
         if len(args) == 1:
             args = args[0]
-            assert type(args) is dict, 'Invalid argument. Possible signatures are replace(str, str, str) and replace(str, dict)'
+            assert type(
+                args) is dict, 'Invalid argument. Possible signatures are replace(str, str, str) and replace(str, dict)'
         elif len(args) == 2:
-            assert type(args[0]) == str and type(args[1]) == str, 'Invalid argument. Possible signatures are replace(str, str, str) and replace(str, dict)'
-            args = {args[0] : args[1]}
+            assert type(args[0]) == str and type(
+                args[1]) == str, 'Invalid argument. Possible signatures are replace(str, str, str) and replace(str, dict)'
+            args = {args[0]: args[1]}
         else:
-            raise Exception('Invalid argument. Possible signatures are replace(str, str, str) and replace(str, dict)')
-        self.add_step('exec', 'transform(ReplaceStringTransform({}, _dict_to_jmap({}, JMap)))'.format(_dq(column), str(args)))
+            raise Exception(
+                'Invalid argument. Possible signatures are replace(str, str, str) and replace(str, dict)')
+        self.add_step('exec', 'transform(ReplaceStringTransform({}, _dict_to_jmap({}, JMap)))'.format(
+            _dq(column), str(args)))
 
     def map_string(self, column, mapping):
         if self.final_schema.columns[column][0] != 'string':
-            raise Exception('Can not apply replace_string transform to column {} because it is not a string column'.format(column))
-        self.add_step('exec', 'transform(StringMapTransform({}, _dict_to_jmap({}, JMap)))'.format(_dq(column), str(mapping)))
+            raise Exception(
+                'Can not apply replace_string transform to column {} because it is not a string column'.format(column))
+        self.add_step('exec', 'transform(StringMapTransform({}, _dict_to_jmap({}, JMap)))'.format(
+            _dq(column), str(mapping)))
 
     def one_hot(self, column):
         if self.final_schema.columns[column][0] != 'categorical':
-            raise Exception('Can not apply one_hot transform to column {} because it is not a categorical column'.format(column))
+            raise Exception(
+                'Can not apply one_hot transform to column {} because it is not a categorical column'.format(column))
         categories = self.final_schema.columns[column][2:]
         new_col_names = [column + '[{}]'.format(cat) for cat in categories]
         new_schema = OrderedDict()
@@ -224,7 +251,8 @@ class TransformProcess(object):
             key = [key]
         else:
             key = list(key)
-        non_key_columns = [x for x in self.final_schema.columns if x not in key]
+        non_key_columns = [
+            x for x in self.final_schema.columns if x not in key]
         col_2_reduction = {}
         if args:
             if type(args[0]) is dict:
@@ -240,28 +268,32 @@ class TransformProcess(object):
         else:
             default = None
             col_2_reduction = kwargs
-        reductions = ['min', 'max', 'sum', 'prod', 'mean', 'std', 'uncorrected_std', 
-        'var', 'pop_var', 'count', 'range', 'count_unique','first', 'last', 
-        'append', 'prepend']
+        reductions = ['min', 'max', 'sum', 'prod', 'mean', 'std', 'uncorrected_std',
+                      'var', 'pop_var', 'count', 'range', 'count_unique', 'first', 'last',
+                      'append', 'prepend']
         if default is None:
             for k in non_key_columns:
-                assert k in col_2_reduction, "Reduction not specified for column {}.".format(k)
+                assert k in col_2_reduction, "Reduction not specified for column {}.".format(
+                    k)
         else:
-            assert default in reductions, "Invalid default reduction {}. Valid redcutions are {}.".format(default, reductions)
+            assert default in reductions, "Invalid default reduction {}. Valid redcutions are {}.".format(
+                default, reductions)
         for k, v in col_2_reduction.items():
-            assert v in reductions, "Invalid redcution {} specified for column {}. Valid reductions are {}.".format(v, k, reductions)
-        reduction_to_function = {'std': 'stddevColumns', 'uncorrected_std' : 'uncorrectedStdevColumns', 'var' : 'variance',
-        'pop_var': 'populationVariance', 'first': 'takeFirstColumns', 'last': 'takeLastColumns', 'max' : 'maxColumn'}
+            assert v in reductions, "Invalid redcution {} specified for column {}. Valid reductions are {}.".format(
+                v, k, reductions)
+        reduction_to_function = {'std': 'stddevColumns', 'uncorrected_std': 'uncorrectedStdevColumns', 'var': 'variance',
+                                 'pop_var': 'populationVariance', 'first': 'takeFirstColumns', 'last': 'takeLastColumns', 'max': 'maxColumn'}
         if default is None:
             default = col_2_reduction[col_2_reduction.keys()[0]]
-        reduction_to_op = {'std' : 'Stdev', 'uncorrected_std': 'UncorrectedStdDev', 'var': 'Variance', 'pop_var': 'PopulationVariance', 
-        'first' : 'TakeFirst', 'last': 'TakeLast'}
+        reduction_to_op = {'std': 'Stdev', 'uncorrected_std': 'UncorrectedStdDev', 'var': 'Variance', 'pop_var': 'PopulationVariance',
+                           'first': 'TakeFirst', 'last': 'TakeLast'}
         default_op = reduction_to_op.get(default, _to_camel(default, True))
         col_2_function = {}
         for k, v in col_2_reduction.items():
             f = reduction_to_function.get(v, _to_camel(v) + 'Columns')
             col_2_function[k] = f
-        code = 'reduce(ReducerBuilder(ReduceOp.{}).keyColumns({})'.format(default_op, ','.join([_dq(k) for k in key]))
+        code = 'reduce(ReducerBuilder(ReduceOp.{}).keyColumns({})'.format(
+            default_op, ','.join([_dq(k) for k in key]))
         for c, f in col_2_function.items():
             code += ".{}({})".format(f, _dq(c))
         code += '.build())'
@@ -285,9 +317,9 @@ class TransformProcess(object):
                 new_type = reduction_to_type.get(reduction, old_type)
                 new_schema[k] = [new_type, new_name]
         self.final_schema.columns = new_schema
-                
+
     def serialize(self):
-        config = {'steps' : self.steps, 'schema' : self.schema.serialize()}
+        config = {'steps': self.steps, 'schema': self.schema.serialize()}
         return config
 
     @classmethod
@@ -326,7 +358,6 @@ class TransformProcess(object):
         from .java_classes import Arrays
         from .java_classes import ReducerBuilder
         from .java_classes import ReduceOp
-
 
         jschema = self.schema.to_java()
         builder = TransformProcessBuilder(jschema)
