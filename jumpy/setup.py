@@ -38,7 +38,7 @@ setup(name='jumpy',
       url='https://github.com/deeplearning4j/deeplearning4j.git',
       license='Apache',
       setup_requires=['Cython', 'pytest-runner'],
-      install_requires=['Cython', 'pydl4j', 'numpy'],
+      install_requires=['Cython', 'requests', 'pydl4j', 'numpy'],
       extras_require={
           'tests': ['pytest',
                     'pytest-pep8',
