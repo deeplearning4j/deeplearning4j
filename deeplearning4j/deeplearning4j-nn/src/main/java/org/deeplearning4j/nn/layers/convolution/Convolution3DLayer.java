@@ -124,16 +124,21 @@ public class Convolution3DLayer extends ConvolutionLayer {
         INDArray bias;
         INDArray biasGradView = null;
 
+        //DL4J conv3d weights: val weightsShape = new long[]{outputDepth, inputDepth, kernel[0], kernel[1], kernel[2]};
+        //libnd4j conv3d weights: [kD, kH, kW, iC, oC]
+        weights = weights.permute(2, 3, 4, 1, 0);
+        INDArray opWeightGradView = weightGradView.permute(2, 3, 4, 1, 0);
+
         INDArray[] inputs;
         INDArray[] outputs;
         if (layerConfig.hasBias()) {
             biasGradView = gradientViews.get(Convolution3DParamInitializer.BIAS_KEY);
             bias = getParamWithNoise(Convolution3DParamInitializer.BIAS_KEY, true, workspaceMgr);
             inputs = new INDArray[]{input, weights, bias, delta};
-            outputs = new INDArray[]{outEpsilon, weightGradView, biasGradView};
+            outputs = new INDArray[]{outEpsilon, opWeightGradView, biasGradView};
         } else {
             inputs = new INDArray[]{input, weights, delta};
-            outputs = new INDArray[]{outEpsilon, weightGradView};
+            outputs = new INDArray[]{outEpsilon, opWeightGradView};
         }
 
         CustomOp op = DynamicCustomOp.builder("conv3dnew_bp")
@@ -245,6 +250,10 @@ public class Convolution3DLayer extends ConvolutionLayer {
                 mode == ConvolutionMode.Same ? 1 : 0,
                 isNCDHW ? 0 : 1
         };
+
+        //DL4J conv3d weights: val weightsShape = new long[]{outputDepth, inputDepth, kernel[0], kernel[1], kernel[2]};
+        //libnd4j conv3d weights: [kD, kH, kW, iC, oC]
+        weights = weights.permute(2, 3, 4, 1, 0);
 
         INDArray[] inputs;
         if (layerConfig.hasBias()) {

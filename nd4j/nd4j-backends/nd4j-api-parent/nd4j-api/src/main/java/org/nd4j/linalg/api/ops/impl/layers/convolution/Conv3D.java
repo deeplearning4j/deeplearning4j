@@ -26,10 +26,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
-import org.nd4j.imports.descriptors.properties.adapters.ConditionalFieldValueNDArrayShapeAdapter;
-import org.nd4j.imports.descriptors.properties.adapters.IntArrayIntIndexAdpater;
-import org.nd4j.imports.descriptors.properties.adapters.StringEqualsAdapter;
-import org.nd4j.imports.descriptors.properties.adapters.StringNotEqualsAdapter;
+import org.nd4j.imports.descriptors.properties.adapters.*;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -133,9 +130,10 @@ public class Conv3D extends DynamicCustomOp {
         Map<String, AttributeAdapter> tfAdapters = new LinkedHashMap<>();
         val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
 
-        tfAdapters.put("kD", new ConditionalFieldValueNDArrayShapeAdapter("NDHWC", 0, 2, fields.get("dataFormat")));
-        tfAdapters.put("kH", new ConditionalFieldValueNDArrayShapeAdapter("NDHWC", 1, 3, fields.get("dataFormat")));
-        tfAdapters.put("kW", new ConditionalFieldValueNDArrayShapeAdapter("NDHWC", 2, 4, fields.get("dataFormat")));
+        //TF uses [kD, kH, kW, iC, oC] for weights
+        tfAdapters.put("kD", new NDArrayShapeAdapter(0));
+        tfAdapters.put("kH", new NDArrayShapeAdapter(1));
+        tfAdapters.put("kW", new NDArrayShapeAdapter(2));
 
         tfAdapters.put("sD", new IntArrayIntIndexAdpater(1));
         tfAdapters.put("sH", new IntArrayIntIndexAdpater(2));

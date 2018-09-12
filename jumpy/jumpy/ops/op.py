@@ -30,6 +30,7 @@ def _is_nd4j(x):
 def _is_jumpy(x):
     return type(x) == ndarray
 
+
 '''
 Use the @op decorator over a method to automatically
 take care of nd4j<->jumpy conversions. e.g:

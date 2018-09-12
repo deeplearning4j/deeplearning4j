@@ -38,7 +38,7 @@ public:
 
 TEST_F(JavaInteropTests, TestShapeExposure1) {
     NDArray<float> input('c', {1, 2, 5, 4});
-    NDArray<float> weights('c', {3, 2, 2, 2});
+    NDArray<float> weights('c', {2, 2, 2, 3});
     NDArray<float> exp('c', {1, 3, 5, 4});
 
 
@@ -147,6 +147,8 @@ TEST_F(JavaInteropTests, TestSconv2d_1) {
     weightsD.linspace(1);
     weightsP.linspace(1);
     bias.linspace(1);
+    weightsD.permutei({2,3,1,0});
+    weightsP.permutei({2,3,1,0});
 
     NDArray<float> expOutput('c', {3, 2, 8, 8});
 
@@ -181,6 +183,7 @@ TEST_F(JavaInteropTests, TestSconv2d_2) {
 
     input.linspace(1);
     weightsD.linspace(1);
+    weightsD.permutei({2,3,1,0});    
 
     NDArray<float> expOutput('c', {3, 3, 8, 8});
 

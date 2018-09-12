@@ -33,8 +33,8 @@ namespace ops  {
 CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
 
     NDArray<T> *input        = INPUT_VARIABLE(0);                                           // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
-    NDArray<T> *weightsDepth = INPUT_VARIABLE(1);                                           // [kH, kW, iC, mC]  (NHWC) or [mC, iC, kH, kW]  (NCHW)
-    NDArray<T> *weightsPoint = nullptr;                                                     // [1, 1, iC*mC, oC] (NHWC) or [oC, iC*mC, 1, 1] (NCHW)
+    NDArray<T> *weightsDepth = INPUT_VARIABLE(1);                                           // [kH, kW, iC, mC]  always
+    NDArray<T> *weightsPoint = nullptr;                                                     // [1, 1, iC*mC, oC] always 
     NDArray<T> *bias         = nullptr;                                                     // [oC], oC = iC*mC if weightsPoint=nullptr
 
     NDArray<T> *output       = OUTPUT_VARIABLE(0);                                          // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW]  (NCHW)
@@ -73,10 +73,10 @@ CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
     ConvolutionUtils<T>::getSizesAndIndexesConv2d(isNCHW, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWmC, indWkH, indOoH);
     mC = weightsDepth->sizeAt(indWmC);                      // channels multiplier
 
-    std::string expectedWeightsDShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({mC,iC,kH,kW,  indWmC,indWiC,indWkH,indWkH+1}));
+    std::string expectedWeightsDShape = ShapeUtils<T>::shapeAsString({kH, kW, iC, mC});
     REQUIRE_TRUE(expectedWeightsDShape == ShapeUtils<T>::shapeAsString(weightsDepth), 0, " SCONV2D OP: wrong shape of weightsDepth array, expected is %s, but got %s instead !", expectedWeightsDShape.c_str(), ShapeUtils<T>::shapeAsString(weightsDepth).c_str());
     if(weightsPoint) {
-        std::string expectedWeightsPShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({oC,iC*mC,1,1,  indWmC,indWiC,indWkH,indWkH+1}));
+        std::string expectedWeightsPShape = ShapeUtils<T>::shapeAsString({1, 1, iC*mC, oC});
         REQUIRE_TRUE(expectedWeightsPShape == ShapeUtils<T>::shapeAsString(weightsPoint), 0, " SCONV2D OP: wrong shape of weightsPoint array, expected is %s, but got %s instead !", expectedWeightsPShape.c_str(), ShapeUtils<T>::shapeAsString(weightsPoint).c_str());
     }
     if (bias)
@@ -97,9 +97,9 @@ CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
 DECLARE_SHAPE_FN(sconv2d) {
 
     auto inputShapeInfo    = inputShape->at(0);         // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
-    auto weightsDShapeInfo = inputShape->at(1);         // [kH, kW, iC, mC]  (NHWC) or [mC, iC, kH, kW]  (NCHW)
-    Nd4jLong* weightsPShapeInfo = nullptr;                   // [1, 1, iC*mC, oC] (NHWC) or [oC, iC*mC, 1, 1] (NCHW)
-    Nd4jLong* biasShapeInfo     = nullptr;                   // [oC], oC = iC*mC if weightsPoint=nullptr
+    auto weightsDShapeInfo = inputShape->at(1);         // [kH, kW, iC, mC]  always
+    Nd4jLong* weightsPShapeInfo = nullptr;              // [1, 1, iC*mC, oC] always
+    Nd4jLong* biasShapeInfo     = nullptr;              // [oC], oC = iC*mC if weightsPoint=nullptr
 
     if(block.width() == 3)
         if(inputShape->at(2)[0] == 4)
@@ -130,12 +130,12 @@ DECLARE_SHAPE_FN(sconv2d) {
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
     int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // 0-NDHWC, 1-NCDHW
 
-    int indIOioC, indIiH, indWkH, indWmC, indWiC;
+    int indIOioC, indIiH, indWmC(3);
     if(!isNCHW) {
-        indIOioC = 3; indIiH = 1; indWkH = 0; indWmC = 3; indWiC = 2;
+        indIOioC = 3; indIiH = 1;
     }
     else {
-        indIOioC = 1; indIiH = 2; indWkH = 2; indWmC = 0; indWiC = 1;
+        indIOioC = 1; indIiH = 2;
     }
 
     const int bS = inputShapeInfo[1];                                               // batch size
@@ -145,10 +145,10 @@ DECLARE_SHAPE_FN(sconv2d) {
     const int mC = weightsDShapeInfo[indWmC+1];                                      // channel multiplier
     const int oC = weightsPShapeInfo ? weightsPShapeInfo[indWmC+1] : iC*mC;       // output channels (oC or iC*mC)
 
-    std::string expectedWeightsDShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({iC,mC,kH,kW,  indWiC,indWmC,indWkH,indWkH+1}));
+    std::string expectedWeightsDShape = ShapeUtils<T>::shapeAsString({kH, kW, iC, mC});
     REQUIRE_TRUE(expectedWeightsDShape == ShapeUtils<T>::shapeAsString(weightsDShapeInfo), 0, "SCONV2D OP: wrong shape of depth weights array, expected is %s, but got %s instead !", expectedWeightsDShape.c_str(), ShapeUtils<T>::shapeAsString(weightsDShapeInfo).c_str());
     if(weightsPShapeInfo) {
-        std::string expectedWeightsPShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({iC*mC,oC,1,1,  indWiC,indWmC,indWkH,indWkH+1}));
+        std::string expectedWeightsPShape = ShapeUtils<T>::shapeAsString({1, 1, iC*mC, oC});
         REQUIRE_TRUE(expectedWeightsPShape == ShapeUtils<T>::shapeAsString(weightsPShapeInfo), 0, "SCONV2D OP: wrong shape of point array, expected is %s, but got %s instead !", expectedWeightsPShape.c_str(), ShapeUtils<T>::shapeAsString(weightsPShapeInfo).c_str());
     }
     if (biasShapeInfo)
@@ -184,13 +184,13 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
 
     NDArray<T> *input        = INPUT_VARIABLE(0);                                           // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
     NDArray<T> *gradO        = INPUT_VARIABLE(1);                                           // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
-    NDArray<T> *weightsDepth = INPUT_VARIABLE(2);                                           // [kH, kW, iC, mC]  (NHWC) or [mC, iC, kH, kW]  (NCHW)
-    NDArray<T> *weightsPoint = nullptr;                                                     // [1, 1, iC*mC, oC] (NHWC) or [oC, iC*mC, 1, 1] (NCHW)
+    NDArray<T> *weightsDepth = INPUT_VARIABLE(2);                                           // [kH, kW, iC, mC] always
+    NDArray<T> *weightsPoint = nullptr;                                                     // [1, 1, iC*mC, oC] always
     NDArray<T> *bias         = nullptr;                                                     // [oC], oC = iC*mC if weightsPoint=nullptr
 
     NDArray<T> *gradI  = OUTPUT_VARIABLE(0);                                                // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
-    NDArray<T> *gradWD = OUTPUT_VARIABLE(1);                                                // [kH, kW, iC, mC]  (NHWC) or [mC, iC, kH, kW] (NCHW)
-    NDArray<T> *gradWP = nullptr;                                                           // [1, 1, iC*mC, oC] (NHWC) or [oC, iC*mC, 1, 1] (NCHW)
+    NDArray<T> *gradWD = OUTPUT_VARIABLE(1);                                                // [kH, kW, iC, mC] always
+    NDArray<T> *gradWP = nullptr;                                                           // [1, 1, iC*mC, oC] always
     NDArray<T> *gradB  = nullptr;                                                           // [oC]
 
     if(block.width() == 4) {
@@ -239,11 +239,11 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
     ConvolutionUtils<T>::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWmC, indWkH, indOoH);
     mC = weightsDepth->sizeAt(indWmC);                      // channels multiplier
 
-    std::string expectedWeightsDShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({mC,iC,kH,kW,  indWmC,indWiC,indWkH,indWkH+1}));
+    std::string expectedWeightsDShape = ShapeUtils<T>::shapeAsString({kH, kW, iC, mC});
     REQUIRE_TRUE(expectedWeightsDShape == ShapeUtils<T>::shapeAsString(weightsDepth), 0, " SCONV2D_BP OP: wrong shape of weightsDepth array, expected is %s, but got %s instead !", expectedWeightsDShape.c_str(), ShapeUtils<T>::shapeAsString(weightsDepth).c_str());
     REQUIRE_TRUE(expectedWeightsDShape == ShapeUtils<T>::shapeAsString(gradWD),       0, " SCONV2D_BP OP: wrong shape of gradWD array, expected is %s, but got %s instead !", expectedWeightsDShape.c_str(), ShapeUtils<T>::shapeAsString(gradWD).c_str());
     if(weightsPoint) {
-        std::string expectedWeightsPShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({oC,iC*mC,1,1,  indWmC,indWiC,indWkH,indWkH+1}));
+        std::string expectedWeightsPShape = ShapeUtils<T>::shapeAsString({1, 1, iC*mC, oC});
         REQUIRE_TRUE(expectedWeightsPShape == ShapeUtils<T>::shapeAsString(weightsPoint), 0, " SCONV2D_BP OP: wrong shape of weightsPoint array, expected is %s, but got %s instead !", expectedWeightsPShape.c_str(), ShapeUtils<T>::shapeAsString(weightsPoint).c_str());
         REQUIRE_TRUE(expectedWeightsPShape == ShapeUtils<T>::shapeAsString(gradWP),       0, " SCONV2D_BP OP: wrong shape of gradWP array, expected is %s, but got %s instead !", expectedWeightsPShape.c_str(), ShapeUtils<T>::shapeAsString(gradWP).c_str());
     }
@@ -290,9 +290,9 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
 
     auto inputShapeInfo    = inputShape->at(0);                 // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
     auto gradOShapeInfo    = inputShape->at(1);                 // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
-    auto weightsDShapeInfo = inputShape->at(2);                 // [kH, kW, iC, mC]  (NHWC) or [mC, iC, kH, kW]  (NCHW)
-    Nd4jLong* weightsPShapeInfo = nullptr;                           // [1, 1, iC*mC, oC] (NHWC) or [oC, iC*mC, 1, 1] (NCHW)
-    Nd4jLong* biasShapeInfo     = nullptr;                           // [oC], oC = iC*mC if weightsPoint=nullptr
+    auto weightsDShapeInfo = inputShape->at(2);                 // [kH, kW, iC, mC]  always
+    Nd4jLong* weightsPShapeInfo = nullptr;                      // [1, 1, iC*mC, oC] always
+    Nd4jLong* biasShapeInfo     = nullptr;                      // [oC], oC = iC*mC if weightsPoint=nullptr
 
     if(block.width() == 4) {
         if(inputShape->at(3)[0] == 4)
@@ -325,12 +325,12 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
     int isNCHW     = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;       // 1-NCHW,  0-NHWC
 
-    int indIOioC, indIiH, indWkH, indWmC, indWiC;
+    int indIOioC, indIiH, indWmC(3);
     if(!isNCHW) {
-        indIOioC = 3; indIiH = 1; indWkH = 0; indWmC = 3; indWiC = 2;
+        indIOioC = 3; indIiH = 1;
     }
     else {
-        indIOioC = 1; indIiH = 2; indWkH = 2; indWmC = 0; indWiC = 1;
+        indIOioC = 1; indIiH = 2;
     }
 
     const int bS = inputShapeInfo[1];                                               // batch size
@@ -345,10 +345,10 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
 
     std::string expectedGradOShapeInfo = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({bS,oC,trueoH,trueoW,  0,indIOioC,indIiH,indIiH+1}));
     REQUIRE_TRUE(expectedGradOShapeInfo == ShapeUtils<T>::shapeAsString(gradOShapeInfo), 0, "SCONV2D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShapeInfo.c_str(), ShapeUtils<T>::shapeAsString(gradOShapeInfo).c_str());
-    std::string expectedWeightsDShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({iC,mC,kH,kW,  indWiC,indWmC,indWkH,indWkH+1}));
+    std::string expectedWeightsDShape = ShapeUtils<T>::shapeAsString({kH, kW, iC, mC});
     REQUIRE_TRUE(expectedWeightsDShape == ShapeUtils<T>::shapeAsString(weightsDShapeInfo), 0, "SCONV2D_BP OP: wrong shape of depth weights array, expected is %s, but got %s instead !", expectedWeightsDShape.c_str(), ShapeUtils<T>::shapeAsString(weightsDShapeInfo).c_str());
     if(weightsPShapeInfo) {
-        std::string expectedWeightsPShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({iC*mC,oC,1,1,  indWiC,indWmC,indWkH,indWkH+1}));
+        std::string expectedWeightsPShape = ShapeUtils<T>::shapeAsString({1, 1, iC*mC, oC});
         REQUIRE_TRUE(expectedWeightsPShape == ShapeUtils<T>::shapeAsString(weightsPShapeInfo), 0, "SCONV2D_BP OP: wrong shape of point array, expected is %s, but got %s instead !", expectedWeightsPShape.c_str(), ShapeUtils<T>::shapeAsString(weightsPShapeInfo).c_str());
     }
     if (biasShapeInfo)

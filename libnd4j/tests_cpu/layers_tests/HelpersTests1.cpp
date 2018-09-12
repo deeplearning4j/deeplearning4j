@@ -1809,6 +1809,7 @@ TEST_F(HelpersTests1, checkGrad_test2) {
 
     x.linspace(1);
     weights.linspace(0.1, 0.1);    
+    weights.permutei({2,3,1,0});
 
     const OpArgsHolder<double> argsHolderFF({&x, &weights},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
     const OpArgsHolder<double> argsHolderBP({&x, &weights, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
@@ -1832,6 +1833,7 @@ TEST_F(HelpersTests1, checkGrad_test3) {
     x.linspace(1);
     weights.linspace(0.1, 0.1);    
     bias = 0.5;
+    weights.permutei({2,3,1,0});
 
     const OpArgsHolder<double> argsHolderFF({&x, &weights, &bias},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
     const OpArgsHolder<double> argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
@@ -1855,6 +1857,7 @@ TEST_F(HelpersTests1, checkGrad_test4) {
     x.linspace(1);
     weights.linspace(0.1, 0.1);    
     bias = 0.5;
+    weights.permutei({2,3,1,0});
 
     const OpArgsHolder<double> argsHolderFF({&x, &weights, &bias},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
     const OpArgsHolder<double> argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
@@ -1878,6 +1881,7 @@ TEST_F(HelpersTests1, checkGrad_test5) {
     x.linspace(1);
     weights.linspace(0.1, 0.1);    
     bias = 0.5;
+    weights.permutei({2,3,1,0});
 
     const OpArgsHolder<double> argsHolderFF({&x, &weights, &bias},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
     const OpArgsHolder<double> argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
@@ -1901,6 +1905,7 @@ TEST_F(HelpersTests1, checkGrad_test6) {
     x.linspace(1);
     weights.linspace(0.1, 0.1);    
     bias = 0.5;
+    weights.permutei({2,3,1,0});
 
     const OpArgsHolder<double> argsHolderFF({&x, &weights, &bias},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
     const OpArgsHolder<double> argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
