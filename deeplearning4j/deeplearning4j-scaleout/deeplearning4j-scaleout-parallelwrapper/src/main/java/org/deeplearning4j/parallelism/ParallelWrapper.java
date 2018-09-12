@@ -543,6 +543,7 @@ public class ParallelWrapper implements AutoCloseable {
                 val params = modelParamsSupplier.get();
                 if (params != null) {
                     if (zoo != null) {
+                        log.info("Updating model parameters...");
                         for (val z:zoo) {
                             z.updateModelParams(params);
                         }
@@ -554,6 +555,7 @@ public class ParallelWrapper implements AutoCloseable {
                 val params = updaterParamsSupplier.get();
                 if (params != null) {
                     if (zoo != null) {
+                        log.info("Updating updater parameters...");
                         for (val z:zoo) {
                             z.updateUpdaterParams(params);
                         }
