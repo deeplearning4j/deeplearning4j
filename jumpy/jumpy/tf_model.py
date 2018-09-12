@@ -17,6 +17,7 @@
 from .java_classes import TFGraphMapper, Nd4j, NDArrayIndex
 from .ndarray import array
 
+
 class TFModel(object):
     def __init__(self, filepath):
         self.sd = TFGraphMapper.getInstance().importGraph(filepath)
