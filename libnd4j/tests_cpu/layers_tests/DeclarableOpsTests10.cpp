@@ -1174,6 +1174,7 @@ TEST_F(DeclarableOpsTests10, deconv3d_test3) {
                                                     8.1 , 16.5 , 16.5 ,  8.4,16.8 , 34.2 , 34.2 , 17.4,16.8 , 34.2 , 34.2 , 17.4, 8.7 , 17.7 , 17.7 ,  9. , 4.35,  8.85,  8.85,  4.5, 9.  , 18.3 , 18.3 ,  9.3, 9.  , 18.3 , 18.3 ,  9.3, 4.65,  9.45,  9.45,  4.8});
     input = 0.5;
     weights.linspace(0.1, 0.1);
+    weights.permutei({2, 3, 4, 1, 0});
 
     nd4j::ops::deconv3d<double> op;
     ResultSet<double>* results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
@@ -1200,6 +1201,7 @@ TEST_F(DeclarableOpsTests10, deconv3d_test4) {
                                                     24.6, 24.6,24.6, 24.6,34.2, 34.2,34.2, 34.2,34.2, 34.2,34.2, 34.2});
     input = 0.5;
     weights.linspace(0.1, 0.1);
+    weights.permutei({2, 3, 4, 1, 0});
 
     nd4j::ops::deconv3d<double> op;
     ResultSet<double>* results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
@@ -1282,6 +1284,7 @@ TEST_F(DeclarableOpsTests10, deconv3d_bp_test3) {
     input = 0.5;
     weights.linspace(0.1, 0.1);
     gradO.linspace(0.5);
+    weights.permutei({2, 3, 4, 1, 0});
 
     const OpArgsHolder<double> argsHolderFF({&input, &weights},         {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
     const OpArgsHolder<double> argsHolderBP({&input, &weights, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
@@ -1309,6 +1312,7 @@ TEST_F(DeclarableOpsTests10, deconv3d_bp_test4) {
     input = 0.5;
     weights.linspace(0.1, 0.1);
     gradO.linspace(0.5);
+    weights.permutei({2, 3, 4, 1, 0});
 
     const OpArgsHolder<double> argsHolderFF({&input, &weights},         {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
     const OpArgsHolder<double> argsHolderBP({&input, &weights, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});

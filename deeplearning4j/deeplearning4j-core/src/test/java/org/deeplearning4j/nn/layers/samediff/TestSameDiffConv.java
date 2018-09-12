@@ -195,10 +195,20 @@ public class TestSameDiffConv extends BaseDL4JTest {
                                             MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
                                             net2.init();
 
-                                            //Check params:
+                                            //Check params: note that samediff/libnd4j conv params are [kH, kW, iC, oC]
+                                            //DL4J are [nOut, nIn, kH, kW]
                                             Map<String, INDArray> params1 = net.paramTable();
                                             Map<String, INDArray> params2 = net2.paramTable();
-                                            assertEquals(msg, params2, params1);
+                                            for(Map.Entry<String,INDArray> e : params1.entrySet()){
+                                                if(e.getKey().endsWith("_W")){
+                                                    INDArray p1 = e.getValue();
+                                                    INDArray p2 = params2.get(e.getKey());
+                                                    p2 = p2.permute(2, 3, 1, 0);
+                                                    p1.assign(p2);
+                                                } else {
+                                                    assertEquals(params2.get(e.getKey()), e.getValue());
+                                                }
+                                            }
 
                                             INDArray in = Nd4j.rand(new int[]{minibatch, nIn, imgH, imgW});
                                             INDArray out = net.output(in);

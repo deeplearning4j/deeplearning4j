@@ -114,8 +114,8 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         }
 
         INDArray biasGradView = gradientViews.get(SeparableConvolutionParamInitializer.BIAS_KEY);
-        INDArray depthWiseweightGradView = gradientViews.get(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY);
-        INDArray pointWiseweightGradView = gradientViews.get(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY);
+        INDArray depthWiseWeightGradView = gradientViews.get(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY);
+        INDArray pointWiseWeightGradView = gradientViews.get(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY);
 
         INDArray outEpsilon = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
 
@@ -131,6 +131,13 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         Pair<INDArray, INDArray> p = preOutput4d(true, true, workspaceMgr);
         delta = afn.backprop(p.getFirst(), epsilon).getFirst();
 
+        //dl4j weights: depth [depthMultiplier, nIn, kH, kW], point [nOut, nIn * depthMultiplier, 1, 1]
+        //libnd4j weights: depth [kH, kW, iC, mC], point [1, 1, iC*mC, oC]
+        depthWiseWeights = depthWiseWeights.permute(2, 3, 1, 0);
+        pointWiseWeights = pointWiseWeights.permute(2, 3, 1, 0);
+        INDArray opDepthWiseWeightGradView = depthWiseWeightGradView.permute(2, 3, 1, 0);
+        INDArray opPointWiseWeightGradView = pointWiseWeightGradView.permute(2, 3, 1, 0);
+
         CustomOp op;
         if(layerConf().hasBias()){
             bias = getParamWithNoise(SeparableConvolutionParamInitializer.BIAS_KEY, true, workspaceMgr);
@@ -138,14 +145,14 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
             op = DynamicCustomOp.builder("sconv2d_bp")
                     .addInputs(input, delta, depthWiseWeights, pointWiseWeights, bias)
                     .addIntegerArguments(args)
-                    .addOutputs(outEpsilon, depthWiseweightGradView, pointWiseweightGradView, biasGradView)
+                    .addOutputs(outEpsilon, opDepthWiseWeightGradView, opPointWiseWeightGradView, biasGradView)
                     .callInplace(false)
                     .build();
         } else {
             op = DynamicCustomOp.builder("sconv2d_bp")
                     .addInputs(input, delta, depthWiseWeights, pointWiseWeights)
                     .addIntegerArguments(args)
-                    .addOutputs(outEpsilon, depthWiseweightGradView, pointWiseweightGradView)
+                    .addOutputs(outEpsilon, opDepthWiseWeightGradView, opPointWiseWeightGradView)
                     .callInplace(false)
                     .build();
         }
@@ -155,8 +162,8 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         if(layerConf().hasBias()){
             retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, biasGradView);
         }
-        retGradient.setGradientFor(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY, depthWiseweightGradView, 'c');
-        retGradient.setGradientFor(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY, pointWiseweightGradView, 'c');
+        retGradient.setGradientFor(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY, depthWiseWeightGradView, 'c');
+        retGradient.setGradientFor(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY, pointWiseWeightGradView, 'c');
 
         weightNoiseParams.clear();
 
@@ -233,6 +240,11 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
                 kH, kW, strides[0], strides[1],
                 pad[0], pad[1], dilation[0], dilation[1], sameMode
         };
+
+        //dl4j weights: depth [depthMultiplier, nIn, kH, kW], point [nOut, nIn * depthMultiplier, 1, 1]
+        //libnd4j weights: depth [kH, kW, iC, mC], point [1, 1, iC*mC, oC]
+        depthWiseWeights = depthWiseWeights.permute(2, 3, 1, 0);
+        pointWiseWeights = pointWiseWeights.permute(2, 3, 1, 0);
 
         INDArray[] opInputs;
         if (layerConf().hasBias()) {
