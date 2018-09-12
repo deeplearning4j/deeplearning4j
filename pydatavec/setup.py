@@ -32,8 +32,8 @@ setup(name='pydatavec',
           'Operating System :: OS Independent',
           'Programming Language :: Python',
           'Programming Language :: Python :: 2',
-          'Programming Language :: Python :: 3'
-          'Topic :: Software Development :: Libraries',
+          'Programming Language :: Python :: 3',
+          'Topic :: Software Development :: Libraries'
       ],
       keywords='python java datavec etl deeplearning4j',
       url='https://github.com/deeplearning4j/deeplearning4j.git',
