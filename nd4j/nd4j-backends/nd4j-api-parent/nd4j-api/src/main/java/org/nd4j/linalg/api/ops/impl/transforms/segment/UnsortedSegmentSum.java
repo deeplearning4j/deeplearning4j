@@ -52,7 +52,7 @@ public class UnsortedSegmentSum extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients){
-        return Arrays.asList(f().unsortedSegmentSumBp(arg(0), arg(1), gradients.get(0)));
+        return Arrays.asList(f().unsortedSegmentSumBp(arg(0), arg(1), gradients.get(0), numSegments));
     }
 
 }

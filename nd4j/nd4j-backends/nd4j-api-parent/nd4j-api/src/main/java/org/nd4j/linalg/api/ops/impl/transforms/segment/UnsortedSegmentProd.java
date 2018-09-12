@@ -52,6 +52,6 @@ public class UnsortedSegmentProd extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients){
-        return Arrays.asList(f().unsortedSegmentProdBp(arg(0), arg(1), gradients.get(0)));
+        return Arrays.asList(f().unsortedSegmentProdBp(arg(0), arg(1), gradients.get(0), numSegments));
     }
 }
