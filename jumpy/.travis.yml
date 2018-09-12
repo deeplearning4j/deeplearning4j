@@ -1,0 +1,25 @@
+sudo: required
+dist: trusty
+language: python
+python:
+  - "2.7"
+  - "3.6"
+before_install:
+  - sudo apt-get install -y python-dev python-pip python-virtualenv pkg-config
+install:
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+    else
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    fi
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - travis_retry conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION nose
+  - source activate test-environment
+  - pip install Cython --install-option="--no-cython-compile"
+  - pip install -e .[tests]
+script:  py.test --pep8 -m pep8 
