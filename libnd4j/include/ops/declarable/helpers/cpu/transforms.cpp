@@ -263,7 +263,7 @@ void pad(const int mode, const NDArray<T>& input, const NDArray<T>& paddings, ND
         startR = mode == 1 ? numLeft+inDimSize-2 : numLeft+inDimSize-1;      // REFLECT or SYMMETRIC
         
         numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(output.getShapeInfo(), dimsToExclude);
-
+// #pragma omp parallel for schedule(guided)
         for(Nd4jLong j = 0; j < numOfSubArrs; ++j) {
 
             NDArray<T> outSubArr = output(j, dimsToExclude);
