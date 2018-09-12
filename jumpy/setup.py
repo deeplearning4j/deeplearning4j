@@ -31,7 +31,7 @@ setup(name='jumpy',
           'Operating System :: OS Independent',
           'Programming Language :: Python',
           'Programming Language :: Python :: 2',
-          'Programming Language :: Python :: 3'
+          'Programming Language :: Python :: 3',
           'Topic :: Software Development :: Libraries',
       ],
       keywords='numpy jumpy java nd4j deeplearning4j',
