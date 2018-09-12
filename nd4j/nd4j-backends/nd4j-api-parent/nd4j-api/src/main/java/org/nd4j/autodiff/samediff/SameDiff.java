@@ -11528,6 +11528,14 @@ public class SameDiff {
                     if (allSeen){
                         newMap.put(e.getKey(), e.getValue());
                         anySeen = true;
+                        iterator.remove();
+                        SDVariable[] outputVars = e.getValue().outputVariables();
+//                        String[] outputs = outgoingArgsReverse.get(e.getKey());
+//                        Collections.addAll(seen, outputs);
+                        for(SDVariable s : outputVars){
+                            seen.add(s.getVarName());
+                        }
+                        break;  //Restart loop over remaining queue elements
                     }
                 }
 

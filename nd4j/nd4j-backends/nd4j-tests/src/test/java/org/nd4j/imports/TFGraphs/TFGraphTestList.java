@@ -43,7 +43,7 @@ import java.util.Map;
 @Ignore
 public class TFGraphTestList {
     public static String[] modelNames = new String[]{
-            "resnetv2"
+            "svd/rank2_3,3_noFull_uv"
 
     };
 
