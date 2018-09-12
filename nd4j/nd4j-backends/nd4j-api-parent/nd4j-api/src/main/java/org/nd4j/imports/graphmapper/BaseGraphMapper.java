@@ -247,6 +247,9 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
                 mapNodeType(tfNode,importState);
         }
 
+        //We aren't guaranteed to have ops imported in the order that they can be executed, so check + fix that
+        diff.validateExecutionOrder();
+
         return diff;
     }
 
