@@ -436,9 +436,10 @@ public abstract  class BaseTransport  implements Transport {
 
             // optionally calling out callback, which will happen approximately 100% of time
             if (response.isRestart()) {
-                if (restartCallback != null)
+                log.info("Processing restart response...");
+                if (restartCallback != null) {
                     restartCallback.call(response);
-                else
+                } else
                     log.warn("Got restart message from master, but there's no defined RestartCallback");
             }
 

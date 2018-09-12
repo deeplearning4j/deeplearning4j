@@ -136,6 +136,7 @@ public final class ModelParameterServer {
      * @param s
      */
     public void addModelParamsSubscriber(@NonNull Subscriber<INDArray> s) {
+        log.info("Adding ModelParamsSubscriber...");
         modelParamsSubsribers.add(s);
     }
 
@@ -169,6 +170,7 @@ public final class ModelParameterServer {
             public void call(HandshakeResponse response) {
                 // upon restart command we'll request current parameters from the current upstream (without any propagation
                 try {
+                    log.info("Restart callback started...");
                     val msg = new ModelParametersRequest();
                     val rootId = transport.getRootId();
                     ModelParametersMessage modelParams = transport.sendMessageBlocking(msg, rootId);
