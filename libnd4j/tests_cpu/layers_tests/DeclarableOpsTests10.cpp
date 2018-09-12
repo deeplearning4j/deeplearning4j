@@ -1324,3 +1324,52 @@ TEST_F(DeclarableOpsTests10, deconv3d_bp_test4) {
 
     ASSERT_TRUE(isGradCorrect);
 }
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, pad_tests10) {
+
+    NDArray<float> input   ('c', {2,3});
+    NDArray<float> paddings('c', {2,2}, {0,0, 0,1});
+    NDArray<float> expected('c', {2,4}, {1.f,1.f,1.f,1.f,1.f,1.f,1.f,1.f});
+
+    input = 1.f;
+
+    nd4j::ops::pad<float> op;
+    auto results = op.execute({&input, &paddings}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);    
+    result->printIndexedBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+// ////////////////////////////////////////////////////////////////////
+// TEST_F(DeclarableOpsTests10, pad_tests11) {
+
+//     NDArray<float> input   ('c', {2,3,4,5});
+//     NDArray<float> paddings('c', {4,2}, {0,0, 0,1, 0,1, 0,0});
+//     NDArray<float> expected('c', {2,4,5,5}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,0.,
+//                                              1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,
+//                                              1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,0.,
+//                                              1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.});
+
+//     nd4j::ops::pad<float> op;
+//     auto results = op.execute({&input, &paddings}, {}, {0});
+
+//     ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+//     NDArray<float>* result = results->at(0);    
+//     // result->printIndexedBuffer();
+
+//     ASSERT_TRUE(expected.isSameShapeStrict(result));
+//     ASSERT_TRUE(expected.equalsTo(result));
+
+//     delete results;
+// }
+
+
