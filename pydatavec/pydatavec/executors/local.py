@@ -41,11 +41,14 @@ class Writable(object):
         self.save_to_csv(path)
 
     def __iter__(self):
-        def j2pylist(x):
-            n = x.size()
-            return [x.get(i) for i in range(n)]
-        ls = [j2pylist(x) for x in j2pylist(self.j_w)]
-        return ls
+        rows = []
+        nr = self.j_w.size()
+        nc = self.j_w.get(0).size() if nr else 0
+        for i in range(nr):
+            row = self.j_w.get(i)
+            cols = [row.get(j).toString() for j in range(nc)]
+            rows.append(cols)
+        return iter(rows)
 
     def iter(self):
         return self.__iter__()
