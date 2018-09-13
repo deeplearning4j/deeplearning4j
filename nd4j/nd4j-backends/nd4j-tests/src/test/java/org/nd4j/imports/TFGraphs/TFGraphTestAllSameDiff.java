@@ -145,26 +145,17 @@ public class TFGraphTestAllSameDiff {
             // this test with a set of more thorough/isolated strided slice tests
             "g_07",
 
-
-
-            //TEMPORARY ignores for new tests before merging PR with fixes
-            // https://github.com/deeplearning4j/deeplearning4j/pull/6373
-            "avg_pooling1d/.*",
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6435
             "avg_pooling3d/.*",
-            "batchnorm.*",
-            "cnn1d_layers/.*",
-            "cnn1d_nn/.*",
-            "cnn2d_layers/.*",
-            "cnn2d_nn/.*",
-            "cnn3d_layers/.*",
-            "cnn3d_nn/.*",
-            "conv2d_transpose/.*",
-            "sepconv2d_layers/.*",
-            "losses/hinge.*",
-            "max_pooling1d/.*",
-            "max_pooling3d/.*",
-            "svd.*",
-            "unsorted_segment_sqrt.*"
+
+            //These have a random component so can't be validated using simple .equals... should still be compared, however
+            "alpha_dropout/.*",
+            "layers_dropout/.*",
+
+            //These absurdly slow:
+            "simplewhile.*",
+
+            //New failures:
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 
