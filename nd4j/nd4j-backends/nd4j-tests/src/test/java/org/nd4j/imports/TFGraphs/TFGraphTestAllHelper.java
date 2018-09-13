@@ -102,12 +102,6 @@ public class TFGraphTestAllHelper {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
 
-    //TODO: Later, we can add this as a param so we can test different graphs in samediff and not samediff
-//    public static String COMMON_BASE_DIR = "tf_graphs/examples";
-//    public static final String COMMON_BASE_DIR = "tf_graphs/zoo_models";
-//    public static final String SAMEDIFF_DEFAULT_BASE_DIR = COMMON_BASE_DIR;
-//    public static final String LIBND4J_DEFAULT_BASE_DIR = COMMON_BASE_DIR;
-
     private static ExecutorConfiguration configuration = ExecutorConfiguration.builder()
             .executionMode(ExecutionMode.SEQUENTIAL)
             .profilingMode(OpExecutioner.ProfilingMode.DISABLED)
@@ -187,7 +181,9 @@ public class TFGraphTestAllHelper {
         OpValidation.collectTensorflowImportCoverage(graph);
 
         if (!execType.equals(ExecuteWith.JUST_PRINT)) {
-            for (String varName : graph.variableMap().keySet()) {
+            int count = 0;
+            List<String> varNames = new ArrayList<>(graph.variableMap().keySet());
+            for (String varName : varNames) {
                 if (!inputs.containsKey(varName)) { //avoiding placeholders
                     INDArray tfValue = intermediateVars(modelName, baseDir, varName);
                     if (tfValue == null) {
@@ -196,14 +192,17 @@ public class TFGraphTestAllHelper {
                     if (skipNode(modelName, varName)) {
                         log.info("\n\tFORCING no check on " + varName);
                     } else {
-                        assertEquals("Shape not equal on node " + varName, ArrayUtils.toString(tfValue.shape()), ArrayUtils.toString(graph.getVariable(varName).getShape()));
+                        assertArrayEquals("Shape not equal on node " + varName, tfValue.shape(), graph.getVariable(varName).getShape());
                         assertEquals("Value not equal on node " + varName, tfValue, graph.getVariable(varName).getArr());
                         log.info("\n\tShapes equal for " + varName);
                         log.info("\n\tValues equal for " + varName);
+                        count++;
                     }
 
                 }
             }
+
+            assertTrue("No intermediate variables were checked", count > 0);
         }
 
         Nd4j.EPS_THRESHOLD = 1e-5;
@@ -263,6 +262,13 @@ public class TFGraphTestAllHelper {
         return readVars(modelName, base_dir, "**.prediction", true);
     }
 
+    protected static Map<String, INDArray> inbetweenVars(String modelName, String base_dir) throws IOException {
+        return readVars(modelName, base_dir, "**.prediction_inbw", true);
+    }
+
+
+    //return readVars(modelName, base_dir, "**.prediction_inbw", true);
+
     /**
      * Possible for a single node to give multiple outputs
      *
@@ -316,7 +322,6 @@ public class TFGraphTestAllHelper {
             LinkedList<File> queue = new LinkedList<>();
             queue.add(baseDir);
 
-            List<Pair<Resource,Resource>> allResources = new ArrayList<>();
             while(!queue.isEmpty()){
                 File subdir = queue.remove();
                 File[] files = subdir.listFiles();
@@ -416,6 +421,7 @@ public class TFGraphTestAllHelper {
             varName = varName.replaceAll("____","/");
             varName = varName.replaceAll(".placeholder.shape","");
             varName = varName.replaceAll(".prediction.shape","");
+            varName = varName.replaceAll(".prediction_inbw.shape","");
             varMap.put(varName, varValue);
         }
         return varMap;
