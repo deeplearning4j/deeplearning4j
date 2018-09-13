@@ -103,6 +103,9 @@ public abstract  class BaseTransport  implements Transport {
     // we're keeping Ids of last 2k INDArrayMessages, just to avoid double spending/retransmission
     protected MessagesHistoryHolder<String> historyHolder = new HashHistoryHolder<String>(2048);
 
+    // this flag is used to track status of handshake procedure at node side
+    protected AtomicBoolean handshakeFlag = new AtomicBoolean(false);
+
     protected final ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors()), new ThreadFactory() {
         @Override
         public Thread newThread(@NotNull Runnable r) {
@@ -448,6 +451,9 @@ public abstract  class BaseTransport  implements Transport {
             val reply = (ResponseMessage) message;
             replies.putIfAbsent(reply.getRequestId(), reply);
 
+            // at last step we're updating handshake flag, so we're aware of finished handshake process
+            handshakeFlag.set(true);
+
             // this is default handler for message pairs
         } else if (message instanceof ResponseMessage) {
             // in this case we store message to the map, to be fetched later
@@ -683,5 +689,18 @@ public abstract  class BaseTransport  implements Transport {
     @Override
     public int totalNumberOfNodes() {
         return numerOfNodes.get();
+    }
+
+    @Override
+    public boolean isConnected() {
+        return true;
+    }
+
+    @Override
+    public boolean isIntroduced() {
+        if (masterMode)
+            return true;
+
+        return handshakeFlag.get();
     }
 }

@@ -19,6 +19,7 @@ package org.nd4j.parameterserver.distributed.v2;
 import io.reactivex.Flowable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -35,6 +36,7 @@ import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.UpdaterPara
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.UpdaterParametersRequest;
 import org.nd4j.parameterserver.distributed.v2.transport.RestartCallback;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
+import org.nd4j.parameterserver.distributed.v2.transport.UpdatesHandler;
 import org.reactivestreams.Subscriber;
 
 import java.util.ArrayList;
@@ -51,13 +53,20 @@ import java.util.concurrent.LinkedBlockingQueue;
 public final class ModelParameterServer {
     protected static final ModelParameterServer INSTANCE = new ModelParameterServer();
 
+    @Getter
     private Transport transport;
+
+    @Getter
+    private INDArray masterModelParams;
+
+    @Getter
+    private INDArray masterUpdaterParams;
 
     // queue is used only if there's no subscribers defined
     private final BlockingQueue<INDArray> updatesQueue = new LinkedBlockingQueue<>(4096);
 
     // subsribers that are connected to actual model
-    protected final List<Subscriber<INDArray>> updatesSubscribers = new CopyOnWriteArrayList<>();
+    protected final List<UpdatesHandler> updatesSubscribers = new CopyOnWriteArrayList<>();
     protected final List<Subscriber<INDArray>> modelParamsSubsribers = new CopyOnWriteArrayList<>();
     protected final List<Subscriber<INDArray>> updaterParamsSubscribers = new CopyOnWriteArrayList<>();
 
@@ -126,9 +135,8 @@ public final class ModelParameterServer {
      * This method adds subcriber that will be called upon gradients update receival
      * @param s
      */
-    public void addUpdatesSubscriber(@NonNull Subscriber<INDArray> s) {
+    public void addUpdatesSubscriber(@NonNull UpdatesHandler s) {
         updatesSubscribers.add(s);
-
     }
 
     /**
@@ -136,7 +144,6 @@ public final class ModelParameterServer {
      * @param s
      */
     public void addModelParamsSubscriber(@NonNull Subscriber<INDArray> s) {
-        log.info("Adding ModelParamsSubscriber...");
         modelParamsSubsribers.add(s);
     }
 
@@ -192,7 +199,7 @@ public final class ModelParameterServer {
             @Override
             public void accept(ModelParametersRequest modelParametersRequest) throws Exception {
                 // send model parameters somewhere
-                val msg = new ModelParametersMessage("msg", Nd4j.create(10, 10));
+                val msg = new ModelParametersMessage("msg", updatesSubscribers.get(0).getParametersArray());
                 msg.setRequestId(modelParametersRequest.getRequestId());
                 transport.sendMessage(msg, modelParametersRequest.getOriginatorId());
             }
@@ -203,7 +210,7 @@ public final class ModelParameterServer {
             @Override
             public void accept(UpdaterParametersRequest updaterParametersRequest) throws Exception {
                 // send updater parameters somewhere
-                val msg = new UpdaterParametersMessage("msg", Nd4j.create(10, 10));
+                val msg = new UpdaterParametersMessage("msg", Nd4j.create(5, 5));
                 msg.setRequestId(updaterParametersRequest.getRequestId());
                 transport.sendMessage(msg, updaterParametersRequest.getOriginatorId());
             }

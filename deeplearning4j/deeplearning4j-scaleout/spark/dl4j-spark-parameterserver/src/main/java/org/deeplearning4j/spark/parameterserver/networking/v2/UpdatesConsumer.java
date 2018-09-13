@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.distributed.v2.transport.UpdatesHandler;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -47,7 +48,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @NoArgsConstructor
 @Builder
 @Slf4j
-public class UpdatesConsumer implements Subscriber<INDArray> {
+public class UpdatesConsumer implements UpdatesHandler {
     protected transient INDArray params;
     protected transient INDArray updates;
     protected transient StepFunction stepFunction;
@@ -152,5 +153,12 @@ public class UpdatesConsumer implements Subscriber<INDArray> {
     @Override
     public void onComplete() {
         // no-op
+    }
+
+    @Override
+    public INDArray getParametersArray() {
+        synchronized (this) {
+            return params.dup(params.ordering());
+        }
     }
 }

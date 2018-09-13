@@ -159,4 +159,10 @@ public interface Transport {
      * @return true
      */
     boolean isConnected();
+
+    /**
+     * This method checks if this node was properly introduced to driver
+     * @return
+     */
+    boolean isIntroduced();
 }

@@ -329,6 +329,15 @@ public class SharedTrainingWrapper {
                     log.debug("Starting ModelParameterServer...");
                     // after initialization finished, we're ok to actually start training
                     ModelParameterServer.getInstance().launch();
+
+                    // waiting for introduction. probably no-op in 99.9999% cases
+                    while (!ModelParameterServer.getInstance().getTransport().isIntroduced()) {
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
                 }
 
                 // if we're going to extend iteratation for debugging purposes - let's do that here
@@ -358,6 +367,13 @@ public class SharedTrainingWrapper {
                     // since there'll be only one consumer, we don't need complex sync logic anymore
                     accumulator.fallbackToSingleConsumerMode(true);
                     accumulator.touch();
+
+                    // checking if there were updated params received (i.e. if that's failover routine
+                    val mParams = modelParamsSupplier.get();
+                    if (mParams != null) {
+                        log.info("Updating model params to the most recent ones...");
+                        originalModel.params().assign(mParams);
+                    }
 
                     // ok. attaching accumulator to model
                     if (model instanceof ComputationGraph) {
