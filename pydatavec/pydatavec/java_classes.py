@@ -71,21 +71,21 @@ JFloat = autoclass('java.lang.Float')
 Arrays = autoclass('java.util.Arrays')
 JMap = autoclass('java.util.HashMap')
 
+try:
+    SparkConf = autoclass('org.apache.spark.SparkConf')
+    SparkContext = autoclass('org.apache.spark.api.java.JavaSparkContext')
+    JavaRDD = autoclass('org.apache.spark.api.java.JavaRDD')
+    SparkTransformExecutor = autoclass('org.datavec.spark.transform.SparkTransformExecutor')
+    StringToWritablesFunction = autoclass('org.datavec.spark.transform.misc.StringToWritablesFunction')
+    WritablesToStringFunction = autoclass('org.datavec.spark.transform.misc.WritablesToStringFunction')
+    spark_available = True
+except:
+    spark_available = False
 
-SparkConf = autoclass('org.apache.spark.SparkConf')
-SparkContext = autoclass('org.apache.spark.api.java.JavaSparkContext')
-JavaRDD = autoclass('org.apache.spark.api.java.JavaRDD')
-SparkTransformExecutor = autoclass(
-    'org.datavec.spark.transform.SparkTransformExecutor')
+CSVRecordReader = autoclass('org.datavec.api.records.reader.impl.csv.CSVRecordReader')
+CSVRecordWriter = autoclass('org.datavec.api.records.writer.impl.csv.CSVRecordWriter')
 
-CSVRecordReader = autoclass(
-    'org.datavec.api.records.reader.impl.csv.CSVRecordReader')
-StringToWritablesFunction = autoclass(
-    'org.datavec.spark.transform.misc.StringToWritablesFunction')
-WritablesToStringFunction = autoclass(
-    'org.datavec.spark.transform.misc.WritablesToStringFunction')
-
-#LocalTransformExecutor = autoclass('org.datavec.local.transforms.LocalTransformExecutor')
+LocalTransformExecutor = autoclass('org.datavec.local.transforms.LocalTransformExecutor')
 
 ChangeCaseStringTransform = autoclass(
     'org.datavec.api.transform.transform.string.ChangeCaseStringTransform')
@@ -105,3 +105,11 @@ StringMapTransform = autoclass(
 
 ReducerBuilder = autoclass('org.datavec.api.transform.reduce.Reducer$Builder')
 ReduceOp = autoclass('org.datavec.api.transform.ReduceOp')
+
+
+FileSplit = autoclass('org.datavec.api.split.FileSplit')
+
+JFile = autoclass('java.io.File')
+ArrayList = autoclass('java.util.ArrayList')
+
+NumberOfRecordsPartitioner = autoclass('org.datavec.api.split.partition.NumberOfRecordsPartitioner')

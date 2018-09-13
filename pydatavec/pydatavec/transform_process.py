@@ -50,6 +50,7 @@ class TransformProcess(object):
         self.schema = schema
         self.final_schema = schema.copy()
         self.steps = []
+        self.executors = {}
 
     def add_step(self, step, *args):
         self.steps.append((step,) + args)
@@ -371,11 +372,24 @@ class TransformProcess(object):
                 f(*step[1:])
         return builder.build()
 
-    def __call__(self, csv):
+    def __call__(self, csv, executor='spark'):
         try:
-            executor = self.executor
-        except AttributeError:
-            from .executors import SparkExecutor
-            executor = SparkExecutor()
-            self.executor = executor
+            executor = self.executors[executor]
+        except:
+            if executor == 'spark':
+                from .java_classes import spark_available
+                if not spark_available:
+                    warnings.warn('Spark not available. Running local executor instead.')
+                    from .executors import LocalExecutor
+                    executor = LocalExecutor()
+                    self.executors['local'] = executor
+                    self.executors['spark'] = executor
+                else:
+                    from .executors import SparkExecutor
+                    executor = SparkExecutor()
+                    self.executors['spark'] = executor
+            if executor == 'local':
+                from .executors import LocalExecutor
+                executor = LocalExecutor()
+                self.executors['local'] = executor
         return executor(self, csv)
