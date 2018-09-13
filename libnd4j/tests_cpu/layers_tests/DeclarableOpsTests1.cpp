@@ -3742,7 +3742,7 @@ TEST_F(DeclarableOpsTests1, Stack_10) {
     float buff1[]   = {1};    
     float expBuff[] = {1, 1, 1};
     Nd4jLong shape1[]    = {1, 1, 1, 0, 1, 99};    
-    Nd4jLong expShape[]  = {2, 1, 3, 1, 1, 0, 1, 99};
+    Nd4jLong expShape[]  = {2, 1, 3, 3, 1, 0, 1, 99};
 
     NDArray<float> input1(buff1, shape1);    
     NDArray<float> expected(expBuff, expShape);

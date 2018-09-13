@@ -1328,50 +1328,6 @@ TEST_F(DeclarableOpsTests10, deconv3d_bp_test4) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, pad_tests10) {
 
-    NDArray<float> input   ('c', {2,3});
-    NDArray<float> paddings('c', {2,2}, {0,0, 0,1});
-    NDArray<float> expected('c', {2,4}, {1.f,1.f,1.f,1.f,1.f,1.f,1.f,1.f});
-
-    input = 1.f;
-
-    nd4j::ops::pad<float> op;
-    auto results = op.execute({&input, &paddings}, {}, {2});
-
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
-
-    NDArray<float>* result = results->at(0);       
-
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
-    ASSERT_TRUE(expected.equalsTo(result));
-
-    delete results;
-}
-
-////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests10, pad_tests11) {
-
-    NDArray<float> input   ('c', {2,3});
-    NDArray<float> paddings('c', {2,2}, {0,1, 0,0});
-    NDArray<float> expected('c', {3,3}, {1.f,1.f,1.f,1.f,1.f,1.f,0.f,0.f,0.f});
-
-    input = 1.f;
-
-    nd4j::ops::pad<float> op;
-    auto results = op.execute({&input, &paddings}, {}, {0});
-
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
-
-    NDArray<float>* result = results->at(0);    
-
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
-    ASSERT_TRUE(expected.equalsTo(result));
-
-    delete results;
-}
-
-////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests10, pad_tests12) {
-
     NDArray<float> input   ('c', {2,3,4});
     NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
     NDArray<float> expected('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
@@ -1392,7 +1348,7 @@ TEST_F(DeclarableOpsTests10, pad_tests12) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests10, pad_tests13) {
+TEST_F(DeclarableOpsTests10, pad_tests11) {
 
     NDArray<float> input   ('c', {2,3,4});
     NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
@@ -1414,7 +1370,7 @@ TEST_F(DeclarableOpsTests10, pad_tests13) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests10, pad_tests14) {
+TEST_F(DeclarableOpsTests10, pad_tests12) {
 
     NDArray<float> input   ('c', {2,3,4,5});
     NDArray<float> paddings('c', {4,2}, {0,0, 0,1, 0,1, 0,0});
@@ -1443,7 +1399,7 @@ TEST_F(DeclarableOpsTests10, pad_tests14) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests10, pad_tests15) {
+TEST_F(DeclarableOpsTests10, pad_tests13) {
 
     NDArray<float> input   ('c', {5});
     NDArray<float> paddings('c', {1,2}, {2,3});
@@ -1465,11 +1421,159 @@ TEST_F(DeclarableOpsTests10, pad_tests15) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests10, pad_tests16) {
+TEST_F(DeclarableOpsTests10, pad_tests14) {
 
     NDArray<float> input   ('c', {1,5});
     NDArray<float> paddings('c', {2,2}, {0,0,2,3});
     NDArray<float> expected('c', {1,10}, {2., 1., 1., 2., 3., 4., 5., 5., 4., 3.});
+    input.linspace(1.f);
+
+    nd4j::ops::pad<float> op;
+    auto results = op.execute({&input, &paddings}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, pad_tests15) {
+
+    NDArray<float> input   ('c', {1,5});
+    NDArray<float> paddings('c', {2,2}, {1,1,0,0});
+    NDArray<float> expected('c', {3,5}, {1., 2., 3., 4., 5., 1., 2., 3., 4., 5., 1., 2., 3., 4., 5.});
+    input.linspace(1.f);
+
+    nd4j::ops::pad<float> op;
+    auto results = op.execute({&input, &paddings}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, pad_tests16) {
+
+    NDArray<float> input   ('c', {5,1});
+    NDArray<float> paddings('c', {2,2}, {2,3,0,0});
+    NDArray<float> expected('c', {10,1}, {3., 2., 1., 2., 3., 4., 5., 4., 3., 2.});
+    input.linspace(1.f);
+
+    nd4j::ops::pad<float> op;
+    auto results = op.execute({&input, &paddings}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, pad_tests17) {
+
+    NDArray<float> input   ('c', {5,1});
+    NDArray<float> paddings('c', {2,2}, {0,0,1,0});
+    NDArray<float> expected('c', {5,2}, {1.,1., 2.,2., 3.,3., 4.,4., 5.,5.});
+    input.linspace(1.f);
+
+    nd4j::ops::pad<float> op;
+    auto results = op.execute({&input, &paddings}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, pad_tests18) {
+
+    NDArray<float> input   ('c', {5});
+    NDArray<float> paddings('c', {1,2}, {0,0});
+    NDArray<float> expected('c', {5}, {1.,2.,3.,4.,5.});
+    input.linspace(1.f);
+
+    nd4j::ops::pad<float> op;
+    auto results = op.execute({&input, &paddings}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, pad_tests19) {
+
+    NDArray<float> input   ('c', {5,1});
+    NDArray<float> paddings('c', {2,2}, {0,0,0,0});
+    NDArray<float> expected('c', {5,1}, {1., 2., 3., 4., 5.});
+    input.linspace(1.f);
+
+    nd4j::ops::pad<float> op;
+    auto results = op.execute({&input, &paddings}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, pad_tests20) {
+
+    NDArray<float> input   ('c', {1,5});
+    NDArray<float> paddings('c', {2,2}, {0,0,0,0});
+    NDArray<float> expected('c', {1,5}, {1., 2., 3., 4., 5.});
+    input.linspace(1.f);
+
+    nd4j::ops::pad<float> op;
+    auto results = op.execute({&input, &paddings}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, pad_tests21) {
+
+    NDArray<float> input   ('c', {1,3,1,5});
+    NDArray<float> paddings('c', {4,2}, {0,0, 0,1, 0,1, 0,0});
+    NDArray<float> expected('c', {1,4,2,5}, {1., 2., 3., 4., 5., 1., 2., 3., 4., 5., 6., 7., 8., 9.,10., 6., 7., 8., 9.,10.,
+                                             11.,12.,13.,14.,15.,11.,12.,13.,14.,15.,11.,12.,13.,14.,15.,11.,12.,13.,14.,15.});
     input.linspace(1.f);
 
     nd4j::ops::pad<float> op;
@@ -1486,3 +1590,118 @@ TEST_F(DeclarableOpsTests10, pad_tests16) {
     delete results;
 }
 
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, pad_tests22) {
+
+    NDArray<float> input   ('c', {1,1});
+    NDArray<float> paddings('c', {2,2}, {0,0, 0,0});
+    NDArray<float> expected('c', {1,1}, {1.});
+    
+    input.linspace(1.f);
+
+    nd4j::ops::pad<float> op;
+    auto results = op.execute({&input, &paddings}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);    
+    // result->printIndexedBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, pad_tests23) {
+
+    NDArray<float> input   ('c', {1,1});
+    NDArray<float> paddings('c', {2,2}, {0,0, 1,0});
+    NDArray<float> expected('c', {1,2}, {0.,1.});
+    
+    input.linspace(1.f);
+
+    nd4j::ops::pad<float> op;
+    auto results = op.execute({&input, &paddings}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);    
+    // result->printShapeInfo("r");
+    // expected.printShapeInfo("e");
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, pad_tests24) {
+
+    NDArray<float> input   ('c', {1});
+    NDArray<float> paddings('c', {1,2}, {0,0});
+    NDArray<float> expected('c', {1}, {1.});
+    
+    input.linspace(1.f);
+
+    nd4j::ops::pad<float> op;
+    auto results = op.execute({&input, &paddings}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);    
+    
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, pad_tests25) {
+
+    NDArray<float> input   ('c', {1});
+    NDArray<float> paddings('c', {1,2}, {1,1});
+    NDArray<float> expected('c', {3}, {1.,1.,1});
+    
+    input.linspace(1.f);
+
+    nd4j::ops::pad<float> op;
+    auto results = op.execute({&input, &paddings}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);        
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, pad_tests26) {
+
+    NDArray<float> input   ('c', {1});
+    NDArray<float> paddings('c', {1,2}, {3,2});
+    NDArray<float> expected('c', {6}, {0., 0., 0., 1., 0., 0.});
+    
+    input.linspace(1.f);
+
+    nd4j::ops::pad<float> op;
+    auto results = op.execute({&input, &paddings}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);        
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+
+ 

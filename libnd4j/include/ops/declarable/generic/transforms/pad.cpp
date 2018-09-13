@@ -34,7 +34,8 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 
     NDArray<T>* input    = INPUT_VARIABLE(0);
     NDArray<T>* paddings = INPUT_VARIABLE(1);
-    NDArray<T>* output   = OUTPUT_VARIABLE(0);
+    NDArray<T>* output   = OUTPUT_VARIABLE(0);    
+    
     std::vector<int>* argI = block.getIArguments();
 
     const int rank =  input->rankOf();    	
@@ -51,12 +52,11 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 	    if (!block.getTArguments()->empty())
 	        padValue = T_ARG(0);
     }
-    else if(INT_ARG(0) == 1) {
+    else if(INT_ARG(0) == 1) {		// REFLECT mode
 		for(int dim=0; dim < rank; ++dim)
 			REQUIRE_TRUE((*paddings)(dim,0) <= (input->shapeOf()[dim]-1) && (*paddings)(dim,1) <= (input->shapeOf()[dim]-1), 0, "PAD op: wrong content of paddings array for REFLECT mode !");
-    }
-	// SYMMETRIC case
-	if(INT_ARG(0) == 2) {		
+    }	
+	if(INT_ARG(0) == 2) {		// SYMMETRIC mode
 		for(int dim=0; dim < rank; ++dim)
 			REQUIRE_TRUE((*paddings)(dim,0) <= input->shapeOf()[dim] && (*paddings)(dim,1)  <= input->shapeOf()[dim], 0, "PAD op: wrong content of paddings array for SYMMETRIC mode !");
 	}
