@@ -81,7 +81,6 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
     return Status::OK();
 }
 
-//////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(batchnorm) {        
 
     std::vector<const NDArray<T>*> inArrs(block.width());
@@ -96,6 +95,99 @@ DECLARE_SHAPE_FN(batchnorm) {
     return SHAPELIST(outShapeInfo);
 }
 
+//////////////////////////////////////////////////////////////////////////
+CUSTOM_OP_IMPL(batchnorm_new, 3, 1, false, 1, 2) {    
+
+    NDArray<T>* input    = INPUT_VARIABLE(0);
+    NDArray<T>* mean     = INPUT_VARIABLE(1);
+    NDArray<T>* variance = INPUT_VARIABLE(2);
+    NDArray<T>* gamma    = nullptr;
+    NDArray<T>* beta     = nullptr;
+
+    NDArray<T>* output   = OUTPUT_VARIABLE(0);
+
+    const bool applyScale  = (bool)INT_ARG(0);
+    const bool applyOffset = (bool)INT_ARG(1);
+    const T    epsilon     = T_ARG(0);
+
+    if(applyScale)
+        gamma = INPUT_VARIABLE(3);    
+    if(applyOffset)
+        beta = INPUT_VARIABLE(3 + static_cast<int>(applyScale));    
+
+    const int numOfIntArgs = block.getIArguments()->size();
+    const int inRank = input->rank();
+
+    std::vector<int> axes;    
+    if(numOfIntArgs > 2)
+        for(int i = 2; i < numOfIntArgs; ++i)
+            axes.push_back(INT_ARG(i));
+    else
+        axes.push_back(inRank-1);               // default dimension to reduce along is last
+    
+    REQUIRE_TRUE(mean->rankOf()     == inRank, 0, "BATCHNORM_NEW op: rank of mean array should be equal rank of input, but got %i and %i correspondingly !", mean->rankOf(), inRank);
+    REQUIRE_TRUE(variance->rankOf() == inRank, 0, "BATCHNORM_NEW op: rank of variance array should be equal rank of input, but got %i and %i correspondingly !", variance->rankOf(), inRank);
+    if(gamma)
+        REQUIRE_TRUE(gamma->rankOf() == inRank, 0, "BATCHNORM_NEW op: rank of gamma array should be equal rank of input, but got %i and %i correspondingly !", gamma->rankOf(), inRank);
+    if(beta)
+        REQUIRE_TRUE(beta->rankOf() == inRank, 0, "BATCHNORM_NEW op: rank of beta array should be equal rank of input, but got %i and %i correspondingly !", beta->rankOf(), inRank);
+
+    Nd4jLong* expShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(input->ordering(), axes, *input, true, false, block.getWorkspace());
+    expShapeStr            = ShapeUtils<T>::shapeAsString(expShapeInfo);
+
+    REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(mean)     == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of mean array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(mean).c_str());
+    REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(variance) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of variance array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(variance).c_str());
+    if(gamma)
+        REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(variance) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of gamma array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(gamma).c_str());
+    if(beta)
+        REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(beta) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of beta array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(beta).c_str());
+
+    RELEASE(expShapeInfo, block.getWorkspace());
+
+    // normalized output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
+
+    NDArray<T> sigmaInvGam = (*variance + epsilon).template transform<simdOps::RSqrt<T>>();
+    if(applyScale)
+        sigmaInvGam *= *gamma;
+
+    NDArray<T> inputMinusMean;
+    if(!input->isSameShape(output) && !mean->isSameShape(output)) {
+        NDArray<T> inputTiled(output, false, block.getWorkspace());
+        input->tile(inputTiled);
+        inputMinusMean = inputTiled - *mean;
+    }
+    else
+        inputMinusMean = *input - *mean;       
+
+    if (applyOffset)
+        output->assign(inputMinusMean * sigmaInvGam + *beta);
+    else 
+        output->assign(inputMinusMean * sigmaInvGam);
+
+    STORE_RESULT(*output);
+ 
+    return Status::OK();
+}
+
+
+DECLARE_SHAPE_FN(batchnorm_new) {        
+
+    Nd4jLong* inShapeInfo = inputShape->at(0);
+    
+    const int inRank = inShapeInfo[0];
+    const int numOfIntArgs = block.getIArguments()->size();
+    
+    std::vector<int> axes;    
+    if(numOfIntArgs > 2)
+        for(int i = 2; i < numOfIntArgs; ++i)
+            axes.push_back(INT_ARG(i));
+    else
+        axes.push_back(inRank-1);
+        
+    Nd4jLong* outShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inShapeInfo), axes, inShapeInfo, false, false, block.getWorkspace());
+    
+    return SHAPELIST(outShapeInfo);
+}
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
@@ -195,7 +287,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     return Status::OK();
 }
 
-//////////////////////////////////////////////////////////////////////////
+
 DECLARE_SHAPE_FN(batchnorm_bp) {
 
     const bool applyScale  = (bool)INT_ARG(0);

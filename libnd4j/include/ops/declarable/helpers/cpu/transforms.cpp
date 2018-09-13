@@ -319,144 +319,144 @@ void pad(const int mode, const NDArray<T>& input, const NDArray<T>& paddings, ND
 
 
 ////////////////////////////////////////////////////////////////////////
-// // initial values of inIdx, outIdx, dim must be equal to zero
-// template<typename T>
-// void recursiveLoopForPad(const int mode, NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, T padValue ) {
+/*// initial values of inIdx, outIdx, dim must be equal to zero
+template<typename T>
+void recursiveLoopForPad(const int mode, NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, T padValue ) {
     
-//     int leftOffset;
-//     // dimensions are array of input dimensions, it is sorted in increasing order
-//     // every time at the beginning we erase first element from it (not good idea to use vector for this purpose, but luckily it is small enough)
-//     // then we use this array for tads building, every time while recursion the number of built tads becomes bigger 
-//     dimensions.erase(dimensions.begin());       
-//     // build tad basing on output array, also create auxiliary arrays pointing on required output array ranges
-//     shape::TAD tadOut(output.getShapeInfo(), dimensions.data(), dimensions.size());
-//     tadOut.createTadOnlyShapeInfo();
-//     tadOut.createOffsets();
-//     NDArray<T> subArrOut(output.getBuffer(), tadOut.tadOnlyShapeInfo, output.getWorkspace());
-//     NDArray<T> subArr(output.getBuffer(), tadOut.tadOnlyShapeInfo, output.getWorkspace());
-//     // build tad basing on input array, also create auxiliary array pointing on required input array range
-//     shape::TAD tadIn(input.getShapeInfo(), dimensions.data(), dimensions.size());
-//     tadIn.createTadOnlyShapeInfo();
-//     tadIn.createOffsets();
-//     NDArray<T> subArrIn(input.getBuffer(), tadIn.tadOnlyShapeInfo, output.getWorkspace());
-//     // these indices take into account recursion and always point to actual tads numbers
-//     if (input.rankOf() > 1 && output.rankOf() > 1) {// only for non-vector cases
-//         outIdx = outIdx * output.sizeAt(dim + 1);
-//         inIdx = inIdx * input.sizeAt(dim + 1);
-//     }
-//     // current input tad number, we add to it unity in a loop
-//     int k = -1;
-//     // loop through current dimension
-//     for(int i = 0; i < output.sizeAt(dim); ++i) {
-//         // corresponds to outer range (relevant indices are absent in input)                        
-//         leftOffset = (int)paddings(dim, 0);
-//         if(i < leftOffset || i >= (input.sizeAt(dim) + leftOffset))
-//             continue;
+    int leftOffset;
+    // dimensions are array of input dimensions, it is sorted in increasing order
+    // every time at the beginning we erase first element from it (not good idea to use vector for this purpose, but luckily it is small enough)
+    // then we use this array for tads building, every time while recursion the number of built tads becomes bigger 
+    dimensions.erase(dimensions.begin());       
+    // build tad basing on output array, also create auxiliary arrays pointing on required output array ranges
+    shape::TAD tadOut(output.getShapeInfo(), dimensions.data(), dimensions.size());
+    tadOut.createTadOnlyShapeInfo();
+    tadOut.createOffsets();
+    NDArray<T> subArrOut(output.getBuffer(), tadOut.tadOnlyShapeInfo, output.getWorkspace());
+    NDArray<T> subArr(output.getBuffer(), tadOut.tadOnlyShapeInfo, output.getWorkspace());
+    // build tad basing on input array, also create auxiliary array pointing on required input array range
+    shape::TAD tadIn(input.getShapeInfo(), dimensions.data(), dimensions.size());
+    tadIn.createTadOnlyShapeInfo();
+    tadIn.createOffsets();
+    NDArray<T> subArrIn(input.getBuffer(), tadIn.tadOnlyShapeInfo, output.getWorkspace());
+    // these indices take into account recursion and always point to actual tads numbers
+    if (input.rankOf() > 1 && output.rankOf() > 1) {// only for non-vector cases
+        outIdx = outIdx * output.sizeAt(dim + 1);
+        inIdx = inIdx * input.sizeAt(dim + 1);
+    }
+    // current input tad number, we add to it unity in a loop
+    int k = -1;
+    // loop through current dimension
+    for(int i = 0; i < output.sizeAt(dim); ++i) {
+        // corresponds to outer range (relevant indices are absent in input)                        
+        leftOffset = (int)paddings(dim, 0);
+        if(i < leftOffset || i >= (input.sizeAt(dim) + leftOffset))
+            continue;
 
-//         // increase input tads number
-//         ++k;
-//         // recursion condition allows for the fact that tad can't reduce to scalar
-//         if(dim < input.rankOf() - 2)
-//             recursiveLoopForPad(mode, input, paddings, output, dimensions, dim + 1, inIdx + k, outIdx + i, padValue);
-//         else if (paddings.sizeAt(0) > dim + 1){
-//             leftOffset = (int)paddings(dim + 1, 0);
-//             // shift buffers pointers to actual element position
-//             if (output.rankOf() > 1) {
-//                 subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + i]);
-//                 subArrIn.setBuffer(input.getBuffer() + tadIn.tadOffsets[inIdx + i - (int) paddings(dim, 0)]);
-//             }
-//             else {
-//                 subArrOut(i) = subArrIn(i - leftOffset);
-//             }
-//             // most inner loop, corresponds to last dim = rank-1
-//             switch (mode) {
-//                 case 0:             // CONSTANT mode                    
-//                     for(int j = 0; j < subArrOut.lengthOf(); ++j)                   
-//                             if(j < leftOffset || j >= (subArrIn.lengthOf() + leftOffset) )                  // firstly fill with zeros outer ranges
-//                                 subArrOut(j) = (T)0.;
-//                             else
-//                                 subArrOut(j) = subArrIn(j - leftOffset);   // fill middle with elements of input array
-//                     break;
+        // increase input tads number
+        ++k;
+        // recursion condition allows for the fact that tad can't reduce to scalar
+        if(dim < input.rankOf() - 2)
+            recursiveLoopForPad(mode, input, paddings, output, dimensions, dim + 1, inIdx + k, outIdx + i, padValue);
+        else if (paddings.sizeAt(0) > dim + 1){
+            leftOffset = (int)paddings(dim + 1, 0);
+            // shift buffers pointers to actual element position
+            if (output.rankOf() > 1) {
+                subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + i]);
+                subArrIn.setBuffer(input.getBuffer() + tadIn.tadOffsets[inIdx + i - (int) paddings(dim, 0)]);
+            }
+            else {
+                subArrOut(i) = subArrIn(i - leftOffset);
+            }
+            // most inner loop, corresponds to last dim = rank-1
+            switch (mode) {
+                case 0:             // CONSTANT mode                    
+                    for(int j = 0; j < subArrOut.lengthOf(); ++j)                   
+                            if(j < leftOffset || j >= (subArrIn.lengthOf() + leftOffset) )                  // firstly fill with zeros outer ranges
+                                subArrOut(j) = (T)0.;
+                            else
+                                subArrOut(j) = subArrIn(j - leftOffset);   // fill middle with elements of input array
+                    break;
 
-//                 case 1:             // REFLECT mode                 
-//                     for(int j = 1;  j <= leftOffset; ++j)                                               // fill firstly left side 
-//                         subArrOut.putIndexedScalar(leftOffset - j, subArrIn.getIndexedScalar(j));                       
-//                     for(int j = 0; j < subArrIn.lengthOf(); ++j)                                        // fill middle
-//                         subArrOut.putIndexedScalar(leftOffset + j, subArrIn.getIndexedScalar(j));                   
-//                     for(int j = (subArrOut.lengthOf() - leftOffset); j < subArrOut.lengthOf(); ++j)     // fill right side
-//                         subArrOut.putIndexedScalar(j, subArrIn.getIndexedScalar(subArrOut.lengthOf() - j - 1));
-//                     break;
+                case 1:             // REFLECT mode                 
+                    for(int j = 1;  j <= leftOffset; ++j)                                               // fill firstly left side 
+                        subArrOut.putIndexedScalar(leftOffset - j, subArrIn.getIndexedScalar(j));                       
+                    for(int j = 0; j < subArrIn.lengthOf(); ++j)                                        // fill middle
+                        subArrOut.putIndexedScalar(leftOffset + j, subArrIn.getIndexedScalar(j));                   
+                    for(int j = (subArrOut.lengthOf() - leftOffset); j < subArrOut.lengthOf(); ++j)     // fill right side
+                        subArrOut.putIndexedScalar(j, subArrIn.getIndexedScalar(subArrOut.lengthOf() - j - 1));
+                    break;
 
-//                 case 2:             // SYMMETRIC mode               
-//                     for(int j = 1;  j <= leftOffset; ++j)                                               // fill firstly left side 
-//                         subArrOut.putIndexedScalar(leftOffset - j, subArrIn.getIndexedScalar(j-1));                             
-//                     for(int j = 0; j < subArrIn.lengthOf(); ++j)                                        // fill middle
-//                         subArrOut.putIndexedScalar(leftOffset + j, subArrIn.getIndexedScalar(j));                   
-//                     for(int j = (subArrOut.lengthOf() - leftOffset); j < subArrOut.lengthOf(); ++j)     // fill right side
-//                         subArrOut.putIndexedScalar(j, subArrIn.getIndexedScalar(subArrOut.lengthOf() - j));     
-//                     break;
-//             }
-//         }
-//         else {
+                case 2:             // SYMMETRIC mode               
+                    for(int j = 1;  j <= leftOffset; ++j)                                               // fill firstly left side 
+                        subArrOut.putIndexedScalar(leftOffset - j, subArrIn.getIndexedScalar(j-1));                             
+                    for(int j = 0; j < subArrIn.lengthOf(); ++j)                                        // fill middle
+                        subArrOut.putIndexedScalar(leftOffset + j, subArrIn.getIndexedScalar(j));                   
+                    for(int j = (subArrOut.lengthOf() - leftOffset); j < subArrOut.lengthOf(); ++j)     // fill right side
+                        subArrOut.putIndexedScalar(j, subArrIn.getIndexedScalar(subArrOut.lengthOf() - j));     
+                    break;
+            }
+        }
+        else {
 
-//              if (mode == 0 && input.rankOf() < 2)
-//                  subArrOut(i) = subArrIn(i - leftOffset);   // fill middle with elements of input array
-//         }   
-//     }   
-//     // populate sub-array formed previously 
-//     leftOffset = (int)paddings(dim,0);       
-//     switch (mode) {
-//         case 0:         // CONSTANT mode
-//             for(int j = 1;  j <= leftOffset; ++j) {
-//                 // fill left side with padValue
-//                 if (output.rankOf() > 1) {
-//                     subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + leftOffset - j]);
-//                     subArrOut.assign(padValue);
-//                 }
-//                 else {
-//                     subArrOut(j - 1) = padValue;
-//                 }
-//             }
-// //            output.printIndexedBuffer("Output at");
-//             for(int j = (output.sizeAt(dim) - leftOffset); j < output.sizeAt(dim); ++j) {       // fill left side with zeros
-//                 if (output.rankOf() > 1) {
-//                     subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + j]);
-//                     subArrOut.assign(padValue);
-//                 }
-//                 else {
-//                     subArrOut(j) = padValue;
-//                 }
-//             }
-//             break;
+             if (mode == 0 && input.rankOf() < 2)
+                 subArrOut(i) = subArrIn(i - leftOffset);   // fill middle with elements of input array
+        }   
+    }   
+    // populate sub-array formed previously 
+    leftOffset = (int)paddings(dim,0);       
+    switch (mode) {
+        case 0:         // CONSTANT mode
+            for(int j = 1;  j <= leftOffset; ++j) {
+                // fill left side with padValue
+                if (output.rankOf() > 1) {
+                    subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + leftOffset - j]);
+                    subArrOut.assign(padValue);
+                }
+                else {
+                    subArrOut(j - 1) = padValue;
+                }
+            }
+//            output.printIndexedBuffer("Output at");
+            for(int j = (output.sizeAt(dim) - leftOffset); j < output.sizeAt(dim); ++j) {       // fill left side with zeros
+                if (output.rankOf() > 1) {
+                    subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + j]);
+                    subArrOut.assign(padValue);
+                }
+                else {
+                    subArrOut(j) = padValue;
+                }
+            }
+            break;
 
-//         case 1:         // REFLECT mode 
-//             for(int j = 1;  j <= leftOffset; ++j) {                                                     // fill left side 
-//                 subArr.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + leftOffset + j]);
-//                 subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + leftOffset - j]);
-//                 subArrOut.assign(&subArr);
-//             }               
-//             for(int j = (output.sizeAt(dim) - leftOffset); j < output.sizeAt(dim); ++j) {       // fill right side
-//                 subArr.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + output.sizeAt(dim) + leftOffset - 1 - j]);
-//                 subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + j]);
-//                 subArrOut.assign(&subArr);              
-//             }   
-//             break;
+        case 1:         // REFLECT mode 
+            for(int j = 1;  j <= leftOffset; ++j) {                                                     // fill left side 
+                subArr.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + leftOffset + j]);
+                subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + leftOffset - j]);
+                subArrOut.assign(&subArr);
+            }               
+            for(int j = (output.sizeAt(dim) - leftOffset); j < output.sizeAt(dim); ++j) {       // fill right side
+                subArr.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + output.sizeAt(dim) + leftOffset - 1 - j]);
+                subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + j]);
+                subArrOut.assign(&subArr);              
+            }   
+            break;
 
-//         case 2:         // SYMMETRIC mode   
-//             for(int j = 1;  j <= leftOffset; ++j) {                                                     // fill left side
-//                 subArr.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + leftOffset + j - 1]);
-//                 subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + leftOffset - j]);
-//                 subArrOut.assign(&subArr);
-//             }           
-//             for(int j = (output.sizeAt(dim) - leftOffset); j < output.sizeAt(dim); ++j) {       // fill right side
-//                 subArr.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + output.sizeAt(dim) + leftOffset - j]);
-//                 subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + j]);
-//                 subArrOut.assign(&subArr);      
-//             }
-//             break;
-//     }
-// }
-
+        case 2:         // SYMMETRIC mode   
+            for(int j = 1;  j <= leftOffset; ++j) {                                                     // fill left side
+                subArr.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + leftOffset + j - 1]);
+                subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + leftOffset - j]);
+                subArrOut.assign(&subArr);
+            }           
+            for(int j = (output.sizeAt(dim) - leftOffset); j < output.sizeAt(dim); ++j) {       // fill right side
+                subArr.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + output.sizeAt(dim) + leftOffset - j]);
+                subArrOut.setBuffer(output.getBuffer() + tadOut.tadOffsets[outIdx + j]);
+                subArrOut.assign(&subArr);      
+            }
+            break;
+    }
+}
+*/
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
