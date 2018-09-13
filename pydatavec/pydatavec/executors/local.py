@@ -77,3 +77,4 @@ class LocalExecutor(object):
             data.add(rr.next())
         processed_data = LocalTransformExecutor.execute(data, tp)
         return Writable(processed_data)
+

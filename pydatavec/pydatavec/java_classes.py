@@ -31,16 +31,21 @@ JSchema = autoclass('org.datavec.api.transform.schema.Schema')
 SchemaBuilder = autoclass('org/datavec/api/transform/schema/Schema$Builder')
 
 JTransformProcess = autoclass('org.datavec.api.transform.TransformProcess')
-TransformProcessBuilder = autoclass('org/datavec/api/transform/TransformProcess$Builder')
+TransformProcessBuilder = autoclass(
+    'org/datavec/api/transform/TransformProcess$Builder')
 
 ConditionOp = autoclass('org.datavec.api.transform.condition.ConditionOp')
 ConditionFilter = autoclass('org.datavec.api.transform.filter.ConditionFilter')
 
-BooleanColumnCondition = autoclass('org.datavec.api.transform.condition.column.BooleanColumnCondition')
-CategoricalColumnCondition = autoclass('org.datavec.api.transform.condition.column.CategoricalColumnCondition')
-DoubleColumnCondition = autoclass('org.datavec.api.transform.condition.column.DoubleColumnCondition')
+BooleanColumnCondition = autoclass(
+    'org.datavec.api.transform.condition.column.BooleanColumnCondition')
+CategoricalColumnCondition = autoclass(
+    'org.datavec.api.transform.condition.column.CategoricalColumnCondition')
+DoubleColumnCondition = autoclass(
+    'org.datavec.api.transform.condition.column.DoubleColumnCondition')
 #FloatColumnCondition = autoclass('org.datavec.api.transform.condition.column.FloatColumnCondition')
-StringColumnCondition = autoclass('org.datavec.api.transform.condition.column.StringColumnCondition')
+StringColumnCondition = autoclass(
+    'org.datavec.api.transform.condition.column.StringColumnCondition')
 
 
 BooleanWritable = autoclass('org.datavec.api.writable.BooleanWritable')
@@ -50,10 +55,10 @@ FloatWritable = autoclass('org.datavec.api.writable.FloatWritable')
 DoubleWritable = autoclass('org.datavec.api.writable.DoubleWritable')
 
 
-
 DateTimeZone = autoclass('org.joda.time.DateTimeZone')
 DateTimeFieldType = autoclass('org.joda.time.DateTimeFieldType')
-DeriveColumnsFromTimeTransformBuilder = autoclass('org.datavec.api.transform.transform.time.DeriveColumnsFromTimeTransform$Builder')
+DeriveColumnsFromTimeTransformBuilder = autoclass(
+    'org.datavec.api.transform.transform.time.DeriveColumnsFromTimeTransform$Builder')
 
 
 Arrays = autoclass('java.util.Arrays')
@@ -77,20 +82,25 @@ try:
 except:
     spark_available = False
 
-
 CSVRecordReader = autoclass('org.datavec.api.records.reader.impl.csv.CSVRecordReader')
-CSVRecordWriter = autoclass('org.datavec.api.records.reader.impl.csv.CSVRecordWriter')
-
+CSVRecordWriter = autoclass('org.datavec.api.records.writer.impl.csv.CSVRecordWriter')
 
 LocalTransformExecutor = autoclass('org.datavec.local.transforms.LocalTransformExecutor')
 
-ChangeCaseStringTransform = autoclass('org.datavec.api.transform.transform.string.ChangeCaseStringTransform')
-ChangeCaseStringTransformCaseType = autoclass('org.datavec.api.transform.transform.string.ChangeCaseStringTransform$CaseType')
-ConcatenateStringColumns = autoclass('org.datavec.api.transform.transform.string.ConcatenateStringColumns')
-RemoveWhiteSpaceTransform = autoclass('org.datavec.api.transform.transform.string.RemoveWhiteSpaceTransform')
-ReplaceEmptyStringTransform = autoclass('org.datavec.api.transform.transform.string.ReplaceEmptyStringTransform')
-ReplaceStringTransform = autoclass('org.datavec.api.transform.transform.string.ReplaceStringTransform')
-StringMapTransform = autoclass('org.datavec.api.transform.transform.string.StringMapTransform')
+ChangeCaseStringTransform = autoclass(
+    'org.datavec.api.transform.transform.string.ChangeCaseStringTransform')
+ChangeCaseStringTransformCaseType = autoclass(
+    'org.datavec.api.transform.transform.string.ChangeCaseStringTransform$CaseType')
+ConcatenateStringColumns = autoclass(
+    'org.datavec.api.transform.transform.string.ConcatenateStringColumns')
+RemoveWhiteSpaceTransform = autoclass(
+    'org.datavec.api.transform.transform.string.RemoveWhiteSpaceTransform')
+ReplaceEmptyStringTransform = autoclass(
+    'org.datavec.api.transform.transform.string.ReplaceEmptyStringTransform')
+ReplaceStringTransform = autoclass(
+    'org.datavec.api.transform.transform.string.ReplaceStringTransform')
+StringMapTransform = autoclass(
+    'org.datavec.api.transform.transform.string.StringMapTransform')
 
 
 ReducerBuilder = autoclass('org.datavec.api.transform.reduce.Reducer$Builder')
