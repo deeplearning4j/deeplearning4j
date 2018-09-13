@@ -38,19 +38,19 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Convolutional Neural Network Loss Layer.<br>
+ * 3D Convolutional Neural Network Loss Layer.<br>
  * Handles calculation of gradients etc for various loss (objective) functions.<br>
- * NOTE: CnnLossLayer does not have any parameters. Consequently, the output activations size is equal to the input size.<br>
- * Input and output activations are same as other CNN layers: 4 dimensions with shape [miniBatchSize,channels,height,width]<br>
- * CnnLossLayer has support for a built-in activation function (tanh, softmax etc) - if this is not required, set
+ * NOTE: Cnn3DLossLayer does not have any parameters. Consequently, the output activations size is equal to the input size.<br>
+ * Input and output activations are same as 3D CNN layers: 5 dimensions with shape [miniBatchSize,channels,depth,height,width]<br>
+ * Cnn3DLossLayer has support for a built-in activation function (tanh, softmax etc) - if this is not required, set
  * activation function to Activation.IDENTITY. For activations such as softmax, note that this is applied channel-wise:
- * that is, softmax is applied along dimension 1 (channel) for each minibatch, and x/y location separately.<br>
+ * that is, softmax is applied along dimension 1 (channel) for each minibatch, and x/y/z location separately.<br>
  * <br>
- * Note that 3 types of masking are supported, where (n=minibatchSize, c=channels, h=height, w=width):<br>
+ * Note that 3 types of masking are supported, where (n=minibatchSize, c=channels, d=depth, h=height, w=width):<br>
  * - Per example masking: Where an example is present or not (and all outputs are masked by it). Mask shape [n,1]<br>
- * - Per x/y location masking: where each spatial X/Y location is present or not (all channels at a given x/y are masked by it).
- * Mask shape: [n,h,w].<br>
- * - Per output masking: Where each output activation value is present or not - mask shape [n,c,h,w] (same as output)<br>
+ * - Per x/y/z location masking: where each spatial X/Y/Z location is present or not (all channels at a given x/y/z are masked by it).
+ * Mask shape: [n,d,h,w].<br>
+ * - Per output masking: Where each output activation value is present or not - mask shape [n,c,d,h,w] (same as output)<br>
  *
  * @author Alex Black
  */
@@ -58,11 +58,11 @@ import java.util.Map;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class CnnLossLayer extends FeedForwardLayer {
+public class Cnn3DLossLayer extends FeedForwardLayer {
 
     protected ILossFunction lossFn;
 
-    private CnnLossLayer(Builder builder) {
+    private Cnn3DLossLayer(Builder builder) {
         super(builder);
         this.lossFn = builder.lossFn;
     }
@@ -70,8 +70,8 @@ public class CnnLossLayer extends FeedForwardLayer {
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                     int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.convolution.CnnLossLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.CnnLossLayer(conf);
+        org.deeplearning4j.nn.layers.convolution.Cnn3DLossLayer ret =
+                        new org.deeplearning4j.nn.layers.convolution.Cnn3DLossLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -88,9 +88,9 @@ public class CnnLossLayer extends FeedForwardLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || (inputType.getType() != InputType.Type.CNN && inputType.getType() != InputType.Type.CNNFlat)) {
+        if (inputType == null || (inputType.getType() != InputType.Type.CNN3D && inputType.getType() != InputType.Type.CNNFlat)) {
             throw new IllegalStateException("Invalid input type for CnnLossLayer (layer index = " + layerIndex
-                            + ", layer name=\"" + getLayerName() + "\"): Expected CNN or CNNFlat input, got " + inputType);
+                            + ", layer name=\"" + getLayerName() + "\"): Expected CNN3D or CNNFlat input, got " + inputType);
         }
         return inputType;
     }
@@ -143,8 +143,8 @@ public class CnnLossLayer extends FeedForwardLayer {
 
         @Override
         @SuppressWarnings("unchecked")
-        public CnnLossLayer build() {
-            return new CnnLossLayer(this);
+        public Cnn3DLossLayer build() {
+            return new Cnn3DLossLayer(this);
         }
     }
 }
