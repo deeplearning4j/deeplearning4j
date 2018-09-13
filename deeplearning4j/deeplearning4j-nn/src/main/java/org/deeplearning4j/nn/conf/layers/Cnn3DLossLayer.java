@@ -97,7 +97,7 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
+        return InputTypeUtil.getPreProcessorForInputTypeCnn3DLayers(inputType, getLayerName());
     }
 
     @Override
