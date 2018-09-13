@@ -48,6 +48,16 @@ public class StochasticGradientDescent extends BaseOptimizer {
 
     @Override
     public boolean optimize(LayerWorkspaceMgr workspaceMgr) {
+        if (accumulator != null) {
+            // before going FF, we're checking if there are any updates available
+            if (accumulator.hasAnything()) {
+                log.info("Applying external updates before FF...");
+
+                // we'll just fire off params update process
+                accumulator.applyUpdate(stepFunction, model.params(), Nd4j.createUninitialized(model.params().shape(), model.params().ordering()));
+            }
+        }
+
         Pair<Gradient, Double> pair = gradientAndScore(workspaceMgr);
 
         Gradient gradient = pair.getFirst();

@@ -75,4 +75,10 @@ public interface GradientsAccumulator extends Serializable {
      * This method does initialization of given worker wrt Thread-Device Affinity
      */
     void touch();
+
+    /**
+     * This method checks if there are any (probably external) updates available
+     * @return
+     */
+    boolean hasAnything();
 }

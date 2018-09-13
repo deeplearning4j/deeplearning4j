@@ -291,4 +291,10 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
         // TODO: to be implemented
         throw new UnsupportedOperationException();
     }
+
+
+    @Override
+    public boolean hasAnything() {
+        return false;
+    }
 }

@@ -567,6 +567,11 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
         }
     }
 
+    @Override
+    public boolean hasAnything() {
+        return !externalSource.isEmpty();
+    }
+
     public static class Builder {
         protected int parties;
         protected double threshold = 1e-3;
