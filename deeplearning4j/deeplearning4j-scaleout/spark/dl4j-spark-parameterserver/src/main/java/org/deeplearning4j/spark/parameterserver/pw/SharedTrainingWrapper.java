@@ -310,6 +310,7 @@ public class SharedTrainingWrapper {
 
                         consumer = UpdatesConsumer.builder()
                                 .accumulator(accumulator)
+                                .params(model.params())
                                 .build();
 
                         accumulator.setExternalSource(consumer.getUpdatesQueue());

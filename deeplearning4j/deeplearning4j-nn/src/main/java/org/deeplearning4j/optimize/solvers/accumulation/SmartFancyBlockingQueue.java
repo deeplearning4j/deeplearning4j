@@ -18,6 +18,7 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.ThresholdCompression;
@@ -38,6 +39,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
     protected final ReentrantReadWriteLock smartLock = new ReentrantReadWriteLock();
     protected int decompressionThreshold = 32;
@@ -83,6 +85,8 @@ public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
 
             if (backingQueue.size() > decompressionThreshold || collapsedMode.get()) {
                 collapsedMode.set(true);
+
+                log.info("Collapsing updates...");
 
                 // if we're already in collapsed mode - we'll just poll back our single collapsed array and update it
                 INDArray params = smartDecompress(array, backingQueue.size() == 1 ? backingQueue.poll() : null);

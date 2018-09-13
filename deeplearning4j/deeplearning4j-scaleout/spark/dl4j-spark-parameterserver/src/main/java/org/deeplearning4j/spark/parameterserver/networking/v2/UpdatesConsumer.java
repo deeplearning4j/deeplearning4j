@@ -25,6 +25,7 @@ import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.solvers.accumulation.FancyBlockingQueue;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
+import org.deeplearning4j.optimize.solvers.accumulation.SmartFancyBlockingQueue;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -62,7 +63,7 @@ public class UpdatesConsumer implements UpdatesHandler {
     protected transient final AtomicLong sparseCounter = new AtomicLong(0);
 
     // make this stuff configurable
-    protected transient final BlockingQueue<INDArray> updatesBuffer = new FancyBlockingQueue<>(new LinkedBlockingQueue<>(1024));
+    protected transient BlockingQueue<INDArray> updatesBuffer;
 
     @Override
     public void onSubscribe(Subscription subscription) {
@@ -86,11 +87,27 @@ public class UpdatesConsumer implements UpdatesHandler {
     }
 
     public BlockingQueue<INDArray> getUpdatesQueue() {
+        if (updatesBuffer == null && accumulator != null) {
+            synchronized (this) {
+                if (updatesBuffer == null) {
+                    updatesBuffer = new SmartFancyBlockingQueue(32, params);
+                }
+            }
+        }
+
         return updatesBuffer;
     }
 
     @Override
     public void onNext(INDArray array) {
+        if (updatesBuffer == null && accumulator != null) {
+            synchronized (this) {
+                if (updatesBuffer == null) {
+                    updatesBuffer = new SmartFancyBlockingQueue(32, params);
+                }
+            }
+        }
+
         if (!bypassMode.get()) {
             if (accumulator != null) {
                 // this means consumer runs on worker node
