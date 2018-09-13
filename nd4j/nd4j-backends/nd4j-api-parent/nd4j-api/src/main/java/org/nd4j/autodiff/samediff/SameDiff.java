@@ -116,6 +116,8 @@ public class SameDiff {
     private Map<String, int[]> permuteOrder;
     private boolean shouldBootStrap = true;
     private Set<String> importedVarName;
+    @Getter @Setter
+    private Set<String> importedConstants;
     //map a function's instance id to a base name, used for propagating variable names
     //for output during import
     private Map<String, String> baseNameForFunctionInstanceId;
@@ -9812,6 +9814,19 @@ public class SameDiff {
         }
     }
 
+    /**
+     * Undo an {@link #addAsPlaceHolder(String)} call - i.e., the variable will still be present in the SameDiff
+     * graph, but it will no longer be marked as a placeholder. If the variable was not marked as a placeholder
+     * initially, this operation will be a no-op.
+     * Note that this function should not generally be used by users - it is intended for developer/internal use.
+     *
+     * @param varName Variable name
+     */
+    public void removeAsPlaceholder(String varName) {
+        placeHolderVarNames.remove(varName);
+        placeHolderOriginalShapes.remove(varName);
+    }
+
 
     /**
      * Resolve all ndarrays by updating the variables for each array specified in the given map.
@@ -11510,7 +11525,11 @@ public class SameDiff {
 
             Map<String,DifferentialFunction> newMap = new LinkedHashMap<>();
             seen.clear();
-            seen.addAll(placeHolderFunctions);
+            //Add all placeholders and constants - these are available at the start of execution
+            seen.addAll(placeHolderVarNames);
+            if(importedConstants != null){
+                seen.addAll(importedConstants);
+            }
 
             while(!queue.isEmpty()) {
                 Iterator<Map.Entry<String, DifferentialFunction>> iterator = queue.iterator();
@@ -11536,6 +11555,27 @@ public class SameDiff {
                             seen.add(s.getVarName());
                         }
                         break;  //Restart loop over remaining queue elements
+                    }
+                }
+
+                if(!anySeen){
+                    iterator = queue.iterator();
+                    while (iterator.hasNext()) {
+                        Map.Entry<String, DifferentialFunction> e = iterator.next();
+                        boolean allSeen = true;
+                        StringBuilder sb = new StringBuilder();
+                        sb.append(e.getKey()).append(" - missing: ");
+                        boolean first = true;
+                        for (String in : incomingArgsReverse.get(e.getKey())) {
+                            if (!seen.contains(in)) {
+                                sb.append(in);
+                                if(!first){
+                                    sb.append(", ");
+                                }
+                                first = false;
+                            }
+                        }
+                        log.info(sb.toString());
                     }
                 }
 

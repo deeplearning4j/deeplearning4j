@@ -805,6 +805,11 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     }
 
     @Override
+    public boolean isConstant(NodeDef nodeDef) {
+        return nodeDef.getOp().startsWith("Const");
+    }
+
+    @Override
     public  INDArray getNDArrayFromTensor(String tensorName, NodeDef node, GraphDef graph) {
         //placeholder of some kind
         if(!node.getAttrMap().containsKey("value")) {

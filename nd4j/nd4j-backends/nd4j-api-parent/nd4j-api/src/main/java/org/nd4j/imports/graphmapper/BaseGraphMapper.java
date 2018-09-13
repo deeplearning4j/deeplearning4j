@@ -31,10 +31,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Base implementation for importing a graph
@@ -182,53 +179,67 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
 
         //map the names of the nodes while accumulating the vertex ids
         //for each variable
-        for(Map.Entry<String,TENSOR_TYPE> entry : variablesForGraph.entrySet()) {
+        for (Map.Entry<String, TENSOR_TYPE> entry : variablesForGraph.entrySet()) {
             DataBuffer.Type dt = dataTypeForTensor(entry.getValue());
-            if(dt == DataBuffer.Type.UNKNOWN && !unknownTypeNodeImportable(entry.getValue())) {
-                val var = importState.getSameDiff().var(entry.getKey(),null,new ZeroInitScheme('c'));
+            if (dt == DataBuffer.Type.UNKNOWN && !unknownTypeNodeImportable(entry.getValue())) {
+                val var = importState.getSameDiff().var(entry.getKey(), null, new ZeroInitScheme('c'));
                 //mark as place holder for validating resolution later.
-                if(isPlaceHolder(entry.getValue())) {
+                if (isPlaceHolder(entry.getValue())) {
                     importState.getSameDiff().addAsPlaceHolder(var.getVarName());
-                    if(var.getShape() != null)
-                        importState.getSameDiff().setOriginalPlaceHolderShape(var.getVarName(),var.getShape());
+                    if (var.getShape() != null)
+                        importState.getSameDiff().setOriginalPlaceHolderShape(var.getVarName(), var.getShape());
+                } else {
+                    //Not a placeholder, but SameDiff.var(String, shape=null, ZeroInitScheme()) above marked it as such due to null shape
+                    importState.getSameDiff().removeAsPlaceholder(var.getVarName());
                 }
 
                 continue;
             }
 
             val arr = getNDArrayFromTensor(entry.getKey(), entry.getValue(), tfGraph);
-            if(arr != null) {
-                val var = importState.getSameDiff().var(entry.getKey(),arr);
+            if (arr != null) {
+                val var = importState.getSameDiff().var(entry.getKey(), arr);
                 //ensure the array is made available for later processing
-                diff.associateArrayWithVariable(arr,var);
-            }
-            else if(getShapeFromTensor(entry.getValue()) == null) {
-                val var = importState.getSameDiff().var(entry.getKey(),null,new ZeroInitScheme('c'));
+                diff.associateArrayWithVariable(arr, var);
+
+                if (isConstant(entry.getValue())) {
+                    if (diff.getImportedConstants() == null) {
+                        diff.setImportedConstants(new LinkedHashSet<String>());
+                    }
+                    diff.getImportedConstants().add(entry.getKey());
+                }
+            } else if (getShapeFromTensor(entry.getValue()) == null) {
+                val var = importState.getSameDiff().var(entry.getKey(), null, new ZeroInitScheme('c'));
                 //mark as place holder for validating resolution later.
 
                 //note that this vertex id can still be a place holder
                 //with a -1 shape. Just because a shape is "known" doesn't mean
                 //that it isn't  a place holder.
-                if(isPlaceHolder(entry.getValue())) {
+                if (isPlaceHolder(entry.getValue())) {
                     val originalShape = getShapeFromTensor(entry.getValue());
                     importState.getSameDiff().addAsPlaceHolder(var.getVarName());
-                    if(var.getShape() != null)
-                        importState.getSameDiff().setOriginalPlaceHolderShape(var.getVarName(),originalShape);
+                    if (var.getShape() != null)
+                        importState.getSameDiff().setOriginalPlaceHolderShape(var.getVarName(), originalShape);
 
+                } else {
+                    //Not a placeholder, but SameDiff.var(String, shape=null, ZeroInitScheme()) above marked it as such due to null shape
+                    importState.getSameDiff().removeAsPlaceholder(var.getVarName());
                 }
 
-            }
-            else {
+            } else {
                 val originalShape = getShapeFromTensor(entry.getValue());
-                val var = importState.getSameDiff().var(entry.getKey(),originalShape);
+                val var = importState.getSameDiff().var(entry.getKey(), originalShape);
                 //mark as place holder for validating resolution later.
 
                 //note that this vertex id can still be a place holder
                 //with a -1 shape. Just because a shape is "known" doesn't mean
                 //that it isn't  a place holder.
-                if(isPlaceHolder(entry.getValue())) {
+                if (isPlaceHolder(entry.getValue())) {
                     importState.getSameDiff().addAsPlaceHolder(var.getVarName());
-                    importState.getSameDiff().setOriginalPlaceHolderShape(var.getVarName(),originalShape);
+                    importState.getSameDiff().setOriginalPlaceHolderShape(var.getVarName(), originalShape);
+                } else if(originalShape == null){
+                    //Not a placeholder, but SameDiff.var(String, shape=null, ZeroInitScheme()) above marked it as such due to null shape
+                    importState.getSameDiff().removeAsPlaceholder(var.getVarName());
                 }
 
             }
