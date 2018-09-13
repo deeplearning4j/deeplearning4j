@@ -447,6 +447,20 @@ public class ConvolutionUtils {
         return out.reshape('c', shape[0] * shape[2] * shape[3], shape[1]);
     }
 
+    public static INDArray reshape5dTo2d(INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType type){
+        if (in.rank() != 5)
+            throw new IllegalArgumentException("Invalid input: expect NDArray with rank 5, got rank " + in.rank()
+                    + " with shape " + Arrays.toString(in.shape()));
+        val shape = in.shape();
+
+        //Reshape: from [n,c,h,w] to [n*h*w,c]
+
+        INDArray out = in.permute(0, 2, 3, 4, 1);
+        if (out.ordering() != 'c' || !Shape.strideDescendingCAscendingF(out))
+            out = out.dup('c');
+        return out.reshape('c', shape[0] * shape[2] * shape[3] * shape[4], shape[1]);
+    }
+
     public static INDArray reshape2dTo4d(INDArray in2d, int[] toShape, LayerWorkspaceMgr workspaceMgr, ArrayType type){
         if(in2d.rank() != 2)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
@@ -459,6 +473,20 @@ public class ConvolutionUtils {
 
         INDArray out = in2d.reshape('c', toShape[0], toShape[2], toShape[3], toShape[1]);
         return workspaceMgr.leverageTo(type, out.permute(0, 3, 1, 2));
+    }
+
+    public static INDArray reshape2dTo5d(INDArray in2d, int[] toShape, LayerWorkspaceMgr workspaceMgr, ArrayType type){
+        if(in2d.rank() != 2)
+            throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
+        if (toShape.length != 5)
+            throw new IllegalArgumentException("Invalid input: expect toShape with 5 elements: got " + Arrays.toString(toShape));
+
+        //Reshape: from [n*d*h*w,c] to [n,d,h,w,c] to [n,c,d,h,w]
+        if(in2d.ordering() != 'c' || !Shape.hasDefaultStridesForShape(in2d))
+            in2d = workspaceMgr.dup(type, in2d, 'c');
+
+        INDArray out = in2d.reshape('c', toShape[0], toShape[2], toShape[3], toShape[4], toShape[1]);
+        return workspaceMgr.leverageTo(type, out.permute(0, 4, 1, 2, 3));
     }
 
     public static INDArray reshapeMaskIfRequired(INDArray mask, INDArray output, LayerWorkspaceMgr workspaceMgr, ArrayType type){
