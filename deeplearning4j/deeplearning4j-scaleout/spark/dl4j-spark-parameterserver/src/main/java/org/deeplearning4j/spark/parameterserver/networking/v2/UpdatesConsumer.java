@@ -136,7 +136,7 @@ public class UpdatesConsumer implements UpdatesHandler {
                 stepFunction.step(params, updates);
                 Nd4j.getExecutioner().commit();
 
-                log.debug("Applying updates. Current ratio: [{}]; Sparse: [{}]; Dense: [{}]; Mean: [{}]", (double) sparseCounter.get() / denseCounter.get(), sparseCounter.get(), denseCounter.get(), updates.meanNumber().doubleValue());
+                log.debug("Applying updates. Current ratio: [{}]; Sparse: [{}]; Dense: [{}];", (double) sparseCounter.get() / denseCounter.get(), sparseCounter.get(), denseCounter.get());
 
                 // once accumulated updates are applied - reset storage, and wait for other messsages
                 Nd4j.getMemoryManager().memset(updates);

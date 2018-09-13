@@ -78,6 +78,9 @@ public final class ModelParameterServer {
     private final AtomicBoolean launchLock = new AtomicBoolean(false);
     private final AtomicBoolean stopLock = new AtomicBoolean(false);
 
+    // this queue is used as temporary storage for updates received during restart event.
+    protected BlockingQueue<INDArray> updatesBacklog = new LinkedBlockingQueue<>();
+
     private Disposable disposable;
 
     protected ModelParameterServer() {
@@ -222,10 +225,15 @@ public final class ModelParameterServer {
              * We process messages here. Messages are either contain INDArrays, say, as gradients update, or as  model parameters.
              */
             if (message instanceof GradientsUpdateMessage) {
-                if (updatesSubscribers.isEmpty())
-                    updatesQueue.add(message.getPayload());
-                else
-                    updatesSubscribers.forEach(s -> s.onNext(message.getPayload()));
+                // it's possible to get updates messages BEFORE model was properly initalized
+                if (!transport.isIntroduced()) {
+
+                } else {
+                    if (updatesSubscribers.isEmpty())
+                        updatesQueue.add(message.getPayload());
+                    else
+                        updatesSubscribers.forEach(s -> s.onNext(message.getPayload()));
+                }
             } else
                 throw new UnsupportedOperationException("Unknown message received: [" + message.getClass().getCanonicalName() + "]");
         });
