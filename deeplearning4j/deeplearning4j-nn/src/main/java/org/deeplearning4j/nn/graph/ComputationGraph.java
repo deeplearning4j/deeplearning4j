@@ -77,6 +77,7 @@ import org.nd4j.linalg.heartbeat.reports.Task;
 import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.schedule.ISchedule;
@@ -1377,6 +1378,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             int outNum = 0;
             for (String s : configuration.getNetworkOutputs()) {
                 GraphVertex gv = verticesMap.get(s);
+                if(gv instanceof LayerVertex) {
+                    //At this point: the input to the output layer might not be set on the layer itself - just the vertex
+                    LayerVertex lv = (LayerVertex) gv;
+                    lv.applyPreprocessorAndSetInput(workspaceMgr);
+                }
                 Layer vertexLayer = gv.getLayer();
                 if (vertexLayer instanceof FrozenLayerWithBackprop) {
                     vertexLayer = ((FrozenLayerWithBackprop) vertexLayer).getInsideLayer();
@@ -1521,7 +1527,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * (not) clearing the layer input arrays.<br>
      * Note: this method should NOT be used with clearInputs = true, unless you know what you are doing. Specifically:
      * when using clearInputs=false, in combination with workspaces, the layer input fields may leak outside of the
-     * workspaces in which they were defined - potentially causing a crash. See https://deeplearning4j.org/workspaces
+     * workspaces in which they were defined - potentially causing a crash. See <a href="https://deeplearning4j.org/workspaces">
+     *     https://deeplearning4j.org/workspaces</a>
      * for more details
      *
      * @param input An array of ComputationGraph inputs
@@ -2151,12 +2158,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         setLayerMaskArrays(fMask, lMasks);
 
         MemoryWorkspace outputPrevious = null;
-        if(outputWorkspace == null) {
+        if(outputWorkspace == null || outputWorkspace instanceof DummyWorkspace) {
             //Verify that no workspace is open externally
             WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active before call to outputOfLayersDetached");
         } else {
             Preconditions.checkState(outputWorkspace.isScopeActive(), "Workspace \"" + outputWorkspace.getId() +
-                    "\" was provided for the network/layer outputs. When provided, this workspace must be opened before" +
+                    "\" was provided for the network/layer outputs. When provided, this workspace must be opened before " +
                     "calling the output method; furthermore, closing the workspace is the responsibility of the user");
             outputPrevious = outputWorkspace.getParentWorkspace();
         }
@@ -2255,7 +2262,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 if (ArrayUtils.contains(layerIndexes, vIdx)) {
                     isRequiredOutput = true;
 
-                    if(outputWorkspace != null){
+                    if(outputWorkspace != null && !(outputWorkspace instanceof DummyWorkspace)){
                         //Place activations in user-specified workspace
                         origWSAct = workspaceMgr.getWorkspaceName(ArrayType.ACTIVATIONS);
                         origWSActConf = workspaceMgr.getConfiguration(ArrayType.ACTIVATIONS);
@@ -2274,7 +2281,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 //Open the relevant workspace for the activations.
                 //Note that this will be closed only once the current vertex's activations have been consumed
                 MemoryWorkspace wsActivations = null;
-                if(outputWorkspace == null || !isRequiredOutput ){    //Open WS if (a) no external/output WS (if present, it's already open), or (b) not being placed in external/output WS
+                if(outputWorkspace == null || outputWorkspace instanceof DummyWorkspace || !isRequiredOutput ){    //Open WS if (a) no external/output WS (if present, it's already open), or (b) not being placed in external/output WS
                     wsActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS);
                     openActivationsWorkspaces.put(wsActivations, workspaceMgr);
                 }
@@ -2282,11 +2289,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 //Note that because we're opening activation workspaces not in any defined order (i.e., workspace
                 // use isn't simply nested), we'll manually override the previous workspace setting. Otherwise, when we
                 // close these workspaces, the "current" workspace may be set to the incorrect one
-                if(wsActivations != null)
+                if(wsActivations != null )
                     wsActivations.setPreviousWorkspace(initialWorkspace);
 
                 int closeableAt = vertexOutputsFullyConsumedByStep[vIdx];
-                if(outputWorkspace == null || (wsActivations != null && !outputWorkspace.getId().equals(wsActivations.getId()))) {
+                if(outputWorkspace == null || outputWorkspace instanceof DummyWorkspace || (wsActivations != null && !outputWorkspace.getId().equals(wsActivations.getId()))) {
                     if (closeAtEndIteraton[closeableAt] == null) {
                         closeAtEndIteraton[closeableAt] = new ArrayList<>();
                     }
@@ -2375,7 +2382,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
             Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
 
-            if(outputWorkspace == null) {
+            if(outputWorkspace == null || outputWorkspace instanceof DummyWorkspace) {
                 WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerDetached");
             } else {
                 Preconditions.checkState(outputWorkspace.isScopeActive(), "Expected output workspace to still be open" +
@@ -3367,15 +3374,32 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Otherwise output is 3d [miniBatchSize,outputSize,inputTimeSeriesLength] when using RnnOutputLayer (or unmodified otherwise).
      */
     public INDArray[] rnnTimeStep(INDArray... inputs) {
+        return rnnTimeStepHelper(null, inputs);
+    }
+
+    /**
+     * See {@link #rnnTimeStep(INDArray...)} for details.<br>
+     * If no memory workspace is provided, the output will be detached (not in any workspace).<br>
+     * If a memory workspace is provided, the output activation array (i.e., the INDArray returned by this method)
+     * will be placed in the specified workspace. This workspace must be opened by the user before calling this method -
+     * and the user is responsible for (a) closing this workspace, and (b) ensuring the output array is not used out
+     * of scope (i.e., not used after closing the workspace to which it belongs - as this is likely to cause either
+     * an exception when used, or a crash).
+     *
+     * @param inputs          Input activations
+     * @param outputWorkspace Output workspace. May be null
+     * @return The output/activations from the network (either detached or in the specified workspace if provided)
+     */
+    public INDArray[] rnnTimeStep(MemoryWorkspace outputWorkspace, INDArray... inputs){
         try{
-            return rnnTimeStepHelper(inputs);
+            return rnnTimeStepHelper(outputWorkspace, inputs);
         } catch (OutOfMemoryError e){
             CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
 
-    private INDArray[] rnnTimeStepHelper(INDArray... inputs){
+    private INDArray[] rnnTimeStepHelper(MemoryWorkspace outputWs, INDArray... inputs){
         boolean inputIs2d = true;
         for (INDArray i : inputs) {
             if (i.rank() != 2) {
@@ -3384,7 +3408,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
         }
 
-        INDArray[] outputs = outputOfLayersDetached(false, FwdPassType.RNN_TIMESTEP, getOutputLayerIndices(), inputs, null, null, true, false, null);
+        INDArray[] outputs = outputOfLayersDetached(false, FwdPassType.RNN_TIMESTEP, getOutputLayerIndices(), inputs, null, null, true, false, outputWs);
 
         //As per MultiLayerNetwork.rnnTimeStep(): if inputs are all 2d, then outputs are all 2d
         if (inputIs2d) {
@@ -3566,7 +3590,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     private List<INDArray[]> getSubsetsForTbptt(int startTimeIdx, long endTimeIdx, INDArray[] inputs, INDArray[] labels,
                                                 INDArray[] featureMasks, INDArray[] labelMasks){
         INDArray[] newInputs = new INDArray[inputs.length];
-        INDArray[] newLabels = new INDArray[inputs.length];
+        INDArray[] newLabels = new INDArray[labels.length];
         INDArray[] newFeatureMasks = (featureMasks != null ? new INDArray[featureMasks.length] : null);
         INDArray[] newLabelMasks = (labelMasks != null ? new INDArray[labelMasks.length] : null);
 
@@ -4009,6 +4033,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         boolean useRnnSegments = (configuration.getBackpropType() == BackpropType.TruncatedBPTT);
 
+        MemoryWorkspace outputWs;
+        if(getConfiguration().getInferenceWorkspaceMode() == WorkspaceMode.ENABLED){
+            outputWs = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(WS_ALL_LAYERS_ACT_CONFIG, WS_OUTPUT_MEM);
+        } else {
+            outputWs = new DummyWorkspace();
+        }
+
         while (iter.hasNext()) {
             MultiDataSet next = iter.next();
 
@@ -4024,21 +4055,22 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 INDArray labels = next.getLabels(0);
                 INDArray[] labelMasks = next.getLabelsMaskArrays();
 
-                //TODO in principle, we could keep these output arrays in a workspace...
-                INDArray[] out = outputOfLayersDetached(false, FwdPassType.STANDARD, getOutputLayerIndices(), features, featuresMasks, labelMasks, true, false, null);
+                try (MemoryWorkspace ws = outputWs.notifyScopeEntered()) {
+                    INDArray[] out = outputOfLayersDetached(false, FwdPassType.STANDARD, getOutputLayerIndices(), features, featuresMasks, labelMasks, true, false, ws);
 
-                for(Integer i : evaluations.keySet()){
-                    IEvaluation[] evalsThisOutput = evaluations.get(i);
-                    if(evalsThisOutput == null)
-                        continue;
+                    for (Integer i : evaluations.keySet()) {
+                        IEvaluation[] evalsThisOutput = evaluations.get(i);
+                        if (evalsThisOutput == null)
+                            continue;
 
-                    Preconditions.checkState(i >= 0 && i < getNumOutputArrays(), "Invalid output index: indices for outputs " +
-                            "must be between 0 and %s inclusive - found index %s", numOutputArrays, (int)i);
-                    INDArray currOut = out[i];
+                        Preconditions.checkState(i >= 0 && i < getNumOutputArrays(), "Invalid output index: indices for outputs " +
+                                "must be between 0 and %s inclusive - found index %s", numOutputArrays, (int) i);
+                        INDArray currOut = out[i];
 
-                    try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-                        for (IEvaluation evaluation : evalsThisOutput)
-                            evaluation.eval(labels, currOut, next.getLabelsMaskArray(i));
+                        try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                            for (IEvaluation evaluation : evalsThisOutput)
+                                evaluation.eval(labels, currOut, next.getLabelsMaskArray(i));
+                        }
                     }
                 }
 
@@ -4070,21 +4102,21 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             next.getLabels(), next.getFeaturesMaskArrays(), next.getLabelsMaskArrays());
                     setLayerMaskArrays(subset.get(2), subset.get(3));
 
-                    INDArray[] outSub = rnnTimeStep(subset.get(0));
+                    try (MemoryWorkspace ws = outputWs.notifyScopeEntered()) {
+                        INDArray[] outSub = rnnTimeStep(ws, subset.get(0));
 
+                        for (Integer idx : evaluations.keySet()) {
+                            IEvaluation[] evalsThisOutput = evaluations.get(idx);
+                            if (evalsThisOutput == null)
+                                continue;
 
-
-                    for(Integer idx : evaluations.keySet()) {
-                        IEvaluation[] evalsThisOutput = evaluations.get(idx);
-                        if (evalsThisOutput == null)
-                            continue;
-
-                        INDArray labelSub = (subset.get(1) == null ? null : subset.get(1)[idx]);
-                        INDArray maskSub = subset.get(3) == null ? null : subset.get(3)[idx];
-                        INDArray currOut = outSub[idx];
-                        try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-                            for (IEvaluation evaluation : evalsThisOutput)
-                                evaluation.eval(labelSub, currOut, maskSub);
+                            INDArray labelSub = (subset.get(1) == null ? null : subset.get(1)[idx]);
+                            INDArray maskSub = subset.get(3) == null ? null : subset.get(3)[idx];
+                            INDArray currOut = outSub[idx];
+                            try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                                for (IEvaluation evaluation : evalsThisOutput)
+                                    evaluation.eval(labelSub, currOut, maskSub);
+                            }
                         }
                     }
                 }

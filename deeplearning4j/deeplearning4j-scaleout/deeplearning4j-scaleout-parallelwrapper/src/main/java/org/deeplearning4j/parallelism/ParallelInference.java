@@ -59,7 +59,7 @@ public class ParallelInference {
     protected int batchLimit;
     protected InferenceMode inferenceMode;
     protected int queueLimit;
-    protected LoadBalanceMode loadBalanceMode;
+    protected LoadBalanceMode loadBalanceMode = LoadBalanceMode.FIFO;
 
     // this queue holds data for inference
     private BlockingQueue<InferenceObservable> observables;
@@ -266,7 +266,7 @@ public class ParallelInference {
         private int batchLimit = DEFAULT_BATCH_LIMIT;
         private InferenceMode inferenceMode = DEFAULT_INFERENCE_MODE;
         private int queueLimit = DEFAULT_QUEUE_LIMIT;
-        protected LoadBalanceMode loadBalanceMode;
+        protected LoadBalanceMode loadBalanceMode = LoadBalanceMode.FIFO;
 
         public Builder(@NonNull Model model) {
             this.model = model;

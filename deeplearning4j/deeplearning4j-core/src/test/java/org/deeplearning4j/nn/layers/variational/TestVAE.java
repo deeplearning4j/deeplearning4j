@@ -223,7 +223,7 @@ public class TestVAE extends BaseDL4JTest {
                                         .nIn(10).nOut(5).encoderLayerSizes(12, 13).decoderLayerSizes(14, 15).build())
                         .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(5).nOut(6)
                                         .activation(new ActivationTanH()).build())
-                        .pretrain(true).backprop(true).build();
+                        .pretrain(true).build();
 
         NeuralNetConfiguration c = mlc.getConf(0);
         org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
@@ -298,7 +298,7 @@ public class TestVAE extends BaseDL4JTest {
                                         .nIn(15).nOut(16).encoderLayerSizes(17).decoderLayerSizes(18).build())
                         .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(18)
                                         .nOut(19).activation(new ActivationTanH()).build())
-                        .pretrain(true).backprop(true).build();
+                        .pretrain(true).build();
 
         String asJson = config.toJson();
         String asYaml = config.toYaml();

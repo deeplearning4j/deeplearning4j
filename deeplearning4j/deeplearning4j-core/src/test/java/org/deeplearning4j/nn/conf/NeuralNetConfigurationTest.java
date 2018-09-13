@@ -228,8 +228,8 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
                         .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0])
                                         .updater(new Sgd(lr)).biasUpdater(new Sgd(biasLr)).build())
                         .layer(1, new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1]).updater(new Sgd(0.7)).build())
-                        .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2]).build())
-                        .backprop(true).pretrain(false).build();
+                        .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2]).lossFunction(LossFunctions.LossFunction.MSE).build())
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -289,8 +289,8 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
                         .l2(l2).list()
                         .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).build())
                         .layer(1, new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1]).l2(0.5).build())
-                        .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2]).build())
-                        .backprop(true).pretrain(false).build();
+                        .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2]).lossFunction(LossFunctions.LossFunction.MSE).build())
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();

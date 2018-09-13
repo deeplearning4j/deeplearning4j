@@ -78,36 +78,19 @@ public class TFGraphTestAllLibnd4j {
             "multiple_outs_a",
             "multiple_outs_b",
 
-            //Temporarily disable these to merge TF resources before ND4J/SameDiff PR https://github.com/deeplearning4j/dl4j-test-resources/pull/156
-            "bincount.*",
-            "sufficient_statistics.*",
-            "scatter_nd.*",
-            "histogram.*",
-            "rint.*",
-            "sequence_mask.*",
-            "slogdet.*",
-            "log_determinant.*",
-            "eye.*",
-            "meshgrid.*",
-            "alpha_dropout.*",
-            "layers_dropout.*",
-            "lrn.*",
-            "l2_normalize.*",
-            "embedding_lookup.*",
-            "batchnorm.*",
-            "sepconv1d_layers.*",
-            "sepconv2d_layers.*",
-            "avg_pooling3d.*",
-            "max_pooling3d.*",
-            "cnn3d_layers.*",
-            "conv2d_transpose.*",
-            "cnn2d.*",
-            "flatten.*",
-            "dense.*",
-            "cnn1d.*",
-            "avg_pooling1d.*",
-            "max_pooling1d.*",
-            "losses.*"
+            //Crashing
+            "cnn3d_layers/.*",
+
+            //Exceptions - need to look into:
+            "alpha_dropout/.*",
+            "layers_dropout/.*",
+            "losses/.*",
+
+            //Failing only on libnd4j/native graph execution
+            "logsumexp/.*",
+            "reduce_all/.*",
+            "reduce_any/.*",
+            "split/.*"
     };
 
     @BeforeClass

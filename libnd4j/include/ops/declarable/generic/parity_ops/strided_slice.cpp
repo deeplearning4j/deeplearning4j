@@ -320,7 +320,7 @@ namespace nd4j {
                 ShapeUtils<T>::copyVectorPart(end, args, elements, elements);
                 ShapeUtils<T>::copyVectorPart(strides, args, elements, elements * 2);
 
-            } else if (block.width() >= 3) {
+            } else if (block.width() > 1) {
                 isLive = true;
 
                 auto v_begin = INPUT_VARIABLE(1);
@@ -336,7 +336,7 @@ namespace nd4j {
                 for (int e = 0; e < v_end->lengthOf(); e++)
                     end.emplace_back((int) v_end->getIndexedScalar(e));
 
-                if (block.width() >= 4) {
+                if (block.width() > 3) {
                     auto v_stride = INPUT_VARIABLE(3);
 
                     REQUIRE_TRUE(v_stride->lengthOf() == v_begin->lengthOf(), 0, "StridedSlice: Length of begin/end/stride should match, but got %i vs %i vs %i instead", (int) v_begin->lengthOf(), (int) v_end->lengthOf(), (int) v_stride->lengthOf());
@@ -349,6 +349,29 @@ namespace nd4j {
                 }
             } else {
                 REQUIRE_TRUE(false, 0, "StridedSlice: Can't find begin/end/stride information neither in IArguments or in input arrays");
+            }            
+
+            // validation of begin and start
+            std::vector<int> ignoreBegin = BitwiseUtils::valueBits(begin_mask);
+            std::vector<int> ignoreEnd   = BitwiseUtils::valueBits(end_mask);
+            std::vector<int> addAxes     = BitwiseUtils::valueBits(new_axis_mask);
+            std::vector<int> moveAxes    = BitwiseUtils::valueBits(shrink_axis_mask);
+            
+            for (int dim = 0, b = 0, e = 0; dim < x->rankOf(); ++dim) {
+
+                if(moveAxes[dim])
+                    continue;                            
+                
+                if(b < begin.size() && !ignoreBegin[b] && !addAxes[dim]) {
+                    int first = strides[b] > 0 ? begin[b] : math::nd4j_abs<int>(begin[b]) - 1;
+                    REQUIRE_TRUE(first <= x->sizeAt(dim), 0, "StridedSlice: begin index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", begin[b], dim);
+                }
+                if(e < end.size() && !ignoreEnd[e] && !addAxes[dim]) {
+                   int last  = strides[e] > 0 ? end[e] : math::nd4j_abs<int>(end[e])   - 1;
+                   REQUIRE_TRUE(last <= x->sizeAt(dim), 0, "StridedSlice: end index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", end[e], dim);
+                }                
+                ++b;
+                ++e;
             }
 
             IndicesList indices;
@@ -411,6 +434,29 @@ namespace nd4j {
             }
 
             REQUIRE_TRUE(begin.size() > 0 && end.size() > 0 && strides.size() > 0, 0, "Strided_Slice: empty arguments");
+            
+            // validation of begin and start
+            std::vector<int> ignoreBegin = BitwiseUtils::valueBits(begin_mask);
+            std::vector<int> ignoreEnd   = BitwiseUtils::valueBits(end_mask);
+            std::vector<int> addAxes     = BitwiseUtils::valueBits(new_axis_mask);
+            std::vector<int> moveAxes    = BitwiseUtils::valueBits(shrink_axis_mask);
+            
+            for (int dim = 0, b = 0, e = 0; dim < inShape[0]; ++dim) {
+
+                if(moveAxes[dim])
+                    continue;                            
+
+                if(b < begin.size() && !ignoreBegin[b] && !addAxes[dim]) {
+                    int first = strides[b] > 0 ? begin[b] : math::nd4j_abs<int>(begin[b]) - 1;
+                    REQUIRE_TRUE(first <= inShape[dim+1], 0, "StridedSlice: begin index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", begin[b], dim);                    
+                }
+                if(e < end.size() && !ignoreEnd[e] && !addAxes[dim]) {
+                   int last  = strides[e] > 0 ? end[e] : math::nd4j_abs<int>(end[e])   - 1;
+                   REQUIRE_TRUE(last <= inShape[dim+1], 0, "StridedSlice: end index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", end[e], dim);                   
+                }
+                ++b;
+                ++e;
+            }
 
             Nd4jLong *newShape;
             std::vector<Nd4jLong> input_shape(shape::rank(inShape));
@@ -503,6 +549,29 @@ namespace nd4j {
                 REQUIRE_TRUE(false, 0, "StridedSliceBP: Can't find begin/end/stride information neither in IArguments or in input arrays");
             }
 
+            // validation of begin and start
+            std::vector<int> ignoreBegin = BitwiseUtils::valueBits(begin_mask);
+            std::vector<int> ignoreEnd   = BitwiseUtils::valueBits(end_mask);
+            std::vector<int> addAxes     = BitwiseUtils::valueBits(new_axis_mask);
+            std::vector<int> moveAxes    = BitwiseUtils::valueBits(shrink_axis_mask);
+            
+            for (int dim = 0, b = 0, e = 0; dim < x->rankOf(); ++dim) {
+
+                if(moveAxes[dim])
+                    continue;                            
+                
+                if(b < begin.size() && !ignoreBegin[b] && !addAxes[dim]) {
+                    int first = strides[b] > 0 ? begin[b] : math::nd4j_abs<int>(begin[b]) - 1;
+                    REQUIRE_TRUE(first <= x->sizeAt(dim), 0, "StridedSlice: begin index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", begin[b], dim);
+                }
+                if(e < end.size() && !ignoreEnd[e] && !addAxes[dim]) {
+                   int last  = strides[e] > 0 ? end[e] : math::nd4j_abs<int>(end[e])   - 1;
+                   REQUIRE_TRUE(last <= x->sizeAt(dim), 0, "StridedSlice: end index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", end[e], dim);
+                }                
+                ++b;
+                ++e;
+            }
+    
             IndicesList indices;
             auto input_shape = x->getShapeAsVector();
             std::vector<Nd4jLong> final_shape;

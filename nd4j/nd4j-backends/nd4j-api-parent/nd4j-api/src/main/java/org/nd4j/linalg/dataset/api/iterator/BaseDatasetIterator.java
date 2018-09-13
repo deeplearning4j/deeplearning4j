@@ -21,6 +21,7 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.fetcher.DataSetFetcher;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Baseline implementation includes
@@ -54,7 +55,10 @@ public class BaseDatasetIterator implements DataSetIterator {
 
     @Override
     public DataSet next() {
-        fetcher.fetch(batch);
+        if(!hasNext())
+            throw new NoSuchElementException("No next element - hasNext() == false");
+        int next = Math.min(batch, numExamples - fetcher.cursor());
+        fetcher.fetch(next);
         return fetcher.next();
     }
 

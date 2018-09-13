@@ -33,7 +33,7 @@ namespace ops  {
 CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
     
     NDArray<T> *input   = INPUT_VARIABLE(0);                                    // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
-    NDArray<T> *weights = INPUT_VARIABLE(1);                                    // [kD, kH, kW, iC, oC] (NDHWC) or [oC, iC, kD, kH, kW] (NCDHW)
+    NDArray<T> *weights = INPUT_VARIABLE(1);                                    // [kD, kH, kW, iC, oC] always
     NDArray<T> *bias    = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
     NDArray<T> *output  = OUTPUT_VARIABLE(0);                                   // [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW)
 
@@ -56,32 +56,28 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
     int isNCDHW  = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;       // 0-NDHWC, 1-NCDHW    
 
     int bS, iC, iD, iH, iW, oC, oD, oH, oW;                     // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-    int indIOioC, indIOioD, indWoC, indWiC, indWkD;       // corresponding indexes
+    int indIOioC, indIOioD, indWoC, indWiC, indWkD;             // corresponding indexes
     ConvolutionUtils<T>::getSizesAndIndexesConv3d(isNCDHW, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWiC, indWoC, indWkD);
 
-    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({iC,oC,kD,kH,kW,  indWiC,indWoC,indWkD,indWkD+1,indWkD+2}));            
+    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString({kD, kH, kW, iC, oC});            
     REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(weights), 0, "CUSTOM CONV3D OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weights).c_str());        
     if (bias)
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM CONV3D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
 
-    std::vector<int> weightsAxesForDot, permutForGradW;
+    std::vector<int> permutForOutput;
 
-    if(!isNCDHW) {
-        weightsAxesForDot = {3,0,1,2};                                          // iC, kD, kH, kW
+    if(!isNCDHW)         
         input = input->permute({0,4,1,2,3});                                    // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]                        
-    }
-    else {
-        weightsAxesForDot = {1,2,3,4};                                          // iC, kD, kH, kW
-        permutForGradW    = {0,2,3,4,1};                                        // [bS, oC, oD, oH, oW] -> [bS, oD, oH, oW, oC]
-    }
+    else
+        permutForOutput    = {0,2,3,4,1};                                        // [bS, oC, oD, oH, oW] -> [bS, oD, oH, oW, oC]
     
     if(isSameMode)                       // SAME
         ConvolutionUtils<T>::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
 
     NDArray<T> columns(input->ordering(), {bS, iC, kD, kH, kW, oD, oH, oW}, block.getWorkspace());            
     ConvolutionUtils<T>::vol2col(*input, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);                 // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]        
-    // [bS, iC, kD, kH, kW, oD, oH, oW] x [kD, kH, kW, iC, oC]/[oC, iC, kD, kH, kW] = [bS, oD, oH, oW, oC]
-    nd4j::MmulHelper<T>::tensorDot(&columns, weights, output, {1,2,3,4}, weightsAxesForDot, permutForGradW);
+    // [bS, iC, kD, kH, kW, oD, oH, oW] x [kD, kH, kW, iC, oC] = [bS, oD, oH, oW, oC]
+    nd4j::MmulHelper<T>::tensorDot(&columns, weights, output, {1,2,3,4}, {3,0,1,2}, permutForOutput);
 
     if(bias)
         output->template applyBroadcast<simdOps::Add<T>>({indIOioC}, bias);
@@ -96,7 +92,7 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
 DECLARE_SHAPE_FN(conv3dnew) {    
 
     auto inputShapeInfo   = inputShape->at(0);                                  // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
-    auto weightsShapeInfo = inputShape->at(1);                                  // [kD, kH, kW, iC, oC] (NDHWC) or [oC, iC, kD, kH, kW] (NCDHW)
+    auto weightsShapeInfo = inputShape->at(1);                                  // [kD, kH, kW, iC, oC] always
     auto biasShapeInfo    = block.width() > 2 ? inputShape->at(2) : nullptr;    // [oC]
 
     int kD = INT_ARG(0);                                                        // filter(kernel) depth
@@ -118,12 +114,12 @@ DECLARE_SHAPE_FN(conv3dnew) {
     REQUIRE_TRUE(inputShapeInfo[0]   == rank, 0, "CUSTOM CONV3D OP: rank of input array must be equal to %i, but got %i instead !", rank, inputShapeInfo);
     REQUIRE_TRUE(weightsShapeInfo[0] == rank, 0, "CUSTOM CONV3D OP: rank of weights array must be equal to %i, but got %i instead !", rank, weightsShapeInfo);
     
-    int indIOioC, indIiD, indWkD, indWoC, indWiC;
+    int indIOioC, indIiD, indWoC(4);
     if(!isNCDHW) {
-        indIOioC = 4; indIiD = 1; indWkD = 0; indWoC = 4; indWiC = 3;
+        indIOioC = 4; indIiD = 1;
     }
     else {        
-        indIOioC = 1; indIiD = 2; indWkD = 2; indWoC = 0; indWiC = 1;              
+        indIOioC = 1; indIiD = 2;
     }    
 
     int bS = inputShapeInfo[1];                           // batch size
@@ -133,7 +129,7 @@ DECLARE_SHAPE_FN(conv3dnew) {
     int iC = inputShapeInfo[indIOioC+1];                  // input channels        
     int oC = weightsShapeInfo[indWoC+1];                  // output channels
 
-    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({iC,oC,kD,kH,kW,  indWiC,indWoC,indWkD,indWkD+1,indWkD+2}));        
+    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString({kD, kH, kW, iC, oC});
     REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(weightsShapeInfo), 0, "CUSTOM CONV3D OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weightsShapeInfo).c_str());    
     if (biasShapeInfo) 
         REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0, "CUSTOM CONV3D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));
@@ -168,12 +164,12 @@ DECLARE_SHAPE_FN(conv3dnew) {
 CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
     
     NDArray<T> *input   = INPUT_VARIABLE(0);                                                // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
-    NDArray<T> *weights = INPUT_VARIABLE(1);                                                // [kD, kH, kW, iC, oC] (NDHWC) or [oC, iC, kD, kH, kW] (NCDHW)
+    NDArray<T> *weights = INPUT_VARIABLE(1);                                                // [kD, kH, kW, iC, oC] always
     NDArray<T> *bias    = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]
     NDArray<T> *gradO   = block.width() > 3 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(2);        // [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW), epsilon_next
     
     NDArray<T> *gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW), epsilon
-    NDArray<T> *gradW = OUTPUT_VARIABLE(1);                                                 // [kD, kH, kW, iC, oC] (NDHWC) or [oC, iC, kD, kH, kW] (NCDHW)
+    NDArray<T> *gradW = OUTPUT_VARIABLE(1);                                                 // [kD, kH, kW, iC, oC] always
     NDArray<T> *gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
 
     REQUIRE_TRUE(input->rankOf()   == 5, 0, "CUSTOM CONV3D_BP OP: rank of input array must be equal to 5, but got %i instead !", input->rankOf());
@@ -203,34 +199,29 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
     ConvolutionUtils<T>::calcOutSizePool3D(trueoD, trueoH, trueoW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH, iW, isSameMode);
 
     std::string expectedGradOShape   = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({bS,oC,trueoD,trueoH,trueoW,  0,indIOioC,indIOioD,indIOioD+1,indIOioD+2}));            
-    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({iC,oC,kD,kH,kW,  indWiC,indWoC,indWkD,indWkD+1,indWkD+2}));
+    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString({kD, kH, kW, iC, oC});
     REQUIRE_TRUE(expectedGradOShape == ShapeUtils<T>::shapeAsString(gradO), 0,  "CUSTOM CONV3D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils<T>::shapeAsString(gradO).c_str());
     REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(weights), 0, "CUSTOM CONV3D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weights).c_str());    
     if(bias)        
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM CONV3D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
     
-    std::vector<int> gradOaxesForDot, permutForGradW, permutForColumns;    
+    std::vector<int> gradOaxesForDot;
 
     if(!isNDHWC) {
         input = input->permute({0,4,1,2,3});                                    // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
         gradI = gradI->permute({0,4,1,2,3});                                    // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
         gradOaxesForDot  = {0,1,2,3};                                           // bS, oD, oH, oW        
-        permutForGradW   = {3,0,1,2,4};                                         // [kD, kH, kW, iC, oC] -> [iC, kD, kH, kW, oC]
-        permutForColumns = {2,3,4,1,0,5,6,7};                                   // [bS, iC, kD, kH, kW, oD, oH, oW] -> [kD, kH, kW, iC, bS, oD, oH, oW]
     }
-    else {
+    else 
         gradOaxesForDot  = {0,2,3,4};                                           // bS, oD, oH, oW
-        permutForGradW   = {1,2,3,4,0};                                         // [oC, iC, kD, kH, kW] -> [iC, kD, kH, kW, oC]
-        permutForColumns = {1,2,3,4,0,5,6,7};                                   // [bS, iC, kD, kH, kW, oD, oH, oW] -> [iC, kD, kH, kW, bS, oD, oH, oW]
-    }
 
     if(isSameMode)                       // SAME        
         ConvolutionUtils<T>::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);    
     
     // ----- calculation of gradW and gradB ----- //                
     NDArray<T> columns(input->ordering(), {bS, iC, kD, kH, kW, oD, oH, oW}, block.getWorkspace());      
-    ConvolutionUtils<T>::vol2col(*input, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);                         // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]        
-    nd4j::MmulHelper<T>::tensorDot(&columns, gradO, gradW, {0,5,6,7}, gradOaxesForDot, permutForGradW);     // [bS, iC, kD, kH, kW, oD, oH, oW] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [iC, kD, kH, kW, oC]
+    ConvolutionUtils<T>::vol2col(*input, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);                   // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]        
+    nd4j::MmulHelper<T>::tensorDot(&columns, gradO, gradW, {0,5,6,7}, gradOaxesForDot, {3,0,1,2,4});     // [bS, iC, kD, kH, kW, oD, oH, oW] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [iC, kD, kH, kW, oC]
 
     if(gradB) {        
         if(gradB->rankOf() == 2) 
@@ -241,8 +232,8 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
     }
 
     //----- calculation of gradI -----//            
-    nd4j::MmulHelper<T>::tensorDot(weights, gradO, &columns, {indWoC}, {indIOioC}, permutForColumns);   // [kD, kH, kW, iC, oC]/[oC, iC, kD, kH, kW]] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [kD, kH, kW, iC, bS, oD, oH, oW]/[iC, kD, kH, kW, bS, oD, oH, oW]
-    ConvolutionUtils<T>::col2vol(columns, *gradI, sD, sH, sW, pD, pH, pW, dD, dH, dW);                     // columns [bS, iC, kD, kH, kW, oD, oH, oW] is de-convoluted to  [bS, iC, iD, iH, iW]
+    nd4j::MmulHelper<T>::tensorDot(weights, gradO, &columns, {indWoC}, {indIOioC}, {2,3,4,1,0,5,6,7});   // [kD, kH, kW, iC, oC] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [kD, kH, kW, iC, bS, oD, oH, oW]
+    ConvolutionUtils<T>::col2vol(columns, *gradI, sD, sH, sW, pD, pH, pW, dD, dH, dW);                   // columns [bS, iC, kD, kH, kW, oD, oH, oW] is de-convoluted to  [bS, iC, iD, iH, iW]
    
     if(!isNDHWC) {
         delete input;        
@@ -257,7 +248,7 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
 DECLARE_SHAPE_FN(conv3dnew_bp) {
 
     Nd4jLong* inputShapeInfo   = inputShape->at(0);                                              // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
-    Nd4jLong* weightsShapeInfo = inputShape->at(1);                                              // [kD, kH, kW, iC, oC] (NDHWC) or [oC, iC, kD, kH, kW] (NCDHW)
+    Nd4jLong* weightsShapeInfo = inputShape->at(1);                                              // [kD, kH, kW, iC, oC] always
     Nd4jLong* biasShapeInfo    = block.width() > 3 ? inputShape->at(2) : nullptr;                // [oC]
     Nd4jLong* gradOShapeInfo   = block.width() > 3 ? inputShape->at(3) : inputShape->at(2);      // [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW), epsilon_next
 
@@ -281,12 +272,12 @@ DECLARE_SHAPE_FN(conv3dnew_bp) {
     REQUIRE_TRUE(weightsShapeInfo[0] == rank, 0, "CUSTOM CONV3D_BP OP: rank of weights array must be equal to %i, but got %i instead !", rank, weightsShapeInfo);
     REQUIRE_TRUE(gradOShapeInfo[0]   == rank, 0, "CUSTOM CONV3D_BP OP: rank of output gradients (next epsilon) array must be equal to %i, but got %i instead !", rank, gradOShapeInfo);
 
-    int indIOioC, indIiD, indWkD, indWoC, indWiC;
+    int indIOioC, indIiD, indWoC(4);
     if(!isNDHWC) {
-        indIOioC = 4; indIiD = 1; indWkD = 0; indWoC = 4; indWiC = 3; 
+        indIOioC = 4; indIiD = 1;
     }
     else {        
-        indIOioC = 1; indIiD = 2; indWkD = 2; indWoC = 0; indWiC = 1;              
+        indIOioC = 1; indIiD = 2;
     }    
 
     int bS = inputShapeInfo[1];                           // batch size
@@ -300,7 +291,7 @@ DECLARE_SHAPE_FN(conv3dnew_bp) {
     ConvolutionUtils<T>::calcOutSizePool3D(trueoD, trueoH, trueoW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH, iW, isSameMode);
 
     std::string expectedGradOShape   = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({bS,oC,trueoD,trueoH,trueoW,  0,indIOioC,indIiD,indIiD+1,indIiD+2}));            
-    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({iC,oC,kD,kH,kW,  indWiC,indWoC,indWkD,indWkD+1,indWkD+2}));
+    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString({kD, kH, kW, iC, oC});
     REQUIRE_TRUE(expectedGradOShape   == ShapeUtils<T>::shapeAsString(gradOShapeInfo),   0, "CUSTOM CONV3D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils<T>::shapeAsString(gradOShapeInfo).c_str());
     REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(weightsShapeInfo), 0, "CUSTOM CONV3D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weightsShapeInfo).c_str());
     if(biasShapeInfo)        

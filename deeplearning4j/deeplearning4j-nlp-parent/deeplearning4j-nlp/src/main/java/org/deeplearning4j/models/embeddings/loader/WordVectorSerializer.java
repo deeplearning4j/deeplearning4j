@@ -49,6 +49,7 @@ import org.deeplearning4j.text.documentiterator.LabelsSource;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.nd4j.base.Preconditions;
 import org.nd4j.compression.impl.NoOp;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -112,7 +113,7 @@ public class WordVectorSerializer {
             int currLine = 0;
             while ((line = reader.readLine()) != null) {
                 String[] split = line.split(" ");
-                assert split.length == layerSize + 1;
+                Preconditions.checkState(split.length == layerSize + 1, "Expected %s values, got %s", layerSize+1, split.length);
                 String word = split[0].replaceAll(WHITESPACE_REPLACEMENT, " ");
 
                 float[] vector = new float[split.length - 1];

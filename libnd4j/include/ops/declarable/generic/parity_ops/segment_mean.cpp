@@ -30,10 +30,10 @@ namespace nd4j {
             REQUIRE_TRUE(idxSegments->isVector(), 0, "segment_mean: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
             REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "segment_mean: segment indexes array length should be equal to the input first dimension, but %i != %i.", idxSegments->lengthOf(), input->sizeAt(0));
 
-            T expected = (T) 0.f, wrong = (T) 0.f;
+            Nd4jLong expected, wrong;
 
-            REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_mean: segment indices should be arranged, but %2.1f > %2.1f",
-                    expected, wrong);
+            REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_mean: segment indices should be arranged, but %i > %i",
+                    wrong, expected);
 
             helpers::segmentMeanFunctor(input, idxSegments, segmentedOutput);
 
@@ -62,6 +62,25 @@ namespace nd4j {
 
             return SHAPELIST(outputShape);
         }
-    }
 
+        CUSTOM_OP_IMPL(segment_mean_bp, 3, 2, false, 0, 0) {
+            auto input = INPUT_VARIABLE(0);
+            auto indices = INPUT_VARIABLE(1);
+            auto gradOut = INPUT_VARIABLE(2);
+            auto output = OUTPUT_VARIABLE(0);
+            auto outIndices = OUTPUT_VARIABLE(1);
+            outIndices->assign(indices);
+            return helpers::segmentMeanFunctorBP(input, indices, gradOut, output);
+        }
+        DECLARE_SHAPE_FN(segment_mean_bp){
+            Nd4jLong* in = inputShape->at(0);
+            Nd4jLong* inIdx = inputShape->at(1);
+
+            Nd4jLong* outShape;
+            Nd4jLong* outIndex;
+            COPY_SHAPE(in, outShape);
+            COPY_SHAPE(inIdx, outIndex);
+            return SHAPELIST(outShape, outIndex);
+        }
+    }
 }

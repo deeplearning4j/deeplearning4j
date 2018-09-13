@@ -30,10 +30,10 @@ namespace nd4j {
             REQUIRE_TRUE(idxSegments->isVector(), 0, "segment_sum: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
             REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "segment_sum: segment indexes array length should be equal to the input first dimension, but %i != %i.", idxSegments->lengthOf(), input->sizeAt(0));
 
-            T expected = (T) 0.f, wrong = (T) 0.f;
+            Nd4jLong expected, wrong;
 
-            REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_sum: segment indices should be arranged, but %2.1f > %2.1f",
-                    expected, wrong);
+            REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_sum: segment indices should be arranged, but %i > %i",
+                    wrong, expected);
 
             helpers::segmentSumFunctor(input, idxSegments, segmentedOutput);
 
@@ -62,6 +62,23 @@ namespace nd4j {
 
             return SHAPELIST(outputShape);
         }
+
+        CUSTOM_OP_IMPL(segment_sum_bp, 3, 2, false, 0, 0) {
+
+            return helpers::segmentSumFunctorBP(INPUT_VARIABLE(0), INPUT_VARIABLE(1), INPUT_VARIABLE(2), OUTPUT_VARIABLE(0));
+        }
+        DECLARE_SHAPE_FN(segment_sum_bp){
+            Nd4jLong* in = inputShape->at(0);
+            Nd4jLong* inIdx = inputShape->at(1);
+
+            Nd4jLong* outShape;
+            Nd4jLong* outIndex;
+            COPY_SHAPE(in, outShape);
+            COPY_SHAPE(inIdx, outIndex);
+            return SHAPELIST(outShape, outIndex);
+
+        }
     }
+
 
 }

@@ -410,7 +410,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testDynamicStitch() {
-        OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
 
         INDArray ia = Nd4j.create(new float[]{5, 1, 3}, new long[]{3});
@@ -488,8 +487,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testEye(){
-        OpValidationSuite.ignoreFailing();
-
         int[] rows = new int[]{3,3,3,3};
         int[] cols = new int[]{3,2,2,2};
         int[][] batch = new int[][]{null, null, {4}, {3,3}};
@@ -1411,7 +1408,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testAtan2BroadcastShape(){
-        OpValidationSuite.ignoreFailing();
         INDArray arr1 = Nd4j.create(new long[]{3,1,4});
         INDArray arr2 = Nd4j.create(new long[]{1,2,4});
 
@@ -1498,8 +1494,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testPad(){
-        OpValidationSuite.ignoreFailing();
-
         INDArray in = Nd4j.valueArrayOf(new long[]{5}, 1.0);
         INDArray pad = Nd4j.create(new double[]{1,1}, new long[]{1,2});
         INDArray value = Nd4j.trueScalar(10.0);
@@ -1711,6 +1705,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
         Nd4j.getExecutioner().exec(op);
 
-        System.out.println(out);
+        assertNotEquals(Nd4j.create(out.shape()), out);
     }
 }

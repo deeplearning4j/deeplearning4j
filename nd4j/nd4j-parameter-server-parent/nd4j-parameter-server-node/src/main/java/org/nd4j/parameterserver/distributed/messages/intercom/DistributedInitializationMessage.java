@@ -36,6 +36,7 @@ import org.nd4j.parameterserver.distributed.messages.aggregations.Initialization
 @Builder
 @Data
 @Slf4j
+@Deprecated
 public class DistributedInitializationMessage extends BaseVoidMessage implements DistributedMessage {
 
     protected int vectorLength;

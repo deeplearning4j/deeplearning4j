@@ -2185,14 +2185,13 @@ public class Nd4j {
             String[] data = line.trim().split(split);
             if (numColumns < 0) {
                 numColumns = data.length;
-
             } else
-                assert data.length == numColumns : "Data has inconsistent number of columns";
+                Preconditions.checkState(data.length == numColumns,
+                        "Data has inconsistent number of columns: data length %s, numColumns %s", data.length, numColumns);
             data2.add(readSplit(data));
 
 
         }
-
         ret = Nd4j.create(data2.size(), numColumns);
         for (int i = 0; i < data2.size(); i++)
             ret.putRow(i, Nd4j.create(Nd4j.createBuffer(data2.get(i))));
@@ -6031,6 +6030,15 @@ public class Nd4j {
         DynamicCustomOp o = op.build();
         outShapes = Nd4j.getExecutioner().calculateOutputShape(o);
         INDArray[] outputs = new INDArray[outShapes.size()];
+
+        if(x == null && (outShapes.get(0) == null || outShapes.get(0).length == 0 || outShapes.get(0)[0] == 0)){
+            //Empty: no conditions match
+            for( int i=0; i<outputs.length; i++ ){
+                outputs[i]  = Nd4j.empty();
+            }
+            return outputs;
+        }
+
         for(int i=0; i<outputs.length; i++){
             outputs[i] = Nd4j.createUninitialized(outShapes.get(i));
         }

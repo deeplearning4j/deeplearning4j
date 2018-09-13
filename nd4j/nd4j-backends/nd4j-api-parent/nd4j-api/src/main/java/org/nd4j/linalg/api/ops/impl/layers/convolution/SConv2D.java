@@ -95,7 +95,7 @@ public class SConv2D extends Conv2D {
 
     @Override
     public String[] tensorflowNames() {
-        throw new NoOpNameFoundException("No op name found for backwards");
+        throw new NoOpNameFoundException("No op name found for " + opName());
     }
 
     @Override

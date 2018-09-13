@@ -27,6 +27,9 @@
 #include <graph/ContextPrototype.h>
 #include <memory/Workspace.h>
 
+#ifdef HAVE_MKLDNN
+#include <MKLDNNStream.h>
+#endif
 
 // CUDA-specific includes
 #ifdef __CUDACC__
@@ -53,6 +56,10 @@ namespace nd4j {
 
             // branch for divergent_op
             int _branch = 0;
+
+#ifdef HAVE_MKLDNN
+            MKLDNNStream<T>* _mkldnnStream = nullptr;
+#endif
         public:
             // TODO: maybe override new here as well?
 
@@ -106,6 +113,10 @@ namespace nd4j {
             int getBranch();
             void setBranch(int branch);
 
+#ifdef HAVE_MKLDNN
+            MKLDNNStream<T> *getMKLDNNStream() { return _mkldnnStream; }
+            void setMKLDNNStream(MKLDNNStream<T> *mkldnnStream) { _mkldnnStream = mkldnnStream; }
+#endif
             /**
              *
              * @return

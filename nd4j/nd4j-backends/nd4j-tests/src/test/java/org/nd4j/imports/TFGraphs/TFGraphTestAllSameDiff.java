@@ -68,8 +68,6 @@ public class TFGraphTestAllSameDiff {
             "transforms/atan2_3,1,4_1,2,4",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6142
             "reverse/shape5.*",
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6155
-            "reductions/argmin.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6172
             "pad/rank1.*",
             "pad/rank2Pone_const10",
@@ -82,45 +80,62 @@ public class TFGraphTestAllSameDiff {
             "confusion/.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6180
             "identity_n.*",
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6189
-            "matmul/rank4.*",
-            "matmul/rank5.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6182
             "zeta.*",
 
-            //Not sure what's up here yet:
-            "svd/rank2_3,3_noFull_uv",
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6281
+            "log_determinant/.*",
+            "slogdet/.*",
 
-            //Temporarily disable these to merge TF resources before ND4J/SameDiff PR https://github.com/deeplearning4j/dl4j-test-resources/pull/156
-            "bincount.*",
-            "sufficient_statistics.*",
-            "scatter_nd.*",
-            "histogram.*",
-            "rint.*",
-            "sequence_mask.*",
-            "slogdet.*",
-            "log_determinant.*",
-            "eye.*",
-            "meshgrid.*",
-            "alpha_dropout.*",
-            "layers_dropout.*",
-            "lrn.*",
-            "l2_normalize.*",
-            "embedding_lookup.*",
-            "batchnorm.*",
-            "sepconv1d_layers.*",
-            "sepconv2d_layers.*",
-            "avg_pooling3d.*",
-            "max_pooling3d.*",
-            "cnn3d_layers.*",
-            "conv2d_transpose.*",
-            "cnn2d.*",
-            "flatten.*",
-            "dense.*",
-            "cnn1d.*",
-            "avg_pooling1d.*",
-            "max_pooling1d.*",
-            "losses.*"
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6285
+            "histogram_fixed_width/.*",
+
+            //TODO need unsorted segment sum - then need to change libnd4j impl slightly (need to know format first)
+            "bincount/.*",
+
+            //Crashing?
+            "batchnorm/.*",
+
+            //Not sure what's up here - "DEPTHWISECONV2D OP: wrong shape of weights array, expected is [-1, -1, 2, 2], but got [1, 2, 2, 2] instead !"
+            "sepconv1d_layers/.*",
+
+            //scatter_nd: one minor validation issue mentioned tu Yurii, already fixed but not merged (should validate vs. shape array length, not rank)
+            "scatter_nd/.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6312
+            "cnn1d_layers/channels_last_b1_k2_s1_d2_SAME",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6311
+            "embedding_lookup/.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6315
+            "nth_element/.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6290
+            "unsorted_segment/.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6321
+            "broadcast_to/.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6322
+            "broadcast_dynamic_shape/.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6345
+            "where/cond_only_rank.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6346
+            "boolean_mask/.*",
+
+            //TODO floormod and truncatemod behave differently - i.e., "c" vs. "python" semantics. Need to check implementations too
+            "truncatemod/.*",
+
+            //Not sure why these are failing yet
+            "lrn/dr3.*",
+            "lrn/dr5.*",
+
+            //This is failing on strided slice - on what appears to be an invalid op arguments. Will replace
+            // this test with a set of more thorough/isolated strided slice tests
+            "g_07"
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 

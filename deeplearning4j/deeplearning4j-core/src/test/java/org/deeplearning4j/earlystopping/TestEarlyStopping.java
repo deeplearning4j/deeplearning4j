@@ -134,7 +134,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                     .layer(new OutputLayer.Builder().nIn(4).nOut(3)
                             .activation(Activation.SOFTMAX)
                             .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                    .pretrain(false).backprop(true).build();
+                    .build();
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
 //            net.setListeners(new ScoreIterationListener(1));
@@ -217,8 +217,9 @@ public class TestEarlyStopping extends BaseDL4JTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(0.01)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
+                                .activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -245,8 +246,9 @@ public class TestEarlyStopping extends BaseDL4JTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
+                                .activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -295,7 +297,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                         .weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -332,8 +334,9 @@ public class TestEarlyStopping extends BaseDL4JTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(1e-6)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                                    .activation(Activation.SOFTMAX)
+                                    .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                        .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -345,7 +348,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                                         .epochTerminationConditions(new MaxEpochsTerminationCondition(10000))
                                         .iterationTerminationConditions(
                                                         new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
-                                                        new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
+                                                        new MaxScoreIterationTerminationCondition(50)) //Initial score is ~8
                                         .scoreCalculator(new DataSetLossCalculator(irisIter, true))
                                         .modelSaver(saver).build();
 
@@ -374,8 +377,9 @@ public class TestEarlyStopping extends BaseDL4JTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(0.0)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
+                                .activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -388,7 +392,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                                                         new ScoreImprovementEpochTerminationCondition(5))
                                         .iterationTerminationConditions(
                                                         new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
-                                                        new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
+                                                        new MaxScoreIterationTerminationCondition(50)) //Initial score is ~8
                                         .scoreCalculator(new DataSetLossCalculator(irisIter, true)).modelSaver(saver)
                                         .build();
 
@@ -419,7 +423,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER).nIn(20).nOut(1)
                                         .build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
         int nSamples = 100;
@@ -460,8 +464,9 @@ public class TestEarlyStopping extends BaseDL4JTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
+                                .activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -497,8 +502,9 @@ public class TestEarlyStopping extends BaseDL4JTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
+                                .activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -560,7 +566,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .list()
                     .layer(new DenseLayer.Builder().nIn(784).nOut(32).build())
-                    .layer(new OutputLayer.Builder().nIn(32).nOut(784).activation(Activation.SIGMOID).build())
+                    .layer(new OutputLayer.Builder().nIn(32).nOut(784).activation(Activation.SIGMOID).lossFunction(LossFunctions.LossFunction.MSE).build())
                     .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -775,6 +781,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
                 .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
+                        .activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -868,7 +875,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                         .activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT)
                         .build())
-                .pretrain(false).backprop(true).build();
+                .build();
 
         File f = testDir.newFolder();
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new LocalFileModelSaver(f.getAbsolutePath());

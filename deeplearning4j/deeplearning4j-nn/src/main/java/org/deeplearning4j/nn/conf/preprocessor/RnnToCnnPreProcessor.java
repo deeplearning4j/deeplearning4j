@@ -131,8 +131,8 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
         if (maskArray == null) {
             return new Pair<>(maskArray, currentMaskState);
         } else if (maskArray.rank() == 2) {
-            //Need to reshape mask array from [minibatch,timeSeriesLength] to [minibatch*timeSeriesLength, 1]
-            return new Pair<>(TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray,
+            //Need to reshape mask array from [minibatch,timeSeriesLength] to 4d minibatch format: [minibatch*timeSeriesLength, 1, 1, 1]
+            return new Pair<>(TimeSeriesUtils.reshapeTimeSeriesMaskToCnn4dMask(maskArray,
                     LayerWorkspaceMgr.noWorkspacesImmutable(), ArrayType.INPUT), currentMaskState);
         } else {
             throw new IllegalArgumentException("Received mask array of rank " + maskArray.rank()

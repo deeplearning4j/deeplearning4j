@@ -196,8 +196,8 @@ public class TupleStreamDataSetIteratorTest extends SolrCloudTestCase {
             .activation(Activation.IDENTITY)
             .build()
           )
-        .pretrain(false)
-        .backprop(true)
+
+
         .build()
       );
     model.init();

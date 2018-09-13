@@ -57,7 +57,7 @@ public class TestParallelEarlyStoppingUI {
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
                         .layer(1, new OutputLayer.Builder().nIn(3).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
 
         // it's important that the UI can report results from parallel training

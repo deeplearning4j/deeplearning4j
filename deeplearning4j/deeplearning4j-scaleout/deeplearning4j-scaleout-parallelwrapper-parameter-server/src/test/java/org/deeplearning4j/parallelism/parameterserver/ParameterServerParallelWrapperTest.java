@@ -71,7 +71,7 @@ public class ParameterServerParallelWrapperTest {
                         .layer(4, new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build())
                         .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).activation(Activation.SOFTMAX).build())
-                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).backprop(true).pretrain(false);
+                        .setInputType(InputType.convolutionalFlat(28, 28, 1));
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);

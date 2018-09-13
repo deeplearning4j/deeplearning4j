@@ -291,6 +291,7 @@ public class SameDiffTests {
         SDVariable y = sameDiff.var("y", arr);
         SDVariable result = sameDiff.mmul(x, y);
         SDVariable otherResult = result.add(result);
+        sameDiff.exec();
         assertArrayEquals(new long[]{2, 2}, result.getShape());
     }
 
@@ -1053,6 +1054,7 @@ public class SameDiffTests {
         val input1 = sd.var("input", matrix);
         val input2 = sd.var("input2", vector);
         val output = sd.mmul("output", input1, input2, MMulTranspose.builder().transposeA(true).transposeB(false).build());
+        sd.exec();
         assertArrayEquals(new long[]{3, 1}, output.getShape());
         val result = sd.exec();
     }
@@ -1581,7 +1583,7 @@ public class SameDiffTests {
         sd.exec();
 
         for (int i = 0; i < 4; i++)
-            assert out.getArr().get(all(), NDArrayIndex.point(i), all(), all()).getDouble(0) == 1;
+            assertEquals(1, out.getArr().get(all(), NDArrayIndex.point(i), all(), all()).getInt(0));
 
     }
 
@@ -1656,7 +1658,7 @@ public class SameDiffTests {
 
 
         SameDiff sd = SameDiff.create();
-        INDArray depthWeightArr = Nd4j.create(depthWise, nIn, kH, kW);
+        INDArray depthWeightArr = Nd4j.create(kH, kW, nIn, depthWise);
 
         INDArray bArr = Nd4j.create(1, depthWise * nIn);
         INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);

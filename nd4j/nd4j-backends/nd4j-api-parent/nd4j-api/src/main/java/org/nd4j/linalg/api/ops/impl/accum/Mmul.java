@@ -114,33 +114,6 @@ public class Mmul extends DynamicCustomOp {
 
     }
 
-
-    @Override
-    public List<long[]> calculateOutputShape() {
-        if(mt == null)
-            mt = MMulTranspose.allFalse();
-
-
-        long[] aShape = larg().getShape();
-        long[] bShape = rarg().getShape();
-        if(Shape.isPlaceholderShape(aShape) || Shape.isPlaceholderShape(bShape))
-            return Collections.emptyList();
-        aShape = mt.isTransposeA() ? transposeShapeArray(aShape) : aShape;
-        bShape = mt.isTransposeB() ? transposeShapeArray(bShape) : bShape;
-
-        long[] shape =  Shape.getMatrixMultiplyShape(aShape,bShape);
-        if(mt.isTransposeResult())
-            shape = transposeShapeArray(shape);
-
-        for(int i = 0; i < shape.length; i++) {
-            if(shape[i] < 1)
-                throw new ND4JIllegalStateException("Invalid shape computed at index " +  i + ": shape " + Arrays.toString(shape));
-        }
-
-        return Collections.singletonList(shape);
-    }
-
-
     @Override
     public String onnxName() {
         return "MatMul";
