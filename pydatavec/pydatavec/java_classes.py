@@ -31,16 +31,21 @@ JSchema = autoclass('org.datavec.api.transform.schema.Schema')
 SchemaBuilder = autoclass('org/datavec/api/transform/schema/Schema$Builder')
 
 JTransformProcess = autoclass('org.datavec.api.transform.TransformProcess')
-TransformProcessBuilder = autoclass('org/datavec/api/transform/TransformProcess$Builder')
+TransformProcessBuilder = autoclass(
+    'org/datavec/api/transform/TransformProcess$Builder')
 
 ConditionOp = autoclass('org.datavec.api.transform.condition.ConditionOp')
 ConditionFilter = autoclass('org.datavec.api.transform.filter.ConditionFilter')
 
-BooleanColumnCondition = autoclass('org.datavec.api.transform.condition.column.BooleanColumnCondition')
-CategoricalColumnCondition = autoclass('org.datavec.api.transform.condition.column.CategoricalColumnCondition')
-DoubleColumnCondition = autoclass('org.datavec.api.transform.condition.column.DoubleColumnCondition')
+BooleanColumnCondition = autoclass(
+    'org.datavec.api.transform.condition.column.BooleanColumnCondition')
+CategoricalColumnCondition = autoclass(
+    'org.datavec.api.transform.condition.column.CategoricalColumnCondition')
+DoubleColumnCondition = autoclass(
+    'org.datavec.api.transform.condition.column.DoubleColumnCondition')
 #FloatColumnCondition = autoclass('org.datavec.api.transform.condition.column.FloatColumnCondition')
-StringColumnCondition = autoclass('org.datavec.api.transform.condition.column.StringColumnCondition')
+StringColumnCondition = autoclass(
+    'org.datavec.api.transform.condition.column.StringColumnCondition')
 
 
 BooleanWritable = autoclass('org.datavec.api.writable.BooleanWritable')
@@ -50,10 +55,10 @@ FloatWritable = autoclass('org.datavec.api.writable.FloatWritable')
 DoubleWritable = autoclass('org.datavec.api.writable.DoubleWritable')
 
 
-
 DateTimeZone = autoclass('org.joda.time.DateTimeZone')
 DateTimeFieldType = autoclass('org.joda.time.DateTimeFieldType')
-DeriveColumnsFromTimeTransformBuilder = autoclass('org.datavec.api.transform.transform.time.DeriveColumnsFromTimeTransform$Builder')
+DeriveColumnsFromTimeTransformBuilder = autoclass(
+    'org.datavec.api.transform.transform.time.DeriveColumnsFromTimeTransform$Builder')
 
 
 Arrays = autoclass('java.util.Arrays')
@@ -66,26 +71,45 @@ JFloat = autoclass('java.lang.Float')
 Arrays = autoclass('java.util.Arrays')
 JMap = autoclass('java.util.HashMap')
 
-
-SparkConf = autoclass('org.apache.spark.SparkConf')
-SparkContext = autoclass('org.apache.spark.api.java.JavaSparkContext')
-JavaRDD = autoclass('org.apache.spark.api.java.JavaRDD')
-SparkTransformExecutor = autoclass('org.datavec.spark.transform.SparkTransformExecutor')
+try:
+    SparkConf = autoclass('org.apache.spark.SparkConf')
+    SparkContext = autoclass('org.apache.spark.api.java.JavaSparkContext')
+    JavaRDD = autoclass('org.apache.spark.api.java.JavaRDD')
+    SparkTransformExecutor = autoclass('org.datavec.spark.transform.SparkTransformExecutor')
+    StringToWritablesFunction = autoclass('org.datavec.spark.transform.misc.StringToWritablesFunction')
+    WritablesToStringFunction = autoclass('org.datavec.spark.transform.misc.WritablesToStringFunction')
+    spark_available = True
+except:
+    spark_available = False
 
 CSVRecordReader = autoclass('org.datavec.api.records.reader.impl.csv.CSVRecordReader')
-StringToWritablesFunction = autoclass('org.datavec.spark.transform.misc.StringToWritablesFunction')
-WritablesToStringFunction = autoclass('org.datavec.spark.transform.misc.WritablesToStringFunction')
+CSVRecordWriter = autoclass('org.datavec.api.records.writer.impl.csv.CSVRecordWriter')
 
-#LocalTransformExecutor = autoclass('org.datavec.local.transforms.LocalTransformExecutor')
+LocalTransformExecutor = autoclass('org.datavec.local.transforms.LocalTransformExecutor')
 
-ChangeCaseStringTransform = autoclass('org.datavec.api.transform.transform.string.ChangeCaseStringTransform')
-ChangeCaseStringTransformCaseType = autoclass('org.datavec.api.transform.transform.string.ChangeCaseStringTransform$CaseType')
-ConcatenateStringColumns = autoclass('org.datavec.api.transform.transform.string.ConcatenateStringColumns')
-RemoveWhiteSpaceTransform = autoclass('org.datavec.api.transform.transform.string.RemoveWhiteSpaceTransform')
-ReplaceEmptyStringTransform = autoclass('org.datavec.api.transform.transform.string.ReplaceEmptyStringTransform')
-ReplaceStringTransform = autoclass('org.datavec.api.transform.transform.string.ReplaceStringTransform')
-StringMapTransform = autoclass('org.datavec.api.transform.transform.string.StringMapTransform')
+ChangeCaseStringTransform = autoclass(
+    'org.datavec.api.transform.transform.string.ChangeCaseStringTransform')
+ChangeCaseStringTransformCaseType = autoclass(
+    'org.datavec.api.transform.transform.string.ChangeCaseStringTransform$CaseType')
+ConcatenateStringColumns = autoclass(
+    'org.datavec.api.transform.transform.string.ConcatenateStringColumns')
+RemoveWhiteSpaceTransform = autoclass(
+    'org.datavec.api.transform.transform.string.RemoveWhiteSpaceTransform')
+ReplaceEmptyStringTransform = autoclass(
+    'org.datavec.api.transform.transform.string.ReplaceEmptyStringTransform')
+ReplaceStringTransform = autoclass(
+    'org.datavec.api.transform.transform.string.ReplaceStringTransform')
+StringMapTransform = autoclass(
+    'org.datavec.api.transform.transform.string.StringMapTransform')
 
 
 ReducerBuilder = autoclass('org.datavec.api.transform.reduce.Reducer$Builder')
 ReduceOp = autoclass('org.datavec.api.transform.ReduceOp')
+
+
+FileSplit = autoclass('org.datavec.api.split.FileSplit')
+
+JFile = autoclass('java.io.File')
+ArrayList = autoclass('java.util.ArrayList')
+
+NumberOfRecordsPartitioner = autoclass('org.datavec.api.split.partition.NumberOfRecordsPartitioner')

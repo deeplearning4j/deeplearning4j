@@ -30,6 +30,9 @@ class StringRDD(object):
         size = jlist.size()
         return iter([jlist.get(i) for i in range(size)])
 
+    def iter(self):
+        return self.__iter__()
+
     def save(self, path):
         self.java_rdd.saveAsTextFile(path)
 
@@ -61,7 +64,8 @@ class SparkExecutor(object):
         source_type = getattr(type(source), '__name__', None)
         if source_type == 'str':
             if os.path.isfile(source) or os.path.isdir(source):
-                string_data = self.spark_context.textFile(source)  # JavaRDD<String>
+                string_data = self.spark_context.textFile(
+                    source)  # JavaRDD<String>
             else:
                 raise ValueError('Invalid source ' + source)
         elif source_type == 'org.apache.spark.api.java.JavaRDD':
@@ -77,7 +81,10 @@ class SparkExecutor(object):
             string_data = self.spark_context.textFile(path)
         else:
             raise Exception('Unexpected source type: ' + str(type(source)))
-        parsed_input_data = string_data.map(self.str2wf(self.rr))   # JavaRDD<List<Writable>>
-        processed_data = self.executor.execute(parsed_input_data, tp.to_java())  # JavaRDD<List<Writable>>
-        processed_as_string = processed_data.map(self.w2strf(","))  # JavaRDD<String>
+        parsed_input_data = string_data.map(
+            self.str2wf(self.rr))   # JavaRDD<List<Writable>>
+        processed_data = self.executor.execute(
+            parsed_input_data, tp.to_java())  # JavaRDD<List<Writable>>
+        processed_as_string = processed_data.map(
+            self.w2strf(","))  # JavaRDD<String>
         return StringRDD(processed_as_string)  # StringRDD
