@@ -19,11 +19,15 @@ package org.nd4j.imports.TFGraphs;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.autodiff.execution.NativeGraphExecutioner;
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
@@ -39,14 +43,19 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.BiFunction;
 import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
 import java.io.*;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -246,12 +255,12 @@ public class TFGraphTestAllHelper {
     }
 
     protected static Map<String, INDArray> inputVars(String modelName, String base_dir) throws IOException {
-        return readVars(modelName, base_dir, "**.placeholder");
+        return readVars(modelName, base_dir, "**.placeholder", true);
     }
 
 
     protected static Map<String, INDArray> outputVars(String modelName, String base_dir) throws IOException {
-        return readVars(modelName, base_dir, "**.prediction");
+        return readVars(modelName, base_dir, "**.prediction", true);
     }
 
     /**
@@ -268,7 +277,7 @@ public class TFGraphTestAllHelper {
         } else {
             varName = varName + ".0";
         }
-        Map<String, INDArray> nodeSepOutput = readVars(modelName, base_dir, varName.replaceAll("/", "____") + ".prediction_inbw");
+        Map<String, INDArray> nodeSepOutput = readVars(modelName, base_dir, varName.replaceAll("/", "____") + ".prediction_inbw", true);
         //required check for pattern matching as there are scopes and "*" above is a greedy match
         Set<String> removeList = confirmPatternMatch(nodeSepOutput.keySet(), varName);
         for (String toRemove : removeList) {
@@ -292,20 +301,59 @@ public class TFGraphTestAllHelper {
         return removeList;
     }
 
-    protected static Map<String, INDArray> readVars(String modelName, String base_dir, String pattern) throws IOException {
+
+    protected static Map<String, INDArray> readVars(String modelName, String base_dir, String pattern, boolean recursive) throws IOException {
         Map<String, INDArray> varMap = new HashMap<>();
         String modelDir = base_dir + "/" + modelName;
-        ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(new ClassPathResource(modelDir).getClassLoader());
-        Resource[] resources = resolver.getResources("classpath*:" + modelDir + "/" + pattern + ".shape");
-        val dtype = Nd4j.dataType();
-        for (int i = 0; i < resources.length; i++) {
-            String fileName = resources[i].getFilename();
-            String varPath = modelDir + "/" + fileName;
-            String[] varNameArr = fileName.split("\\.");
-            String varName = String.join(".", Arrays.copyOfRange(varNameArr, 0, varNameArr.length - 2));
-//            int[] varShape = Nd4j.readNumpy(new ClassPathResource(varPath).getInputStream(), ",").data().asInt();
 
-            List<String> lines = FileUtils.readLines(new ClassPathResource(varPath).getFile(), Charset.forName("UTF-8"));
+        List<Pair<Resource,Resource>> resources = new ArrayList<>();
+        if(recursive){
+            String nameRegex = pattern.replace("**.",".*\\.") + "\\.shape";
+            File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString() + "/" + modelName);
+            baseDir.mkdirs();
+            baseDir.deleteOnExit();
+            new ClassPathResource(modelDir).copyDirectory(baseDir);
+            LinkedList<File> queue = new LinkedList<>();
+            queue.add(baseDir);
+
+            List<Pair<Resource,Resource>> allResources = new ArrayList<>();
+            while(!queue.isEmpty()){
+                File subdir = queue.remove();
+                File[] files = subdir.listFiles();
+                if (files != null) {
+                    for (File f : files) {
+                        if (f.isDirectory()) {
+                            queue.add(f);
+                        } else {
+                            String filename = f.getName();
+                            if(filename.matches(nameRegex)){
+                                File csvFile = new File(f.getAbsolutePath().replace(".shape",".csv"));
+                                resources.add(new Pair<>(new FileSystemResource(f), new FileSystemResource(csvFile)));
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(new ClassPathResource(modelDir).getClassLoader());
+            Resource[] r = resolver.getResources("classpath*:" + modelDir + "/" + pattern + ".shape");
+            for(Resource res : r){
+                String fileName = res.getFilename();
+                String varPath = modelDir + "/" + fileName;
+                Resource r2 = new org.springframework.core.io.ClassPathResource(varPath.replace(".shape", ".csv"));
+                resources.add(new Pair<>(res, r2));
+            }
+
+        }
+
+
+        val dtype = Nd4j.dataType();
+        for (int i = 0; i < resources.size(); i++) {
+
+            List<String> lines; //= FileUtils.readLines(new ClassPathResource(varPath).getFile(), Charset.forName("UTF-8"));
+            try(InputStream is = new BufferedInputStream(resources.get(i).getFirst().getInputStream())){
+                lines = IOUtils.readLines(is, StandardCharsets.UTF_8);
+            }
             List<String> filtered = new ArrayList<>(lines.size());
             for(String s : lines){
                 String trimmed = s.trim();
@@ -317,7 +365,10 @@ public class TFGraphTestAllHelper {
             INDArray varValue;
             if(filtered.size() == 0){
                 //Scalar
-                float[] varContents = Nd4j.readNumpy(new ClassPathResource(varPath.replace(".shape", ".csv")).getInputStream(), ",").data().asFloat();
+                float[] varContents;
+                try(InputStream is = new BufferedInputStream(resources.get(i).getSecond().getInputStream())){
+                    varContents = Nd4j.readNumpy(is, ",").data().asFloat();
+                }
                 Preconditions.checkState(varContents.length == 1, "Expected length 1 content for scalar shape; got length %s", varContents.length);
                 varValue = Nd4j.trueScalar(varContents[0]);
             } else {
@@ -327,12 +378,16 @@ public class TFGraphTestAllHelper {
                 }
 
                 try {
-                    String content = FileUtils.readFileToString(new ClassPathResource(varPath.replace(".shape", ".csv")).getFile(), Charset.forName("UTF-8"));
+                    String content;
+                    try(InputStream is = new BufferedInputStream(resources.get(i).getSecond().getInputStream())){
+                        content = String.join("\n", IOUtils.readLines(is, StandardCharsets.UTF_8));
+                    }
+                    //= FileUtils.readFileToString(new ClassPathResource(varPath.replace(".shape", ".csv")).getFile(), Charset.forName("UTF-8"));
                     if (content.isEmpty()) {
                         if (varShape.length == 1 && varShape[0] == 0) {
                             varValue = Nd4j.empty();
                         } else {
-                            throw new IllegalStateException("Empty data but non-empty shape: " + varPath);
+                            throw new IllegalStateException("Empty data but non-empty shape: " + resources.get(i).getSecond());
                         }
                     } else {
                         content = content.replaceAll("False", "0");
@@ -349,18 +404,19 @@ public class TFGraphTestAllHelper {
                         }
                     }
                 } catch (NumberFormatException e) {
-                    // FIXME: we can't parse boolean arrays right now :(
                     log.warn("Error parsing number", e);
                     continue;
                 }
             }
-            //varValue = Nd4j.readNumpy(new ClassPathResource(varPath.replace(".shape", ".csv")).getInputStream(), ",").reshape(varShape);
-            if (varName.contains("____")) {
-                //these are intermediate node outputs
-                varMap.put(varName.replaceAll("____", "/"), varValue);
-            } else {
-                varMap.put(varName, varValue);
-            }
+
+            URI u = resources.get(i).getFirst().getURI();
+            String varName = u.toString();
+            int idx = varName.indexOf(modelName);
+            varName = varName.substring(idx + modelName.length()+1);    //+1 for "/"
+            varName = varName.replaceAll("____","/");
+            varName = varName.replaceAll(".placeholder.shape","");
+            varName = varName.replaceAll(".prediction.shape","");
+            varMap.put(varName, varValue);
         }
         return varMap;
     }
