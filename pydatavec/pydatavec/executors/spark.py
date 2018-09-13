@@ -30,6 +30,9 @@ class StringRDD(object):
         size = jlist.size()
         return iter([jlist.get(i) for i in range(size)])
 
+    def iter(self):
+        return self.__iter__()
+
     def save(self, path):
         self.java_rdd.saveAsTextFile(path)
 
