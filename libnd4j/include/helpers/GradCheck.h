@@ -65,7 +65,7 @@ class GradCheck {
 // //////////////////////////////////////////////////////////////////////////
 
 // template<typename T>
-// FORCEINLINE bool ShapeUtils<T>::isPermutNecessary(const std::vector<int>& permut) {        
+// FORCEINLINE bool ShapeUtils::isPermutNecessary(const std::vector<int>& permut) {
 
 //     for(int i=0; i<permut.size(); ++i)
 //         if(permut[i] != i)

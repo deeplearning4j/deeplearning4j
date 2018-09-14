@@ -171,7 +171,7 @@ void prelu(const NDArray<T>& input, const NDArray<T>& alpha, NDArray<T>& output)
     for(Nd4jLong i = 0; i < inputLen; ++i) {
         T x = input(i);
         if(x < static_cast<T>(0)) 
-            output(i) = x * alpha(ShapeUtils<T>::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i));
+            output(i) = x * alpha(ShapeUtils::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i));
         else
             output(i) = x;
     }
@@ -193,7 +193,7 @@ void preluBP(const NDArray<T>& input, const NDArray<T>& alpha, const NDArray<T>&
         T grO = dLdO(i);
         if(x < static_cast<T>(0)) {
             
-            Nd4jLong alphaInd = ShapeUtils<T>::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i);
+            Nd4jLong alphaInd = ShapeUtils::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i);
             dLdI(i) = grO * alpha(alphaInd);
             dLdA(alphaInd) += grO * x;
         }

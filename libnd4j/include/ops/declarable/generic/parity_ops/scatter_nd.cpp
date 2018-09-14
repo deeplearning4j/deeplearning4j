@@ -48,7 +48,7 @@ CUSTOM_OP_IMPL(scatter_nd, 3, 1, false, 0, 0) {
     std::vector<Nd4jLong> indShape = indices->getShapeAsVector();    
     std::vector<Nd4jLong> expectedUpdShape(std::begin(indShape), std::end(indShape) - 1);     
     std::move(std::begin(outShape) + indices->sizeAt(-1), std::end(outShape), std::back_inserter(expectedUpdShape));        
-    REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ND OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString(expectedUpdShape).c_str(), ShapeUtils<T>::shapeAsString(updShape).c_str());
+    REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ND OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
     
     // initial zeroing of output
     if(output->ews() == 1)

@@ -89,7 +89,7 @@ DECLARE_SHAPE_FN(batchnorm) {
 
     // check whether all input shapes are mutually broadcastable
     Nd4jLong* outShapeInfo = nullptr;
-    const bool areShapesOk = ShapeUtils<T>::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
+    const bool areShapesOk = ShapeUtils::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
     REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM op: the shapes of input arrays are not mutually broadcastable !");
 
     return SHAPELIST(outShapeInfo);

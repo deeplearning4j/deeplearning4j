@@ -39,7 +39,7 @@ void sparseSoftmaxCrossEntropyLossWithLogits(const NDArray<T>& labels, const NDA
         
     const Nd4jLong labelsLen = labels.lengthOf();
 
-    std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(logits.rankOf(), {-1});
+    std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(logits.rankOf(), {-1});
  
 #pragma omp parallel for schedule(guided) 
     for(Nd4jLong i = 0; i < labelsLen; ++i) {

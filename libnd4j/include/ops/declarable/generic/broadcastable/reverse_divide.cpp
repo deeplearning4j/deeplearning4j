@@ -51,36 +51,24 @@ namespace nd4j {
             auto gradX = OUTPUT_VARIABLE(0);
             auto gradY = OUTPUT_VARIABLE(1);
 
-            auto lambdaY = LAMBDA_TT(_e, _x) {
-                return _e / _x;
-            };
-
-            auto lambdaX = LAMBDA_TTT(_e, _x, _y) {
-                return _e * -_y / (_x * _x);
-            };
-
-
             if (x->isSameShape(y)) {
                 // PWT case case
 
                 // X gradient
-                epsNext->applyTriplewiseLambda(x, y, lambdaX, gradX);
+                //epsNext->applyTriplewiseLambda(x, y, lambdaX, gradX);
+                gradX->assign(epsNext * -(*y) / ((*x) * (*x)));
 
                 // Y gradient
-                epsNext->applyPairwiseLambda(x, lambdaY, gradY);
+                //epsNext->applyPairwiseLambda(x, lambdaY, gradY);
+                epsNext->applyPairwiseTransform(pairwise::Divide, x, gradY, nullptr);
 
             } else if (y->isScalar()) {
                 // scalar case
-                T _y = y->getScalar(0);
-                auto lambdaXS = LAMBDA_TT(_e, _x,  _y) {
-                    return _e * -_y / (_x * _x);
-                };
-
                 auto tmp = epsNext->reduceNumber(reduce::Sum);
                 auto tmpX = x->reduceNumber(reduce::Sum);
                 gradY->assign(tmp / tmpX);
-                
-                epsNext->applyPairwiseLambda(x, lambdaXS, gradX);
+
+                gradX->assign(epsNext * -(*y) / ((*x) * (*x)));
             } else {
                 // broadcast case
 

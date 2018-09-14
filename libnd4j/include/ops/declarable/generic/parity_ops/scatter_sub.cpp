@@ -41,7 +41,7 @@ namespace nd4j {
             REQUIRE_TRUE(inRank > 0, 0, "SCATTER_SUB OP: input should not be scalar !");
     
             if(inRank == 1) {
-                REQUIRE_TRUE(indices->isSameShape(updates), 0, "SCATTER_SUB OP: when input array has rank = 1 then indices and updates must have the same shapes, but got %s and %s correspondingly !", ShapeUtils<T>::shapeAsString(indices).c_str(), ShapeUtils<T>::shapeAsString(updates).c_str());
+                REQUIRE_TRUE(indices->isSameShape(updates), 0, "SCATTER_SUB OP: when input array has rank = 1 then indices and updates must have the same shapes, but got %s and %s correspondingly !", ShapeUtils::shapeAsString(indices).c_str(), ShapeUtils::shapeAsString(updates).c_str());
             }
             else if (inRank == updRank && indices->isVector()) {
 
@@ -50,7 +50,7 @@ namespace nd4j {
                 std::vector<Nd4jLong> expectedUpdShape = {indices->lengthOf()}; 
                 expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin()+1, inShape.end());
         
-                REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_SUB OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString(expectedUpdShape).c_str(), ShapeUtils<T>::shapeAsString(updShape).c_str());
+                REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_SUB OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
             }
 
             else {
@@ -62,7 +62,7 @@ namespace nd4j {
                 std::vector<Nd4jLong> expectedUpdShape = indices->getShapeAsVector();        
                 expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin()+1, inShape.end());
         
-                REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_SUB OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString(expectedUpdShape).c_str(), ShapeUtils<T>::shapeAsString(updShape).c_str());
+                REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_SUB OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
             }
 
             if (!block.isInplace())

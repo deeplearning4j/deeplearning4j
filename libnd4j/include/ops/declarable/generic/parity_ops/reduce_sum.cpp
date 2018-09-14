@@ -53,7 +53,7 @@ namespace ops {
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
     
         //std::vector<int> dimensions = *block.getIArguments();
-        Nd4jLong* outShapeInfo;// = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
+        Nd4jLong* outShapeInfo;// = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
         COPY_SHAPE(inputShape->at(0), outShapeInfo);
         return SHAPELIST(outShapeInfo);
     }

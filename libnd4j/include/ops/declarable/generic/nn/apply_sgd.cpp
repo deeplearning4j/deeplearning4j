@@ -31,7 +31,7 @@ namespace nd4j {
 
             T lr = (T) 0.0f;
 
-            REQUIRE_TRUE(parameters->isSameShape(gradients), 0, "ApplySGD: parameters and gradients should have the same shape, but got parameters = %s and gradients = %s !", ShapeUtils<T>::shapeAsString(parameters).c_str(), ShapeUtils<T>::shapeAsString(gradients).c_str());
+            REQUIRE_TRUE(parameters->isSameShape(gradients), 0, "ApplySGD: parameters and gradients should have the same shape, but got parameters = %s and gradients = %s !", ShapeUtils::shapeAsString(parameters).c_str(), ShapeUtils::shapeAsString(gradients).c_str());
 
             if (block.width() == 3) {
                 auto tarr = INPUT_VARIABLE(2);

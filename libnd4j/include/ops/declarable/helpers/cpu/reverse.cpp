@@ -190,7 +190,7 @@ void reverseSequence(const NDArray<T>* input, const NDArray<T>* seqLengths, NDAr
         if(seqDim > batchDim)
             --seqDim;
 
-        std::vector<int> dimensions = ShapeUtils<T>::evalDimsToExclude(input->rankOf(), {batchDim});       
+        std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {batchDim});
 
         ResultSet<T>* inSubArrsSet  = input->allTensorsAlongDimension(dimensions);
         ResultSet<T>* outSubArrsSet = output->allTensorsAlongDimension(dimensions);
@@ -224,7 +224,7 @@ template<typename T>
 void reverse(const NDArray<T>* input, NDArray<T>* output, const std::vector<int>* intArgs, bool isLegacy) {
 
     // we need to reverse axis only if that's new op
-    std::vector<int> dimensions = isLegacy ? *intArgs : ShapeUtils<T>::evalDimsToExclude(input->rankOf(), *intArgs);
+    std::vector<int> dimensions = isLegacy ? *intArgs : ShapeUtils::evalDimsToExclude(input->rankOf(), *intArgs);
 
     ResultSet<T>* listOut = output->allTensorsAlongDimension(dimensions);
     ResultSet<T>* listIn  = input->allTensorsAlongDimension(dimensions);

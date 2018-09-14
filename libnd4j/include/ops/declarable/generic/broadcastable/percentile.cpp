@@ -32,9 +32,9 @@ CUSTOM_OP_IMPL(percentile, 1, 1, false, 1, -2) {
     auto input  = INPUT_VARIABLE(0);                                             // tensor with rank > 0
     auto output = OUTPUT_VARIABLE(0);                                            // [bS, oD, oH, oW, iC] (NDHWC) or [bS, iC, oD, oH, oW] (NCDHW)
 
-    const T q = T_ARG(0);                                                             // percentile
-    const int interpolation = block.getTArguments()->size() > 1 ? T_ARG(1) : (T)2.;     // 0-"lower", 1-"higher", 2-"nearest"(default)
-    const int keepDims = block.getTArguments()->size() > 2 ? T_ARG(2) : (T)0.;          // false is default
+    const auto q = T_ARG(0);                                                             // percentile
+    const int interpolation = block.getTArguments()->size() > 1 ? T_ARG(1) : 2.;     // 0-"lower", 1-"higher", 2-"nearest"(default)
+    const int keepDims = block.getTArguments()->size() > 2 ? T_ARG(2) : 0.;          // false is default
 
     const int axisArrRank = block.getIArguments()->size();
     const int inputArrRank = input->rankOf();
@@ -50,7 +50,7 @@ CUSTOM_OP_IMPL(percentile, 1, 1, false, 1, -2) {
     }
 
     std::vector<int> axises = *block.getIArguments();
-    helpers::percentile<T>(*input, *output, axises, q, interpolation);
+    helpers::percentile(*input, *output, axises, q, interpolation);
 
     return Status::OK();
 }
@@ -73,7 +73,7 @@ DECLARE_SHAPE_FN(percentile) {
     }
 
     std::vector<int> axises = *block.getIArguments();
-    Nd4jLong* outputShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShapeInfo), axises, inputShapeInfo, keepDims, false, block.getWorkspace());
+    Nd4jLong* outputShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShapeInfo), axises, inputShapeInfo, keepDims, false, block.getWorkspace());
 
     return SHAPELIST(outputShapeInfo);
 }

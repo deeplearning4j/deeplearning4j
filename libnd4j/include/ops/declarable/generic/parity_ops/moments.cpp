@@ -73,7 +73,7 @@ namespace nd4j {
                 }
 
             }
-            //std::vector<int> dims = ShapeUtils<T>::convertAxisToTadTarget(input->rankOf(), {axis});
+            //std::vector<int> dims = ShapeUtils::convertAxisToTadTarget(input->rankOf(), {axis});
             const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
     
             auto meanShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, keepDims, false, block.workspace());

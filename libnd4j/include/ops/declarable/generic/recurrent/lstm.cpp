@@ -111,20 +111,20 @@ DECLARE_SHAPE_FN(lstm) {
     const int numUnits = c0ShapeInfo[2];
  
     // input shapes validation
-    const std::string h0Shape        = ShapeUtils<T>::shapeAsString(h0ShapeInfo);
-    const std::string correctH0Shape = ShapeUtils<T>::shapeAsString({bS, numProj});
-    const std::string c0Shape        = ShapeUtils<T>::shapeAsString(c0ShapeInfo);
-    const std::string correctC0Shape = ShapeUtils<T>::shapeAsString({bS, numUnits});
-    const std::string WxShape        = ShapeUtils<T>::shapeAsString(WxShapeInfo);
-    const std::string correctWxShape = ShapeUtils<T>::shapeAsString({inSize, 4*numUnits});
-    const std::string WhShape        = ShapeUtils<T>::shapeAsString(WhShapeInfo);
-    const std::string correctWhShape = ShapeUtils<T>::shapeAsString({numProj, 4*numUnits});
-    const std::string WcShape        = ShapeUtils<T>::shapeAsString(WcShapeInfo);
-    const std::string correctWcShape = ShapeUtils<T>::shapeAsString({3*numUnits});
-    const std::string WpShape        = ShapeUtils<T>::shapeAsString(WpShapeInfo);
-    const std::string correctWpShape = ShapeUtils<T>::shapeAsString({numUnits, numProj});
-    const std::string bShape         = ShapeUtils<T>::shapeAsString(bShapeInfo);
-    const std::string correctBShape  = ShapeUtils<T>::shapeAsString({4*numUnits});
+    const std::string h0Shape        = ShapeUtils::shapeAsString(h0ShapeInfo);
+    const std::string correctH0Shape = ShapeUtils::shapeAsString({bS, numProj});
+    const std::string c0Shape        = ShapeUtils::shapeAsString(c0ShapeInfo);
+    const std::string correctC0Shape = ShapeUtils::shapeAsString({bS, numUnits});
+    const std::string WxShape        = ShapeUtils::shapeAsString(WxShapeInfo);
+    const std::string correctWxShape = ShapeUtils::shapeAsString({inSize, 4*numUnits});
+    const std::string WhShape        = ShapeUtils::shapeAsString(WhShapeInfo);
+    const std::string correctWhShape = ShapeUtils::shapeAsString({numProj, 4*numUnits});
+    const std::string WcShape        = ShapeUtils::shapeAsString(WcShapeInfo);
+    const std::string correctWcShape = ShapeUtils::shapeAsString({3*numUnits});
+    const std::string WpShape        = ShapeUtils::shapeAsString(WpShapeInfo);
+    const std::string correctWpShape = ShapeUtils::shapeAsString({numUnits, numProj});
+    const std::string bShape         = ShapeUtils::shapeAsString(bShapeInfo);
+    const std::string correctBShape  = ShapeUtils::shapeAsString({4*numUnits});
 
     REQUIRE_TRUE(correctH0Shape == h0Shape, 0, "LSTM operation: wrong shape of initial cell output, expected is %s, but got %s instead !", correctH0Shape.c_str(), h0Shape.c_str()); 
     REQUIRE_TRUE(correctC0Shape == c0Shape, 0, "LSTM operation: wrong shape of initial cell state,  expected is %s, but got %s instead !", correctC0Shape.c_str(), c0Shape.c_str()); 

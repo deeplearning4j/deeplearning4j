@@ -53,31 +53,31 @@ namespace nd4j {
 
             if (x->isSameShape(y)) {
                 // PWT case case
-                epsNext->template applyTransform<simdOps::Neg<T>>(gradY, nullptr);
+                epsNext->applyTransform(transform::Neg, gradY, nullptr);
                 gradX->assign(epsNext);
             } else if (y->isScalar()) {
                 // scalar case
-                auto tmp = epsNext->template reduceNumber<simdOps::Sum<T>>();
+                auto tmp = epsNext->reduceNumber(reduce::Sum);
                 gradY->assign(-tmp);
                 gradX->assign(epsNext);
             } else {
                 // broadcastable
-                auto axisX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
-                auto axisY = ShapeUtils<T>::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
+                auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
+                auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
                 if (axisX.size() > 0) {
-                    auto sum = epsNext->template reduceAlongDimension<simdOps::Sum<T>>(axisX);
+                    auto sum = epsNext->reduceAlongDimension(reduce::Sum, axisX);
                     gradX->assign(sum);
                     delete sum;
                 } else 
                     gradX->assign(epsNext);
 
                 if (axisY.size() > 0) {
-                    auto sum = epsNext->template reduceAlongDimension<simdOps::Sum<T>>(axisY);
-                    sum->template applyTransform<simdOps::Neg<T>>(gradY);
+                    auto sum = epsNext->reduceAlongDimension(reduce::Sum, axisY);
+                    sum->applyTransform(transform::Neg, gradY);
                     delete sum;
                 } else {
-                    epsNext->template applyTransform<simdOps::Neg<T>>(gradY);
+                    epsNext->applyTransform(transform::Neg, gradY);
                 }
             }  
 

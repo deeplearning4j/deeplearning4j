@@ -34,7 +34,7 @@ CONFIGURABLE_OP_IMPL(betainc, 3, 1, false, 0, 0) {
 
 	auto output   = OUTPUT_VARIABLE(0);
 
-    REQUIRE_TRUE(a->isSameShape(b) && a->isSameShape(x), 0, "CONFIGURABLE_OP betainc: all three input arrays must have the same shapes, bit got a=%s, b=%s and x=%s instead !", ShapeUtils<T>::shapeAsString(a).c_str(), ShapeUtils<T>::shapeAsString(b).c_str(), ShapeUtils<T>::shapeAsString(x).c_str());
+    REQUIRE_TRUE(a->isSameShape(b) && a->isSameShape(x), 0, "CONFIGURABLE_OP betainc: all three input arrays must have the same shapes, bit got a=%s, b=%s and x=%s instead !", ShapeUtils::shapeAsString(a).c_str(), ShapeUtils::shapeAsString(b).c_str(), ShapeUtils::shapeAsString(x).c_str());
 
     int arrLen = a->lengthOf();
 

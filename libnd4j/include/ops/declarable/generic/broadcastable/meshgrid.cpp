@@ -47,7 +47,7 @@ CUSTOM_OP_IMPL(meshgrid, -1, -1, false, 0, 0) {
         outArrs[i] = OUTPUT_VARIABLE(i);
     }
 
-    helpers::meshgrid<T>(inArrs, outArrs, swapFirst2Dims);
+    helpers::meshgrid(inArrs, outArrs, swapFirst2Dims);
 
     return Status::OK();
 }

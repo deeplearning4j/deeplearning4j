@@ -27,8 +27,8 @@ namespace ops {
     DECLARE_SHAPE_FN(reduce_dot_bp) {    
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
     
-        Nd4jLong* outShapeInfo1;// = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims);
-        Nd4jLong* outShapeInfo2;// = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims);
+        Nd4jLong* outShapeInfo1;// = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims);
+        Nd4jLong* outShapeInfo2;// = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims);
         COPY_SHAPE(inputShape->at(0), outShapeInfo1);
         COPY_SHAPE(inputShape->at(1), outShapeInfo2);
 

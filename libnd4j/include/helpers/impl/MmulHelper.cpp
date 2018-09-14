@@ -41,7 +41,7 @@ template<typename T>
 nd4j::NDArray<T>* nd4j::MmulHelper<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, const std::vector<int>& axes_0, const std::vector<int>& axes_1) {
     std::vector<int> permutAt, permutBt;
     std::vector<Nd4jLong> shapeAt, shapeBt;        
-    auto outShape = ShapeUtils<T>::evalShapeForTensorDot(a, b, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
+    auto outShape = ShapeUtils::evalShapeForTensorDot(a, b, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
     NDArray<T>* aPR(const_cast<NDArray<T>*>(a)), *bPR(const_cast<NDArray<T>*>(b));
     aPR = a->permute(permutAt);        
     bPR = b->permute(permutBt);
@@ -75,7 +75,7 @@ template<typename T>
 void nd4j::MmulHelper<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, nd4j::NDArray<T>* c, const std::vector<int>& axes_a, const std::vector<int>& axes_b, const std::vector<int>& permutForC) {
     std::vector<int> permutAt, permutBt;
     std::vector<Nd4jLong> shapeAt, shapeBt;
-    auto outShape = ShapeUtils<T>::evalShapeForTensorDot(a, b, axes_a, axes_b, permutAt, permutBt, shapeAt, shapeBt);
+    auto outShape = ShapeUtils::evalShapeForTensorDot(a, b, axes_a, axes_b, permutAt, permutBt, shapeAt, shapeBt);
     NDArray<T> *aPR(const_cast<NDArray<T>*>(a)), *bPR(const_cast<NDArray<T>*>(b)), *cP(c), *cPR(c);
     // check whether permutation is required
     if(!permutForC.empty())
@@ -518,9 +518,9 @@ void MmulHelper<T>::matmul(const nd4j::NDArray<T>* x, const nd4j::NDArray<T>* y,
     int xRank = x->rankOf();
     int yRank = y->rankOf();
 
-    std::vector<Nd4jLong> outShape = ShapeUtils<T>::evalShapeForMatmul(x->getShapeInfo(), y->getShapeInfo(), transX, transY);
+    std::vector<Nd4jLong> outShape = ShapeUtils::evalShapeForMatmul(x->getShapeInfo(), y->getShapeInfo(), transX, transY);
     if(!z->isSameShape(outShape)) {
-        nd4j_printf("NDArrayFactory::matmul static method: input shape of output array is wrong, actual is %s and expected is %s ! \n", ShapeUtils<T>::shapeAsString(z).c_str(), ShapeUtils<T>::shapeAsString(outShape).c_str());
+        nd4j_printf("NDArrayFactory::matmul static method: input shape of output array is wrong, actual is %s and expected is %s ! \n", ShapeUtils::shapeAsString(z).c_str(), ShapeUtils::shapeAsString(outShape).c_str());
         throw std::invalid_argument("");       
     }
         
@@ -558,7 +558,7 @@ void MmulHelper<T>::matmul(const nd4j::NDArray<T>* x, const nd4j::NDArray<T>* y,
         for(int i = 0; i < batchRank; ++i)
             dimsToExclude[i] = i;
 
-        const Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(xT->getShapeInfo(), dimsToExclude);
+        const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(xT->getShapeInfo(), dimsToExclude);
 
 #pragma omp parallel for schedule(guided)
         for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {

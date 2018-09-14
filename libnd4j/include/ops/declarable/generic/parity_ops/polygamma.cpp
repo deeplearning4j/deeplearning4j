@@ -33,7 +33,7 @@ CONFIGURABLE_OP_IMPL(polygamma, 2, 1, false, 0, 0) {
 
     auto output   = OUTPUT_VARIABLE(0);
 
-    REQUIRE_TRUE(n->isSameShape(x), 0, "POLYGAMMA op: two input arrays n and x must have the same shapes, but got n=%s and x=%s instead !", ShapeUtils<T>::shapeAsString(n).c_str(), ShapeUtils<T>::shapeAsString(x).c_str());
+    REQUIRE_TRUE(n->isSameShape(x), 0, "POLYGAMMA op: two input arrays n and x must have the same shapes, but got n=%s and x=%s instead !", ShapeUtils::shapeAsString(n).c_str(), ShapeUtils::shapeAsString(x).c_str());
 
     int arrLen = n->lengthOf();
     for(int i = 0; i < arrLen; ++i ) {

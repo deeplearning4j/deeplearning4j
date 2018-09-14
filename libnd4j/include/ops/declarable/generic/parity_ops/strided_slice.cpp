@@ -316,9 +316,9 @@ namespace nd4j {
 
                 REQUIRE_TRUE(delta == 0, 0, "StridedSlice: Number of Integer arguments should be equal to input rank x 3 = %i, but got %i instead", (x->rankOf() * 3), dim_values);
 
-                ShapeUtils<T>::copyVectorPart(begin, args, elements, 0);
-                ShapeUtils<T>::copyVectorPart(end, args, elements, elements);
-                ShapeUtils<T>::copyVectorPart(strides, args, elements, elements * 2);
+                ShapeUtils::copyVectorPart(begin, args, elements, 0);
+                ShapeUtils::copyVectorPart(end, args, elements, elements);
+                ShapeUtils::copyVectorPart(strides, args, elements, elements * 2);
 
             } else if (block.width() >= 3) {
                 isLive = true;
@@ -469,9 +469,9 @@ namespace nd4j {
 
                 REQUIRE_TRUE(delta == 0, 0, "StridedSliceBP: Number of Integer arguments should be equal to input rank x 3 = %i, but got %i instead", (x->rankOf() * 3), dim_values);
 
-                ShapeUtils<T>::copyVectorPart(begin, args, elements, 0);
-                ShapeUtils<T>::copyVectorPart(end, args, elements, elements);
-                ShapeUtils<T>::copyVectorPart(strides, args, elements, elements * 2);
+                ShapeUtils::copyVectorPart(begin, args, elements, 0);
+                ShapeUtils::copyVectorPart(end, args, elements, elements);
+                ShapeUtils::copyVectorPart(strides, args, elements, elements * 2);
 
             } else if (block.width() >= 3) {
                 isLive = true;

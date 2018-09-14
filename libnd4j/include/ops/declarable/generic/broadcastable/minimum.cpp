@@ -43,6 +43,8 @@ namespace nd4j {
         }
 
         CUSTOM_OP_IMPL(minimum_bp, 3, 2, false, 0, 0) {
+            // FIXME: lambdas
+            /*
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
             auto epsNext = INPUT_VARIABLE(2);
@@ -119,6 +121,7 @@ namespace nd4j {
                 delete preY;
             }
 
+            */
             return Status::OK();
         }
 

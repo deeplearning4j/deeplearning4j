@@ -571,8 +571,8 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
 
     const std::string wShape               = ShapeUtils::shapeAsString(w);
     const std::string wCorrectShape        = ShapeUtils::shapeAsString({3*inSize, inSize});
-    // const std::string bShape               = ShapeUtils<T>::shapeAsString(b);
-    // const std::string bCorrectShape        = ShapeUtils<T>::shapeAsString({2*inSize});
+    // const std::string bShape               = ShapeUtils::shapeAsString(b);
+    // const std::string bCorrectShape        = ShapeUtils::shapeAsString({2*inSize});
     const std::string c0Shape              = ShapeUtils::shapeAsString(c0);
     const std::string c0CorrectShape       = ShapeUtils::shapeAsString({bS, inSize});
     const std::string cShape               = ShapeUtils::shapeAsString(c);

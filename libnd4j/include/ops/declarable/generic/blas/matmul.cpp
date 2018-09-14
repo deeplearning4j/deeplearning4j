@@ -267,7 +267,7 @@ DECLARE_SHAPE_FN(matmul) {
             if (transY == 1)
                 transY = 112;
 
-            auto outputShape = ShapeUtils<T>::matrixProductShape(inputShape->at(0), inputShape->at(1), transX == 112, transY == 112, block.getWorkspace());
+            auto outputShape = ShapeUtils::matrixProductShape(inputShape->at(0), inputShape->at(1), transX == 112, transY == 112, block.getWorkspace());
 
             return SHAPELIST(outputShape);
         }*/

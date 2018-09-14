@@ -34,7 +34,7 @@ namespace ops {
 
         Nd4jLong* zShapeInfo = nullptr;
         const bool areShapesBroadcastable = ShapeUtils::evalBroadcastShapeInfo(x->getShapeInfo(), y->getShapeInfo(), true, zShapeInfo, block.getWorkspace());
-        REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY OP: the shapes of x %s and y %s are not suitable for broadcast !", ShapeUtils::shapeAsString(x).c_str(), ShapeUtils<T>::shapeAsString(y).c_str());
+        REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY OP: the shapes of x %s and y %s are not suitable for broadcast !", ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
         RELEASE(zShapeInfo, block.getWorkspace());
 
         // z->assign(*x * *y);
@@ -57,7 +57,7 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
 
     Nd4jLong* dLdzShapeInfo = nullptr;
     const bool areShapesBroadcastable = ShapeUtils::evalBroadcastShapeInfo(x->getShapeInfo(), y->getShapeInfo(), true, dLdzShapeInfo, block.getWorkspace());
-    REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY_BP OP: the shapes of x %s and y %s are not suitable for broadcast !", ShapeUtils<T>::shapeAsString(x).c_str(), ShapeUtils<T>::shapeAsString(y).c_str());
+    REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY_BP OP: the shapes of x %s and y %s are not suitable for broadcast !", ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
     REQUIRE_TRUE(shape::equalsSoft(dLdz->shapeInfo(), dLdzShapeInfo), 0, "MULTIPLY_BP OP: wrong shape of next epsilon array (dLdOut), expected is %s, but got %s instead !", ShapeUtils::shapeAsString(dLdzShapeInfo).c_str(), ShapeUtils::shapeAsString(dLdz).c_str());
     RELEASE(dLdzShapeInfo, block.getWorkspace());
 
@@ -65,21 +65,18 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     const Nd4jLong yLen = y->lengthOf();
     
     if(xLen == 1 && yLen == 1) {    // both are scalars
-        (*dLdx)(0.) = (*y)(0.) * (*dLdz)(0.);
-        (*dLdy)(0.) = (*x)(0.) * (*dLdz)(0.);
+        y->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdx);
+        x->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy);
     }
-    else if(xLen == 1) {            // x is scalar and y is not 
-
-        (*dLdx)(0.) = (*y * *dLdz).reduceNumber(reduce::Sum);
-        dLdz->applyScalar(scalar::Multiply, (*x)(0.), dLdy);
+    else if(xLen == 1) {            // x is scalar and y is not
+        (*dLdx) = (*y * *dLdz).reduceNumber(reduce::Sum);
+        dLdz->applyScalar(scalar::Multiply, *x, dLdy, nullptr);
     }
-    else if(yLen == 1) {            // y is scalar and x is not 
-
-        (*dLdy)(0.) = (*x * *dLdz).reduceNumber(reduce::Sum);
-        dLdz->applyScalar(scalar::Multiply, (*y)(0.), dLdx);
+    else if(yLen == 1) {            // y is scalar and x is not
+        (*dLdy) = (*x * *dLdz).reduceNumber(reduce::Sum);
+        dLdz->applyScalar(scalar::Multiply, (*y), dLdx);
     }    
     else if(x->isSameShape(y)) {
-
         x->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy, nullptr);
         y->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdx, nullptr);
     }
@@ -179,8 +176,8 @@ DECLARE_SHAPE_FN(multiply_bp) {
                 preX->tileToShape(targetShape);
                 preY->tileToShape(targetShape);
 
-                auto axisX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
-                auto axisY = ShapeUtils<T>::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
+                auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
+                auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
                 if (axisX.size() > 0) {
                     auto sum = preX->template reduceAlongDimension<simdOps::Sum<T>>(axisX);

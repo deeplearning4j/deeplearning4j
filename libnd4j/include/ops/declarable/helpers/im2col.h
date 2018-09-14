@@ -26,7 +26,6 @@
 namespace nd4j {
     namespace ops {
         namespace helpers {
-            template <typename T>
             void _im2col(nd4j::graph::LaunchContext& context, void *dst, void *src, Nd4jLong *outShape, Nd4jLong *inShape, int kY, int kX, int sY, int sX, int pY, int pX, int dY, int dX, bool isSameMode, void *zeroPadVal);
         }
     }

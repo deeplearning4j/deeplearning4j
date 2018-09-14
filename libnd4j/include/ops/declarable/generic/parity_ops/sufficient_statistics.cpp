@@ -62,7 +62,7 @@ namespace nd4j {
 
                     axis[e] = ca;
             }
-            //std::vector<int> dims = ShapeUtils<T>::convertAxisToTadTarget(input->rankOf(), {axis});
+            //std::vector<int> dims = ShapeUtils::convertAxisToTadTarget(input->rankOf(), {axis});
             auto scalarShape = ShapeBuilders::createScalarShapeInfo(block.workspace());
             auto sumShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
             auto squareShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());

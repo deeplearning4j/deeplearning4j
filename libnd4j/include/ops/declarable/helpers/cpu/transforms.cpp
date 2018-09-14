@@ -143,7 +143,7 @@ void randomShuffle(NDArray<T>& input, NDArray<T>& output, nd4j::random::RandomBu
     else {
             
         // evaluate sub-arrays list of input array through all dimensions excluding first one
-        std::vector<int> dimensions = ShapeUtils<T>::evalDimsToExclude(input.rankOf(), {0});       
+        std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input.rankOf(), {0});
         ResultSet<T>* subArrsListIn = input.allTensorsAlongDimension(dimensions);
 
         // apply Fisher-Yates shuffle
@@ -424,7 +424,7 @@ void gather(NDArray<T>* input, const NDArray<T>* indices, NDArray<T>* output, co
     
         // first case: indices consist of only one scalar
         if(indices->isScalar()) {
-            std::vector<int> dimensions = ShapeUtils<T>::evalDimsToExclude(input->rankOf(), {axis});
+            std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
             shape::TAD tad(input->getShapeInfo(), dimensions.data(), dimensions.size());
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
@@ -439,8 +439,8 @@ void gather(NDArray<T>* input, const NDArray<T>* indices, NDArray<T>* output, co
         }
         // second case: indices is vector
         else if(indices->isVector()) {      
-            ResultSet<T>* listOut = output->allTensorsAlongDimension(ShapeUtils<T>::evalDimsToExclude(output->rankOf(), {axis}));
-            ResultSet<T>* listIn  = input->allTensorsAlongDimension(ShapeUtils<T>::evalDimsToExclude(input->rankOf(),  {axis}));
+            ResultSet<T>* listOut = output->allTensorsAlongDimension(ShapeUtils::evalDimsToExclude(output->rankOf(), {axis}));
+            ResultSet<T>* listIn  = input->allTensorsAlongDimension(ShapeUtils::evalDimsToExclude(input->rankOf(),  {axis}));
 #pragma omp parallel for if(listOut->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)             
             for(int i = 0; i < listOut->size(); ++i)
                 listOut->at(i)->assign(listIn->at((int)(*indices)(i)));
@@ -451,8 +451,8 @@ void gather(NDArray<T>* input, const NDArray<T>* indices, NDArray<T>* output, co
         else {
             std::vector<int> dimsOut(indices->rankOf());
             std::iota(dimsOut.begin(), dimsOut.end(), axis);   // fill with axis, axis+1, ... indices->rankOf()-1
-            std::vector<int> temp1 = ShapeUtils<T>::evalDimsToExclude(output->rankOf(), dimsOut);
-            std::vector<int> temp2 = ShapeUtils<T>::evalDimsToExclude(input->rankOf(),  {axis});
+            std::vector<int> temp1 = ShapeUtils::evalDimsToExclude(output->rankOf(), dimsOut);
+            std::vector<int> temp2 = ShapeUtils::evalDimsToExclude(input->rankOf(),  {axis});
             ResultSet<T>* listOut = output->allTensorsAlongDimension(temp1);
             ResultSet<T>* listIn = input->allTensorsAlongDimension(temp2 );
 #pragma omp parallel for if(listOut->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
@@ -471,7 +471,7 @@ void gather(NDArray<T>* input, const NDArray<T>* indices, NDArray<T>* output, co
         // we only allow scalar/vector case here
         if (numOfIntArgs == 2) {
             // scalar case
-            std::vector<int> dimensions = ShapeUtils<T>::evalDimsToExclude(input->rankOf(), {axis});
+            std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
             shape::TAD tad(input->getShapeInfo(), dimensions.data(), dimensions.size());
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
@@ -479,8 +479,8 @@ void gather(NDArray<T>* input, const NDArray<T>* indices, NDArray<T>* output, co
             output->assign(&tadArr);
         } else {
             // vector case
-            ResultSet<T>* listOut = output->allTensorsAlongDimension(ShapeUtils<T>::evalDimsToExclude(output->rankOf(), {axis}));
-            ResultSet<T>* listIn  = input->allTensorsAlongDimension(ShapeUtils<T>::evalDimsToExclude(input->rankOf(),  {axis}));
+            ResultSet<T>* listOut = output->allTensorsAlongDimension(ShapeUtils::evalDimsToExclude(output->rankOf(), {axis}));
+            ResultSet<T>* listIn  = input->allTensorsAlongDimension(ShapeUtils::evalDimsToExclude(input->rankOf(),  {axis}));
 
             // that's fine, since we know that number of iArgs matches number of elements in listOut
 #pragma omp parallel for if(listOut->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)     
@@ -668,8 +668,8 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
         }
         else {
 
-            std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(rank, dimensions);
-            const Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);            
+            std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, dimensions);
+            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
 
 #pragma omp parallel for schedule(guided) 
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
@@ -692,14 +692,14 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
         }
         else {
             
-            std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(rank, dimensions);
-            const Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
+            std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, dimensions);
+            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
             std::vector<Nd4jLong> idxRanges(rank * 2);
 
 #pragma omp parallel for schedule(guided) firstprivate(idxRanges)
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
 
-                ShapeUtils<T>::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
+                ShapeUtils::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
 
                 NDArray<T> outputSubArr = output(idxRanges);                
                 NDArray<T> inputSubArr  = input(idxRanges);
@@ -739,14 +739,14 @@ void clipByNormBP(const NDArray<T>& input, const NDArray<T>& gradO, NDArray<T>& 
     }
     else {
             
-        std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(rank, dimensions);
-        const Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
+        std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, dimensions);
+        const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
         std::vector<Nd4jLong> idxRanges(rank * 2);
 
 #pragma omp parallel for schedule(guided) firstprivate(idxRanges)
         for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
 
-            ShapeUtils<T>::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
+            ShapeUtils::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
             T N = norm2(i);
 
             NDArray<T> gradOSubArr = gradO(idxRanges);

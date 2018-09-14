@@ -63,7 +63,7 @@ class ScatterHelper {
                     idcU.push_back(e);
                 }
 
-                std::vector<int> tadDimension = ShapeUtils<T>::convertAxisToTadTarget(input->rankOf(), {0});
+                std::vector<int> tadDimension = ShapeUtils::convertAxisToTadTarget(input->rankOf(), {0});
                 auto tadsOperand = output->multipleTensorsAlongDimension(idc, tadDimension);
                 auto tadsUpdate = updates->multipleTensorsAlongDimension(idcU, tadDimension);
 
@@ -173,7 +173,7 @@ static FORCEINLINE void scatterND(const NDArray<T>& indices, const NDArray<T>& u
     } 
     else {
 
-        std::vector<int> dimsToExcludeInd = ShapeUtils<T>::evalDimsToExclude(indRank, {indRank-1});
+        std::vector<int> dimsToExcludeInd = ShapeUtils::evalDimsToExclude(indRank, {indRank-1});
         std::vector<int> dimsToExcludeUpd(indRank - 1);
         std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
         std::vector<Nd4jLong> idxRangeOut(2*outRank, 0);

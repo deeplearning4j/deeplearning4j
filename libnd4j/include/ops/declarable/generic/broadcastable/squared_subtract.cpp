@@ -52,6 +52,7 @@ namespace nd4j {
             auto gradX = OUTPUT_VARIABLE(0);
             auto gradY = OUTPUT_VARIABLE(1);
 
+            /*
             auto lambdaX = LAMBDA_TTT(_e, _x, _y) {
                 return _e * (T) 2.0 * (_x - _y) ;
             };
@@ -59,28 +60,29 @@ namespace nd4j {
             auto lambdaY = LAMBDA_TTT(_e, _x, _y) {
                 return _e * (T) 2.0 * (_y - _x);
             };
+            */
+
+            auto ts = (*NDArray::scalar<int>(2));
 
 
             if (x->isSameShape(y)) {
                 // PWT case case
 
                 // X gradient
-                epsNext->applyTriplewiseLambda(x, y, lambdaX, gradX);
+                //epsNext->applyTriplewiseLambda(x, y, lambdaX, gradX);
+                gradY->assign(epsNext * ts * ((*x) - (*y)));
 
                 // Y gradient
-                epsNext->applyTriplewiseLambda(x, y, lambdaY, gradY);
+                //epsNext->applyTriplewiseLambda(x, y, lambdaY, gradY);
+                gradY->assign(epsNext * ts * ((*y) - (*x)));
 
             } else if (y->isScalar()) {
                 // scalar case
-                T _y = y->getScalar(0);
-                auto lambdaS = LAMBDA_TT(_e, _x, _y) {
-                    return _e * (T) 2.0f * (_x - _y);
-                };
-
-                T tmpX = x->template reduceNumber<simdOps::Sum<T>>();
+                auto tmpX = x->reduceNumber(reduce::Sum);
                 gradY->assign(tmpX);
                 
-                epsNext->applyPairwiseLambda(x, lambdaS, gradX);
+                //epsNext->applyPairwiseLambda(x, lambdaS, gradX);
+                gradX->assign(epsNext * ts * ((*x) - (*y)));
             } else {
                 // broadcast case
 
@@ -93,8 +95,11 @@ namespace nd4j {
                 preY->tileToShape(targetShape);
 
 
-                epsNext->applyTriplewiseLambda(x, y, lambdaX, preX);
-                epsNext->applyTriplewiseLambda(x, y, lambdaY, preY);
+                //epsNext->applyTriplewiseLambda(x, y, lambdaX, preX);
+                //epsNext->applyTriplewiseLambda(x, y, lambdaY, preY);
+
+                preX->assign(epsNext * ts * ((*x) - (*y)));
+                preY->assign(epsNext * ts * ((*y) - (*x)));
 
                 auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
                 auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());

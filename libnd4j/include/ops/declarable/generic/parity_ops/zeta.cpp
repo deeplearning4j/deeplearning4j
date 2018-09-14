@@ -32,7 +32,7 @@ namespace nd4j {
 
             auto output   = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(x->isSameShape(q), 0, "ZETA op: two input arrays must have the same shapes, bot got x=%s and q=%s !", ShapeUtils<T>::shapeAsString(x).c_str(), ShapeUtils<T>::shapeAsString(q).c_str());
+            REQUIRE_TRUE(x->isSameShape(q), 0, "ZETA op: two input arrays must have the same shapes, bot got x=%s and q=%s !", ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(q).c_str());
 
             int arrLen = x->lengthOf();
 

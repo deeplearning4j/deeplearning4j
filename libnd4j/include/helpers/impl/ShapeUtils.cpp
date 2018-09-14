@@ -252,10 +252,10 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
     Nd4jLong* ShapeUtils::evalPermShapeInfo(const int* dimensions, const int rank, const NDArray& arr, nd4j::memory::Workspace* workspace) {
 
         if (!arr.nonNull())
-            throw std::runtime_error("ShapeUtils<T>::evalPermShapeInfo static method: wrong arguments in pn/termute method: either array is nullptr!");
+            throw std::runtime_error("ShapeUtils::evalPermShapeInfo static method: wrong arguments in pn/termute method: either array is nullptr!");
 
         if (rank != arr.rankOf())
-            throw std::runtime_error("ShapeUtils<T>::evalPermShapeInfo static method: wrong arguments in pn/termute method: rank is not suitable!");
+            throw std::runtime_error("ShapeUtils::evalPermShapeInfo static method: wrong arguments in pn/termute method: rank is not suitable!");
     
         auto shapeInfoLength = shape::shapeInfoLength(rank);
         // allocate memory for new array - shapeInfo
@@ -276,10 +276,10 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
     Nd4jLong* ShapeUtils::evalPermShapeInfo(const Nd4jLong *dimensions, const int rank, const NDArray& arr, nd4j::memory::Workspace* workspace) {
 
         if (!arr.nonNull())
-            throw std::runtime_error("ShapeUtils<T>::evalPermShapeInfo static method: wrong arguments in pn/termute method: either array is nullptr!");
+            throw std::runtime_error("ShapeUtils::evalPermShapeInfo static method: wrong arguments in pn/termute method: either array is nullptr!");
 
         if (rank != arr.rankOf())
-            throw std::runtime_error("ShapeUtils<T>::evalPermShapeInfo static method: wrong arguments in pn/termute method: rank is not suitable!");
+            throw std::runtime_error("ShapeUtils::evalPermShapeInfo static method: wrong arguments in pn/termute method: rank is not suitable!");
 
         auto shapeInfoLength = shape::shapeInfoLength(rank);
         // allocate memory for new array - shapeInfo
@@ -614,7 +614,7 @@ Nd4jLong* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<Nd
     std::string ShapeUtils::shapeAsString(const Nd4jLong* shapeInfo) {
         
         if(!shapeInfo)
-            throw std::runtime_error("ShapeUtils<T>::shapeAsString method: input shapeInfo must not be nullptr !");
+            throw std::runtime_error("ShapeUtils::shapeAsString method: input shapeInfo must not be nullptr !");
         
         std::string result;
 
@@ -632,7 +632,7 @@ Nd4jLong* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<Nd
 
     std::string ShapeUtils::shapeAsString(const int rank, const Nd4jLong* shapeInfo) {
         if(!shapeInfo)
-            throw std::runtime_error("ShapeUtils<T>::shapeAsString method: input shapeInfo must not be nullptr !");
+            throw std::runtime_error("ShapeUtils::shapeAsString method: input shapeInfo must not be nullptr !");
 
         std::string result;
 
