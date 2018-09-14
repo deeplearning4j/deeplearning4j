@@ -114,7 +114,7 @@ public class UpdatesConsumer implements UpdatesHandler {
 
                 try {
                     // we're just storing update into buffer, and it'll be consumed by GradientsAccumulator on next cycle
-                    log.debug("Putting update to the queue, current size: [{}]", updatesBuffer.size());
+                    log.info("Putting update to the queue, current size: [{}]", updatesBuffer.size());
                     updatesBuffer.put(array);
                 } catch (Exception e) {
                     e.printStackTrace();
