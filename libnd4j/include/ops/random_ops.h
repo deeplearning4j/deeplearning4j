@@ -223,12 +223,12 @@ namespace randomOps {
         random_def T op(Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) {
             T lambda = extraParams[0];
             T x = helper->relativeT(idx, nd4j::DataTypeUtils::template min<T>(), (T)1.f);            
-            return -nd4j::math::nd4j_log<double>((T)1.f - x) / lambda;      
+            return -nd4j::math::nd4j_log<T, T>((T)1.f - x) / lambda;
         }
 
         random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) {
             T lambda = extraParams[0];            
-            return -nd4j::math::nd4j_log<double>((T)1.f - valueX) / lambda;  // valueX must be within (0, 1]
+            return -nd4j::math::nd4j_log<T, T>((T)1.f - valueX) / lambda;  // valueX must be within (0, 1]
         }
     };
 

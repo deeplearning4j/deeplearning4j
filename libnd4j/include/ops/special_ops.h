@@ -1499,7 +1499,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 
 #pragma omp parallel for simd reduction(sumT:sum)
 						for (int i = 0; i < length; i++) {
-                            result[i] = nd4j::math::nd4j_exp<X>(dx[i] - max);
+                            result[i] = nd4j::math::nd4j_exp<X,X>(dx[i] - max);
 							sum += result[i];
 						}
 
@@ -1517,7 +1517,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 
 #pragma omp parallel for simd reduction(sumT:sum)
 						for (int i = 0; i < length; i++) {
-                            auto r = nd4j::math::nd4j_exp<X>(dx[i * elementWiseStride] - max);
+                            auto r = nd4j::math::nd4j_exp<X, X>(dx[i * elementWiseStride] - max);
                             result[i * resultElementWiseStride] = r;
 							sum += r;
 						}
@@ -1655,14 +1655,14 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 
 #pragma omp simd reduction(sumT:sum)
 					for (int i = 0; i < length; i++) {
-						result[i] = nd4j::math::nd4j_exp<X>(dx[i] - max);
+						result[i] = nd4j::math::nd4j_exp<X, X>(dx[i] - max);
 						sum += result[i];
 					}
 
 #pragma omp simd
 					for (int i = 0; i < length; i++) {
 						result[i] /= sum;
-						result[i] = nd4j::math::nd4j_log<X>(result[i]);
+						result[i] = nd4j::math::nd4j_log<X, X>(result[i]);
 					}
 				}
 				else if (elementWiseStride > 1) {
@@ -1673,14 +1673,14 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 
 #pragma omp simd reduction(sumT:sum)
 					for (int i = 0; i < length; i++) {
-						result[i * elementWiseStride] = nd4j::math::nd4j_exp<X>(dx[i * elementWiseStride] - max);
+						result[i * elementWiseStride] = nd4j::math::nd4j_exp<X, X>(dx[i * elementWiseStride] - max);
 						sum += result[i * elementWiseStride];
 					}
 
 #pragma omp simd
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] /= sum;
-						result[i * elementWiseStride] = nd4j::math::nd4j_log<X>(result[i * elementWiseStride]);
+						result[i * elementWiseStride] = nd4j::math::nd4j_log<X, X>(result[i * elementWiseStride]);
 					}
 				}
 			}
@@ -1854,7 +1854,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 #pragma omp simd reduction(sumT:sum)
 					for (int i = 0; i < length; i++) {
 						result[i] -= max;
-						result[i] = nd4j::math::nd4j_exp<X>(result[i]);
+						result[i] = nd4j::math::nd4j_exp<X, X>(result[i]);
 						sum += result[i];
 					}
 
@@ -1878,7 +1878,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 #pragma omp simd reduction(sumT:sum)
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] -= max;
-						result[i * elementWiseStride] = nd4j::math::nd4j_exp<X>(result[i * elementWiseStride]);
+						result[i * elementWiseStride] = nd4j::math::nd4j_exp<X, X>(result[i * elementWiseStride]);
 						sum += result[i * elementWiseStride];
 					}
 

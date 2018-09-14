@@ -129,14 +129,14 @@ template<typename T>
         template<typename T>
         math_def inline T nd4j_cosh(T val);
 
-		template<typename T>
-        math_def inline T nd4j_exp(T val);
+		template<typename X, typename Z>
+        math_def inline Z nd4j_exp(X val);
 
 		template<typename T>
         math_def inline T nd4j_floor(T val);
 
-		template<typename T>
-        math_def inline T nd4j_log(T val);
+		template<typename X, typename Z>
+        math_def inline Z nd4j_log(X val);
 
 		template<typename X, typename Y, typename Z>
         math_def inline Z nd4j_pow(X val, Y val2);
@@ -158,13 +158,13 @@ template<typename T>
 
 		template<typename T>
         math_def inline T nd4j_sigmoid(T val) {
-			return (T) 1.0 / ((T) 1.0 + nd4j_exp<T>(-val));
+			return (T) 1.0 / ((T) 1.0 + nd4j_exp<T, T>(-val));
 		}
 
 		template<typename T>
         math_def inline T nd4j_elu(T val) {
 			if (val >= (T) 0.0) return val;
-			else return nd4j_exp<T>(val) - (T) 1.0;
+			else return nd4j_exp<T, T>(val) - (T) 1.0;
 			//return val >= 0.0 ? val : (nd4j_exp<T>(val) - 1.0);
 		}
 
@@ -180,7 +180,7 @@ template<typename T>
 		template<typename T>
         math_def inline T nd4j_eluderivative(T val) {
 			if (val >= (T) 0.0f) return (T) 1.0f;
-			else return nd4j_exp<T>(val);
+			else return nd4j_exp<T, T>(val);
 			//return val >= 0.0 ? 1.0 : nd4j_exp(val);
 		}
 		template<typename T>
@@ -190,15 +190,15 @@ template<typename T>
 		math_def inline T nd4j_sinh(T val);
 		template<typename T>
         math_def inline T softplus(T val) {
-			return nd4j_log<T>((T) 1.0f + nd4j_exp<T>(val));
+			return nd4j_log<T, T>((T) 1.0f + nd4j_exp<T, T>(val));
 		}
 		template<typename T>
         math_def inline T nd4j_softsign(T val) {
 			return val / ((T) 1.0f + nd4j::math::nd4j_abs<T>(val));
 		}
 
-		template<typename T>
-        math_def inline T nd4j_sqrt(T val);
+		template<typename X, typename Z>
+        math_def inline Z nd4j_sqrt(X val);
 
 		template<typename T>
         math_def inline T nd4j_tanh(T val);
@@ -270,7 +270,7 @@ template<typename T>
 
         template<typename T>
         math_def inline T nd4j_tan(T val) {
-            return nd4j_log((val + 1 / (1 - val)) * 0.5);
+            return nd4j_log<T, T>((val + 1 / (1 - val)) * 0.5);
         }
 
         template<typename T>
@@ -349,7 +349,7 @@ template<typename T>
         template<typename T>
         math_def inline T nd4j_asinh(T val) {
             //Math.log(Math.sqrt(Math.pow(x, 2) + 1) + x)
-            return nd4j_log(nd4j_sqrt(nd4j_pow<T,T,T>(val, (T) 2) + (T) 1) + val);
+            return nd4j_log<T, T>(nd4j_sqrt<T, T>(nd4j_pow<T,T,T>(val, (T) 2) + (T) 1) + val);
         }
 
 		template<typename T>
@@ -696,30 +696,22 @@ template<typename T>
         }
 
 
-		template<>
-        math_def inline float16 nd4j_exp<float16>(float16 val) {
+		template <typename X, typename Z>
+        math_def inline Z nd4j_exp(X val) {
+            if (std::is_same<X, float16>::value) {
 #ifdef NATIVE_HALFS
-            return hexp(val.data);
+                return hexp(val.data);
 #else
-			return (float16) expf((float) val);
+                return static_cast<Z>(expf((float) val));
 #endif
-		}
-
-
-		template<>
-        math_def inline float nd4j_exp<float>(float val) {
-			return expf(val);
-		}
-
-		template<>
-        math_def inline double nd4j_exp<double>(double val) {
-			return exp(val);
-		}
-
-		template<>
-        math_def inline int nd4j_exp<int>(int val) {
-			return expf((float) val);
-		}
+            } else if (std::is_same<X, double>::value) {
+                return static_cast<Z>(exp(val));
+            } else if (std::is_same<X, float>::value) {
+                return static_cast<Z>(sqrtf(val));
+            } else {
+                return static_cast<Z>(sqrtf((float) val));
+            }
+        }
 
 		template<>
         math_def inline float16 nd4j_floor<float16>(float16 val) {
@@ -786,31 +778,22 @@ template<typename T>
 			return val;
 		}
 
-		template<>
-        math_def inline float16 nd4j_log<float16>(float16 val) {
+		template<typename X, typename Z>
+        math_def inline Z nd4j_log(X val) {
+        	if (std::is_same<X, float16>::value) {
 #ifdef NATIVE_HALFS
-            return hlog(val.data);
+				return static_cast<Z>(hlog(val.data));
 #else
-			return (float16) logf((float) val);
+				return static_cast<Z>(logf((float) val));
 #endif
+			} else if (std::is_same<X, double>::value) {
+				return static_cast<Z>(log(val));
+        	} else if (std::is_same<X, float>::value) {
+				return static_cast<Z>(logf(val));
+        	} else {
+				return static_cast<Z>(logf((float) val));
+        	}
 		}
-
-
-		template<>
-        math_def inline float nd4j_log<float>(float val) {
-			return logf(val);
-		}
-
-		template<>
-        math_def inline double nd4j_log<double>(double val) {
-			return log(val);
-		}
-
-		template<>
-        math_def inline int nd4j_log<int>(int val) {
-			return logf((int) val);
-		}
-
 
 		/**
 		 * This func is special case - it must return floating point value, and optionally Y arg can be floating point argument
@@ -964,30 +947,22 @@ template<typename T>
 		}
 
 
-		template<>
-        math_def inline float16 nd4j_sqrt<float16>(float16 val) {
+		template <typename X, typename Z>
+        math_def inline Z nd4j_sqrt(X val) {
+            if (std::is_same<X, float16>::value) {
 #ifdef NATIVE_HALFS
-            return hsqrt(val.data);
+                return static_cast<Z>(hsqrt(val.data));
 #else
-			return (float16) sqrtf((float) val);
+                return static_cast<Z>(sqrtf((float) val));
 #endif
-		}
-
-
-		template<>
-        math_def inline float nd4j_sqrt<float>(float val) {
-			return sqrtf(val);
-		}
-
-		template<>
-        math_def inline double nd4j_sqrt<double>(double val) {
-			return sqrt(val);
-		}
-
-		template<>
-        math_def inline int nd4j_sqrt<int>(int val) {
-			return sqrtf((float) val);
-		}
+            } else if (std::is_same<X, double>::value) {
+                return static_cast<Z>(sqrt(val));
+            } else if (std::is_same<X, float>::value) {
+                return static_cast<Z>(sqrtf(val));
+            } else {
+                return static_cast<Z>(sqrt((float) val));
+            }
+        }
 
 		template<>
         math_def inline float16 nd4j_tanh<float16>(float16 val) {

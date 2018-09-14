@@ -217,12 +217,14 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    static double execReduce3Scalar(int opNum,
+    static void execReduce3Scalar(int opNum,
                                void *x,
                                Nd4jLong *xShapeInfo,
                                void *extraParamsVals,
                                void *y,
-                               Nd4jLong *yShapeInfo);
+                               Nd4jLong *yShapeInfo,
+                               void *z,
+                               Nd4jLong *zShapeInfo);
 
     /**
      *

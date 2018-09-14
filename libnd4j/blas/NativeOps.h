@@ -286,13 +286,15 @@ public:
      * @param y
      * @param yShapeInfo
      */
-    double   execReduce3Scalar(Nd4jPointer *extraPointers,
+    void execReduce3Scalar(Nd4jPointer *extraPointers,
                                      int opNum,
                                      void *x,
                                      Nd4jLong *xInfo,
                                      void *extraParamsVals,
                                      void *y,
-                                     Nd4jLong *yInfo);
+                                     Nd4jLong *yInfo,
+                                     void *z,
+                                     Nd4jLong *zInfo);
     /**
      *
      * @param opNum

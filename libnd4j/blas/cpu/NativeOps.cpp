@@ -336,13 +336,15 @@ void NativeOps::execReduce3(Nd4jPointer *extraPointers,
  * @param y
  * @param yShapeInfo
  */
-double NativeOps::execReduce3Scalar(Nd4jPointer *extraPointers,int opNum,
+void NativeOps::execReduce3Scalar(Nd4jPointer *extraPointers,int opNum,
                                             void *x,
                                             Nd4jLong *xShapeInfo,
                                             void *extraParams,
                                             void *y,
-                                            Nd4jLong *yShapeInfo) {
-    return NativeOpExcutioner::execReduce3Scalar(opNum,x,xShapeInfo,extraParams,y,yShapeInfo);
+                                            Nd4jLong *yShapeInfo,
+                                            void *z,
+                                            Nd4jLong *zShapeInfo) {
+    NativeOpExcutioner::execReduce3Scalar(opNum,x,xShapeInfo,extraParams,y,yShapeInfo, z, zShapeInfo);
 }
 /**
  *

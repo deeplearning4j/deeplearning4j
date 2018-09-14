@@ -1439,12 +1439,14 @@ NDArray NDArray::transp() const {
 
         double *extras = new double[1]{eps};
 
+        auto tmp = NDArray::scalar<float>(0.0f, this->_workspace);
+
         // we don't need extraparams for this op
-        double val = NativeOpExcutioner::execReduce3Scalar(4, _buffer, _shapeInfo, extras, other->_buffer, other->_shapeInfo);
+        NativeOpExcutioner::execReduce3Scalar(4, _buffer, _shapeInfo, extras, other->_buffer, other->_shapeInfo, tmp->buffer(), tmp->shapeInfo());
 
         delete[] extras;
 
-        if (val > 0)
+        if (tmp->getScalar<int>(0) > 0)
             return false;
 
         return true;
@@ -2426,7 +2428,7 @@ NDArray NDArray::transp() const {
 			    for(int j=0; j<columns(); ++j)	{	// check whether norm of column vector = 1
 			        for(int i=0; i<rows(); ++i)
 				        dot += getScalar<double>(i,j)*getScalar<double>(i,j);
-			    if(dot != 0.f && nd4j::math::nd4j_abs(nd4j::math::nd4j_sqrt(dot) - 1.f) > eps)
+			    if(dot != 0.f && nd4j::math::nd4j_abs(nd4j::math::nd4j_sqrt<double, double>(dot) - 1.f) > eps)
 				    return false;
 
 			    dot = 0.f;
@@ -2448,7 +2450,7 @@ NDArray NDArray::transp() const {
 			        for(int j=0; j<columns(); ++j)
 					    dot += getScalar<double>(i,j)*getScalar<double>(i,j);
 
-			        if(dot!= 0. && nd4j::math::nd4j_abs(nd4j::math::nd4j_sqrt<double>(dot) - 1.) > eps)
+			        if(dot!= 0. && nd4j::math::nd4j_abs(nd4j::math::nd4j_sqrt<double, double>(dot) - 1.) > eps)
 				        return false;
 			        dot = 0.;
 		        }
@@ -2894,7 +2896,7 @@ NDArray NDArray::transp() const {
         }
         // perform calculations
         if(rankOf() == copy.size() && other->rankOf() == copy.size())
-            reinterpret_cast<double *>(result->_buffer)[0] = NativeOpExcutioner::execReduce3Scalar(op, _buffer, _shapeInfo, const_cast<void *>(extraParams), other->_buffer, other->_shapeInfo);
+            NativeOpExcutioner::execReduce3Scalar(op, _buffer, _shapeInfo, const_cast<void *>(extraParams), other->_buffer, other->_shapeInfo, result->_buffer, result->shapeInfo());
         else {
             shape::TAD tadX(_shapeInfo, copy.data(), copy.size());
             tadX.createTadOnlyShapeInfo();

@@ -47,15 +47,15 @@ namespace simdOps {
         }
 
         op_def static T op(T d1, T d2) {
-            return nd4j::math::nd4j_exp<T>(d1 - d2);
+            return nd4j::math::nd4j_exp<T, T>(d1 - d2);
         }
 
         op_def static T op(T d1, T* extraParams) {
-            return nd4j::math::nd4j_exp<T>(d1 - extraParams[0]);
+            return nd4j::math::nd4j_exp<T, T>(d1 - extraParams[0]);
         }
 
         op_def static T postProcess(T reduction, Nd4jLong n, T *extraParams) {
-            return extraParams[0] + nd4j::math::nd4j_log<T>(reduction);
+            return extraParams[0] + nd4j::math::nd4j_log<T, T>(reduction);
         }
 
 #ifdef __CUDACC__
