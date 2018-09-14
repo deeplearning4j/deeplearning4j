@@ -34,7 +34,10 @@ public class TFGraphTestZooModels {
             "deeplab.*",
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6422
-            "nasnet_mobile_.*"
+            "nasnet_mobile_.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6423
+            "resnetv2"
 
     };
 
@@ -132,9 +135,9 @@ public class TFGraphTestZooModels {
 //        if(!modelName.equals("mobilenet_v1_0.5_128")){
 //        if(!modelName.equals("nasnet_mobile_2018_04_27")){
 //        if(!modelName.equals("resnetv2")){
-        if(!modelName.equals("mobilenet_v2_1.0_224")){
-            OpValidationSuite.ignoreFailing();
-        }
+//        if(!modelName.equals("mobilenet_v2_1.0_224")){
+//            OpValidationSuite.ignoreFailing();
+//        }
 
         Nd4j.create(1);
         for(String s : IGNORE_REGEXES){
