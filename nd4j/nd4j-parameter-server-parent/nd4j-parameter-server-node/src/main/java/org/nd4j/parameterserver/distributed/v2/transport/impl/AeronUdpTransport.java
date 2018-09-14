@@ -248,6 +248,8 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         if (!remoteConnections.containsKey(message.getOriginatorId()))
             addConnection(message.getOriginatorId());
 
+        log.info("Got [{}] message from [{}]", message.getClass().getSimpleName(), message.getOriginatorId());
+
         // we're just putting deserialized message into the buffer
         try {
             messageQueue.put(message);

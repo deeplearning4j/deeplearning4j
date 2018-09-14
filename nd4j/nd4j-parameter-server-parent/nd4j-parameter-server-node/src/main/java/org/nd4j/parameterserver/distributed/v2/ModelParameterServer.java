@@ -230,7 +230,7 @@ public final class ModelParameterServer {
                     log.info("Storing GradientsUpdateMessage into backlog queue...");
                     updatesQueue.add(message.getPayload());
                 } else {
-                    log.info("Propagating GradientsUpdateMessage to subscribers: [{}]");
+                    log.info("Propagating GradientsUpdateMessage to subscribers: [{}]", updatesSubscribers.size());
                     updatesSubscribers.forEach(s -> s.onNext(message.getPayload()));
                 }
             } else
