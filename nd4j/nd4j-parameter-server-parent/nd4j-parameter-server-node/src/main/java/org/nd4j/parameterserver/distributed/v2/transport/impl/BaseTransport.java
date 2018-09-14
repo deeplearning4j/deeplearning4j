@@ -497,7 +497,7 @@ public abstract  class BaseTransport  implements Transport {
                 if (numerOfNodes.get() > 0) {
                     propagateBroadcastableMessage((BroadcastableMessage) message, PropagationMode.BOTH_WAYS);
                 } else {
-
+                    log.info("Skipping broadcast due to absence of nodes in mesh");
                 }
             } catch (Exception e) {
                 log.error("Wasn't able to propagate message [{}] from [{}]", message.getClass().getSimpleName(), message.getOriginatorId());

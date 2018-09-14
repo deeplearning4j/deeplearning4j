@@ -23,6 +23,7 @@ import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.util.ThreadUtils;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
@@ -297,7 +298,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                     if (relocatable) {
                         try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
                                         .getAndActivateWorkspace(appliedConfiguration, "CGA_APPLY")) {
-                            if (compressed.isCompressed()) {
+                            if (compressed.isCompressed() || compressed.data().dataType() == DataBuffer.Type.INT) {
                                 INDArray compressed_copy = compressed.unsafeDuplication(true);
 
                                 int encoding = compressed.data().getInt(3);
@@ -313,7 +314,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                             }
                         }
                     } else {
-                        if (compressed.isCompressed()) {
+                        if (compressed.isCompressed() || compressed.data().dataType() == DataBuffer.Type.INT) {
                             int encoding = compressed.data().getInt(3);
                             if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
                                 Nd4j.getExecutioner().thresholdDecode(compressed, updates);
