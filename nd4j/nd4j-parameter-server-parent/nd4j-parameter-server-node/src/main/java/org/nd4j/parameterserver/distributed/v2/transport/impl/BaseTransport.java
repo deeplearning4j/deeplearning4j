@@ -405,6 +405,7 @@ public abstract  class BaseTransport  implements Transport {
                 } else {
                     // first we add new node to the mesh
                     mesh.get().addNode(message.getOriginatorId());
+                    numerOfNodes.incrementAndGet();
                 }
 
                 response.setMesh(mesh.get().clone());
@@ -493,8 +494,11 @@ public abstract  class BaseTransport  implements Transport {
             // here we should propagate message down
             try {
                 // we propagate message ONLY if we've already received Mesh from master
-                if (numerOfNodes.get() > 0)
+                if (numerOfNodes.get() > 0) {
                     propagateBroadcastableMessage((BroadcastableMessage) message, PropagationMode.BOTH_WAYS);
+                } else {
+
+                }
             } catch (Exception e) {
                 log.error("Wasn't able to propagate message [{}] from [{}]", message.getClass().getSimpleName(), message.getOriginatorId());
                 log.error("BroadcastableMessage propagation exception:", e);
