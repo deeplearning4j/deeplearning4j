@@ -40,13 +40,9 @@ namespace nd4j {
             auto epsilon = INPUT_VARIABLE(1);
 
             auto z = OUTPUT_VARIABLE(0);
-/*
-            auto lambda = LAMBDA_TT(_x, _e) {
-                return _e * nd4j::math::nd4j_eluderivative(_x);
-            };
 
-            input->applyPairwiseLambda(epsilon, lambda, z);  
-*/
+            input->applyPairwiseTransform(pairwise::ELUDerivativeE, epsilon, z, nullptr);
+
             return Status::OK();
         }
     }

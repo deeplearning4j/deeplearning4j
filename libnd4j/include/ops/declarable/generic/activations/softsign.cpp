@@ -42,12 +42,7 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            auto lambda = LAMBDA_TT(_x, _e) {
-                T f = (T) 1.0f + nd4j::math::nd4j_abs<T>(_x);
-                return _e * ((T) 1.0f / (f * f));
-            };
-
-            input->applyPairwiseLambda(epsilon, lambda, z);  
+            input->applyPairwiseTransform(pairwise::SoftsignDerivativeE, epsilon, z, nullptr);
 
             return Status::OK();
         }

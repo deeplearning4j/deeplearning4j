@@ -32,7 +32,7 @@ namespace nd4j {
             input->applyTransform(nd4j::transform::HardTanh, output, nullptr);
             STORE_RESULT(output);
             
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         CONFIGURABLE_OP_IMPL(hardtanh_bp, 2, 1, true, 0, 0) {
@@ -40,14 +40,10 @@ namespace nd4j {
             auto epsilon = INPUT_VARIABLE(1);
 
             auto z = OUTPUT_VARIABLE(0);
-/*
-            auto lambda = LAMBDA_TT(_x, _e) {
-                return _e * simdOps::HardTanhDerivative<T>::op(_x, nullptr);
-            };
 
-            input->applyPairwiseLambda(epsilon, lambda, z);  
-*/
-            return ND4J_STATUS_OK;
+            input->applyPairwiseTransform(pairwise::HardTanhDerivativeE, epsilon, z, nullptr);
+
+            return Status::OK();
         }
     }
 }

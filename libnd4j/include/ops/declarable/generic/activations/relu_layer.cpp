@@ -36,7 +36,7 @@ namespace nd4j {
 
             
             auto output = OUTPUT_VARIABLE(0);
-            T bound = (T)0.f;
+            //T bound = (T)0.f;
             //nd4j_printf("Matrix x(%ix%i), Matrix w(%ix%i), b(1x%i)\n", x->sizeAt(0), x->sizeAt(1), w->sizeAt(0), w->sizeAt(1), b->lengthOf());
 
             nd4j::ops::xw_plus_b op;
@@ -44,8 +44,7 @@ namespace nd4j {
             REQUIRE_TRUE(Status::OK() == result->status(), 0, "relu_layer: xw_plus_b op failed on input data.");
 
             auto xw = result->at(0);
-            xw->applyTransform(nd4j::transform::RELU, output, &bound);
-
+            xw->applyTransform(nd4j::transform::RELU, output, nullptr);
 
             return Status::OK();
         }

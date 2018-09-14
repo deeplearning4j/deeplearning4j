@@ -80,13 +80,10 @@ namespace nd4j {
                 return tmpResult->status();
 
             auto actv = tmpResult->at(0);
-/*
+
             // now we do RELU backward pass
-            auto lambda = LAMBDA_TT(_x, _e) {
-                return _x > (T) 0.0f ? _e  : (T) 0.0f;
-            };
-            actv->applyPairwiseLambda(epsilonNext, lambda);
-*/
+            actv->applyPairwiseTransform(pairwise::RELUDerivativeE, epsilon, nullptr);
+
             // now we split updated array into 2 chunks along last dimension
             nd4j::ops::concat_bp opc;
             auto dec = opc.execute({input, input, actv}, {},{-1});

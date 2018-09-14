@@ -43,16 +43,9 @@ CONFIGURABLE_OP_IMPL(relu6_bp, 2, 1, true, 0, 0) {
     auto input = INPUT_VARIABLE(0);
     auto gradO = INPUT_VARIABLE(1);
     auto gradI = OUTPUT_VARIABLE(0);
-    
-    auto derivative = LAMBDA_TT(inp, grad) {
-        if((T)0. < inp && inp < (T)6.)
-            return grad;                    // derivative = 1
-        else 
-            return (T)0.;                   // derivative = 0
-    };
 
-    input->applyPairwiseLambda(gradO, derivative, gradI);
-    
+    input->applyPairwiseTransform(pairwise::RELU6DerivativeE, gradO, gradI, nullptr);
+
     return Status::OK();
 }
 

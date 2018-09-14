@@ -42,11 +42,7 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            auto lambda = LAMBDA_TT(_x, _e) {
-                return _e * simdOps::SELUDerivative<T>::op(_x, nullptr);
-            };
-
-            input->applyPairwiseLambda(epsilon, lambda, z);  
+            input->applyPairwiseTransform(pairwise::SELUDerivativeE, epsilon, z, nullptr);
 
             return Status::OK();
         }

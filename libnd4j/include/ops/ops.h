@@ -1430,6 +1430,54 @@ namespace simdOps {
 		}
 	};
 
+	template <typename X, typename Y>
+	class SigmoidDerivativeE {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static X op(X d1, Y d2, X *params) {
+            X s = nd4j::math::nd4j_sigmoid<X>(d1);
+            return (X) d2 * (s * ((X) 1.0f - s));
+		}
+	};
+
+    template <typename X, typename Y>
+    class SoftplusDerivativeE {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static X op(X d1, Y d2, X *params) {
+            X p = nd4j::math::nd4j_pow<X, X, X>(static_cast<X>(M_E), d1);
+            return (X) d2 * (p / (p + 1.));
+        }
+    };
+
+    template <typename X, typename Y>
+    class SoftsignDerivativeE {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static X op(X d1, Y d2, X *params) {
+            X f = (X) 1.0f + nd4j::math::nd4j_abs<X>(d1);
+            return (X) d2 * ((X) 1.0f / (f * f));
+        }
+    };
+
+    template <typename X, typename Y>
+    class TanhDerivativeE {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static X op(X d1, Y d2, X *params) {
+            X t = nd4j::math::nd4j_tanh<X>(d1);
+            return (X) d2 * ((X) 1.0f - (t * t));
+        }
+    };
+
     template <typename X>
     class HardSigmoid {
     public:
@@ -1875,9 +1923,113 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static X op(X d1, X *params) {
-			return d1 < params[0] ? params[0] : d1;
+		    X t = params == nullptr ? static_cast<X>(0.0f) : params[0];
+			return d1 < t ? t : d1;
 		}
 	};
+
+	template <typename X, typename Y>
+	class RELUDerivativeE {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static X op(X d1, Y d2, X *params) {
+			X t = params == nullptr ? (X) 0.0f : params[0];
+			return d1 > t ? (Y) d2  : (X) 0.0f;
+		}
+	};
+
+    template <typename X, typename Y>
+    class RELU6DerivativeE {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static X op(X d1, Y d2, X *params) {
+            if((X)0.f < d1 && d1 < (X)6.f)
+                return (X) d2;                    // derivative = 1
+            else
+                return (X) 0.f;                   // derivative = 0
+        }
+    };
+
+    template <typename X, typename Y>
+    class LRELUDerivativeE {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static X op(X d1, Y d2, X *params) {
+        	return d1 >= static_cast<X>(0.0f) ? static_cast<X>(d2) : static_cast<X>(0.0f);
+        }
+    };
+
+	template <typename X, typename Y>
+	class CUBEDerivativeE {
+	public:
+	    no_op_exec_special
+	    no_op_exec_special_cuda
+
+	    op_def static X op(X d1, Y d2, X *params) {
+            return static_cast<X>(d2) * (3 * d1 * d1);
+	    }
+	};
+
+    template <typename X, typename Y>
+    class ELUDerivativeE {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static X op(X d1, Y d2, X *params) {
+            return static_cast<X>(d2) * nd4j::math::nd4j_eluderivative<X>(d1);
+        }
+    };
+
+    template <typename X, typename Y>
+    class HardSigmoidDerivativeE {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static X op(X d1, Y d2, X *params) {
+            return static_cast<X>(d2) * simdOps::HardSigmoidDerivative<X>::op(d1, nullptr);
+        }
+    };
+
+    template <typename X, typename Y>
+    class HardTanhDerivativeE {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static X op(X d1, Y d2, X *params) {
+            return static_cast<X>(d2) * simdOps::HardTanhDerivative<X>::op(d1, nullptr);
+        }
+    };
+
+    template <typename X, typename Y>
+    class RationalTanhDerivativeE {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static X op(X d1, Y d2, X *params) {
+            return static_cast<X>(d2) * simdOps::RationalTanhDerivative<X>::op(d1, nullptr);
+        }
+    };
+
+    template <typename X, typename Y>
+    class RectifiedTanhDerivativeE {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static X op(X d1, Y d2, X *params) {
+            return d1 > (X) 0.0f ? (X) d2 * (nd4j::math::nd4j_tanhderivative<X>(d1)) : (X) 0.0f;
+        }
+    };
 
 	template <typename X>
 	class RELU6 {
@@ -1921,6 +2073,17 @@ namespace simdOps {
 
         op_def static X op(X d1, X *params) {
             return d1 > static_cast<X>(0) ? static_cast<X>(SELU_LAMBDA) : static_cast<X>(SELU_ALPHA) * static_cast<X>(SELU_LAMBDA) * nd4j::math::nd4j_exp<X, X>(d1);
+        }
+    };
+
+    template <typename X, typename Y>
+    class SELUDerivativeE {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static X op(X d1, Y d2, X *params) {
+            return (X) d2 * simdOps::SELUDerivative<X>::op(d1, nullptr);
         }
     };
 

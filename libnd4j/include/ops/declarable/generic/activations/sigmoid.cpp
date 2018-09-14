@@ -42,14 +42,9 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            auto lambda = LAMBDA_TT(_x, _e) {
-                T s = nd4j::math::nd4j_sigmoid<T>(_x);
-                return _e * (s * ((T) 1.0f - s));
-            };
+            input->applyPairwiseTransform(pairwise::SigmoidDerivativeE, epsilon, z, nullptr);
 
-            input->applyPairwiseLambda(epsilon, lambda, z);  
-
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
     }
 }

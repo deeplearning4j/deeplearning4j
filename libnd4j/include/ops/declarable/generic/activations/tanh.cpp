@@ -42,12 +42,7 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            auto lambda = LAMBDA_TT(_x, _e) {
-                T t = nd4j::math::nd4j_tanh<T>(_x);
-                return _e * ((T) 1.0f - (t * t));
-            };
-
-            input->applyPairwiseLambda(epsilon, lambda, z);  
+            input->applyPairwiseTransform(pairwise::TanhDerivativeE, epsilon, z, nullptr);
 
             return Status::OK();
         }

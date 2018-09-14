@@ -317,6 +317,20 @@
         (30, LogicalXor) ,\
         (31, LogicalNot) ,\
         (32, LogicalAnd) ,\
+        (33, RELUDerivativeE) ,\
+        (34, CUBEDerivativeE) ,\
+        (35, ELUDerivativeE) ,\
+        (36, HardSigmoidDerivativeE) ,\
+        (37, HardTanhDerivativeE) ,\
+        (38, LRELUDerivativeE) ,\
+        (39, RationalTanhDerivativeE) ,\
+        (40, RectifiedTanhDerivativeE) ,\
+        (41, RELU6DerivativeE) ,\
+        (42, SELUDerivativeE) ,\
+        (43, SigmoidDerivativeE) ,\
+        (44, SoftplusDerivativeE) ,\
+        (47, SoftsignDerivativeE) ,\
+        (48, TanhDerivativeE) ,\
         (92, PowDerivative), \
         (93, LogPoisonLoss), \
         (94, LogPoisonLossFull)

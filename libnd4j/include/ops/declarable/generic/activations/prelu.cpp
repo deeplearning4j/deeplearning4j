@@ -60,7 +60,7 @@ CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
 
     const Nd4jLong expectedAlphaLen = std::accumulate(expectedAlphaShape.begin(), expectedAlphaShape.end(), 1, std::multiplies<T>());        
 
-    REQUIRE_TRUE(alphaLen == expectedAlphaLen, 0, "PRELU OP: wrong shape of alpha array, expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils<T>::shapeAsString(alphaShape).c_str());   
+    REQUIRE_TRUE(alphaLen == expectedAlphaLen, 0, "PRELU OP: wrong shape of alpha array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils<T>::shapeAsString(alphaShape).c_str());
     // ***** end of validation ***** //
 
     if(alphaShape != expectedAlphaShape)
@@ -108,7 +108,7 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
 
     const Nd4jLong expectedAlphaLen = std::accumulate(expectedAlphaShape.begin(), expectedAlphaShape.end(), 1, std::multiplies<T>());        
 
-    REQUIRE_TRUE(alphaLen == expectedAlphaLen, 0, "PRELU_BP OP: wrong shape of alpha array, expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils<T>::shapeAsString(alphaShape).c_str());   
+    REQUIRE_TRUE(alphaLen == expectedAlphaLen, 0, "PRELU_BP OP: wrong shape of alpha array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils::shapeAsString(alphaShape).c_str());
     // ***** end of validation ***** //
     
     if(alphaShape != expectedAlphaShape) {
