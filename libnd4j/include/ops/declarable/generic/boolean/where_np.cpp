@@ -41,24 +41,42 @@ namespace nd4j {
                 if (condition->isSameShape(x)) {
                     // FIXME: for perf it might be better to issue memcpy here, and fill only mismatched values from either X or Y
                     if(y->isScalar()) {
-                        for (int e = 0; e < condition->lengthOf(); e++) {
-                            T v = condition->getIndexedScalar(e);
-                            T r = v > (T) 0.0f ? y->getIndexedScalar(0) : x->getIndexedScalar(e);
-                            z->putIndexedScalar(e, r);
+                        if (y->isR()) {
+                            for (int e = 0; e < condition->lengthOf(); e++) {
+                                auto r = condition->getIndexedScalar<bool>(e) ? y->getIndexedScalar<double>(0)
+                                                                              : x->getIndexedScalar<double>(e);
+                                z->putIndexedScalar(e, r);
+                            }
+                        } else {
+                            for (int e = 0; e < condition->lengthOf(); e++) {
+                                auto r = condition->getIndexedScalar<bool>(e) ? y->getIndexedScalar<Nd4jLong>(0)
+                                                                              : x->getIndexedScalar<Nd4jLong>(e);
+                                z->putIndexedScalar(e, r);
+                            }
                         }
                     }
                     else {
-
-                        for (int e = 0; e < condition->lengthOf(); e++) {
-                            T v = condition->getIndexedScalar(e);
-                            if (v > 0.0f) {
-                                T r = y->getIndexedScalar(numMatches);
-                                z->putIndexedScalar(e, r);
-                                numMatches++;
+                        if (y->isR()) {
+                            for (int e = 0; e < condition->lengthOf(); e++) {
+                                if (condition->getIndexedScalar<bool>(e)) {
+                                    auto r = y->getIndexedScalar<double>(numMatches);
+                                    z->putIndexedScalar(e, r);
+                                    numMatches++;
+                                } else {
+                                    auto r = x->getIndexedScalar<double>(e);
+                                    z->putIndexedScalar(e, r);
+                                }
                             }
-                            else {
-                                T r = x->getIndexedScalar(e);
-                                z->putIndexedScalar(e, r);
+                        } else {
+                            for (int e = 0; e < condition->lengthOf(); e++) {
+                                if (condition->getIndexedScalar<bool>(e)) {
+                                    auto r = y->getIndexedScalar<Nd4jLong>(numMatches);
+                                    z->putIndexedScalar(e, r);
+                                    numMatches++;
+                                } else {
+                                    auto r = x->getIndexedScalar<Nd4jLong>(e);
+                                    z->putIndexedScalar(e, r);
+                                }
                             }
                         }
                     }
@@ -66,15 +84,13 @@ namespace nd4j {
                 else {
                     REQUIRE_TRUE(condition->lengthOf() == x->sizeAt(0), 0, "Condition length should be equal to the dim0 of x/y to act as TAD-mask, but got %d instead", condition->lengthOf());
 
-                    auto dims = ShapeUtils<T>::convertAxisToTadTarget(x->rankOf(), {0});
+                    auto dims = ShapeUtils::convertAxisToTadTarget(x->rankOf(), {0});
                     auto tadsX = x->allTensorsAlongDimension(dims);
                     auto tadsY = y->allTensorsAlongDimension(dims);
                     auto tadsZ = z->allTensorsAlongDimension(dims);
 
                     for (int e = 0; e < tadsX->size(); e++) {
-                        T v = condition->getIndexedScalar(e);
-
-                        if (v == (T) 0.0f)
+                        if (!condition->getIndexedScalar<bool>(e))
                             tadsZ->at(e)->assign(tadsY->at(e));
                         else
                             tadsZ->at(e)->assign(tadsX->at(e));
@@ -90,14 +106,15 @@ namespace nd4j {
                 REQUIRE_TRUE(block.width() == 1, 0, "Where op takes either 1 or 3 operands, But got %d operands instead", block.width());
 
                 Nd4jLong width = condition->rankOf();
-                nd4j::ops::Where<T> op;
-                std::unique_ptr<ResultSet<T>> res(op.execute({condition}, {}, {}));
+                nd4j::ops::Where op;
+                std::unique_ptr<ResultSet> res(op.execute({condition}, {}, {}));
                 REQUIRE_OK(res->status());
-                NDArray<T>* whereTrue = res->at(0);
+                NDArray* whereTrue = res->at(0);
                 for (Nd4jLong outNext = 0; outNext < width; ++outNext) {
                     auto output = OUTPUT_VARIABLE(outNext);
                     for (Nd4jLong e = 0; e < output->lengthOf(); ++e) {
-                        (*output)(e) =  (*whereTrue)(e, outNext);
+                        //(*output)(e) =  (*whereTrue)(e, outNext);
+                        throw std::runtime_error("Not implemented");
                     }
                 }
 //                auto result = list.stack();
@@ -120,13 +137,13 @@ namespace nd4j {
             } else {
                 auto condition = INPUT_VARIABLE(0);
 
-                Nd4jLong numOfTrue = condition->template reduceNumber<simdOps::CountNonZero<T>>();
+                auto numOfTrue = condition->reduceNumber(reduce::CountNonZero).getIndexedScalar<Nd4jLong>(0);
                 // output shape - a tuple of rank(inShape) 1D tensors with numOfTrue len
                 for (Nd4jLong e = 0; e < condition->rankOf(); ++e) {
                     Nd4jLong *newShape;
 //                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
   //                  shape::shapeVector(numOfTrue, newShape);
-                    newShape = ShapeUtils<T>::createVectorShapeInfo(numOfTrue, block.getWorkspace());
+                    newShape = ShapeBuilders::createVectorShapeInfo(numOfTrue, block.getWorkspace());
                     shapes->push_back(newShape);
                 }
             }

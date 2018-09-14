@@ -28,8 +28,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-
-template<typename T>
+    
 class Householder {
 
     public:
@@ -46,7 +45,7 @@ class Householder {
     * 
     *  x - input vector, remains unaffected
     */                       
-    static NDArray<T> evalHHmatrix(const NDArray<T>& x);
+    static NDArray evalHHmatrix(const NDArray& x);
 
     /**
     *  this method evaluates data required for calculation of Householder matrix P = identity_matrix - coeff * w * w^T
@@ -63,9 +62,9 @@ class Householder {
     *  normX - this scalar is the first non-zero element in vector resulting from Householder transformation -> (P*x)
     *  coeff - scalar, scaling factor in Householder matrix formula  
     */                       
-    static void evalHHmatrixData(const NDArray<T>& x, NDArray<T>& tail, T& coeff, T& normX);
+    static void evalHHmatrixData(const NDArray& x, NDArray& tail, T& coeff, T& normX);
 
-    static void evalHHmatrixDataI(const NDArray<T>& x, T& coeff, T& normX);
+    static void evalHHmatrixDataI(const NDArray& x, T& coeff, T& normX);
 
     /**
     *  this method mathematically multiplies input matrix on Householder from the left P * matrix
@@ -74,7 +73,7 @@ class Householder {
     *  tail - the essential part of the Householder vector w: [w1, w2, w3, ...]
     *  coeff - scalar, scaling factor in Householder matrix formula  
     */                       
-    static void mulLeft(NDArray<T>& matrix, const NDArray<T>& tail, const T coeff);
+    static void mulLeft(NDArray& matrix, const NDArray& tail, const T coeff);
 
     /**
     *  this method mathematically multiplies input matrix on Householder from the right matrix * P
@@ -83,7 +82,7 @@ class Householder {
     *  tail - the essential part of the Householder vector w: [w1, w2, w3, ...]
     *  coeff - scalar, scaling factor in Householder matrix formula  
     */                       
-    static void mulRight(NDArray<T>& matrix, const NDArray<T>& tail, const T coeff);
+    static void mulRight(NDArray& matrix, const NDArray& tail, const T coeff);
         
 
 
@@ -96,7 +95,7 @@ class Householder {
     // *  matrix - input 2D matrix to be reduced to upper bidiagonal from    
     // */
     // template <typename T>
-    // void biDiagonalizeUp(NDArray<T>& matrix);
+    // void biDiagonalizeUp(NDArray& matrix);
 
     // /** 
     // *  given a matrix matrix [m,n], this function computes its singular value decomposition matrix = u * s * v^T
@@ -110,7 +109,7 @@ class Householder {
     // *  fullUV - if false then only p (p is smaller among m and n) first columns of u and v will be calculated and their dimensions in this case are [m, p] and [n, p]
     // *
     // */
-    // void svd(const NDArray<T>& matrix, NDArray<T>& u, NDArray<T>& s, NDArray<T>& v, const bool calcUV = false, const bool fullUV = false)    
+    // void svd(const NDArray& matrix, NDArray& u, NDArray& s, NDArray& v, const bool calcUV = false, const bool fullUV = false)    
 
 
 

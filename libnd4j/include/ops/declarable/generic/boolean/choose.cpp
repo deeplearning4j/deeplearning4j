@@ -27,29 +27,28 @@
 #include <vector>
 #include <NDArray.h>
 
-template<typename T>
-nd4j::NDArray<T>  * processCondition(int mode,nd4j::NDArray<T> *arg, nd4j::NDArray<T> *comp, T compScalar);
+// FIXME: !!!
+/*
+nd4j::NDArray* processCondition(int mode,nd4j::NDArray *arg, nd4j::NDArray *comp, nd4j::NDArray& compScalar);
 
 template <typename T>
 T processElementCondition(int mode,T d1,T d2);
 
 
 
+nd4j::NDArray* processCondition(int mode,nd4j::NDArray *arg, nd4j::NDArray *comp,nd4j::NDArray *output, nd4j::NDArray *numResult, nd4j::NDArray& compScalar) {
 
-template<typename T>
-nd4j::NDArray<T>  * processCondition(int mode,nd4j::NDArray<T> *arg, nd4j::NDArray<T> *comp,nd4j::NDArray<T> *output, nd4j::NDArray<T> *numResult,T compScalar) {
-    /**
-     * Convert to straight ndarray based on input
-     */
+     //Convert to straight ndarray based on input
+
     int numResults = 0;
     if(comp != nullptr) {
         if (comp->isScalar()) {
             //Other input for compare could be an ndarray or a secondary scalar
             //for comparison
-            nd4j::NDArray<T> arg1 = *arg;
-            nd4j::NDArray<T> comp1 = *comp;
+            nd4j::NDArray arg1 = *arg;
+            nd4j::NDArray comp1 = *comp;
             for (Nd4jLong i = 0; i < arg->lengthOf(); i++) {
-                T result2 = processElementCondition<T>(mode,arg1(i),comp1(0.));
+                T result2 = processElementCondition(mode,arg1(i),comp1(0.));
                 if(result2 > 0) {
                     output->putScalar(numResults, arg1(i));
                     numResults++;
@@ -59,9 +58,9 @@ nd4j::NDArray<T>  * processCondition(int mode,nd4j::NDArray<T> *arg, nd4j::NDArr
             // REQUIRE_TRUE(comp.isSameShape(arg));
             //Other input for compare could be an ndarray or a secondary scalar
             //for comparison
-            nd4j::NDArray<T> arg1 = *arg;
+            nd4j::NDArray arg1 = *arg;
             for (Nd4jLong i = 0; i < arg->lengthOf(); i++) {
-                T result2 = processElementCondition<T>(mode,arg1(i),compScalar);
+                T result2 = processElementCondition(mode,arg1(i),compScalar);
                 if(result2 > 0) {
                     output->putScalar(numResults, arg1(i));
                     numResults++;
@@ -71,11 +70,11 @@ nd4j::NDArray<T>  * processCondition(int mode,nd4j::NDArray<T> *arg, nd4j::NDArr
 
     }
     else {
-        nd4j::NDArray<T> arg1 = *arg;
+        nd4j::NDArray arg1 = *arg;
         //Other input for compare could be an ndarray or a secondary scalar
         //for comparison
         for (Nd4jLong i = 0; i < arg->lengthOf(); i++) {
-            T result2 = processElementCondition<T>(mode,arg1(i),compScalar);
+            T result2 = processElementCondition(mode,arg1(i),compScalar);
             if(result2 > 0) {
                 output->putScalar(numResults, arg1(i));
                 numResults++;
@@ -90,19 +89,21 @@ nd4j::NDArray<T>  * processCondition(int mode,nd4j::NDArray<T> *arg, nd4j::NDArr
 
 }
 
+
 template <typename T>
 T processElementCondition(int mode,T d1,T d2) {
     T modePointer = (T ) mode;
     T input[3] = {d2, (T) EPS, (T) mode};
-    T res = simdOps::MatchCondition<T>::op(d1, input);
+    T res = simdOps::MatchCondition::op(d1, input);
     return res;
 
 }
-
+*/
 
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(choose, -1, 2, false, -1, -1) {
+            /*
             int mode = INT_ARG(0);
             if (block.width() > 1) {
                 auto arg = INPUT_VARIABLE(0);
@@ -114,17 +115,17 @@ namespace nd4j {
                 if(arg->isScalar() || comp->isScalar()) {
                     if(arg->isScalar()) {
                         T scalar = arg1(0.);
-                        processCondition<T>(mode,comp,nullptr,result,numResults,scalar);
+                        processCondition(mode,comp,nullptr,result,numResults,scalar);
 
                     }
                     else {
                         T scalar = comp1(0.);
-                        processCondition<T>(mode,arg,nullptr,result,numResults,scalar);
+                        processCondition(mode,arg,nullptr,result,numResults,scalar);
 
                     }
                 }
                 else {
-                    processCondition<T>(mode,arg,comp,result,numResults,0.0f);
+                    processCondition(mode,arg,comp,result,numResults,0.0f);
 
                 }
 
@@ -138,12 +139,12 @@ namespace nd4j {
                 auto arg = INPUT_VARIABLE(0);
                 auto numResults = OUTPUT_VARIABLE(1);
                 auto result = OUTPUT_VARIABLE(0);
-                processCondition<T>(mode,arg,nullptr,result,numResults,scalar);
+                processCondition(mode,arg,nullptr,result,numResults,scalar);
                 STORE_2_RESULTS(result,numResults);
             }
+*/
 
-
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(choose) {
@@ -170,7 +171,7 @@ namespace nd4j {
             Nd4jLong* newShape;
             COPY_SHAPE(shape, newShape);
 
-            auto shapeScalar = ShapeUtils<T>::createScalarShapeInfo(block.workspace());
+            auto shapeScalar = ShapeBuilders::createScalarShapeInfo(block.workspace());
 
             return SHAPELIST(newShape, shapeScalar);
         }

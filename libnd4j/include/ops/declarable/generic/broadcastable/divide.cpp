@@ -38,7 +38,7 @@ namespace nd4j {
                 OVERWRITE_RESULT(tZ);
             }
 
-			return ND4J_STATUS_OK;
+			return Status::OK();
         }
         DECLARE_SYN(Div, divide);
 
@@ -50,57 +50,53 @@ namespace nd4j {
             auto gradX = OUTPUT_VARIABLE(0);
             auto gradY = OUTPUT_VARIABLE(1);
 
-            auto lambdaX = LAMBDA_TT(_e, _y) {
-                return _e / _y;
-            };
-
+/*
             auto lambdaY = LAMBDA_TTT(_e, _x, _y) {
                 return _e * -_x / (_y * _y);
             };
-
+*/
 
             if (x->isSameShape(y)) {
                 // PWT case case
 
                 // X gradient
-                epsNext->applyPairwiseLambda(y, lambdaX, gradX);
+                //epsNext->applyPairwiseLambda(y, lambdaX, gradX);
+                epsNext->applyPairwiseTransform(pairwise::Divide, y, gradX);
 
                 // Y gradient
-                epsNext->applyTriplewiseLambda(x, y, lambdaY, gradY);
+                //epsNext->applyTriplewiseLambda(x, y, lambdaY, gradY);
+                gradY->assign(epsNext * - (*x) / ((*y) * (*y)));
 
             } else if (y->isScalar()) {
                 // scalar case
-                T _y = y->getScalar(0);
-                auto lambdaS = LAMBDA_T(_e, _y) {
-                    return _e / _y;
-                };
 
-                T tmp = epsNext->template reduceNumber<simdOps::Sum<T>>();
-                T tmpX = x->template reduceNumber<simdOps::Sum<T>>();
-                gradY->assign(tmp * -tmpX / (_y * _y));
+                auto tmp = epsNext->reduceNumber(reduce::Sum);
+                auto tmpX = x->reduceNumber(reduce::Sum);
+                gradY->assign(tmp * -tmpX / ((*y) * (*y)));
                 
-                epsNext->applyLambda(lambdaS, gradX);
+                //epsNext->applyLambda(lambdaS, gradX);
+                epsNext->applyScalar(scalar::Divide, *y, gradX, nullptr);
             } else {
                 // broadcast case
 
                 auto preX = *epsNext / *y;
 
-                NDArray<T> negX(*x);
-                x->template applyTransform<simdOps::Neg<T>>(&negX);
+                NDArray negX(*x);
+                x->applyTransform(transform::Neg, &negX);
                 auto preY = *epsNext * negX / ((*y) * (*y));
 
-                auto axisX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
-                auto axisY = ShapeUtils<T>::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
+                auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
+                auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
                 if (axisX.size() > 0) {
-                    auto sum = preX.template reduceAlongDimension<simdOps::Sum<T>>(axisX);
+                    auto sum = preX.reduceAlongDimension(reduce::Sum, axisX);
                     gradX->assign(sum);
                     delete sum;
                 } else 
                     gradX->assign(preX);
 
                 if (axisY.size() > 0) {
-                    auto sum = preY.template reduceAlongDimension<simdOps::Sum<T>>(axisY);
+                    auto sum = preY.reduceAlongDimension(reduce::Sum, axisY);
                     gradY->assign(sum);
                     delete sum;
                 } else

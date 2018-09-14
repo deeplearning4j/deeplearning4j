@@ -28,8 +28,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-
-template<typename T>
+    
 class HHsequence {
 
     public:
@@ -37,12 +36,12 @@ class HHsequence {
     /*
     *  matrix containing the Householder vectors
     */
-    NDArray<T> _vectors;        
+    NDArray _vectors;        
 
     /*
     *  vector containing the Householder coefficients
     */
-    NDArray<T> _coeffs;    
+    NDArray _coeffs;    
     
     /*
     *  shift of the Householder sequence 
@@ -62,18 +61,18 @@ class HHsequence {
     /*
     *  constructor
     */
-    HHsequence(const NDArray<T>& vectors, const NDArray<T>& coeffs, const char type);
+    HHsequence(const NDArray& vectors, const NDArray& coeffs, const char type);
 
     /**
     *  this method mathematically multiplies input matrix on Householder sequence from the left H0*H1*...Hn * matrix
     * 
     *  matrix - input matrix to be multiplied
     */                       
-    void mulLeft(NDArray<T>& matrix) const;
+    void mulLeft(NDArray& matrix) const;
 
-    NDArray<T> getTail(const int idx) const;
+    NDArray getTail(const int idx) const;
 
-    void applyTo(NDArray<T>& dest) const;
+    void applyTo(NDArray& dest) const;
 
     FORCEINLINE int rows() const;
 
@@ -81,8 +80,7 @@ class HHsequence {
 
 
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
-FORCEINLINE int HHsequence<T>::rows() const {
+FORCEINLINE int HHsequence::rows() const {
 
     return _type == 'u' ? _vectors.sizeAt(0) : _vectors.sizeAt(1); 
 }    

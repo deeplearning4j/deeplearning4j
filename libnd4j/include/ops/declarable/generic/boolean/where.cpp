@@ -41,25 +41,30 @@ namespace nd4j {
                 if (condition->isSameShape(x)) {
                     // FIXME: for perf it might be better to issue memcpy here, and fill only mismatched values from either X or Y
                     for (int e = 0; e < condition->lengthOf(); e++) {
-                        T v = condition->getIndexedScalar(e);
-                        T r = v == (T) 0.0f ? y->getIndexedScalar(e) : x->getIndexedScalar(e);
-                        z->putIndexedScalar(e, r);
+                        if (y->isR()) {
+                            auto r = !condition->getIndexedScalar<bool>(e) ? y->getIndexedScalar<double>(e)
+                                                                           : x->getIndexedScalar<double>(e);
+                            z->putIndexedScalar(e, r);
+                        } else {
+                            auto r = !condition->getIndexedScalar<bool>(e) ? y->getIndexedScalar<Nd4jLong>(e)
+                                                                           : x->getIndexedScalar<Nd4jLong>(e);
+                            z->putIndexedScalar(e, r);
+                        }
                     }
                 } else {
                     REQUIRE_TRUE(condition->lengthOf() == x->sizeAt(0), 0, "Condition length should be equal to the dim0 of x/y to act as TAD-mask, but got %d instead", condition->lengthOf());
 
-                    auto dims = ShapeUtils<T>::convertAxisToTadTarget(x->rankOf(), {0});
+                    auto dims = ShapeUtils::convertAxisToTadTarget(x->rankOf(), {0});
                     auto tadsX = x->allTensorsAlongDimension(dims);
                     auto tadsY = y->allTensorsAlongDimension(dims);
                     auto tadsZ = z->allTensorsAlongDimension(dims);
 
                     for (int e = 0; e < tadsX->size(); e++) {
-                        T v = condition->getIndexedScalar(e);
-
-                        if (v == (T) 0.0f)
+                        if (!condition->getIndexedScalar<bool>(e)) {
                             tadsZ->at(e)->assign(tadsY->at(e));
-                        else
+                        } else {
                             tadsZ->at(e)->assign(tadsX->at(e));
+                        }
                     }
 
                     delete tadsX;
@@ -73,21 +78,18 @@ namespace nd4j {
 
                 int width = condition->rankOf();
 
-                std::vector<int> dims = ShapeUtils<T>::convertAxisToTadTarget(width, {0});
+                std::vector<int> dims = ShapeUtils::convertAxisToTadTarget(width, {0});
 
-                NDArrayList<T> list(0, true);
+                NDArrayList list(0, true);
                 int cnt = 0;
 
                 Nd4jLong idx[MAX_RANK];
                 for (int e = 0; e < condition->lengthOf(); e++) {
-                    shape::ind2subC(condition->rankOf(), condition->shapeOf(), e, idx);
-
-                    auto offset = shape::getOffset(0, condition->shapeOf(), condition->stridesOf(), idx, condition->rankOf());
-                    T v = condition->buffer()[offset];
-                    if (v != (T) 0.0f) {
-                        auto array = new NDArray<T>('c', {1, condition->rankOf()});
-                        for (int f = 0; f < condition->rankOf(); f++)
-                            array->putIndexedScalar(f, (T) idx[f]);
+                    if (!condition->getIndexedScalar<bool>(e)) {
+                        auto array = new NDArray('c', {1, condition->rankOf()});
+                        throw std::runtime_error("Not implemented properly");
+                        //for (int f = 0; f < condition->rankOf(); f++)
+                            //array->putIndexedScalar(e, (T) idx[f]);
 
                         list.write(cnt++, array);
                     }
@@ -112,7 +114,7 @@ namespace nd4j {
                 // output shape is the 2D tensor num_true x rankOf (inShape)
                 auto condition = INPUT_VARIABLE(0);
                 auto inShape = inputShape->at(0);
-                Nd4jLong numOfTrue = condition->template reduceNumber<simdOps::CountNonZero<T>>();
+                Nd4jLong numOfTrue = condition->reduceNumber(reduce::CountNonZero, nullptr).getIndexedScalar<Nd4jLong>(0);
                 Nd4jLong *newshape;
                 ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
 

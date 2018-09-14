@@ -33,7 +33,7 @@ CONFIGURABLE_OP_IMPL(thresholdedrelu, 1, 1, true, 0, 0) {
     auto input  = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
-    const T theta = block.getTArguments()->size() == 0 ? static_cast<T>(1) : T_ARG(0);
+    //const T theta = block.getTArguments()->size() == 0 ? static_cast<T>(1) : T_ARG(0);
 
     // REQUIRE_TRUE(theta >= static_cast<T>(0), 0, "THRESHOLDED_RELU OP: input float argument theta must be >= 0, but got %f instead !", theta);
 /*
@@ -41,6 +41,10 @@ CONFIGURABLE_OP_IMPL(thresholdedrelu, 1, 1, true, 0, 0) {
 
     input->applyLambda(func, output);
     */
+
+// FIXME: we should have proper extra set here
+    input->applyTransform(transform::RELU, output, nullptr);
+
     return Status::OK();
 }
 

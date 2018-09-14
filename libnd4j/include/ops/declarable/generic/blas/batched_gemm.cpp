@@ -80,9 +80,9 @@ namespace nd4j {
 
             REQUIRE_TRUE(vA.size() == vB.size() && vA.size() == vC.size() && vA.size() == batchSize, 0, "BatchedGemm: mismatched numbers of A, B, C for unknown reason");
             
-            nd4j::ops::helpers::_bgemm<T>(vA, vB, vC, alpha, beta, transA, transB, M, N, K, ldA, ldB, ldC);
+            nd4j::ops::helpers::_bgemm(vA, vB, vC, alpha, beta, transA, transB, M, N, K, ldA, ldB, ldC);
             
-            return ND4J_STATUS_OK;
+            return Status::OK();
         };
 
 

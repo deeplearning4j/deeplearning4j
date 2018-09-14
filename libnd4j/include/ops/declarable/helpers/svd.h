@@ -30,17 +30,16 @@ namespace ops     {
 namespace helpers {
 
 
-template<typename T>
 class SVD {
 
     public:
     
     int _switchSize = 10;
 
-    NDArray<T> _m;
-    NDArray<T> _s;
-    NDArray<T> _u;
-    NDArray<T> _v;
+    NDArray _m;
+    NDArray _s;
+    NDArray _u;
+    NDArray _v;
     
     int _diagSize;
 
@@ -52,54 +51,52 @@ class SVD {
     /**
     *  constructor
     */
-    SVD(const NDArray<T>& matrix, const int switchSize, const bool calcV, const bool calcU, const bool fullUV);
+    SVD(const NDArray& matrix, const int switchSize, const bool calcV, const bool calcU, const bool fullUV);
 
-    SVD(const NDArray<T>& matrix, const int switchSize, const bool calcV, const bool calcU, const bool fullUV, const char t);
+    SVD(const NDArray& matrix, const int switchSize, const bool calcV, const bool calcU, const bool fullUV, const char t);
 
     void deflation1(int col1, int shift, int ind, int size);
     
     void deflation2(int col1U , int col1M, int row1W, int col1W, int ind1, int ind2, int size);
     
     void deflation(int col1, int col2, int ind, int row1W, int col1W, int shift);    
-    
-    T secularEq(const T diff, const NDArray<T>& col0, const NDArray<T>& diag, const NDArray<T> &permut, const NDArray<T>& diagShifted, const T shift);
 
-    void calcSingVals(const NDArray<T>& col0, const NDArray<T>& diag, const NDArray<T>& permut, NDArray<T>& singVals, NDArray<T>& shifts, NDArray<T>& mus);
+    // FIXME: proper T support required here
+    double secularEq(const double diff, const NDArray& col0, const NDArray& diag, const NDArray &permut, const NDArray& diagShifted, const double shift);
 
-    void perturb(const NDArray<T>& col0, const NDArray<T>& diag, const NDArray<T>& permut, const NDArray<T>& singVals,  const NDArray<T>& shifts, const NDArray<T>& mus, NDArray<T>& zhat);
+    void calcSingVals(const NDArray& col0, const NDArray& diag, const NDArray& permut, NDArray& singVals, NDArray& shifts, NDArray& mus);
 
-    void calcSingVecs(const NDArray<T>& zhat, const NDArray<T>& diag, const NDArray<T>& perm, const NDArray<T>& singVals, const NDArray<T>& shifts, const NDArray<T>& mus, NDArray<T>& U, NDArray<T>& V);
+    void perturb(const NDArray& col0, const NDArray& diag, const NDArray& permut, const NDArray& singVals,  const NDArray& shifts, const NDArray& mus, NDArray& zhat);
 
-    void calcBlockSVD(int firstCol, int size, NDArray<T>& U, NDArray<T>& singVals, NDArray<T>& V);
+    void calcSingVecs(const NDArray& zhat, const NDArray& diag, const NDArray& perm, const NDArray& singVals, const NDArray& shifts, const NDArray& mus, NDArray& U, NDArray& V);
+
+    void calcBlockSVD(int firstCol, int size, NDArray& U, NDArray& singVals, NDArray& V);
 
     void DivideAndConquer(int col1, int col2, int row1W, int col1W, int shift);
 
-    void exchangeUV(const HHsequence<T>& hhU, const HHsequence<T>& hhV, const NDArray<T> U, const NDArray<T> V);
+    void exchangeUV(const HHsequence& hhU, const HHsequence& hhV, const NDArray U, const NDArray V);
 
-    void evalData(const NDArray<T>& matrix);
+    void evalData(const NDArray& matrix);
 
-    FORCEINLINE NDArray<T>& getS();
-    FORCEINLINE NDArray<T>& getU();
-    FORCEINLINE NDArray<T>& getV();
+    FORCEINLINE NDArray& getS();
+    FORCEINLINE NDArray& getU();
+    FORCEINLINE NDArray& getV();
 
 };
 
 
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
-FORCEINLINE NDArray<T>& SVD<T>::getS() {
+FORCEINLINE NDArray& SVD::getS() {
   return _s;
 }
 
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
-FORCEINLINE NDArray<T>& SVD<T>::getU() {
+FORCEINLINE NDArray& SVD::getU() {
   return _u;
 }
 
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
-FORCEINLINE NDArray<T>& SVD<T>::getV() {
+FORCEINLINE NDArray& SVD::getV() {
   return _v;
 }
 
@@ -107,8 +104,7 @@ FORCEINLINE NDArray<T>& SVD<T>::getV() {
 
 //////////////////////////////////////////////////////////////////////////
 // svd operation, this function is not method of SVD class, it is standalone function
-template <typename T>
-void svd(const NDArray<T>* x, const std::vector<NDArray<T>*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum);
+void svd(const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum);
 
 
 

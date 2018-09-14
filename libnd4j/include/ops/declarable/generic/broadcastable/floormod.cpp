@@ -56,8 +56,7 @@ namespace nd4j {
                 epsNext->applyPairwiseTransform(pairwise::Multiply, tmpResult->at(0), gradY, nullptr);
             else // epsNext is greater than gradY
             {
-                for (Nd4jLong e = 0; e < gradY->lengthOf(); e++)
-                    (*gradY)(e) = (*tmpResult->at(0))(e) * (*epsNext)(e);
+                tmpResult->at(0)->applyPairwiseTransform(pairwise::Multiply, epsNext, gradY, nullptr);
             }
             return Status::OK();
         }

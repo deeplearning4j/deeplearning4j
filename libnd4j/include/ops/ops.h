@@ -1936,7 +1936,7 @@ namespace simdOps {
 
 		op_def static X op(X d1, Y d2, X *params) {
 			X t = params == nullptr ? (X) 0.0f : params[0];
-			return d1 > t ? (Y) d2  : (X) 0.0f;
+			return d1 > t ? (X) d2  : (X) 0.0f;
 		}
 	};
 

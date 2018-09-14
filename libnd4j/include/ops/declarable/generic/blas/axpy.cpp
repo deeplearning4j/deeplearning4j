@@ -32,7 +32,7 @@ namespace nd4j {
 
             REQUIRE_TRUE(x->isSameShape(y),0, "Axpy: both arguments should have the same shape")
 
-            T a = (T) 1.0f;
+            double a = (double) 1.0f;
 
             if (block.width() > 2) {
                 auto alpha = INPUT_VARIABLE(2);
@@ -41,11 +41,16 @@ namespace nd4j {
                 a = T_ARG(0);
             }
 
+            /*
             auto lambda = LAMBDA_TT(_y, _x, a) {
                 return a * _x + _y;
             };
 
             y->applyPairwiseLambda(x, lambda, z);
+            */
+
+            // FIXME: set proper extras here
+            y->applyPairwiseTransform(pairwise::Axpy, x, z, nullptr);
 
             return ND4J_STATUS_OK;
         }
