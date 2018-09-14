@@ -20,6 +20,7 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -63,9 +64,8 @@ public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
 
     protected INDArray smartDecompress(INDArray encoded, INDArray target) {
         INDArray result = target == null ? Nd4j.create(paramsShape, paramsOrder) : target;
-        if (!encoded.isCompressed()) {
-            result.addi(encoded);
-        } else {
+
+        if (encoded.isCompressed() || encoded.data().dataType() == DataBuffer.Type.INT) {
             int encoding = encoded.data().getInt(3);
             if (encoding == ThresholdCompression.FLEXIBLE_ENCODING) {
                 Nd4j.getExecutioner().thresholdDecode(encoded, result);
@@ -73,6 +73,8 @@ public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
                 Nd4j.getExecutioner().bitmapDecode(encoded, result);
             } else
                 throw new ND4JIllegalStateException("Unknown encoding mode: [" + encoding + "]");
+        } else {
+            result.addi(encoded);
         }
 
         return result;
