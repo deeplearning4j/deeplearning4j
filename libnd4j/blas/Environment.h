@@ -35,6 +35,7 @@ namespace nd4j{
         std::atomic<bool> _debug;
         std::atomic<bool> _profile;
         std::atomic<int> _maxThreads;
+        std::atomic<bool> _useMKLDNN{true};
 
         static Environment* _instance;
 
@@ -59,6 +60,9 @@ namespace nd4j{
 
         int maxThreads();
         void setMaxThreads(int max);
+
+        bool isUseMKLDNN() { return _useMKLDNN.load(); }
+        void setUseMKLDNN(bool useMKLDNN) { _useMKLDNN.store(useMKLDNN); }
     };
 }
 
