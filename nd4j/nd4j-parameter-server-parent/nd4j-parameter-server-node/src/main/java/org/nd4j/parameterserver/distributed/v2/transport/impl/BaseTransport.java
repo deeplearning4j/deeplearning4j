@@ -447,13 +447,12 @@ public abstract  class BaseTransport  implements Transport {
                     log.warn("Got restart message from master, but there's no defined RestartCallback");
             }
 
+            // at last step we're updating handshake flag, so we're aware of finished handshake process
+            handshakeFlag.set(true);
 
             // in any way we're putting this message back to replies
             val reply = (ResponseMessage) message;
             replies.putIfAbsent(reply.getRequestId(), reply);
-
-            // at last step we're updating handshake flag, so we're aware of finished handshake process
-            handshakeFlag.set(true);
 
             // this is default handler for message pairs
         } else if (message instanceof ResponseMessage) {

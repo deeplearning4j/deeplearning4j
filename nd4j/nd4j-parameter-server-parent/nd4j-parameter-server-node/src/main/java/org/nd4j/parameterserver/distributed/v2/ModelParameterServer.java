@@ -226,14 +226,10 @@ public final class ModelParameterServer {
              */
             if (message instanceof GradientsUpdateMessage) {
                 // it's possible to get updates messages BEFORE model was properly initalized
-                if (!transport.isIntroduced()) {
-
-                } else {
-                    if (updatesSubscribers.isEmpty())
-                        updatesQueue.add(message.getPayload());
-                    else
-                        updatesSubscribers.forEach(s -> s.onNext(message.getPayload()));
-                }
+                if (updatesSubscribers.isEmpty())
+                    updatesQueue.add(message.getPayload());
+                else
+                    updatesSubscribers.forEach(s -> s.onNext(message.getPayload()));
             } else
                 throw new UnsupportedOperationException("Unknown message received: [" + message.getClass().getCanonicalName() + "]");
         });
