@@ -140,7 +140,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      * @param data the data to merge
      * @return a single dataset
      */
-    public static DataSet merge(List<DataSet> data) {
+    public static DataSet merge(List<? extends org.nd4j.linalg.dataset.api.DataSet> data) {
         if (data.isEmpty())
             throw new IllegalArgumentException("Unable to merge empty dataset");
 
@@ -148,7 +148,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         boolean anyFeaturesPreset = false;
         boolean anyLabelsPreset = false;
         boolean first = true;
-        for(DataSet ds : data){
+        for(org.nd4j.linalg.dataset.api.DataSet ds : data){
             if(ds.isEmpty()){
                 continue;
             }
@@ -171,7 +171,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         INDArray[] featuresMasksToMerge = null;
         INDArray[] labelsMasksToMerge = null;
         int count = 0;
-        for (DataSet ds : data) {
+        for (org.nd4j.linalg.dataset.api.DataSet ds : data) {
             if(ds.isEmpty())
                 continue;
             featuresToMerge[count] = ds.getFeatures();
@@ -209,7 +209,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         DataSet dataset = new DataSet(featuresOut, labelsOut, featuresMaskOut, labelsMaskOut);
 
         List<Serializable> meta = null;
-        for (DataSet ds : data) {
+        for (org.nd4j.linalg.dataset.api.DataSet ds : data) {
             if (ds.getExampleMetaData() == null || ds.getExampleMetaData().size() != ds.numExamples()) {
                 meta = null;
                 break;
