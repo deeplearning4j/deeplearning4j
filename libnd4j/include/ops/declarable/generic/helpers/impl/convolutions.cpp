@@ -879,53 +879,27 @@ void ConvolutionUtils<T>::mkldnn_conv2d(MKLDNNStream<T> &stream, const std::vect
         auto formatw = mkldnn::memory::format::hwio;
         auto conv_src_md = mkldnn::memory::desc({ conv_src_tz }, type, format);
         auto conv_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
-        auto conv_bias_md = mkldnn::memory::desc({ conv_bias_tz }, type, mkldnn::memory::format::x);        
+        auto conv_bias_md = mkldnn::memory::desc({ conv_bias_tz }, type, mkldnn::memory::format::x);
         auto conv_dst_md = mkldnn::memory::desc({ conv_dst_tz }, type, format);
 
-        // conv_src_md.data.ndims     = 4;
-        // conv_weights_md.data.ndims = 4;
-        // conv_bias_md.data.ndims    = 1;
-        // conv_dst_md.data.ndims     = 4;
+        conv_src_md.data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
+        conv_src_md.data.layout_desc.blocking.strides[0][0] = input->stridesOf()[isNCHW ? 0 : 0];
+        conv_src_md.data.layout_desc.blocking.strides[0][1] = input->stridesOf()[isNCHW ? 1 : 3];
+        conv_src_md.data.layout_desc.blocking.strides[0][2] = input->stridesOf()[isNCHW ? 2 : 1];
+        conv_src_md.data.layout_desc.blocking.strides[0][3] = input->stridesOf()[isNCHW ? 3 : 2];
 
-        // conv_src_md.data.dims[0] = bS;
-        // conv_src_md.data.dims[1] = iC;
-        // conv_src_md.data.dims[2] = iH;
-        // conv_src_md.data.dims[3] = iW;
+        conv_weights_md.data.format = mkldnn_blocked; // overrides "formatw = hwio"
+        conv_weights_md.data.layout_desc.blocking.strides[0][0] = weights->stridesOf()[3];
+        conv_weights_md.data.layout_desc.blocking.strides[0][1] = weights->stridesOf()[2];
+        conv_weights_md.data.layout_desc.blocking.strides[0][2] = weights->stridesOf()[0];
+        conv_weights_md.data.layout_desc.blocking.strides[0][3] = weights->stridesOf()[1];
 
-        // conv_weights_md.data.dims[0] = oC;
-        // conv_weights_md.data.dims[1] = iC;
-        // conv_weights_md.data.dims[2] = kH;
-        // conv_weights_md.data.dims[3] = kW;
+        conv_dst_md.data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
+        conv_dst_md.data.layout_desc.blocking.strides[0][0] = output->stridesOf()[isNCHW ? 0 : 0];
+        conv_dst_md.data.layout_desc.blocking.strides[0][1] = output->stridesOf()[isNCHW ? 1 : 3];
+        conv_dst_md.data.layout_desc.blocking.strides[0][2] = output->stridesOf()[isNCHW ? 2 : 1];
+        conv_dst_md.data.layout_desc.blocking.strides[0][3] = output->stridesOf()[isNCHW ? 3 : 2];
 
-        // conv_dst_md.data.dims[0] = bS;
-        // conv_dst_md.data.dims[1] = oC;
-        // conv_dst_md.data.dims[2] = oH;
-        // conv_dst_md.data.dims[3] = oW;
-        
-        // conv_bias_md.data.dims[0] = oC;
-
-        // conv_src_md.data.format     = mkldnn_blocked;
-        // conv_weights_md.data.format = mkldnn_blocked;
-        // conv_bias_md.data.format    = mkldnn_blocked;
-        // conv_dst_md.data.format     = mkldnn_blocked;
-
-        // conv_src_md.data.layout_desc.blocking.strides[0][0] = input->stridesOf()[0];
-        // conv_src_md.data.layout_desc.blocking.strides[0][1] = input->stridesOf()[1];
-        // conv_src_md.data.layout_desc.blocking.strides[0][2] = input->stridesOf()[2];
-        // conv_src_md.data.layout_desc.blocking.strides[0][3] = input->stridesOf()[3];
-
-        // conv_weights_md.data.layout_desc.blocking.strides[0][0] = weights->stridesOf()[0];
-        // conv_weights_md.data.layout_desc.blocking.strides[0][1] = weights->stridesOf()[1];
-        // conv_weights_md.data.layout_desc.blocking.strides[0][2] = weights->stridesOf()[2];
-        // conv_weights_md.data.layout_desc.blocking.strides[0][3] = weights->stridesOf()[3];
-
-        // conv_dst_md.data.layout_desc.blocking.strides[0][0] = output->stridesOf()[0];
-        // conv_dst_md.data.layout_desc.blocking.strides[0][1] = output->stridesOf()[1];
-        // conv_dst_md.data.layout_desc.blocking.strides[0][2] = output->stridesOf()[2];
-        // conv_dst_md.data.layout_desc.blocking.strides[0][3] = output->stridesOf()[3];
-        
-        // conv_bias_md.data.layout_desc.blocking.strides[0][0] = bias->stridesOf()[0];        
- 
         auto conv_desc = bias != nullptr
                 ? convolution_forward::desc(prop_kind::forward,
                         convolution_direct, conv_src_md, conv_weights_md, conv_bias_md,

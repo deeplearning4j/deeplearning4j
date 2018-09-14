@@ -22,7 +22,7 @@
 #define ND4J_CONTEXT_PROTOTYPE_H
 
 #include <vector>
-
+#include <Environment.h>
 
 namespace nd4j {
     namespace graph {
@@ -40,7 +40,7 @@ namespace nd4j {
             // opNum for legacy XYZ ops
             int _opNum = -1;
 
-            bool _useMKLDNN = true;
+            bool _useMKLDNN = nd4j::Environment::getInstance()->isUseMKLDNN();
 
         public:
             explicit ContextPrototype(int nodeId = 1, bool inPlace = false);
