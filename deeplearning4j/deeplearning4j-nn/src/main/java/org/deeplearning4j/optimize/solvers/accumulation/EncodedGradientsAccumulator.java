@@ -297,25 +297,33 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                     if (relocatable) {
                         try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
                                         .getAndActivateWorkspace(appliedConfiguration, "CGA_APPLY")) {
-                            INDArray compressed_copy = compressed.unsafeDuplication(true);
+                            if (compressed.isCompressed()) {
+                                INDArray compressed_copy = compressed.unsafeDuplication(true);
 
-                            int encoding = compressed.data().getInt(3);
-                            if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
-                                Nd4j.getExecutioner().thresholdDecode(compressed_copy, updates);
-                            else if (encoding == ThresholdCompression.BITMAP_ENCODING)
-                                Nd4j.getExecutioner().bitmapDecode(compressed_copy, updates);
-                            else
-                                throw new DL4JInvalidConfigException(
-                                                "Unknown compression header received: " + encoding);
+                                int encoding = compressed.data().getInt(3);
+                                if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
+                                    Nd4j.getExecutioner().thresholdDecode(compressed_copy, updates);
+                                else if (encoding == ThresholdCompression.BITMAP_ENCODING)
+                                    Nd4j.getExecutioner().bitmapDecode(compressed_copy, updates);
+                                else
+                                    throw new DL4JInvalidConfigException(
+                                            "Unknown compression header received: " + encoding);
+                            } else {
+                                updates.addi(compressed);
+                            }
                         }
                     } else {
-                        int encoding = compressed.data().getInt(3);
-                        if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
-                            Nd4j.getExecutioner().thresholdDecode(compressed, updates);
-                        else if (encoding == ThresholdCompression.BITMAP_ENCODING)
-                            Nd4j.getExecutioner().bitmapDecode(compressed, updates);
-                        else
-                            throw new DL4JInvalidConfigException("Unknown compression header received: " + encoding);
+                        if (compressed.isCompressed()) {
+                            int encoding = compressed.data().getInt(3);
+                            if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
+                                Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+                            else if (encoding == ThresholdCompression.BITMAP_ENCODING)
+                                Nd4j.getExecutioner().bitmapDecode(compressed, updates);
+                            else
+                                throw new DL4JInvalidConfigException("Unknown compression header received: " + encoding);
+                        } else {
+                            updates.addi(compressed);
+                        }
                     }
                     cnt++;
                     ent++;
