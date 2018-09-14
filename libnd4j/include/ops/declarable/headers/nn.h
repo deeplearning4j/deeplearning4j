@@ -107,6 +107,9 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_batchnorm)
         DECLARE_CUSTOM_OP(batchnorm, 3, 1, false, 1, 2);
         #endif
+        #if NOT_EXCLUDED(OP_batchnorm)
+        DECLARE_CUSTOM_OP(batchnorm_new, 3, 1, false, 1, 2);
+        #endif
 
         /**
         * back prop in batch normalization
@@ -163,7 +166,7 @@ namespace nd4j {
          * scale:  1D input array of scale factors, shape [iD]
          * offset: 1D input array of offsets (shifts), shape [iD]
          * mean: 1D input array of population mean used for inference, shape [iD], this array is required only if isTraining = false
-         * variance: 1D input array of population mean used for inference, shape [iD], this array is required only if isTraining = false         
+         * variance: 1D input array of population mean used for inference, shape [iD], this array is required only if isTraining = false
          * 
          * T input arguments:
          * 0: epsilon, it is optional argument, default value is 0.001, this is small number to be added to the variance of x
