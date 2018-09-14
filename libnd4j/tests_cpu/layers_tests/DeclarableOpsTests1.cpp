@@ -2846,8 +2846,6 @@ TEST_F(DeclarableOpsTests1, batchnorm_test4) {
     delete results;
 }
 
-
-
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, sru_old_test1) {
 
@@ -4639,7 +4637,7 @@ TEST_F(DeclarableOpsTests1, Test_Expose_2) {
     variableSpace.trackList(list);
 
     Context<float> block(1, &variableSpace);
-    block.pickInput(-1);
+    block.pickInput(-1); 
 
     nd4j::ops::expose<float> op;
     auto result = op.execute(&block);

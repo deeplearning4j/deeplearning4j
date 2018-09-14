@@ -76,8 +76,6 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
     else 
         output->assign(inputMinusMean * sigmaInvGam);
 
-    STORE_RESULT(*output);
- 
     return Status::OK();
 }
 
@@ -116,75 +114,71 @@ CUSTOM_OP_IMPL(batchnorm_new, 3, 1, false, 1, 2) {
         beta = INPUT_VARIABLE(3 + static_cast<int>(applyScale));    
 
     const int numOfIntArgs = block.getIArguments()->size();
-    const int inRank = input->rank();
+    const int inRank = input->rankOf();
 
+    // get axes args to normalize input array over
     std::vector<int> axes;    
     if(numOfIntArgs > 2)
         for(int i = 2; i < numOfIntArgs; ++i)
             axes.push_back(INT_ARG(i));
     else
-        axes.push_back(inRank-1);               // default dimension to reduce along is last
-    
-    REQUIRE_TRUE(mean->rankOf()     == inRank, 0, "BATCHNORM_NEW op: rank of mean array should be equal rank of input, but got %i and %i correspondingly !", mean->rankOf(), inRank);
-    REQUIRE_TRUE(variance->rankOf() == inRank, 0, "BATCHNORM_NEW op: rank of variance array should be equal rank of input, but got %i and %i correspondingly !", variance->rankOf(), inRank);
-    if(gamma)
-        REQUIRE_TRUE(gamma->rankOf() == inRank, 0, "BATCHNORM_NEW op: rank of gamma array should be equal rank of input, but got %i and %i correspondingly !", gamma->rankOf(), inRank);
-    if(beta)
-        REQUIRE_TRUE(beta->rankOf() == inRank, 0, "BATCHNORM_NEW op: rank of beta array should be equal rank of input, but got %i and %i correspondingly !", beta->rankOf(), inRank);
+        axes.push_back(inRank-1);               // default dimension to reduce along is last dimension
 
-    Nd4jLong* expShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(input->ordering(), axes, *input, true, false, block.getWorkspace());
-    expShapeStr            = ShapeUtils<T>::shapeAsString(expShapeInfo);
+    const int numOfAxes = axes.size();
+    REQUIRE_TRUE(numOfAxes <= inRank, 0, "BATCHNORM_NEW op: too big number of input axes to normalize over, expected number should be less or equal to rank of input array, but got %i and %i correspondingly !", numOfAxes, inRank);
+    
+    // get, for example, something like {1, inDim1, 1, inDim3, 1} if axes = {1, 3}
+    std::vector<Nd4jLong> expShapeWithUnities(inRank, 1);
+    for(int i = 0; i < numOfAxes; ++i)
+        expShapeWithUnities[axes[i]] = input->sizeAt(axes[i]);     
+
+    // evaluate expected shape for mean, variance and gamma. These 3 arrays should have identical shapes
+    // for example if input shape is {2,3,4,5,6} and axes = {1,3}, then expected shape would be {1,3,1,5,1}, and if axes = {3}, then expected shape would be {5}
+    std::vector<Nd4jLong> expShape = numOfAxes == 1 ? std::vector<Nd4jLong>(1, input->sizeAt(axes[0])) : expShapeWithUnities;    
+    std::string expShapeStr = ShapeUtils<T>::shapeAsString(expShape);
 
     REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(mean)     == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of mean array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(mean).c_str());
     REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(variance) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of variance array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(variance).c_str());
     if(gamma)
         REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(variance) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of gamma array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(gamma).c_str());
     if(beta)
-        REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(beta) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of beta array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(beta).c_str());
-
-    RELEASE(expShapeInfo, block.getWorkspace());
+        REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(beta) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of beta array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(beta).c_str());  
 
     // normalized output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
+
+    if(numOfAxes == 1 && inRank > 1) {
+        mean     = mean->reshape(mean->ordering(), expShapeWithUnities);
+        variance = variance->reshape(variance->ordering(), expShapeWithUnities);
+        if(gamma)
+            gamma = gamma->reshape(gamma->ordering(), expShapeWithUnities);
+        if(beta)
+            beta  = beta->reshape(beta->ordering(), expShapeWithUnities);
+    }
 
     NDArray<T> sigmaInvGam = (*variance + epsilon).template transform<simdOps::RSqrt<T>>();
     if(applyScale)
         sigmaInvGam *= *gamma;
 
-    NDArray<T> inputMinusMean;
-    if(!input->isSameShape(output) && !mean->isSameShape(output)) {
-        NDArray<T> inputTiled(output, false, block.getWorkspace());
-        input->tile(inputTiled);
-        inputMinusMean = inputTiled - *mean;
-    }
-    else
-        inputMinusMean = *input - *mean;       
-
     if (applyOffset)
-        output->assign(inputMinusMean * sigmaInvGam + *beta);
+        output->assign((*input - *mean) * sigmaInvGam + *beta);
     else 
-        output->assign(inputMinusMean * sigmaInvGam);
+        output->assign((*input - *mean) * sigmaInvGam);
 
-    STORE_RESULT(*output);
- 
+    if(numOfAxes == 1 && inRank > 1) {
+        delete mean; 
+        delete variance;
+        delete gamma;
+        delete beta;
+    }
+    
     return Status::OK();
 }
 
-
 DECLARE_SHAPE_FN(batchnorm_new) {        
 
-    Nd4jLong* inShapeInfo = inputShape->at(0);
-    
-    const int inRank = inShapeInfo[0];
-    const int numOfIntArgs = block.getIArguments()->size();
-    
-    std::vector<int> axes;    
-    if(numOfIntArgs > 2)
-        for(int i = 2; i < numOfIntArgs; ++i)
-            axes.push_back(INT_ARG(i));
-    else
-        axes.push_back(inRank-1);
-        
-    Nd4jLong* outShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inShapeInfo), axes, inShapeInfo, false, false, block.getWorkspace());
+    Nd4jLong* outShapeInfo = nullptr;
+   
+    COPY_SHAPE(inputShape->at(0), outShapeInfo);    // output shape is identical to input shape
     
     return SHAPELIST(outShapeInfo);
 }
