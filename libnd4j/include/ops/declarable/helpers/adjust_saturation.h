@@ -110,8 +110,7 @@ namespace helpers {
         *b = bb + m;
     }
 
-    template <typename T>
-    void _adjust_saturation(NDArray *input, NDArray *output, T delta, bool isNHWC);
+    void _adjust_saturation(NDArray *input, NDArray *output, NDArray *delta, bool isNHWC);
 }
 }
 }

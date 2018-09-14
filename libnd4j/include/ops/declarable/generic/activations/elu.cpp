@@ -32,7 +32,7 @@ namespace nd4j {
             input->applyTransform(nd4j::transform::ELU, output, nullptr);
             STORE_RESULT(output);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         CONFIGURABLE_OP_IMPL(elu_bp, 2, 1, true, 0, 0) {
@@ -40,14 +40,14 @@ namespace nd4j {
             auto epsilon = INPUT_VARIABLE(1);
 
             auto z = OUTPUT_VARIABLE(0);
-
+/*
             auto lambda = LAMBDA_TT(_x, _e) {
                 return _e * nd4j::math::nd4j_eluderivative(_x);
             };
 
             input->applyPairwiseLambda(epsilon, lambda, z);  
-
-            return ND4J_STATUS_OK;
+*/
+            return Status::OK();
         }
     }
 }

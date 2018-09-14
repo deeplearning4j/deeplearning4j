@@ -34,7 +34,7 @@ namespace nd4j {
 
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(linear, identity);
 
@@ -46,7 +46,7 @@ namespace nd4j {
 
             z->assign(epsilon);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(LinearGrad, identity_bp);
     }

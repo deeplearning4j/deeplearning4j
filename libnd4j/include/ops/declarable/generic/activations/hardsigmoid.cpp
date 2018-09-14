@@ -40,13 +40,13 @@ namespace nd4j {
             auto epsilon = INPUT_VARIABLE(1);
 
             auto z = OUTPUT_VARIABLE(0);
-
+/*
             auto lambda = LAMBDA_TT(_x, _e) {
                 return _e * simdOps::HardSigmoidDerivative<T>::op(_x, nullptr);
             };
 
             input->applyPairwiseLambda(epsilon, lambda, z);  
-
+*/
             return Status::OK();
         }
     }

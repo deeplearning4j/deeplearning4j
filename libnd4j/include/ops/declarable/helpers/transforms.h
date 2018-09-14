@@ -37,7 +37,7 @@ namespace helpers {
 	void randomShuffle(NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace);
     
     // auxiliary function which serves for recursion purpose and is used in pad operation
-	void recursiveLoopForPad(const int mode, NDArray& input, const NDArray& paddings, NDArray& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, T padValue);
+	void recursiveLoopForPad(const int mode, NDArray& input, const NDArray& paddings, NDArray& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, NDArray& padValue);
 
 	void invertPermutation(const NDArray& input, NDArray& output);
 
@@ -57,11 +57,11 @@ namespace helpers {
 
 	void mergeAdd(const std::vector<NDArray*>& inArrs, NDArray& output);
 
-	void clipByNorm(NDArray& input, NDArray& output, const std::vector<int>& dimensions, const T clipNorm, const bool isInplace);
+	void clipByNorm(NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace);
 
-	void clipByNormBP(const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const T clipNorm);
+	void clipByNormBP(const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm);
 
-	void clipByAveraged(NDArray& input, NDArray& output, const std::vector<int>& dimensions, const T clipNorm, const bool isInplace);
+	void clipByAveraged(NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace);
 
 	void mirrorPad(const NDArray& input, const NDArray& paddings, NDArray& output, const int mode);
 
