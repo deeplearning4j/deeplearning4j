@@ -40,7 +40,7 @@ CONFIGURABLE_OP_IMPL(log_softmax, 1, 1, true, 0, 0) {
     if(input->isVector()) {
         
         if(rank == 1 || input->sizeAt(dim) != 1)
-            helpers::logSoftMaxForVector<T>(*input, *output);
+            helpers::logSoftMaxForVector(*input, *output);
         else
             *output = 0.;
     }

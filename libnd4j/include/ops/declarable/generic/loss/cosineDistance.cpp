@@ -61,8 +61,9 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
 			reps.emplace_back(labels->shapeOf()[i] / weights->shapeOf()[i]);
 		weightsBroad = new NDArray(weights->tile(reps));
 	}
-		
-	NDArray weightedLosses = 1.f - ((*predictions) * (*labels)).reduceAlongDims(reduce::Sum, {dim}, true);
+
+	auto ts = *(NDArray::scalar(1.f));
+	NDArray weightedLosses = ts - ((*predictions) * (*labels)).reduceAlongDims(reduce::Sum, {dim}, true);
 
  	// multiply weightedLosses on weights
  	weightedLosses *= (*weights);

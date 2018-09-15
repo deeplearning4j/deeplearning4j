@@ -34,9 +34,10 @@ namespace nd4j {
 
             REQUIRE_TRUE(input->rankOf() == 4, 0, "lrn: Input rank of 4 expected, but got %i instead", input->rankOf());
 
-            T alpha = T_ARG(1);
-            T beta = T_ARG(2);
-            T bias = T_ARG(0);
+            // FIXME: double?
+            double alpha = T_ARG(1);
+            double beta = T_ARG(2);
+            double bias = T_ARG(0);
             int depth = INT_ARG(0);
 
             return helpers::lrnFunctor(input, output, depth, bias, alpha, beta);
@@ -49,9 +50,11 @@ namespace nd4j {
 
             REQUIRE_TRUE(input->rankOf() == 4, 0, "lrn_bp: Input rank of 4 expected, but got %i instead", input->rankOf());
             REQUIRE_TRUE(input->isSameShape(errors), 0, "lrn_bp: Both input and errors should have the same shape");
-            T alpha = T_ARG(1);
-            T beta = T_ARG(2);
-            T bias = T_ARG(0);
+
+            // FIXME: double?
+            double alpha = T_ARG(1);
+            double beta = T_ARG(2);
+            double bias = T_ARG(0);
             int depth = INT_ARG(0);
 
             std::unique_ptr<NDArray> unitScale(errors->dup('c'));
@@ -78,10 +81,11 @@ namespace nd4j {
 
             REQUIRE_TRUE(input->rankOf() == 4, 0, "Input rank of 4 expected, but got %i instead", input->rankOf());
 
-            T alpha = T_ARG(0);
-            T beta = T_ARG(1);
-            T bias = T_ARG(2);
-            T depth = T_ARG(3);
+            // FIXME: double
+            double alpha = T_ARG(0);
+            double beta = T_ARG(1);
+            double bias = T_ARG(2);
+            double depth = T_ARG(3);
 
             return helpers::lrnFunctorEx(input, output, unitScale, scale, (int)depth, bias, alpha, beta);
         }

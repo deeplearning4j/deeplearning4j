@@ -29,13 +29,13 @@ namespace nd4j {
             auto parameters = INPUT_VARIABLE(0);
             auto gradients = INPUT_VARIABLE(1);
 
-            T lr = (T) 0.0f;
+            double lr = 0.0;
 
             REQUIRE_TRUE(parameters->isSameShape(gradients), 0, "ApplySGD: parameters and gradients should have the same shape, but got parameters = %s and gradients = %s !", ShapeUtils::shapeAsString(parameters).c_str(), ShapeUtils::shapeAsString(gradients).c_str());
 
             if (block.width() == 3) {
                 auto tarr = INPUT_VARIABLE(2);
-                lr = tarr->getScalar(0);
+                lr = tarr->getScalar<double>(0);
             } else if (block.getTArguments()->size() == 1) {
                 lr = T_ARG(0);
             } else {
@@ -44,12 +44,14 @@ namespace nd4j {
 
             auto Z = OUTPUT_VARIABLE(0);
 
+            // FIXME: lambda
+            /*
             auto lambda = LAMBDA_TT(_x, _y, lr) {
                 return _x - (_y * lr);
             };
 
             parameters->applyPairwiseLambda(gradients, lambda, Z);
-
+            */
             return Status::OK();
         }
         DECLARE_SYN(ApplyGradientDescent, apply_sgd);

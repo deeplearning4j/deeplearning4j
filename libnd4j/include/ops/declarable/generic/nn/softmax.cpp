@@ -38,7 +38,7 @@ CONFIGURABLE_OP_IMPL(softmax, 1, 1, true, 0, 0) {
 
     REQUIRE_TRUE(dim < rank, 0, "SOFTMAX OP: the value of input integer parameter (dimension) must be less than input array rank %i, but got dimension = %i instead !", rank, dim);
 
-    helpers::softmax<T>(*input, *output, dim);
+    helpers::softmax(*input, *output, dim);
 
     return Status::OK();
 }
@@ -54,7 +54,7 @@ CONFIGURABLE_OP_IMPL(softmax_bp, 2, 1, true, 0, 0) {
 
     REQUIRE_TRUE(dim < rank, 0, "SOFTMAX_BP OP: the value of input integer parameter (dimension) must be less than input array rank %i, but got dimension = %i instead !", rank, dim);
     
-    helpers::softmax<T>(*input, *gradI, dim);
+    helpers::softmax(*input, *gradI, dim);
 
     auto sumAlongDim = (*gradI * *gradO).reduceAlongDims(reduce::Sum, {dim}, true);
     gradI->assign(*gradI * (*gradO - sumAlongDim));

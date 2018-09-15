@@ -70,9 +70,10 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 1, false, 0, 2) {
         variance = new NDArray(scale->ordering(), shape, block.getWorkspace());
     }
 
-    T epsilon;
+    // FIXME: double?
+    double epsilon;
     if(block.getTArguments()->size() > 0)         
-        epsilon = T_ARG(0) > (T)1.001e-5 ? T_ARG(0) : (T)1.001e-5;    
+        epsilon = T_ARG(0) > 1.001e-5 ? T_ARG(0) : 1.001e-5;
     else 
         epsilon = 0.001;
     
@@ -81,23 +82,25 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 1, false, 0, 2) {
     xAffected.assign(x);
 
     const int restSizeMinusOne = (restSize > 1) ? (restSize - 1) : 1;
-    const T restSizeInv = (T)1.0 / restSize;
-    const T restSizeAdjust = (T)restSize / restSizeMinusOne;
+    // FIXME: float?
+    const float restSizeInv = 1.0f / restSize;
+    const float restSizeAdjust = (float)restSize / restSizeMinusOne;
 
     if(isTraining) {
-        auto sum = xAffected.sum({0});
+        auto sum = xAffected.reduceAlongDimension(reduce::Sum, {0});
         mean->assign((*sum) * restSizeInv);
         *batchMean = *mean;
         delete sum;
     }
     else 
-        *batchMean = 0.;
+        *batchMean = 0.f;
     
     xAffected -= *mean;
 
     if(isTraining) {        
         int power = 2;
-        auto sum = xAffected.applyScalar(scalar::Pow, power).sum({0});
+        xAffected.applyScalar(scalar::Pow, power);
+        auto sum = xAffected.reduceAlongDimension(reduce::Sum, {0});
         variance->assign((*sum) * restSizeInv);
         *batchVar  = (*variance) * restSizeAdjust;
         delete sum;

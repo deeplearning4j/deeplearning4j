@@ -35,7 +35,8 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
     auto output      = OUTPUT_VARIABLE(0);
 
     int reductionMode = INT_ARG(0);			// 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
-    T delta = T_ARG(0);
+    // FIXME: double?
+    double delta = T_ARG(0);
 
     // input validation
     REQUIRE_TRUE(labels->isSameShape(predictions), 0, "HUBER_LOSS OP: labels and predictions arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils::shapeAsString(labels).c_str(), ShapeUtils::shapeAsString(predictions).c_str());
@@ -61,7 +62,7 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
 	NDArray quadratic(error.getShapeInfo(), block.getWorkspace());
 	error.applyScalar(scalar::MinPairwise, delta, &quadratic);
  
-    NDArray weightedLosses = quadratic*quadratic*(T)0.5 + (error - quadratic)*delta;
+    NDArray weightedLosses = quadratic * quadratic * 0.5f + (error - quadratic)*delta;
 
     // multiply weightedLosses on weights
      weightedLosses *= (*weights);

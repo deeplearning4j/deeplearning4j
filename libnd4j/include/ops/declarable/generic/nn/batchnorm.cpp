@@ -38,7 +38,9 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
 
     const bool applyScale  = (bool)INT_ARG(0);
     const bool applyOffset = (bool)INT_ARG(1);
-    const T    epsilon     = T_ARG(0);
+
+    // FIXME: double?
+    const double epsilon     = T_ARG(0);
 
     if(applyScale)
         gamma = INPUT_VARIABLE(3);    
@@ -113,7 +115,9 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 
     const bool applyScale  = (bool)INT_ARG(0);
     const bool applyOffset = (bool)INT_ARG(1);
-    const T    epsilon     = T_ARG(0);
+
+    // FIXME: double?
+    const double    epsilon     = T_ARG(0);
 
     const int dLdONum = static_cast<int>(applyScale) + static_cast<int>(applyOffset);
 

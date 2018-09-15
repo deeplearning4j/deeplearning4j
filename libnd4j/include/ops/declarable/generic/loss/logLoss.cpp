@@ -35,7 +35,8 @@ CUSTOM_OP_IMPL(log_loss, 3, 1, false, 1, 1) {
     auto output      = OUTPUT_VARIABLE(0);
 
     int reductionMode = INT_ARG(0);			// 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
-    T epsilon = T_ARG(0);
+    // FIXME: double?
+    double epsilon = T_ARG(0);
 
     // input validation
     REQUIRE_TRUE(labels->isSameShape(predictions), 0, "LOG_LOSS OP: labels and predictions arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils::shapeAsString(labels).c_str(), ShapeUtils::shapeAsString(predictions).c_str());
@@ -55,8 +56,9 @@ CUSTOM_OP_IMPL(log_loss, 3, 1, false, 1, 1) {
 			reps.emplace_back(labels->shapeOf()[i] / weights->shapeOf()[i]);
 		weightsBroad = new NDArray(weights->tile(reps));
 	}	
-	
-	NDArray weightedLosses = -(*labels)*((*predictions + epsilon).transform(transform::Log)) - (1. - *labels)*((1. - *predictions + epsilon).transform(transform::Log));
+
+	auto ts = *(NDArray::scalar(1.0f));
+	NDArray weightedLosses = -(*labels)*((*predictions + epsilon).transform(transform::Log)) - (ts - *labels)*((ts - *predictions + epsilon).transform(transform::Log));
 
     // multiply weightedLosses on weights
     weightedLosses *= (*weights);

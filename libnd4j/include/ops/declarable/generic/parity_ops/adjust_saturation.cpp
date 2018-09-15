@@ -32,7 +32,7 @@ namespace ops {
 
         REQUIRE_TRUE(input->rankOf() == 3 || input->rankOf() == 4, 0, "AdjustSaturation: op expects either 3D or 4D input, but got %i instead", input->rankOf());
 
-        T delta = 0;
+        double delta = 0;
         if (block.numT() > 0)
             delta = T_ARG(0);
         else if (block.width() > 1) {
@@ -53,8 +53,9 @@ namespace ops {
 
         REQUIRE_TRUE(numChannels == 3, 0, "AdjustSaturation: this operation expects image with 3 channels (R, G, B), but got % instead", numChannels);
 
+        auto ts = *(NDArray::scalar(delta));
         // FIXME: delta should be NDArray scalar
-        helpers::_adjust_saturation(input, output, delta, isNHWC);
+        helpers::_adjust_saturation(input, output, &ts, isNHWC);
 
         return Status::OK();
     }
