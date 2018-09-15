@@ -103,12 +103,15 @@ namespace nd4j {
                 const int n = columns->shapeOf()[1];
                 const int k = weights->shapeOf()[0];
 
+                // FIXME: mmul helper should be used here
+                /*
                 nd4j::blas::GEMM<T>::op('c', 'n', 't', m, n, k,
                                         1.0,
                                         tadIn->getBuffer(), n,
                                         weights->getBuffer(), m,
                                         0.0,
                                         columns->getBuffer(), n);
+                                        */
 
                 // ConvolutionUtils<T>::_col2vol(columns->getBuffer(),
                 //                               nOutputPlane, outputDepth, outputHeight, outputWidth,
@@ -118,7 +121,7 @@ namespace nd4j {
                 //                               dT, dH, dW,
                 //                               dilationT,  dilationH,  dilationW,
                 //                               tadOut->getBuffer());
-                ConvolutionUtils<T>::col2vol(*columns, *tadOut, dT, dH, dW, pT, pH, pW, dilationT, dilationH, dilationW);
+                ConvolutionUtils::col2vol(*columns, *tadOut, dT, dH, dW, pT, pH, pW, dilationT, dilationH, dilationW);
 
 
                 const int m_ = nOutputPlane;
@@ -126,12 +129,15 @@ namespace nd4j {
                 const int k_ = 1;
 
                 if (biasUsed) {
+                    // FIXME: mmul helper should be used here
+                    /*
                     nd4j::blas::GEMM<T>::op('c', 't', 'n', n_, m_, k_,
                                             1.0,
                                             ones->getBuffer(), k_,
                                             bias->getBuffer(), k_,
                                             1.0,
                                             tadOut->getBuffer(), n_);
+                                            */
                 }
             }
 
@@ -262,12 +268,14 @@ namespace nd4j {
                 //         dT, dH, dW,
                 //         dilationT,  dilationH,  dilationW,
                 //         gradColumns->getBuffer());
-                ConvolutionUtils<T>::vol2col(*tadNext, *gradColumns, dT, dH, dW, pT, pH, pW, dilationT, dilationH, dilationW);
+                ConvolutionUtils::vol2col(*tadNext, *gradColumns, dT, dH, dW, pT, pH, pW, dilationT, dilationH, dilationW);
 
                 const auto m = weights->shapeOf()[0];
                 const auto n = gradColumns->shapeOf()[1];
                 const auto k = weights->shapeOf()[1] * weights->shapeOf()[2] * weights->shapeOf()[3] * weights->shapeOf()[4];
 
+                // FIXME: mmul helper should be used here
+                /*
                 nd4j::blas::GEMM<T>::op('f', 'n', 'n',
                                         n, m, k,
                                         1.0f,
@@ -275,7 +283,9 @@ namespace nd4j {
                                         weights->getBuffer(), k,
                                         0,
                                         tadOutput->getBuffer(), n
+
                 );
+                 */
             }
 
 
@@ -321,7 +331,7 @@ namespace nd4j {
             int aH = INT_ARG(11);
             bool biasUsed = INT_ARG(12) != 0;
 
-            T scale = block.getTArguments()->at(0);
+            double scale = block.getTArguments()->at(0);
 
             int nInputPlane  = (int)gradWeight->shapeOf()[0];
             int nOutputPlane = (int)gradWeight->shapeOf()[1];
@@ -362,11 +372,13 @@ namespace nd4j {
                 //         dilationT,  dilationH,  dilationW,
                 //         columns->getBuffer()
                 // );
-                ConvolutionUtils<T>::vol2col(*tadEpsilon, *columns, dT, dH, dW, pT, pH, pW, dilationT, dilationH, dilationW);
+                ConvolutionUtils::vol2col(*tadEpsilon, *columns, dT, dH, dW, pT, pH, pW, dilationT, dilationH, dilationW);
                 const Nd4jLong n = columns->shapeOf()[0];   // nOutputPlane * kt * kh * kw
                 const Nd4jLong m = tadInput->shapeOf()[0];   // nInputPlane
                 const Nd4jLong k = columns->shapeOf()[1];
 
+                // FIXME: mmul helper should be used here
+                /**
                 nd4j::blas::GEMM<T>::op('f', 't', 'n',
                                         n, m, k,
                                         scale,
@@ -374,18 +386,22 @@ namespace nd4j {
                                         tadInput->getBuffer(), k,
                                         1,
                                         gradWeight->getBuffer(), n);
+                                        */
 
                 const Nd4jLong m_ = nOutputPlane;
                 const Nd4jLong k_ = outputDepth * outputHeight * outputWidth;
 
 
                 if (gradBias) {
+                    // FIXME: mmul helper should be used here
+                    /*
                     nd4j::blas::GEMV<T>::op('t',
                                             k_, m_,
                                             scale,
                                             tadEpsilon->getBuffer(), k_,
                                             ones->getBuffer(), 1, (T)1.0f,
                                             gradBias->getBuffer(), 1);
+                                            */
                 }
             }
 

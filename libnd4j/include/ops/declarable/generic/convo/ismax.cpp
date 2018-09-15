@@ -26,6 +26,8 @@
 namespace nd4j {
     namespace ops {
         CONFIGURABLE_OP_IMPL(ismax, 1, 1, true, 0, -1) {
+            //FIXME: should be moved to helpers!
+            /*
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
             std::vector<int> dimensions = *(block.getIArguments());			// argI
@@ -243,7 +245,8 @@ namespace nd4j {
                     }
                 }
             }
-            return ND4J_STATUS_OK;
+            */
+            return Status::OK();
         }
         DECLARE_SYN(IsMax, ismax);
     }

@@ -33,7 +33,7 @@ namespace nd4j {
             template <typename T>
             static Nd4jStatus conv3D(T* output_data, T alpha, T* ptr_input, Nd4jLong nInputDepth, Nd4jLong nInputRows, Nd4jLong nInputCols, T* ptr_weight, Nd4jLong nKernelDepth, Nd4jLong nKernelRows, Nd4jLong nKernelCols, Nd4jLong sdepth, Nd4jLong srow, Nd4jLong scol, const char *vf, const char *xc);
 
-            static Nd4jStatus conv3Dmv(NDArray* r_, T beta, T alpha, NDArray* t_, NDArray* k_, Nd4jLong sdepth, Nd4jLong srow, Nd4jLong scol, const char *vf, const char *xc);
+            static Nd4jStatus conv3Dmv(NDArray* r_, double beta, double alpha, NDArray* t_, NDArray* k_, Nd4jLong sdepth, Nd4jLong srow, Nd4jLong scol, const char *vf, const char *xc);
 
             template <typename T>
             static void fullXCorr3Dptr(T*r_, T alpha, T *t_, Nd4jLong it, Nd4jLong ir, Nd4jLong ic, T *k_, Nd4jLong kt, Nd4jLong kr, Nd4jLong kc, Nd4jLong st, Nd4jLong sr, Nd4jLong sc);
@@ -99,13 +99,13 @@ namespace nd4j {
 
             static void maxPool2d(NDArray* input, NDArray* output, const std::vector<int>& params, NDArray* indices);
 
-            static void pooling3d(NDArray& input, NDArray& output, const T* extraParams);
+            static void pooling3d(NDArray& input, NDArray& output, const void* extraParams);
 
-            static void pooling2d(NDArray& input, NDArray& output, const T* extraParams);
+            static void pooling2d(NDArray& input, NDArray& output, const void* extraParams);
 
-            static void pooling2dBP(NDArray& input, NDArray& gradO, NDArray& gradI, const T* extraParams);
+            static void pooling2dBP(NDArray& input, NDArray& gradO, NDArray& gradI, const void* extraParams);
 
-            static void pooling3dBP(NDArray& input, NDArray& gradO, NDArray& gradI, const T* extraParams);
+            static void pooling3dBP(NDArray& input, NDArray& gradO, NDArray& gradI, const void* extraParams);
 
     };
 

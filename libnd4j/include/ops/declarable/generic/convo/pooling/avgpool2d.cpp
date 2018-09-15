@@ -30,7 +30,7 @@ namespace ops  {
 
 CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
 
-    NDArray<T>* input = INPUT_VARIABLE(0);
+    auto input = INPUT_VARIABLE(0);
 
     REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", input->rankOf());
 
@@ -64,14 +64,15 @@ CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
         output = output->permute({0, 3, 1, 2});               // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
     }
 
-    ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+    ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
     if (isSameMode)
-        ConvolutionUtils<T>::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);            
+        ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
             
-    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;    
-    T extraParams[] = {static_cast<T>(kH), static_cast<T>(kW), static_cast<T>(sH), static_cast<T>(sW), static_cast<T>(pH), static_cast<T>(pW), static_cast<T>(dH), static_cast<T>(dW), static_cast<T>(1.f), static_cast<T>(extraParam0)};
-    ConvolutionUtils<T>::pooling2d(*input, *output, extraParams);
+    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;
+    // FIXME: double!
+    double extraParams[] = {static_cast<double>(kH), static_cast<double>(kW), static_cast<double>(sH), static_cast<double>(sW), static_cast<double>(pH), static_cast<double>(pW), static_cast<double>(dH), static_cast<double>(dW), static_cast<double>(1.f), static_cast<double>(extraParam0)};
+    ConvolutionUtils::pooling2d(*input, *output, extraParams);
 
     if (!isNCHW) {
         delete input;
@@ -115,7 +116,7 @@ DECLARE_SHAPE_FN(avgpool2d) {
 
     // calculate output Height/Width
     int oH, oW;
-    ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+    ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
     // allocate memory for new shape
     Nd4jLong* newShapeInfo = nullptr;
@@ -142,9 +143,9 @@ DECLARE_SHAPE_FN(avgpool2d) {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
 
-    NDArray<T>* input = INPUT_VARIABLE(0);                          // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    NDArray<T>* gradO = INPUT_VARIABLE(1);                          // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
-    NDArray<T>* gradI = OUTPUT_VARIABLE(0);                         // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
+    auto input = INPUT_VARIABLE(0);                          // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    auto gradO = INPUT_VARIABLE(1);                          // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
+    auto gradI = OUTPUT_VARIABLE(0);                         // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
 
     int kH = INT_ARG(0);                                                        // filter(kernel) height
     int kW = INT_ARG(1);                                                        // filter(kernel) width
@@ -163,7 +164,7 @@ CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
 
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
-    ConvolutionUtils<T>::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
+    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
 
     std::string expectedGradOShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({bS,iC,oH,oW,  0,indIOioC,indIiH,indIiH+1}));
     std::string expectedGradIShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({bS,iC,iH,iW,  0,indIOioC,indIiH,indIiH+1}));
@@ -176,7 +177,7 @@ CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
     }
     
     if(isSameMode)                       // SAME        
-        ConvolutionUtils<T>::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
+        ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
     // NDArray<T> columnsWrongShape(input->ordering(), {bS, iC, oH, oW, kH, kW}, input->getWorkspace());    
     // NDArray<T>* columns = columnsWrongShape.permute({0, 1, 4, 5, 2, 3});                                // [bS, iC, oH, oW, kH, kW] -> [bS, iC, kH, kW, oH, oW]
@@ -189,10 +190,11 @@ CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
 
     // *gradI /= kH*kW; 
         
-    NDArray<T> temp;    // does not mean anything, just to fit pooling2dBP signature
+    NDArray temp;    // does not mean anything, just to fit pooling2dBP signature
     // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;
-    std::vector<T> argT = {(T) kH, (T) kW, (T) sH, (T) sW, (T) pH, (T) pW, (T) dH, (T)dW, 1., (T)extraParam0};    
-    ConvolutionUtils<T>::pooling2dBP(temp, *gradO, *gradI, argT.data());
+    std::vector<double > argT = {(double) kH, (double) kW, (double) sH, (double) sW, (double) pH, (double) pW, (double) dH, (double)dW, 1., (double)extraParam0};
+    // FIXME: get rid of this vector shit
+    ConvolutionUtils::pooling2dBP(temp, *gradO, *gradI, argT.data());
 
     if(!isNCHW) {
         delete gradI;

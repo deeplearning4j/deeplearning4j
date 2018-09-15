@@ -63,15 +63,15 @@ namespace nd4j {
 
             if (ceil_mode)
             {
-                otime   = (Nd4jLong)(nd4j::math::nd4j_ceil<T>((T)(itime   - kT + 2*padT) / dT)) + 1;
-                oheight = (Nd4jLong)(nd4j::math::nd4j_ceil<T>((T)(iheight - kH + 2*padH) / dH)) + 1;
-                owidth  = (Nd4jLong)(nd4j::math::nd4j_ceil<T>((T)(iwidth  - kW + 2*padW) / dW)) + 1;
+                otime   = (Nd4jLong)(nd4j::math::nd4j_ceil<float>((float)(itime   - kT + 2*padT) / dT)) + 1;
+                oheight = (Nd4jLong)(nd4j::math::nd4j_ceil<float>((float)(iheight - kH + 2*padH) / dH)) + 1;
+                owidth  = (Nd4jLong)(nd4j::math::nd4j_ceil<float>((float)(iwidth  - kW + 2*padW) / dW)) + 1;
             }
             else
             {
-                otime   = (Nd4jLong)(nd4j::math::nd4j_floor<T>((T)(itime   - kT + 2*padT) / dT)) + 1;
-                oheight = (Nd4jLong)(nd4j::math::nd4j_floor<T>((T)(iheight - kH + 2*padH) / dH)) + 1;
-                owidth  = (Nd4jLong)(nd4j::math::nd4j_floor<T>((T)(iwidth  - kW + 2*padW) / dW)) + 1;
+                otime   = (Nd4jLong)(nd4j::math::nd4j_floor<float>((float)(itime   - kT + 2*padT) / dT)) + 1;
+                oheight = (Nd4jLong)(nd4j::math::nd4j_floor<float>((float)(iheight - kH + 2*padH) / dH)) + 1;
+                owidth  = (Nd4jLong)(nd4j::math::nd4j_floor<float>((float)(iwidth  - kW + 2*padW) / dW)) + 1;
             }
             if (padT || padH || padW)
             {
@@ -115,8 +115,6 @@ namespace nd4j {
             Nd4jLong otime;
             Nd4jLong oheight;
             Nd4jLong owidth;
-            T *gradInput_data;
-            T *gradOutput_data;
             int kT = INT_ARG(0);
             int kW = INT_ARG(1);
             int kH = INT_ARG(2);
@@ -137,11 +135,11 @@ namespace nd4j {
             int dimh = 3;
             int dimw = 4;
 
-            ConvolutionUtils<T>::avgPool3DBP(*gradNext, *output,  kT, kW, kH, dT, dW, dH, padT, padW, padH, count_include_pad);
+            ConvolutionUtils::avgPool3DBP(*gradNext, *output,  kT, kW, kH, dT, dW, dH, padT, padW, padH, count_include_pad);
 
             STORE_RESULT(*output);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SHAPE_FN(avgpool3d_bp) {
             // output shape equals to input shape, all out of sudden
@@ -180,8 +178,6 @@ namespace nd4j {
             Nd4jLong otime;
             Nd4jLong oheight;
             Nd4jLong owidth;
-            T *input_data;
-            T *output_data;
 
             int dimN = 1;
             int dimt = 2;
@@ -196,15 +192,15 @@ namespace nd4j {
 
             if (ceil_mode)
             {
-                otime   = (Nd4jLong)(nd4j::math::nd4j_ceil<T>((T)(itime   - kT + 2*padT) / dT)) + 1;
-                oheight = (Nd4jLong)(nd4j::math::nd4j_ceil<T>((T)(iheight - kH + 2*padH) / dH)) + 1;
-                owidth  = (Nd4jLong)(nd4j::math::nd4j_ceil<T>((T)(iwidth  - kW + 2*padW) / dW)) + 1;
+                otime   = (Nd4jLong)(nd4j::math::nd4j_ceil<float>((float)(itime   - kT + 2*padT) / dT)) + 1;
+                oheight = (Nd4jLong)(nd4j::math::nd4j_ceil<float>((float)(iheight - kH + 2*padH) / dH)) + 1;
+                owidth  = (Nd4jLong)(nd4j::math::nd4j_ceil<float>((float)(iwidth  - kW + 2*padW) / dW)) + 1;
             }
             else
             {
-                otime   = (Nd4jLong)(nd4j::math::nd4j_floor<T>((T)(itime   - kT + 2*padT) / dT)) + 1;
-                oheight = (Nd4jLong)(nd4j::math::nd4j_floor<T>((T)(iheight - kH + 2*padH) / dH)) + 1;
-                owidth  = (Nd4jLong)(nd4j::math::nd4j_floor<T>((T)(iwidth  - kW + 2*padW) / dW)) + 1;
+                otime   = (Nd4jLong)(nd4j::math::nd4j_floor<float>((float)(itime   - kT + 2*padT) / dT)) + 1;
+                oheight = (Nd4jLong)(nd4j::math::nd4j_floor<float>((float)(iheight - kH + 2*padH) / dH)) + 1;
+                owidth  = (Nd4jLong)(nd4j::math::nd4j_floor<float>((float)(iwidth  - kW + 2*padW) / dW)) + 1;
             }
             if (padT || padH || padW)
             {
@@ -225,17 +221,19 @@ namespace nd4j {
 
             REQUIRE_TRUE(output->isSameShape({nBatch, (int) nslices, (int)otime, (int)oheight, (int)owidth}), 0, "Output should have shape of [%i, %i, %i, %i, %i], but got [%i, %i, %i, %i, %i] instead", nBatch, nslices, otime, oheight, owidth, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3), output->sizeAt(4));
 
-            ConvolutionUtils<T>::avgPool3D(*input, *output,  kT, kH, kW, dT, dH, dW, padT, padH, padW, count_include_pad);
+            ConvolutionUtils::avgPool3D(*input, *output,  kT, kH, kW, dT, dH, dW, padT, padH, padW, count_include_pad);
 
             STORE_RESULT(*output);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
 
 
 //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(maxpool3d, 1, 2, true, 0, 13) {
+            // FIXME: should be removed or moved to helpers
+            /*
             auto input = INPUT_VARIABLE(0);
 
             auto output = OUTPUT_VARIABLE(0);
@@ -341,7 +339,7 @@ namespace nd4j {
             indices_data = indices->getBuffer();
 
             for (int n = 0; n < input->sizeAt(0); n++) {
-                ConvolutionUtils<T>::_dilatedMaxPool3D(
+                ConvolutionUtils::_dilatedMaxPool3D(
                         input_data   + n * istride,
                         output_data  + n * ostride,
                         indices_data + n * ostride,
@@ -358,7 +356,7 @@ namespace nd4j {
                 delete _input;
 
             STORE_RESULT(*output);
-
+*/
             return Status::OK();
         }
         DECLARE_SYN(MaxPool3D, maxpool3d);
@@ -398,13 +396,13 @@ namespace nd4j {
             
             int otime, oheight, owidth;
             if (ceilMode) {
-                otime = (int)(nd4j::math::nd4j_ceil<T>((T)(itime - (dilationT * (kT - 1) + 1) + 2*pT) / dT)) + 1;
-                oheight = (int)(nd4j::math::nd4j_ceil<T>((T)(iheight - (dilationH * (kH - 1) + 1) + 2*pH) / dH)) + 1;
-                owidth  = (int)(nd4j::math::nd4j_ceil<T>((T)(iwidth  - (dilationW * (kW - 1) + 1) + 2*pW) / dW)) + 1;
+                otime = (int)(nd4j::math::nd4j_ceil<float>((float)(itime - (dilationT * (kT - 1) + 1) + 2*pT) / dT)) + 1;
+                oheight = (int)(nd4j::math::nd4j_ceil<float>((float)(iheight - (dilationH * (kH - 1) + 1) + 2*pH) / dH)) + 1;
+                owidth  = (int)(nd4j::math::nd4j_ceil<float>((float)(iwidth  - (dilationW * (kW - 1) + 1) + 2*pW) / dW)) + 1;
             } else {
-                otime = (int)(nd4j::math::nd4j_floor<T>((T)(itime - (dilationT * (kT - 1) + 1) + 2*pT) / dT)) + 1;
-                oheight = (int)(nd4j::math::nd4j_floor<T>((T)(iheight - (dilationH * (kH - 1) + 1) + 2*pH) / dH)) + 1;
-                owidth  = (int)(nd4j::math::nd4j_floor<T>((T)(iwidth  - (dilationW * (kW - 1) + 1) + 2*pW) / dW)) + 1;
+                otime = (int)(nd4j::math::nd4j_floor<float>((float)(itime - (dilationT * (kT - 1) + 1) + 2*pT) / dT)) + 1;
+                oheight = (int)(nd4j::math::nd4j_floor<float>((float)(iheight - (dilationH * (kH - 1) + 1) + 2*pH) / dH)) + 1;
+                owidth  = (int)(nd4j::math::nd4j_floor<float>((float)(iwidth  - (dilationW * (kW - 1) + 1) + 2*pW) / dW)) + 1;
             }
 
 
@@ -433,6 +431,8 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(maxpool3d_bp, 3, 1, true, 0, 13) {
+            // FIXME: should be deleted or moved to helpers
+            /*
             auto input = INPUT_VARIABLE(0);
             auto gradNext = INPUT_VARIABLE(1);
             auto indices = INPUT_VARIABLE(2);
@@ -493,7 +493,6 @@ namespace nd4j {
             int dimh = 3;
             int dimw = 4;
 
-            /* sizes */
             nslices = input->sizeAt(dimN);
             itime = input->sizeAt(dimt);
             iheight = input->sizeAt(dimh);
@@ -502,7 +501,6 @@ namespace nd4j {
             oheight = gradNext->sizeAt(dimh);
             owidth = gradNext->sizeAt(dimw);
 
-            /* get raw pointers */
             gradInput_data = output->getBuffer();
             gradOutput_data = gradNext->getBuffer();
             indices_data = indices->getBuffer();
@@ -513,7 +511,7 @@ namespace nd4j {
             Nd4jLong ostride = nslices * otime * owidth * oheight;
 
             for (int p = 0; p < nBatch; p++) {
-                ConvolutionUtils<T>::_dilatedMaxPool3D_bp(
+                ConvolutionUtils::_dilatedMaxPool3D_bp(
                         gradInput_data + p * istride,
                         gradOutput_data + p * ostride,
                         indices_data + p * ostride,
@@ -527,7 +525,7 @@ namespace nd4j {
             }
 
             STORE_RESULT(*output);
-
+*/
             return Status::OK();
         }
         DECLARE_SHAPE_FN(maxpool3d_bp) {

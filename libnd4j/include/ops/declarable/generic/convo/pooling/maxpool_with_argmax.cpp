@@ -29,9 +29,9 @@ namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(max_pool_with_argmax, 1, 2, false, 0, 9) {
 
-            NDArray<T>* x = INPUT_VARIABLE(0);
-            NDArray<T>* z = OUTPUT_VARIABLE(0);
-            NDArray<T>* indeces = OUTPUT_VARIABLE(1);
+            auto x = INPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
+            auto indeces = OUTPUT_VARIABLE(1);
 
             REQUIRE_TRUE(x->rankOf() == 4, 0, "max_pool_with_argmax: Input should have rank of 4, but got %i instead", x->rankOf());
 
@@ -39,7 +39,7 @@ namespace nd4j {
 
             helpers::maxPoolingFunctor(x, z, argI, indeces);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         
         DECLARE_SHAPE_FN(max_pool_with_argmax) {

@@ -63,12 +63,12 @@ namespace nd4j {
                     std::unique_ptr<ResultSet> outputBlock(tadOut->allExamples());
                     for (int i = 0; i < bias->lengthOf(); i++) {
                         auto oB = outputBlock->at(i);
-                        oB->assign(bias->getScalar(i));
+                        oB->assign(bias->getScalar<double>(i));
                     }
                 } else
                     output->assign(0.0);
 
-                Nd4jStatus  res = ConvolutionUtils<T>::conv3Dmv(tadOut, (T) 1.0f, (T) 1.0f, tadIn, weights, dT, dH, dW, "V", "X");
+                Nd4jStatus  res = ConvolutionUtils::conv3Dmv(tadOut,  1.0f, 1.0f, tadIn, weights, dT, dH, dW, "V", "X");
                 if (res != ND4J_STATUS_OK)
                     throw std::runtime_error("Failed to apply Conv3D");
             }

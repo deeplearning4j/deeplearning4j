@@ -69,7 +69,7 @@ CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
 
     int bS, iC, iH, iW, mC, oC, oH, oW;                     // batch size, input channels, input height/width, channels multiplier, output channels, output height/width
     int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;   // corresponding indexes
-    ConvolutionUtils<T>::getSizesAndIndexesConv2d(isNCHW, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWmC, indWkH, indOoH);
+    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWmC, indWkH, indOoH);
     mC = weightsDepth->sizeAt(indWmC);                      // channels multiplier
 
     std::string expectedWeightsDShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({mC,iC,kH,kW,  indWmC,indWiC,indWkH,indWkH+1}));
@@ -83,11 +83,11 @@ CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
 
     if (iC == 1) {
         nd4j_debug("SCONV2D OP: for input_channels = 1 this op is equivalent to standard conv2d\n","");
-        ConvolutionUtils<T>::conv2d({input, weightsDepth, bias}, output, {kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW});
+        ConvolutionUtils::conv2d({input, weightsDepth, bias}, output, {kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW});
         return Status::OK();
     }
 
-    ConvolutionUtils<T>::sconv2d({input, weightsDepth, weightsPoint, bias}, output, {kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW});
+    ConvolutionUtils::sconv2d({input, weightsDepth, weightsPoint, bias}, output, {kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW});
 
     return Status::OK();
 }
@@ -154,7 +154,7 @@ DECLARE_SHAPE_FN(sconv2d) {
         REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0, "SCONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));
 
     int oH, oW;                                         // output height, width
-    ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+    ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
     Nd4jLong* outputShapeInfo = nullptr;
     ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo), Nd4jLong);
@@ -234,7 +234,7 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
 
     int bS, iC, iH, iW, mC, oC, oH, oW;                     // batch size, input channels, input height/width, channels multiplier, output channels, output height/width
     int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;   // corresponding indexes
-    ConvolutionUtils<T>::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWmC, indWkH, indOoH);
+    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWmC, indWkH, indOoH);
     mC = weightsDepth->sizeAt(indWmC);                      // channels multiplier
 
     std::string expectedWeightsDShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({mC,iC,kH,kW,  indWmC,indWiC,indWkH,indWkH+1}));
@@ -261,12 +261,12 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
 
         auto resultFFShape = isNCHW ? std::vector<Nd4jLong>({bS, mC*iC, oH, oW}) : std::vector<Nd4jLong>({bS, oH, oW, mC*iC});
         auto resultFF = new NDArray(input->ordering(), resultFFShape, block.getWorkspace());
-        ConvolutionUtils<T>::sconv2d({input, weightsDepth, nullptr, nullptr}, resultFF, {kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW});
+        ConvolutionUtils::sconv2d({input, weightsDepth, nullptr, nullptr}, resultFF, {kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW});
 
         auto gradIDepthShape = ShapeUtils::composeShapeUsingDimsAndIdx({bS,iC*mC,oH,oW,  0,indIOioC,indIiH,indIiH+1});
         auto gradIDepth = new NDArray(resultFF->ordering(), gradIDepthShape, block.getWorkspace());                 // [bS, oH, oW, iC*mC]  (NHWC) or [bS, iC*mC, oH, oW] (NCHW)
 
-        ConvolutionUtils<T>::conv2dBP({resultFF, weightsPoint, bias, gradO}, {gradIDepth, gradWP, gradB}, {1,1, 1,1, 0,0, 1,1, isSameMode, isNCHW});    // in this case oH=iH and oW=iW
+        ConvolutionUtils::conv2dBP({resultFF, weightsPoint, bias, gradO}, {gradIDepth, gradWP, gradB}, {1,1, 1,1, 0,0, 1,1, isSameMode, isNCHW});    // in this case oH=iH and oW=iW
 
         gradO = gradIDepth;
         bias = gradB = nullptr;                     // if pointwise backprop was done then don't calculate gradB at depthwise_conv2d_bp step
@@ -275,7 +275,7 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
     }
 
     // ----- apply depthwise_conv2d_bp ----- //
-    ConvolutionUtils<T>::depthwiseConv2dBP({input, weightsDepth, bias, gradO}, {gradI, gradWD, gradB}, {kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW});
+    ConvolutionUtils::depthwiseConv2dBP({input, weightsDepth, bias, gradO}, {gradI, gradWD, gradB}, {kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW});
 
     if(weightsPoint)
         delete gradO;
@@ -339,7 +339,7 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
     const int oC = weightsPShapeInfo ? weightsPShapeInfo[indWmC+1] : iC*mC;         // output channels (oC or iC*mC)
 
     int trueoH, trueoW;          // true output height, width
-    ConvolutionUtils<T>::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+    ConvolutionUtils::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
     std::string expectedGradOShapeInfo = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({bS,oC,trueoH,trueoW,  0,indIOioC,indIiH,indIiH+1}));
     REQUIRE_TRUE(expectedGradOShapeInfo == ShapeUtils::shapeAsString(gradOShapeInfo), 0, "SCONV2D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShapeInfo.c_str(), ShapeUtils::shapeAsString(gradOShapeInfo).c_str());

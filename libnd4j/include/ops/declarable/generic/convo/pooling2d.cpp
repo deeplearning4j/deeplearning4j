@@ -27,6 +27,8 @@
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(pooling2d, 1, 1, false, 0, 11) {
+            // FIXME: this op should be moved to helpers, or removed
+            /*
             auto x = INPUT_VARIABLE(0);
             REQUIRE_TRUE(x->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", x->rankOf());
             std::vector<int> argI = *(block.getIArguments());				// 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode; 9 - pooling mode; 10 - divisor extraParam0 for pnorm case
@@ -41,7 +43,7 @@ namespace nd4j {
             int dH = argI[6];			//Dilation, height dimension
             int dW = argI[7];			//Dilation, width dimension
             int poolingMode = argI[9];
-            T extraParam0 = (int)argI[10];
+            int extraParam0 = (int)argI[10];
 
             REQUIRE_TRUE(dH != 0 && dW != 0, 0, "POOLING2D op: dilation must not be  zero, but got instead {%i, %i}", dH, dW);
 
@@ -157,6 +159,7 @@ namespace nd4j {
                 }
             }
             delete[] im2colShapeInfo;
+             */
             return Status::OK();
         }
         DECLARE_SYN(Pooling2D, pooling2d);
@@ -187,7 +190,7 @@ namespace nd4j {
 
             // calculate output Height/Width
             int oH, oW;
-            ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+            ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
             // allocate memory for new shape
             Nd4jLong* newShapeInfo = nullptr;
             ALLOCATE(newShapeInfo, block.getWorkspace(), 12, Nd4jLong);
