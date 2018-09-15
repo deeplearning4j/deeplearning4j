@@ -35,7 +35,7 @@ namespace nd4j {
 
             if (block.getIArguments()->size() == 2 && block.width() == 1) {
                 // all at once case
-                nd4j::ops::helpers::_prefix<T, simdOps::Multiply<T>>(input->buffer(), input->shapeInfo(), output->buffer(), output->shapeInfo(), exclusive, reverse);
+                nd4j::ops::helpers::_prefix(scalar::Multiply, input, output, exclusive, reverse);
             } else {
                 std::vector<int> dims(block.numI() - 2);
 
@@ -52,7 +52,7 @@ namespace nd4j {
                     if (dims[e] < 0)
                         dims[e] += input->rankOf();
 
-                nd4j::ops::helpers::_prefix<T, simdOps::Multiply<T>>(input, output, dims, exclusive, reverse);
+                nd4j::ops::helpers::_prefix(scalar::Multiply, input, output, dims, exclusive, reverse);
             }
 
             return Status::OK();
@@ -71,7 +71,7 @@ namespace nd4j {
     
             if (block.width() > 2) {
                 dims = axis->template asVectorT<int>();
-                OUTPUT_VARIABLE(1)->assign(static_cast<T>(1.0f));
+                OUTPUT_VARIABLE(1)->assign(1.0f);
             } else if (int newSize = (block.numI() - 2)) {
                 dims.resize(newSize);
     
@@ -79,38 +79,38 @@ namespace nd4j {
                     dims[e] = INT_ARG(e + 2);
             }
 
-            nd4j::ops::helpers::_prefix<T, simdOps::Multiply<T>>(input, output, dims, exclusive, reverse);
+            nd4j::ops::helpers::_prefix(scalar::Multiply, input, output, dims, exclusive, reverse);
             std::unique_ptr<NDArray> val(output->dup());
  
             gradOut->applyPairwiseTransform(pairwise::Multiply, output, val.get(), nullptr);
             val->applyPairwiseTransform(pairwise::Divide, input, val.get(), nullptr);
             if (!exclusive && !reverse) {
                 if (dims.size())
-                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val.get(), output, dims, true, false);
+                    nd4j::ops::helpers::_prefix(scalar::Add, val.get(), output, dims, true, false);
                 else
-                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val->buffer(), output->shapeInfo(), output->buffer(), output->shapeInfo(), false, true);
+                    nd4j::ops::helpers::_prefix(scalar::Add, val.get(), output, false, true);
     
             }
             else if (!exclusive && reverse){
                 if (dims.size())
-                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val.get(), output, dims, false, false);
+                    nd4j::ops::helpers::_prefix(scalar::Add, val.get(), output, dims, false, false);
                 else
-                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val->buffer(), output->shapeInfo(), output->buffer(), output->shapeInfo(), false, false);
+                    nd4j::ops::helpers::_prefix(scalar::Add, val.get(), output, false, false);
             }
             else if (exclusive && !reverse) {
                 if (dims.size())
-                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val.get(), output, dims, true, true);
+                    nd4j::ops::helpers::_prefix(scalar::Add, val.get(), output, dims, true, true);
                 else
-                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val->buffer(), output->shapeInfo(), output->buffer(), output->shapeInfo(), true, true);
+                    nd4j::ops::helpers::_prefix(scalar::Add, val.get(), output, true, true);
             }
             else {
                 if (dims.size())
-                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val.get(), output, dims, true, false);
+                    nd4j::ops::helpers::_prefix(scalar::Add, val.get(), output, dims, true, false);
                 else
-                    nd4j::ops::helpers::_prefix<T, simdOps::Add<T>>(val->buffer(), output->shapeInfo(), output->buffer(), output->shapeInfo(), true, false);
+                    nd4j::ops::helpers::_prefix(scalar::Add, val.get(), output, true, false);
             }
                 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(cumprod_bp) {

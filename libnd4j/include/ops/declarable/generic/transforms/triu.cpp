@@ -29,8 +29,8 @@ namespace ops  {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(triu, 1, 1, false, 0, 0) {
 	
-    NDArray<T>* input  = INPUT_VARIABLE(0);
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto input  = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
 
     REQUIRE_TRUE(input->rankOf() > 0, 0, "TRIU OP: the rank of input array must be > 0, but got %i instead !", input->rankOf());
 
@@ -70,10 +70,10 @@ DECLARE_SHAPE_FN(triu) {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(triu_bp, 2, 1, false, 0, 0) {
     
-    NDArray<T>* input = INPUT_VARIABLE(0);
-    NDArray<T>* gradO = INPUT_VARIABLE(1);              // dLoss/dO
+    auto input = INPUT_VARIABLE(0);
+    auto gradO = INPUT_VARIABLE(1);              // dLoss/dO
 
-    NDArray<T>* gradI = OUTPUT_VARIABLE(0);              // dLoss/dI
+    auto gradI = OUTPUT_VARIABLE(0);              // dLoss/dI
 
     REQUIRE_TRUE(input->rankOf() > 0, 0, "TRIU_BP OP: the rank of input array must be > 0, but got %i instead !", input->rankOf());
 

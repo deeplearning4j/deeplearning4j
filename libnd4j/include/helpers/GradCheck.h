@@ -35,7 +35,7 @@ class GradCheck {
         static constexpr double EPSILON = 1e-5;
         static constexpr double MAXRELERR = 1e-5;
         static constexpr double MINABSERR = 1e-6;
-        static void fillGradArrays(const LossFunc loss, const std::vector<NDArray<double>*>& gradArrs);
+        static void fillGradArrays(const LossFunc loss, const std::vector<NDArray*>& gradArrs);
 
     
     public:        
