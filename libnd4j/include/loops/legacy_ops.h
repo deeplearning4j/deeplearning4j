@@ -204,7 +204,8 @@
         (32, LogicalAnd) ,\
         (33, Pow) ,\
         (34, PowDerivative) ,\
-        (35,CompareAndSet)
+        (35, CompareAndSet) ,\
+        (36, SXELogitsSmoother)
 
 
 
@@ -331,6 +332,7 @@
         (44, SoftplusDerivativeE) ,\
         (47, SoftsignDerivativeE) ,\
         (48, TanhDerivativeE) ,\
+        (49, SXELossWithLogits) ,\
         (92, PowDerivative), \
         (93, LogPoisonLoss), \
         (94, LogPoisonLossFull)

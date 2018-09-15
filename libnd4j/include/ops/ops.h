@@ -1928,6 +1928,28 @@ namespace simdOps {
 		}
 	};
 
+    template <typename X, typename Y>
+    class SXELogitsSmoother {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static X op(X d1, Y d2, X *params) {
+            return d1 * ((X)1.f - (X) d2) + (X)(0.5f) * (X) d2;
+        }
+    };
+
+    template <typename X, typename Y>
+    class SXELossWithLogits {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static X op(X d1, Y d2, X *params) {
+            return nd4j::math::nd4j_max<X>(d1, (X)0.f) - d1 * (X) d2 + nd4j::math::nd4j_log<X, X>((X)1.f + nd4j::math::nd4j_exp<X, X>(-nd4j::math::nd4j_abs<X>(d1)));
+        }
+    };
+
 	template <typename X, typename Y>
 	class RELUDerivativeE {
 	public:

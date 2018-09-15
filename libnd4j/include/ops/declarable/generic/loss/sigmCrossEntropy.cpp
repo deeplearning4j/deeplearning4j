@@ -35,7 +35,7 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
     auto output  = OUTPUT_VARIABLE(0);
 
     int reductionMode = INT_ARG(0);			// 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
-    T labelsSmoothing = T_ARG(0);
+    float labelsSmoothing = T_ARG(0);
 
     // input validation    
     REQUIRE_TRUE(labels->isSameShape(logits), 0, "SIGM_CROSS_ENTROPY_LOSS OP: labels and logits arrays must have the same shapes, but got %s and %s correspondingly!", ShapeUtils::shapeAsString(labels).c_str(), ShapeUtils::shapeAsString(logits).c_str());
@@ -58,21 +58,20 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
 	
 	// If labelsSmoothing is nonzero, smooth the labels towards 1/2:
 	auto newLabels = labels;
-	if(labelsSmoothing != (T)0.) {
-		auto smooth = LAMBDA_T(value, labelsSmoothing) { return value * ((T)1. - labelsSmoothing) + (T)(0.5) * labelsSmoothing; };
-    	newLabels = new NDArray(*labels);
-    	newLabels->applyLambda(smooth);  
+	if(labelsSmoothing != 0.) {
+		newLabels = new NDArray(*labels);
+    	newLabels->applyScalar(scalar::SXELogitsSmoother, labelsSmoothing, newLabels, nullptr);
 	}
 	
 	NDArray weightedLosses(newLabels->getShapeInfo(), block.getWorkspace());
-	auto sigm_cross_entropy_lossWithLogits = LAMBDA_TT(x, z) { return nd4j::math::nd4j_max(x, (T)0.) - x * z + nd4j::math::nd4j_log((T)1. + nd4j::math::nd4j_exp(-nd4j::math::nd4j_abs(x))); };	
-	logits->applyPairwiseLambda(newLabels, sigm_cross_entropy_lossWithLogits, &weightedLosses);
+	//auto sigm_cross_entropy_lossWithLogits = LAMBDA_TT(x, z) { return nd4j::math::nd4j_max(x, (T)0.) - x * z + nd4j::math::nd4j_log((T)1. + nd4j::math::nd4j_exp(-nd4j::math::nd4j_abs(x))); };
+	//logits->applyPairwiseLambda(newLabels, sigm_cross_entropy_lossWithLogits, &weightedLosses);
+
+	logits->applyPairwiseTransform(pairwise::SXELossWithLogits, newLabels, &weightedLosses, nullptr);
 
     // multiply weightedLosses on weights
- 	if(weights->isScalar())
- 		weightedLosses *= (*weights)(0.);
- 	else
- 		weightedLosses *= (*weights); 	
+    weightedLosses *= (*weights);
+
  	// regard 4 possible reduction modes below
 	REQUIRE_TRUE(reductionMode==0 || reductionMode==1 || reductionMode==2 || reductionMode==3, 0, "SIGM_CROSS_ENTROPY_LOSS OP: reduction mode value is not acceptable, possible values are 0, 1, 2, 3, but got %i instead!", reductionMode);
 	switch (reductionMode) {
@@ -81,38 +80,36 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
 			break;
 		
 		case 1: {											// 1 - "weighted_sum", output is scalar and equal to sum of all elements of weightedLosses array
-			(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum);
+			(*output) = weightedLosses.reduceNumber(reduce::Sum);
 			break;
 		}
 		case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of weightedLosses array divided by sum of all elements of weightsBroad array
-			T sum;
+			double sum;
 			if (weights->isScalar())
-				sum = (*weights)(0.) * weightedLosses.lengthOf();
+				sum = weights->getScalar<double>(0) * weightedLosses.lengthOf();
 			else 
-				sum = weightsBroad->reduceNumber(reduce::Sum);
+				sum = weightsBroad->reduceNumber(reduce::Sum).getScalar<double>(0);
 			
-			if (sum == (T)0.)
-				(*output)(0.) = (T)0.;
+			if (sum == 0.)
+				(*output) = 0.;
 			else 
-				(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum) / sum;
+				(*output) = weightedLosses.reduceNumber(reduce::Sum) / sum;
 			break;
 		}
 		case 3: {											// 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
-			int numOfNonZeroWeights = 0;
+			Nd4jLong numOfNonZeroWeights = 0;
 			if(weights->isScalar()) {
-				if((*weights)(0.) != (T)0.)
+				if(weights->getScalar<double>(0) != 0.)
 					numOfNonZeroWeights = weightedLosses.lengthOf();
 			}
 			else {
-				for(int i = 0; i < weightsBroad->lengthOf(); ++i)
-					if((*weightsBroad)(i) != (T)0.)
-						++numOfNonZeroWeights;
+				numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).getScalar<Nd4jLong>(0);
 			}
 
 			if (numOfNonZeroWeights == 0)
-				(*output)(0.) = (T)0.;
+				(*output) = 0.;
 			else 
-				(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum) / numOfNonZeroWeights;
+				(*output) = weightedLosses.reduceNumber(reduce::Sum) / numOfNonZeroWeights;
 			break;
 		}
 	}

@@ -35,7 +35,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
     auto output  = OUTPUT_VARIABLE(0);
 
     int reductionMode = INT_ARG(0);			// 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
-    T labelsSmoothing = T_ARG(0);
+    float labelsSmoothing = T_ARG(0);
     
     // input validation    		       
     REQUIRE_TRUE(labels->isSameShape(logits), 0, "SOFTMAX_CROSS_ENTROPY_LOSS OP: labels and logits arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils::shapeAsString(labels).c_str(), ShapeUtils::shapeAsString(logits).c_str());
@@ -48,11 +48,13 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 
 	// If label_smoothing is nonzero, smooth the labels towards 1/num_classes: new_onehot_labels = onehot_labels * (1 - label_smoothing) + label_smoothing / num_classes
 	auto newLabels = labels;
-	if(labelsSmoothing != (T)0.) {
-		T numClasses = (T)labels->sizeAt(1);
-		auto smooth = LAMBDA_T(value, labelsSmoothing, numClasses) { return value * ((T)1. - labelsSmoothing) + labelsSmoothing/numClasses; };
+	if(labelsSmoothing != 0.) {
+		auto numClasses = labels->sizeAt(1);
+		auto ts = *(NDArray::scalar(1.f - labelsSmoothing));
+		//auto smooth = LAMBDA_T(value, labelsSmoothing, numClasses) { return value * ((T)1. - labelsSmoothing) + labelsSmoothing/numClasses; };
     	newLabels = new NDArray(*labels);
-    	newLabels->applyLambda(smooth);  
+    	//newLabels->applyLambda(smooth);
+    	*newLabels = newLabels * ts + (labelsSmoothing / numClasses);
 	}	
 		
 	std::vector<int> dimensions = {-1};
@@ -68,7 +70,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 	auto logSumExp = sumExp.transform(transform::Log);
 	// sum(-labels *((logits - max_logits) - log(sum(exp(logits - max_logits))))) along classes
 	// The subtraction broadcasts along the batch dimension
-	NDArray weightedLosses = ((-*newLabels)*(shiftedLogits - logSumExp)).template reduceAlongDims<simdOps::Sum<T>>(dimensions);
+	NDArray weightedLosses = ((-*newLabels)*(shiftedLogits - logSumExp)).reduceAlongDims(reduce::Sum, dimensions);
 	
 	// perform weights broadcasting/tile to weightedLosses if it is necessary
 	auto weightsBroad = weights;
@@ -81,10 +83,8 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 	}	
 
     // multiply weightedLosses on weights
- 	if(weights->isScalar())
- 		weightedLosses *= (*weights)(0.);
- 	else
- 		weightedLosses *= (*weights); 	
+    weightedLosses *= (*weights);
+
  	// regard 4 possible reduction modes below
  	REQUIRE_TRUE(reductionMode==0 || reductionMode==1 || reductionMode==2 || reductionMode==3, 0, "SOFTMAX_CROSS_ENTROPY_LOSS OP: reduction mode value is not acceptable, possible values are 0, 1, 2, 3, but got %i instead!", reductionMode);
 	switch (reductionMode) {
@@ -93,38 +93,36 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 			break;
 		
 		case 1: {											// 1 - "weighted_sum", output is scalar and equal to sum of all elements of weightedLosses array
-			(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum);
+			(*output) = weightedLosses.reduceNumber(reduce::Sum);
 			break;
 		}
 		case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of weightedLosses array divided by sum of all elements of weightsBroad array
-			T sum;
+			double sum;
 			if (weights->isScalar())
-				sum = (*weights)(0.) * weightedLosses.lengthOf();
+				sum = weights->getScalar<double>(0) * weightedLosses.lengthOf();
 			else 
-				sum = weightsBroad->reduceNumber(reduce::Sum);
+				sum = weightsBroad->reduceNumber(reduce::Sum).getScalar<double>(0);
 			
-			if (sum == (T)0.)
-				(*output)(0.) = (T)0.;
+			if (sum == 0.)
+				(*output) = 0.;
 			else 
-				(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum) / sum;
+				(*output) = weightedLosses.reduceNumber(reduce::Sum) / sum;
 			break;
 		}
 		case 3: {											// 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
-			int numOfNonZeroWeights = 0;
+			Nd4jLong numOfNonZeroWeights = 0;
 			if(weights->isScalar()) {
-				if((*weights)(0.) != (T)0.)
+				if(weights->getScalar<double>(0) != 0.)
 					numOfNonZeroWeights = weightedLosses.lengthOf();
 			}
 			else {
-				for(int i = 0; i < weightsBroad->lengthOf(); ++i)
-					if((*weightsBroad)(i) != (T)0.)
-						++numOfNonZeroWeights;
+				numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).getScalar<Nd4jLong>(0);
 			}
 
 			if (numOfNonZeroWeights == 0)
-				(*output)(0.) = (T)0.;
+				(*output) = 0.;
 			else 
-				(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum) / numOfNonZeroWeights;
+				(*output) = weightedLosses.reduceNumber(reduce::Sum) / numOfNonZeroWeights;
 			break;
 		}
 	}

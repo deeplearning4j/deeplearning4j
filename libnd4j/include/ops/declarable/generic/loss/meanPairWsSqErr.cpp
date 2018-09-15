@@ -62,15 +62,18 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 0) {
 
 	NDArray numOfNonZeroWeights(sumSqrsDiffPerBatch.getShapeInfo(), block.getWorkspace());
 	if(weights->isScalar()) {
-		if((*weights)(0.) != (T)0.)
+		if((*weights).getScalar<double>(0) != 0.)
 			numOfNonZeroWeights.assign((labels->lengthOf()/labels->sizeAt(0)));
 	}
 	else {
 		int sizeAtRestDims =  weightsBroad->lengthOf()/weightsBroad->sizeAt(0);
+		/*
 		for(int i = 0; i < numOfNonZeroWeights.lengthOf(); ++i)
 			for(int j = 0; j < sizeAtRestDims; ++j)
 				if((*weightsBroad)(i*sizeAtRestDims + j) != (T)0.)
 					++numOfNonZeroWeights(i);
+					*/
+		throw std::runtime_error("Not implemented yet");
 	}
 	
 	sumSqrsDiffPerBatch.applyPairwiseTransform(pairwise::SafeDivide, &numOfNonZeroWeights, nullptr);
@@ -79,18 +82,15 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 0) {
 	auto nonZerosSquared = numOfNonZeroWeights*numOfNonZeroWeights;
 	(sumDiff*sumDiff).applyPairwiseTransform(pairwise::SafeDivide, &nonZerosSquared, &sumDiff, nullptr);
 	
-	auto weightedLosses = (sumSqrsDiffPerBatch - sumDiff)*(T)2.;
+	auto weightedLosses = (sumSqrsDiffPerBatch - sumDiff) * 2.;
 
     // multiply weightedLosses on weights
- 	if(weights->isScalar())
- 		weightedLosses *= (*weights)(0.);
- 	else
- 		weightedLosses *= (*weights); 	
+    weightedLosses *= (*weights);
  		
 	if(numOfNonZeroWeights.reduceNumber(reduce::Sum).getScalar<float>(0) == 0.f)
-		(*output)(0.) = 0.f;
+		(*output) = 0.f;
 	else
-		(*output)(0.) = weightedLosses.reduceNumber(reduce::Sum);
+		(*output) = weightedLosses.reduceNumber(reduce::Sum);
 
 
     STORE_RESULT(*output);
