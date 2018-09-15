@@ -34,7 +34,7 @@ namespace nd4j {
                 return Status::OK();
             }
 
-            auto axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->getScalar<int>(0);
+            Nd4jLong axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->getScalar<int>(0);
 
             if (axis < 0)
                 axis += input->rankOf() + 1;
@@ -82,7 +82,7 @@ namespace nd4j {
             auto x_rank = shape::rank(inShape);
             char order = shape::order(inShape);
 
-            auto axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->getScalar<int>(0);
+            Nd4jLong axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->getScalar<int>(0);
 
             if (axis < 0)
                 axis += x_rank + 1;

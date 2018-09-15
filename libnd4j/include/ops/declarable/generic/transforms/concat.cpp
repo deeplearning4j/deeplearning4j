@@ -41,7 +41,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
             
             if(INPUT_VARIABLE(i)->rankOf() == 0) {
                 auto vec = new NDArray('c', {1}, block.getWorkspace());
-                (*vec)(0.) = (*INPUT_VARIABLE(i))(0.);
+                (*vec) = *INPUT_VARIABLE(i);
                 nonEmptyArrs.push_back(vec);
                 arrsToDelete.push_back(index);
             }
@@ -79,7 +79,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
     if(numOfArrs == 1) 
         output->assign(nonEmptyArrs[0]);
     else 
-        helpers::concat<T>(nonEmptyArrs, *output, axis);
+        helpers::concat(nonEmptyArrs, *output, axis);
 
     // delete dynamically allocated vectors with length=1
     for(int index : arrsToDelete)

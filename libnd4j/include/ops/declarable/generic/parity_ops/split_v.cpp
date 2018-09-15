@@ -35,7 +35,7 @@ namespace ops {
             axis = INT_ARG(0);
         } else if (block.width() > 2){
             auto _a = INPUT_VARIABLE(2);
-            axis = _a->getScalar(0);
+            axis = _a->getScalar<int>(0);
         } 
 
         if (axis < 0)

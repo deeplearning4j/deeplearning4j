@@ -36,14 +36,13 @@ namespace nd4j {
 
             int arrLen = x->lengthOf();
 
+            // FIXME: this should NOT be loop.
             for(int i = 0; i < arrLen; ++i ) {
-
-                REQUIRE_TRUE((*x)(i) > (T)1., 0, "ZETA op: all elements of x array must be > 1 !");
-
-                REQUIRE_TRUE((*q)(i) > (T)0., 0, "ZETA op: all elements of q array must be > 0 !");
+                REQUIRE_TRUE(x->getScalar<float>(i) > 1.f, 0, "ZETA op: all elements of x array must be > 1 !");
+                REQUIRE_TRUE(q->getScalar<float>(i) > 0.f, 0, "ZETA op: all elements of q array must be > 0 !");
             }
 
-            *output = helpers::zeta<T>(*x, *q);
+            *output = helpers::zeta(*x, *q);
 
             return Status::OK();
         }

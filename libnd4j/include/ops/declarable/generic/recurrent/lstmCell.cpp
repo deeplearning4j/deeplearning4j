@@ -45,9 +45,11 @@ CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
     
     const int peephole   = INT_ARG(0);                            // if 1, provide peephole connections
     const int projection = INT_ARG(1);                            // if 1, then projection is performed, if false then numProj==numUnits is mandatory!!!!
-    const T clippingCellValue  = T_ARG(0);                        // clipping value for ct, if it is not equal to zero, then cell state is clipped
-    const T clippingProjValue  = T_ARG(1);                        // clipping value for projected ht, if it is not equal to zero, then projected cell output is clipped
-    const T forgetBias   = T_ARG(2);
+
+    // FIXME: double?
+    const double clippingCellValue  = T_ARG(0);                        // clipping value for ct, if it is not equal to zero, then cell state is clipped
+    const double clippingProjValue  = T_ARG(1);                        // clipping value for projected ht, if it is not equal to zero, then projected cell output is clipped
+    const double forgetBias   = T_ARG(2);
 
     const int rank     = xt->rankOf();    
     const int bS       = xt->sizeAt(0);
@@ -81,7 +83,8 @@ CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
     REQUIRE_TRUE(!(!projection && numUnits != numProj), 0, "LSTMCELL operation: projection option is switched of, and in this case output dimensionality for the projection matrices (numProj) must be equal to number of units in lstmCell !");
     
     // calculations
-    helpers::lstmCell<T>({xt,ht_1,ct_1, Wx,Wh,Wc,Wp, b},   {ht,ct},   {(T)peephole, (T)projection, clippingCellValue, clippingProjValue, forgetBias});
+    // FIXME: shitty initializer lists
+    //helpers::lstmCell({xt,ht_1,ct_1, Wx,Wh,Wc,Wp, b},   {ht,ct},   {(T)peephole, (T)projection, clippingCellValue, clippingProjValue, forgetBias});
     
     return Status::OK();
 }

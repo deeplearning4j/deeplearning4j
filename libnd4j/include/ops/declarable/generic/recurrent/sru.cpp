@@ -31,20 +31,18 @@ namespace nd4j {
 namespace ops  {
 
 // return 2d array evaluated though last dimension interval t1-t2
-template <typename T>
-NDArray<T>* timestep(const NDArray<T>* const arr, const int t1, const int t2) {
+NDArray* timestep(const NDArray* const arr, const int t1, const int t2) {
 
         IndicesList list({ NDIndex::all(), NDIndex::all(), NDIndex::interval(t1,t2)});
-        NDArray<T>* result = arr->subarray(list);     
+        NDArray* result = arr->subarray(list);
         result->reshapei(result->ordering(), {arr->shapeOf()[0], arr->shapeOf()[1]} );
 
         return result;
 }
 
-template <typename T>
-NDArray<T> _sigmoid(const NDArray<T>& arr) {
-    NDArray<T> result(arr.getShapeInfo(), arr.getWorkspace());
-    (const_cast<NDArray<T>&>(arr)).template applyTransform<simdOps::Sigmoid<T>>(&result);
+NDArray _sigmoid(const NDArray& arr) {
+    NDArray result(arr.getShapeInfo(), arr.getWorkspace());
+    (const_cast<NDArray&>(arr)).applyTransform(transform::Sigmoid, &result);
 
     return result;
 }
@@ -52,6 +50,8 @@ NDArray<T> _sigmoid(const NDArray<T>& arr) {
 
 /////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sru_logic, 5, 2, false, 0, 0) {
+    // FIXME: NDArray::mmul call
+    /*
     auto input   = INPUT_VARIABLE(0);                // X, input 3d tensor [bS x K x N], N - number of time steps, bS - batch size, K - number of features
     auto weights = INPUT_VARIABLE(1);                // W, 2d tensor of weights [3K x K]
     auto bias    = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 2*K]
@@ -85,7 +85,7 @@ CUSTOM_OP_IMPL(sru_logic, 5, 2, false, 0, 0) {
     NDArray xmt = *input;
     //  input = input * mask
     if(applyMask)
-        xmt.applyBroadcast(BroadcastOpsTuple::Multiply(), {0, 1}, mask, &xmt, nullptr);
+        xmt.applyBroadcast(broadcast::Multiply, {0, 1}, mask, &xmt, nullptr);
     
     for (int t = 0; t < N; ++t) {
   
@@ -105,7 +105,7 @@ CUSTOM_OP_IMPL(sru_logic, 5, 2, false, 0, 0) {
         output->assign(ht, {{}, {}, {t,t+1}} );
         state->assign (ct, {{}, {}, {t,t+1}} );
     }    
-    
+    */
     return Status::OK();
 }
 
@@ -157,7 +157,7 @@ CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
     const int time      = x->shapeOf()[2];                     // time - number of time steps
 
     // multiplication matrix = matmul(w,x)
-    auto wi = MmulHelper<T>::mmul(w, x, nullptr, (T)1., (T)0.);      //       U [bS x 3K x time]
+    auto wi = MmulHelper::mmul(w, x, nullptr, 1., 0.);      //       U [bS x 3K x time]
     // wi.printShapeInfo();
     auto wiZ = wi->subarray( { NDIndex::all(), NDIndex::interval(0,inSize),     NDIndex::all() } );       // [bS x inSize x time]
     auto wiF = wi->subarray( { NDIndex::all(), NDIndex::interval(inSize,2*inSize),   NDIndex::all() } );       // forget gate [bS x inSize x time]
@@ -171,7 +171,7 @@ CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
     auto xmt  = x->dup(x->ordering());
     //  x = x * mask
     if(applyMask)
-        xmt->applyBroadcast(BroadcastOpsTuple::Multiply(), {0, 1}, mask, xmt, nullptr);            // apply mask
+        xmt->applyBroadcast(broadcast::Multiply, {0, 1}, mask, xmt, nullptr);            // apply mask
 
     for (int t = 0; t < time; ++t) {
         xt = timestep(xmt, t, t+1);         // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
@@ -184,8 +184,8 @@ CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
         // ft = sigmoid(ft + bf), rt = sigmoid(rt + bR)
         ft->addRowVector(bF, ft);
         rt->addRowVector(bR, rt);
-        ft->applyTransform(transform::Sigmoid);
-        rt->applyTransform(transform::Sigmoid);
+        ft->applyTransform(transform::Sigmoid, ft, nullptr);
+        rt->applyTransform(transform::Sigmoid, rt, nullptr);
         // ct = ft * c_t-1 + (1 - ft) * zt,
         ft->applyPairwiseTransform(pairwise::Multiply, ct_1, ct, nullptr);
         ft->applyTransform(transform::OneMinus, ft);
@@ -276,11 +276,11 @@ CUSTOM_OP_IMPL(sru, 5, 2, false, 0, 0) {
     auto xm = x;
     if(mask) {
         xm = new NDArray(x->getShapeInfo(), true, block.getWorkspace());
-        x->applyBroadcast(BroadcastOpsTuple::Multiply(), {0, 1}, mask, xm, nullptr);
+        x->applyBroadcast(broadcast::Multiply, {0, 1}, mask, xm, nullptr);
     }
 
     // time loop
-    helpers::sruTimeLoop<T>({xm, c0, w, b}, {h, c});
+    helpers::sruTimeLoop({xm, c0, w, b}, {h, c});
 
     if(mask)
         delete xm;
@@ -380,7 +380,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     if(applyMask)
         x->applyBroadcast(broadcast::Multiply, {0, 1}, mask, x, nullptr);            // apply mask
     // multiplication matrix wi = matmul(w,x), U = WX
-    auto wi = MmulHelper<T>::mmul(w, x, nullptr, (T)1., (T)0.);      // U [bS x 3K x N]
+    auto wi = MmulHelper::mmul(w, x, nullptr, 1., 0.);      // U [bS x 3K x N]
 
     auto wiZ = wi->subarray( { NDIndex::all(), NDIndex::interval(0,K),     NDIndex::all() } );       // [bS x K x N]
     auto wiF = wi->subarray( { NDIndex::all(), NDIndex::interval(K,2*K),   NDIndex::all() } );       // forget gate [bS x K x N]
@@ -421,8 +421,8 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
         // ft = sigmoid(ft + bf), rt = sigmoid(rt + bR)
         ft->addRowVector(bF, ft);
         rt->addRowVector(bR, rt);
-        ft->applyTransform(transform::Sigmoid);
-        rt->applyTransform(transform::Sigmoid);
+        ft->applyTransform(transform::Sigmoid, ft, nullptr);
+        rt->applyTransform(transform::Sigmoid, rt, nullptr);
         
         // TODO T val = (activation_type == 1) ? tanh(cur) : ((activation_type == 2) ? reluf(cur) : cur );
         ct->applyTransform(transform::Tanh, gct);
@@ -475,7 +475,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
 
     // gradX 
     auto weightsT = w->transpose();                                            // [K x 3K]
-    MmulHelper<T>::mmul(weightsT, gradU, gradX, (T)1., (T)0.);                    // [bS x K x N]    
+    MmulHelper::mmul(weightsT, gradU, gradX, 1., 0.);                    // [bS x K x N]
     gradX->applyPairwiseTransform(pairwise::Add, gradHX, gradX, nullptr);        // + grad_highway_x
     if(applyMask)
         gradX->applyBroadcast(broadcast::Multiply, {0,1}, mask, gradX, nullptr);  // apply mask
@@ -486,7 +486,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
 
     // gradW [bS x 3K x K]
     x->permutei({0, 2, 1});                                               // [bS x N x K]
-    MmulHelper<T>::mmul(gradU, x, gradW, (T)1., (T)0.);          // [bS x 3K x K]
+    MmulHelper::mmul(gradU, x, gradW, 1., 0.);          // [bS x 3K x K]
 
     delete gradUR; delete gradBF; delete gradUZ; delete gradUF; delete gradBR;
 
@@ -539,6 +539,9 @@ DECLARE_SHAPE_FN(sru_bp) {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
+    // FIXME: to be implemented
+    /*
+
     auto x        = INPUT_VARIABLE(0);                                   // X, input 3d tensor [bS x inSize x time], time - number of time steps, bS - batch size, inSize - number of features
     auto w        = INPUT_VARIABLE(1);                                   // W, 2d tensor of weights [3*inSize x inSize]
     auto b        = INPUT_VARIABLE(2);                                   // B, row of biases with twice length [1 × 2*inSize]
@@ -667,7 +670,7 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
     // gradW [bS x 3K x inSize]
     x->permutei({0, 2, 1});                                               // [bS x time x inSize]
     gradW->assign( mmul(gradU, *x) );
-    
+    */
     return Status::OK();
 }
 
@@ -711,6 +714,8 @@ DECLARE_SHAPE_FN(sru_bp_logic) {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
+    // FIXME: to be implemented
+    /*
     auto x   = INPUT_VARIABLE(0);                // X, input 3d tensor [time x bS x 2K], time - number of time steps, bS - batch size, inSize - number of features
     auto w = INPUT_VARIABLE(1);                // W, 2d tensor of weights [2K x 6K]
     auto b    = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 4K]
@@ -791,6 +796,8 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
             pOutputVal += ncolsRev;
         }
     }
+
+    */
     return Status::OK();
 }
 
@@ -825,6 +832,8 @@ DECLARE_SHAPE_FN(sru_bi) {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
+    // FIXME: to be implemented
+    /*
     auto x    = INPUT_VARIABLE(0);                // X, input 3d tensor [time x bS x 2K], time - number of time steps, bS - batch size, inSize - number of features
     auto w  = INPUT_VARIABLE(1);                // W, 2d tensor of weights [2K x 6K]
     auto b     = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 4K]
@@ -950,7 +959,7 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
     // gradWeights     
     x->permutei({0, 2, 1});                                             // [time x bS x 2K] -> [time x 2K x bS]
     *gradWeights = mmul(*x, gradWi);                                    // [time x 2K x bS ] * [time x bS x 6K] = [time x 2K x 6K]
-
+*/
     return Status::OK();
 }
 

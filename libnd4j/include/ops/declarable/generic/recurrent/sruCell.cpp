@@ -55,8 +55,9 @@ CUSTOM_OP_IMPL(sruCell, 4, 2, false, 0, 0) {
     REQUIRE_TRUE(correctWShape    == WShape,    0, "SRUCELL operation: wrong shape of weights, expected is %s, but got %s instead !", correctWShape.c_str(), WShape.c_str()); 
     REQUIRE_TRUE(correctBShape    == bShape,    0, "SRUCELL operation: wrong shape of biases, expected is %s, but got %s instead !", correctBShape.c_str(), bShape.c_str()); 
 
-            
-    helpers::sruCell<T>({xt, ct_1, w, b}, {ht, ct});
+
+    // fixme: shitty initializer lists
+    helpers::sruCell({xt, ct_1, w, b}, {ht, ct});
     
     return Status::OK();
 }

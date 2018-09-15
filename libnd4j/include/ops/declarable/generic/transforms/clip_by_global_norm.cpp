@@ -28,6 +28,8 @@ namespace ops  {
 
 CUSTOM_OP_IMPL(clip_by_global_norm, 1, 2, true, 1, 0) {
 
+    // FIXME: lambdas
+    /*
     const T clipNorm = T_ARG(0);
     T globalNorm = 0; //sqrt(sum([l2norm(t)**2 for t in t_list]))
 
@@ -54,7 +56,8 @@ CUSTOM_OP_IMPL(clip_by_global_norm, 1, 2, true, 1, 0) {
             auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
             input->applyLambda(lambda, output);
         }
-    } 
+    }
+    */
 
     return Status::OK();
 }

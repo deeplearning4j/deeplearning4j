@@ -81,14 +81,16 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
     if(maxTimeStep)
         REQUIRE_TRUE(ShapeUtils::shapeAsString(maxTimeStep)  == ShapeUtils::shapeAsString({bS}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of maxTimeStep array, expected is [%i], but got %s instead !", bS, ShapeUtils::shapeAsString(maxTimeStep).c_str());
 
+    // FIXME: constructors
+    /*
     // forward steps
     auto hFW = new NDArray({time, bS, numUnitsFW}, block.getWorkspace());
-    helpers::rnnTimeLoop<T>({x, WxFW, WhFW, bFW, h0FW, maxTimeStep}, hFW, hFWFinal);
+    helpers::rnnTimeLoop({x, WxFW, WhFW, bFW, h0FW, maxTimeStep}, hFW, hFWFinal);
 
     auto seqLen = maxTimeStep;
     if(seqLen == nullptr) {    	
     	seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, block.getWorkspace());	// [bS]
-    	*seqLen = (T)x->sizeAt(0);														// set each element of seqLen to be equal to time
+    	*seqLen = x->sizeAt(0);														// set each element of seqLen to be equal to time
     }
 
     // reverse x 
@@ -97,11 +99,11 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
 
     // backward steps    
     auto hBW = new NDArray({time, bS, numUnitsBW}, block.getWorkspace());
-    helpers::rnnTimeLoop<T>({revOut, WxBW, WhBW, bBW, h0BW, maxTimeStep}, hBW, hBWFinal);
+    helpers::rnnTimeLoop({revOut, WxBW, WhBW, bBW, h0BW, maxTimeStep}, hBW, hBWFinal);
 
     // reverse hBW 
     auto hBWcopy = new NDArray(*hBW);
-    helpers::reverseSequence<T>(hBWcopy, seqLen, hBW, 0, 1);
+    helpers::reverseSequence(hBWcopy, seqLen, hBW, 0, 1);
 
     // concatenate hFW and hBW along last third dimension
     // NDArrayFactory<T>::concat({hFW, hBW}, 2, h);
@@ -115,6 +117,7 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
     if(seqLen != maxTimeStep)
     	delete seqLen;
 
+    */
     return Status::OK();
 }
 

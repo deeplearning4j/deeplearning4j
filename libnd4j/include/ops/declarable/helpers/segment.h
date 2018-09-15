@@ -27,7 +27,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    bool segmentIndicesValidate(NDArray* indices, T& expected, T& output);
+    bool segmentIndicesValidate(NDArray* indices, double& expected, double& output);
 
     void segmentMaxFunctor(NDArray* input, NDArray* indices, NDArray* output);
 

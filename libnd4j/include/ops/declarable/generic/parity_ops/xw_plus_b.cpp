@@ -38,7 +38,7 @@ namespace nd4j {
             REQUIRE_TRUE(b->isVector() && b->lengthOf() == z->sizeAt(-1), 0, "xw_plus_b: Input vector should have proper dimension 1x%i. "
                 "But %i != %i.", z->sizeAt(-1), b->lengthOf(), z->sizeAt(-1));
             // multiply x to y
-            MmulHelper<T>::mmul(x, y, z, T(1.0f), T(0.0f));
+            MmulHelper::mmul(x, y, z, 1.0, 0.0);
 
             // adding b vector
             z->addiRowVector(b);

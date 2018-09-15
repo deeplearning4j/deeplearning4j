@@ -30,10 +30,10 @@ namespace nd4j {
             REQUIRE_TRUE(idxSegments->isVector(), 0, "segment_sum: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
             REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "segment_sum: segment indexes array length should be equal to the input first dimension, but %i != %i.", idxSegments->lengthOf(), input->sizeAt(0));
 
-            T expected = (T) 0.f, wrong = (T) 0.f;
+            // FIXME: float?
+            double expected = 0.f, wrong = 0.f;
 
-            REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_sum: segment indices should be arranged, but %2.1f > %2.1f",
-                    expected, wrong);
+            REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_sum: segment indices should be arranged, but %2.1f > %2.1f", expected, wrong);
 
             helpers::segmentSumFunctor(input, idxSegments, segmentedOutput);
 
@@ -46,7 +46,7 @@ namespace nd4j {
             auto in = inputShape->at(0);
             int outRank = shape::rank(in);
             Nd4jLong* outputShape = nullptr;
-            T val = (*idxVector)(idxVector->lengthOf() - 1);
+            int val = (*idxVector).getScalar<int>(idxVector->lengthOf() - 1);
 
             int numOfClasses = static_cast<int>(val) + 1;
 

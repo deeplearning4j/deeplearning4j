@@ -35,20 +35,6 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(unique) {
-/*
-            auto shapeList = SHAPELIST(); 
-            for (int e = 0; e < 2; e++) {
-                int* newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
-                if (shape::order(inputShape->at(0)) == 'c')
-                    shape::shapeBuffer(shape::rank(inputShape->at(0)), shape::shapeOf(inputShape->at(0)), newshape);
-                else 
-                    shape::shapeBufferFortran(shape::rank(inputShape->at(0)), shape::shapeOf(inputShape->at(0)), newshape);
-                shapeList->push_back(newshape); 
-
-            }
-            return shapeList;
-*/
             auto in = inputShape->at(0);
             auto source = INPUT_VARIABLE(0);
 //            auto shapeList = SHAPELIST(); 

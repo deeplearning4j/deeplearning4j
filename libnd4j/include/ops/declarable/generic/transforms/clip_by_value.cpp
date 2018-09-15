@@ -27,8 +27,9 @@ namespace nd4j {
     namespace ops {
         CONFIGURABLE_OP_IMPL(clipbyvalue, 1, 1, true, 2, 0) {
             auto input = INPUT_VARIABLE(0);
-            auto output = this->getZ(block);
+            auto output = OUTPUT_VARIABLE(0);
 
+            // FIXME: extra args!!!
             input->applyTransform(transform::ClipByValue, output, block.getTArguments()->data());
 
             STORE_RESULT(*output);

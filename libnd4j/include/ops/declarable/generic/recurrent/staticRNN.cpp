@@ -66,7 +66,7 @@ CUSTOM_OP_IMPL(static_rnn, 4, 2, false, 0, 0) {
         REQUIRE_TRUE(ShapeUtils::shapeAsString(maxTimeStep)  == ShapeUtils::shapeAsString({bS}), 0, "STATIC_RNN custom operation: wrong shape of maxTimeStep array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString({bS}).c_str(), ShapeUtils::shapeAsString(maxTimeStep).c_str());
 
 
-    helpers::rnnTimeLoop<T>({x, Wx, Wh, b, h0, maxTimeStep}, h, hFinal);    
+    helpers::rnnTimeLoop({x, Wx, Wh, b, h0, maxTimeStep}, h, hFinal);
     
     return Status::OK();
 }

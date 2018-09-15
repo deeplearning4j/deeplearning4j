@@ -28,11 +28,11 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(random_crop, 2, 1, false, 0, 0) {
-    NDArray<T>* input   = INPUT_VARIABLE(0); // values for crop
-    NDArray<T>* shape   = INPUT_VARIABLE(1); // shape for result
+    auto input   = INPUT_VARIABLE(0); // values for crop
+    auto shape   = INPUT_VARIABLE(1); // shape for result
 
-    NDArray<T>* reduceShape = nullptr; // this param is optional
-    NDArray<T>* output  = OUTPUT_VARIABLE(0); // 
+    NDArray* reduceShape = nullptr; // this param is optional
+    auto output  = OUTPUT_VARIABLE(0); //
     
     int seed = 0;
 
@@ -45,8 +45,7 @@ CUSTOM_OP_IMPL(random_crop, 2, 1, false, 0, 0) {
         input->rankOf(), shape->lengthOf());
 
     for (int e = 0; e < shape->lengthOf(); ++e) {
-        REQUIRE_TRUE((*shape)(e) <= input->sizeAt(e), 0, "random_crop: Shape tensor should be less than proper input dimension (dim %i, %i > %i).",
-             e, (*shape)(e), input->sizeAt(e));
+        REQUIRE_TRUE((*shape).getScalar<Nd4jLong>(e) <= input->sizeAt(e), 0, "random_crop: Shape tensor should be less than proper input dimension (dim %i, %i > %i).", e, (*shape).getScalar<Nd4jLong>(e), input->sizeAt(e));
     }
 
     nd4j::random::RandomBuffer* rng = block.getRNG();
@@ -64,7 +63,7 @@ DECLARE_SHAPE_FN(random_crop) {
     Nd4jLong *newShape;
     ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
     for (int e = 0; e < shape.size(); e++)
-        shape[e] = (*in)(e);
+        shape[e] = (*in).getScalar<Nd4jLong>(e);
 
     shape::shapeBuffer(shape.size(), shape.data(), newShape);
 

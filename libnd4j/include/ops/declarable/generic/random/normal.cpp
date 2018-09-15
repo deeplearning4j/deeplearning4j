@@ -28,14 +28,15 @@ namespace nd4j {
         CUSTOM_OP_IMPL(random_normal, 1, 1, true, 2, 0) {
             // normal distribution
             auto rng = block.getRNG();
-
+            // FIXME: to be implemented
+/*
             REQUIRE_TRUE(rng != nullptr, 0, "RNG isn't defined for this Graph instance");
 
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
             functions::random::RandomFunction<T>::template execTransform<randomOps::GaussianDistribution<T>>(block.getRNG(), z->getBuffer(), z->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data());
-
+*/
             return Status::OK();
         }
 

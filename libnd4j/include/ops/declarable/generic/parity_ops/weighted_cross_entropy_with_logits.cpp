@@ -31,6 +31,9 @@ namespace ops {
         auto targets = INPUT_VARIABLE(0);
         auto input = INPUT_VARIABLE(1);
         auto weights = INPUT_VARIABLE(2);
+
+        // FIXME: lambdas
+        /*
         T posWeight;
         
         REQUIRE_TRUE(targets->isSameShape(input), 0, "WEIGHTED_CROSS_ENTROPY_WITH_LOGITS op: The shape of both input params should be equal, but got input_shape=%s and targets_shape=%s !", ShapeUtils::shapeAsString(input).c_str(), ShapeUtils::shapeAsString(targets).c_str());
@@ -63,7 +66,7 @@ namespace ops {
             *targetTensor = (*targetVector * *targetTensor) + T(1.0);
             input->applyTriplewiseLambda(targets, targetTensor.get(), mainRoutine, output);
         }
-
+*/
         return Status::OK();
     }
 }

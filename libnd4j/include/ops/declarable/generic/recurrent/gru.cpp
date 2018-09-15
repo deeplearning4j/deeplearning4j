@@ -60,7 +60,7 @@ CUSTOM_OP_IMPL(gru, 5, 1, false, 0, 0) {
     REQUIRE_TRUE(bShape  == bCorrectShape,  0, "GRU operation: wrong shape of biases array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());     
 
 
-    helpers::gruTimeLoop<T>({x, h0, Wx, Wh, b}, h);      
+    helpers::gruTimeLoop({x, h0, Wx, Wh, b}, h);
     
     return Status::OK();
 }

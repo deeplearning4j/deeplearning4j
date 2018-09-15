@@ -30,9 +30,9 @@ namespace nd4j {
             auto rng = block.getRNG();
             auto z = OUTPUT_VARIABLE(0);
 
-            z->putScalar(0, (T) rng->getSeed());
+            z->putScalar(Nd4jLong(0), rng->getSeed());
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(get_seed) {

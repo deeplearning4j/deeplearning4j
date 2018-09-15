@@ -22,7 +22,7 @@
 #if NOT_EXCLUDED(OP_scatter_nd_sub)
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/generic/helpers/ScatterHelper.HHH>
+//#include <ops/declarable/generic/helpers/ScatterHelper.h>
 
 namespace nd4j {
 namespace ops  {

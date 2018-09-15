@@ -29,6 +29,8 @@ namespace nd4j {
             // uniform distribution
             auto rng = block.getRNG();
 
+            // FIXME: to be implemented
+            /*
             if (rng == nullptr)
                 return Status::THROW("RNG is null, aborting...");
 
@@ -45,8 +47,8 @@ namespace nd4j {
             }
 
             STORE_RESULT(*z);
-
-            return ND4J_STATUS_OK;
+*/
+            return Status::OK();
         }
 
 

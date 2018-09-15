@@ -41,6 +41,7 @@ namespace nd4j {
                 auto outE = OUTPUT_VARIABLE(e);
                 outE->assign(tads->at(e));
 
+                // just for debugging purposes
                 this->storeResult(block, e, *outE);
             }
 

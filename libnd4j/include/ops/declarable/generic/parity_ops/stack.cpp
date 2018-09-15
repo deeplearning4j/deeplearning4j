@@ -91,7 +91,7 @@ DECLARE_SHAPE_FN(stack) {
 	std::vector<Nd4jLong> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);
 	
 	// insert (int) block.width() at dim position of input shape to get output shape	
-	outShape.insert(outShape.begin() + dim, (Nd4jLong) block.width());						
+	outShape.insert(outShape.begin() + Nd4jLong(dim), (Nd4jLong) block.width());
 	
 	// evaluate output ShapeInfo
 	int newRank = outShape.size();

@@ -35,7 +35,7 @@ namespace nd4j {
             } else if (block.width() > 0) {
                 auto input = INPUT_VARIABLE(0);
                 REQUIRE_TRUE(input->isScalar(),0 ,"SetSeed: Seed operand should be scalar");
-                seed = (Nd4jLong) input->getScalar(0);
+                seed = input->getScalar<Nd4jLong>(0);
             } else {
                 REQUIRE_TRUE(false, 0, "SetSeed: either IArg or scalr input should be provided");
             }
@@ -44,7 +44,7 @@ namespace nd4j {
             NativeOps nativeOps;
             nativeOps.refreshBuffer(nullptr, seed, (Nd4jPointer) rng);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(set_seed) {
