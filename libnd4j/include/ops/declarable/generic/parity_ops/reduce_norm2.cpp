@@ -68,7 +68,9 @@ namespace ops {
             auto output = OUTPUT_VARIABLE(0);
 
             const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-            T keepDimsT = (keepDims?T(1.f):T(0.f));
+
+            // FIXME: double!
+            double keepDimsT = (keepDims ? 1.f : 0.f);
 
             // at first step we build fwd activation
             nd4j::ops::reduce_norm2 op;
@@ -78,8 +80,9 @@ namespace ops {
                 for (int e = 0; e < block.numI(); e++)
                     axes.emplace_back(INT_ARG(e));// = *block.getIArguments();
             }
-            std::vector<T> tVec(1);
-            tVec[0] = (keepDims?T(1.0):T(0.0));
+            // FIXME: double!
+            std::vector<double> tVec(1);
+            tVec[0] = (keepDims ? 1.0 : 0.0);
             std::vector<NDArray*> inputVec({input});
             std::unique_ptr<ResultSet> tmpResult(op.execute(inputVec, tVec, axes, false));
             if (tmpResult->status() != Status::OK())
@@ -89,10 +92,14 @@ namespace ops {
 
 
             if (tempNorm2->isScalar()) {
+                // FIXME: lambda
+                /*
                 auto norm2Backprop = LAMBDA_T(_x, epsilon, tempNorm2) {
                     return (*epsilon)(0.) * _x / (*tempNorm2)(0.);
                 };
                 input->applyLambda(norm2Backprop, output);
+                */
+                throw std::runtime_error("Not implemented yet");
             }
             else {
                 std::vector<int> axesList = *block.getIArguments();

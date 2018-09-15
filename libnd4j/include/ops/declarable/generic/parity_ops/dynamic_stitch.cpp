@@ -55,11 +55,15 @@ namespace ops {
         auto firstShape = inputShape->at(0);
         for(int i = 0; i < numOfData; i++) {
             auto input = INPUT_VARIABLE(i);
-            
+
+            // FIXME: we have reduce::Max, cinsider using it instead
+            /*
             for (int e = 0; e < input->lengthOf(); ++e) {
                 if (T(maxValue) < (*input)(e))
                     maxValue = static_cast<int>((*input)(e));
             }
+             */
+            throw std::runtime_error("Not implemented yet");
         }
 
         Nd4jLong *outShapeInfo;

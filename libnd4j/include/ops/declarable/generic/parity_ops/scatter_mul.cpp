@@ -23,7 +23,7 @@
 #if NOT_EXCLUDED(OP_scatter_mul)
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/generic/helpers/ScatterHelper.h>
+#include <ops/declarable/generic/helpers/ScatterHelper.HHH>
 
 namespace nd4j {
     namespace ops {
@@ -34,6 +34,8 @@ namespace nd4j {
 
             auto output = OUTPUT_VARIABLE(0);
 
+            // FIXME: scatter helper should be updated
+            /*
             const int inRank  = input->rankOf();
             const int indRank = indices->rankOf();
             const int updRank = updates->rankOf();
@@ -69,7 +71,7 @@ namespace nd4j {
 
             // ScatterHelper<T>::template scatterApply<simdOps::Multiply<T>>(output, indices, updates);        
             ScatterHelper<T>::template scatter<simdOps::Multiply<T>>(*indices, *updates, *output);
-
+*/
             return Status::OK();
         }
         DECLARE_SYN(ScatterMul, scatter_mul);

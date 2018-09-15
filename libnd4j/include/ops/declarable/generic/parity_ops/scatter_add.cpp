@@ -23,7 +23,7 @@
 #if NOT_EXCLUDED(OP_scatter_add)
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/generic/helpers/ScatterHelper.h>
+#include <ops/declarable/generic/helpers/ScatterHelper.HHH>
 
 namespace nd4j {
     namespace ops {
@@ -32,6 +32,8 @@ namespace nd4j {
             auto indices = INPUT_VARIABLE(1);
             auto updates = INPUT_VARIABLE(2);
 
+            // FIXME: scatter helper should be updated
+/*
             auto output = OUTPUT_VARIABLE(0);
 
             const int inRank  = input->rankOf();
@@ -60,7 +62,7 @@ namespace nd4j {
                 std::vector<Nd4jLong> updShape = updates->getShapeAsVector();
                 std::vector<Nd4jLong> inShape  = input->getShapeAsVector();
                 std::vector<Nd4jLong> expectedUpdShape = indices->getShapeAsVector();        
-                expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin()+1, inShape.end());
+                expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin() + Nd4jLong(1L), inShape.end());
 
                 REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ADD OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
             }
@@ -69,8 +71,8 @@ namespace nd4j {
                 output->assign(input);
 
             // ScatterHelper<T>::template scatterApply<simdOps::Add<T>>(output, indices, updates);
-            ScatterHelper<T>::template scatter<simdOps::Add<T>>(*indices, *updates, *output);
-
+            ScatterHelper::scatter<simdOps::Add<T>>(*indices, *updates, *output);
+*/
             return Status::OK();
         }
         DECLARE_SYN(ScatterAdd, scatter_add);

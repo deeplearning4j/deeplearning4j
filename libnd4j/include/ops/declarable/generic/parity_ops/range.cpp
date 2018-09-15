@@ -35,6 +35,8 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
     const int numTArgs  = block.getTArguments()->size();
     const int numIArgs  = block.getIArguments()->size();    
 
+    // FIXME: this op should be fully moved to helpers
+    /*
     T start(T(0)), limit, delta(T(1));
     
     if (numIArgs > 0) {
@@ -87,7 +89,7 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
     REQUIRE_TRUE((limit - start) / delta > 0, 0, "CUSTOM RANGE OP: value of (limit-start)/delta should be positive !");
 
     helpers::range(start, delta, *output);
-
+*/
     return Status::OK();
 }
 
@@ -97,6 +99,8 @@ DECLARE_SHAPE_FN(range) {
     const int numTArgs  = block.getTArguments()->size();
     const int numIArgs  = block.getIArguments()->size();    
 
+    // FIXME: this op should be moved to heleprers PROPERLY
+    /**
     T start(T(0)), limit, delta(T(1));
     
     if (numIArgs > 0) {
@@ -156,8 +160,9 @@ DECLARE_SHAPE_FN(range) {
     Nd4jLong* vecShapeInfo(nullptr);        
     ALLOCATE(vecShapeInfo, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);    
     shape::shapeVector(steps, vecShapeInfo);
-    
-    return SHAPELIST(vecShapeInfo);
+    */
+    //return SHAPELIST(vecShapeInfo);
+    return SHAPELIST();
 }
 
 

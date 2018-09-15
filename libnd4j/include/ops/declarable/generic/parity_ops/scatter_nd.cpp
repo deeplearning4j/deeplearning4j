@@ -22,7 +22,7 @@
 #if NOT_EXCLUDED(OP_scatter_nd)
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/generic/helpers/ScatterHelper.h>
+#include <ops/declarable/generic/helpers/ScatterHelper.HHH>
 
 namespace nd4j {
 namespace ops  {
@@ -33,6 +33,9 @@ CUSTOM_OP_IMPL(scatter_nd, 3, 1, false, 0, 0) {
     auto shape   = INPUT_VARIABLE(2);
 
     auto output = OUTPUT_VARIABLE(0);
+
+        // FIXME: scatter helper should be updated
+    /*
 
     const int indRank   = indices->rankOf();
     const int updRank   = updates->rankOf();
@@ -57,22 +60,22 @@ CUSTOM_OP_IMPL(scatter_nd, 3, 1, false, 0, 0) {
         *output = 0;
 
     ScatterHelper<T>::template scatterND<simdOps::Copy<T>>(*indices, *updates, *output);
-
+*/
     return Status::OK();
 }
 
 ////////////////////////////////////////////////////////////////////////7
 DECLARE_SHAPE_FN(scatter_nd) {
 
-    NDArray<T>* shape = INPUT_VARIABLE(2);
-    Nd4jLong* updShapeInfo = inputShape->at(1);
+    auto shape = INPUT_VARIABLE(2);
+    auto updShapeInfo = inputShape->at(1);
 
     Nd4jLong* outShapeInfo;
     ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(shape->lengthOf()), Nd4jLong);
 
     outShapeInfo[0] = shape->lengthOf();
     for(int i = 0; i < outShapeInfo[0]; ++i)
-        outShapeInfo[i + 1] = static_cast<Nd4jLong>((*shape)(i));
+        outShapeInfo[i + 1] = shape->getScalar<Nd4jLong>(i);
 
     shape::updateStrides(outShapeInfo, shape::order(updShapeInfo));
         

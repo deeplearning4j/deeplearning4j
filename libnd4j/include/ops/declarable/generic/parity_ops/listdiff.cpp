@@ -30,8 +30,11 @@ namespace nd4j {
             auto values = INPUT_VARIABLE(0);
             auto keep = INPUT_VARIABLE(1);
 
-            std::vector<T> saved;
-            std::vector<T> indices;
+
+            // FIXME: must be moved to helpers
+            /**
+            std::vector<double> saved;
+            std::vector<Nd4jLong> indices;
 
             REQUIRE_TRUE(values->rankOf() == 1, 0, "ListDiff: rank of values should be 1D, but got %iD instead", values->rankOf());
             REQUIRE_TRUE(keep->rankOf() == 1, 0, "ListDiff: rank of keep should be 1D, but got %iD instead", keep->rankOf());
@@ -39,12 +42,13 @@ namespace nd4j {
             for (Nd4jLong e = 0; e < values->lengthOf(); e++) {
                 T v = values->getScalar(e);
                 T extras[] = {v, (T) 0.0f, (T) 10.0f};
-                auto idx = keep->template indexReduceNumber<simdOps::FirstIndex<T>>(extras);
+                auto idx = keep->indexReduceNumber(indexreduce::FirstIndex, extras);
                 if (idx < 0) {
                     saved.emplace_back(v);
-                    indices.emplace_back(static_cast<T>(e));
+                    indices.emplace_back(e);
                 }
             }
+
 
             // FIXME: we need 0-size NDArrays
             if (saved.size() == 0) {
@@ -63,6 +67,7 @@ namespace nd4j {
                 //OVERWRITE_2_RESULTS(z0, z1);
                 STORE_2_RESULTS(z0, z1);
             }
+             */
 
             return Status::OK();
         };
@@ -76,18 +81,21 @@ namespace nd4j {
             REQUIRE_TRUE(values->rankOf() == 1, 0, "ListDiff: rank of values should be 1D, but got %iD instead", values->rankOf());
             REQUIRE_TRUE(keep->rankOf() == 1, 0, "ListDiff: rank of keep should be 1D, but got %iD instead", keep->rankOf());
 
+            // FIXME: must be moved to helpers
+            /*
             for (int e = 0; e < values->lengthOf(); e++) {
                 T v = values->getScalar(e);
                 T extras[] = {v, (T) 0.0f, (T) 10.0f};
-                auto idx = keep->template indexReduceNumber<simdOps::FirstIndex<T>>(extras);
+                auto idx = keep->indexReduceNumber(indexreduce::FirstIndex, extras);
                 if (idx < 0)
                     saved++;
             }
+            */
 
             REQUIRE_TRUE(saved > 0, 0, "ListDiff: no matches found");
 
-            auto shapeX = ShapeUtils::createVectorShapeInfo(saved, block.workspace());
-            auto shapeY = ShapeUtils::createVectorShapeInfo(saved, block.workspace());
+            auto shapeX = ShapeBuilders::createVectorShapeInfo(saved, block.workspace());
+            auto shapeY = ShapeBuilders::createVectorShapeInfo(saved, block.workspace());
 
             return SHAPELIST(shapeX, shapeY);
         }

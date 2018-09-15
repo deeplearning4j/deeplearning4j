@@ -36,8 +36,9 @@ CONFIGURABLE_OP_IMPL(dropout, 1, 1, true, 1, 1) {
     auto output  = OUTPUT_VARIABLE(0); //
     
     int seed = INT_ARG(0);
-    
-    T probValue = T_ARG(0); 
+
+    // FIXME: float?
+    float probValue = T_ARG(0);
     if (block.width() > 1)
         reduceShape = INPUT_VARIABLE(1);
 

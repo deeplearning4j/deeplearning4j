@@ -38,13 +38,14 @@ CONFIGURABLE_OP_IMPL(betainc, 3, 1, false, 0, 0) {
 
     int arrLen = a->lengthOf();
 
+    // FIXME: this stuff should be single op call. No sense rolling over couple of arrays twice
     for(int i = 0; i < arrLen; ++i ) {            
-        REQUIRE_TRUE((*a)(i) > (T)0.,   0, "BETAINC op: arrays a array must contain only elements > 0 !");            
-        REQUIRE_TRUE((*b)(i) > (T)0.,   0, "BETAINC op: arrays b array must contain only elements > 0 !");                    
-        REQUIRE_TRUE((T)0. <= (*x)(i) && (*x)(i) <= (T)1., 0, "BETAINC op: all elements of x array must be within [0, 1] range!");                
+        REQUIRE_TRUE(a->getScalar<float>(i) > 0.f,   0, "BETAINC op: arrays a array must contain only elements > 0 !");
+        REQUIRE_TRUE(b->getScalar<float>(i) > 0.f,   0, "BETAINC op: arrays b array must contain only elements > 0 !");
+        REQUIRE_TRUE(0.f <= x->getScalar<float>(i) && x->getScalar<float>(i) <= 1.f, 0, "BETAINC op: all elements of x array must be within [0, 1] range!");
     }
 
-    *output = helpers::betaInc<T>(*a, *b, *x);
+    *output = helpers::betaInc(*a, *b, *x);
 
     return Status::OK();
 }

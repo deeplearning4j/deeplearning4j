@@ -162,6 +162,8 @@ namespace nd4j {
         static NDArray v(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace);
 
 
+        void *bufferWithOffset(Nd4jLong offset);
+
 #ifndef __JAVACPP_HACK__
         // this method only available out of javacpp
         /**

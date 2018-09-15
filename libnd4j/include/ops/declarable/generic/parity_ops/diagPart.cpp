@@ -42,10 +42,12 @@ namespace ops  {
     		const int inLen  = input->lengthOf();
 
     		int i(0), j(0);
+    		// FIXME: must be moved to helper
     		while(j < outLen) {
-    			(*output)(j) = (*input)(i);
-    			i += outLen+1;
-    			++j;
+    			//(*output)(j) = (*input)(i);
+    			//i += outLen+1;
+    			//++j;
+    			throw std::runtime_error("Not implemented yet");
     		}
     
 		    return Status::OK();

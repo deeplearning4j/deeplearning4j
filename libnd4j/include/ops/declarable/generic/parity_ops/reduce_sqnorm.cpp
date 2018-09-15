@@ -68,7 +68,7 @@ namespace ops {
             auto output = OUTPUT_VARIABLE(0);
 
             if (epsilon->isScalar()) {
-                output->assign(epsilon->getScalar(0) * T(2.f));
+                output->assign(epsilon->getScalar<double>(0) * 2.f);
                 output->applyPairwiseTransform(pairwise::Multiply, input, output, nullptr);
             }
             else {

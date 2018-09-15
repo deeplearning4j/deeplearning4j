@@ -29,7 +29,6 @@ namespace helpers {
     template <typename T>
     T lup(NDArray* input, NDArray* compound, NDArray* permutation);
 
-    template <typename T>
     int determinant(NDArray* input, NDArray* output);
 
     int inverse(NDArray* input, NDArray* output);

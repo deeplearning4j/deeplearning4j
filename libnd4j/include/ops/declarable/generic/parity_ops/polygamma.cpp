@@ -36,13 +36,15 @@ CONFIGURABLE_OP_IMPL(polygamma, 2, 1, false, 0, 0) {
     REQUIRE_TRUE(n->isSameShape(x), 0, "POLYGAMMA op: two input arrays n and x must have the same shapes, but got n=%s and x=%s instead !", ShapeUtils::shapeAsString(n).c_str(), ShapeUtils::shapeAsString(x).c_str());
 
     int arrLen = n->lengthOf();
+    // FIXME: this shit should be single op call, not a loop!
     for(int i = 0; i < arrLen; ++i ) {
         // TODO case for n == 0 (digamma) should be of OK
-        REQUIRE_TRUE((*n)(i) > (T)0., 0, "POLYGAMMA op: all elements of n array must be > 0 !");
-        REQUIRE_TRUE((*x)(i) > (T)0., 0, "POLYGAMMA op: all elements of x array must be > 0 !");
+        REQUIRE_TRUE(n->getScalar<float>(i) > 0.f, 0, "POLYGAMMA op: all elements of n array must be > 0 !");
+        REQUIRE_TRUE(x->getScalar<float>(i) > 0.f, 0, "POLYGAMMA op: all elements of x array must be > 0 !");
     }
 
-    *output = helpers::polyGamma<T>(*n, *x);
+    // FIXME: we should use output to save
+    *output = helpers::polyGamma(*n, *x);
     return Status::OK();
 }
 

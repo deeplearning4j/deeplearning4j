@@ -70,14 +70,14 @@ namespace nd4j {
                 auto epsilonNext2d = epsilonNext->permute({1, 0, 2, 3});
                 epsilonNext2d->reshapei('c', {(int) bias->lengthOf(), -1});
 
-                auto sum = epsilonNext2d->sum({1});
+                auto sum = epsilonNext2d->reduceAlongDimension(reduce::Sum, {1});
                 gradB->assign(sum);
 
                 delete sum;
                 delete epsilonNext2d;
             } else if (input->rankOf() == 2) {
                 // regular fully-connected case
-                auto sum = epsilonNext->sum({0});
+                auto sum = epsilonNext->reduceAlongDimension(reduce::Sum, {0});
                 gradB->assign(sum);
                 
                 delete sum;

@@ -30,10 +30,9 @@ namespace nd4j {
             void dynamicPartitionFunctor(NDArray const* input, NDArray const* indices, std::vector<NDArray*>& outputList);
 
             int dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray* output);
-            template <typename T>
+
             void dynamicPartitionFunctorBP(NDArray const* input, NDArray const* indices, std::vector<NDArray*> const& gradientInputList, std::vector<NDArray*>& outputList);
 
-            template <typename T>
             int dynamicStitchFunctorBP(std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray const* gradientInput, std::vector<NDArray*>& outputList);
         }
     }

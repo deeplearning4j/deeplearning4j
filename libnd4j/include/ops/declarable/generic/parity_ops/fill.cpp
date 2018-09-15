@@ -28,26 +28,26 @@ namespace nd4j {
         
         CUSTOM_OP_IMPL(fill, 1, 1, false, -2, 0) {
             auto shapeArray = INPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
 
             auto w = block.width();
+            auto i = block.numI();
             auto t = block.numT();
 
-            REQUIRE_TRUE( w > 1 || t > 0, 0, "Fill: either additional variable should exist, or scalar value should be present");
-            
-            T scalar = w == 1 ? T_ARG(0) : INPUT_VARIABLE(1)->getScalar(0);
+            REQUIRE_TRUE( w > 1 || t > 0 || i > 0, 0, "Fill: either additional variable should exist, or scalar value should be present");
+            if (w > 1) {
+                output->assign(INPUT_VARIABLE(1));
+            } else {
+                if (t > 0) {
+                    output->assign(T_ARG(0));
+                } else if (i > 0) {
+                    output->assign(INT_ARG(0));
+                }
+            }
 
-            std::vector<Nd4jLong> shape((int) shapeArray->lengthOf());
+            STORE_RESULT(output);
 
-            for (int e = 0; e < shapeArray->lengthOf(); e++)
-                shape[e] = static_cast<Nd4jLong>((*shapeArray)(e));
-
-            auto result = NDArray::valueOf(shape, scalar, 'c');
-
-            OUTPUT_VARIABLE(0)->assign(result);
-            STORE_RESULT(result);
-
-
-            return ND4J_STATUS_OK;
+            return Status::OK();
         };
 
         
@@ -60,7 +60,7 @@ namespace nd4j {
 
             newShape[0] = len;
             for (int e = 0; e < shapeArray->lengthOf(); e++)
-                newShape[e+1] = static_cast<Nd4jLong>((*shapeArray)(e));
+                newShape[e+1] = shapeArray->getScalar<Nd4jLong>(e);
             
             shape::updateStrides(newShape, 'c');
 

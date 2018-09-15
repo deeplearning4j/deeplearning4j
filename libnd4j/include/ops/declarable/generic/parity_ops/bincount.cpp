@@ -38,7 +38,7 @@ namespace nd4j {
             int maxLength = -1;
             int minLength = 0;
             int maxIndex = values->argMax();
-            maxLength = int((*values)(maxIndex))  + 1;
+            maxLength = values->getScalar<int>(maxIndex)  + 1;
 
             if (block.numI() > 0) {
                 minLength = nd4j::math::nd4j_max(INT_ARG(0), 0);
@@ -59,7 +59,7 @@ namespace nd4j {
             auto in = INPUT_VARIABLE(0);
 
             int maxIndex = in->argMax();
-            int maxLength = int((*in)(maxIndex))  + 1;
+            int maxLength = in->getScalar<int>(maxIndex)  + 1;
 
             if (block.numI() > 0)
                 maxLength = nd4j::math::nd4j_max(maxLength, INT_ARG(0));

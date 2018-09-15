@@ -32,50 +32,28 @@ namespace nd4j {
 
             auto resMeans = OUTPUT_VARIABLE(0);
             auto resVariances = OUTPUT_VARIABLE(1);
-/*
-    divisor = math_ops.reciprocal(counts, name="divisor")
-    if shift is not None:
-      shifted_mean = math_ops.multiply(mean_ss, divisor, name="shifted_mean")
-      mean = math_ops.add(shifted_mean, shift, name="mean")
-    else:  # no shift.
-      shifted_mean = math_ops.multiply(mean_ss, divisor, name="mean")
-      mean = shifted_mean
-    variance = math_ops.subtract(
-        math_ops.multiply(variance_ss, divisor),
-        math_ops.square(shifted_mean),
-        name="variance")
-  return (mean, variance)
 
-*/
-
-            T shift(0);
+            // FIXME: double?
+            double shift(0);
             
             if (block.getTArguments()->size() > 0) {
                 shift = T_ARG(0);
             }
-//            nd4j_printf("means output %p \n",  resMeans->getBuffer())
-//            nd4j_printf("variance output %p \n",  resVariances->getBuffer())
-//            resMeans->printBuffer("Output Means");
-//            resVariances->printBuffer("Output Variance");
 
-            means->applyScalar(scalar::Divide, (*counts)(0.), resMeans, nullptr);
+            means->applyScalar(scalar::Divide, *counts, resMeans, nullptr);
 
             std::unique_ptr<NDArray> squareMeans(resMeans->dup('c'));
             std::unique_ptr<NDArray> tempVariances(resVariances->dup('c'));
 
-            squareMeans->applyTransform(transform::Square, nullptr);
-            variances->applyScalar(scalar::Divide, (*counts)(0.), tempVariances.get(), nullptr);
+            squareMeans->applyTransform(transform::Square, squareMeans.get(), nullptr);
+            variances->applyScalar(scalar::Divide, *counts, tempVariances.get(), nullptr);
 //            tempVariances->printIndexedBuffer("varianced divided by count");
             tempVariances->applyPairwiseTransform(pairwise::Subtract, squareMeans.get(), resVariances, nullptr);
 
             if (shift != 0) {
                 resMeans->applyScalar(scalar::Add, shift, resMeans, nullptr);
             }
-          
-//            resMeans->printBuffer("Output Means");
-//            resVariances->printBuffer("Output Variance");
-//            nd4j_printf("means output %p \n",  resMeans->getBuffer())
-//            nd4j_printf("variance output %p \n",  resVariances->getBuffer())
+
             return Status::OK();
         }
 

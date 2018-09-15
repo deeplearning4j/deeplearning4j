@@ -29,8 +29,9 @@ namespace nd4j {
         CUSTOM_OP_IMPL(onehot, 1, 1, false, -2, -2) {
             auto input = INPUT_VARIABLE(0);
 
-            T on(1.0f); // T_ARG(0);
-            T off(0.0f); //T_ARG(1);
+            // FIXME: double?
+            double on(1.0f); // T_ARG(0);
+            double off(0.0f); //T_ARG(1);
 
             auto depth = -1; //INT_ARG(0);
             auto axis = -1; //INT_ARG(1);
@@ -48,10 +49,10 @@ namespace nd4j {
 
 
             if (block.width() > 2) {
-                on = INPUT_VARIABLE(2)->getScalar(0);
+                on = INPUT_VARIABLE(2)->getScalar<double>(0);
 
                 if (block.width() > 3)
-                    off = INPUT_VARIABLE(3)->getScalar(0);
+                    off = INPUT_VARIABLE(3)->getScalar<double>(0);
             } else if (block.numT() > 0) {
                 on = T_ARG(0);
 
@@ -79,14 +80,14 @@ namespace nd4j {
 
             delete tads;
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(onehot) {
             auto inShape = inputShape->at(0);
 
             int depth = -1;
-            int axis = -1;
+            Nd4jLong axis = -1;
 
             if (block.numI() > 0)
                 axis = INT_ARG(0);

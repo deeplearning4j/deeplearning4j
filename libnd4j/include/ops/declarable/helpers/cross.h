@@ -23,19 +23,34 @@
 namespace nd4j {
 namespace ops {
 namespace helpers {
-    template <typename X, typename Y, typename Z>
     void FORCEINLINE _cross(NDArray *a, NDArray *b, NDArray *o) {
-        auto a0 = a->getScalar(0);
-        auto a1 = a->getScalar(1);
-        auto a2 = a->getScalar(2);
+        if (a->isR()) {
+            auto a0 = a->getScalar<double>(0);
+            auto a1 = a->getScalar<double>(1);
+            auto a2 = a->getScalar<double>(2);
 
-        auto b0 = b->getScalar(0);
-        auto b1 = b->getScalar(1);
-        auto b2 = b->getScalar(2);
+            auto b0 = b->getScalar<double>(0);
+            auto b1 = b->getScalar<double>(1);
+            auto b2 = b->getScalar<double>(2);
 
-        o->putScalar(0, a1 * b2 - a2 * b1);
-        o->putScalar(1, a2 * b0 - a0 * b2);
-        o->putScalar(2, a0 * b1 - a1 * b0);
+            Nd4jLong idx = 0L;
+            o->putScalar(Nd4jLong(0L), a1 * b2 - a2 * b1);
+            o->putScalar(1L, a2 * b0 - a0 * b2);
+            o->putScalar(2L, a0 * b1 - a1 * b0);
+        } else {
+            auto a0 = a->getScalar<Nd4jLong>(0);
+            auto a1 = a->getScalar<Nd4jLong>(1);
+            auto a2 = a->getScalar<Nd4jLong>(2);
+
+            auto b0 = b->getScalar<Nd4jLong>(0);
+            auto b1 = b->getScalar<Nd4jLong>(1);
+            auto b2 = b->getScalar<Nd4jLong>(2);
+
+            Nd4jLong idx = 0L;
+            o->putScalar(Nd4jLong(0L), a1 * b2 - a2 * b1);
+            o->putScalar(1L, a2 * b0 - a0 * b2);
+            o->putScalar(2L, a0 * b1 - a1 * b0);
+        }
     }
 
     void FORCEINLINE _crossBatched(NDArray *a, NDArray *b, NDArray *o) {

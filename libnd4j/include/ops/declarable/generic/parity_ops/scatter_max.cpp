@@ -22,7 +22,7 @@
 #if NOT_EXCLUDED(OP_scatter_max)
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/generic/helpers/ScatterHelper.h>
+#include <ops/declarable/generic/helpers/ScatterHelper.HHH>
 
 namespace nd4j {
 namespace ops {
@@ -35,6 +35,8 @@ OP_IMPL(scatter_max, 3, 1, true) {
 
     auto output = OUTPUT_VARIABLE(0);
 
+        // FIXME: scatter helper should be updated
+    /*
     const int inRank  = input->rankOf();
     const int indRank = indices->rankOf();
     const int updRank = updates->rankOf();
@@ -69,7 +71,7 @@ OP_IMPL(scatter_max, 3, 1, true) {
             output->assign(input);
 
     ScatterHelper<T>::template scatter<simdOps::Max<T>>(*indices, *updates, *output);
-
+*/
     return Status::OK();
 }
 DECLARE_SYN(ScatterMax, scatter_max);

@@ -27,16 +27,15 @@ namespace nd4j {
     namespace ops {
         CONFIGURABLE_OP_IMPL(fill_as, 1, 1, true, 0, 0) {
             auto output = OUTPUT_VARIABLE(0);
-            T scalr = 0;
 
             if (block.width() > 1) {
                 auto s = INPUT_VARIABLE(1);
-                scalr = s->getScalar(0);
-            } else if (block.getTArguments()->size() > 0) {
-                scalr = T_ARG(0);
-            };
-
-            output->assign(scalr);
+                output->assign(s);
+            } else if (block.numT() > 0) {
+                output->assign(T_ARG(0));
+            } else if (block.numI() > 0) {
+                output->assign(INT_ARG(0));
+            }
 
             STORE_RESULT(output);
 

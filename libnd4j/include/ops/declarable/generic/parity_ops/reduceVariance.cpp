@@ -82,12 +82,12 @@ CUSTOM_OP_IMPL(reduce_variance_bp, 2, 1, false, 0, 0) {
 
     const Nd4jLong N = input->lengthOf() / gradO->lengthOf();
     const Nd4jLong NminusOne = biasCorrected ? N - 1 : N;
-    const T factor1 = static_cast<T>(2) / NminusOne;
-    const T factor2 = static_cast<T>(2) / (N * NminusOne);
+    const double factor1 = 2.0 / NminusOne;
+    const double factor2 = 2.0 / (N * NminusOne);
     
-    auto mean = input->template reduceAlongDims(reduce::Mean, dimensions, true);
+    auto mean = input->reduceAlongDims(reduce::Mean, dimensions, true);
     
-    gradI->assign( (*input - mean) * (static_cast<T>(2) / NminusOne));                                    // automatic broadcasting happens here
+    gradI->assign( (*input - mean) * (2.0f / NminusOne));                                    // automatic broadcasting happens here
 
     Nd4jLong* gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(input->ordering(), dimensions, *input, true, false, block.getWorkspace());
     const bool isGradOShapeBroadcast = shape::equalsSoft(gradOShapeKeepDims, gradO->getShapeInfo());

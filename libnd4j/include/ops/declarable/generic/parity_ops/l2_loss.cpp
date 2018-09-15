@@ -31,8 +31,9 @@ namespace nd4j {
 
             REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
 
+            // FIXME: output should be used directly here, to avoid sum
             auto sum = input->reduceNumber(reduce::SquaredNorm) / 2;
-            (*output)(0.) = sum;
+            (*output) = sum;
 
             return Status::OK();
         }

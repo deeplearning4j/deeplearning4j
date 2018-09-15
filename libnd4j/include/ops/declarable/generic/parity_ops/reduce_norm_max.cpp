@@ -70,7 +70,8 @@ namespace ops {
 			
 			output->assign(0.0);
 
-            T keepDimsT = (keepDims?T(1.f):T(0.f));
+			// FIXME: double
+            double keepDimsT = (keepDims ? 1.f : 0.f);
             // at first step we build fwd activation
             nd4j::ops::reduce_norm_max op;
             std::vector<Nd4jLong> axes;
@@ -80,8 +81,9 @@ namespace ops {
                     axes.emplace_back(INT_ARG(e));// = *block.getIArguments();
             }
 
-            std::vector<T> tVec(1);
-            tVec[0] = (keepDims?T(1.0):T(0.0));
+            // FIXME: double
+            std::vector<double> tVec(1);
+            tVec[0] = (keepDims ? 1.0 : 0.0);
             std::vector<NDArray*> inputVec({input});
             std::unique_ptr<ResultSet> tmpResult(op.execute(inputVec, tVec, axes, false));
             if (tmpResult->status() != Status::OK())
