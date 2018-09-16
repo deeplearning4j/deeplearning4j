@@ -42,6 +42,7 @@
 #include <Status.h>
 #include <helpers/ArrayUtils.h>
 #include <helpers/ShapeBuilders.h>
+#include <NDArrayFactory.h>
 
 
 namespace nd4j {

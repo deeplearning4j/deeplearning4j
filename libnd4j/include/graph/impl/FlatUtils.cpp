@@ -22,6 +22,7 @@
 #include <array/DataTypeConversions.h>
 #include <array/DataTypeUtils.h>
 #include <array/ByteOrderUtils.h>
+#include <NDArrayFactory.h>
 
 
 namespace nd4j {
@@ -43,7 +44,7 @@ namespace nd4j {
             if (shape::isEmpty(newShape)) {
                 delete[] newShape;
                 // FIXME: probably should be not a static float
-                return NDArray::empty<float>(nullptr);
+                return NDArrayFactory::empty<float>(nullptr);
             }
 
             auto length = shape::length(newShape);

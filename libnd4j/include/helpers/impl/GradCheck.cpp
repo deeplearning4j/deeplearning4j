@@ -19,6 +19,7 @@
 //
 
 #include <GradCheck.h>
+#include <NDArrayFactory.h>
 
 
 namespace nd4j {
@@ -49,19 +50,19 @@ void GradCheck::fillGradArrays(const LossFunc loss, const std::vector<NDArray*>&
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, const OpArgsHolder<double>& argsHolderFF, const OpArgsHolder<double>& argsHolderBP,
+bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, const OpArgsHolder& argsHolderFF, const OpArgsHolder& argsHolderBP,
 	                      const std::vector<bool>& whatArrsToCheck, const std::vector<double>& idxRange, const LossFunc loss ) {
 
 	const int numInArrsFF     = argsHolderFF.getNumInArrs();						// also numInArrsFF = number of output arrays in opBP
 	const int numInGradArrsBP = argsHolderBP.getNumInArrs() - numInArrsFF;  		// because argsHolderBP.getNumInArrs() = numInArrsFF + numInGradArrsBP
-	const std::vector<NDArray<double>*>& inArrsFF = argsHolderFF.getInArrs();
-	const std::vector<NDArray<double>*>& inArrsBP = argsHolderBP.getInArrs();	
+	const std::vector<NDArray*>& inArrsFF = argsHolderFF.getInArrs();
+	const std::vector<NDArray*>& inArrsBP = argsHolderBP.getInArrs();
 
 	// fill input gradient arrays in accordance to type of loss function
-	fillGradArrays(loss, std::vector<NDArray<double>*>(&inArrsBP[numInArrsFF], &inArrsBP[numInArrsFF + numInGradArrsBP]));
+	fillGradArrays(loss, std::vector<NDArray*>(&inArrsBP[numInArrsFF], &inArrsBP[numInArrsFF + numInGradArrsBP]));
 
 	// beck prop pass	
-	ResultSet<double>* outArrsBP = opBP.execute(argsHolderBP);		// number of output arrays in back prop = numInArrsFF;
+	ResultSet* outArrsBP = opBP.execute(argsHolderBP);		// number of output arrays in back prop = numInArrsFF;
 
 	for(int i = 0; i < numInArrsFF; ++i) {							// loop through input array
 		
@@ -73,24 +74,31 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 		
 		for(Nd4jLong j = idxStart; j < idxEnd; ++j) {			// loop through all elements for current array
 
-			double& elem = (*inArrsFF[i])(j);
+			auto f = inArrsFF[i]->getScalar<double>(j);
+			double& elem = f;
 			const double orig = elem;
 
 			// add epsilon, feed forward
 			elem = orig + EPSILON;
-			ResultSet<double>* outArrsFF = opFF.execute(argsHolderFF);
+			ResultSet* outArrsFF = opFF.execute(argsHolderFF);
 			int numOutArrs = outArrsFF->size();
 			double scorePlus = 0.;
-			for(int k = 0; k < numOutArrs; ++k)				// loop through output array
-				scorePlus += NativeOpExcutioner<double>::execReduceScalar(loss, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr);
+			auto tmpScalar = NDArrayFactory::v(0.0);
+			for(int k = 0; k < numOutArrs; ++k) {                // loop through output array
+				NativeOpExcutioner::execReduceScalar(loss, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());
+				scorePlus += tmpScalar.getScalar<double>(0);
+			}
 			delete outArrsFF;
 
 			// subtract epsilon, feed forward
 			elem = orig - EPSILON;
 			outArrsFF = opFF.execute(argsHolderFF);
 			double scoreMinus = 0.;
-			for(int k = 0; k < numOutArrs; ++k)				// loop through output array
-				scoreMinus += NativeOpExcutioner<double>::execReduceScalar(loss, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr);
+
+			for(int k = 0; k < numOutArrs; ++k) {            // loop through output array
+				NativeOpExcutioner::execReduceScalar(loss, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());
+				scoreMinus += tmpScalar.getScalar<double>(0);
+			}
 			delete outArrsFF;
 
 			// restore initial element value
@@ -104,7 +112,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 			}
 
 			// get analytical gradient 
-			const double analyticGrad = (*outArrsBP->at(i))(j);
+			const double analyticGrad = outArrsBP->at(i)->getScalar<double>(j);
 			if(std::isnan(analyticGrad) || std::isinf(analyticGrad)) {
 				printf("GradCheck::checkGrad: got wrong value for analytical gradient for input array # %i and its element at position %lld ! \n", i, j);
 				throw std::runtime_error("");

@@ -28,7 +28,7 @@ namespace nd4j {
         LIST_OP_IMPL(size_list, 1, 1, 0, 0) {
             auto list = INPUT_LIST(0);
 
-            auto result = NDArray::scalar(list->height(), block.workspace());
+            auto result = NDArrayFactory::scalar(list->height(), block.workspace());
 
             OVERWRITE_RESULT(result);
 

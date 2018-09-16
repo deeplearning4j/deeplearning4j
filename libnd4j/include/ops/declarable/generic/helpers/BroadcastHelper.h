@@ -24,6 +24,7 @@
 #include <NDArray.h>
 #include <helpers/ShapeUtils.h>
 #include <BroadcastOpsTuple.h>
+#include <NDArrayFactory.h>
 
 namespace nd4j {
     namespace ops {
@@ -41,7 +42,7 @@ namespace nd4j {
                         return z;
                     } else {
                         auto v = y->getShapeAsVector();
-                        auto tZ = NDArray::valueOf(v, *y, y->ordering());
+                        auto tZ = NDArrayFactory::valueOf(v, *y, y->ordering());
                         tZ->applyPairwiseTransform(op.p, y, extraArgs);
                         return tZ;
                     }

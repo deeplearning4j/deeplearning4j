@@ -118,7 +118,7 @@ endforeach(TMP_PATH)
 
 
 add_executable(runtests ${LOOPS_SOURCES} ../../blas/cpu/NativeOps.cpp ../../blas/cpu/GraphExecutioner.cpp
-    ../../blas/cpu/NativeOpExcutioner.cpp ../../blas/cpu/NDArray.cpp
+    ../../blas/cpu/NativeOpExcutioner.cpp ../../blas/cpu/NDArray.cpp ../../blas/cpu/NDArrayFactory.cpp
     ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h
     ../../blas/Environment.cpp ../../blas/Environment.h  ${ARRAY_SOURCES} ${TYPES_SOURCES}
     ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}

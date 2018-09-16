@@ -31,7 +31,7 @@ namespace ops  {
         auto input = INPUT_VARIABLE(0);
         auto output = OUTPUT_VARIABLE(0);
 
-        const auto clipNorm = *NDArray::scalar(T_ARG(0));
+        const auto clipNorm = *NDArrayFactory::scalar(T_ARG(0));
         const bool isInplace = block.isInplace();
         
         helpers::clipByNorm(*input, *output, *block.getIArguments(), clipNorm, isInplace);
@@ -45,7 +45,7 @@ namespace ops  {
         auto gradO = INPUT_VARIABLE(1);
 
         auto gradI = OUTPUT_VARIABLE(0);
-        const auto clipNorm = *NDArray::scalar(T_ARG(0));
+        const auto clipNorm = *NDArrayFactory::scalar(T_ARG(0));
 
         helpers::clipByNormBP(*input, *gradO, *gradI, *block.getIArguments(), clipNorm); 
 

@@ -29,7 +29,7 @@ namespace nd4j {
     private:
         // helpers for helper 
         // multiptication N-dimensions tensor on other N-dimensions one
-        template <typename X, typename Y, typename Z>
+        //template <typename X, typename Y, typename Z>
         static nd4j::NDArray* mmulNxN(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C, double alpha = 1.0, double beta = 0.0);
         // multiptication Matrix to vector
         template <typename X, typename Y, typename Z>
@@ -38,6 +38,8 @@ namespace nd4j {
         template <typename X, typename Y, typename Z>
         static nd4j::NDArray* mmulMxM(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C, double alpha = 1.0, double beta = 0.0);
 
+        template <typename X, typename Y, typename Z>
+        static void _dot(void* vA, void* vB, void* vC, Nd4jLong length);
     public:
 
         static nd4j::NDArray* mmul(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C = nullptr, double alpha = 1.0, double beta = 0.0);

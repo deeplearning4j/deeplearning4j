@@ -23,6 +23,7 @@
 
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/adjust_hue.h>
+#include <NDArrayFactory.h>
 
 namespace nd4j {
 namespace ops {
@@ -54,7 +55,7 @@ namespace ops {
 
         REQUIRE_TRUE(numChannels == 3, 0, "AdjustHue: this operation expects image with 3 channels (R, G, B), but got % instead", numChannels);
 
-        auto ts = *(NDArray::scalar(delta));
+        auto ts = *(NDArrayFactory::scalar(delta));
         // FIXME: delta should be NDArray scalar
         helpers::_adjust_hue(input, output, &ts, isNHWC);
 

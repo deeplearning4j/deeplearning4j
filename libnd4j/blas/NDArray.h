@@ -126,63 +126,13 @@ namespace nd4j {
         std::string toStringValue(T value);
 
     public:
-        template <typename T>
-        static NDArray* empty(nd4j::memory::Workspace* workspace = nullptr);
 
-        template <typename T>
-        static NDArray* valueOf(const std::initializer_list<Nd4jLong>& shape, const T value, const char order = 'c');
-
-        template <typename T>
-        static NDArray* valueOf(const std::vector<Nd4jLong>& shape, const T value, const char order = 'c');
-
-        static NDArray* valueOf(const std::vector<Nd4jLong>& shape, const NDArray& value, const char order = 'c');
-
-        template <typename T>
-        static NDArray* linspace(const T from, const T to, const Nd4jLong numElements);
-
-        template <typename T>
-        static NDArray* scalar(const T value, nd4j::memory::Workspace* workspace = nullptr);
-
-        static NDArray* scalar(nd4j::DataType dType, const double value, nd4j::memory::Workspace* workspace = nullptr);
-        static NDArray* scalar(nd4j::DataType dType, const Nd4jLong value, nd4j::memory::Workspace* workspace = nullptr);
-
-        template <typename T>
-        static NDArray* vector(Nd4jLong length, const T startingValue = (T) 0, nd4j::memory::Workspace *workspace = nullptr);
-
-        template <typename T>
-        static NDArray* create(std::initializer_list<Nd4jLong> s, nd4j::memory::Workspace* workspace);
-
-        template <typename T>
-        static NDArray* create(const char order, const std::vector<Nd4jLong> &shape, nd4j::memory::Workspace* workspace);
-
-        template <typename T>
-        static NDArray* p(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace);
-
-        template <typename T>
-        static NDArray v(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace);
-
-
-        void *bufferWithOffset(Nd4jLong offset);
-
-#ifndef __JAVACPP_HACK__
-        // this method only available out of javacpp
-        /**
-         * This constructor creates vector of T
-         *
-         * @param values
-         */
-        template <typename T>
-        static NDArray* create(std::initializer_list<T> values, nd4j::memory::Workspace* workspace = nullptr);
-
-        template <typename T>
-        static NDArray* create(std::vector<T> &values, nd4j::memory::Workspace* workspace = nullptr);
-#endif
-        
         /**
         *  default constructor, do not allocate memory, memory for array is passed from outside 
         */
         NDArray(void *buffer = nullptr, Nd4jLong* shapeInfo = nullptr, nd4j::memory::Workspace* workspace = nullptr);
 
+        void *bufferWithOffset(Nd4jLong offset);
 
         /**
         *  copy constructor
@@ -250,6 +200,9 @@ namespace nd4j {
         */ 
         void* operator new(size_t i);
         void operator delete(void* p);
+
+
+        void setWorkspace(memory::Workspace* workspace);
 
         /**
         *  method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)

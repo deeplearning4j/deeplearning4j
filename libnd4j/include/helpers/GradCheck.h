@@ -51,7 +51,7 @@ class GradCheck {
         *  IdxRange - specifies indexes range over which array elements will be checked, for example {0.2, 0.7} means range [0.2*array_length, 0.7*array_length), default value is {0., 1.}
         *  loss - type of scalar loss function, it specifies what elements values will be filled into input gradient arrays automatically, default value is SUM
         */
-        static bool checkGrad(ops::DeclarableOp<double>& opFF, ops::DeclarableOp<double>& opBP, const OpArgsHolder<double>& argsHolderFF, const OpArgsHolder<double>& argsHolderBP, 
+        static bool checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, const OpArgsHolder& argsHolderFF, const OpArgsHolder& argsHolderBP,
                               const std::vector<bool>& whatArrsToCheck = std::vector<bool>(), const std::vector<double>& IdxRange = {0., 1.}, const LossFunc loss = SUM);
 
 };
