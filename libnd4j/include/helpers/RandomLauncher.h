@@ -28,17 +28,13 @@ namespace nd4j {
         static void applyInvertedDropOut(nd4j::random::RandomBuffer* buffer, NDArray *array, double retainProb, NDArray* z = nullptr);
         static void applyAlphaDropOut(nd4j::random::RandomBuffer* buffer, NDArray *array, double retainProb, double alpha, double beta, double alphaPrime, NDArray* z = nullptr);
 
-        template <typename T>
-        static void fillUniform(nd4j::random::RandomBuffer* buffer, NDArray* array, T from, T to);
+        static void fillUniform(nd4j::random::RandomBuffer* buffer, NDArray* array, double from, double to);
 
-        template <typename T>
-        static void fillGaussian(nd4j::random::RandomBuffer* buffer, NDArray* array, T mean, T stdev);
+        static void fillGaussian(nd4j::random::RandomBuffer* buffer, NDArray* array, double mean, double stdev);
 
-        template <typename T>
-        static void fillLogNormal(nd4j::random::RandomBuffer* buffer, NDArray* array, T mean, T stdev);
+        static void fillLogNormal(nd4j::random::RandomBuffer* buffer, NDArray* array, double mean, double stdev);
 
-        template <typename T>
-        static void fillTruncatedNormal(nd4j::random::RandomBuffer* buffer, NDArray* array, T mean, T stdev);
+        static void fillTruncatedNormal(nd4j::random::RandomBuffer* buffer, NDArray* array, double mean, double stdev);
 
         static void fillBinomial(nd4j::random::RandomBuffer* buffer, NDArray* array, int trials, double prob);
 

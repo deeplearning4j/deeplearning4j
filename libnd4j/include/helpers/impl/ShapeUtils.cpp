@@ -417,7 +417,7 @@ bool ShapeUtils::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool
         return true;
     } else if ((shape::rank(max) == 0 && shape::isScalar(min))) {
         // X is the driver here
-        resultShapeInfo = ShapeUtils::createScalarShapeInfo(workspace);
+        resultShapeInfo = ShapeBuilders::createScalarShapeInfo(workspace);
         return true;
     }
 
