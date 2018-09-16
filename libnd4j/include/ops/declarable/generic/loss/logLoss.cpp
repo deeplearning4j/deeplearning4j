@@ -57,7 +57,7 @@ CUSTOM_OP_IMPL(log_loss, 3, 1, false, 1, 1) {
 		weightsBroad = new NDArray(weights->tile(reps));
 	}	
 
-	auto ts = *(NDArrayFactory::scalar(1.0f));
+	auto ts = NDArrayFactory::_scalar(1.0f);
 	NDArray weightedLosses = -(*labels)*((*predictions + epsilon).transform(transform::Log)) - (ts - *labels)*((ts - *predictions + epsilon).transform(transform::Log));
 
     // multiply weightedLosses on weights

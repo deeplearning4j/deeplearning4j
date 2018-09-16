@@ -112,8 +112,29 @@ namespace nd4j {
         return res;
     }
 
+////////////////////////////////////////////////////////////////////////
+    template <typename T>
+    NDArray NDArrayFactory::_scalar(T scalar, nd4j::memory::Workspace* workspace) {
+        NDArray res;
+        auto zType = DataTypeUtils::fromT<T>();
+
+        int8_t *buffer;
+        ALLOCATE(buffer, workspace, 1 * sizeof(T), int8_t);
+
+        auto shapeInfo = ShapeBuilders::createScalarShapeInfo(zType, workspace);
+
+        res.setShapeInfo(shapeInfo);
+        res.setBuffer(buffer);
+        res.triggerAllocationFlag(true, true);
+        res.setWorkspace(workspace);
+
+        res.assign(scalar);
+
+        return res;
+    }
+
     template<typename T>
-    NDArray* NDArrayFactory::p(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace) {
+    NDArray* NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace) {
         auto result = new NDArray();
         int rank = (int) shape.size();
 

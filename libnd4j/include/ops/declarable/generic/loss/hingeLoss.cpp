@@ -55,7 +55,7 @@ CUSTOM_OP_IMPL(hinge_loss, 3, 1, false, 0, 1) {
 		weightsBroad = new NDArray(weights->tile(reps));
 	}
 
-	auto ts = *(NDArrayFactory::scalar<float>(1.0f));
+	auto ts = NDArrayFactory::_scalar<float>(1.0f);
 
 	 // We first need to convert binary labels to -1/1 labels (as floats)
 	NDArray weightedLosses = ts - ((*labels)* 2.f - 1.f)*(*logits);

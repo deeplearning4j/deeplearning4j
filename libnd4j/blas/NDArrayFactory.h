@@ -47,8 +47,14 @@ namespace nd4j {
         template <typename T>
         static NDArray* scalar(const T value, nd4j::memory::Workspace* workspace = nullptr);
 
+        template <typename T>
+        static NDArray _scalar(const T value, nd4j::memory::Workspace* workspace = nullptr);
+
         static NDArray* scalar(nd4j::DataType dType, const double value, nd4j::memory::Workspace* workspace = nullptr);
         static NDArray* scalar(nd4j::DataType dType, const Nd4jLong value, nd4j::memory::Workspace* workspace = nullptr);
+
+        static NDArray _scalar(nd4j::DataType dType, const double value, nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray _scalar(nd4j::DataType dType, const Nd4jLong value, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
         static NDArray v(const T value, nd4j::memory::Workspace* workspace = nullptr);
@@ -57,16 +63,18 @@ namespace nd4j {
         static NDArray* vector(Nd4jLong length, const T startingValue = (T) 0, nd4j::memory::Workspace *workspace = nullptr);
 
         template <typename T>
-        static NDArray* create(std::initializer_list<Nd4jLong> s, nd4j::memory::Workspace* workspace);
+        static NDArray* create(std::initializer_list<Nd4jLong> s, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
-        static NDArray* create(const char order, const std::vector<Nd4jLong> &shape, nd4j::memory::Workspace* workspace);
+        static NDArray* create(const char order, const std::vector<Nd4jLong> &shape, nd4j::memory::Workspace* workspace = nullptr);
+
+        static NDArray* create(nd4j::DataType dataType, const char order, const std::vector<Nd4jLong> &shape, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
-        static NDArray* p(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace);
+        static NDArray* create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
-        static NDArray v(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace);
+        static NDArray _create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace = nullptr);
 
 #ifndef __JAVACPP_HACK__
         // this method only available out of javacpp

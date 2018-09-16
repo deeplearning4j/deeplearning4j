@@ -484,30 +484,31 @@ NDArray* MmulHelper::simpleMMul(const NDArray* a, const NDArray* b, NDArray* c, 
 
     NDArray* dot = c;
     if(c == nullptr) 
-        c = NDArrayFactory::create('f', {a->shapeOf()[0], b->shapeOf()[1]}, a->getWorkspace());
-        c = NDArrayFactory::create('f', {a->shapeOf()[0], b->shapeOf()[1]}, a->getWorkspace());
+        c = NDArrayFactory::create(b->dataType(), 'f', {a->shapeOf()[0], b->shapeOf()[1]}, a->getWorkspace());
     else {
         if( c->shapeOf()[0] != a->shapeOf()[0] || c->shapeOf()[1] != b->shapeOf()[1])
             throw std::runtime_error("NDArrayFactory::simpleMMul static function: wrong shape of C array !");
-        if(beta != (T)0. ) {
-            dot = new NDArray<T>(c->ordering(), {a->shapeOf()[0], b->shapeOf()[1]},  a->getWorkspace());
-            if( beta != (T)1.)
-                c->template applyScalar<simdOps::Multiply<T>>(beta);            
+        if(beta != 0. ) {
+            dot = NDArrayFactory::create(c->dataType(), c->ordering(), {a->shapeOf()[0], b->shapeOf()[1]},  a->getWorkspace());
+            if( beta != 1.)
+                c->applyScalar(scalar::Multiply, beta, c, nullptr);
         }        
     }
     int M = a->shapeOf()[0];
     int N = b->shapeOf()[1];
     int K = a->shapeOf()[1];
+
+    // FIXME: double?
     for(int row = 0; row < M; ++row)
         for(int col = 0; col < N; ++col)
             for(int j = 0; j < K; ++j)
-                    (*dot)(row,col) += (*a)(row,j)*(*b)(j,col);
+                    dot->putScalar(row,col, a->getScalar<double>(row,j) * b->getScalar<double>(j,col));
 
-    if(alpha != (T)1.)
-        dot->template applyScalar<simdOps::Multiply<T>>(alpha);
+    if(alpha != 1.)
+        dot->applyScalar(scalar::Multiply, alpha, dot, nullptr);
 
-    if(beta != (T)0.) {
-        c->template applyPairwiseTransform<simdOps::Add<T>>(dot, nullptr);
+    if(beta != 0.) {
+        c->applyPairwiseTransform(pairwise::Add, dot, nullptr);
         delete dot;
     }
     
@@ -515,76 +516,80 @@ NDArray* MmulHelper::simpleMMul(const NDArray* a, const NDArray* b, NDArray* c, 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void MmulHelper::matmul(const nd4j::NDArray* x, const nd4j::NDArray* y, nd4j::NDArray* z, const bool transX, const bool transY) {
-   
-    int xRank = x->rankOf();
-    int yRank = y->rankOf();
+    void MmulHelper::matmul(const nd4j::NDArray* x, const nd4j::NDArray* y, nd4j::NDArray* z, const bool transX, const bool transY) {
+        int xRank = x->rankOf();
+        int yRank = y->rankOf();
 
-    std::vector<Nd4jLong> outShape = ShapeUtils::evalShapeForMatmul(x->getShapeInfo(), y->getShapeInfo(), transX, transY);
-    if(!z->isSameShape(outShape)) {
-        nd4j_printf("NDArrayFactory::matmul static method: input shape of output array is wrong, actual is %s and expected is %s ! \n", ShapeUtils::shapeAsString(z).c_str(), ShapeUtils::shapeAsString(outShape).c_str());
-        throw std::invalid_argument("");       
-    }
-        
-    NDArray* xT(const_cast<NDArray*>(x)), *yT(const_cast<NDArray*>(y)), *zT(z);
-    
-    if((transX && xRank > 1) || (transY && yRank > 1)) {
-        
-        const int rank = xRank >= yRank ? xRank : yRank;
-        std::vector<int> permut(rank);
-        for (int i = 0; i < rank-2; ++i)
-            permut[i] = i;        
-        permut[rank-2] = rank - 1;
-        permut[rank-1] = rank - 2;
-        
-        if(transX)
-            xT = x->permute(permut);
-
-        if(transY)
-            yT = y->permute(permut);
-    }
-
-    if(xRank <= 2 && yRank <= 2) {  // dot (1Dx1D), vector-matrix (1Dx2D), matrix-vector (2Dx1D), matrix-matrix (2Dx2D) product cases
-
-        if(xRank == 1 && yRank == 2) {   // reduce vector-matrix to matrix-matrix case
-            xT = x->reshape(x->ordering(), {1, x->lengthOf()}); // please note x is not transposed in this case (since xRank=1)
-            zT = z->reshape(z->ordering(), {1, z->lengthOf()});
+        auto outShape = ShapeUtils::evalShapeForMatmul(x->getShapeInfo(), y->getShapeInfo(), transX, transY);
+        if(!z->isSameShape(outShape)) {
+            nd4j_printf("NDArrayFactory::matmul static method: input shape of output array is wrong, actual is %s and expected is %s ! \n", ShapeUtils::shapeAsString(z).c_str(), ShapeUtils::shapeAsString(outShape).c_str());
+            throw std::invalid_argument("");
         }
         
-        mmul(xT, yT, zT, (T)1., (T)0.);        
-    }
-    else {  // rest cases -  batched mmul
+        NDArray* xT(const_cast<NDArray*>(x)), *yT(const_cast<NDArray*>(y)), *zT(z);
+    
+        if((transX && xRank > 1) || (transY && yRank > 1)) {
+            const int rank = xRank >= yRank ? xRank : yRank;
+            std::vector<int> permut(rank);
+            for (int i = 0; i < rank-2; ++i)
+                permut[i] = i;
+            permut[rank-2] = rank - 1;
+            permut[rank-1] = rank - 2;
         
-        const int batchRank = xRank - 2;    
-        std::vector<int> dimsToExclude(batchRank);
-        for(int i = 0; i < batchRank; ++i)
-            dimsToExclude[i] = i;
+            if(transX)
+                xT = x->permute(permut);
 
-        const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(xT->getShapeInfo(), dimsToExclude);
+            if(transY)
+                yT = y->permute(permut);
+        }
+
+        if(xRank <= 2 && yRank <= 2) {  // dot (1Dx1D), vector-matrix (1Dx2D), matrix-vector (2Dx1D), matrix-matrix (2Dx2D) product cases
+
+            if(xRank == 1 && yRank == 2) {   // reduce vector-matrix to matrix-matrix case
+                xT = x->reshape(x->ordering(), {1, x->lengthOf()}); // please note x is not transposed in this case (since xRank=1)
+                zT = z->reshape(z->ordering(), {1, z->lengthOf()});
+            }
+        
+            mmul(xT, yT, zT, 1., 0.);
+        }
+        else {  // rest cases -  batched mmul
+        
+            const int batchRank = xRank - 2;
+            std::vector<int> dimsToExclude(batchRank);
+            for(int i = 0; i < batchRank; ++i)
+                dimsToExclude[i] = i;
+
+            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(xT->getShapeInfo(), dimsToExclude);
 
 #pragma omp parallel for schedule(guided)
-        for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
-            
-            NDArray<T> xSubArr = (*xT)(i, dimsToExclude);
-            NDArray<T> ySubArr = (*yT)(i, dimsToExclude);
-            NDArray<T> zSubArr = (*zT)(i, dimsToExclude);
-            mmul(&xSubArr, &ySubArr, &zSubArr, (T)1., (T)0.);
+            for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
+                auto xSubArr = (*xT)(i, dimsToExclude);
+                auto ySubArr = (*yT)(i, dimsToExclude);
+                auto zSubArr = (*zT)(i, dimsToExclude);
+                mmul(&xSubArr, &ySubArr, &zSubArr, 1., 0.);
+            }
         }
+
+        if(xT != x)
+            delete xT;
+        if(yT != y)
+            delete yT;
+        if(zT != z)
+            delete zT;
     }
 
-    if(xT != x)
-        delete xT;
-    if(yT != y)
-        delete yT;
-    if(zT != z)
-        delete zT;
-}
+    template <typename X, typename Y, typename Z>
+    void MmulHelper::_dot(void* vA, void* vB, void* vC, Nd4jLong length) {
+        auto A = reinterpret_cast<X *>(vA);
+        auto B = reinterpret_cast<Y *>(vB);
+        auto C = reinterpret_cast<Z *>(vC);
 
+        C[0] = nd4j::math::nd4j_dot<X, Y, Z>(A, B, length);
+    }
 
-
-template class ND4J_EXPORT MmulHelper<float>;
-template class ND4J_EXPORT MmulHelper<float16>;
-template class ND4J_EXPORT MmulHelper<double>;
+    BUILD_TRIPLE_TEMPLATE(template nd4j::NDArray* MmulHelper::mmulMxM, (nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C, double alpha, double beta), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+    BUILD_TRIPLE_TEMPLATE(template nd4j::NDArray* MmulHelper::mmulMxV, (nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C, double alpha, double beta);, LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+    BUILD_TRIPLE_TEMPLATE(template void MmulHelper::_dot, (void* vA, void* vB, void* vC, Nd4jLong length);, LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
 }
 
 
