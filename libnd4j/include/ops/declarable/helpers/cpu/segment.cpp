@@ -1004,6 +1004,49 @@ namespace helpers {
 
     template <typename T>
     int unsortedSegmentMeanFunctorBP(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* gradOut, Nd4jLong numOfClasses, NDArray<T>* output) {
+
+        std::map<Nd4jLong, Nd4jLong> classCount;//(numClasses);
+
+        for (Nd4jLong count = 0; count < numOfClasses; ++count) {
+            classCount[count] = 0;
+        }
+
+        for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
+            classCount[static_cast<Nd4jLong>(indices->getScalar(e))] ++;
+        }
+
+        // if input is a vector: (as if in doc sample)
+        if (input->isVector()) {
+            for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
+                Nd4jLong classNum = static_cast<Nd4jLong>(indices->getScalar(e));
+                (*output)(e) = (*gradOut)(classNum) / T(classCount[classNum]);
+            }
+        }
+        else {
+            std::vector<int> restDims(input->rankOf() - 1);
+//#pragma omp parallel for
+            for (int e = 1; e < input->rankOf(); e++)
+                restDims[e - 1] = e;
+
+            std::unique_ptr<ResultSet<T>> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
+            std::unique_ptr<ResultSet<T>> listOfTensors(input->allTensorsAlongDimension(restDims));
+            std::unique_ptr<ResultSet<T>> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+
+            //int numOfClasses = tempRes->sizeAt(0); // number of classes
+            //std::vector<std::pair<NDArray<T>*, int>> outputs(numOfClasses);
+
+            int pos = 0;
+            for (int i = 0; i < indices->lengthOf(); i++) {
+                Nd4jLong classNum = static_cast<Nd4jLong>((*indices)(i));
+                NDArray<T>* current = listOfTensors->at(i);
+                NDArray<T>* currentOut = listOfOutTensors->at(i);
+                NDArray<T>* currentGradOut = listOfGradOuts->at(classNum);
+//#pragma omp parallel for
+                for (int e = 0; e < current->lengthOf(); e++) {
+                    (*currentOut)(e) = (*currentGradOut)(e) / T(classCount[classNum]);
+                }
+            }
+        }
         return ND4J_STATUS_OK;
     }
 
@@ -1087,7 +1130,49 @@ namespace helpers {
 
     template <typename T>
     int unsortedSegmentSqrtNFunctorBP(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* gradOut, Nd4jLong numOfClasses, NDArray<T>* output) {
-        return 0;
+        std::map<Nd4jLong, Nd4jLong> classCount;//(numClasses);
+
+        for (Nd4jLong count = 0; count < numOfClasses; ++count) {
+            classCount[count] = 0;
+        }
+
+        for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
+            classCount[static_cast<Nd4jLong>(indices->getScalar(e))] ++;
+        }
+
+        // if input is a vector: (as if in doc sample)
+        if (input->isVector()) {
+            for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
+                Nd4jLong classNum = static_cast<Nd4jLong>(indices->getScalar(e));
+                (*output)(e) = (*gradOut)(classNum) / nd4j::math::nd4j_sqrt(T(classCount[classNum]));
+            }
+        }
+        else {
+            std::vector<int> restDims(input->rankOf() - 1);
+//#pragma omp parallel for
+            for (int e = 1; e < input->rankOf(); e++)
+                restDims[e - 1] = e;
+
+            std::unique_ptr<ResultSet<T>> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
+            std::unique_ptr<ResultSet<T>> listOfTensors(input->allTensorsAlongDimension(restDims));
+            std::unique_ptr<ResultSet<T>> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+
+            //int numOfClasses = tempRes->sizeAt(0); // number of classes
+            //std::vector<std::pair<NDArray<T>*, int>> outputs(numOfClasses);
+
+            int pos = 0;
+            for (int i = 0; i < indices->lengthOf(); i++) {
+                Nd4jLong classNum = static_cast<Nd4jLong>((*indices)(i));
+                NDArray<T>* current = listOfTensors->at(i);
+                NDArray<T>* currentOut = listOfOutTensors->at(i);
+                NDArray<T>* currentGradOut = listOfGradOuts->at(classNum);
+//#pragma omp parallel for
+                for (int e = 0; e < current->lengthOf(); e++) {
+                    (*currentOut)(e) = (*currentGradOut)(e) / nd4j::math::nd4j_sqrt(T(classCount[classNum]));
+                }
+            }
+        }
+        return ND4J_STATUS_OK;
     }
 
     template int unsortedSegmentMaxFunctorBP<float>(NDArray<float>* input, NDArray<float>* indices, NDArray<float>* gradOut, Nd4jLong numOfClasses, NDArray<float>* output);

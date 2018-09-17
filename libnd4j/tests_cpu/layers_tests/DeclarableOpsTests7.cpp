@@ -1174,7 +1174,6 @@ TEST_F(DeclarableOpsTests7, TestSegmentMean_1) {
     delete result;
 }
 
-////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestSegmentMean_2) {
     NDArray<double> x('c', {4, 4}, {1.8, 2.5,  4.,  9.,2.1, 2.4,  3.,  9.,2.1, 2.1, 0.7, 0.1,3., 4.2, 2.2, 1.});
     NDArray<double> idx({0.0, 0.0, 1.0, 2.0});
@@ -1306,6 +1305,38 @@ TEST_F(DeclarableOpsTests7, TestSegmentMeanBP_1) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMeanBP_1) {
+    NDArray<double> x({1.8, 2.5,4.,  9., 2.1, 2.4,3.,9., 2.1, 2.1,0.7, 0.1, 3., 4.2, 2.2, 1.});
+    NDArray<double> idx({0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 2.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0});
+    NDArray<double> eps({1.,      2.,     3.,        4.,       5.});
+    NDArray<double> exp({1./2.,  1./2., 2./4., 2./4., 2./4., 2./4, 3., 4./3., 4./3., 4./3.,
+                         5./6., 5./6., 5./6., 5./6., 5./6., 5./6.});
+    nd4j::ops::unsorted_segment_mean_bp<double> op;
+
+    auto result = op.execute({&x, &idx, &eps}, {}, {5});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMeanBP_2) {
+    NDArray<double> x({3.,1.8, 2.5,4.,  9., 2.1, 2.4,9., 2.1, 2.1,0.7, 0.1, 3., 4.2, 2.2, 1.});
+    NDArray<double> idx({2.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0});
+    NDArray<double> eps({1.,      2.,     3.,        4.,       5.});
+    NDArray<double> exp({3., 1./2.,  1./2., 2./4., 2./4., 2./4., 2./4, 4./3., 4./3., 4./3.,
+                         5./6., 5./6., 5./6., 5./6., 5./6., 5./6.});
+    nd4j::ops::unsorted_segment_mean_bp<double> op;
+
+    auto result = op.execute({&x, &idx, &eps}, {}, {5});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMean_2) {
     NDArray<double> x('c', {4, 4}, {1.8, 2.5,  4.,  9.,2.1, 2.4,  3.,  9.,2.1, 2.1, 0.7, 0.1,3., 4.2, 2.2, 1.});
     NDArray<double> idx({0.0, 0.0, 1.0, 2.0});
@@ -1394,6 +1425,23 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentSqrtN_1) {
 
     auto result = op.execute({&x, &idx}, {}, {5});
     ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestUnsortedSegmentSqrtN_BP_1) {
+    NDArray<double> x({3.,1.8, 2.5,4.,  9., 2.1, 2.4,9., 2.1, 2.1,0.7, 0.1, 3., 4.2, 2.2, 1.});
+    NDArray<double> idx({2.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0});
+    NDArray<double> eps({1., 2.,      3.,        4.,  5.});
+//    NDArray<double> exp({3.0405593, 8.75,      3.,        7.621024,  4.5723805});
+    NDArray<double> exp({3., 0.707107, 0.707107, 1., 1., 1., 1., 2.309401, 2.309401, 2.309401, 2.041241, 2.041241, 2.041241, 2.041241, 2.041241, 2.041241});
+    nd4j::ops::unsorted_segment_sqrt_n_bp<double> op;
+
+    auto result = op.execute({&x, &idx, &eps}, {}, {5});
+    ASSERT_EQ(result->status(), Status::OK());
+    result->at(0)->printIndexedBuffer("Hello Out:");
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
     delete result;
@@ -1808,8 +1856,8 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentProdBP_2) {
 
     auto result = op.execute({&x, &idx, &eps}, {}, {});
     ASSERT_EQ(result->status(), Status::OK());
-    result->at(0)->printIndexedBuffer("Unsorted ProdBP Output");
-    exp.printIndexedBuffer("Unsorted ProdBP Expect");
+    //result->at(0)->printIndexedBuffer("Unsorted ProdBP Output");
+    //exp.printIndexedBuffer("Unsorted ProdBP Expect");
 
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
