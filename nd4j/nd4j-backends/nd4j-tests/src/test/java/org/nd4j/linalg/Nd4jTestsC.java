@@ -1746,7 +1746,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 assertEquals(orig.getDouble(i, j), transposei.getDouble(j, i), 1e-1);
             }
         }
-
     }
 
     @Test
@@ -6993,6 +6992,60 @@ public class Nd4jTestsC extends BaseNd4jTest {
         exp = a.transpose().mmul(b.transpose()).transpose();
         act = a.mmul(b, MMulTranspose.builder().transposeA(true).transposeB(true).transposeResult(true).build());
         assertEquals(exp, act);
+    }
+
+    @Test
+    public void testInvalidOrder(){
+
+        try {
+            Nd4j.create(new int[]{1}, 'z');
+            fail("Expected failure");
+        } catch (IllegalArgumentException e){
+            assertTrue(e.getMessage().toLowerCase().contains("order"));
+        }
+
+        try {
+            Nd4j.zeros(1, 'z');
+            fail("Expected failure");
+        } catch (IllegalArgumentException e){
+            assertTrue(e.getMessage().toLowerCase().contains("order"));
+        }
+
+        try {
+            Nd4j.zeros(new int[]{1}, 'z');
+            fail("Expected failure");
+        } catch (IllegalArgumentException e){
+            assertTrue(e.getMessage().toLowerCase().contains("order"));
+        }
+
+        try {
+            Nd4j.create(new long[]{1}, 'z');
+            fail("Expected failure");
+        } catch (IllegalArgumentException e){
+            assertTrue(e.getMessage().toLowerCase().contains("order"));
+        }
+
+        try {
+            Nd4j.rand('z', 1, 1);
+            fail("Expected failure");
+        } catch (IllegalArgumentException e){
+            assertTrue(e.getMessage().toLowerCase().contains("order"));
+        }
+
+        try {
+            Nd4j.createUninitialized(new int[]{1}, 'z');
+            fail("Expected failure");
+        } catch (IllegalArgumentException e){
+            assertTrue(e.getMessage().toLowerCase().contains("order"));
+        }
+
+        try {
+            Nd4j.createUninitialized(new long[]{1}, 'z');
+            fail("Expected failure");
+        } catch (IllegalArgumentException e){
+            assertTrue(e.getMessage().toLowerCase().contains("order"));
+        }
+
     }
 
     ///////////////////////////////////////////////////////

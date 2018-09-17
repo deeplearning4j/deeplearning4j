@@ -107,7 +107,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if (Character.toLowerCase(order) != 'c' && Character.toLowerCase(order) != 'f')
             throw new IllegalArgumentException("Order must either be c or f");
 
-        this.order = order;
+        this.order = Character.toLowerCase(order);
     }
 
     /**
@@ -119,7 +119,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if (Character.toLowerCase(order) != 'c' && Character.toLowerCase(order) != 'f')
             throw new IllegalArgumentException("Order must either be c or f");
 
-        this.order = order;
+        this.order = Character.toLowerCase(order);
     }
 
     /**
@@ -523,6 +523,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(char order, long rows, long columns) {
+        Shape.assertValidOrder(order);
         return Nd4j.getRandom().nextDouble(order, new long[] {rows, columns});
     }
 
@@ -561,6 +562,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray randn(char order, long rows, long columns) {
+        Shape.assertValidOrder(order);
         return Nd4j.getRandom().nextGaussian(order, new long[] {rows, columns});
     }
 
@@ -653,11 +655,13 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(char order, int[] shape) {
+        Shape.assertValidOrder(order);
         return Nd4j.getRandom().nextDouble(order, shape);
     }
 
     @Override
     public INDArray rand(char order, long[] shape) {
+        Shape.assertValidOrder(order);
         return Nd4j.getRandom().nextDouble(order, shape);
     }
 
@@ -687,11 +691,13 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray randn(char order, int[] shape) {
+        Shape.assertValidOrder(order);
         return Nd4j.getRandom().nextGaussian(order, shape);
     }
 
     @Override
     public INDArray randn(char order, long[] shape) {
+        Shape.assertValidOrder(order);
         return Nd4j.getRandom().nextGaussian(order, shape);
     }
 
@@ -784,6 +790,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray pullRows(INDArray source, int sourceDimension, int[] indexes, char order) {
+        Shape.assertValidOrder(order);
         long vectorLength = source.shape()[sourceDimension];
         INDArray ret = Nd4j.createUninitialized(new long[] {indexes.length, vectorLength}, order);
 
@@ -842,6 +849,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray create(int[] shape, int[] stride, long offset, char ordering) {
+        Shape.assertValidOrder(ordering);
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -889,6 +897,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray create(float[] data, int[] shape, char ordering) {
+        Shape.assertValidOrder(ordering);
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -1245,6 +1254,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray create(long[] shape, long[] stride, long offset, char ordering) {
+        Shape.assertValidOrder(ordering);
         if (shape.length == 1 && shape[0] == 0) {
             shape = new long[] {1, 1};
         }
@@ -1442,6 +1452,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray create(float[] data, char order) {
+        Shape.assertValidOrder(order);
         int[] shape = new int[] {1, data.length};
         return create(Nd4j.createBuffer(data), shape, Nd4j.getStrides(shape, order), order, 0);
     }
@@ -1454,6 +1465,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray create(double[] data, char order) {
+        Shape.assertValidOrder(order);
         return create(data, new int[] {1, data.length}, Nd4j.getStrides(new int[] {1, data.length}, order), order, 0);
     }
 
@@ -1465,6 +1477,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray create(DataBuffer buffer, int[] shape, int[] stride, char order, long offset) {
+        Shape.assertValidOrder(order);
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -1474,6 +1487,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray create(int[] data, int[] shape, int[] stride, char order, long offset) {
+        Shape.assertValidOrder(order);
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};

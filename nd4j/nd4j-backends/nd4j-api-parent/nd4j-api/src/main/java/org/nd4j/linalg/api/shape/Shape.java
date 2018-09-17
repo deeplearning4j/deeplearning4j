@@ -3537,4 +3537,10 @@ public class Shape {
     public static boolean isEmpty(long[] shapeInfo) {
         return ArrayOptionsHelper.arrayType(shapeInfo) == ArrayType.EMPTY;
     }
+
+    public static void assertValidOrder(char order){
+        if(order != 'c' && order != 'f'){
+            throw new IllegalArgumentException("Invalid order arg: must be 'c' or 'f', got '" + order + "'");
+        }
+    }
 }
