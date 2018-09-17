@@ -183,14 +183,148 @@ void randomShuffle(NDArray<T>& input, NDArray<T>& output, nd4j::random::RandomBu
 
 }
 
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+void pad(const int mode, const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& output, const T padValue ) {
+
+    const int rank = output.rankOf();
+    std::vector<int> dimsToExclude(rank);
+    std::iota(dimsToExclude.begin(), dimsToExclude.end(), 0);             // fill with 0, 1, ... rank-1    
+
+    Nd4jLong numLeft    = paddings(rank-1,0);
+    Nd4jLong numRight   = paddings(rank-1,1);
+    Nd4jLong inDimSize  = input.sizeAt(rank-1);
+    Nd4jLong outDimSize = output.sizeAt(rank-1);
+
+    std::vector<std::vector<Nd4jLong>> outIdx = { std::vector<Nd4jLong>(2*rank), {numLeft, numLeft + inDimSize}, {0, numLeft}, {numLeft + inDimSize, outDimSize} };
+    
+    for(int i = 0; i < rank-1; ++i) {
+        outIdx[0][2*i]     = paddings(i, 0);
+        outIdx[0][2*i + 1] = outIdx[0][2*i] + input.sizeAt(i);
+    }    
+    outIdx[0][2*rank-1] = outIdx[0][2*rank-2] = 0;
+
+    // ***** populate innermost sub-arrays firstly ***** //
+    dimsToExclude.pop_back();    
+
+    Nd4jLong startL = mode == 1 ? 1 : 0;                            // REFLECT or SYMMETRIC
+    Nd4jLong startR = mode == 1 ? inDimSize-2 : inDimSize-1;        // REFLECT or SYMMETRIC
+
+    Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
+
+    NDArray<T> outSubArr0 = output(outIdx[0], true);
+    
+#pragma omp parallel for schedule(guided)
+    for(Nd4jLong j = 0; j < numOfSubArrs; ++j) {
+
+        NDArray<T> outSubArr1   = outSubArr0(j, dimsToExclude);
+        NDArray<T> inSubArr     = input(j, dimsToExclude);        
+        NDArray<T> outSubArrMid = outSubArr1(outIdx[1]);
+
+        outSubArrMid.assign(inSubArr);      // assign middle
+
+        if(mode == 0)  { // CONSTANT
+            if(numLeft != 0) {
+                NDArray<T> temp = outSubArr1(outIdx[2]);
+                temp = padValue;                        // assign left                     
+            }
+            if(numRight != 0) {
+                NDArray<T> temp = outSubArr1(outIdx[3]);
+                temp = padValue;                        // assign right
+            }
+        }
+        else {                                                              // REFLECT or SYMMETRIC
+            
+            for(Nd4jLong k = numLeft-1, e = startL; k >= 0; --k, ++e)     // fill left side             
+                outSubArr1(k) = inSubArr(e);            
+
+            for(Nd4jLong k = numLeft + inDimSize, e = startR; k < outDimSize; ++k, --e)     // fill right side
+                outSubArr1(k) = inSubArr(e);                        
+        }
+    }        
+
+    // ***** fill rest of outer sub-arrays ***** //    
+    std::vector<Nd4jLong> outIdxInner(2,0);
+    std::vector<Nd4jLong> outIdxOuter(2,0);
+
+    for(int i = rank - 2; i >= 0; --i) {
+        
+        dimsToExclude.pop_back();
+
+        outIdxInner.push_back(0), outIdxInner.push_back(0);
+        outIdxOuter.push_back(0), outIdxOuter.push_back(0);
+
+        Nd4jLong numLeft  = paddings(i,0);
+        Nd4jLong numRight = paddings(i,1);
+
+        if(numLeft == 0 && numRight == 0)
+            continue;
+
+        Nd4jLong inDimSize  = input.sizeAt(i);
+        Nd4jLong outDimSize = output.sizeAt(i);
+        
+        if(mode == 0) {
+            outIdxOuter[0] = 0;                   outIdxOuter[1] = numLeft;
+            outIdxInner[0] = numLeft + inDimSize; outIdxInner[1] = outDimSize;
+        }
+        
+        startL = mode == 1 ? numLeft+1 : numLeft;                            // REFLECT or SYMMETRIC
+        startR = mode == 1 ? numLeft+inDimSize-2 : numLeft+inDimSize-1;      // REFLECT or SYMMETRIC
+        
+        numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(output.getShapeInfo(), dimsToExclude);
+
+#pragma omp parallel for schedule(guided) firstprivate(outIdxOuter, outIdxInner)
+        for(Nd4jLong j = 0; j < numOfSubArrs; ++j) {
+
+            NDArray<T> outSubArr = output(j, dimsToExclude);
+
+            if(mode == 0)  { // CONSTANT
+
+                if(numLeft != 0) {                   
+                    NDArray<T> temp = outSubArr(outIdxOuter);
+                    temp = padValue;                              // assign left 
+                }
+        
+                if(numRight != 0) {                   
+                    NDArray<T> temp = outSubArr(outIdxInner);
+                    temp = padValue;                              // assign right
+                }
+            }
+            else {                                                              // REFLECT or SYMMETRIC
+            
+                for(Nd4jLong k = numLeft-1, e = startL; k >= 0; --k, ++e) {    // fill left side
+                    outIdxOuter[0] = k;
+                    outIdxOuter[1] = k+1;
+                    outIdxInner[0] = e;
+                    outIdxInner[1] = e+1;
+                    NDArray<T> outSubArrInner = outSubArr(outIdxInner);
+                    NDArray<T> outSubArrOuter = outSubArr(outIdxOuter);
+                    outSubArrOuter.assign(outSubArrInner);
+                }
+
+                for(Nd4jLong k = numLeft + inDimSize, e = startR; k < outDimSize; ++k, --e) {    // fill right side
+                    outIdxOuter[0] = k;
+                    outIdxOuter[1] = k+1;
+                    outIdxInner[0] = e;
+                    outIdxInner[1] = e+1;
+                    NDArray<T> outSubArrInner = outSubArr(outIdxInner);
+                    NDArray<T> outSubArrOuter = outSubArr(outIdxOuter);
+                    outSubArrOuter.assign(outSubArrInner);
+                }
+            }
+        }        
+    }
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////
-// initial values of inIdx, outIdx, dim must be equal to zero
+/*// initial values of inIdx, outIdx, dim must be equal to zero
 template<typename T>
 void recursiveLoopForPad(const int mode, NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, T padValue ) {
     
     int leftOffset;
-    // dimensions are array of input dimensions, it is sorted by increasing order
+    // dimensions are array of input dimensions, it is sorted in increasing order
     // every time at the beginning we erase first element from it (not good idea to use vector for this purpose, but luckily it is small enough)
     // then we use this array for tads building, every time while recursion the number of built tads becomes bigger 
     dimensions.erase(dimensions.begin());       
@@ -322,7 +456,7 @@ void recursiveLoopForPad(const int mode, NDArray<T>& input, const NDArray<T>& pa
             break;
     }
 }
-
+*/
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
@@ -1011,9 +1145,13 @@ template void randomShuffle<float>(NDArray<float>& input, NDArray<float>& output
 template void randomShuffle<float16>(NDArray<float16>& input, NDArray<float16>& output, nd4j::random::RandomBuffer& rng, const bool isInplace);
 template void randomShuffle<double>(NDArray<double>& input, NDArray<double>& output, nd4j::random::RandomBuffer& rng, const bool isInplace);
 
-template void recursiveLoopForPad<float>(const int mode, NDArray<float>& input, const NDArray<float>& paddings, NDArray<float>& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, float padValue);
-template void recursiveLoopForPad<float16>(const int mode, NDArray<float16>& input, const NDArray<float16>& paddings, NDArray<float16>& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, float16 padValue);
-template void recursiveLoopForPad<double>(const int mode, NDArray<double>& input, const NDArray<double>& paddings, NDArray<double>& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, double padValue);
+// template void recursiveLoopForPad<float>(const int mode, NDArray<float>& input, const NDArray<float>& paddings, NDArray<float>& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, float padValue);
+// template void recursiveLoopForPad<float16>(const int mode, NDArray<float16>& input, const NDArray<float16>& paddings, NDArray<float16>& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, float16 padValue);
+// template void recursiveLoopForPad<double>(const int mode, NDArray<double>& input, const NDArray<double>& paddings, NDArray<double>& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, double padValue);
+
+template void pad<float16>(const int mode, const NDArray<float16>& input, const NDArray<float16>& paddings, NDArray<float16>& output, const float16 padValue);
+template void pad<float>(const int mode, const NDArray<float>& input, const NDArray<float>& paddings, NDArray<float>& output, const float padValue);
+template void pad<double>(const int mode, const NDArray<double>& input, const NDArray<double>& paddings, NDArray<double>& output, const double padValue);
 
 template void invertPermutation<float>(const NDArray<float>& input, NDArray<float>& output);
 template void invertPermutation<float16>(const NDArray<float16>& input, NDArray<float16>& output);

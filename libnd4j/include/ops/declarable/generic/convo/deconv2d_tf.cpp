@@ -47,7 +47,7 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
     int dH = INT_ARG(6);                                                        // dilations height
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
-    int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // 0-NHWC, 1-NCHW    
+    int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // INT_ARG(9): 1-NHWC, 0-NCHW
 
     const int rank = gradO->rankOf();
 
@@ -101,7 +101,7 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
     const int dH = INT_ARG(6);                                                        // dilations height
     const int dW = INT_ARG(7);                                                        // dilations width
     const int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
-    const int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // 0-NHWC, 1-NCHW    
+    const int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // INT_ARG(9): 1-NHWC, 0-NCHW
 
     int indIOioC, indIiH, indWoC(3), indOoH;
     if(!isNCHW) {
@@ -172,7 +172,7 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
      int dH = INT_ARG(6);                                                        // dilations height
      int dW = INT_ARG(7);                                                        // dilations width
      int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
-     int isNCHW     = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;       // 0-NCHW,  1-NHWC
+     int isNCHW     = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;       // INT_ARG(9): 0-NCHW,  1-NHWC
 
      int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
      int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
@@ -228,7 +228,7 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
      int dH = INT_ARG(6);                                                        // dilations height
      int dW = INT_ARG(7);                                                        // dilations width
      int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
-     int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // 0-NDHWC, 1-NCDHW
+     int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // INT_ARG(9): 1-NHWC, 0-NCHW
 
      int indIOioC, indIiH, indWkH, indWoC, indWiC;
      if(!isNCHW) {

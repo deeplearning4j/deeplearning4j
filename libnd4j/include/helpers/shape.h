@@ -1362,12 +1362,12 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
         }
 
 
-        if (shape::isVector(shape, rank)) {
-            for (int i = 0; i < 2; i++)
-                stride[i] = 1;
-            return stride;
+        // if (shape::isVector(shape, rank)) {
+        //     for (int i = 0; i < 2; i++)
+        //         stride[i] = 1;
+        //     return stride;
 
-        }
+        // }
 
         int st = startNum;
         for (int j = rank - 1; j >= 0; j--) {
@@ -1384,12 +1384,12 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
             return ret;
         }
 
-        if (shape::isVector(shape, rank)) {
-            for (int i = 0; i < 2; i++)
-                ret[i] = 1;
-            return ret;
+        // if (shape::isVector(shape, rank)) {
+        //     for (int i = 0; i < 2; i++)
+        //         ret[i] = 1;
+        //     return ret;
 
-        }
+        // }
 
         int st = startNum;
         for (int j = rank - 1; j >= 0; j--) {

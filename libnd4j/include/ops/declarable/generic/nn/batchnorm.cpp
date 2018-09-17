@@ -76,12 +76,9 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
     else 
         output->assign(inputMinusMean * sigmaInvGam);
 
-    STORE_RESULT(*output);
- 
     return Status::OK();
 }
 
-//////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(batchnorm) {        
 
     std::vector<const NDArray<T>*> inArrs(block.width());
@@ -96,6 +93,95 @@ DECLARE_SHAPE_FN(batchnorm) {
     return SHAPELIST(outShapeInfo);
 }
 
+//////////////////////////////////////////////////////////////////////////
+CUSTOM_OP_IMPL(batchnorm_new, 3, 1, false, 1, 2) {    
+
+    NDArray<T>* input    = INPUT_VARIABLE(0);
+    NDArray<T>* mean     = INPUT_VARIABLE(1);
+    NDArray<T>* variance = INPUT_VARIABLE(2);
+    NDArray<T>* gamma    = nullptr;
+    NDArray<T>* beta     = nullptr;
+
+    NDArray<T>* output   = OUTPUT_VARIABLE(0);
+
+    const bool applyScale  = (bool)INT_ARG(0);
+    const bool applyOffset = (bool)INT_ARG(1);
+    const T    epsilon     = T_ARG(0);
+
+    if(applyScale)
+        gamma = INPUT_VARIABLE(3);    
+    if(applyOffset)
+        beta = INPUT_VARIABLE(3 + static_cast<int>(applyScale));    
+
+    const int numOfIntArgs = block.getIArguments()->size();
+    const int inRank = input->rankOf();
+
+    // get axes args to normalize input array over
+    std::vector<int> axes;    
+    if(numOfIntArgs > 2)
+        for(int i = 2; i < numOfIntArgs; ++i)
+            axes.push_back(INT_ARG(i));
+    else
+        axes.push_back(inRank-1);               // default dimension to reduce along is last dimension
+
+    const int numOfAxes = axes.size();
+    REQUIRE_TRUE(numOfAxes <= inRank, 0, "BATCHNORM_NEW op: too big number of input axes to normalize over, expected number should be less or equal to rank of input array, but got %i and %i correspondingly !", numOfAxes, inRank);
+    
+    // get, for example, something like {1, inDim1, 1, inDim3, 1} if axes = {1, 3}
+    std::vector<Nd4jLong> expShapeWithUnities(inRank, 1);
+    for(int i = 0; i < numOfAxes; ++i)
+        expShapeWithUnities[axes[i]] = input->sizeAt(axes[i]);     
+
+    // evaluate expected shape for mean, variance and gamma. These 3 arrays should have identical shapes
+    // for example if input shape is {2,3,4,5,6} and axes = {1,3}, then expected shape would be {1,3,1,5,1}, and if axes = {3}, then expected shape would be {5}
+    std::vector<Nd4jLong> expShape = numOfAxes == 1 ? std::vector<Nd4jLong>(1, input->sizeAt(axes[0])) : expShapeWithUnities;    
+    std::string expShapeStr = ShapeUtils<T>::shapeAsString(expShape);
+
+    REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(mean)     == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of mean array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(mean).c_str());
+    REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(variance) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of variance array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(variance).c_str());
+    if(gamma)
+        REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(variance) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of gamma array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(gamma).c_str());
+    if(beta)
+        REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(beta) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of beta array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(beta).c_str());  
+
+    // normalized output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
+
+    if(numOfAxes == 1 && inRank > 1) {
+        mean     = mean->reshape(mean->ordering(), expShapeWithUnities);
+        variance = variance->reshape(variance->ordering(), expShapeWithUnities);
+        if(gamma)
+            gamma = gamma->reshape(gamma->ordering(), expShapeWithUnities);
+        if(beta)
+            beta  = beta->reshape(beta->ordering(), expShapeWithUnities);
+    }
+
+    NDArray<T> sigmaInvGam = (*variance + epsilon).template transform<simdOps::RSqrt<T>>();
+    if(applyScale)
+        sigmaInvGam *= *gamma;
+
+    if (applyOffset)
+        output->assign((*input - *mean) * sigmaInvGam + *beta);
+    else 
+        output->assign((*input - *mean) * sigmaInvGam);
+
+    if(numOfAxes == 1 && inRank > 1) {
+        delete mean; 
+        delete variance;
+        delete gamma;
+        delete beta;
+    }
+    
+    return Status::OK();
+}
+
+DECLARE_SHAPE_FN(batchnorm_new) {        
+
+    Nd4jLong* outShapeInfo = nullptr;
+   
+    COPY_SHAPE(inputShape->at(0), outShapeInfo);    // output shape is identical to input shape
+    
+    return SHAPELIST(outShapeInfo);
+}
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
@@ -195,7 +281,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     return Status::OK();
 }
 
-//////////////////////////////////////////////////////////////////////////
+
 DECLARE_SHAPE_FN(batchnorm_bp) {
 
     const bool applyScale  = (bool)INT_ARG(0);
