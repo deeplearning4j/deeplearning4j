@@ -85,7 +85,7 @@ public class DepthwiseConv2D extends DynamicCustomOp {
                 config.getDH(),
                 config.getDW(),
                 ArrayUtil.fromBoolean(config.isSameMode()),
-                ArrayUtil.fromBoolean(config.isNHWC()));
+                config.getDataFormat().equalsIgnoreCase("NCHW") ? 0 : 1);
 
     }
 

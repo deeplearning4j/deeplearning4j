@@ -29,6 +29,9 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Conv2DConfig extends BaseConvolutionConfig {
+    public static final String NCHW = "NCHW";
+    public static final String NHWC = "NHWC";
+
     @Builder.Default
     private long kH = -1L;
     @Builder.Default
@@ -47,9 +50,7 @@ public class Conv2DConfig extends BaseConvolutionConfig {
     private long dW = 1;
     private boolean isSameMode;
     @Builder.Default
-    private String dataFormat = "NWHC";
-    @Builder.Default
-    private boolean isNHWC = false;
+    private String dataFormat = NCHW;
 
     public Map<String, Object> toProperties() {
         Map<String, Object> ret = new LinkedHashMap<>();
@@ -63,7 +64,6 @@ public class Conv2DConfig extends BaseConvolutionConfig {
         ret.put("dW", dW);
         ret.put("isSameMode", isSameMode);
         ret.put("dataFormat", dataFormat);
-        ret.put("isNWHC", isNHWC);
         return ret;
     }
 

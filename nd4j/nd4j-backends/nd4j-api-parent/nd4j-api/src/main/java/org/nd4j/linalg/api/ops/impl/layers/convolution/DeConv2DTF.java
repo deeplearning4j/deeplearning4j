@@ -96,8 +96,7 @@ public class DeConv2DTF extends DynamicCustomOp {
         addIArgument(config.getDH());
         addIArgument(config.getDW());
         addIArgument(ArrayUtil.fromBoolean(config.isSameMode()));
-        addIArgument(ArrayUtil.fromBoolean(config.isNHWC()));
-
+        addIArgument(config.getDataFormat().equalsIgnoreCase(DeConv2DConfig.NCHW) ? 0 : 1);
     }
 
     @Override
