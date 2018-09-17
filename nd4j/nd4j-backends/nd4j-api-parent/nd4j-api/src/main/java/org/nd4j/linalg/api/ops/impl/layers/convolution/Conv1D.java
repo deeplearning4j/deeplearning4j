@@ -80,7 +80,7 @@ public class Conv1D extends DynamicCustomOp {
                 config.getS(),
                 config.getP(),
                 ArrayUtil.fromBoolean(config.isSameMode()),
-                ArrayUtil.fromBoolean(config.isNHC()));
+                ArrayUtil.fromBoolean(config.isNWC()));
     }
 
     @Override
