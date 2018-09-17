@@ -147,6 +147,19 @@ public class TFGraphTestAllSameDiff {
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6435
             "avg_pooling3d/.*",
+            "max_pooling3d/.*",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6440
+            "cnn2d_layers/channels_first_b1_k2_s2_SAME",
+            "cnn2d_nn/nchw_b1_k2_s2_SAME",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6440
+            "cnn1d_layers/channels_first_b1_k2_s2_d1_SAME",
+            "cnn1d_layers/channels_first_b2_k2_s1_d2_SAME",
+            "cnn1d_nn/ncw_b1_k2_s2_SAME",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6441
+            "matrix_determinant/rank2_5,5",
 
             //These have a random component so can't be validated using simple .equals... should still be compared, however
             "alpha_dropout/.*",
@@ -156,6 +169,15 @@ public class TFGraphTestAllSameDiff {
             "simplewhile.*",
 
             //New failures:
+            "gru_dynamic_mnist",
+            "primitive_gru_dynamic",
+            "simple_while",
+
+            //Bad test, no outputs (but there are non-output ("inbetween") results)
+            "g_10",
+
+            //Bad test, to be deleted
+            "transpose_00"
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 

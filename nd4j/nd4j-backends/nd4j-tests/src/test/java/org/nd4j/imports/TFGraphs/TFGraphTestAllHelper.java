@@ -160,6 +160,9 @@ public class TFGraphTestAllHelper {
                 assertNotNull(tfPred);
 
                 if(precisionOverride == null) {
+                    long[] sTf = tfPred.shape();
+                    long[] sNd4j = nd4jPred.shape();
+                    assertArrayEquals("Shapes are not equal: " + Arrays.toString(sTf) + " vs " + Arrays.toString(sNd4j), sTf, sNd4j);
                     assertEquals("Predictions do not match on " + modelName + ", node " + outputNode, tfPred, nd4jPred);
                 } else {
                     boolean eq = tfPred.equalsWithEps(nd4jPred, precisionOverride);
