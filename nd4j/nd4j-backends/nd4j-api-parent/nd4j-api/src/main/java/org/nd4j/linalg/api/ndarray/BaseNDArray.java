@@ -4491,7 +4491,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray transposei() {
-        return permute(ArrayUtil.reverseCopy(ArrayUtil.range(0, rank())));
+        return permutei(ArrayUtil.reverseCopy(ArrayUtil.range(0, rank())));
     }
 
     protected INDArray create(DataBuffer data, int[] shape, int[] strides) {

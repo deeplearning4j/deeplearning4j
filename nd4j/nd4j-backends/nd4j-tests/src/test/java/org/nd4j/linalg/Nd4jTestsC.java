@@ -6954,6 +6954,17 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertArrayEquals(expShape, arr.shape());
     }
 
+    @Test
+    public void testTransposei(){
+        INDArray arr = Nd4j.linspace(1,12,12).reshape('c',3,4);
+
+        INDArray ti = arr.transposei();
+        assertArrayEquals(new long[]{4,3}, ti.shape());
+        assertArrayEquals(new long[]{4,3}, arr.shape());
+
+        assertTrue(arr == ti);  //Should be same object
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;
