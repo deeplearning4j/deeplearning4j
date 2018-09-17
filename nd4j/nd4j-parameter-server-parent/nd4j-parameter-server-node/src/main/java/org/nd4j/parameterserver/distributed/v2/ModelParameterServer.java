@@ -36,11 +36,14 @@ import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.UpdaterPara
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.UpdaterParametersRequest;
 import org.nd4j.parameterserver.distributed.v2.transport.RestartCallback;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
+import org.nd4j.parameterserver.distributed.v2.transport.UpdaterParametersProvider;
 import org.nd4j.parameterserver.distributed.v2.transport.UpdatesHandler;
+import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 import org.reactivestreams.Subscriber;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -61,6 +64,8 @@ public final class ModelParameterServer {
 
     @Getter
     private INDArray masterUpdaterParams;
+
+    private UpdaterParametersProvider updaterParametersProvider;
 
     // queue is used only if there's no subscribers defined
     private final BlockingQueue<INDArray> updatesQueue = new LinkedBlockingQueue<>(4096);
@@ -123,7 +128,8 @@ public final class ModelParameterServer {
     }
 
     /**
-     * This method applies
+     * This method stores provided entities for MPS internal use
+     *
      * @param configuration
      * @param transport
      * @param isMasterNode
@@ -132,6 +138,20 @@ public final class ModelParameterServer {
         this.transport = transport;
         this.masterMode = isMasterNode;
         this.configuration = configuration;
+    }
+
+    /**
+     * This method stores provided entities for MPS internal use
+     *
+     * @param configuration
+     * @param transport
+     * @param isMasterNode
+     */
+    public void configure(@NonNull VoidConfiguration configuration, @NonNull Transport transport, @NonNull UpdaterParametersProvider updaterProvider) {
+        this.transport = transport;
+        this.masterMode = false;
+        this.configuration = configuration;
+        this.updaterParametersProvider = updaterProvider;
     }
 
     /**
@@ -187,10 +207,37 @@ public final class ModelParameterServer {
                     val mParams = modelParams.getPayload();
                     modelParamsSubsribers.forEach(s -> s.onNext(mParams));
 
+                    // we're getting ID...
+                    val mesh = response.getMesh();
+                    val rootNode = mesh.getRootNode();
+                    String tId = null;
+                    val list = new ArrayList<MeshOrganizer.Node>(rootNode.getDownstreamNodes());
+                    Collections.shuffle(list);
+                    for (val n:list) {
+
+                        // we're picking first available node (that's not downstream node
+                        if (!n.getId().equals(transport.id())) {
+                            tId = n.getId();
+                            break;
+                        }
+                    }
+
+                    // if we're the only node - skip request
+                    if (tId == null) {
+                        log.warn("Wasn't able to find source for Updater parameters...");
+                        return;
+                    }
+
+                    // lets make sure there is connection to desired node
+                    transport.ensureConnection(tId);
+
                     // updater parameters are optional, it's possible to have models without updater parameters (i.e. SGD)
-                    UpdaterParametersMessage updaterParams = transport.sendMessageBlocking(new UpdaterParametersRequest(), rootId);
+                    UpdaterParametersMessage updaterParams = transport.sendMessageBlocking(new UpdaterParametersRequest(), tId);
                     val uParams = updaterParams.getPayload();
-                    updaterParamsSubscribers.forEach(s -> s.onNext(uParams));
+                    if (uParams != null) {
+                        updaterParamsSubscribers.forEach(s -> s.onNext(uParams));
+                        log.info("Updater parameters propagated...");
+                    }
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -212,8 +259,19 @@ public final class ModelParameterServer {
         transport.addRequestConsumer(UpdaterParametersRequest.class, new Consumer<UpdaterParametersRequest>() {
             @Override
             public void accept(UpdaterParametersRequest updaterParametersRequest) throws Exception {
+                // master mode physically can't have updater parameters
+                if (masterMode)
+                    return;
+
+                if ( updaterParametersProvider == null) {
+                    log.warn("UpdaterParametersProvider wasn't set");
+                    return;
+                }
+
+
                 // send updater parameters somewhere
-                val msg = new UpdaterParametersMessage("msg", Nd4j.create(5, 5));
+                log.info("Trying to send out Updater parameters...");
+                val msg = new UpdaterParametersMessage(java.util.UUID.randomUUID().toString(), updaterParametersProvider.getUpdaterParameters());
                 msg.setRequestId(updaterParametersRequest.getRequestId());
                 transport.sendMessage(msg, updaterParametersRequest.getOriginatorId());
             }

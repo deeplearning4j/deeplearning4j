@@ -707,4 +707,9 @@ public abstract  class BaseTransport  implements Transport {
 
         return handshakeFlag.get();
     }
+
+    @Override
+    public void ensureConnection(String id) {
+        // no-op for local transports
+    }
 }

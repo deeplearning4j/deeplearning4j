@@ -24,8 +24,10 @@ import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.config.DL4JEnvironmentVars;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.updater.BaseMultiLayerUpdater;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.SleepyTrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodedGradientsAccumulator;
@@ -52,6 +54,7 @@ import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.TransportType;
 import org.nd4j.parameterserver.distributed.util.NetworkOrganizer;
 import org.nd4j.parameterserver.distributed.v2.ModelParameterServer;
+import org.nd4j.parameterserver.distributed.v2.transport.UpdaterParametersProvider;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.AeronUdpTransport;
 
 import java.util.ArrayList;
@@ -298,6 +301,9 @@ public class SharedTrainingWrapper {
 
                     log.debug("Checking for ModelParameterServer existence");
 
+                    // we're saving reference to original model
+                    originalModel = model;
+
                     // if we're running in spark localhost mode - we don't want double initialization
                     if (!ModelParameterServer.getInstance().isInitialized()) {
                         log.info("Initializing transport [{}:{}] with root as [{}:{}]...", localIP, voidConfiguration.getUnicastPort(), voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort());
@@ -317,15 +323,35 @@ public class SharedTrainingWrapper {
 
                         log.debug("Configuring transport...");
                         //  pass values right away
-                        ModelParameterServer.getInstance().configure(voidConfiguration, transport, false);
+                        ModelParameterServer.getInstance().configure(voidConfiguration, transport, new UpdaterParametersProvider() {
+                            @Override
+                            public INDArray getUpdaterParameters() {
+                                log.info("Serving updater parameters...");
+                                Updater updater = null;
+                                if (originalModel instanceof MultiLayerNetwork) {
+                                    updater = ((MultiLayerNetwork) originalModel).getUpdater();
+                                } else if (originalModel instanceof ComputationGraph) {
+                                    updater = ((ComputationGraph) originalModel).getUpdater();
+                                }
+
+                                if (updater != null) {
+                                    if (updater instanceof BaseMultiLayerUpdater) {
+                                        return ((BaseMultiLayerUpdater) updater).getStateViewArrayCopy();
+                                    } else {
+                                        log.error("Updater doesn't implement getStateViewArrayCopy()");
+                                        return null;
+                                    }
+                                } else {
+                                    log.warn("No Updater in the model");
+                                    return null;
+                                }
+                            };
+                        });
+
                         ModelParameterServer.getInstance().addUpdatesSubscriber(consumer);
                         ModelParameterServer.getInstance().addModelParamsSubscriber(modelParamsSupplier);
                         ModelParameterServer.getInstance().addUpdaterParamsSubscriber(updateParamsSupplier);
                     }
-
-
-                    // we're saving reference to original model
-                    originalModel = model;
 
                     log.debug("Starting ModelParameterServer...");
                     // after initialization finished, we're ok to actually start training

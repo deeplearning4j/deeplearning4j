@@ -284,6 +284,12 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         }
     }
 
+    @Override
+    public void ensureConnection(String id) {
+        // we just directly call addConnection
+        addConnection(id);
+    }
+
     protected void addConnection(@NonNull String ipAndPort) {
         try {
             aeronLock.lock();

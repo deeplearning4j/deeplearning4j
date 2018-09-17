@@ -28,6 +28,11 @@ import org.reactivestreams.Publisher;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * This interface describes Transport abstraction, used to communicate between cluster nodes
+ *
+ * @author raver119@gmail.com
+ */
 public interface Transport {
 
     /**
@@ -165,4 +170,10 @@ public interface Transport {
      * @return
      */
     boolean isIntroduced();
+
+    /**
+     * This method checks connection to the given node ID, and if it's not connected - establishes connection
+     * @param id
+     */
+    void ensureConnection(String id);
 }
