@@ -149,14 +149,12 @@ public class TFGraphTestAllSameDiff {
             "avg_pooling3d/.*",
             "max_pooling3d/.*",
 
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6440
-            "cnn2d_layers/channels_first_b1_k2_s2_SAME",
-            "cnn2d_nn/nchw_b1_k2_s2_SAME",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6440
-            "cnn1d_layers/channels_first_b1_k2_s2_d1_SAME",
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6447
             "cnn1d_layers/channels_first_b2_k2_s1_d2_SAME",
-            "cnn1d_nn/ncw_b1_k2_s2_SAME",
+            "cnn2d_layers/channels_first_b1_k12_s1_d12_SAME",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6448
+            "sepconv2d_layers/.*",
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6441
             "matrix_determinant/rank2_5,5",
