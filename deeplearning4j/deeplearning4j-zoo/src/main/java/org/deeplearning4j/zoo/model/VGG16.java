@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -181,7 +182,7 @@ public class VGG16 extends ZooModel {
 
     @Override
     public ModelMetaData metaData() {
-        return new ModelMetaData(new int[][] {inputShape}, 1, ZooType.CNN);
+        return null ;//new ModelMetaData(new int[][] {inputShape}, 1, ZooType.CNN);
     }
 
     @Override
