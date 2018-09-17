@@ -26,7 +26,6 @@ import java.io.Serializable;
 @Getter
 @EqualsAndHashCode
 public class MMulTranspose implements Serializable {
-    //    private INDArray a,b;
     private static MMulTranspose allFalse = MMulTranspose.builder().build();
     private boolean transposeA;
     private boolean transposeB;
@@ -38,34 +37,6 @@ public class MMulTranspose implements Serializable {
         this.transposeA = transposeA;
         this.transposeB = transposeB;
         this.transposeResult = transposeResult;
-//        if(transposeResult) {
-//            //Here: relying on (a x b)T = bT x aT
-//            //(a x bT) = b x aT
-//            //etc
-//            this.transposeA = !transposeB;
-//            this.transposeB = !transposeA;
-//            this.a = b;
-//            this.b = a;
-//        } else {
-//            this.a = a;
-//            this.b = b;
-//            this.transposeA = transposeA;
-//            this.transposeB = transposeB;
-//        }
-//
-//        if(this.transposeA && this.a != null) {
-//            if (this.a.rank() == 2)
-//                this.a = this.a.transpose();
-//            if (this.a.rank() == 3)
-//                this.a = this.a.permute(0, 2, 1);
-//        }
-//
-//        if(this.transposeB && this.b != null) {
-//            if (this.b.rank() == 2)
-//                this.b = this.b.transpose();
-//            if (b.rank() == 3)
-//                this.b = this.b.permute(0, 2, 1);
-//        }
     }
 
     /**
