@@ -37,7 +37,7 @@ CUSTOM_OP_IMPL(upsampling3d, 1, 1, false, 0, 3) {
     const int factorD = INT_ARG(0);
     const int factorH = INT_ARG(1);
     const int factorW = INT_ARG(2);
-    const int isNCDHW = block.getIArguments()->size() > 3 ? INT_ARG(3) : 0;       // 0-NCDHW,  1-NDHWC
+    const int isNCDHW = block.getIArguments()->size() > 3 ? INT_ARG(3) : 0;       // INT_ARG(3): 0-NCDHW,  1-NDHWC
 
     REQUIRE_TRUE(input->rankOf() == 5, 0, "UPSAMPLING3D op: input should be 5D, but got %i instead!", input->rankOf());
     REQUIRE_TRUE(output->rankOf() == 5, 0, "UPSAMPLING3D op: output should be 5D, but got %i instead!", output->rankOf());
@@ -57,7 +57,7 @@ DECLARE_SHAPE_FN(upsampling3d) {
     const int factorD = INT_ARG(0);
     const int factorH = INT_ARG(1);
     const int factorW = INT_ARG(2);
-    const int isNCDHW = block.getIArguments()->size() > 3 ? INT_ARG(3) : 0;       // 0-NCHW,  1-NHWC
+    const int isNCDHW = block.getIArguments()->size() > 3 ? INT_ARG(3) : 0;       // INT_ARG(3): 0-NCHW,  1-NHWC
 
     Nd4jLong *outputShapeInfo = nullptr;
     ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo[0]), Nd4jLong);
@@ -90,7 +90,7 @@ CUSTOM_OP_IMPL(upsampling3d_bp, 2, 1, false, 0, 0) {
     NDArray<T>* gradO = INPUT_VARIABLE(1);             // [bS, iC, factorD*iD, factorH*iH, factorW*iW ] (NCDHW) or [bS, factorD*iD, factorH*iH, factorW*iW, iC] (NDHWC)
     NDArray<T>* gradI = OUTPUT_VARIABLE(0);            // [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC) 
                 
-    const int isNCDHW  = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;       // 0-NCHW,  1-NHWC
+    const int isNCDHW  = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;       // INT_ARG(0): 0-NCHW,  1-NHWC
 
     // REQUIRE_TRUE(input->rankOf() == 5, 0, "UPSAMPLING3D_BP op: input array must be 4D, but got %i instead!", input->rankOf());
     REQUIRE_TRUE(gradO->rankOf() == 5, 0, "UPSAMPLING3D_BP op: output's gradient array must be 4D, but got %i instead!", gradO->rankOf());

@@ -54,7 +54,7 @@ CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
     int oH = 0;
     int oW = 0;
 
-    int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // 0-NCHW, 1-NHWC
+    int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // INT_ARG(10): 0-NCHW, 1-NHWC
 
     const int iH = static_cast<int>(isNCHW ? input->sizeAt(2) : input->sizeAt(1));
     const int iW = static_cast<int>(isNCHW ? input->sizeAt(3) : input->sizeAt(2));
@@ -102,7 +102,7 @@ DECLARE_SHAPE_FN(avgpool2d) {
     const int dW = INT_ARG(7);
     const int isSameMode = INT_ARG(8);
 
-    const int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // 0-NCHW, 1-NHWC
+    const int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // INT_ARG(10): 0-NCHW, 1-NHWC
 
     REQUIRE_TRUE(dH != 0 && dW != 0, 0, "AVGPOOL2D op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
 
@@ -156,7 +156,7 @@ CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
     int extraParam0 = INT_ARG(9);
-    int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;         // 0-NCHW, 1-NHWC
+    int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;         // INT_ARG(10): 0-NCHW, 1-NHWC
 
     REQUIRE_TRUE(input->rankOf() == 4, 0, "AVGPOOL2D_BP op: input should have rank of 4, but got %i instead", input->rankOf());
     REQUIRE_TRUE(dH != 0 && dW != 0, 0, "AVGPOOL2D_BP op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
