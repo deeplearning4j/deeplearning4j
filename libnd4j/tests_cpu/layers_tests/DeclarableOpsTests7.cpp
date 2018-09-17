@@ -1412,6 +1412,23 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentSqrtN_4) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestUnsortedSegmentSqrtN_5) {
+    NDArray<double> x({1.,2.,5.,7.,3.,1.,3.,4.});
+    NDArray<double> idx({3.,1.,0.,0.,2.,0.,3.,2.});
+    //NDArray<double> exp({1.7320508075688772, 1.,      1.4142135623730951,        1.4142135623730951});
+    NDArray<double> exp({7.5055537, 2.,        4.9497476, 2.828427});
+    nd4j::ops::unsorted_segment_sqrt_n<double> op;
+
+    auto result = op.execute({&x, &idx}, {}, {4});
+    ASSERT_EQ(result->status(), Status::OK());
+   // result->at(0)->printIndexedBuffer("Output");
+   // exp.printIndexedBuffer("Expect");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestSegmentSum_1) {
     NDArray<double> x({1.8, 2.5,4.,  9., 2.1, 2.4,3.,9., 2.1, 2.1,0.7, 0.1, 3., 4.2, 2.2, 1.    });
     NDArray<double> idx({0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 2.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0});
