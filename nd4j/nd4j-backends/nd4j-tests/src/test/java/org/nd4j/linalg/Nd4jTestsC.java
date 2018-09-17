@@ -326,8 +326,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray arrTransposeAssertion = arr.transpose().mmul(arr2);
         MMulTranspose mMulTranspose = MMulTranspose.builder()
                 .transposeA(true)
-                .a(arr)
-                .b(arr2)
                 .build();
 
         INDArray testResult = arr.mmul(arr2,mMulTranspose);
@@ -337,8 +335,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray bTransposeAssertion = arr.mmul(arr2.transpose());
         mMulTranspose = MMulTranspose.builder()
                 .transposeB(true)
-                .a(arr)
-                .b(arr2)
                 .build();
 
         INDArray bTest = arr.mmul(arr2,mMulTranspose);
@@ -404,8 +400,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray assertion = Nd4j.create(new double[][] {{14, 32}, {32, 77}});
         MMulTranspose mMulTranspose = MMulTranspose.builder()
           .transposeB(true)
-          .a(arr)
-          .b(arr)
           .build();
 
         DynamicCustomOp op = new Mmul(arr, arr, z, mMulTranspose);
@@ -1743,12 +1737,13 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testInplaceTranspose() {
-        INDArray test = Nd4j.rand(34, 484);
+        INDArray test = Nd4j.rand(3, 4);
+        INDArray orig = test.dup();
         INDArray transposei = test.transposei();
 
-        for (int i = 0; i < test.rows(); i++) {
-            for (int j = 0; j < test.columns(); j++) {
-                assertEquals(test.getDouble(i, j), transposei.getDouble(j, i), 1e-1);
+        for (int i = 0; i < orig.rows(); i++) {
+            for (int j = 0; j < orig.columns(); j++) {
+                assertEquals(orig.getDouble(i, j), transposei.getDouble(j, i), 1e-1);
             }
         }
 
@@ -6963,6 +6958,41 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertArrayEquals(new long[]{4,3}, arr.shape());
 
         assertTrue(arr == ti);  //Should be same object
+    }
+
+    @Test
+    public void testINDArrayMmulWithTranspose(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray a = Nd4j.rand(2,5);
+        INDArray b = Nd4j.rand(5,3);
+        INDArray exp = a.mmul(b).transpose();
+        INDArray act = a.mmul(b, MMulTranspose.builder().transposeResult(true).build());
+
+        assertEquals(exp, act);
+
+        a = Nd4j.rand(5,2);
+        b = Nd4j.rand(5,3);
+        exp = a.transpose().mmul(b);
+        act = a.mmul(b, MMulTranspose.builder().transposeA(true).build());
+        assertEquals(exp, act);
+
+        a = Nd4j.rand(2,5);
+        b = Nd4j.rand(3,5);
+        exp = a.mmul(b.transpose());
+        act = a.mmul(b, MMulTranspose.builder().transposeB(true).build());
+        assertEquals(exp, act);
+
+        a = Nd4j.rand(5,2);
+        b = Nd4j.rand(3,5);
+        exp = a.transpose().mmul(b.transpose());
+        act = a.mmul(b, MMulTranspose.builder().transposeA(true).transposeB(true).build());
+        assertEquals(exp, act);
+
+        a = Nd4j.rand(5,2);
+        b = Nd4j.rand(3,5);
+        exp = a.transpose().mmul(b.transpose()).transpose();
+        act = a.mmul(b, MMulTranspose.builder().transposeA(true).transposeB(true).transposeResult(true).build());
+        assertEquals(exp, act);
     }
 
     ///////////////////////////////////////////////////////

@@ -3382,15 +3382,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return the result of the matrix multiplication
      */
     @Override
-    public INDArray mmul(INDArray other, INDArray result,MMulTranspose mMulTranspose) {
-        MMulTranspose mMulTranspose1 = MMulTranspose.builder()
-                .a(this)
-                .b(other)
-                .transposeA(mMulTranspose.isTransposeA())
-                .transposeB(mMulTranspose.isTransposeB())
-                .transposeResult(mMulTranspose.isTransposeResult())
-                .build();
-        return mMulTranspose1.getA().mmul(mMulTranspose1.getB(),result);
+    public INDArray mmul(INDArray other, INDArray result, MMulTranspose mMulTranspose) {
+        return mMulTranspose.exec(this, other, result);
     }
 
     /**
@@ -3401,16 +3394,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mmul(INDArray other, MMulTranspose mMulTranspose) {
-        MMulTranspose mMulTranspose1 = MMulTranspose.builder()
-                .a(this)
-                .b(other)
-                .transposeA(mMulTranspose.isTransposeA())
-                .transposeB(mMulTranspose.isTransposeB())
-                .transposeResult(mMulTranspose.isTransposeResult())
-                .build();
-        System.out.println(mMulTranspose1.getA());
-        System.out.println(mMulTranspose1.getB());
-        return mMulTranspose1.getA().mmul(mMulTranspose1.getB());
+        return mMulTranspose.exec(this, other, null);
     }
 
     /**
@@ -3436,13 +3420,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public double[][] toDoubleMatrix() {
         if(!isMatrix()) {
-            throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix!");
+            throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix! Array shape: " + Arrays.toString(this.shape()));
         }
 
-        if (this.rows() > Integer.MAX_VALUE || this.columns() > Integer.MAX_VALUE)
+        if (this.size(0) > Integer.MAX_VALUE || this.size(1) > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
-        double[][] ret = new double[(int) rows()][(int) columns()];
+        double[][] ret = new double[rows()][columns()];
         for(int i = 0; i < ret.length; i++) {
             ret[i] = getRow(i).dup().data().asDouble();
         }
@@ -3674,14 +3658,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mmuli(INDArray other, INDArray result, MMulTranspose transpose) {
-        MMulTranspose mMulTranspose = MMulTranspose.builder()
-                .a(this)
-                .b(other)
-                .transposeA(transpose.isTransposeA())
-                .transposeB(transpose.isTransposeB())
-                .transposeResult(transpose.isTransposeResult())
-                .build();
-        return mMulTranspose.getA().mmuli(mMulTranspose.getB(),result);
+        return transpose.exec(this, other, result);
     }
 
     /**
@@ -4479,7 +4456,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray transpose() {
-        return transposei();
+        return permute(ArrayUtil.reverseCopy(ArrayUtil.range(0, rank())));
     }
 
 
