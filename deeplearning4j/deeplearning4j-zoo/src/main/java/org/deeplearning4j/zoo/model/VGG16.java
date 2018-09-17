@@ -182,7 +182,7 @@ public class VGG16 extends ZooModel {
 
     @Override
     public ModelMetaData metaData() {
-        return null ;//new ModelMetaData(new int[][] {inputShape}, 1, ZooType.CNN);
+        return new ModelMetaData(new int[][] {inputShape}, 1, ZooType.CNN);
     }
 
     @Override
