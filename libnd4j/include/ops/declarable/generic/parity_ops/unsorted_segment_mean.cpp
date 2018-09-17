@@ -34,8 +34,8 @@ namespace nd4j {
 
             Nd4jLong wrong;
 
-            REQUIRE_TRUE(helpers::unsortedSegmentIndicesValidate(idxSegments, numOfClasses, wrong), 0, "unsorted_segment_mean: segment indices should be arranged, but %i > %i",
-                    wrong, numOfClasses);
+            REQUIRE_TRUE(helpers::unsortedSegmentIndicesValidate(idxSegments, numOfClasses, wrong), 0, "unsorted_segment_mean: segment indices should be in range [0, %i), but %i > %i",
+                    numOfClasses, wrong, numOfClasses);
 
             helpers::unsortedSegmentMeanFunctor(input, idxSegments, numOfClasses, segmentedOutput);
 
