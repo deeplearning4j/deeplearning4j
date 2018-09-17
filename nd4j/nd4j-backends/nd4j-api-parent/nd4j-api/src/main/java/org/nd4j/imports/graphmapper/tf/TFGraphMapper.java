@@ -588,7 +588,25 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         if (tfProperties == null)
             return;
 
-        for(val entry : tfProperties.entrySet()) {
+        //Can't execute in just any order: sometimes there are dependencies between attribute mappings
+        //For example, conv2d strides depend on data format -> need to map data format before mapping strides
+        //Solution: map nodes without adapters before nodes with adapters. This doesn't guarantee we'll always be
+        // mapping in the right order (for example, we might have adapter(x) depends on adapter(y)) but it should catch most cases
+        Map<String,PropertyMapping> map = new LinkedHashMap<>();
+        for(Map.Entry<String,PropertyMapping> e : tfProperties.entrySet()){
+            if(!attributeAdapters.get(mappedTfName).containsKey(e.getKey())){
+                //No adapter for this attribute
+                map.put(e.getKey(), e.getValue());
+            }
+        }
+        for(Map.Entry<String,PropertyMapping> e : tfProperties.entrySet()){
+            if(!map.containsKey(e.getKey())){
+                //Not added on first pass -> must have attribute mapper
+                map.put(e.getKey(), e.getValue());
+            }
+        }
+
+        for(Map.Entry<String,PropertyMapping> entry : map.entrySet()){
             val tfAttrName = entry.getValue().getTfAttrName();
             val currentField = fields.get(entry.getKey());
 
@@ -739,11 +757,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                             on.setValueFor(currentField,tensor.getFloat(0));
                         }
                     }
-
-
-                }
-
-                else {
+                } else {
                     on.getSameDiff().addPropertyToResolve(on,entry.getKey());
                 }
             }
