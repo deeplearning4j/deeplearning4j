@@ -664,4 +664,29 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
 
         newGraph.output(input);
     }
+
+    @Test
+    public void testChangeNOutNIn() {
+        INDArray input = Nd4j.create(new long[] {1, 2, 4, 4});
+        MultiLayerNetwork net = new MultiLayerNetwork(new NeuralNetConfiguration.Builder()
+                .list()
+                .setInputType(InputType.inferInputTypes(input)[0])
+                .layer(new Convolution2D.Builder(1, 1).nOut(10).build())
+                .layer(new SubsamplingLayer.Builder(1,1).build())
+                .layer(new Convolution2D.Builder(1, 1).nOut(7).build())
+                .layer(new OutputLayer.Builder().activation(Activation.SOFTMAX).nOut(2).build())
+                .build());
+        net.init();
+
+        final MultiLayerNetwork newNet = new TransferLearning.Builder(net)
+                .nOutReplace(0, 5, WeightInit.XAVIER)
+                .nInReplace(2, 5, WeightInit.XAVIER)
+                .build();
+
+        newNet.init();
+
+        assertEquals("Incorrect number of outputs!", 5 , newNet.layerSize(0));
+        assertEquals("Incorrect number of inputs!", 5, newNet.layerInputSize(2));
+        newNet.output(input);
+    }
 }

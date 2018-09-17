@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -62,6 +63,7 @@ public class TransferLearning {
         private Set<Integer> editedLayers = new HashSet<>();
         private Map<Integer, Triple<Integer, Pair<WeightInit, Distribution>, Pair<WeightInit, Distribution>>> editedLayersMap =
                         new HashMap<>();
+        private Map<Integer, Triple<Integer, WeightInit, Distribution>> nInEditedMap = new HashMap<>();
         private List<INDArray> editedParams = new ArrayList<>();
         private List<NeuralNetConfiguration> editedConfs = new ArrayList<>();
         private List<INDArray> appendParams = new ArrayList<>(); //these could be new arrays, and views from origParams
@@ -200,9 +202,36 @@ public class TransferLearning {
                         Distribution distNext) {
             editedLayers.add(layerNum);
             Triple<Integer, Pair<WeightInit, Distribution>, Pair<WeightInit, Distribution>> t =
-                            new Triple(nOut, new Pair<>(scheme, dist),
-                                            new Pair<>(schemeNext, distNext));
+                            new Triple<>(nOut, new Pair<>(scheme, dist), new Pair<>(schemeNext, distNext));
             editedLayersMap.put(layerNum, t);
+            return this;
+        }
+
+        /**
+         * Modify the architecture of a vertex layer by changing nIn of the specified layer.<br>
+         * Note that only the specified layer will be modified - all other layers will not be changed by this call.
+         *
+         * @param layerNum The number of the layer to change nIn of
+         * @param nIn      Value of nIn to change to
+         * @param scheme   Weight init scheme to use for params in layerName
+         * @return Builder
+         */
+        public Builder nInReplace(int layerNum, int nIn, WeightInit scheme) {
+            return nInReplace(layerNum, nIn, scheme, null);
+        }
+
+        /**
+         * Modify the architecture of a vertex layer by changing nIn of the specified layer.<br>
+         * Note that only the specified layer will be modified - all other layers will not be changed by this call.
+         *
+         * @param layerNum The number of the layer to change nIn of
+         * @param nIn      Value of nIn to change to
+         * @param scheme   Weight init scheme to use for params in layerName
+         * @return Builder
+         */
+        public Builder nInReplace(int layerNum, int nIn, WeightInit scheme, Distribution dist) {
+            Triple<Integer, WeightInit, Distribution> t = new Triple<>(nIn, scheme, dist);
+            nInEditedMap.put(layerNum, t);
             return this;
         }
 
@@ -357,6 +386,15 @@ public class TransferLearning {
                 }
             }
 
+            if(!nInEditedMap.isEmpty()){
+                Integer[] editedLayersSorted = nInEditedMap.keySet().toArray(new Integer[nInEditedMap.size()]);
+                Arrays.sort(editedLayersSorted);
+                for (Integer layerNum : editedLayersSorted) {
+                    Triple<Integer,WeightInit,Distribution> t = nInEditedMap.get(layerNum);
+                    nInReplaceBuild(layerNum, t.getFirst(), t.getSecond(), t.getThird());
+                }
+            }
+
             //finally pop layers specified
             int i = 0;
             while (i < popN) {
@@ -388,11 +426,33 @@ public class TransferLearning {
             }
         }
 
+        private void nInReplaceBuild(int layerNum, int nIn, WeightInit init, Distribution dist) {
+            Preconditions.checkArgument(layerNum >= 0 && layerNum < editedConfs.size(), "Invalid layer index: must be 0 to " +
+                    "numLayers-1 = %s includive, got %s", editedConfs.size(), layerNum);
+            NeuralNetConfiguration layerConf = editedConfs.get(layerNum);
+            Layer layerImpl = layerConf.getLayer(); //not a clone need to modify nOut in place
+            Preconditions.checkArgument(layerImpl instanceof FeedForwardLayer, "nInReplace can only be applide on FeedForward layers;" +
+                    "got layer of type %s", layerImpl.getClass().getSimpleName());
+            FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
+            layerImplF.setWeightInit(init);
+            layerImplF.setDist(dist);
+            layerImplF.setNIn(nIn);
+            long numParams = layerImpl.initializer().numParams(layerConf);
+            INDArray params = Nd4j.create(1, numParams);
+            org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
+            editedParams.set(layerNum, someLayer.params());
+        }
+
+
         private void nOutReplaceBuild(int layerNum, int nOut, Pair<WeightInit, Distribution> schemedist,
                         Pair<WeightInit, Distribution> schemedistNext) {
+            Preconditions.checkArgument(layerNum >= 0 && layerNum < editedConfs.size(), "Invalid layer index: must be 0 to " +
+                    "numLayers-1 = %s includive, got %s", editedConfs.size(), layerNum);
 
             NeuralNetConfiguration layerConf = editedConfs.get(layerNum);
             Layer layerImpl = layerConf.getLayer(); //not a clone need to modify nOut in place
+            Preconditions.checkArgument(layerImpl instanceof FeedForwardLayer, "nOutReplace can only be applide on FeedForward layers;" +
+                    "got layer of type %s", layerImpl.getClass().getSimpleName());
             FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
             layerImplF.setWeightInit(schemedist.getLeft());
             layerImplF.setDist(schemedist.getRight());
@@ -405,15 +465,17 @@ public class TransferLearning {
             if (layerNum + 1 < editedConfs.size()) {
                 layerConf = editedConfs.get(layerNum + 1);
                 layerImpl = layerConf.getLayer(); //modify in place
-                layerImplF = (FeedForwardLayer) layerImpl;
-                layerImplF.setWeightInit(schemedistNext.getLeft());
-                layerImplF.setDist(schemedistNext.getRight());
-                layerImplF.setNIn(nOut);
-                numParams = layerImpl.initializer().numParams(layerConf);
-                if (numParams > 0) {
-                    params = Nd4j.create(1, numParams);
-                    someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
-                    editedParams.set(layerNum + 1, someLayer.params());
+                if(layerImpl instanceof FeedForwardLayer) {
+                    layerImplF = (FeedForwardLayer) layerImpl;
+                    layerImplF.setWeightInit(schemedistNext.getLeft());
+                    layerImplF.setDist(schemedistNext.getRight());
+                    layerImplF.setNIn(nOut);
+                    numParams = layerImpl.initializer().numParams(layerConf);
+                    if (numParams > 0) {
+                        params = Nd4j.create(1, numParams);
+                        someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
+                        editedParams.set(layerNum + 1, someLayer.params());
+                    }
                 }
             }
 
@@ -584,8 +646,66 @@ public class TransferLearning {
             return nOutReplace(layerName, nOut, scheme, schemeNext, null, null);
         }
 
+        /**
+         * Modify the architecture of a vertex layer by changing nIn of the specified layer.<br>
+         * Note that only the specified layer will be modified - all other layers will not be changed by this call.
+         *
+         * @param layerName The name of the layer to change nIn of
+         * @param nIn      Value of nIn to change to
+         * @param scheme    Weight init scheme to use for params in layerName
+         * @return GraphBuilder
+         */
+        public GraphBuilder nInReplace(String layerName, int nIn, WeightInit scheme) {
+            return nInReplace(layerName, nIn, scheme, null);
+        }
+
         public GraphBuilder validateOutputLayerConfig(boolean validateOutputLayerConfig){
             this.validateOutputLayerConfig = validateOutputLayerConfig;
+            return this;
+        }
+
+        /**
+         * Modify the architecture of a vertex layer by changing nIn of the specified layer.<br>
+         * Note that only the specified layer will be modified - all other layers will not be changed by this call.
+         *
+         * @param layerName The name of the layer to change nIn of
+         * @param nIn       Value of nIn to change to
+         * @param scheme    Weight init scheme to use for params in layerName and the layers following it
+         * @return GraphBuilder
+         */
+        public GraphBuilder nInReplace(String layerName, int nIn, WeightInit scheme, Distribution dist) {
+            Preconditions.checkState(origGraph.getVertex(layerName) != null, "Layer with name %s not found",
+                    layerName);
+            Preconditions.checkState(origGraph.getVertex(layerName).hasLayer(), "nInReplace can only be applied" +
+                    " on vertices with layers. Vertex %s does not have a layer", layerName);
+            initBuilderIfReq();
+
+            NeuralNetConfiguration layerConf = origGraph.getLayer(layerName).conf();
+            Layer layerImpl = layerConf.getLayer().clone();
+
+            Preconditions.checkState(layerImpl instanceof FeedForwardLayer, "Can only use nInReplace on FeedForward layers;" +
+                    "got layer of type %s for layer name %s", layerImpl.getClass().getSimpleName(), layerName);
+
+            layerImpl.resetLayerDefaultConfig();
+            FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
+            layerImplF.setWeightInit(scheme);
+            layerImplF.setDist(dist);
+            layerImplF.setNIn(nIn);
+
+            if(editedVertices.contains(layerName) && editedConfigBuilder.getVertices().get(layerName) instanceof LayerVertex
+                    && nInFromNewConfig.containsKey(layerName)){
+                Layer l = ((LayerVertex)editedConfigBuilder.getVertices().get(layerName)).getLayerConf().getLayer();
+                if(l instanceof FeedForwardLayer){
+                    layerImplF.setNIn(nInFromNewConfig.get(layerName));
+                }
+            }
+
+            editedConfigBuilder.removeVertex(layerName, false);
+            LayerVertex lv = (LayerVertex) origConfig.getVertices().get(layerName);
+            String[] lvInputs = origConfig.getVertexInputs().get(layerName).toArray(new String[0]);
+            editedConfigBuilder.addLayer(layerName, layerImpl, lv.getPreProcessor(), lvInputs);
+            editedVertices.add(layerName);
+
             return this;
         }
 
@@ -635,6 +755,8 @@ public class TransferLearning {
                                         "Cannot modify nOut of a layer vertex that feeds non-layer vertices. Use removeVertexKeepConnections followed by addVertex instead");
                     }
                     layerConf = origGraph.getLayer(fanoutVertexName).conf();
+                    if(!(layerConf.getLayer() instanceof FeedForwardLayer))
+                        continue;
                     layerImpl = layerConf.getLayer().clone();
                     layerImplF = (FeedForwardLayer) layerImpl;
                     layerImplF.setWeightInit(schemeNext);

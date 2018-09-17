@@ -43,6 +43,7 @@ import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -527,5 +528,46 @@ public class TransferLearningCompGraphTest extends BaseDL4JTest {
         assertEquals("Incorrect # inputs", 7, newGraph.layerInputSize(secondConv));
 
         newGraph.outputSingle(input);
+    }
+
+
+
+    @Test
+    public void testChangeNOutNIn() {
+        final String inputName = "input";
+        final String changeNoutName = "changeNout";
+        final String poolName = "pool";
+        final String afterPoolName = "afterPool";
+        final String outputName = "output";
+        final INDArray input = Nd4j.create(new long[] {1, 2, 4, 4});
+        final ComputationGraph graph = new ComputationGraph(new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs(inputName)
+                .setOutputs(outputName)
+                .setInputTypes(InputType.inferInputTypes(input))
+                .addLayer(changeNoutName, new Convolution2D.Builder(1, 1)
+                        .nOut(10)
+                        .build(), inputName)
+                .addLayer(poolName, new SubsamplingLayer.Builder(1,1).build(), changeNoutName)
+                .addLayer(afterPoolName, new Convolution2D.Builder(1, 1)
+                        .nOut(7)
+                        .build(), poolName)
+                .addLayer(outputName, new OutputLayer.Builder()
+                        .activation(Activation.SOFTMAX)
+                        .nOut(2)
+                        .build(), afterPoolName)
+                .build());
+        graph.init();
+
+        final ComputationGraph newGraph = new TransferLearning.GraphBuilder(graph)
+                .nOutReplace(changeNoutName, 5, WeightInit.XAVIER)
+                .nInReplace(afterPoolName, 5, WeightInit.XAVIER)
+                .build();
+
+        newGraph.init();
+
+        assertEquals("Incorrect number of outputs!", 5 , newGraph.layerSize(changeNoutName));
+        assertEquals("Incorrect number of inputs!", 5, newGraph.layerInputSize(afterPoolName));
+        newGraph.output(input);
     }
 }
