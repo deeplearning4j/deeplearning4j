@@ -688,4 +688,27 @@ public class BatchNormalizationTest extends BaseDL4JTest {
             log.info("OK: {}", (rnn ? "rnn" : "cnn1d"));
         }
     }
+
+    @Test
+    public void testInputValidation(){
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new BatchNormalization.Builder().nIn(10).nOut(10).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        INDArray in1 = Nd4j.create(1, 10);
+        INDArray in2 = Nd4j.create(1, 5);
+
+        INDArray out1 = net.output(in1);
+        try {
+            INDArray out2 = net.output(in2);
+            fail();
+        } catch (IllegalArgumentException e){
+            assertTrue(e.getMessage().contains("expected input"));
+        }
+    }
 }
