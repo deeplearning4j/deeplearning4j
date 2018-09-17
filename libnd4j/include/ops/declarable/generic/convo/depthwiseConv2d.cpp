@@ -89,7 +89,7 @@ DECLARE_SHAPE_FN(depthwise_conv2d) {
     int dH = INT_ARG(6);                                                        // dilations height
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
-    int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // 0-NDHWC, 1-NCDHW
+    int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // 1-NHWC, 0-NCHW
 
     int indIOioC, indIiH, indWmC(3);
     if(!isNCHW) {
@@ -162,7 +162,7 @@ CUSTOM_OP_IMPL(depthwise_conv2d_bp, 3, 2, false, 0, 9) {
     int dH = INT_ARG(6);                                                        // dilations height
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
-    int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // 0-NHWC, 1-NCHW    
+    int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // 1-NHWC, 0-NCHW    
 
     int bS, iC, iH, iW, mC, oC, oH, oW;                     // batch size, input channels, input height/width, channels multiplier(oC = iC*mC), output channels, output height/width
     int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;   // corresponding indexes
@@ -207,7 +207,7 @@ DECLARE_SHAPE_FN(depthwise_conv2d_bp) {
     int dH = INT_ARG(6);                                                        // dilations height
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
-    int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // 0-NHWC, 1-NCHW    
+    int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // 1-NHWC, 0-NCHW    
 
     int indIOioC, indIiH, indWmC(3);
     if(!isNCHW) {

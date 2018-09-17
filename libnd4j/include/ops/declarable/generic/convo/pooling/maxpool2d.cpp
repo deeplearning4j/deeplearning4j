@@ -56,7 +56,7 @@ CUSTOM_OP_IMPL(maxpool2d, 1, 1, false, 0, 9) {
     int oH = 0;
     int oW = 0;
 
-    int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // 0-NDHWC, 1-NCDHW    
+    int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // 1-NHWC, 0-NCHW    
 
     const int iH = isNCHW ? input->sizeAt(2) : input->sizeAt(1);
     const int iW = isNCHW ? input->sizeAt(3) : input->sizeAt(2);
@@ -104,7 +104,7 @@ DECLARE_SYN(maxpool, maxpool2d);
             int dH = INT_ARG(6);
             int dW = INT_ARG(7);
             int isSameMode = INT_ARG(8);
-            int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;           // 0-NHWC, 1-NCHW
+            int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;           // 1-NHWC, 0-NCHW
 
             REQUIRE_TRUE(dH != 0 && dW != 0, 0, "MAXPOOL2D op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
 
@@ -155,7 +155,7 @@ CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 10) {
     int dH = INT_ARG(6);                                                        // dilations height
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
-    int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;         // 0-NHWC, 1-NCHW    
+    int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;         // 1-NHWC, 0-NCHW    
 
     REQUIRE_TRUE(input->rankOf() == 4, 0, "MAXPOOL2D_BP op: input should have rank of 4, but got %i instead", input->rankOf());
     REQUIRE_TRUE(dH != 0 && dW != 0, 0, "MAXPOOL2D_BP op: dilation must not be zero, but got instead {%i, %i}", dH, dW);

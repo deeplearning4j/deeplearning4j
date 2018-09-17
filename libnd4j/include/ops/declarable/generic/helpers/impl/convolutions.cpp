@@ -802,7 +802,7 @@ void ConvolutionUtils<T>::conv2d(const std::vector<NDArray<T>*>& inArrs, NDArray
     int dH = intArgs[6];                                                        // dilations height
     int dW = intArgs[7];                                                        // dilations width
     int isSameMode = intArgs[8];                                                // 0-VALID, 1-SAME
-    int isNCHW     = intArgs[9];                                                // 1-NCHW,  0-NHWC
+    int isNCHW     = intArgs[9];                                                
     
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
@@ -855,7 +855,7 @@ void ConvolutionUtils<T>::mkldnn_conv2d(MKLDNNStream<T> &stream, const std::vect
     int dH = intArgs[6];                                                        // dilations height
     int dW = intArgs[7];                                                        // dilations width
     int isSameMode = intArgs[8];                                                // 0-VALID, 1-SAME
-    int isNCHW     = intArgs[9];                                                // 1-NCHW,  0-NHWC
+    int isNCHW     = intArgs[9];                                                
 
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
@@ -948,7 +948,7 @@ void ConvolutionUtils<T>::conv2dBP(const std::vector<NDArray<T>*>& inArrs, const
     int dH = intArgs[6];                                                        // dilations height
     int dW = intArgs[7];                                                        // dilations width
     int isSameMode = intArgs[8];                                                // 0-VALID, 1-SAME
-    int isNCHW     = intArgs[9];                                                // 0-NHWC, 1-NCHW    
+    int isNCHW     = intArgs[9];                                                
 
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
@@ -1016,7 +1016,7 @@ void ConvolutionUtils<T>::depthwiseConv2d(const std::vector<NDArray<T>*>& inArrs
     int dH = intArgs[6];                                                        // dilations height 
     int dW = intArgs[7];                                                        // dilations width
     int isSameMode = intArgs[8];                                                // 0-VALID, 1-SAME
-    int isNCHW     = intArgs[9];                                                // 0-NCHW,  1-NHWC
+    int isNCHW     = intArgs[9];                                                
 
     int bS, iC, iH, iW, mC, oC, oH, oW;                     // batch size, input channels, input height/width, channels multiplier(oC = iC*mC), output channels, output height/width
     int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;   // corresponding indexes
@@ -1078,7 +1078,7 @@ void ConvolutionUtils<T>::depthwiseConv2dBP(const std::vector<NDArray<T>*>& inAr
     int dH = intArgs[6];                                                        // dilations height
     int dW = intArgs[7];                                                        // dilations width
     int isSameMode = intArgs[8];                                                // 0-VALID, 1-SAME
-    int isNCHW     = intArgs[9];                                                // 0-NHWC, 1-NCHW    
+    int isNCHW     = intArgs[9];                                                
 
     int bS, iC, iH, iW, mC, oC, oH, oW;                     // batch size, input channels, input height/width, channels multiplier(oC = iC*mC), output channels, output height/width
     int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;   // corresponding indexes
@@ -1156,7 +1156,7 @@ void ConvolutionUtils<T>::sconv2d(const std::vector<NDArray<T>*>& inArrs, NDArra
     int dH = intArgs[6];                                                        // dilations height
     int dW = intArgs[7];                                                        // dilations width
     int isSameMode = intArgs[8];                                                // 0-VALID, 1-SAME
-    int isNCHW     = intArgs[9];                                                // 1-NCHW,  0-NHWC
+    int isNCHW     = intArgs[9];                                                
     
     int bS, iC, iH, iW, mC, oC, oH, oW;                     // batch size, input channels, input height/width, channels multiplier, output channels, output height/width
     int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;   // corresponding indexes

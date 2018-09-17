@@ -2194,7 +2194,7 @@ TEST_F(ConvolutionTests, upsampling2d_test1) {
 
     const int bS=3,  iH=2,iW=2,  iC=3;
     const int factorH=2, factorW=3; 
-    const int isNCHW = 0;                    // data format, default is NHWC
+    const int isNCHW = 0;                    // data format, default is NCHW
 
     NDArray<float> input ('c', {bS, iH, iW, iC});    
     input.linspace(1);
@@ -2222,7 +2222,7 @@ TEST_F(ConvolutionTests, upsampling2d_test2) {
 
     const int bS=3,  iH=2,iW=2,  iC=3;
     const int factorH=2, factorW=3; 
-    const int isNCHW = 1;                    // data format, default is NHWC
+    const int isNCHW = 1;                    // data format, default is NCHW
 
     NDArray<float> input ('c', {bS, iC, iH, iW});    
     input.linspace(1);
@@ -2251,7 +2251,7 @@ TEST_F(ConvolutionTests, upsampling3d_test1) {
 
     const int bS=3,  iD=2,iH=2,iW=2,  iC=3;
     const int factorD=2,factorH=3,factorW=2; 
-    const int isNCDHW = 0;                    // data format, default is NHWC
+    const int isNCDHW = 0;                    // data format, default is NCHW
 
     NDArray<float> input ('c', {bS, iD, iH, iW, iC});    
     input.linspace(1);
@@ -2288,7 +2288,7 @@ TEST_F(ConvolutionTests, upsampling3d_test2) {
 
     const int bS=3,  iD=2,iH=2,iW=2,  iC=3;
     const int factorD=2,factorH=3,factorW=2;
-    const int isNCDHW = 1;                    // data format, default is NHWC
+    const int isNCDHW = 1;                    // data format, default is NCHW
 
     NDArray<float> input ('c', {bS, iC, iD, iH, iW});    
     input.linspace(1);
@@ -2323,7 +2323,7 @@ TEST_F(ConvolutionTests, upsampling2d_bp_test1) {
 
     const int bS=1,  iH=2,iW=2,  iC=1;
     const int factorH=2, factorW=2; 
-    const int isNCHW = 1;                    // data format, default is NHWC
+    const int isNCHW = 1;                    // data format, default is NCHW
 
     NDArray<float> input ('c', {bS, iC, iH, iW});
     NDArray<float> gradO ('c', {bS, iC, iH*factorH, iW*factorW});
@@ -2348,7 +2348,7 @@ TEST_F(ConvolutionTests, upsampling2d_bp_test2) {
 
     const int bS=1,  iH=2,iW=2,  iC=1;
     const int factorH=2, factorW=2; 
-    const int isNCHW = 0;                    // data format, default is NHWC
+    const int isNCHW = 0;                    // data format, default is NCHW
 
     NDArray<float> input ('c', {bS, iH, iW, iC});
     NDArray<float> gradO ('c', {bS, iH*factorH, iW*factorW, iC});
@@ -2373,7 +2373,7 @@ TEST_F(ConvolutionTests, upsampling3d_bp_test1) {
 
     const int bS=1,  iD=2,iH=2,iW=2,  iC=1;
     const int factorD=2, factorH=2, factorW=2; 
-    const int isNCDHW = 1;                    // data format, default is NHWC
+    const int isNCDHW = 1;                    // data format, default is NCHW
 
     NDArray<float> input ('c', {bS, iC, iD, iH, iW});
     NDArray<float> gradO ('c', {bS, iC, iD*factorD, iH*factorH, iW*factorW});

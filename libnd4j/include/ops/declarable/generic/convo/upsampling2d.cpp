@@ -37,7 +37,7 @@ CUSTOM_OP_IMPL(upsampling2d, 1, 1, false, 0, 2) {
 
     const int factorH = INT_ARG(0);
     const int factorW = INT_ARG(1);
-    const int isNCHW  = block.getIArguments()->size() > 2 ? INT_ARG(2) : 0;       // 1-NCHW,  0-NHWC
+    const int isNCHW  = block.getIArguments()->size() > 2 ? INT_ARG(2) : 0;       // 0-NCHW,  1-NHWC
 
     REQUIRE_TRUE(input->rankOf() == 4, 0, "UPSAMPLING2D op: input should be 4D, but got %i instead!", input->rankOf());
     REQUIRE_TRUE(output->rankOf() == 4, 0, "UPSAMPLING2D op: output should be 4D, but got %i instead!", output->rankOf());
@@ -58,7 +58,7 @@ DECLARE_SHAPE_FN(upsampling2d) {
 
     const int factorH = INT_ARG(0);
     const int factorW = INT_ARG(1);
-    const int isNCHW  = block.getIArguments()->size() > 2 ? INT_ARG(2) : 0;       // 1-NCHW,  0-NHWC
+    const int isNCHW  = block.getIArguments()->size() > 2 ? INT_ARG(2) : 0;       // 0-NCHW,  1-NHWC
 
     Nd4jLong *outputShapeInfo = nullptr;
     ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo[0]), Nd4jLong);
@@ -90,7 +90,7 @@ CUSTOM_OP_IMPL(upsampling2d_bp, 2, 1, false, 0, 0) {
     NDArray<T>* gradO = INPUT_VARIABLE(1);             // [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
     NDArray<T>* gradI = OUTPUT_VARIABLE(0);            // [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)
 
-    const int isNCHW  = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;       // 1-NCHW,  0-NHWC
+    const int isNCHW  = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;       // 0-NCHW,  1-NHWC
 
     // REQUIRE_TRUE(input->rankOf() == 4, 0, "UPSAMPLING2D_BP op: input array must be 4D, but got %i instead!", input->rankOf());
     REQUIRE_TRUE(gradO->rankOf() == 4, 0, "UPSAMPLING2D_BP op: output's gradient array must be 4D, but got %i instead!", gradO->rankOf());
