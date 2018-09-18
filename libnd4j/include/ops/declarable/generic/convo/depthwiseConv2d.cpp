@@ -69,7 +69,6 @@ CUSTOM_OP_IMPL(depthwise_conv2d, 2, 1, false, 0, 9) {
 }
 
 
-
 DECLARE_SHAPE_FN(depthwise_conv2d) {
 
     Nd4jLong* inputShapeInfo   = inputShape->at(0);                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
@@ -99,7 +98,7 @@ DECLARE_SHAPE_FN(depthwise_conv2d) {
         indIOioC = 1; indIiH = 2;
     }    
 
-    const int bS = inputShapeInfo[1];                            // batch size
+    const int bS = inputShapeInfo[1];                            // batch size 
     const int iH = inputShapeInfo[indIiH+1];                     // input height
     const int iW = inputShapeInfo[indIiH+2];                     // input width
     const int iC = inputShapeInfo[indIOioC+1];                   // input channels        
