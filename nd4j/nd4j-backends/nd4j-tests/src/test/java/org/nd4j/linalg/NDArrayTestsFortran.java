@@ -578,15 +578,15 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testInplaceTranspose() {
-        INDArray test = Nd4j.rand(34, 484);
+        INDArray test = Nd4j.rand(3, 4);
+        INDArray orig = test.dup();
         INDArray transposei = test.transposei();
 
-        for (int i = 0; i < test.rows(); i++) {
-            for (int j = 0; j < test.columns(); j++) {
-                assertEquals(test.getDouble(i, j), transposei.getDouble(j, i), 1e-1);
+        for (int i = 0; i < orig.rows(); i++) {
+            for (int j = 0; j < orig.columns(); j++) {
+                assertEquals(orig.getDouble(i, j), transposei.getDouble(j, i), 1e-1);
             }
         }
-
     }
 
 

@@ -747,8 +747,6 @@ public class MiscOpValidation extends BaseOpValidation {
                     .transposeA(true)
                     .transposeB(false)
                     .transposeResult(false)
-                    .a(first)
-                    .b(second)
                     .build();
             SDVariable mmul = sd.f().mmul(f, s, mt);
             sd.updateVariableNameAndReference(mmul, "mmul");
