@@ -140,13 +140,13 @@ public class TFGraphTestZooModels {
         this.localTestDir = localTestDir;
     }
 
-    @Test(timeout = 360000L)
+    @Test   //(timeout = 360000L)
     public void testOutputOnly() throws Exception {
 //        if(!modelName.equals("mobilenet_v1_0.5_128")){
 //        if(!modelName.equals("nasnet_mobile_2018_04_27")){
 //        if(!modelName.equals("resnetv2")){
-        if(!modelName.equals("mobilenet_v2_1.0_224")){
-//        if(!modelName.equals("densenet_2018_04_27")){
+//        if(!modelName.equals("mobilenet_v2_1.0_224")){
+        if(!modelName.equals("densenet_2018_04_27")){
             OpValidationSuite.ignoreFailing();
         }
 
@@ -165,7 +165,10 @@ public class TFGraphTestZooModels {
 //        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
 //                LOADER, precisionOverride);
 
+        Double maxRE = 1e-2;
+        Double minAbs = 1e-3;
+
         TFGraphTestAllHelper.checkIntermediate(inputs, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
-                LOADER, precisionOverride, localTestDir);
+                LOADER, maxRE, minAbs, localTestDir);
     }
 }

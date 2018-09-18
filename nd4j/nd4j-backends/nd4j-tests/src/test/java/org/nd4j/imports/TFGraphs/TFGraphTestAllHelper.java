@@ -41,10 +41,15 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.BiFunction;
 import org.nd4j.linalg.function.Function;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -128,7 +133,9 @@ public class TFGraphTestAllHelper {
 
     protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName,
                                           String baseDir, String modelFilename, ExecuteWith execType, BiFunction<File,String,SameDiff> loader,
-                                          Double precisionOverride) throws IOException {
+                                          Double maxRelErrorOverride, Double minAbsErrorOverride) throws IOException {
+        Preconditions.checkArgument((maxRelErrorOverride == null) == (minAbsErrorOverride == null), "Both maxRelErrorOverride and minAbsErrorOverride" +
+                " must be null or both must be provided");
         Nd4j.EPS_THRESHOLD = 1e-3;
 
         SameDiff graph = getGraphAfterExec(baseDir, modelFilename, modelName, inputs, execType, loader);
@@ -163,7 +170,7 @@ public class TFGraphTestAllHelper {
                 assertNotNull(nd4jPred);
                 assertNotNull(tfPred);
 
-                if(precisionOverride == null) {
+                if(maxRelErrorOverride == null) {
                     long[] sTf = tfPred.shape();
                     long[] sNd4j = nd4jPred.shape();
                     assertArrayEquals("Shapes are not equal: " + Arrays.toString(sTf) + " vs " + Arrays.toString(sNd4j), sTf, sNd4j);
@@ -180,8 +187,23 @@ public class TFGraphTestAllHelper {
                     }
                     assertTrue("Predictions do not match on " + modelName + ", node " + outputNode, eq);
                 } else {
-                    boolean eq = tfPred.equalsWithEps(nd4jPred, precisionOverride);
-                    assertTrue("Predictions do not match on " + modelName + ", node " + outputNode + " - precision " + precisionOverride, eq);
+                    INDArray diff = Transforms.abs(tfPred.sub(nd4jPred), false);
+                    INDArray absErrorMask = diff.gte(minAbsErrorOverride);   //value 1 if x[i] > minAbsError; value 0 otherwise. Used to get rid of 1e-30 vs. 1e-29 type failures
+                    INDArray sumAbs = Transforms.abs(tfPred, true).addi(Transforms.abs(nd4jPred, true));
+                    BooleanIndexing.replaceWhere(sumAbs, 1.0, Conditions.equals(0.0));  //Can only get 0.0 if both are zeros - need to avoid 0/0=NaN
+                    INDArray relError = diff.divi(sumAbs);
+                    relError.muli(absErrorMask);
+
+                    int countExceeds = Nd4j.getExecutioner().exec(new MatchCondition(relError, Conditions.greaterThan(maxRelErrorOverride))).z().getInt(0);
+
+                    double maxRE = -1;
+                    if(countExceeds > 0){
+                        maxRE = relError.maxNumber().doubleValue();
+                    }
+
+
+                    assertEquals( outputNode + ": " + countExceeds + " values exceed maxRelError=" + maxRelErrorOverride
+                            + " with minAbsError=" + minAbsErrorOverride + "; largest observed relError=" + maxRE, 0, countExceeds);
                 }
             }
             log.info("\n\tTEST {} PASSED with {} arrays compared...", modelName, predictions.keySet().size());
@@ -191,12 +213,16 @@ public class TFGraphTestAllHelper {
         Nd4j.EPS_THRESHOLD = 1e-5;
     }
 
-    public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, String baseDir, String modelFileName, ExecuteWith execType, File localTestDir) throws IOException {
-        checkIntermediate(inputs, modelName, baseDir, modelFileName, execType, LOADER, null, localTestDir);
+    public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, String baseDir, String modelFileName,
+                                         ExecuteWith execType, File localTestDir) throws IOException {
+        checkIntermediate(inputs, modelName, baseDir, modelFileName, execType, LOADER, null, null, localTestDir);
     }
 
     public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, String baseDir, String modelFileName,
-                                         ExecuteWith execType, BiFunction<File,String,SameDiff> loader, Double precisionOverride, File localTestDir) throws IOException {
+                                         ExecuteWith execType, BiFunction<File,String,SameDiff> loader,
+                                         Double maxRelErrorOverride, Double minAbsErrorOverride, File localTestDir) throws IOException {
+        Preconditions.checkArgument((maxRelErrorOverride == null) == (minAbsErrorOverride == null), "Both maxRelErrorOverride and minAbsErrorOverride" +
+                " must be null or both must be provided");
         Nd4j.EPS_THRESHOLD = 1e-3;
         val graph = getGraphAfterExec(baseDir, modelFileName, modelName, inputs, execType, loader);
 
@@ -227,9 +253,24 @@ public class TFGraphTestAllHelper {
                     } else {
                         assertArrayEquals("Shape not equal on node " + varName, tfValue.shape(), graph.getVariable(varName).getShape());
                         INDArray sdVal = graph.getVariable(varName).getArr();
-                        if(precisionOverride != null){
-                            boolean eq = tfValue.equalsWithEps(sdVal, precisionOverride);
-                            assertTrue("Value not equal on node " + varName, eq);
+                        if(maxRelErrorOverride != null){
+                            INDArray diff = Transforms.abs(tfValue.sub(sdVal), false);
+                            INDArray absErrorMask = diff.gte(minAbsErrorOverride);   //value 1 if x[i] > minAbsError; value 0 otherwise. Used to get rid of 1e-30 vs. 1e-29 type failures
+                            INDArray sumAbs = Transforms.abs(tfValue, true).addi(Transforms.abs(sdVal, true));
+                            BooleanIndexing.replaceWhere(sumAbs, 1.0, Conditions.equals(0.0));  //Can only get 0.0 if both are zeros - need to avoid 0/0=NaN
+                            INDArray relError = diff.divi(sumAbs);
+                            relError.muli(absErrorMask);
+
+                            int countExceeds = Nd4j.getExecutioner().exec(new MatchCondition(relError, Conditions.greaterThan(maxRelErrorOverride))).z().getInt(0);
+
+                            double maxRE = -1;
+                            if(countExceeds > 0){
+                                maxRE = relError.maxNumber().doubleValue();
+                            }
+
+
+                            assertEquals( varName + ": " + countExceeds + " values exceed maxRelError=" + maxRelErrorOverride
+                                    + " with minAbsError=" + minAbsErrorOverride + "; largest observed relError=" + maxRE, 0, countExceeds);
                         } else {
                             assertEquals("Value not equal on node " + varName, tfValue, sdVal);
                         }
@@ -478,10 +519,10 @@ public class TFGraphTestAllHelper {
     }
 
 
-    public static Double testPrecisionOverride(String testName){
+    public static Pair<Double,Double> testPrecisionOverride(String testName){
         if("conv_4".equalsIgnoreCase(testName)){
             //Most values: around 1k. So this is the 6th significant figure, which is OK
-            return 1e-2;
+            return new Pair<>(1e-3, 1e-5);
         }
         return null;
     }

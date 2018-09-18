@@ -24,6 +24,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.File;
@@ -88,8 +89,12 @@ public class TFGraphTestList {
         File dir = testDir.newFolder();
         Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);
         Map<String, INDArray> predictions = TFGraphTestAllHelper.outputVars(modelName, MODEL_DIR, dir);
-        Double precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
-        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, MODEL_DIR, MODEL_FILENAME, executeWith, TFGraphTestAllHelper.LOADER, precisionOverride);
+        Pair<Double,Double> precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
+        Double maxRE = (precisionOverride == null ? null : precisionOverride.getFirst());
+        Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());
+
+        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, MODEL_DIR, MODEL_FILENAME, executeWith,
+                TFGraphTestAllHelper.LOADER, maxRE, minAbs);
     }
 
     @Test

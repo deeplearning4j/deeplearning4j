@@ -26,6 +26,7 @@ import org.nd4j.OpValidationSuite;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.File;
@@ -200,8 +201,10 @@ public class TFGraphTestAllSameDiff {
 
     @Parameterized.Parameters(name="{2}")
     public static Collection<Object[]> data() throws IOException {
+        System.out.println("TESTING");
         File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
         List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
+        System.out.println("PARAMS: " + params);
         return params;
     }
 
@@ -226,10 +229,12 @@ public class TFGraphTestAllSameDiff {
                 OpValidationSuite.ignoreFailing();
             }
         }
-        Double precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
+        Pair<Double,Double> precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
+        Double maxRE = (precisionOverride == null ? null : precisionOverride.getFirst());
+        Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());
 
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH,
-                TFGraphTestAllHelper.LOADER, precisionOverride);
+                TFGraphTestAllHelper.LOADER, maxRE, minAbs);
         //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
     }
 

@@ -26,6 +26,7 @@ import org.nd4j.OpValidationSuite;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.File;
@@ -149,10 +150,12 @@ public class TFGraphTestAllLibnd4j {
             }
         }
 
-        Double precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
+        Pair<Double,Double> precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
+        Double maxRE = (precisionOverride == null ? null : precisionOverride.getFirst());
+        Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());
 
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH,
-                TFGraphTestAllHelper.LOADER, precisionOverride);
+                TFGraphTestAllHelper.LOADER, maxRE, minAbs);
         //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
     }
 
