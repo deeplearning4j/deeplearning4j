@@ -955,7 +955,7 @@ namespace nd4j {
          * @return
          */
         int Graph::totalNodes() {
-            if (_built != true)
+            if (_built.load() != true)
                 buildGraph();
 
             return _mapped->size();
@@ -970,7 +970,7 @@ namespace nd4j {
                 _mutexPreprocessing.unlock();
             }
 
-            if (_built != true)
+            if (_built.load() != true)
                 return ND4J_STATUS_BAD_GRAPH;
 
             return ND4J_STATUS_OK;
