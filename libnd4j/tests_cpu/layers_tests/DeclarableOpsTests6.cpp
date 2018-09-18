@@ -885,8 +885,8 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_6) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Output ");
-    z->printShapeInfo("Shape");
+    //z->printIndexedBuffer("Output ");
+    //z->printShapeInfo("Shape");
     //exp.printIndexedBuffer("Expected ");
     ASSERT_TRUE(z->isScalar());
     ASSERT_TRUE(exp.isSameShape(z));
