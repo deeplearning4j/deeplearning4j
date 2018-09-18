@@ -56,7 +56,7 @@ CUSTOM_OP_IMPL(pointwise_conv2d, 2, 1, false, 0, 0) {
     if (bias) 
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM POINTWISECONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());                
         
-    ConvolutionUtils::conv2d({input, weights, bias}, output, {kH,kW, sH,sW, pH,pW, dH,dW, 1/*isSameMode*/, isNCHW});
+    ConvolutionUtils::conv2d(input, weights, bias, output, kH,kW, sH,sW, pH,pW, dH,dW, 1/*isSameMode*/, isNCHW);
 
     return Status::OK();
 }

@@ -75,7 +75,7 @@ namespace nd4j {
             // evaluates sizes values and indexes using input and output arrays depending on data format
             static void getSizesAndIndexesConv3d(const bool isNCDHW, const NDArray& input, const NDArray& output, int& bS, int& iC, int& iD, int& iH, int& iW, int& oC, int& oD, int& oH, int& oW, int& indIOioC, int& indIOioD, int& indWiC, int& indWoC, int& indWkD);
 
-            static void conv2d(const std::vector<NDArray*>& inArrs, NDArray* output, const std::vector<int>& intArgs);
+            static void conv2d(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW);
 
             static void conv2dBP(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const std::vector<int>& intArgs);
 

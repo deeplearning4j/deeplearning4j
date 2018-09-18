@@ -80,7 +80,7 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 4) {
     auto outputReshaped  = output ->reshape(output->ordering(),  reshapeForOutput);
     auto weightsReshaped = weights->reshape(weights->ordering(), reshapeForWeights);
 
-    ConvolutionUtils::conv2d({inputReshaped, weightsReshaped, bias}, outputReshaped, {1,kW,  1,sW,  0,pW,  1,1,  isSameMode,  isNCW});
+    ConvolutionUtils::conv2d(inputReshaped, weightsReshaped, bias, outputReshaped, 1,kW,  1,sW,  0,pW,  1,1,  isSameMode,  isNCW);
 
     delete inputReshaped;
     delete outputReshaped;
