@@ -29,9 +29,8 @@ namespace nd4j {
         namespace helpers {
         
 
-
             template <typename T>
-            void _bgemm(std::vector<NDArray<T>*>& vA, std::vector<NDArray<T>*>& vB, std::vector<NDArray<T>*>& vC, NDArray<T>* alphas, NDArray<T>* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC) {
+            void __bgemm(std::vector<NDArray*>& vA, std::vector<NDArray*>& vB, std::vector<NDArray*>& vC, NDArray* alphas, NDArray* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC) {
                 int batchSize = vA.size();
                 if (BlasHelper::getInstance()->hasBatchedGEMM<T>()) {
                     auto arr = vA.at(0);
@@ -64,14 +63,14 @@ namespace nd4j {
                     std::vector<T*> buffersC(batchSize);
 
                     for (int e = 0; e < batchSize; e++) {
-                        buffersA[e] = vA[e]->buffer();
-                        buffersB[e] = vB[e]->buffer();
-                        buffersC[e] = vC[e]->buffer();
+                        buffersA[e] = reinterpret_cast<T *>(vA[e]->buffer());
+                        buffersB[e] = reinterpret_cast<T *>(vB[e]->buffer());
+                        buffersC[e] = reinterpret_cast<T *>(vC[e]->buffer());
                     }
 
-                    if (sizeof(T) == 8) {
+                    if (std::is_same<T, double>::value) {
                         BlasHelper::getInstance()->dgemmBatched()(CblasColMajor, tA, tB, tM, tN, tK, (double *) alphas->buffer(), (double **) buffersA.data(), tldA, (double **) buffersB.data(), tldB, (double *) betas->buffer(),(double **)  buffersC.data(), tldC, vA.size(), tsize);
-                    } else if (sizeof(T) == 4) {
+                    } else if (std::is_same<T, float >::value) {
                         BlasHelper::getInstance()->sgemmBatched()(CblasColMajor, tA, tB, tM, tN, tK, (float *) alphas->buffer(), (float **) buffersA.data(), tldA, (float **) buffersB.data(), tldB, (float *) betas->buffer(), (float **) buffersC.data(), tldC, vA.size(), tsize);
                     }
 
@@ -91,11 +90,11 @@ namespace nd4j {
 
 #pragma omp parallel for
                     for (int p = 0; p < vA.size(); ++p) {
-                        auto A = vA.at(p)->buffer();
-                        auto B = vB.at(p)->buffer();
-                        auto C = vC.at(p)->buffer();
-                        auto alpha = alphas->getScalar(p);
-                        auto beta = betas->getScalar(p);
+                        auto A = reinterpret_cast<T*>(vA.at(p)->buffer());
+                        auto B = reinterpret_cast<T*>(vB.at(p)->buffer());
+                        auto C = reinterpret_cast<T*>(vC.at(p)->buffer());
+                        auto alpha = alphas->getScalar<T>(p);
+                        auto beta = betas->getScalar<T>(p);
                         for (int m = 0; m < M; ++m) {
                             for (int n = 0; n < N; ++n) {
                                 T c_mnp = 0;
@@ -111,9 +110,14 @@ namespace nd4j {
                 }
             };
 
-            template void _bgemm<float>(std::vector<NDArray<float>*>& vA, std::vector<NDArray<float>*>& vB, std::vector<NDArray<float>*>& vC, NDArray<float>* alphas, NDArray<float>* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC);
-            template void _bgemm<double>(std::vector<NDArray<double>*>& vA, std::vector<NDArray<double>*>& vB, std::vector<NDArray<double>*>& vC, NDArray<double>* alphas, NDArray<double>* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC);
-            template void _bgemm<float16>(std::vector<NDArray<float16>*>& vA, std::vector<NDArray<float16>*>& vB, std::vector<NDArray<float16>*>& vC, NDArray<float16>* alphas, NDArray<float16>* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC);
+
+            void _bgemm(std::vector<NDArray*>& vA, std::vector<NDArray*>& vB, std::vector<NDArray*>& vC, NDArray* alphas, NDArray* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC) {
+                auto xType = vA.at(0)->dataType();
+
+                BUILD_SINGLE_SELECTOR(xType, __bgemm, (vA, vB, vC, alphas, betas, transA, transB, M, N, K, ldA, ldB, ldC), FLOAT_TYPES);
+            }
+
+            BUILD_SINGLE_TEMPLATE(template void __bgemm, (std::vector<NDArray*>& vA, std::vector<NDArray*>& vB, std::vector<NDArray*>& vC, NDArray* alphas, NDArray* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC), FLOAT_TYPES);
         }
     }
 }
