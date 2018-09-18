@@ -125,10 +125,10 @@ static T gausLegQuad(const T a, const T b, const T x) {
 	T amu = a - (T)1.; 
 	T bmu = b - (T)1.;
 	T rat = a / (a + b);
-	T lnrat  = math::nd4j_log<T>(rat);
-	T lnratm = math::nd4j_log<T>((T)1. - rat);
+	T lnrat  = math::nd4j_log<T,T>(rat);
+	T lnratm = math::nd4j_log<T,T>((T)1. - rat);
 
-	t = math::nd4j_sqrt<T>(a * b /((a + b) * (a + b) * (a + b + (T)1.)));
+	t = math::nd4j_sqrt<T,T>(a * b /((a + b) * (a + b) * (a + b + (T)1.)));
 	if (x > rat) {	
 		if (x >= (T)1.) 
 			return (T)1.0;
@@ -145,9 +145,9 @@ static T gausLegQuad(const T a, const T b, const T x) {
 #pragma omp simd private(t) reduction(add:sum)
 	for (int i = 0; i < 18; ++i) {	
 		t = x + (upLim - x) * (T)abscissas[i];
-		sum += (T)weights[i] * math::nd4j_exp<T>(amu * (math::nd4j_log<T>(t) - lnrat) + bmu * (math::nd4j_log<T>((T)1. - t) - lnratm));
+		sum += (T)weights[i] * math::nd4j_exp<T,T>(amu * (math::nd4j_log<T,T>(t) - lnrat) + bmu * (math::nd4j_log<T,T>((T)1. - t) - lnratm));
 	}
-	result = sum * (upLim - x) * math::nd4j_exp<T>(amu * lnrat - lgamma(a) + bmu * lnratm - lgamma(b) + lgamma(a + b));
+	result = sum * (upLim - x) * math::nd4j_exp<T,T>(amu * lnrat - lgamma(a) + bmu * lnratm - lgamma(b) + lgamma(a + b));
 	
 	if(result > (T)0.)
 		return (T)1. - result;
@@ -160,7 +160,7 @@ static T gausLegQuad(const T a, const T b, const T x) {
 ///////////////////////////////////////////////////////////////////
 // evaluates incomplete beta function for positive a and b, and x between 0 and 1.
 template <typename T> 
-static T betaInc(const T a, const T b, const T x) {	
+static T betaIncTA(T a, T b, T x) {
 	// if (a <= (T)0. || b <= (T)0.) 
 	// 	throw("betaInc function: a and b must be > 0 !");
 
@@ -178,7 +178,7 @@ static T betaInc(const T a, const T b, const T x) {
 	if (a > (T)maxValue && b > (T)maxValue) 
 		return gausLegQuad<T>(a, b, x);	
 
-	T front = math::nd4j_exp<T>( lgamma(a + b) - lgamma(a) - lgamma(b) + a * math::nd4j_log<T>(x) + b * math::nd4j_log<T>((T)1. - x));	
+	T front = math::nd4j_exp<T,T>( lgamma(a + b) - lgamma(a) - lgamma(b) + a * math::nd4j_log<T, T>(x) + b * math::nd4j_log<T, T>((T)1. - x));
 	
 	// continued fractions
 	if (x < (a + (T)1.) / (a + b + (T)2.)) 
@@ -187,21 +187,26 @@ static T betaInc(const T a, const T b, const T x) {
 	else 
 		return (T)1. - front * continFract(b, a, (T)1. - x) / b;
 
-}    
+}
+
+template<typename T>
+NDArray betaIncT(const NDArray& a, const NDArray& b, const NDArray& x) {
+	NDArray result(&x, false, x.getWorkspace());
+
+#pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+	for(int i = 0; i < x.lengthOf(); ++i) {
+		result.putScalar(i, betaIncTA<T>(a.getScalar<T>(i), b.getScalar<T>(i), x.getScalar<T>(i)));
+	}
+
+	return result;
+}
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 // overload betaInc for arrays, shapes of a, b and x must be the same !!!
-template <typename T> 
-NDArray<T> betaInc(const NDArray<T>& a, const NDArray<T>& b, const NDArray<T>& x) {	
-	
-	NDArray<T> result(&x, false, x.getWorkspace());
-
-#pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)	
-	for(int i = 0; i < x.lengthOf(); ++i)
-		result(i) = betaInc<T>(a(i), b(i), x(i));
-
-	return result;
+NDArray betaInc(const NDArray& a, const NDArray& b, const NDArray& x) {
+	auto xType = a.dataType();
+	BUILD_SINGLE_SELECTOR(xType, return betaIncT, (a, b, x), FLOAT_TYPES);
 }
 
 
@@ -213,13 +218,13 @@ template float   gausLegQuad<float>  (const float   a, const float   b, const fl
 template float16 gausLegQuad<float16>(const float16 a, const float16 b, const float16 x);
 template double  gausLegQuad<double> (const double  a, const double  b, const double  x);
 
-template float   betaInc<float>  (const float   a, const float   b, const float   x);
-template float16 betaInc<float16>(const float16 a, const float16 b, const float16 x);
-template double  betaInc<double> (const double  a, const double  b, const double  x);
+template float   betaIncTA<float>  (const float   a, const float   b, const float   x);
+template float16 betaIncTA<float16>(const float16 a, const float16 b, const float16 x);
+template double  betaIncTA<double> (const double  a, const double  b, const double  x);
 
-template NDArray<float>   betaInc<float>  (const NDArray<float>&   a, const NDArray<float>&   b, const NDArray<float>&  x);
-template NDArray<float16> betaInc<float16>(const NDArray<float16>& a, const NDArray<float16>& b, const NDArray<float16>& x);
-template NDArray<double>  betaInc<double> (const NDArray<double>&  a, const NDArray<double>&  b, const NDArray<double>& x);
+template NDArray betaIncT<float>  (const NDArray&   a, const NDArray&   b, const NDArray&  x);
+template NDArray betaIncT<float16>(const NDArray& a, const NDArray& b, const NDArray& x);
+template NDArray betaIncT<double> (const NDArray&  a, const NDArray&  b, const NDArray& x);
 
 
 }
