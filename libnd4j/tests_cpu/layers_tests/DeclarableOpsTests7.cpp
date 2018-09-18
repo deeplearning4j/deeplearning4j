@@ -1954,10 +1954,46 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentProd_1) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestUnsortedSegmentProd_11) {
+    NDArray<double> x({3.,1.8, 2.5,4.,  9., 2.1, 2.4,9., 2.1, 2.1,0.7, 0.1, 3., 4.2, 2.2, 1.});
+    NDArray<double> idx({2.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0});
+    NDArray<double> exp({4.5,    181.44,     3.,      39.69,     1.9404});
+
+    nd4j::ops::unsorted_segment_prod<double> op;
+
+    auto result = op.execute({&x, &idx}, {}, {5});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestUnsortedSegmentProd_2) {
     NDArray<double> x('c', {4, 4}, {
             1.8, 2.5,  4.,  9.,        2.1, 2.4,  3.,  9.,        2.1, 2.1, 0.7, 0.1,         3., 4.2, 2.2, 1.    });
     NDArray<double> idx({0.0, 0.0, 1.0, 2.0});
+    NDArray<double> exp('c', {3, 4}, {        3.78,       6. ,       12.  ,      81.,        2.1 ,       2.1,        0.7 ,       0.1,        3.  ,       4.2,        2.2 ,       1.});
+
+    //{ 2.1, 2.5,  4.,  9., 2.1, 2.1, 0.7, 0.1, 3.,  4.2, 2.2, 1.}
+
+    nd4j::ops::unsorted_segment_prod<double> op;
+
+    auto result = op.execute({&x, &idx}, {}, {3});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_EQ(result->size(), 1);
+//    exp.printIndexedBuffer("Expect");
+//    exp.printShapeInfo("Exp Shape");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestUnsortedSegmentProd_12) {
+    NDArray<double> x('c', {4, 4}, {
+            3., 4.2, 2.2, 1.,
+            1.8, 2.5,  4.,  9.,        2.1, 2.4,  3.,  9.,        2.1, 2.1, 0.7, 0.1    });
+    NDArray<double> idx({2.0, 0.0, 0.0, 1.0});
     NDArray<double> exp('c', {3, 4}, {        3.78,       6. ,       12.  ,      81.,        2.1 ,       2.1,        0.7 ,       0.1,        3.  ,       4.2,        2.2 ,       1.});
 
     //{ 2.1, 2.5,  4.,  9., 2.1, 2.1, 0.7, 0.1, 3.,  4.2, 2.2, 1.}
