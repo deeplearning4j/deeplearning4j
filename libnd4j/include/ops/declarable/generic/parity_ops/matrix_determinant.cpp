@@ -42,15 +42,13 @@ namespace nd4j {
             int targetRank = shape::rank(inShape) - 2; // last two dimensions will be reduced to scalar
 
             if (targetRank == 0) { // scalar only
-                determinantShape = shape::createScalarShapeInfo();
+                determinantShape = ShapeUtils<T>::createScalarShapeInfo();
             }
             else if (targetRank == 1) { // vector 
-                ALLOCATE(determinantShape, block.getWorkspace(), shape::shapeInfoLength(targetRank), Nd4jLong);
-                shape::shapeVector(shape::sizeAt(inShape, 0), determinantShape);
+                determinantShape = ShapeUtils<T>::createVectorShapeInfo(shape::sizeAt(inShape, 0));
             }
             else { // only two last dimensions are excluded
                 ALLOCATE(determinantShape, block.getWorkspace(), shape::shapeInfoLength(targetRank), Nd4jLong);
-
                 if (shape::order(inShape) == 'c')
                     shape::shapeBuffer(targetRank, shape::shapeOf(inShape), determinantShape);
                 else

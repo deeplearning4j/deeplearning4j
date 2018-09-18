@@ -871,6 +871,31 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_5) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, MatrixDeterminant_6) {
+
+    NDArray<double> x('c', {4, 4});
+    NDArray<double> exp(-16.0);
+    x.linspace(1);
+    x(5) = 4.0;
+    x(12) = 12.0;
+
+    nd4j::ops::matrix_determinant<double> op;
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    z->printIndexedBuffer("Output ");
+    z->printShapeInfo("Shape");
+    //exp.printIndexedBuffer("Expected ");
+    ASSERT_TRUE(z->isScalar());
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, MatrixInverse_1) {
 
     NDArray<double> x('c', {2, 5, 5}, {
