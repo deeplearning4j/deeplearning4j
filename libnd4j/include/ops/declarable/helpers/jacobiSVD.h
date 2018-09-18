@@ -29,7 +29,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    
+template <typename T>
 class JacobiSVD {
 
     public:                
