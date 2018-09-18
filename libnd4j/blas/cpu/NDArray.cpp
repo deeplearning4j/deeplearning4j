@@ -253,7 +253,7 @@ namespace nd4j {
         std::vector<int64_t> vector(magicNumber);
 
         for (int e = 0; e < magicNumber; e++)
-            vector[e] = reinterpret_cast<int64_t>(this->_shapeInfo[e]);
+            vector[e] = static_cast<int64_t>(this->_shapeInfo[e]);
 
         return vector;
     }
