@@ -22,6 +22,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.builder.Diff;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -32,6 +33,7 @@ import org.nd4j.autodiff.execution.NativeGraphExecutioner;
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.base.Preconditions;
@@ -44,6 +46,7 @@ import org.nd4j.linalg.function.BiFunction;
 import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -109,14 +112,15 @@ public class TFGraphTestAllHelper {
             .outputMode(OutputMode.VARIABLE_SPACE)
             .build();
 
-    protected static List<Object[]> fetchTestParams(String baseDir, String modelFileName, ExecuteWith executeWith) throws IOException {
+    protected static List<Object[]> fetchTestParams(String baseDir, String modelFileName, ExecuteWith executeWith, File localTestDir) throws IOException {
         String[] modelNames = modelDirNames(baseDir, executeWith, modelFileName);
         List<Object[]> modelParams = new ArrayList<>();
         for (int i = 0; i < modelNames.length; i++) {
-            Object[] currentParams = new Object[3];
-            currentParams[0] = inputVars(modelNames[i], baseDir); //input variable map - could be null
-            currentParams[1] = outputVars(modelNames[i], baseDir); //saved off predictions
+            Object[] currentParams = new Object[4];
+            currentParams[0] = inputVars(modelNames[i], baseDir, localTestDir); //input variable map - could be null
+            currentParams[1] = outputVars(modelNames[i], baseDir, localTestDir); //saved off predictions
             currentParams[2] = modelNames[i];
+            currentParams[3] = localTestDir;
             modelParams.add(currentParams);
         }
         return modelParams;
@@ -163,7 +167,18 @@ public class TFGraphTestAllHelper {
                     long[] sTf = tfPred.shape();
                     long[] sNd4j = nd4jPred.shape();
                     assertArrayEquals("Shapes are not equal: " + Arrays.toString(sTf) + " vs " + Arrays.toString(sNd4j), sTf, sNd4j);
-                    assertEquals("Predictions do not match on " + modelName + ", node " + outputNode, tfPred, nd4jPred);
+                    boolean eq = tfPred.equals(nd4jPred);
+                    if(!eq){
+                        NDArrayStrings s = new NDArrayStrings();
+                        String s1 = s.format(tfPred, false);
+                        String s2 = s.format(nd4jPred, false);
+                        System.out.print("TF: ");
+                        System.out.println(s1);
+                        System.out.print("SD: ");
+                        System.out.println(s2);
+
+                    }
+                    assertTrue("Predictions do not match on " + modelName + ", node " + outputNode, eq);
                 } else {
                     boolean eq = tfPred.equalsWithEps(nd4jPred, precisionOverride);
                     assertTrue("Predictions do not match on " + modelName + ", node " + outputNode + " - precision " + precisionOverride, eq);
@@ -176,29 +191,49 @@ public class TFGraphTestAllHelper {
         Nd4j.EPS_THRESHOLD = 1e-5;
     }
 
-    public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, String baseDir, String modelFileName, ExecuteWith execType) throws IOException {
+    public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, String baseDir, String modelFileName, ExecuteWith execType, File localTestDir) throws IOException {
+        checkIntermediate(inputs, modelName, baseDir, modelFileName, execType, LOADER, null, localTestDir);
+    }
+
+    public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, String baseDir, String modelFileName,
+                                         ExecuteWith execType, BiFunction<File,String,SameDiff> loader, Double precisionOverride, File localTestDir) throws IOException {
         Nd4j.EPS_THRESHOLD = 1e-3;
-        val graph = getGraphAfterExec(baseDir, modelFileName, modelName, inputs, execType, LOADER);
+        val graph = getGraphAfterExec(baseDir, modelFileName, modelName, inputs, execType, loader);
 
         //Collect coverage info about ops
         OpValidation.collectTensorflowImportCoverage(graph);
 
         if (!execType.equals(ExecuteWith.JUST_PRINT)) {
             int count = 0;
-            List<String> varNames = new ArrayList<>(graph.variableMap().keySet());
+            //Evaluate the nodes in their execution order - this is useful for debugging (as we want the *first* failure
+            // to be detected before later failures)
+            Set<String> varNamesSet = new HashSet<>(graph.variableMap().keySet());
+            List<String> varNames = new ArrayList<>();
+            Map<String,DifferentialFunction> fns = graph.getFunctionInstancesById();  //LinkedHashMap defines execution order
+            for(Map.Entry<String,DifferentialFunction> e : fns.entrySet()){
+                String[] outputs = graph.getOutputsForFunction(e.getValue());
+                Collections.addAll(varNames, outputs);
+            }
+
             for (String varName : varNames) {
                 if (!inputs.containsKey(varName)) { //avoiding placeholders
-                    INDArray tfValue = intermediateVars(modelName, baseDir, varName);
+                    INDArray tfValue = intermediateVars(modelName, baseDir, varName, localTestDir);
                     if (tfValue == null) {
                         continue;
                     }
+                    log.info("Starting check: variable {}", varName);
                     if (skipNode(modelName, varName)) {
                         log.info("\n\tFORCING no check on " + varName);
                     } else {
                         assertArrayEquals("Shape not equal on node " + varName, tfValue.shape(), graph.getVariable(varName).getShape());
-                        assertEquals("Value not equal on node " + varName, tfValue, graph.getVariable(varName).getArr());
-                        log.info("\n\tShapes equal for " + varName);
-                        log.info("\n\tValues equal for " + varName);
+                        INDArray sdVal = graph.getVariable(varName).getArr();
+                        if(precisionOverride != null){
+                            boolean eq = tfValue.equalsWithEps(sdVal, precisionOverride);
+                            assertTrue("Value not equal on node " + varName, eq);
+                        } else {
+                            assertEquals("Value not equal on node " + varName, tfValue, sdVal);
+                        }
+                        log.info("Values and shapes equal for {}", varName);
                         count++;
                     }
 
@@ -256,17 +291,17 @@ public class TFGraphTestAllHelper {
         return exampleNames;
     }
 
-    protected static Map<String, INDArray> inputVars(String modelName, String base_dir) throws IOException {
-        return readVars(modelName, base_dir, "**.placeholder", true);
+    protected static Map<String, INDArray> inputVars(String modelName, String base_dir, File localTestDir) throws IOException {
+        return readVars(modelName, base_dir, "**.placeholder", true, localTestDir);
     }
 
 
-    protected static Map<String, INDArray> outputVars(String modelName, String base_dir) throws IOException {
-        return readVars(modelName, base_dir, "**.prediction", true);
+    protected static Map<String, INDArray> outputVars(String modelName, String base_dir, File localTestDir) throws IOException {
+        return readVars(modelName, base_dir, "**.prediction", true, localTestDir);
     }
 
-    protected static Map<String, INDArray> inbetweenVars(String modelName, String base_dir) throws IOException {
-        return readVars(modelName, base_dir, "**.prediction_inbw", true);
+    protected static Map<String, INDArray> inbetweenVars(String modelName, String base_dir, File localTestDir) throws IOException {
+        return readVars(modelName, base_dir, "**.prediction_inbw", true, localTestDir);
     }
 
 
@@ -278,7 +313,7 @@ public class TFGraphTestAllHelper {
      * How is a node that has a list of outputs like in the case of "node_multiple_out" work
      * Below is hardcoded for a single node
      */
-    protected static INDArray intermediateVars(String modelName, String base_dir, String varName) throws IOException {
+    protected static INDArray intermediateVars(String modelName, String base_dir, String varName, File localTestDir) throws IOException {
         //convert varName to convention used in naming files
         // "/" replaced by "____"; followed by a digit indicating the output number followed by prediction_inbw.(shape|csv)
         if (varName.contains(":")) {
@@ -286,7 +321,7 @@ public class TFGraphTestAllHelper {
         } else {
             varName = varName + ".0";
         }
-        Map<String, INDArray> nodeSepOutput = readVars(modelName, base_dir, varName.replaceAll("/", "____") + ".prediction_inbw", true);
+        Map<String, INDArray> nodeSepOutput = readVars(modelName, base_dir, varName.replaceAll("/", "____") + ".prediction_inbw", true, localTestDir);
         //required check for pattern matching as there are scopes and "*" above is a greedy match
         Set<String> removeList = confirmPatternMatch(nodeSepOutput.keySet(), varName);
         for (String toRemove : removeList) {
@@ -311,17 +346,25 @@ public class TFGraphTestAllHelper {
     }
 
 
-    protected static Map<String, INDArray> readVars(String modelName, String base_dir, String pattern, boolean recursive) throws IOException {
+    protected static Map<String, INDArray> readVars(String modelName, String base_dir, String pattern, boolean recursive, File localTestDir) throws IOException {
         Map<String, INDArray> varMap = new HashMap<>();
         String modelDir = base_dir + "/" + modelName;
 
         List<Pair<Resource,Resource>> resources = new ArrayList<>();
         if(recursive){
             String nameRegex = pattern.replace("**.",".*\\.") + "\\.shape";
-            File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString() + "/" + modelName);
-            baseDir.mkdirs();
-            baseDir.deleteOnExit();
-            new ClassPathResource(modelDir).copyDirectory(baseDir);
+//            File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString() + "/" + modelName);
+//            baseDir.mkdirs();
+//            baseDir.deleteOnExit();
+//            new ClassPathResource(modelDir).copyDirectory(baseDir);
+            File baseDir = new File(localTestDir, "extracted/" + modelName);
+            String[] arr = baseDir.list();
+            if(!baseDir.exists() || arr == null || arr.length == 0){
+                baseDir.mkdirs();
+                baseDir.deleteOnExit();
+                new ClassPathResource(modelDir).copyDirectory(baseDir);
+            }
+
             LinkedList<File> queue = new LinkedList<>();
             queue.add(baseDir);
 
@@ -388,7 +431,11 @@ public class TFGraphTestAllHelper {
                 try {
                     String content;
                     try(InputStream is = new BufferedInputStream(resources.get(i).getSecond().getInputStream())){
+//                        long start = System.currentTimeMillis();
+//                        log.info("STARTING READ: {}", resources.get(i).getSecond());
                         content = String.join("\n", IOUtils.readLines(is, StandardCharsets.UTF_8));
+//                        long end = System.currentTimeMillis();
+//                        log.info("Finished reading: {} ms", end - start);
                     }
                     //= FileUtils.readFileToString(new ClassPathResource(varPath.replace(".shape", ".csv")).getFile(), Charset.forName("UTF-8"));
                     if (content.isEmpty()) {

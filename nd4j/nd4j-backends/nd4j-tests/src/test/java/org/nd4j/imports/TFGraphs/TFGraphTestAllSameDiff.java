@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -53,6 +54,8 @@ public class TFGraphTestAllSameDiff {
     private Map<String, INDArray> inputs;
     private Map<String, INDArray> predictions;
     private String modelName;
+    private File localTestDir;
+
     private static final TFGraphTestAllHelper.ExecuteWith EXECUTE_WITH = TFGraphTestAllHelper.ExecuteWith.SAMEDIFF;
     private static final String BASE_DIR = "tf_graphs/examples";
     private static final String MODEL_FILENAME = "frozen_model.pb";
@@ -197,14 +200,16 @@ public class TFGraphTestAllSameDiff {
 
     @Parameterized.Parameters(name="{2}")
     public static Collection<Object[]> data() throws IOException {
-        List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH);
+        File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
+        List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
         return params;
     }
 
-    public TFGraphTestAllSameDiff(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName) throws IOException {
+    public TFGraphTestAllSameDiff(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws IOException {
         this.inputs = inputs;
         this.predictions = predictions;
         this.modelName = modelName;
+        this.localTestDir = localTestDir;
     }
 
     @Test(timeout = 25000L)

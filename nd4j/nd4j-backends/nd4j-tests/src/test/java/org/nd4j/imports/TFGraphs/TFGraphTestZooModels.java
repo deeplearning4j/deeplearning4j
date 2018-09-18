@@ -3,6 +3,7 @@ package org.nd4j.imports.TFGraphs;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -12,6 +13,7 @@ import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.BiFunction;
 import org.nd4j.resources.Downloader;
@@ -24,17 +26,21 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RunWith(Parameterized.class)
 @Slf4j
 public class TFGraphTestZooModels {
+
+    @ClassRule
+    public static TemporaryFolder classTestDir = new TemporaryFolder();
 
     public static final String[] IGNORE_REGEXES = {
             //https://github.com/deeplearning4j/deeplearning4j/issues/6397
             "deeplab.*",
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6422
-            "nasnet_mobile_.*",
+//            "nasnet_mobile_.*",
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6423
             "resnetv2"
@@ -53,6 +59,7 @@ public class TFGraphTestZooModels {
     private Map<String, INDArray> inputs;
     private Map<String, INDArray> predictions;
     private String modelName;
+    private File localTestDir;
 
     public static final BiFunction<File,String,SameDiff> LOADER = new RemoteCachingLoader();
 
@@ -120,14 +127,17 @@ public class TFGraphTestZooModels {
 
     @Parameterized.Parameters(name="{2}")
     public static Collection<Object[]> data() throws IOException {
-        List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF);
+        classTestDir.create();
+        File baseDir = classTestDir.newFolder();    // new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
+        List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF, baseDir);
         return params;
     }
 
-    public TFGraphTestZooModels(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName) throws IOException {
+    public TFGraphTestZooModels(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws IOException {
         this.inputs = inputs;
         this.predictions = predictions;
         this.modelName = modelName;
+        this.localTestDir = localTestDir;
     }
 
     @Test(timeout = 360000L)
@@ -135,9 +145,12 @@ public class TFGraphTestZooModels {
 //        if(!modelName.equals("mobilenet_v1_0.5_128")){
 //        if(!modelName.equals("nasnet_mobile_2018_04_27")){
 //        if(!modelName.equals("resnetv2")){
-//        if(!modelName.equals("mobilenet_v2_1.0_224")){
-//            OpValidationSuite.ignoreFailing();
-//        }
+        if(!modelName.equals("mobilenet_v2_1.0_224")){
+//        if(!modelName.equals("densenet_2018_04_27")){
+            OpValidationSuite.ignoreFailing();
+        }
+
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
 
         Nd4j.create(1);
         for(String s : IGNORE_REGEXES){
@@ -149,7 +162,10 @@ public class TFGraphTestZooModels {
         Double precisionOverride = null;    //TFGraphTestAllHelper.testPrecisionOverride(modelName);
 
         currentTestDir = testDir.newFolder();
-        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
-                LOADER, precisionOverride);
+//        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
+//                LOADER, precisionOverride);
+
+        TFGraphTestAllHelper.checkIntermediate(inputs, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
+                LOADER, precisionOverride, localTestDir);
     }
 }

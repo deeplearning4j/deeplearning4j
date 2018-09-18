@@ -18,12 +18,15 @@ package org.nd4j.imports.TFGraphs;
 
 import org.junit.After;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,6 +45,9 @@ import java.util.Map;
 @RunWith(Parameterized.class)
 @Ignore
 public class TFGraphTestList {
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     public static String[] modelNames = new String[]{
             "matrix_determinant/rank2_5,5"
 
@@ -79,16 +85,18 @@ public class TFGraphTestList {
 
     @Test
     public void testOutputOnly() throws IOException {
-        Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR);
-        Map<String, INDArray> predictions = TFGraphTestAllHelper.outputVars(modelName, MODEL_DIR);
+        File dir = testDir.newFolder();
+        Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);
+        Map<String, INDArray> predictions = TFGraphTestAllHelper.outputVars(modelName, MODEL_DIR, dir);
         Double precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, MODEL_DIR, MODEL_FILENAME, executeWith, TFGraphTestAllHelper.LOADER, precisionOverride);
     }
 
     @Test
     public void testAlsoIntermediate() throws IOException {
-        Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR);
-        TFGraphTestAllHelper.checkIntermediate(inputs, modelName, MODEL_DIR, MODEL_FILENAME, executeWith);
+        File dir = testDir.newFolder();
+        Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);
+        TFGraphTestAllHelper.checkIntermediate(inputs, modelName, MODEL_DIR, MODEL_FILENAME, executeWith, dir);
 
     }
 }
