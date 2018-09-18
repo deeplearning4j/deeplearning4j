@@ -69,9 +69,9 @@
                 omp_out = nd4j::math::nd4j_min(omp_in, omp_out) )\
                 initializer (omp_priv=MAX_FLOAT)
 
-#pragma omp declare reduction(sumT : float,double,float16 :              \
+#pragma omp declare reduction(sumT : float,double,float16,int,Nd4jLong,Nd4jULong,int8_t,uint8_t,bool,int16_t,uint16_t,uint32_t :              \
                 omp_out = omp_in + omp_out)\
-                initializer (omp_priv=0.0f)
+                initializer (omp_priv=0)
 #endif
 
 

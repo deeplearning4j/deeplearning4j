@@ -23,8 +23,9 @@
 namespace nd4j {
 namespace ops {
 namespace helpers {
+
     template <typename T>
-    void _depthToSpace(NDArray<T> *input, NDArray<T> *output, int block_size, bool isNHWC) {
+    static void __depthToSpace(NDArray *input, NDArray *output, int block_size, bool isNHWC) {
         T *input_ptr = input->buffer();
         T *output_ptr = output->buffer();
 
@@ -83,9 +84,14 @@ namespace helpers {
         }
     }
 
-    template void _depthToSpace<float>(NDArray<float> *input, NDArray<float> *output, int block_size, bool isNHWC);
-    template void _depthToSpace<float16>(NDArray<float16> *input, NDArray<float16> *output, int block_size, bool isNHWC);
-    template void _depthToSpace<double>(NDArray<double> *input, NDArray<double> *output, int block_size, bool isNHWC);
+    void _depthToSpace(NDArray *input, NDArray *output, int block_size, bool isNHWC) {
+        auto xType = input->dataType();
+
+        BUILD_SINGLE_SELECTOR(xType, __depthToSpace, (input, output, block_size, isNHWC), LIBND4J_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void __depthToSpace, (NDArray *input, NDArray *output, int block_size, bool isNHWC);, LIBND4J_TYPES);
+
 }
 }
 }

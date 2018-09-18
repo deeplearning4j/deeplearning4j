@@ -56,14 +56,24 @@ BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(nd4j::NDArrayFactor
 		NDArray* bottomRightCorner(nullptr), *column(nullptr), *row(nullptr);
 		T coeff, normX;
 
+		T _x, _y;
+
 		for(int i = 0; i < cols-1; ++i ) {
 
 			// evaluate Householder matrix nullifying columns
 			column = _HHmatrix.subarray({{i,   rows}, {i, i+1}});
-			Householder::evalHHmatrixDataI(*column, _HHmatrix.getScalar<T>(i,i), _HHbidiag.getScalar<T>(i,i));
+
+            _x = _HHmatrix.getScalar<T>(i,i);
+            _y = _HHbidiag.getScalar<T>(i,i);
+
+			Householder<T>::evalHHmatrixDataI(*column, _x, _y);
+
+            _HHmatrix.putScalar<T>(i, i, _x);
+            _HHbidiag.putScalar<T>(i, i, _y);
+
 			// multiply corresponding matrix block on householder matrix from the left: P * bottomRightCorner
 			bottomRightCorner =  _HHmatrix.subarray({{i, rows}, {i+1, cols}});	// {i, cols}
-			Householder::mulLeft(*bottomRightCorner, _HHmatrix({i+1,rows, i,i+1}, true), _HHmatrix.getScalar<T>(i,i));
+			Householder<T>::mulLeft(*bottomRightCorner, _HHmatrix({i+1,rows, i,i+1}, true), _HHmatrix.getScalar<T>(i,i));
 
 			delete bottomRightCorner;
 			delete column;
@@ -73,21 +83,47 @@ BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(nd4j::NDArrayFactor
 
 			// evaluate Householder matrix nullifying rows
 			row  = _HHmatrix.subarray({{i, i+1}, {i+1, cols}});
-			Householder::evalHHmatrixDataI(*row, _HHmatrix.getScalar<T>(i,i+1), _HHbidiag.getScalar<T>(i,i+1));
+
+
+            _x = _HHmatrix.getScalar<T>(i,i+1);
+            _y = _HHbidiag.getScalar<T>(i,i+1);
+
+			Householder<T>::evalHHmatrixDataI(*row, _x, _y);
+
+            _HHmatrix.putScalar<T>(i, i+1, _x);
+            _HHbidiag.putScalar<T>(i, i+1, _y);
+
 			// multiply corresponding matrix block on householder matrix from the right: bottomRightCorner * P
 			bottomRightCorner = _HHmatrix.subarray({{i+1, rows}, {i+1, cols}});  // {i, rows}
-			Householder::mulRight(*bottomRightCorner, _HHmatrix.getScalar<T>({i,i+1, i+2,cols}, true), _HHmatrix.getScalar<T>(i,i+1));
+
+			Householder<T>::mulRight(*bottomRightCorner, _HHmatrix({i,i+1, i+2,cols}, true), _HHmatrix.getScalar<T>(i,i+1));
 
 			delete bottomRightCorner;
 			delete row;
 		}
 
 		row  = _HHmatrix.subarray({{cols-2, cols-1}, {cols-1, cols}});
-		Householder::evalHHmatrixDataI(*row, _HHmatrix.getScalar<T>(cols-2,cols-1), _HHbidiag.getScalar<T>(cols-2,cols-1));
+
+		_x = _HHmatrix.getScalar<T>(cols-2,cols-1);
+		_y = _HHbidiag.getScalar<T>(cols-2,cols-1);
+
+		Householder<T>::evalHHmatrixDataI(*row, _x, _y);
+
+        _HHmatrix.putScalar<T>(cols-2,cols-1, _x);
+        _HHbidiag.putScalar<T>(cols-2,cols-1, _y);
+
 		delete row;
 
 		column = _HHmatrix.subarray({{cols-1, rows}, {cols-1, cols}});
-		Householder::evalHHmatrixDataI(*column, _HHmatrix.getScalar<T>(cols-1,cols-1), _HHbidiag.getScalar<T>(cols-1,cols-1));
+
+		_x = _HHmatrix.getScalar<T>(cols-1,cols-1);
+		_y = _HHbidiag.getScalar<T>(cols-1,cols-1);
+
+		Householder<T>::evalHHmatrixDataI(*column, _x, _y);
+
+		_HHmatrix.putScalar<T>(cols-1, cols-1, _x);
+        _HHbidiag.putScalar<T>(cols-1, cols-1, _y);
+
 		delete column;
 	}
 

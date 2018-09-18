@@ -76,7 +76,6 @@ namespace nd4j {
         template <typename T>
         static NDArray _create(const char order, const std::vector<Nd4jLong> &shape, std::vector<T> &data, nd4j::memory::Workspace* workspace = nullptr);
 
-        template <typename T>
         static NDArray _create(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr);
 
 #ifndef __JAVACPP_HACK__
