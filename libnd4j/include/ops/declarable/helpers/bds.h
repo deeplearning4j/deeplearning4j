@@ -26,7 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    int bdsFunctor(NDArray* x_shape, NDArray* y_shape, NDArray* output);
+    Nd4jStatus bdsFunctor(NDArray* x_shape, NDArray* y_shape, NDArray* output);
 }
 }
 }
