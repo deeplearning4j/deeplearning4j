@@ -67,12 +67,18 @@ class HHsequence {
     *  this method mathematically multiplies input matrix on Householder sequence from the left H0*H1*...Hn * matrix
     * 
     *  matrix - input matrix to be multiplied
-    */                       
-    void mulLeft(NDArray& matrix) const;
+    */
+    template <typename T>
+    void _mulLeft(NDArray& matrix);
+
+    void mulLeft(NDArray& matrix);
 
     NDArray getTail(const int idx) const;
 
-    void applyTo(NDArray& dest) const;
+    template <typename T>
+    void _applyTo(NDArray& dest);
+
+    void applyTo(NDArray& dest);
 
     FORCEINLINE int rows() const;
 

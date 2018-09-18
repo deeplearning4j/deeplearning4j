@@ -20,6 +20,7 @@
 
 #include <ops/declarable/helpers/hhSequence.h>
 #include <ops/declarable/helpers/householder.h>
+#include <NDArrayFactory.h>
 
 namespace nd4j {
 namespace ops {
@@ -27,8 +28,7 @@ namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
-template <typename T>
-HHsequence<T>::HHsequence(const NDArray<T>& vectors, const NDArray<T>& coeffs, const char type): _vectors(vectors), _coeffs(coeffs) {
+HHsequence::HHsequence(const NDArray& vectors, const NDArray& coeffs, const char type): _vectors(vectors), _coeffs(coeffs) {
 	
 	_diagSize = nd4j::math::nd4j_min(_vectors.sizeAt(0), _vectors.sizeAt(1));
 	_shift = 0;    
@@ -37,25 +37,29 @@ HHsequence<T>::HHsequence(const NDArray<T>& vectors, const NDArray<T>& coeffs, c
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void HHsequence<T>::mulLeft(NDArray<T>& matrix) const {    		
+void HHsequence::_mulLeft(NDArray& matrix) {
 
 	const int rows   = _vectors.sizeAt(0);
 	const int cols   = _vectors.sizeAt(1);
 	const int inRows = matrix.sizeAt(0);	
 
-	NDArray<T>* block(nullptr);
+	NDArray* block(nullptr);
 
 	for(int i = _diagSize - 1; i >= 0; --i) {		
     	
     	if(_type == 'u') {
     		
     		block = matrix.subarray({{inRows - rows + _shift + i, inRows}, {}});
-    		Householder<T>::mulLeft(*block, _vectors({i + 1 + _shift, rows, i, i+1}, true), _coeffs(i));
+    		T _x = _coeffs.getScalar<T>(i);
+    		Householder<T>::mulLeft(*block, _vectors({i + 1 + _shift, rows, i, i+1}, true), _x);
+    		_coeffs.putScalar<T>(i, _x);
     	}
     	else {
 
     		block = matrix.subarray({{inRows - cols + _shift + i, inRows}, {}});
-    		Householder<T>::mulLeft(*block, _vectors({i, i+1, i + 1 + _shift, cols}, true), _coeffs(i));    	
+            T _x = _coeffs.getScalar<T>(i);
+    		Householder<T>::mulLeft(*block, _vectors({i, i+1, i + 1 + _shift, cols}, true), _x);
+            _coeffs.putScalar<T>(i, _x);
     	}
 
     	delete block;
@@ -64,8 +68,7 @@ void HHsequence<T>::mulLeft(NDArray<T>& matrix) const {
 
 
 //////////////////////////////////////////////////////////////////////////
-template <typename T>
-NDArray<T> HHsequence<T>::getTail(const int idx) const {
+NDArray HHsequence::getTail(const int idx) const {
 
     
     int first = idx + 1 + _shift;
@@ -79,12 +82,12 @@ NDArray<T> HHsequence<T>::getTail(const int idx) const {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void HHsequence<T>::applyTo(NDArray<T>& dest) const{
+void HHsequence::_applyTo(NDArray& dest) {
     
     int size = _type == 'u' ? _vectors.sizeAt(0) : _vectors.sizeAt(1);
 
     if(dest.rankOf() != 2 || (dest.sizeAt(0) != size && dest.sizeAt(1) != size))
-        dest = NDArray<T>(dest.ordering(), {size, size}, dest.getWorkspace());
+        dest = NDArrayFactory::_create(dest.ordering(), {size, size}, dest.dataType(), dest.getWorkspace());
     dest.setIdentity();
     
     for(int k = _diagSize - 1; k >= 0; --k) {
@@ -92,23 +95,31 @@ void HHsequence<T>::applyTo(NDArray<T>& dest) const{
         int curNum = size - k - _shift;
         if(curNum < 1 || (k + 1 + _shift) >= size )
             continue;
-        NDArray<T>* block = dest.subarray({{dest.sizeAt(0)-curNum, dest.sizeAt(0)},{dest.sizeAt(1)-curNum, dest.sizeAt(1)}});
-        Householder<T>::mulLeft(*block, getTail(k), _coeffs(k));      
+        auto block = dest.subarray({{dest.sizeAt(0)-curNum, dest.sizeAt(0)},{dest.sizeAt(1)-curNum, dest.sizeAt(1)}});
+        T _x = _coeffs.getScalar<T>(k);
+
+        Householder<T>::mulLeft(*block, getTail(k), _x);
+
+        _coeffs.putScalar<T>(k, _x);
         delete block;
     }  
 }
 
 
-template class ND4J_EXPORT HHsequence<float>;
-template class ND4J_EXPORT HHsequence<float16>;
-template class ND4J_EXPORT HHsequence<double>;
+    void HHsequence::applyTo(NDArray& dest) {
+        auto xType = _coeffs.dataType();
 
+        BUILD_SINGLE_SELECTOR(xType, _applyTo, (dest), FLOAT_TYPES);
+    }
 
+    void HHsequence::mulLeft(NDArray& matrix) {
+        auto xType = _coeffs.dataType();
 
+        BUILD_SINGLE_SELECTOR(xType, _mulLeft, (matrix), FLOAT_TYPES);
+    }
 
-
-
-
+    BUILD_SINGLE_TEMPLATE(template void HHsequence::_applyTo, (nd4j::NDArray &dest), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void HHsequence::_mulLeft, (NDArray& matrix), FLOAT_TYPES);
 }
 }
 }
