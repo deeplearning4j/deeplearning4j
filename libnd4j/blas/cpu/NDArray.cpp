@@ -248,15 +248,16 @@ namespace nd4j {
         return vector;
     }
 
-    std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
-        int magicNumber = shape::shapeInfoLength(this->rankOf());
-        std::vector<int64_t> vector(magicNumber);
+////////////////////////////////////////////////////////////////////////
+std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
+    int magicNumber = shape::shapeInfoLength(this->rankOf());
+    std::vector<int64_t> vector(magicNumber);
 
-        for (int e = 0; e < magicNumber; e++)
-            vector[e] = static_cast<int64_t>(this->_shapeInfo[e]);
+    for (int e = 0; e < magicNumber; e++)
+        vector[e] = static_cast<int64_t>(_shapeInfo[e]);
 
-        return vector;
-    }
+    return vector;
+}
 
 ////////////////////////////////////////////////////////////////////////
     std::vector<Nd4jLong> NDArray::getShapeInfoAsVector() {
