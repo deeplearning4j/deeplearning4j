@@ -39,7 +39,7 @@ static void _diagFunctor(const NDArray* input, NDArray* output) {
         (*output).putScalar<T>(i * (inLength + 1), (*input).getScalar<T>(i));
 }
 
-    void _diagFunctor(const NDArray* input, NDArray* output) {
+    void diagFunctor(const NDArray* input, NDArray* output) {
         auto xType = input->dataType();
 
         BUILD_SINGLE_SELECTOR(xType, _diagFunctor, (input, output), LIBND4J_TYPES);
