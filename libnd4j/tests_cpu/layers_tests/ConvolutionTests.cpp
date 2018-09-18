@@ -2451,5 +2451,36 @@ TEST_F(ConvolutionTests, conv2D_input_BP_test1) {
     delete results;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests, depthwise_conv2d_test4) {
+
+    int bS=1, iH=3,iW=3,  iC=2,mC=1,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;    
+    int       oC=iC*mC;
+    int       oH=3,oW=3;    
+    int paddingMode = 1;             // 1-SAME, 0-VALID;
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW    
+
+    NDArray<double> input   ('c', {bS, iH, iW, iC});
+    NDArray<double> weights ('c', {kH, kW, iC, mC});
+
+    
+    NDArray<double> expOutput('c', {bS, oH, oW, oC}, {20., 24.,28., 32.,16., 18.,44., 48.,52., 56.,28., 30.,28., 30.,32., 34.,17., 18.});
+    input.linspace(1.);
+    weights = 1.;
+
+    nd4j::ops::depthwise_conv2d<double> op;
+    ResultSet<double>* results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    NDArray<double>* output = results->at(0);
+    // output->printIndexedBuffer();
+
+    ASSERT_EQ(Status::OK(), results->status());
+
+    ASSERT_TRUE(expOutput.isSameShape(output));
+    ASSERT_TRUE(expOutput.equalsTo(output));    
+    
+    delete results; 
+}
+
 #endif //LIBND4J_CONVOLUTIONTESTS_H
+
 
