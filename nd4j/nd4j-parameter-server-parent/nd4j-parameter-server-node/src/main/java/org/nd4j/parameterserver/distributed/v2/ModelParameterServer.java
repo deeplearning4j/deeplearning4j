@@ -269,9 +269,11 @@ public final class ModelParameterServer {
 
                     // we're not requesting updater params if
                     if (!gotFinalState.get()) {
+                        val tId = transport.getRandomDownstreamFrom(transport.getRootId(), updaterParametersRequest.getOriginatorId());
+                        log.info("Sending UpdaterParameters request to [{}]", tId);
 
                         // trying to get updaters from root downstreams, excluding original message sender
-                        UpdaterParametersMessage updaterParams = transport.sendMessageBlocking(new UpdaterParametersRequest(), transport.getRandomDownstreamFrom(transport.getRootId(), updaterParametersRequest.getOriginatorId()));
+                        UpdaterParametersMessage updaterParams = transport.sendMessageBlocking(new UpdaterParametersRequest(), tId);
                         val uParams = updaterParams.getPayload();
 
                         try {
