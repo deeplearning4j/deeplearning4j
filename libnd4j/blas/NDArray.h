@@ -38,14 +38,27 @@
 
 namespace nd4j {
 
-    /*
-    ND4J_EXPORT NDArray<float> operator-(const float, const NDArray<float>&);
-    ND4J_EXPORT NDArray<float16> operator-(const float16, const NDArray<float16>&);
-    ND4J_EXPORT NDArray<double> operator-(const double, const NDArray<double>&);
-    ND4J_EXPORT NDArray<float> operator+(const float, const NDArray<float>&);
-    ND4J_EXPORT NDArray<float16> operator+(const float16, const NDArray<float16>&);
-    ND4J_EXPORT NDArray<double> operator+(const double, const NDArray<double>&);
-    */
+
+    ND4J_EXPORT NDArray operator-(const float, const NDArray&);
+    ND4J_EXPORT NDArray operator-(const float16, const NDArray&);
+    ND4J_EXPORT NDArray operator-(const double, const NDArray&);
+    ND4J_EXPORT NDArray operator-(const int, const NDArray&);
+
+    ND4J_EXPORT NDArray operator+(const float, const NDArray&);
+    ND4J_EXPORT NDArray operator+(const float16, const NDArray&);
+    ND4J_EXPORT NDArray operator+(const double, const NDArray&);
+    ND4J_EXPORT NDArray operator+(const int, const NDArray&);
+
+    ND4J_EXPORT NDArray operator*(const float, const NDArray&);
+    ND4J_EXPORT NDArray operator*(const float16, const NDArray&);
+    ND4J_EXPORT NDArray operator*(const double, const NDArray&);
+    ND4J_EXPORT NDArray operator*(const int, const NDArray&);
+
+    ND4J_EXPORT NDArray operator/(const float, const NDArray&);
+    ND4J_EXPORT NDArray operator/(const float16, const NDArray&);
+    ND4J_EXPORT NDArray operator/(const double, const NDArray&);
+    ND4J_EXPORT NDArray operator/(const int, const NDArray&);
+
     NDArray mmul(const NDArray&, const NDArray&);
 
     class ND4J_EXPORT NDArray {
@@ -1146,6 +1159,8 @@ namespace nd4j {
         */
         template <typename T>
         void putScalar(const Nd4jLong i, const T value);
+
+        void putScalar(const Nd4jLong i, const NDArray& value);
 
         /** 
         *  assigns given scalar to 2D array element by given indexes

@@ -40,6 +40,9 @@ class HHcolPivQR {
 
         HHcolPivQR(const NDArray& matrix);
 
+        template <typename T>
+        void _evalData();
+
         void evalData();
 };
 
