@@ -258,21 +258,21 @@
 
 
 #define RANDOM_OPS \
-        (0, randomOps::UniformDistribution) ,\
-        (1, randomOps::DropOut) ,\
-        (2, randomOps::DropOutInverted) ,\
-        (3, randomOps::ProbablisticMerge) ,\
-        (4, randomOps::Linspace) ,\
-        (5, randomOps::Choice) ,\
-        (6, randomOps::GaussianDistribution) ,\
-        (7, randomOps::BernoulliDistribution) ,\
-        (8, randomOps::BinomialDistribution),\
-        (9, randomOps::BinomialDistributionEx),\
-        (10, randomOps::LogNormalDistribution) ,\
-        (11, randomOps::TruncatedNormalDistribution) ,\
-        (12, randomOps::AlphaDropOut),\
-        (13, randomOps::ExponentialDistribution),\
-        (14, randomOps::ExponentialDistributionInv)
+        (0, UniformDistribution) ,\
+        (1, DropOut) ,\
+        (2, DropOutInverted) ,\
+        (3, ProbablisticMerge) ,\
+        (4, Linspace) ,\
+        (5, Choice) ,\
+        (6, GaussianDistribution) ,\
+        (7, BernoulliDistribution) ,\
+        (8, BinomialDistribution),\
+        (9, BinomialDistributionEx),\
+        (10, LogNormalDistribution) ,\
+        (11, TruncatedNormalDistribution) ,\
+        (12, AlphaDropOut),\
+        (13, ExponentialDistribution),\
+        (14, ExponentialDistributionInv)
 
 
 

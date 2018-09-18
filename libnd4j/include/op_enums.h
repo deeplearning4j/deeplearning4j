@@ -27,6 +27,12 @@
 #include <enum_boilerplate.h>
 
 namespace nd4j {
+    namespace random {
+        enum Ops {
+            BUILD_ENUMERATION(RANDOM_OPS)
+        };
+    }
+
     namespace transform {
         enum Ops {
             BUILD_ENUMERATION(TRANSFORM_OPS)

@@ -28,7 +28,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    int dropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* output, NDArray<T>* reduceShape, int seed, T probValue) {
+    static int _dropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue) {
         NativeOps native;
 
         native.reSeedBuffer(nullptr, (long)seed, rng);
@@ -36,9 +36,11 @@ namespace helpers {
         if (rng == nullptr)
             return ND4J_STATUS_BAD_RNG;
 
+        T prob = static_cast<T>(probValue);
   
         if (reduceShape == nullptr)
-            input->template applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, output, &probValue);
+            //input->template applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, output, &probValue);
+            NativeOpExcutioner::execRandom(random::DropOutInverted, rng, input->buffer(), input->shapeInfo(), output->buffer(), output->shapeInfo(), &prob);
         else {
             REQUIRE_TRUE(reduceShape->lengthOf() <= input->rankOf(), 0, "dropout: Noise shape should be fittable to input");
         
@@ -48,7 +50,7 @@ namespace helpers {
 
 #pragma omp parallel
             for( int i = 0; fit && (i < dims.size()); i++ ) {
-                dims[i] = (*reduceShape)(i);
+                dims[i] = reduceShape->getScalar<Nd4jLong>(i);
                 for (int e = 0; fit && (e < input->rankOf()); ++e)
                     if (input->sizeAt(e) % dims[i]) {
                         fit = false;
@@ -57,24 +59,30 @@ namespace helpers {
         
             // check dims to fit input
             REQUIRE_TRUE(fit, 0, "dropout: Noise shape should fit to input rank.");
-            std::unique_ptr<NDArray<T>> chunk(new NDArray<T>('c', dims));
+            std::unique_ptr<NDArray> chunk(new NDArray('c', dims));
             chunk->assign(T(1.0));
-            chunk->template applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, chunk.get(), &probValue);
+            //chunk->applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, chunk.get(), &probValue);
+            NativeOpExcutioner::execRandom(random::DropOutInverted, rng, chunk->buffer(), chunk->shapeInfo(), chunk->buffer(), chunk->shapeInfo(), &prob);
         
             // broadcast chunk to full matrix
-            std::unique_ptr<NDArray<T>> dropOutMultiplier(new NDArray<T>(*input));
+            std::unique_ptr<NDArray> dropOutMultiplier(new NDArray(*input));
             dropOutMultiplier->assign(T(0.0));
         
             *dropOutMultiplier += *chunk;
         
-            input->template applyPairwiseTransform<simdOps::Multiply<T>>(dropOutMultiplier.get(), output, nullptr);
+            input->applyPairwiseTransform(pairwise::Multiply, dropOutMultiplier.get(), output, nullptr);
         }
 
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
-    template int dropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<float>* input, NDArray<float>* output, NDArray<float>* reduceShape, int seed, float probValue);
-    template int dropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<float16>* input, NDArray<float16>* output, NDArray<float16>* reduceShape, int seed, float16 probValue);
-    template int dropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<double>* input, NDArray<double>* output, NDArray<double>* reduceShape, int seed, double probValue);
+
+    int dropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue) {
+        auto xType = input->dataType();
+
+        BUILD_SINGLE_SELECTOR(xType, _dropOutFunctor, (rng, input, output, reduceShape, seed, probValue), FLOAT_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template int _dropOutFunctor, (nd4j::random::RandomBuffer* rng, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue);, FLOAT_TYPES);
 
 }
 }

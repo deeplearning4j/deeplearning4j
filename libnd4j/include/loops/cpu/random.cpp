@@ -22,6 +22,8 @@
 #include <op_boilerplate.h>
 #include <loops/random.h>
 
+using namespace randomOps;
+
 namespace functions {
     namespace random {
 

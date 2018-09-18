@@ -25,11 +25,10 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void extractPatches(NDArray<T>* images, NDArray<T>* output, 
-        int sizeRow, int sizeCol, int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame){
+    static void _extractPatches(NDArray* images, NDArray* output, int sizeRow, int sizeCol, int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame){
         std::vector<int> restDims({1, 2, 3}); // the first and the last dims
-        std::unique_ptr<ResultSet<T>> listOfMatricies(images->allTensorsAlongDimension(restDims));
-        std::unique_ptr<ResultSet<T>> listOfOutputs(output->allTensorsAlongDimension(restDims));
+        std::unique_ptr<ResultSet> listOfMatricies(images->allTensorsAlongDimension(restDims));
+        std::unique_ptr<ResultSet> listOfOutputs(output->allTensorsAlongDimension(restDims));
         // 3D matricies - 2D matricies of vectors (if last dim is greater than 1)
         int e = 0;
         int ksizeRowsEffective = sizeRow + (sizeRow - 1) * (rateRow - 1);
@@ -42,8 +41,8 @@ namespace helpers {
 
 #pragma omp parallel for if(batchCount > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < batchCount; ++e) {
-            NDArray<T>* patch = listOfMatricies->at(e);
-            NDArray<T>* outMatrix = listOfOutputs->at(e);
+            auto patch = listOfMatricies->at(e);
+            auto outMatrix = listOfOutputs->at(e);
             int startRow = 0;
             int startCol = 0;
             int pos = 0;
@@ -52,16 +51,22 @@ namespace helpers {
                 for (int l = 0; l < sizeRow && l + i < rowDim; l++)
                 for (int m = 0; m < sizeCol && m + j < colDim; m++) {
                 for (int k = 0; k < lastDim; ++k) {
-                    (*outMatrix)(pos++) = (*patch)(i + rateRow * l, j + m * rateCol, k);
+                    outMatrix->putScalar<T>(pos++, patch->getScalar<T>(i + rateRow * l, j + m * rateCol, k));
                     if (pos >= outMatrix->lengthOf()) { k = lastDim; m = sizeCol; l = sizeRow; j = colDim; i = rowDim; }
                 }
             }
         }
     }
 
-    template void extractPatches(NDArray<float>* input, NDArray<float>* output, int sizeRow, int sizeCol, int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame);
-    template void extractPatches(NDArray<float16>* input, NDArray<float16>* output, int sizeRow, int sizeCol, int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame);
-    template void extractPatches(NDArray<double>* input, NDArray<double>* output, int sizeRow, int sizeCol, int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame);
+
+    void extractPatches(NDArray* images, NDArray* output, int sizeRow, int sizeCol, int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame){
+        auto xType = images->dataType();
+
+        BUILD_SINGLE_SELECTOR(xType, _extractPatches, (images, output, sizeRow, sizeCol, stradeRow, stradeCol, rateRow, rateCol, theSame), LIBND4J_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void _extractPatches, (NDArray* input, NDArray* output, int sizeRow, int sizeCol, int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame), LIBND4J_TYPES);
+
 }
 }
 }
