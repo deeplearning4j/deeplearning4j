@@ -17,6 +17,7 @@
 package org.datavec.image.loader;
 
 import org.apache.commons.io.IOUtils;
+import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.Java2DFrameConverter;
@@ -110,7 +111,7 @@ public class TestNativeImageLoader {
         NativeImageLoader loader5 = new NativeImageLoader(h4, w4, ch4, NativeImageLoader.MultiPageMode.FIRST);
         INDArray array6 = null;
         try {
-            array6 = loader5.asMatrix(new ClassPathResource(path2MitosisFile).getFile());
+            array6 = loader5.asMatrix(new ClassPathResource(path2MitosisFile).getFile().getAbsolutePath());
         } catch (IOException e) {
             e.printStackTrace();
             fail();
@@ -141,7 +142,7 @@ public class TestNativeImageLoader {
         NativeImageLoader loader7 = new NativeImageLoader(h4, w4, ch6, NativeImageLoader.MultiPageMode.MINIBATCH);
         INDArray array8 = null;
         try {
-            array8 = loader7.asMatrix(new ClassPathResource(path2MitosisFile).getFile());
+            array8 = loader7.asMatrix(new ClassPathResource(path2MitosisFile).getFile().getAbsolutePath());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -154,7 +155,7 @@ public class TestNativeImageLoader {
 
     @Test
     public void testAsRowVector() throws Exception {
-        BufferedImage img1 = makeRandomBufferedImage(0, 0, 1);
+        org.opencv.core.Mat img1 = makeRandomOrgOpenCvCoreMatImage(0, 0, 1);
         Mat img2 = makeRandomImage(0, 0, 3);
 
         int w1 = 35, h1 = 79, ch1 = 3;
@@ -344,6 +345,15 @@ public class TestNativeImageLoader {
         return c2.convert(c.convert(img));
     }
 
+    org.opencv.core.Mat makeRandomOrgOpenCvCoreMatImage(int height, int width, int channels) {
+        Mat img = makeRandomImage(height, width, channels);
+
+        Loader.load(org.bytedeco.javacpp.opencv_java.class);
+        OpenCVFrameConverter.ToOrgOpenCvCoreMat c = new OpenCVFrameConverter.ToOrgOpenCvCoreMat();
+
+        return c.convert(c.convert(img));
+    }
+
     Mat makeRandomImage(int height, int width, int channels) {
         if (height <= 0) {
             height = rng.nextInt() % 100 + 100;
@@ -366,7 +376,7 @@ public class TestNativeImageLoader {
 
     @Test
     public void testAsWritable() throws Exception {
-        File f0 = new ClassPathResource("datavec-data-image/testimages/class0/0.jpg").getFile();
+        String f0 = new ClassPathResource("datavec-data-image/testimages/class0/0.jpg").getFile().getAbsolutePath();
 
         NativeImageLoader imageLoader = new NativeImageLoader();
         ImageWritable img = imageLoader.asWritable(f0);
@@ -398,7 +408,7 @@ public class TestNativeImageLoader {
         m.setAccessible(true);
 
         File f1 = new ClassPathResource("datavec-data-image/voc/2007/JPEGImages/000005.jpg").getFile();
-        File f2 = new ClassPathResource("datavec-data-image/voc/2007/JPEGImages/000007.jpg").getFile();
+        String f2 = new ClassPathResource("datavec-data-image/voc/2007/JPEGImages/000007.jpg").getFile().getAbsolutePath();
 
         //Start with a large buffer
         byte[] buffer = new byte[20*1024*1024];
