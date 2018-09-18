@@ -18,6 +18,7 @@
 // Created by Yurii Shyrma on 18.12.2017
 //
 
+
 #include <ops/declarable/helpers/householder.h>
 #include <ops/declarable/helpers/biDiagonalUp.h>
 #include <NDArrayFactory.h>
@@ -128,9 +129,16 @@ HHsequence BiDiagonalUp::_makeHHsequence(const char type) const {
     }
 }
 
+	HHsequence BiDiagonalUp::makeHHsequence(const char type) const {
+		auto xType = _HHmatrix.dataType();
+
+		BUILD_SINGLE_SELECTOR(xType, return _makeHHsequence, (type);, FLOAT_TYPES);
+	}
+
 
 
 BUILD_SINGLE_TEMPLATE(template void BiDiagonalUp::_evalData, (), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template HHsequence BiDiagonalUp::_makeHHsequence, (const char type) const, FLOAT_TYPES);
 
 }
 }

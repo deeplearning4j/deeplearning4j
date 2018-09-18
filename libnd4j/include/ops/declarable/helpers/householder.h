@@ -28,7 +28,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    
+template <typename T>
 class Householder {
 
     public:
@@ -61,7 +61,7 @@ class Householder {
     *  tail - the essential part of the vector w: [w1, w2, w3, ...]
     *  normX - this scalar is the first non-zero element in vector resulting from Householder transformation -> (P*x)
     *  coeff - scalar, scaling factor in Householder matrix formula  
-    */                       
+    */
     static void evalHHmatrixData(const NDArray& x, NDArray& tail, T& coeff, T& normX);
 
     static void evalHHmatrixDataI(const NDArray& x, T& coeff, T& normX);
@@ -72,7 +72,7 @@ class Householder {
     *  x - input matrix
     *  tail - the essential part of the Householder vector w: [w1, w2, w3, ...]
     *  coeff - scalar, scaling factor in Householder matrix formula  
-    */                       
+    */
     static void mulLeft(NDArray& matrix, const NDArray& tail, const T coeff);
 
     /**

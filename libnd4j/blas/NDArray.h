@@ -45,8 +45,8 @@ namespace nd4j {
     ND4J_EXPORT NDArray<float> operator+(const float, const NDArray<float>&);
     ND4J_EXPORT NDArray<float16> operator+(const float16, const NDArray<float16>&);
     ND4J_EXPORT NDArray<double> operator+(const double, const NDArray<double>&);
-    NDArray mmul(const NDArray&, const NDArray&);
     */
+    NDArray mmul(const NDArray&, const NDArray&);
 
     class ND4J_EXPORT NDArray {
     private:
@@ -926,7 +926,7 @@ namespace nd4j {
         *  left - input array
         *  right - input array
         */
-        //friend NDArray mmul<>(const NDArray& left, const NDArray& right);
+        friend NDArray mmul(const NDArray& left, const NDArray& right);
 
         /**
         *  this method assigns elements of other array to the subarray of this array defined by given intervals
