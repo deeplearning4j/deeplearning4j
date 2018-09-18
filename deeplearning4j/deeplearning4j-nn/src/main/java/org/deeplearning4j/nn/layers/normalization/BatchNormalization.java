@@ -272,6 +272,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     public INDArray preOutput(INDArray x, TrainingMode training, LayerWorkspaceMgr workspaceMgr) {
+        if(x.size(1) != layerConf().getNOut()){
+            throw new IllegalArgumentException("input.size(1) does not match expected input size of " + layerConf().getNIn()
+                    + " - got input array with shape " + Arrays.toString(x.shape()));
+        }
         INDArray activations;
         // TODO add this directly in layer or get the layer prior...
         // batchnorm true but need to clarify if activation before or after

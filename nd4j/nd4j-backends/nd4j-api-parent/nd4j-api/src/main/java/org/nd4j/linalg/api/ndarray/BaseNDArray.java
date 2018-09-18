@@ -169,6 +169,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering
      */
     public BaseNDArray(DataBuffer buffer, int[] shape, int[] stride, long offset, char ordering) {
+        Shape.assertValidOrder(ordering);
         this.data = offset > 0 ? Nd4j.createBuffer(buffer, offset, Shape.lengthOfBuffer(shape, stride)) : buffer;
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, offset,
                 Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering));
@@ -178,6 +179,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     public BaseNDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, char ordering) {
+        Shape.assertValidOrder(ordering);
         this.data = offset > 0 ? Nd4j.createBuffer(buffer, offset, Shape.lengthOfBuffer(shape, stride)) : buffer;
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, offset,
                 Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering));
@@ -336,6 +338,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param newColumns the number of columns (<i>m</i>) of the new matrix.
      */
     public BaseNDArray(int newRows, int newColumns, char ordering) {
+        Shape.assertValidOrder(ordering);
         this.data = Nd4j.createBuffer((long) newRows * newColumns);
         int[] shape = new int[] {newRows, newColumns};
         int[] stride = Nd4j.getStrides(shape, ordering);
@@ -345,6 +348,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     public BaseNDArray(long newRows, long newColumns, char ordering) {
+        Shape.assertValidOrder(ordering);
         this.data = Nd4j.createBuffer((long) newRows * newColumns);
         long[] shape = new long[] {newRows, newColumns};
         long[] stride = Nd4j.getStrides(shape, ordering);
@@ -382,6 +386,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param shape  the shape of the ndarray
      */
     public BaseNDArray(List<INDArray> slices, int[] shape, int[] stride, char ordering) {
+        Shape.assertValidOrder(ordering);
         DataBuffer ret = slices.get(0).data().dataType() == (DataBuffer.Type.FLOAT)
                 ? Nd4j.createBuffer(new float[ArrayUtil.prod(shape)])
                 : Nd4j.createBuffer(new double[ArrayUtil.prod(shape)]);
@@ -444,6 +449,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering
      */
     public BaseNDArray(float[] data, int[] shape, int[] stride, long offset, char ordering) {
+        Shape.assertValidOrder(ordering);
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, offset,
                 Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering));
         if (data != null && data.length > 0) {
@@ -462,6 +468,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     public BaseNDArray(float[] data, long[] shape, long[] stride, long offset, char ordering) {
+        Shape.assertValidOrder(ordering);
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, offset,
                 Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering));
         if (data != null && data.length > 0) {
@@ -474,6 +481,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     public BaseNDArray(double[] data, long[] shape, long[] stride, long offset, char ordering) {
+        Shape.assertValidOrder(ordering);
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, offset,
                 Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering));
         if (data != null && data.length > 0) {
@@ -651,6 +659,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public BaseNDArray(DataBuffer floatBuffer, char order) {
         this(floatBuffer, new int[] {(int) floatBuffer.length()},
                 Nd4j.getStrides(new int[] {(int) floatBuffer.length()}, order), 0, order);
+        Shape.assertValidOrder(order);
         if (floatBuffer.length() >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Length of buffer can not be >= Integer.MAX_VALUE");
     }
@@ -3382,15 +3391,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return the result of the matrix multiplication
      */
     @Override
-    public INDArray mmul(INDArray other, INDArray result,MMulTranspose mMulTranspose) {
-        MMulTranspose mMulTranspose1 = MMulTranspose.builder()
-                .a(this)
-                .b(other)
-                .transposeA(mMulTranspose.isTransposeA())
-                .transposeB(mMulTranspose.isTransposeB())
-                .transposeResult(mMulTranspose.isTransposeResult())
-                .build();
-        return mMulTranspose1.getA().mmul(mMulTranspose1.getB(),result);
+    public INDArray mmul(INDArray other, INDArray result, MMulTranspose mMulTranspose) {
+        return mMulTranspose.exec(this, other, result);
     }
 
     /**
@@ -3401,16 +3403,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mmul(INDArray other, MMulTranspose mMulTranspose) {
-        MMulTranspose mMulTranspose1 = MMulTranspose.builder()
-                .a(this)
-                .b(other)
-                .transposeA(mMulTranspose.isTransposeA())
-                .transposeB(mMulTranspose.isTransposeB())
-                .transposeResult(mMulTranspose.isTransposeResult())
-                .build();
-        System.out.println(mMulTranspose1.getA());
-        System.out.println(mMulTranspose1.getB());
-        return mMulTranspose1.getA().mmul(mMulTranspose1.getB());
+        return mMulTranspose.exec(this, other, null);
     }
 
     /**
@@ -3436,13 +3429,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public double[][] toDoubleMatrix() {
         if(!isMatrix()) {
-            throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix!");
+            throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix! Array shape: " + Arrays.toString(this.shape()));
         }
 
-        if (this.rows() > Integer.MAX_VALUE || this.columns() > Integer.MAX_VALUE)
+        if (this.size(0) > Integer.MAX_VALUE || this.size(1) > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
-        double[][] ret = new double[(int) rows()][(int) columns()];
+        double[][] ret = new double[rows()][columns()];
         for(int i = 0; i < ret.length; i++) {
             ret[i] = getRow(i).dup().data().asDouble();
         }
@@ -3674,14 +3667,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mmuli(INDArray other, INDArray result, MMulTranspose transpose) {
-        MMulTranspose mMulTranspose = MMulTranspose.builder()
-                .a(this)
-                .b(other)
-                .transposeA(transpose.isTransposeA())
-                .transposeB(transpose.isTransposeB())
-                .transposeResult(transpose.isTransposeResult())
-                .build();
-        return mMulTranspose.getA().mmuli(mMulTranspose.getB(),result);
+        return transpose.exec(this, other, result);
     }
 
     /**
@@ -4479,7 +4465,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray transpose() {
-        return transposei();
+        return permute(ArrayUtil.reverseCopy(ArrayUtil.range(0, rank())));
     }
 
 
@@ -4491,7 +4477,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray transposei() {
-        return permute(ArrayUtil.reverseCopy(ArrayUtil.range(0, rank())));
+        return permutei(ArrayUtil.reverseCopy(ArrayUtil.range(0, rank())));
     }
 
     protected INDArray create(DataBuffer data, int[] shape, int[] strides) {

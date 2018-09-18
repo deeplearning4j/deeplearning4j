@@ -517,36 +517,25 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
 
         DataSet randomData = new DataSet(Nd4j.rand(10, 28 * 28 * 3).reshape(10, 3, 28, 28), Nd4j.rand(10, 10));
         MultiLayerNetwork modelToFineTune =
-                        new MultiLayerNetwork(
-                                        new NeuralNetConfiguration.Builder().seed(123)
-                                                        .weightInit(WeightInit.XAVIER)
-                                                        .updater(new Nesterovs(0.01, 0.9))
-                                                        .list()
-                                                        .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(3).stride(1, 1)
-                                                                        .nOut(20).activation(Activation.IDENTITY)
-                                                                        .build())
-                                                        .layer(1, new SubsamplingLayer.Builder(
-                                                                        SubsamplingLayer.PoolingType.MAX)
-                                                                                        .kernelSize(2, 2).stride(2, 2)
-                                                                                        .build())
-                                                        .layer(2, new ConvolutionLayer.Builder(5, 5).stride(1, 1)
-                                                                        .nOut(50).activation(Activation.IDENTITY)
-                                                                        .build())
-                                                        .layer(3, new SubsamplingLayer.Builder(
-                                                                        SubsamplingLayer.PoolingType.MAX)
-                                                                                        .kernelSize(2, 2).stride(2, 2)
-                                                                                        .build())
-                                                        .layer(4, new DenseLayer.Builder().activation(Activation.RELU)
-                                                                        .nOut(500).build())
-                                                        .layer(5, new DenseLayer.Builder().activation(Activation.RELU)
-                                                                        .nOut(250).build())
-                                                        .layer(6, new OutputLayer.Builder(
-                                                                        LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                                                                        .nOut(100)
-                                                                                        .activation(Activation.SOFTMAX)
-                                                                                        .build())
-                                                        .setInputType(InputType.convolutionalFlat(28, 28, 3)) //See note below
-                                                        .build());
+                new MultiLayerNetwork(
+                        new NeuralNetConfiguration.Builder().seed(123)
+                                .weightInit(WeightInit.XAVIER)
+                                .updater(new Nesterovs(0.01, 0.9))
+                                .list()
+                                .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(3).stride(1, 1)
+                                        .nOut(20).activation(Activation.IDENTITY).build())
+                                .layer(1, new SubsamplingLayer.Builder(PoolingType.MAX)
+                                        .kernelSize(2, 2).stride(2, 2).build())
+                                .layer(2, new ConvolutionLayer.Builder(5, 5).stride(1, 1)
+                                        .nOut(50).activation(Activation.IDENTITY).build())
+                                .layer(3, new SubsamplingLayer.Builder(PoolingType.MAX)
+                                        .kernelSize(2, 2).stride(2, 2).build())
+                                .layer(4, new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build())
+                                .layer(5, new DenseLayer.Builder().activation(Activation.RELU).nOut(250).build())
+                                .layer(6, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                                        .nOut(100).activation(Activation.SOFTMAX).build())
+                                .setInputType(InputType.convolutionalFlat(28, 28, 3)) //See note below
+                                .build());
         modelToFineTune.init();
         INDArray asFrozenFeatures = modelToFineTune.feedForwardToLayer(2, randomData.getFeatures(), false).get(2); //10x20x12x12
 
@@ -663,5 +652,30 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
         assertEquals("Incorrect # inputs", 7, newGraph.layerInputSize(1));
 
         newGraph.output(input);
+    }
+
+    @Test
+    public void testChangeNOutNIn() {
+        INDArray input = Nd4j.create(new long[] {1, 2, 4, 4});
+        MultiLayerNetwork net = new MultiLayerNetwork(new NeuralNetConfiguration.Builder()
+                .list()
+                .setInputType(InputType.inferInputTypes(input)[0])
+                .layer(new Convolution2D.Builder(1, 1).nOut(10).build())
+                .layer(new SubsamplingLayer.Builder(1,1).build())
+                .layer(new Convolution2D.Builder(1, 1).nOut(7).build())
+                .layer(new OutputLayer.Builder().activation(Activation.SOFTMAX).nOut(2).build())
+                .build());
+        net.init();
+
+        final MultiLayerNetwork newNet = new TransferLearning.Builder(net)
+                .nOutReplace(0, 5, WeightInit.XAVIER)
+                .nInReplace(2, 5, WeightInit.XAVIER)
+                .build();
+
+        newNet.init();
+
+        assertEquals("Incorrect number of outputs!", 5 , newNet.layerSize(0));
+        assertEquals("Incorrect number of inputs!", 5, newNet.layerInputSize(2));
+        newNet.output(input);
     }
 }
