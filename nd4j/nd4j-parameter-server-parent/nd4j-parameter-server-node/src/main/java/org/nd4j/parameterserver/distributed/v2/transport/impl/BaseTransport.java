@@ -47,13 +47,11 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -537,6 +535,23 @@ public abstract  class BaseTransport  implements Transport {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public String getRandomDownstreamFrom(@NonNull String id, String exclude) {
+        val nodes = mesh.get().getDownstreamsForNode(id);
+        if (nodes.isEmpty())
+            return null;
+
+        // fetching ids of all the nodes
+        val ids = new ArrayList<String>(nodes.stream().map(node -> {return node.getId();}).collect(Collectors.toList()));
+        if (exclude != null)
+            ids.remove(exclude);
+
+        if (ids.size() > 1)
+            Collections.shuffle(ids);
+
+        return ids.get(0);
     }
 
     @Override

@@ -33,6 +33,10 @@ public final class GradientsUpdateMessage extends BaseINDArrayMessage implements
     @Setter
     private String relayId;
 
+    @Getter
+    @Setter
+    private int iteration;
+
     public GradientsUpdateMessage(@NonNull String messageId, INDArray payload) {
         super(messageId, payload);
     }

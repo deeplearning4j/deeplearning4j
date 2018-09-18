@@ -207,8 +207,10 @@ public class MeshOrganizer implements Serializable {
         version++;
         node.setUpstreamNode(this.rootNode);
 
-        for (val n: node.getDownstreamNodes())
-            n.setUpstreamNode(this.rootNode);
+        for (val n: node.getDownstreamNodes()) {
+            this.rootNode.addDownstreamNode(n);
+            node.removeFromDownstreams(n);
+        }
     }
 
     /**

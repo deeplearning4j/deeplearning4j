@@ -48,6 +48,15 @@ public interface Transport {
     String getUpstreamId();
 
     /**
+     * This method returns random
+     *
+     * @param id
+     * @param exclude
+     * @return
+     */
+    String getRandomDownstreamFrom(String id, String exclude);
+
+    /**
      * This method returns consumer that accepts messages for delivery
      * @return
      */

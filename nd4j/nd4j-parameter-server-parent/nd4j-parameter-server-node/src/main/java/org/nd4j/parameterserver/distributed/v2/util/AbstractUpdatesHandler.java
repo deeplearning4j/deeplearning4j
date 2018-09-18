@@ -14,29 +14,26 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.v2.messages.pairs.params;
+package org.nd4j.parameterserver.distributed.v2.util;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.Setter;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.parameterserver.distributed.v2.messages.ResponseMessage;
-import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseINDArrayMessage;
+import org.nd4j.parameterserver.distributed.v2.transport.UpdatesHandler;
+import org.reactivestreams.Subscription;
 
-/**
- * This message holds INDArray with model parameters
- * @author raver119@gmail.com
- */
-@NoArgsConstructor
-public final class UpdaterParametersMessage extends BaseINDArrayMessage implements ResponseMessage {
-    private static final long serialVersionUID = 1L;
+public abstract class AbstractUpdatesHandler implements UpdatesHandler {
 
-    @Getter
-    @Setter
-    protected boolean finalState = false;
+    @Override
+    public void onSubscribe(Subscription subscription) {
 
-    public UpdaterParametersMessage(@NonNull String messageId, INDArray payload) {
-        super(messageId, payload);
+    }
+
+    @Override
+    public void onError(Throwable throwable) {
+
+    }
+
+    @Override
+    public void onComplete() {
+
     }
 }

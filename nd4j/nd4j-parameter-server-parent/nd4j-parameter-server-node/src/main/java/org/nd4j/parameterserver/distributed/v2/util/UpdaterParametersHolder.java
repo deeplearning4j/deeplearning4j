@@ -14,29 +14,31 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.v2.messages.pairs.params;
+package org.nd4j.parameterserver.distributed.v2.util;
 
-import lombok.Getter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.Setter;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.parameterserver.distributed.v2.messages.ResponseMessage;
-import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseINDArrayMessage;
+
+import java.io.Serializable;
 
 /**
- * This message holds INDArray with model parameters
+ * This class provides simple holder functionaliy
+ *
  * @author raver119@gmail.com
  */
+@Data
 @NoArgsConstructor
-public final class UpdaterParametersMessage extends BaseINDArrayMessage implements ResponseMessage {
-    private static final long serialVersionUID = 1L;
+@AllArgsConstructor
+public class UpdaterParametersHolder implements Serializable {
+    private INDArray parameters;
 
-    @Getter
-    @Setter
-    protected boolean finalState = false;
+    private long timeReceived = System.currentTimeMillis();
 
-    public UpdaterParametersMessage(@NonNull String messageId, INDArray payload) {
-        super(messageId, payload);
+    private boolean finalState = false;
+
+    public long getAge() {
+        return System.currentTimeMillis()  - timeReceived;
     }
 }
