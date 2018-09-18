@@ -95,6 +95,13 @@ public class BatchNorm extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
+        //Switch order: TF uses [input, gamma, beta, mean, variance]; libnd4j expects [input, mean, variance, gamma, beta]
+        String[] inputs = initWith.getInputsForFunction(this);
+        String[] orig = inputs.clone();
+        inputs[1] = orig[3];    //Mean
+        inputs[2] = orig[4];    //Variance
+        inputs[3] = orig[1];    //gamma
+        inputs[4] = orig[2];    //beta
         addArgs();
     }
 
