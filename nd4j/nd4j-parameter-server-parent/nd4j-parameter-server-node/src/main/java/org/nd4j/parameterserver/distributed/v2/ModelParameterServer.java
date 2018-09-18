@@ -228,6 +228,8 @@ public final class ModelParameterServer {
                         return;
                     }
 
+                    log.info("Trying to get updater parameters from [{}]", tId);
+
                     // lets make sure there is connection to desired node
                     transport.ensureConnection(tId);
 
