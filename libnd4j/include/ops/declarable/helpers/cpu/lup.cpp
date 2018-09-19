@@ -195,60 +195,66 @@ namespace helpers {
 
 
     template <typename T>
-    int inverse(NDArray* input, NDArray* output) {
+    static int _inverse(NDArray* input, NDArray* output) {
 
         auto n = input->sizeAt(-1);
         auto n2 = n * n;
         auto totalCount = output->lengthOf() / n2;
         
         output->assign((T)0.0); // fill up output tensor with zeros
-        std::unique_ptr<NDArray<T>> matrix(new NDArray<T>({n, n})); //, block.getWorkspace());
-        std::unique_ptr<NDArray<T>> compound(new NDArray<T>({n, n})); //, block.getWorkspace());
-        std::unique_ptr<NDArray<T>> permutation(new NDArray<T>({n, n}));
-        std::unique_ptr<NDArray<T>> lowerMatrix(new NDArray<T>({n, n}));
-        std::unique_ptr<NDArray<T>> upperMatrix(new NDArray<T>({n, n}));
+        auto matrix = NDArrayFactory::_create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getWorkspace()); //, block.getWorkspace());
+        auto compound = NDArrayFactory::_create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getWorkspace()); //, block.getWorkspace());
+        auto permutation = NDArrayFactory::_create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getWorkspace());
+        auto lowerMatrix = NDArrayFactory::_create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getWorkspace());
+        auto upperMatrix = NDArrayFactory::_create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getWorkspace());
 
         for (int e = 0; e < totalCount; e++) {
             if (e)
-                matrix->assign((T)0.0);
+                matrix.assign(0.0f);
 
             for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
-                (*matrix)(row++) = (*input)(k);
+                matrix.putScalar(row++, input->getScalar<T>(k));
             }
-            T det = lup(matrix.get(), compound.get(), permutation.get());
+            T det = _lup<T>(&matrix, &compound, &permutation).template getScalar<T>(0);
 
-            if (nd4j::math::nd4j_abs(det) < T(0.0000001)) {
+            // FIXME: and how this is going to work on float16?
+            if (nd4j::math::nd4j_abs<T>(det) < T(0.0000001)) {
                 nd4j_printf("matrix_inverse: The matrix %i has no inverse due determinant is %lf. Quiting...\n", e, det);
-                matrix->printIndexedBuffer("Wrong matrix");
-                ND4J_STATUS_VALIDATION;
+                matrix.printIndexedBuffer("Wrong matrix");
+                return ND4J_STATUS_VALIDATION;
             }
-            lowerMatrix->setIdentity(); // set up U to identity matrix
+            lowerMatrix.setIdentity(); // set up U to identity matrix
             for (int k = 1; k < n; k++) {  // and then put all values under main diagonal on to it
                 for (int j = 0; j < k; j++)
-                    (*lowerMatrix)(k, j) = (*compound)(k, j);
+                    lowerMatrix.putScalar(k, j, compound.template getScalar<T>(k, j));
             }
-            upperMatrix->setIdentity(); // set up U to identity matrix
+            upperMatrix.setIdentity(); // set up U to identity matrix
             for (int k = 0; k < n; k++) {  // and then put all values under main diagonal on to it
                 for (int j = k; j < n; j++)
-                    (*upperMatrix)(k, j) = (*compound)(k, j);
+                    upperMatrix.putScalar(k, j, compound.template getScalar<T>(k, j));
             }
-            invertUpperMatrix(upperMatrix.get(), matrix.get());
+            invertUpperMatrix(&upperMatrix, &matrix);
 
-            invertLowerMatrix(lowerMatrix.get(), upperMatrix.get());
+            invertLowerMatrix(&lowerMatrix, &upperMatrix);
 
-            nd4j::MmulHelper<T>::mmul(matrix.get(), upperMatrix.get(), compound.get(), T(1.0f), T(0.0f));
-            nd4j::MmulHelper<T>::mmul(compound.get(), permutation.get(), matrix.get(), T(1.0f), T(0.0f));
+            nd4j::MmulHelper::mmul(&matrix, &upperMatrix, &compound, 1.0, 0.0);
+            nd4j::MmulHelper::mmul(&compound, &permutation, &matrix, 1.0, 0.0);
             for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
-                (*output)(k) = (*matrix)(row++);
+                output->putScalar(k, matrix.template getScalar<T>(row++));
             }
         }
 
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
 
-    template int inverse(NDArray<float>* input, NDArray<float>* output);
-    template int inverse(NDArray<float16>* input, NDArray<float16>* output);
-    template int inverse(NDArray<double>* input, NDArray<double>* output);
+    int inverse(NDArray* input, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), return _inverse, (input, output), LIBND4J_TYPES);
+    }
+
+
+
+    BUILD_SINGLE_TEMPLATE(template int _inverse, (NDArray* input, NDArray* output), LIBND4J_TYPES);
+
 }
 }
 }
