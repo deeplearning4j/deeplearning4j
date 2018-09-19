@@ -781,18 +781,20 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
     if(norm2.lengthOf() == 1) {        
 
         const T N = norm2.getScalar<T>(0);
+
+        auto cn = clipNorm.getScalar<T>(0);
         
-        if(N > clipNorm) {            
+        if(N > cn) {
 
             const T sumOfProd = (input * gradO).reduceNumber(reduce::Sum).getScalar<T>(0);    // reduce to scalar
             const T factor1 = static_cast<T>(1.f) / N;
             const T factor3 = factor1 / (N * N) ;                                            // 1 / (N*N*N)
-            
-            auto lambda = LAMBDA_TT(elem1, elem2, clipNorm, sumOfProd, factor1, factor3) {
-                return clipNorm * (factor1 * elem2 - factor3 * elem1 * sumOfProd);
+
+            auto lambda = LAMBDA_TT(elem1, elem2, cn, sumOfProd, factor1, factor3) {
+                return cn * (factor1 * elem2 - factor3 * elem1 * sumOfProd);
             };
 
-            const_cast<NDArray&>(input).applyPairwiseLambda(&gradO, lambda, &gradI);
+            (const_cast<NDArray&>(input)).applyPairwiseLambda<T>(&gradO, lambda, &gradI);
         }
         else 
             gradI.assign(gradO);
@@ -811,8 +813,10 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
 
             auto gradOSubArr = gradO(idxRanges);
             auto gradISubArr = gradI(idxRanges);
-            
-            if (N > clipNorm) {
+
+            auto cn = clipNorm.getScalar<T>(0);
+
+            if (N > cn) {
                 
                 auto inputSubArr = input(idxRanges);
                 
@@ -820,10 +824,10 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
                 const T factor1 = static_cast<T>(1.f) / N;
                 const T factor3 = factor1 / (N * N) ;                                            // 1 / (N*N*N)
 
-                auto lambda = LAMBDA_TT(elem1, elem2, clipNorm, sumOfProd, factor1, factor3) {
-                    return clipNorm * (factor1 * elem2 - factor3 * elem1 * sumOfProd);
+                auto lambda = LAMBDA_TT(elem1, elem2, cn, sumOfProd, factor1, factor3) {
+                    return cn * (factor1 * elem2 - factor3 * elem1 * sumOfProd);
                 };
-                inputSubArr.applyPairwiseLambda(&gradOSubArr, lambda, &gradISubArr);
+                inputSubArr.applyPairwiseLambda<T>(&gradOSubArr, lambda, &gradISubArr);
             }
             else
                 gradISubArr.assign(gradOSubArr);
@@ -840,44 +844,52 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void clipByAveraged(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& dimensions, const T clipNorm, const bool isInplace) {
-    
+static void clipByAveraged_(NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
+
+    auto cn = clipNorm.getScalar<T>(0);
     if (dimensions.size() == 0) {
         // all-reduce
-        T n2 = input.template reduceNumber<simdOps::Norm2<T>>() / input.lengthOf();        
-        if (n2 <= clipNorm) {
+        T n2 = input.reduceNumber(reduce::Norm2).getScalar<T>(0) / input.lengthOf();
+        if (n2 <= cn) {
             if (!isInplace)
                 output.assign(input);
         } 
         else {
-            const T factor = clipNorm / n2;
+            const T factor = cn / n2;
             auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
-            input.applyLambda(lambda, &output);
+            input.applyLambda<T>(lambda, &output);
         }
     } 
     else {
         // along dimension
-        auto norm2 = input.template reduceAlongDims<simdOps::Norm2<T>>(dimensions, false);
+        auto norm2 = input.reduceAlongDims(reduce::Norm2, dimensions, false);
         if (!isInplace)
                 output.assign(input);
         auto tads = output.allTensorsAlongDimension(dimensions);
         // TODO: make this CUDA-compliant somehow
         for (int e = 0; e < tads->size(); e++) {
-            T n2 = norm2.getScalar(e) / tads->at(e)->lengthOf();
-            const T factor = clipNorm / n2;
-            if (n2 > clipNorm) {
+            T n2 = norm2.getScalar<T>(e) / tads->at(e)->lengthOf();
+            const T factor = cn / n2;
+            if (n2 > cn) {
                 auto lambda = LAMBDA_T(_x, factor) {return _x * factor;};
-                tads->at(e)->applyLambda(lambda, &output);
+                tads->at(e)->applyLambda<T>(lambda, &output);
             }
         }
         delete tads;
     }
 }
 
+    void clipByAveraged(NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
+        BUILD_SINGLE_SELECTOR(input.dataType(), clipByAveraged_, (input, output, dimensions, clipNorm, isInplace), FLOAT_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void clipByAveraged_, (NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace), FLOAT_TYPES);
+
+
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void mirrorPad(const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& output, const int mode) {
+static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
     
     // mode:  0 - REFLECT, else - SYMMETRIC
     const int reflBorder = (bool)mode ? 1 : 0;
@@ -889,18 +901,18 @@ void mirrorPad(const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& 
 
     if(rank <= 1) {
 
-        const int leftSide  = static_cast<int>(paddings(static_cast<Nd4jLong>(0)));
-        const int rightSide = static_cast<int>(paddings(static_cast<Nd4jLong>(1)));
+        const auto leftSide  = paddings.getScalar<Nd4jLong>(0);
+        const auto rightSide = paddings.getScalar<Nd4jLong>(1);
 
 #pragma omp parallel for if(outLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
         for(int i = 0; i < outLen; ++i) {
             
             for(int j = 0; j < leftSide; ++j)
-                output(j) = input(inLen - leftSide + symmBorder - j);
+                output.putScalar(j, input.getScalar<T>(inLen - leftSide + symmBorder - j));
             for(int j = 0; j < inLen; ++j)
-                output(j + leftSide) = input(j);
+                output.putScalar(j + leftSide, input.getScalar<T>(j));
             for(int j = 0; j < rightSide; ++j)
-                output(leftSide + inLen + j) = input(inLen - 1 - symmBorder - j);
+                output.putScalar(leftSide + inLen + j, input.getScalar<T>(inLen - 1 - symmBorder - j));
         }  
     }
     else {
@@ -913,7 +925,7 @@ void mirrorPad(const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& 
 
             for(int j = 0; j < rank; ++j) {
             
-                const int leftSide  = static_cast<int>(paddings(j, 0));
+                const auto leftSide  = paddings.getScalar<T>(j, 0);
 
                 if(outIdx[j] < leftSide) 
                     inIdx[j] = leftSide - outIdx[j] - reflBorder;
@@ -925,16 +937,22 @@ void mirrorPad(const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& 
                     inIdx[j] = 2 * input.sizeAt(j) + leftSide - outIdx[j] - 1 - symmBorder;                
             }
     
-            Nd4jLong outOffset = shape::getOffset(0, output.shapeOf(), output.stridesOf(), outIdx.data(), rank);
-            Nd4jLong inOffset  = shape::getOffset(0, input.shapeOf(),  input.stridesOf(),  inIdx.data(),  rank);
-            output.buffer()[outOffset] = input.getBuffer()[inOffset];
+            auto outOffset = shape::getOffset(0, output.shapeOf(), output.stridesOf(), outIdx.data(), rank);
+            auto inOffset  = shape::getOffset(0, input.shapeOf(),  input.stridesOf(),  inIdx.data(),  rank);
+            reinterpret_cast<T*>(output.buffer())[outOffset] = reinterpret_cast<T*>(input.getBuffer())[inOffset];
         }
     }
 }
 
+    void mirrorPad(const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
+        BUILD_SINGLE_SELECTOR(input.dataType(), mirrorPad_, (input, paddings, output, mode), LIBND4J_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void mirrorPad_, (const NDArray& input, const NDArray& paddings, NDArray& output, const int mode), LIBND4J_TYPES);
+
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void concat(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output, const int axis) {
+static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
 
     const int numOfArrs = inArrs.size();
     bool allC = true;
@@ -953,8 +971,8 @@ void concat(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output, const in
 
     //we are merging all scalars
     if(allScalar) {
-        for(int i = 0; i < numOfArrs; i++) 
-                 output.getBuffer()[i] = inArrs[i]->getBuffer()[0];
+        for(int i = 0; i < numOfArrs; i++)
+            reinterpret_cast<T*>(output.getBuffer())[i] = reinterpret_cast<T*>(inArrs[i]->getBuffer())[0];
         return;
     }
 
@@ -965,8 +983,8 @@ void concat(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output, const in
 #pragma omp parallel for schedule(guided)
             for (int r = 0; r < numOfArrs; r++) {
 
-                T *z = output.getBuffer() + (r * lenOfFirstArr);
-                T *x = inArrs[r]->getBuffer();
+                T *z = reinterpret_cast<T*>(output.getBuffer()) + (r * lenOfFirstArr);
+                T *x = reinterpret_cast<T*>(inArrs[r]->getBuffer());
 
 #pragma omp simd
                 for (Nd4jLong e = 0; e < lenOfFirstArr; e++)
@@ -977,7 +995,7 @@ void concat(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output, const in
             int currBuffer = 0;
             int currBufferOffset = 0;
             for (int i = 0; i < output.lengthOf(); i++) {
-                output.getBuffer()[i] = inArrs[currBuffer]->getBuffer()[currBufferOffset++];
+                reinterpret_cast<T*>(output.getBuffer())[i] = reinterpret_cast<T*>(inArrs[currBuffer]->getBuffer())[currBufferOffset++];
                 if (currBufferOffset >= inArrs[currBuffer]->lengthOf()) {
                     currBuffer++;
                     currBufferOffset = 0;
@@ -1003,17 +1021,23 @@ void concat(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output, const in
 // #pragma omp parallel for if(numOfArrs > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
 #pragma omp parallel for schedule(guided)
     for(int i = 0; i < numOfArrs; ++i) {
-        NDArray<T> temp = output(indices[i], true);
+        auto temp = output(indices[i], true);
         temp.assign(inArrs[i]);
     }
 }
 
+    void concat(const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
+        BUILD_SINGLE_SELECTOR(output.dataType(), concat_,(inArrs, output, axis), LIBND4J_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void concat_, (const std::vector<NDArray*>& inArrs, NDArray& output, const int axis), LIBND4J_TYPES);
+
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void tileBP(const NDArray<T>& gradO /*input*/, NDArray<T>& gradI /*output*/, const std::vector<Nd4jLong> reps) {
+static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
 
-    T* gradIBuff      = gradI.getBuffer();
-    const T* gradOBuff      = gradO.getBuffer();
+    T* gradIBuff      = reinterpret_cast<T*>(gradI.getBuffer());
+    const T* gradOBuff      = reinterpret_cast<T*>(gradO.getBuffer());
     const Nd4jLong gradILen = gradI.lengthOf();
     const Nd4jLong gradOLen = gradO.lengthOf();  // gradOLen >= gradILen
     const Nd4jLong gradIEWS = nd4j::math::nd4j_abs<Nd4jLong>(gradI.ews());
@@ -1030,13 +1054,17 @@ void tileBP(const NDArray<T>& gradO /*input*/, NDArray<T>& gradI /*output*/, con
 
     if(gradO.ordering() == 'c' && gradOEWS == 1) {
 #pragma omp parallel for simd if(gradOLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for(Nd4jLong i=0;  i<gradOLen; ++i)
-            gradI(shape::subArrayIndex(gradO.getShapeInfo(), gradI.getShapeInfo(), i)) += gradOBuff[i];
+        for(Nd4jLong i=0;  i<gradOLen; ++i) {
+            auto idx = shape::subArrayIndex(gradO.getShapeInfo(), gradI.getShapeInfo(), i);
+            gradI.putScalar(idx, gradI.getScalar<T>(idx) + gradOBuff[i]);
+        }
     }
     else if(gradO.ordering() == 'c' && gradOEWS > 1) {
 #pragma omp parallel for simd if(gradOLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for(Nd4jLong i=0;  i<gradOLen; ++i)
-            gradI(shape::subArrayIndex(gradO.getShapeInfo(), gradI.getShapeInfo(), i)) += gradOBuff[i*gradOEWS];
+        for(Nd4jLong i=0;  i<gradOLen; ++i) {
+            auto idx = shape::subArrayIndex(gradO.getShapeInfo(), gradI.getShapeInfo(), i);
+            gradI.putScalar(idx, gradI.getScalar<T>(idx) + gradOBuff[i * gradOEWS]);
+        }
     }
     else {
         Nd4jLong idx[MAX_RANK];
@@ -1046,92 +1074,18 @@ void tileBP(const NDArray<T>& gradO /*input*/, NDArray<T>& gradI /*output*/, con
 #pragma omp parallel for simd if(gradOLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(idx)
         for(Nd4jLong i=0;  i<gradOLen; ++i) {
             shape::ind2subC(gradORank, gradOShape, i, gradOLen, idx);
-            gradI(shape::subArrayIndex(gradO.getShapeInfo(), gradI.getShapeInfo(), i)) += gradOBuff[shape::getOffset(0, gradOShape, gradOStrides, idx, gradORank)];
+            auto fidx = shape::subArrayIndex(gradO.getShapeInfo(), gradI.getShapeInfo(), i);
+            gradI.putScalar(fidx, gradI.getScalar<T>(fidx) + gradOBuff[shape::getOffset(0, gradOShape, gradOStrides, idx, gradORank)]);
         }
     }
 }
 
+    void tileBP(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
+        BUILD_SINGLE_SELECTOR(gradI.dataType(), tileBP_, (gradO, gradI, reps), FLOAT_TYPES);
+    }
 
 
-template void triu<float>(const NDArray<float>& input, NDArray<float>& output, const int diagonal);
-template void triu<float16>(const NDArray<float16>& input, NDArray<float16>& output, const int diagonal);
-template void triu<double>(const NDArray<double>& input, NDArray<double>& output, const int diagonal);
-
-template void triuBP<float>(const NDArray<float>& input, const NDArray<float>& gradO, NDArray<float>& gradI, const int diagonal);
-template void triuBP<float16>(const NDArray<float16>& input, const NDArray<float16>& gradO, NDArray<float16>& gradI, const int diagonal);
-template void triuBP<double>(const NDArray<double>& input, const NDArray<double>& gradO, NDArray<double>& gradI, const int diagonal);
-
-template void trace<float>(const NDArray<float>& input, NDArray<float>& output);
-template void trace<float16>(const NDArray<float16>& input, NDArray<float16>& output);
-template void trace<double>(const NDArray<double>& input, NDArray<double>& output);
-
-template void randomShuffle<float>(NDArray<float>& input, NDArray<float>& output, nd4j::random::RandomBuffer& rng, const bool isInplace);
-template void randomShuffle<float16>(NDArray<float16>& input, NDArray<float16>& output, nd4j::random::RandomBuffer& rng, const bool isInplace);
-template void randomShuffle<double>(NDArray<double>& input, NDArray<double>& output, nd4j::random::RandomBuffer& rng, const bool isInplace);
-
-template void recursiveLoopForPad<float>(const int mode, NDArray<float>& input, const NDArray<float>& paddings, NDArray<float>& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, float padValue);
-template void recursiveLoopForPad<float16>(const int mode, NDArray<float16>& input, const NDArray<float16>& paddings, NDArray<float16>& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, float16 padValue);
-template void recursiveLoopForPad<double>(const int mode, NDArray<double>& input, const NDArray<double>& paddings, NDArray<double>& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, double padValue);
-
-template void invertPermutation<float>(const NDArray<float>& input, NDArray<float>& output);
-template void invertPermutation<float16>(const NDArray<float16>& input, NDArray<float16>& output);
-template void invertPermutation<double>(const NDArray<double>& input, NDArray<double>& output);
-
-template void gatherND<float>(NDArray<float>& input, NDArray<float>& indices, NDArray<float>& output);
-template void gatherND<float16>(NDArray<float16>& input, NDArray<float16>& indices, NDArray<float16>& output);
-template void gatherND<double>(NDArray<double>& input, NDArray<double>& indices, NDArray<double>& output);
-
-template void gather<float>(NDArray<float>* input, const NDArray<float>* indices, NDArray<float>* output, const std::vector<int>& intArgs);
-template void gather<float16>(NDArray<float16>* input, const NDArray<float16>* indices, NDArray<float16>* output, const std::vector<int>& intArgs);
-template void gather<double>(NDArray<double>* input, const NDArray<double>* indices, NDArray<double>* output, const std::vector<int>& intArgs);
-
-template void eye<float>(NDArray<float>& output);
-template void eye<float16>(NDArray<float16>& output);
-template void eye<double>(NDArray<double>& output);
-
-template void scatterUpdate<float>(NDArray<float>& operand, NDArray<float>& updates, const std::vector<int>* intArgs);
-template void scatterUpdate<float16>(NDArray<float16>& operand, NDArray<float16>& updates, const std::vector<int>* intArgs);
-template void scatterUpdate<double>(NDArray<double>& operand, NDArray<double>& updates, const std::vector<int>* intArgs);
-
-template void mergeMaxIndex<float>(const std::vector<NDArray<float>*>& inArrs, NDArray<float>& output);
-template void mergeMaxIndex<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>& output);
-template void mergeMaxIndex<double>(const std::vector<NDArray<double>*>& inArrs, NDArray<double>& output);
-
-template void mergeMax<float>(const std::vector<NDArray<float>*>& inArrs, NDArray<float>& output);
-template void mergeMax<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>& output);
-template void mergeMax<double>(const std::vector<NDArray<double>*>& inArrs, NDArray<double>& output);
-
-template void mergeAvg<float>(const std::vector<NDArray<float>*>& inArrs, NDArray<float>& output);
-template void mergeAvg<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>& output);
-template void mergeAvg<double>(const std::vector<NDArray<double>*>& inArrs, NDArray<double>& output);
-
-template void mergeAdd<float>(const std::vector<NDArray<float>*>& inArrs, NDArray<float>& output);
-template void mergeAdd<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>& output);
-template void mergeAdd<double>(const std::vector<NDArray<double>*>& inArrs, NDArray<double>& output);
-
-template void clipByNorm<float>(NDArray<float>& input, NDArray<float>& output, const std::vector<int>& dimensions, const float clipNorm, const bool isInplace);
-template void clipByNorm<float16>(NDArray<float16>& input, NDArray<float16>& output, const std::vector<int>& dimensions, const float16 clipNorm, const bool isInplace);
-template void clipByNorm<double>(NDArray<double>& input, NDArray<double>& output, const std::vector<int>& dimensions, const double clipNorm, const bool isInplace);
-
-template void clipByNormBP<float>(const NDArray<float>& input, const NDArray<float>& gradO, NDArray<float>& gradI, const std::vector<int>& dimensions, const float clipNorm);
-template void clipByNormBP<float16>(const NDArray<float16>& input, const NDArray<float16>& gradO, NDArray<float16>& gradI, const std::vector<int>& dimensions, const float16 clipNorm);
-template void clipByNormBP<double>(const NDArray<double>& input, const NDArray<double>& gradO, NDArray<double>& gradI, const std::vector<int>& dimensions, const double clipNorm);
-
-template void clipByAveraged<float>(NDArray<float>& input, NDArray<float>& output, const std::vector<int>& dimensions, const float clipNorm, const bool isInplace);
-template void clipByAveraged<float16>(NDArray<float16>& input, NDArray<float16>& output, const std::vector<int>& dimensions, const float16 clipNorm, const bool isInplace);
-template void clipByAveraged<double>(NDArray<double>& input, NDArray<double>& output, const std::vector<int>& dimensions, const double clipNorm, const bool isInplace);
-
-template void mirrorPad<float>(const NDArray<float>& input, const NDArray<float>& paddings, NDArray<float>& output, const int mode);
-template void mirrorPad<float16>(const NDArray<float16>& input, const NDArray<float16>& paddings, NDArray<float16>& output, const int mode);
-template void mirrorPad<double>(const NDArray<double>& input, const NDArray<double>& paddings, NDArray<double>& output, const int mode);
-
-template void tileBP<float>(const NDArray<float>& gradO, NDArray<float>& gradI, const std::vector<Nd4jLong> reps);
-template void tileBP<float16>(const NDArray<float16>& gradO, NDArray<float16>& gradI, const std::vector<Nd4jLong> reps);
-template void tileBP<double>(const NDArray<double>& gradO, NDArray<double>& gradI, const std::vector<Nd4jLong> reps);
-
-template void concat<float>(const std::vector<NDArray<float>*>& inArrs, NDArray<float>& output, const int axis);
-template void concat<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>& output, const int axis);
-template void concat<double>(const std::vector<NDArray<double>*>& inArrs, NDArray<double>& output, const int axis);
+    BUILD_SINGLE_TEMPLATE(template void tileBP_, (const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps), FLOAT_TYPES);
 
 }
 }

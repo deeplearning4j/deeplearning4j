@@ -548,21 +548,26 @@ namespace nd4j {
         *  func - what operation to apply
         *  target - where to store result
         */
-        //void applyLambda(const std::function<T(T)>& func, NDArray* target = nullptr);
+        template <typename T>
+        void applyLambda(const std::function<T(T)>& func, NDArray* target = nullptr);
 
-        //void applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDArray* target = nullptr);
+        template <typename T>
+        void applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDArray* target = nullptr);
 
         /** 
         *  apply pairwise operation "func" to an array
         *  other - input array
         *  func - what pairwise operation to apply
         *  target - where to store result
-        */ 
-        //void applyPairwiseLambda(const NDArray* other, const std::function<T(T, T)>& func, NDArray* target = nullptr);
+        */
+        template <typename T>
+        void applyPairwiseLambda(const NDArray* other, const std::function<T(T, T)>& func, NDArray* target = nullptr);
 
-        //void applyIndexedPairwiseLambda(NDArray* other, const std::function<T(Nd4jLong, T, T)>& func, NDArray* target = nullptr);
+        template <typename T>
+        void applyIndexedPairwiseLambda(NDArray* other, const std::function<T(Nd4jLong, T, T)>& func, NDArray* target = nullptr);
 
-        //void applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<T(T, T, T)>& func, NDArray* target = nullptr);
+        template <typename T>
+        void applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<T(T, T, T)>& func, NDArray* target = nullptr);
 #endif
 
         /**

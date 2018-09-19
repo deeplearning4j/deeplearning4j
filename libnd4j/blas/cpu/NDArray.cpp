@@ -272,9 +272,9 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
 
 ////////////////////////////////////////////////////////////////////////
 #ifndef __JAVACPP_HACK__
-/*
+
     template<typename T>
-    void NDArray<T>::applyTriplewiseLambda(NDArray<T>* second, NDArray<T> *third, const std::function<T(T, T, T)>& func, NDArray<T>* target) {
+    void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<T(T, T, T)>& func, NDArray* target) {
         if (target == nullptr)
             target = this;
 
@@ -321,7 +321,7 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
     }
 
     template<typename T>
-    void NDArray<T>::applyPairwiseLambda(const NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target) {
+    void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<T(T, T)>& func, NDArray* target) {
         if (target == nullptr)
             target = this;
 
@@ -362,7 +362,7 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
 
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
-    void NDArray<T>::applyLambda(const std::function<T(T)>& func, NDArray<T>* target) {
+    void NDArray::applyLambda(const std::function<T(T)>& func, NDArray* target) {
         if (target == nullptr)
             target = this;
 
@@ -387,7 +387,7 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
     }
 
     template<typename T>
-    void NDArray<T>::applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDArray<T>* target) {
+    void NDArray::applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDArray* target) {
         if (target == nullptr)
             target = this;
 
@@ -413,7 +413,7 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
     }
 
     template<typename T>
-    void NDArray<T>::applyIndexedPairwiseLambda(NDArray<T>* other, const std::function<T(Nd4jLong, T, T)>& func, NDArray<T>* target) {
+    void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<T(Nd4jLong, T, T)>& func, NDArray* target) {
         if (target == nullptr)
             target = this;
 
@@ -450,7 +450,6 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
             }
         }
     }
-    */
 #endif
 
 
