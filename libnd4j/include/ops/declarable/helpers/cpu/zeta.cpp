@@ -61,57 +61,55 @@ static FORCEINLINE T zetaSlow(const T x, const T q) {
 	return result;
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 // fast implementation, it is based on Euler-Maclaurin summation formula
-template <typename T>
-static FORCEINLINE T zeta(const T x, const T q) {
-	
-	// if (x <= (T)1.) 
-	// 	throw("zeta function: x must be > 1 !");
+    template <typename T>
+    T zeta(const T x, const T q) {
 
-	// if (q <= (T)0.) 
-	// 	throw("zeta function: q must be > 0 !");
+        // if (x <= (T)1.)
+        // 	throw("zeta function: x must be > 1 !");
 
-	T a, b(0.), k, s, t, w;
-		
-	s = math::nd4j_pow<T, T, T>(q, -x);
-	a = q;
-	int i = 0;
+        // if (q <= (T)0.)
+        // 	throw("zeta function: q must be > 0 !");
 
-	while(i < 9 || a <= (T)9.) {
-		i += 1;
-		a += (T)1.0;
-		b = math::nd4j_pow<T, T, T>(a, -x);
-		s += b;
-		if(math::nd4j_abs(b / s) < (T)machep)
-			return s;
-	}
-	
-	w = a;
-	s += b * (w / (x - (T)1.) - (T)0.5);
-	a = (T)1.;
-	k = (T)0.;
-	
-	for(i = 0; i < 12; ++i) {
-		a *= x + k;
-		b /= w;
-		t = a * b / coeff[i];
-		s += t;
-		t = math::nd4j_abs(t / s);
-		
-		if(t < (T)machep)
-			return s;
-		
-		k += (T)1.;
-		a *= x + k;
-		b /= w;
-		k += (T)1.;
-	}
-	
-	return s;
-}
+        T a, b(0.), k, s, t, w;
 
+        s = math::nd4j_pow<T, T, T>(q, -x);
+        a = q;
+        int i = 0;
+
+        while(i < 9 || a <= (T)9.) {
+            i += 1;
+            a += (T)1.0;
+            b = math::nd4j_pow<T, T, T>(a, -x);
+            s += b;
+            if(math::nd4j_abs(b / s) < (T)machep)
+                return s;
+        }
+
+        w = a;
+        s += b * (w / (x - (T)1.) - (T)0.5);
+        a = (T)1.;
+        k = (T)0.;
+
+        for(i = 0; i < 12; ++i) {
+            a *= x + k;
+            b /= w;
+            t = a * b / coeff[i];
+            s += t;
+            t = math::nd4j_abs(t / s);
+
+            if(t < (T)machep)
+                return s;
+
+            k += (T)1.f;
+            a *= x + k;
+            b /= w;
+            k += (T)1.f;
+        }
+
+        return s;
+    }
 
 //////////////////////////////////////////////////////////////////////////
 // calculate the Hurwitz zeta function for arrays
@@ -134,6 +132,9 @@ static NDArray zeta_(const NDArray& x, const NDArray& q) {
 	BUILD_SINGLE_TEMPLATE(template NDArray zeta_, (const NDArray& x, const NDArray& q), FLOAT_TYPES);
 
 
+    template float16 zeta(float16, float16);
+    template float zeta(float, float);
+    template double zeta(double, double);
 }
 }
 }

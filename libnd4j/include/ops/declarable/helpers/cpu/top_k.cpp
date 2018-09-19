@@ -133,15 +133,15 @@ namespace helpers {
     }
 
         int topKFunctor(NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort) {
-            BUILD_SINGLE_SELECTOR(input->dataType(), return topKFunctor_, (input, values, indeces, k, needSort), LIBND4J_TYPES);
+            BUILD_SINGLE_SELECTOR(input->dataType(), return topKFunctor_, (input, values, indeces, k, needSort), NUMERIC_TYPES);
         }
 
         int inTopKFunctor(NDArray* input, NDArray* target, NDArray* result, int k) {
-            BUILD_SINGLE_SELECTOR(input->dataType(), return inTopKFunctor_, (input, target, result, k), LIBND4J_TYPES);
+            BUILD_SINGLE_SELECTOR(input->dataType(), return inTopKFunctor_, (input, target, result, k), NUMERIC_TYPES);
         }
 
-        BUILD_SINGLE_TEMPLATE(template int topKFunctor_, (NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort), LIBND4J_TYPES);
-        BUILD_SINGLE_TEMPLATE(template int inTopKFunctor_, (NDArray* input, NDArray* target, NDArray* result, int k), LIBND4J_TYPES);
+        BUILD_SINGLE_TEMPLATE(template int topKFunctor_, (NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort), NUMERIC_TYPES);
+        BUILD_SINGLE_TEMPLATE(template int inTopKFunctor_, (NDArray* input, NDArray* target, NDArray* result, int k), NUMERIC_TYPES);
 }
 }
 }

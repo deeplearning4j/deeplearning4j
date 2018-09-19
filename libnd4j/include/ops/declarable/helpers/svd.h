@@ -86,17 +86,20 @@ class SVD {
 
 
 //////////////////////////////////////////////////////////////////////////
-FORCEINLINE NDArray& SVD::getS() {
+template <typename T>
+FORCEINLINE NDArray& SVD<T>::getS() {
   return _s;
 }
 
 //////////////////////////////////////////////////////////////////////////
-FORCEINLINE NDArray& SVD::getU() {
+template <typename T>
+FORCEINLINE NDArray& SVD<T>::getU() {
   return _u;
 }
 
 //////////////////////////////////////////////////////////////////////////
-FORCEINLINE NDArray& SVD::getV() {
+template <typename T>
+FORCEINLINE NDArray& SVD<T>::getV() {
   return _v;
 }
 
