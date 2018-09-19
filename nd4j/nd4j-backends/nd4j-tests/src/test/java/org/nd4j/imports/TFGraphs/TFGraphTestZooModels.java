@@ -161,14 +161,18 @@ public class TFGraphTestZooModels {
         }
         Double precisionOverride = null;    //TFGraphTestAllHelper.testPrecisionOverride(modelName);
 
+
+        Double maxRE = 1e-3;
+        Double minAbs = 1e-4;
+
         currentTestDir = testDir.newFolder();
-//        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
-//                LOADER, precisionOverride);
+        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
+                LOADER, maxRE, minAbs);
 
-        Double maxRE = 1e-2;
-        Double minAbs = 1e-3;
 
-        TFGraphTestAllHelper.checkIntermediate(inputs, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
-                LOADER, maxRE, minAbs, localTestDir);
+//        Double maxRE = 1e-2;
+//        Double minAbs = 1e-3;
+//        TFGraphTestAllHelper.checkIntermediate(inputs, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
+//                LOADER, maxRE, minAbs, localTestDir);
     }
 }
