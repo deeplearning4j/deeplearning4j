@@ -1555,7 +1555,7 @@ public class SameDiffTests {
         SDVariable sdBeta = sd.var("beta", beta);
 
         SDVariable out = sd.batchNorm(sdInput, sdMean, sdVar, sdGamma, sdBeta,
-                true, true, 0.0);
+                0.0, 1);
         out = sd.tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();

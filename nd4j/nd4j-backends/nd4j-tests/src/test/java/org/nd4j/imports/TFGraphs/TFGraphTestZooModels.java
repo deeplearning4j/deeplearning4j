@@ -26,7 +26,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @RunWith(Parameterized.class)
 @Slf4j
@@ -39,11 +38,9 @@ public class TFGraphTestZooModels {
             //https://github.com/deeplearning4j/deeplearning4j/issues/6397
             "deeplab.*",
 
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6422
-//            "nasnet_mobile_.*",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6423
-            "resnetv2"
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6462
+            "inception_v4_2018_04_27",
+            "inception_resnet_v2_2018_04_27"
 
     };
 
@@ -109,7 +106,7 @@ public class TFGraphTestZooModels {
                     }
                     Preconditions.checkState(toExtract != null, "Found to .pb files in archive: %s", localFile.getAbsolutePath());
 
-                    Preconditions.checkNotNull(currentTestDir);
+                    Preconditions.checkNotNull(currentTestDir, "currentTestDir has not been set (is null)");
                     modelFile = new File(currentTestDir, "tf_model.pb");
                     ArchiveUtils.tarGzExtractSingleFile(localFile, modelFile, toExtract);
                 } else if(filename.endsWith(".zip")){
@@ -144,11 +141,13 @@ public class TFGraphTestZooModels {
     public void testOutputOnly() throws Exception {
 //        if(!modelName.equals("mobilenet_v1_0.5_128")){
 //        if(!modelName.equals("nasnet_mobile_2018_04_27")){
-//        if(!modelName.equals("resnetv2")){
+//        if(!modelName.equals("resnetv2_imagenet_frozen_graph")){
 //        if(!modelName.equals("mobilenet_v2_1.0_224")){
-        if(!modelName.equals("densenet_2018_04_27")){
-            OpValidationSuite.ignoreFailing();
-        }
+//        if(!modelName.equals("densenet_2018_04_27")){
+//        if(!modelName.equals("inception_resnet_v2_2018_04_27")){
+//            OpValidationSuite.ignoreFailing();
+//        }
+        currentTestDir = testDir.newFolder();
 
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
 
@@ -159,12 +158,9 @@ public class TFGraphTestZooModels {
                 OpValidationSuite.ignoreFailing();
             }
         }
-        Double precisionOverride = null;    //TFGraphTestAllHelper.testPrecisionOverride(modelName);
-
 
         Double maxRE = 1e-3;
         Double minAbs = 1e-4;
-
         currentTestDir = testDir.newFolder();
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
                 LOADER, maxRE, minAbs);

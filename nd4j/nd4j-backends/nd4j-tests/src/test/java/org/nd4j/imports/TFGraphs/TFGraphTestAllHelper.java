@@ -40,6 +40,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.factory.Nd4j;
@@ -194,6 +195,20 @@ public class TFGraphTestAllHelper {
                     INDArray relError = diff.divi(sumAbs);
                     relError.muli(absErrorMask);
 
+
+                    /*
+                    Try to detect bad test.
+                    The idea: suppose all values are small, and are excluded due to minAbsError threshold
+                    i.e., all 1e-5 vs. -1e-5 with min abs error of 1e-4
+                    */
+                    INDArray maxAbs = Transforms.max(Transforms.abs(tfPred, true), Transforms.abs(tfPred, true), true);
+                    long countMaxAbsGTThreshold = maxAbs.gte(minAbsErrorOverride).sumNumber().intValue();
+                    long countNotMasked = absErrorMask.sumNumber().intValue();  //Values are 0 or 1... if all 0s -> nothing being tested
+                    if(countNotMasked == 0 && countMaxAbsGTThreshold == 0){
+                        fail("All values for node " + outputNode + " are masked out due to minAbsError=" + minAbsErrorOverride +
+                                " and max values are all less than minAbsError - nothing can be tested here");
+                    }
+
                     int countExceeds = Nd4j.getExecutioner().exec(new MatchCondition(relError, Conditions.greaterThan(maxRelErrorOverride))).z().getInt(0);
 
                     double maxRE = -1;
@@ -224,7 +239,7 @@ public class TFGraphTestAllHelper {
         Preconditions.checkArgument((maxRelErrorOverride == null) == (minAbsErrorOverride == null), "Both maxRelErrorOverride and minAbsErrorOverride" +
                 " must be null or both must be provided");
         Nd4j.EPS_THRESHOLD = 1e-3;
-        val graph = getGraphAfterExec(baseDir, modelFileName, modelName, inputs, execType, loader);
+        SameDiff graph = getGraphAfterExec(baseDir, modelFileName, modelName, inputs, execType, loader);
 
         //Collect coverage info about ops
         OpValidation.collectTensorflowImportCoverage(graph);
@@ -264,8 +279,14 @@ public class TFGraphTestAllHelper {
                             int countExceeds = Nd4j.getExecutioner().exec(new MatchCondition(relError, Conditions.greaterThan(maxRelErrorOverride))).z().getInt(0);
 
                             double maxRE = -1;
+                            //Mainly used for analysis in debugger:
+                            DifferentialFunction op = null;
+                            String[] opInputs = null;
                             if(countExceeds > 0){
                                 maxRE = relError.maxNumber().doubleValue();
+                                //Find the op that this variable is produced by
+                                op = graph.getVariableOutputFunction(varName);
+                                opInputs = graph.getInputsForFunction(op);
                             }
 
 
