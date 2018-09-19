@@ -140,7 +140,7 @@ void _conv2d(const NDArray* input, const NDArray* weights, const NDArray* bias, 
 
 void ConvolutionUtils::conv2d(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
     
-    BUILD_TRIPLE_SELECTOR(input->dataType(), weights->dataType(), output->dataType(), _conv2d, (input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW);, LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+    BUILD_TRIPLE_SELECTOR(input->dataType(), weights->dataType(), output->dataType(), _conv2d, (input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
 }
 
 BUILD_TRIPLE_TEMPLATE(template void _conv2d, (const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
