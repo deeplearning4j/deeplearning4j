@@ -341,16 +341,16 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 
             if(aRank > bRank) {
                 NDArray aSubArr = (*A)(idxRanges);
-                BUILD_TRIPLE_SELECTOR(A->dataType(), B->dataType(), C->dataType(), return mmulMxM, (&aSubArr, B, &cSubArr, 1., 0.), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+                BUILD_TRIPLE_SELECTOR(A->dataType(), B->dataType(), C->dataType(), c = mmulMxM, (&aSubArr, B, &cSubArr, 1., 0.), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
             }
             else if(bRank > aRank) {
                 NDArray bSubArr = (*B)(idxRanges);                
-                BUILD_TRIPLE_SELECTOR(A->dataType(), B->dataType(), C->dataType(), return mmulMxM, (A, &bSubArr, &cSubArr, 1., 0.), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+                BUILD_TRIPLE_SELECTOR(A->dataType(), B->dataType(), C->dataType(), c = mmulMxM, (A, &bSubArr, &cSubArr, 1., 0.), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
             }
             else {                
                 NDArray aSubArr = (*A)(idxRanges);
                 NDArray bSubArr = (*B)(idxRanges);                
-                BUILD_TRIPLE_SELECTOR(A->dataType(), B->dataType(), C->dataType(), return mmulMxM, (&aSubArr, &bSubArr, &cSubArr, 1., 0.), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+                BUILD_TRIPLE_SELECTOR(A->dataType(), B->dataType(), C->dataType(), c = mmulMxM, (&aSubArr, &bSubArr, &cSubArr, 1., 0.), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
             }                   
 
             if (c != &cSubArr) { cSubArr.assign(c); delete c; }

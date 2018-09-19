@@ -27,7 +27,7 @@ namespace helpers {
 
 // input [bS, iC, iH, iW] is convoluted to output [bS, iC, kH, kW, oH, oW]
 template <typename T>
-static void im2col_(nd4j::graph::LaunchContext& context, NDArray& input,  NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const NDArray& arrZeroPadVal) {
+static void im2col_(nd4j::graph::LaunchContext& context, const NDArray& input,  NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const NDArray& arrZeroPadVal) {
 
 	// [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]        
    		
@@ -119,11 +119,11 @@ static void im2col_(nd4j::graph::LaunchContext& context, NDArray& input,  NDArra
 }
 
 
-void im2col(nd4j::graph::LaunchContext& context, NDArray* im,  NDArray* col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const NDArray& arrZeroPadVal) {
+void im2col(nd4j::graph::LaunchContext& context, const NDArray* im,  NDArray* col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const NDArray& arrZeroPadVal) {
 	BUILD_SINGLE_SELECTOR(im->dataType(), im2col_, (context, *im, *col, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, arrZeroPadVal), LIBND4J_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void im2col_, (nd4j::graph::LaunchContext& context, NDArray& im,  NDArray& col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const NDArray& arrZeroPadVal), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void im2col_, (nd4j::graph::LaunchContext& context, const NDArray& im,  NDArray& col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const NDArray& arrZeroPadVal), LIBND4J_TYPES);
 
 
 }
