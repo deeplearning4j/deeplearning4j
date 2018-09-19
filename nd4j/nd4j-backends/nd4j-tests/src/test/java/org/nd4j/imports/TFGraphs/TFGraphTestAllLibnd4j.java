@@ -97,7 +97,10 @@ public class TFGraphTestAllLibnd4j {
             "logsumexp/.*",
             "reduce_all/.*",
             "reduce_any/.*",
-            "split/.*"
+            "split/.*",
+
+            "reductions/count_nonzero.*",
+            "sufficient_statistics.*"
     };
 
     @BeforeClass

@@ -95,18 +95,6 @@ public class Conv3DConfig extends BaseConvolutionConfig {
         }
     }
 
-    //Partial builder implementation for convenience method
-    public static class Conv3DConfigBuilder {
-        public Conv3DConfigBuilder isNCDHW(boolean isNCDHW){
-            if(isNCDHW){
-                dataFormat = NCDHW;
-            } else {
-                dataFormat = NDHWC;
-            }
-            return this;
-        }
-    }
-
     public Map<String, Object> toProperties() {
         Map<String, Object> ret = new LinkedHashMap<>();
         ret.put("kD", kD);

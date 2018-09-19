@@ -488,6 +488,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             SDVariable w0 = sd.var("w0", Nd4j.rand(new int[]{2, 2, 2, nIn, 3}).muli(10));  //[kD, kH, kW, iC, oC]
                             SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
                             out = sd.conv3d(in, w0, b0, Conv3DConfig.builder()
+                                    .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
                                     .isNCDHW(ncdhw)
                                     .isValidMode(false)
                                     .kH(2).kW(2).kD(2)
@@ -499,7 +500,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             msg = "1 - conv3d+no bias+no same, ncdhw=" + ncdhw + " - input " + Arrays.toString(shape);
                             SDVariable w1 = sd.var("w1", Nd4j.rand(new int[]{2, 2, 2, nIn, 3}).muli(10));  //[kD, kH, kW, iC, oC]
                             out = sd.conv3d(in, w1, Conv3DConfig.builder()
-                                    .isNCDHW(ncdhw)
+                                    .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
                                     .isValidMode(true)
                                     .kH(2).kW(2).kD(2)
                                     .sD(1).sH(1).sW(1)
