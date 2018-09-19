@@ -606,100 +606,117 @@ void scatterUpdate(NDArray& operand, NDArray& updates, const std::vector<int>* i
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void mergeMaxIndex(const std::vector<NDArray*>& inArrs, NDArray& output) {
+static void mergeMaxIndex_(const std::vector<NDArray*>& inArrs, NDArray& output) {
 
     const Nd4jLong numArgs = inArrs.size();
     auto x = inArrs[0];
 
 #pragma omp parallel for if(x->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
     for (Nd4jLong e = 0; e < x->lengthOf(); e++) {
-        T max = -MAX_FLOAT;
+        T max = -DataTypeUtils::max<T>();
         Nd4jLong idx = 0;
             
         for (int i = 0; i < numArgs; i++){
             
-            T v = (*inArrs[i])(e);
+            T v = inArrs[i]->getScalar<T>(e);
             if (v > max) {
                 max = v;
                 idx = i;
             }
         }
-        output(e) = idx;
+        output.putScalar(e, idx);
     }
 }
+    void mergeMaxIndex(const std::vector<NDArray*>& inArrs, NDArray& output) {
+        BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), mergeMaxIndex_, (inArrs, output), LIBND4J_TYPES);
+    }
 
+    BUILD_SINGLE_TEMPLATE(template void mergeMaxIndex_, (const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void mergeMax(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output) {
+static void mergeMax_(const std::vector<NDArray*>& inArrs, NDArray& output) {
     
     const Nd4jLong numArgs = inArrs.size();
-    NDArray<T> *x = inArrs[0];    
+    auto x = inArrs[0];
 
 #pragma omp parallel for if(x->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided) proc_bind(close)
      for (Nd4jLong e = 0; e < x->lengthOf(); e++) {
         T max = -MAX_FLOAT;
-        for (int i = 0; i < numArgs; i++) { 
-            T v = (*inArrs[i])(e);
+        for (int i = 0; i < numArgs; i++) {
+            T v = inArrs[i]->getScalar<T>(e);
             if (v > max)
                 max = v;
         }
-        output(e) = max;
+        output.putScalar(e, max);
     }
 }
+    void mergeMax(const std::vector<NDArray*>& inArrs, NDArray& output) {
+        BUILD_SINGLE_SELECTOR(output.dataType(), mergeMax_, (inArrs, output), LIBND4J_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void mergeMax_, (const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void mergeAvg(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output) {
+static void mergeAvg_(const std::vector<NDArray*>& inArrs, NDArray& output) {
     
     const Nd4jLong numArgs = inArrs.size();
-    const T factor = 1. / numArgs;
-    NDArray<T> *x = inArrs[0];    
+    const T factor = 1.f / numArgs;
+    auto x = inArrs[0];
         
 #pragma omp parallel for if(x->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided) proc_bind(close)
     for (Nd4jLong e = 0; e < x->lengthOf(); e++) {
         T sum = 0.;
         for (int i = 0; i < numArgs; i++) { 
-            T v = (*inArrs[i])(e);
+            T v = inArrs[i]->getScalar<T>(e);
             sum += v;
         }
-        output(e) = sum * factor;
+        output.putScalar<T>(e, sum * factor);
     }
 }
+    void mergeAvg(const std::vector<NDArray*>& inArrs, NDArray& output) {
+        BUILD_SINGLE_SELECTOR(output.dataType(), mergeAvg_, (inArrs, output), LIBND4J_TYPES);
+    }
 
+    BUILD_SINGLE_TEMPLATE(template void mergeAvg_, (const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void mergeAdd(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output) {
+static void mergeAdd_(const std::vector<NDArray*>& inArrs, NDArray& output) {
     
     const Nd4jLong numArgs = inArrs.size();
-    NDArray<T> *x = inArrs[0];    
+    auto x = inArrs[0];
         
 #pragma omp parallel for if(x->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided) proc_bind(close)
     for (Nd4jLong e = 0; e < x->lengthOf(); e++) {
         
-        T sum = 0.;
+        T sum = (T) 0.f;
         
         for (int i = 0; i < numArgs; i++) 
-            sum += (*inArrs[i])(e);;        
+            sum += inArrs[i]->getScalar<T>(e);
 
-        output(e) = sum;
+        output.putScalar(e, sum);
     }
 }
+    void mergeAdd(const std::vector<NDArray*>& inArrs, NDArray& output) {
+        BUILD_SINGLE_SELECTOR(output.dataType(), mergeAdd_, (inArrs, output), LIBND4J_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void mergeAdd_, (const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& dimensions, const T clipNorm, const bool isInplace) {    
+static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
         
     const int rank = input.rankOf();
-    NDArray<T> norm2 = input.template reduceAlongDims<simdOps::Norm2<T>>(dimensions);
+   auto norm2 = input.reduceAlongDims(reduce::Norm2, dimensions);
 
     if (isInplace) {
-
         if(norm2.lengthOf() == 1) {
 
-            if(norm2(0.) > clipNorm)
-                input *= (clipNorm / norm2(0.));
+            if(norm2.getScalar<T>(0) > clipNorm.getScalar<T>(0))
+                input *= (clipNorm.getScalar<T>(0) / norm2.getScalar<T>(0));
         }
         else {
 
@@ -708,10 +725,10 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
 
 #pragma omp parallel for schedule(guided) 
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
-                if (norm2(i) > clipNorm) {
+                if (norm2.getScalar<T>(i) > clipNorm.getScalar<T>(0)) {
                     
-                    NDArray<T> inputSubArr  = input(i, dimsToExclude);
-                    inputSubArr *= (clipNorm / norm2(i));
+                    auto inputSubArr  = input(i, dimsToExclude);
+                    inputSubArr *= (clipNorm.getScalar<T>(0) / norm2.getScalar<T>(i));
                 }
             }
         }
@@ -720,8 +737,8 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
         
         if(norm2.lengthOf() == 1) {
 
-            if(norm2(0.) > clipNorm)
-                output.assign( input * (clipNorm / norm2(0.)));
+            if(norm2.getScalar<T>(0) > clipNorm.getScalar<T>(0))
+                output.assign( input * (clipNorm / norm2.getScalar<T>(0)));
             else
                 output.assign( input );
         }
@@ -736,38 +753,46 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
 
                 ShapeUtils::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
 
-                NDArray<T> outputSubArr = output(idxRanges);                
-                NDArray<T> inputSubArr  = input(idxRanges);
+                auto outputSubArr = output(idxRanges);
+                auto inputSubArr  = input(idxRanges);
                 outputSubArr.assign(inputSubArr);
                 
-                if (norm2(i) > clipNorm) 
-                    outputSubArr *= clipNorm / norm2(i);                
+                if (norm2.getScalar<T>(i) > clipNorm.getScalar<T>(0))
+                    outputSubArr *= clipNorm / norm2.getScalar<T>(i);
             }           
         }
     }
 }
 
+    void clipByNorm(NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
+        BUILD_SINGLE_SELECTOR(output.dataType(), clipByNorm_, (input, output, dimensions, clipNorm, isInplace), FLOAT_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void clipByNorm_, (NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace), FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void clipByNormBP(const NDArray<T>& input, const NDArray<T>& gradO, NDArray<T>& gradI /*output*/, const std::vector<int>& dimensions, const T clipNorm) {
+static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm) {
     
     const int rank = input.rankOf();
 
-    NDArray<T> norm2 = input.template reduceAlongDims<simdOps::Norm2<T>>(dimensions);
+    auto norm2 = input.reduceAlongDims(reduce::Norm2, dimensions);
 
     if(norm2.lengthOf() == 1) {        
 
-        const T N = norm2(0.);
+        const T N = norm2.getScalar<T>(0);
         
         if(N > clipNorm) {            
 
-            const T sumOfProd = (input * gradO).template reduceNumber<simdOps::Sum<T>>();    // reduce to scalar
+            const T sumOfProd = (input * gradO).reduceNumber(reduce::Sum).getScalar<T>(0);    // reduce to scalar
             const T factor1 = static_cast<T>(1.f) / N;
             const T factor3 = factor1 / (N * N) ;                                            // 1 / (N*N*N)
             
-            auto lambda = LAMBDA_TT(elem1, elem2, clipNorm, sumOfProd, factor1, factor3) { return clipNorm * (factor1 * elem2 - factor3 * elem1 * sumOfProd); };
-            const_cast<NDArray<T>&>(input).applyPairwiseLambda(&gradO, lambda, &gradI);
+            auto lambda = LAMBDA_TT(elem1, elem2, clipNorm, sumOfProd, factor1, factor3) {
+                return clipNorm * (factor1 * elem2 - factor3 * elem1 * sumOfProd);
+            };
+
+            const_cast<NDArray&>(input).applyPairwiseLambda(&gradO, lambda, &gradI);
         }
         else 
             gradI.assign(gradO);
@@ -782,20 +807,22 @@ void clipByNormBP(const NDArray<T>& input, const NDArray<T>& gradO, NDArray<T>& 
         for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
 
             ShapeUtils::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
-            T N = norm2(i);
+            T N = norm2.getScalar<T>(i);
 
-            NDArray<T> gradOSubArr = gradO(idxRanges);
-            NDArray<T> gradISubArr = gradI(idxRanges);                
+            auto gradOSubArr = gradO(idxRanges);
+            auto gradISubArr = gradI(idxRanges);
             
             if (N > clipNorm) {
                 
-                NDArray<T> inputSubArr = input(idxRanges);
+                auto inputSubArr = input(idxRanges);
                 
-                const T sumOfProd = (inputSubArr * gradOSubArr).template reduceNumber<simdOps::Sum<T>>();    // reduce to scalar
+                const T sumOfProd = (inputSubArr * gradOSubArr).reduceNumber(reduce::Sum).getScalar<T>(0);    // reduce to scalar
                 const T factor1 = static_cast<T>(1.f) / N;
                 const T factor3 = factor1 / (N * N) ;                                            // 1 / (N*N*N)
 
-                auto lambda = LAMBDA_TT(elem1, elem2, clipNorm, sumOfProd, factor1, factor3) { return clipNorm * (factor1 * elem2 - factor3 * elem1 * sumOfProd); };
+                auto lambda = LAMBDA_TT(elem1, elem2, clipNorm, sumOfProd, factor1, factor3) {
+                    return clipNorm * (factor1 * elem2 - factor3 * elem1 * sumOfProd);
+                };
                 inputSubArr.applyPairwiseLambda(&gradOSubArr, lambda, &gradISubArr);
             }
             else
@@ -803,6 +830,12 @@ void clipByNormBP(const NDArray<T>& input, const NDArray<T>& gradO, NDArray<T>& 
         }           
     }
 }
+
+    void clipByNormBP(const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm) {
+        BUILD_SINGLE_SELECTOR(gradI.dataType(), clipByNormBP_, (input, gradO, gradI, dimensions, clipNorm), FLOAT_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void clipByNormBP_, (const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm), FLOAT_TYPES);
 
 
 //////////////////////////////////////////////////////////////////////////
