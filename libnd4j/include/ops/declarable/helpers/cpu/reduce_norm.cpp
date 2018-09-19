@@ -25,8 +25,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    void reduceNorm1BP(NDArray<T>* input, NDArray<T>* epsilon, NDArray<T>* tempNorm, NDArray<T>* output, std::vector<int> const& axes) {
+    void reduceNorm1BP(NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes) {
 
         std::vector<int> dimensions; //(input->rankOf() - axes.size());
         for (Nd4jLong e = 0; e < input->rankOf(); e++) {
@@ -34,18 +33,14 @@ namespace helpers {
                 dimensions.emplace_back(e);
             }
         }
-        std::unique_ptr<ResultSet<T>> outList(output->allTensorsAlongDimension(dimensions));
-        std::unique_ptr<ResultSet<T>> inList(input->allTensorsAlongDimension(dimensions));
+        std::unique_ptr<ResultSet> outList(output->allTensorsAlongDimension(dimensions));
+        std::unique_ptr<ResultSet> inList(input->allTensorsAlongDimension(dimensions));
         for (int e = 0; e < outList->size(); ++e) {
-            auto norm1Backprop = LAMBDA_TT(_x, _e) {
-                return (_x >= T(0.f) ?_e:-_e);
-            };
-            inList->at(e)->applyPairwiseLambda(epsilon, norm1Backprop, outList->at(e));
+            inList->at(e)->applyPairwiseTransform(pairwise::ReduceNorm1E, epsilon, outList->at(e), nullptr);
         }
     }
 
-    template <typename T>
-    void reduceNorm2BP(NDArray<T>* input, NDArray<T>* epsilon, NDArray<T>* tempNorm, NDArray<T>* output, std::vector<int> const& axes) {
+    void reduceNorm2BP(NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes) {
 
         std::vector<int> dimensions; //(input->rankOf() - axes.size());
         for (Nd4jLong e = 0; e < input->rankOf(); e++) {
@@ -53,16 +48,15 @@ namespace helpers {
                 dimensions.emplace_back(e);
             }
         }
-        std::unique_ptr<ResultSet<T>> outList(output->allTensorsAlongDimension(dimensions));
-        std::unique_ptr<ResultSet<T>> inList(input->allTensorsAlongDimension(dimensions));
+        std::unique_ptr<ResultSet> outList(output->allTensorsAlongDimension(dimensions));
+        std::unique_ptr<ResultSet> inList(input->allTensorsAlongDimension(dimensions));
         for (int e = 0; e < outList->size(); ++e) {
-            epsilon->template applyPairwiseTransform<simdOps::Multiply<T>>(inList->at(e), outList->at(e), nullptr);
-            outList->at(e)->template applyPairwiseTransform<simdOps::Divide<T>>(tempNorm, outList->at(e), nullptr);
+            epsilon->applyPairwiseTransform(pairwise::Multiply, inList->at(e), outList->at(e), nullptr);
+            outList->at(e)->applyPairwiseTransform(pairwise::Divide, tempNorm, outList->at(e), nullptr);
         }
     }
 
-    template <typename T>
-    void reduceSquareNormBP(NDArray<T>* input, NDArray<T>* epsilon, NDArray<T>* tempNorm, NDArray<T>* output, std::vector<int> const& axes) {
+    void reduceSquareNormBP(NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes) {
 
         std::vector<int> dimensions; //(input->rankOf() - axes.size());
         for (Nd4jLong e = 0; e < input->rankOf(); e++) {
@@ -70,27 +64,14 @@ namespace helpers {
                 dimensions.emplace_back(e);
             }
         }
-        std::unique_ptr<ResultSet<T>> outList(output->allTensorsAlongDimension(dimensions));
-        std::unique_ptr<ResultSet<T>> inList(input->allTensorsAlongDimension(dimensions));
+        std::unique_ptr<ResultSet> outList(output->allTensorsAlongDimension(dimensions));
+        std::unique_ptr<ResultSet> inList(input->allTensorsAlongDimension(dimensions));
         for (int e = 0; e < outList->size(); ++e) {
-            outList->at(e)->assign(T(2.f));
-            outList->at(e)->template applyPairwiseTransform<simdOps::Multiply<T>>(epsilon, outList->at(e), nullptr);
-            outList->at(e)->template applyPairwiseTransform<simdOps::Multiply<T>>(inList->at(e), outList->at(e), nullptr);
+            outList->at(e)->assign(2.f);
+            outList->at(e)->applyPairwiseTransform(pairwise::Multiply, epsilon, outList->at(e), nullptr);
+            outList->at(e)->applyPairwiseTransform(pairwise::MinPairwise, inList->at(e), outList->at(e), nullptr);
         }
     }
-
-    template void reduceNorm1BP(NDArray<float>* input, NDArray<float>* epsilon, NDArray<float>* tempNorm, NDArray<float>* output, std::vector<int> const& axes);
-    template void reduceNorm1BP(NDArray<float16>* input, NDArray<float16>* epsilon, NDArray<float16>* tempNorm, NDArray<float16>* output, std::vector<int> const& axes);
-    template void reduceNorm1BP(NDArray<double>* input, NDArray<double>* epsilon, NDArray<double>* tempNorm, NDArray<double>* output, std::vector<int> const& axes);
-
-    template void reduceNorm2BP(NDArray<float>* input, NDArray<float>* epsilon, NDArray<float>* tempNorm, NDArray<float>* output, std::vector<int> const& axes);
-    template void reduceNorm2BP(NDArray<float16>* input, NDArray<float16>* epsilon, NDArray<float16>* tempNorm, NDArray<float16>* output, std::vector<int> const& axes);
-    template void reduceNorm2BP(NDArray<double>* input, NDArray<double>* epsilon, NDArray<double>* tempNorm, NDArray<double>* output, std::vector<int> const& axes);
-
-    template void reduceSquareNormBP(NDArray<float>* input, NDArray<float>* epsilon, NDArray<float>* tempNorm, NDArray<float>* output, std::vector<int> const& axes);
-    template void reduceSquareNormBP(NDArray<float16>* input, NDArray<float16>* epsilon, NDArray<float16>* tempNorm, NDArray<float16>* output, std::vector<int> const& axes);
-    template void reduceSquareNormBP(NDArray<double>* input, NDArray<double>* epsilon, NDArray<double>* tempNorm, NDArray<double>* output, std::vector<int> const& axes);
-
 }
 }
 }

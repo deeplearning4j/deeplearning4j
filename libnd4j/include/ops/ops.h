@@ -2015,6 +2015,18 @@ namespace simdOps {
 	};
 
     template <typename X, typename Y>
+    class ReduceNorm1E {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static X op(X d1, Y d2, X *params) {
+            X _d2 = static_cast<X>(d2);
+            return (d1 >= X(0.f) ? _d2: -_d2);
+        }
+    };
+
+    template <typename X, typename Y>
     class ELUDerivativeE {
     public:
         no_op_exec_special

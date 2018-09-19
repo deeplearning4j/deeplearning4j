@@ -334,6 +334,7 @@
         (47, SoftsignDerivativeE) ,\
         (48, TanhDerivativeE) ,\
         (49, SXELossWithLogits) ,\
+        (50, ReduceNorm1E) ,\
         (92, PowDerivative), \
         (93, LogPoisonLoss), \
         (94, LogPoisonLossFull)
