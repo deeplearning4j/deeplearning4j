@@ -228,12 +228,96 @@ void ConvolutionUtils::conv2dBP(const NDArray* input, const NDArray* weights, co
 }
 
 
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+void upsampling2d_(const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW) {
+    // input  has shape [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC) 
+    // output has shape [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
+    
+    std::vector<Nd4jLong> indIn  = {0,0,  0,0,  0,0,  0,0};
+    std::vector<Nd4jLong> indOut = {0,0,  0,0,  0,0,  0,0};
+    const int dimIH = isNCHW ? 2 : 1;    
+    const int j0 = 2*dimIH;
+    const int j1 = j0+1, j2 = j0+2, j3 = j0+3;
+    const int size0 = input.sizeAt(dimIH) * input.sizeAt(dimIH+1);
+    // const int size1 = factorH * factorW;
+
+#pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indIn, indOut) 
+    for(int ih = 0; ih < input.sizeAt(dimIH); ++ih) {
+        for(int iw = 0; iw < input.sizeAt(dimIH+1); ++iw) {
+            indIn[j0] = ih; indIn[j1] = ih+1; 
+            indIn[j2] = iw; indIn[j3] = iw+1; 
+
+// #pragma omp parallel for if(size1 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indOut) 
+            for(int fh = 0; fh < factorH; ++fh) {
+                for(int fw = 0; fw < factorW; ++fw) {
+                    
+                    indOut[j0] = ih * factorH + fh; indOut[j1] = indOut[j0] + 1; 
+                    indOut[j2] = iw * factorW + fw; indOut[j3] = indOut[j2] + 1;                     
+                    auto i = input(indIn);
+                    auto o = output(indOut);
+                    o.assign(i);
+                }
+            }
+        }
+    }
+}
+
+void ConvolutionUtils::upsampling2d(const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW) {
+    BUILD_SINGLE_SELECTOR(input.dataType(), upsampling2d_, (input, output, factorH, factorW, isNCHW), LIBND4J_TYPES);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+void upsampling3d_(const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
+    // input  has shape [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC) 
+    // output has shape [bS, iC, factorD*iD, factorH*iH, factorW*iW ] (NCDHW) or [bS, factorD*iD, factorH*iH, factorW*iW, iC] (NDHWC)
+    std::vector<Nd4jLong> indIn  = {0,0,  0,0,  0,0,  0,0,  0,0};
+    std::vector<Nd4jLong> indOut = {0,0,  0,0,  0,0,  0,0,  0,0};
+    const int dimID = isNCDHW ? 2 : 1;    
+    const int j0 = 2*dimID;
+    const int j1 = j0+1, j2 = j0+2, j3 = j0+3, j4 = j0+4, j5 = j0+5;;
+    const int size0 = input.sizeAt(dimID) * input.sizeAt(dimID+1) * input.sizeAt(dimID+2);
+    // const int size1 = factorD * factorH * factorW;
+
+#pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indIn, indOut) 
+    for(int id = 0; id < input.sizeAt(dimID); ++id) {
+        for(int ih = 0; ih < input.sizeAt(dimID+1); ++ih) {
+            for(int iw = 0; iw < input.sizeAt(dimID+2); ++iw) {
+                indIn[j0] = id; indIn[j1] = id+1;
+                indIn[j2] = ih; indIn[j3] = ih+1;
+                indIn[j4] = iw; indIn[j5] = iw+1;
+
+// #pragma omp parallel for if(size1 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indOut) 
+            for(int fd = 0; fd < factorD; ++fd) {
+                for(int fh = 0; fh < factorH; ++fh) {
+                    for(int fw = 0; fw < factorW; ++fw) {
+                            indOut[j0] = id * factorD + fd; indOut[j1] = indOut[j0] + 1; 
+                            indOut[j2] = ih * factorH + fh; indOut[j3] = indOut[j2] + 1; 
+                            indOut[j4] = iw * factorW + fw; indOut[j5] = indOut[j4] + 1;                     
+                            auto i = input(indIn);                    
+                            auto o = output(indOut);
+                            o.assign(i);
+                        }
+                    }
+                }
+            }
+        }
+    }    
+}
+
+void ConvolutionUtils::upsampling3d(const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
+    BUILD_SINGLE_SELECTOR(input.dataType(), upsampling3d_, (input, output, factorD, factorH, factorW, isNCDHW), LIBND4J_TYPES);
+}
+
 
 
 
 
 BUILD_TRIPLE_TEMPLATE(template void conv2d_,   (const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
 BUILD_TRIPLE_TEMPLATE(template void conv2dBP_, (const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void upsampling2d_, (const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void upsampling3d_, (const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW), LIBND4J_TYPES);
 
 }
 }
