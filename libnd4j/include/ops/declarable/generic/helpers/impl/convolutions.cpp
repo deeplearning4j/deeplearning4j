@@ -19,6 +19,9 @@
 //
 
 #include <ops/declarable/generic/helpers/convolutions.h>
+#include <ops/declarable/helpers/im2col.h>
+#include <NDArrayFactory.h>
+#include <MmulHelper.h>
 
 namespace nd4j {
 namespace ops  {
@@ -125,10 +128,10 @@ void _conv2d(const NDArray* input, const NDArray* weights, const NDArray* bias, 
 
     NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->getWorkspace());        
 
-    //----- calculation of output -----//
-    // std::vector<T> extrasIm2Col({(T) kH, (T) kW, (T) sH, (T) sW, (T) pH, (T) pW, (T) dH, (T) dW, (T)0.f, (T)0.f});
-    // input->template applyTransform<simdOps::Im2col<T>>(&columns, extrasIm2Col.data());                    // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-    // MmulHelper<T>::tensorDot(&columns, weights, output, {1,2,3}, weightsAxesForDot, permutForOutput); // [bS, iC, kH, kW, oH, oW] x [kH, kW, iC, oC]/[oC, iC, kH, kW] = [bS, oH, oW, oC]
+    //----- calculation of output -----//        
+    LaunchContext ctx;
+    helpers::im2col(ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, NDArrayFactory::_scalar(0.f, input->getWorkspace()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+    MmulHelper::tensorDot(&columns, weights, output, {1,2,3}, weightsAxesForDot, permutForOutput);      // [bS, iC, kH, kW, oH, oW] x [kH, kW, iC, oC]/[oC, iC, kH, kW] = [bS, oH, oW, oC]
 
     //----- add biases if required -----//
     if(bias)
