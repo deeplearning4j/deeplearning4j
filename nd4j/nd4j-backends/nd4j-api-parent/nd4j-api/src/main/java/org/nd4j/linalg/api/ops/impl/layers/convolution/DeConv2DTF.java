@@ -159,7 +159,7 @@ public class DeConv2DTF extends DynamicCustomOp {
         val dataFormat = PropertyMapping.builder()
                 .onnxAttrName("data_format")
                 .tfAttrName("data_format")
-                .propertyNames(new String[]{"isNHWC"})
+                .propertyNames(new String[]{"dataFormat"})
                 .build();
 
 
@@ -170,7 +170,7 @@ public class DeConv2DTF extends DynamicCustomOp {
         map.put("dW", dilationMapping);
         map.put("dH", dilationMapping);
         map.put("isSameMode", sameMode);
-        map.put("isNHWC", dataFormat);
+        map.put("dataFormat", dataFormat);
 
         ret.put(tensorflowName(), map);
         return ret;
