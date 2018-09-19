@@ -1014,12 +1014,12 @@ namespace helpers {
 
         std::map<Nd4jLong, Nd4jLong> classCount;//(numClasses);
 
-#pragma omp parallel for if(numOfClasses > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+//#pragma omp parallel for if(numOfClasses > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (Nd4jLong count = 0; count < numOfClasses; ++count) {
             classCount[count] = 0;
         }
 
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+//#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
             classCount[static_cast<Nd4jLong>(indices->getScalar(e))] ++;
         }
@@ -1145,12 +1145,12 @@ namespace helpers {
     int unsortedSegmentSqrtNFunctorBP(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* gradOut, Nd4jLong numOfClasses, NDArray<T>* output) {
         std::map<Nd4jLong, Nd4jLong> classCount;//(numClasses);
 
-#pragma omp parallel for if(numOfClasses > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+//#pragma omp parallel for if(numOfClasses > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (Nd4jLong count = 0; count < numOfClasses; ++count) {
             classCount[count] = 0;
         }
 
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+//#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
             classCount[static_cast<Nd4jLong>(indices->getScalar(e))] ++;
         }
