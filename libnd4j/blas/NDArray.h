@@ -997,6 +997,9 @@ namespace nd4j {
         template <typename N>
         NDArray* asT();
 
+        template <typename T>
+        void linspace(const T start);
+
         /**
         *  calculates the trace of an array, that is sum of elements on main diagonal = sum array[i, i, i, ...]
         */

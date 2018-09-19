@@ -32,10 +32,10 @@ public:
 
 
 TEST_F(BooleanOpsTests, LtTest_1) {
-    auto x = NDArray<float>::scalar(1.0f);
-    auto y = NDArray<float>::scalar(2.0f);
+    auto x = NDArrayFactory::scalar(1.0f);
+    auto y = NDArrayFactory::scalar(2.0f);
 
-    nd4j::ops::lt_scalar<float> op;
+    nd4j::ops::lt_scalar op;
 
 
     ASSERT_TRUE(op.evaluate({x, y}));
@@ -45,10 +45,10 @@ TEST_F(BooleanOpsTests, LtTest_1) {
 }
 
 TEST_F(BooleanOpsTests, LtTest_2) {
-    auto x = NDArray<float>::scalar(2.0f);
-    auto y = NDArray<float>::scalar(1.0f);
+    auto x = NDArrayFactory::scalar(2.0f);
+    auto y = NDArrayFactory::scalar(1.0f);
 
-    nd4j::ops::lt_scalar<float> op;
+    nd4j::ops::lt_scalar op;
 
 
     ASSERT_FALSE(op.evaluate({x, y}));
@@ -58,54 +58,54 @@ TEST_F(BooleanOpsTests, LtTest_2) {
 }
 
 TEST_F(BooleanOpsTests, Is_non_decreasing_1) {
-    NDArray<float> x('c', {2 , 2}, {1, 2, 4, 4});
+    auto x = NDArrayFactory::_create<double>('c', {2 , 2}, {1, 2, 4, 4});
 
-    nd4j::ops::is_non_decreasing<float> op;
+    nd4j::ops::is_non_decreasing op;
 
     ASSERT_TRUE(op.evaluate({&x}));
 
 }
 
 TEST_F(BooleanOpsTests, Is_non_decreasing_2) {
-    NDArray<float> x('c', {2 , 2}, {1, 2, 4, 3});
+    auto x = NDArrayFactory::_create<double>('c', {2 , 2}, {1, 2, 4, 3});
 
-    nd4j::ops::is_non_decreasing<float> op;
+    nd4j::ops::is_non_decreasing op;
 
     ASSERT_FALSE(op.evaluate({&x}));
 
 }
 
 TEST_F(BooleanOpsTests, Is_strictly_increasing_1) {
-    NDArray<float> x('c', {2 , 2}, {1, 2, 4, 5});
+    auto x = NDArrayFactory::_create<double>('c', {2 , 2}, {1, 2, 4, 5});
 
-    nd4j::ops::is_strictly_increasing<float> op;
+    nd4j::ops::is_strictly_increasing op;
 
     ASSERT_TRUE(op.evaluate({&x}));
 
 }
 
 TEST_F(BooleanOpsTests, Is_strictly_increasing_2) {
-    NDArray<float> x('c', {2 , 2}, {1, 2, 3, 3});
+    auto x = NDArrayFactory::_create<double>('c', {2 , 2}, {1, 2, 3, 3});
 
-    nd4j::ops::is_strictly_increasing<float> op;
+    nd4j::ops::is_strictly_increasing op;
 
     ASSERT_FALSE(op.evaluate({&x}));
 
 }
 
 TEST_F(BooleanOpsTests, Is_strictly_increasing_3) {
-    NDArray<float> x('c', {2 , 2}, {1, 2, 4, 3});
+    auto x = NDArrayFactory::_create<double>('c', {2 , 2}, {1, 2, 4, 3});
 
-    nd4j::ops::is_strictly_increasing<float> op;
+    nd4j::ops::is_strictly_increasing op;
 
     ASSERT_FALSE(op.evaluate({&x}));
 
 }
 
 TEST_F(BooleanOpsTests, Is_numeric_tensor_1) {
-    NDArray<float> x('c', {2 , 2}, {1, 2, 4, 3});
+    auto x = NDArrayFactory::_create<float>('c', {2 , 2}, {1.f, 2.f, 4.f, 3.f});
 
-    nd4j::ops::is_numeric_tensor<float> op;
+    nd4j::ops::is_numeric_tensor op;
 
     ASSERT_TRUE(op.evaluate({&x}));
 

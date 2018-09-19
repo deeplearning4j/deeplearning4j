@@ -31,11 +31,11 @@ public:
 };
 
 TEST_F(BackpropTests, Test_Add_1) {
-    NDArray<float> x('c', {2, 3, 4});
-    NDArray<float> y('c', {3, 4});
-    NDArray<float> e('c', {2, 3, 4});
+    auto x = NDArrayFactory::_create<float>('c', {2, 3, 4});
+    auto y = NDArrayFactory::_create<float>('c', {3, 4});
+    auto e = NDArrayFactory::_create<float>('c', {2, 3, 4});
 
-    nd4j::ops::add_bp<float> op;
+    nd4j::ops::add_bp op;
     auto result = op.execute({&x, &y, &e}, {}, {});
 
     ASSERT_EQ(Status::OK(), result->status());

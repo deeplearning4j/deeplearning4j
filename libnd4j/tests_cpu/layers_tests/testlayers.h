@@ -34,6 +34,7 @@
 #include <ops/gemm.h>
 #include <GraphExecutioner.h>
 #include <gtest/gtest.h>
+#include <NDArrayFactory.h>
 
 // meh
 //#include <../blas/cpu/NDArray.cpp>
