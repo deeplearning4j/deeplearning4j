@@ -19,14 +19,14 @@
 //
 
 #include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_bincount)
+#if NOT_EXCLUDED(OP_resize_bilinear)
 
 //#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(resize_linear, 1, 1, false, 0, -2) {
+        CUSTOM_OP_IMPL(resize_bilinear, 1, 1, false, 0, -2) {
 
             NDArray<T>* values = INPUT_VARIABLE(0);
             
@@ -48,7 +48,7 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        DECLARE_SHAPE_FN(resize_linear) {
+        DECLARE_SHAPE_FN(resize_bilinear) {
             auto shapeList = SHAPELIST(); 
             auto in = inputShape->at(0);
 
@@ -70,6 +70,7 @@ namespace nd4j {
             }
             
             ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(4), Nd4jLong);
+            outputShape[0] = 4;
             outputShape[1] = in[1];
             outputShape[2] = width;
             outputShape[3] = height;

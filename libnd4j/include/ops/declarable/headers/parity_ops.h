@@ -1433,8 +1433,8 @@ namespace nd4j {
         * CAUTION: either size tensor or a pair of int params should be provided.
         */
 
-        #if NOT_EXCLUDED(OP_resize_linear)
-        DECLARE_CUSTOM_OP(resize_linear, 1, 1, false, 0, -2);
+        #if NOT_EXCLUDED(OP_resize_bilinear)
+        DECLARE_CUSTOM_OP(resize_bilinear, 1, 1, false, 0, -2);
         #endif
 
         /**
