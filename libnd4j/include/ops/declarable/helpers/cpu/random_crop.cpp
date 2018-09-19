@@ -28,7 +28,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* shape, NDArray<T>* output, int seed) {
+    static int _randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray* input, NDArray* shape, NDArray* output, int seed) {
         NativeOps native;
         if (seed)
             native.reSeedBuffer(nullptr, (long)seed, rng);
@@ -38,13 +38,15 @@ namespace helpers {
         }
         int last = shape->lengthOf() - 1;
         
-        functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(rng, output->getBuffer(), output->getShapeInfo(), std::vector<T>({T(0.), shape->getScalar(last)}).data());
+        //functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(rng, output->getBuffer(), output->getShapeInfo(), std::vector<T>({T(0.), shape->getScalar(last)}).data());
+        NativeOpExcutioner::execRandom(random::UniformDistribution, rng, output->buffer(), output->shapeInfo(), std::vector<T>({T(0.), shape->getScalar<T>(last)}).data());
+
         Nd4jLong maxIndex = output->argMax();
-        Nd4jLong startPos = (*output)(maxIndex);
+        Nd4jLong startPos = output->getScalar<Nd4jLong>(maxIndex);
         int lastDim = input->sizeAt(-1);
         // nd4j_printf("Before processing: %i %i. Output length %i\n", maxIndex, startPos, output->lengthOf());
         int pos = 0;
-        int width = startPos + shape->getScalar(last);
+        Nd4jLong width = startPos + shape->getScalar<Nd4jLong>(last);
         if (width >= lastDim) {
             startPos -= (width - lastDim);
             width = lastDim;
@@ -52,15 +54,18 @@ namespace helpers {
         // nd4j_printf("Start pos %i, width %i, lastDim %i\n", startPos, width, lastDim);
 
         for (int i = 0; i < input->lengthOf(); i += lastDim) {
-            for (int k = startPos; k < width && pos < output->lengthOf(); k++) {
-                (*output)(pos++) = (*input)(i + k);
+            for (Nd4jLong k = startPos; k < width && pos < output->lengthOf(); k++) {
+                output->putScalar(pos++, input->getScalar<T>(i + k));
             }
         }
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
-    template int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<float>* input, NDArray<float>* shape, NDArray<float>* output,  int seed);
-    template int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<float16>* input, NDArray<float16>* shape, NDArray<float16>* output, int seed);
-    template int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<double>* input, NDArray<double>* shape, NDArray<double>* output, int seed);
+
+    int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray* input, NDArray* shape, NDArray* output, int seed) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), _randomCropFunctor, (rng, input, shape, output, seed), FLOAT_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template int _randomCropFunctor, (nd4j::random::RandomBuffer* rng, NDArray* input, NDArray* shape, NDArray* output,  int seed), FLOAT_TYPES);
 
 }
 }

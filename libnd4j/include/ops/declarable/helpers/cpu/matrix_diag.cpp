@@ -20,6 +20,7 @@
 
 #include "ResultSet.h"
 #include <ops/declarable/helpers/matrix_diag.h>
+#include <Status.h>
 
 namespace nd4j {
 namespace ops {
@@ -30,10 +31,10 @@ namespace helpers {
 // Returns a batched matrix tensor with new batched diagonal values.
 // for detailed explanations please take a look on web page: https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
 template <typename T>
-int matrixDiag(const NDArray<T>* input, NDArray<T>* output) {
+static int _matrixDiag(const NDArray* input, NDArray* output) {
 
-    ResultSet<T>* listOut  = output->allTensorsAlongDimension({output->rankOf() - 2, output->rankOf() - 1});
-    ResultSet<T>* listDiag = input->allTensorsAlongDimension({input->rankOf() - 1});
+    auto listOut  = output->allTensorsAlongDimension({output->rankOf() - 2, output->rankOf() - 1});
+    auto listDiag = input->allTensorsAlongDimension({input->rankOf() - 1});
 
     if (listOut->size() != listDiag->size()) {
         nd4j_printf("matrix_diag: Input matrix has wrong shape.", "");
@@ -45,19 +46,19 @@ int matrixDiag(const NDArray<T>* input, NDArray<T>* output) {
     // condition is hold: listOut->size() == listDiag->size()
     for(int i = 0; i < listOut->size(); ++i)       
         for (int e = 0; e < lastDimension; e++)
-            (*listOut->at(i))(e, e) = (*listDiag->at(i))(e);            
+            listOut->at(i)->putScalar(e, e, listDiag->at(i)->getScalar<T>(e));
     
     delete listOut;
     delete listDiag;
 
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
+    int matrixDiag(const NDArray* input, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), _matrixDiag, (input, output), LIBND4J_TYPES);
+    }
 
-template int matrixDiag<float>(const NDArray<float>* input, NDArray<float>* output);
-template int matrixDiag<float16>(const NDArray<float16>* input, NDArray<float16>* output);
-template int matrixDiag<double>(const NDArray<double>* input, NDArray<double>* output);
-
+    BUILD_SINGLE_TEMPLATE(template int _matrixDiag, (const NDArray* input, NDArray* output), LIBND4J_TYPES);
 
 }
 }

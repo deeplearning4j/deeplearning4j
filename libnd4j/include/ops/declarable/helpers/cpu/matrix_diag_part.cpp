@@ -20,6 +20,7 @@
 
 #include "ResultSet.h"
 #include <ops/declarable/helpers/matrix_diag_part.h>
+#include <Status.h>
 
 namespace nd4j {
 namespace ops {
@@ -30,10 +31,10 @@ namespace helpers {
 // Returns a batched matrix tensor with new batched diagonal values.
 // for detailed explanations please take a look on web page: https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
 template <typename T>
-int matrixDiagPart(const NDArray<T>* input, NDArray<T>* output) {
+int _matrixDiagPart(const NDArray* input, NDArray* output) {
 
-    ResultSet<T>* listOut  = output->allTensorsAlongDimension({output->rankOf() - 1});
-    ResultSet<T>* listDiag = input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
+    auto listOut  = output->allTensorsAlongDimension({output->rankOf() - 1});
+    auto listDiag = input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
 
     if (listOut->size() != listDiag->size()) {
         nd4j_printf("matrix_diag_part: Input matrix has wrong shape.", "");
@@ -45,19 +46,19 @@ int matrixDiagPart(const NDArray<T>* input, NDArray<T>* output) {
     // condition is hold: listOut->size() == listDiag->size()
     for(int i = 0; i < listOut->size(); ++i)       
         for(int j = 0; j < lastDimension; ++j)
-            (*listOut->at(i))(j) = (*listDiag->at(i))(j, j);            
+            listOut->at(i)->putScalar(j, listDiag->at(i)->getScalar<T>(j, j));
     
     delete listOut;
     delete listDiag;
 
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
+    int matrixDiagPart(const NDArray* input, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), _matrixDiagPart, (input, output), LIBND4J_TYPES);
+    }
 
-template int matrixDiagPart<float>(const NDArray<float>* input, NDArray<float>* output);
-template int matrixDiagPart<float16>(const NDArray<float16>* input, NDArray<float16>* output);
-template int matrixDiagPart<double>(const NDArray<double>* input, NDArray<double>* output);
-
+    BUILD_SINGLE_TEMPLATE(template int _matrixDiagPart, (const NDArray* input, NDArray* output), LIBND4J_TYPES);
 
 }
 }

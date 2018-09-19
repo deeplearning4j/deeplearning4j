@@ -164,10 +164,6 @@ namespace nd4j {
         */
         NDArray(nd4j::memory::Workspace* workspace);
 
-        /**
-        *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
-        */
-        NDArray(const NDArray *other, const bool copyStrides = false, nd4j::memory::Workspace* workspace = nullptr);
 				
         /**
 		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 

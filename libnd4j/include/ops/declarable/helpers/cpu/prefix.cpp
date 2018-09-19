@@ -26,11 +26,13 @@
 namespace nd4j {
     namespace ops {
         namespace helpers {
-            template <typename T, typename OpName>
-            void _prefix(T* x, Nd4jLong* xShapeInfo, T* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse) {
+            template <typename T>
+            static void __prefix(scalar::Ops op, void* vx, Nd4jLong* xShapeInfo, void* vz, Nd4jLong* zShapeInfo, bool exclusive, bool reverse) {
+                auto x = reinterpret_cast<T *>(vx);
+                auto z = reinterpret_cast<T *>(vz);
                 auto length = shape::length(xShapeInfo);
 
-                T prevSum = OpName::startingValue();
+                T prevSum = op == scalar::Add ? (T) 0 : (T) 1;
                 T sum = prevSum;
                                 
                 if (reverse) {
@@ -38,7 +40,7 @@ namespace nd4j {
                         shape::order(xShapeInfo) == 'c' && shape::order(zShapeInfo) == 'c') {
 
                         for (Nd4jLong e = length - 1; e >= 0; --e) {
-                            sum = OpName::op(sum, x[e]);
+                            sum = op == scalar::Add ? simdOps::Add<T, T>::op(sum, x[e]) : simdOps::Multiply<T, T>::op(sum, x[e]);
                             if (!exclusive)
                                 prevSum = sum;
 
@@ -66,7 +68,7 @@ namespace nd4j {
                             auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
                             auto zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
 
-                            sum = OpName::op(sum, x[xOffset]);
+                            sum = op == scalar::Add ? simdOps::Add<T, T>::op(sum, x[xOffset]) : simdOps::Multiply<T, T>::op(sum, x[xOffset]);
                             if (!exclusive)
                                 prevSum = sum;
 
@@ -80,7 +82,7 @@ namespace nd4j {
                         shape::order(xShapeInfo) == 'c' && shape::order(zShapeInfo) == 'c') {                        
 
                         for (int e = 0; e < length; e++) {
-                            sum = OpName::op(sum, x[e]);
+                            sum = op == scalar::Add ? simdOps::Add<T, T>::op(sum, x[e]) : simdOps::Multiply<T, T>::op(sum, x[e]);
 
                             if (!exclusive)
                                 prevSum = sum;
@@ -109,7 +111,7 @@ namespace nd4j {
                             auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
                             auto zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
 
-                            sum = OpName::op(sum, x[xOffset]);
+                            sum = op == scalar::Add ? simdOps::Add<T, T>::op(sum, x[xOffset]) : simdOps::Multiply<T, T>::op(sum, x[xOffset]);
 
                             if (!exclusive)
                                 prevSum = sum;
@@ -122,8 +124,8 @@ namespace nd4j {
                 }
             };
 
-            template <typename T, typename OpName>
-            void _prefix(NDArray<T>* x, NDArray<T>* z, std::vector<int>& dims, bool exclusive, bool reverse) {
+            template <typename T>
+            static void __prefix(scalar::Ops op, NDArray* x, NDArray* z, std::vector<int>& dims, bool exclusive, bool reverse) {
                 auto xTads = x->allTensorsAlongDimension(dims);
                 auto zTads = z->allTensorsAlongDimension(dims);
                 auto t = xTads->size();
@@ -133,29 +135,22 @@ namespace nd4j {
                     auto tx = xTads->at(e);
                     auto tz = zTads->at(e);
 
-                    _prefix<T, OpName>(tx->buffer(), tx->shapeInfo(), tz->buffer(), tz->shapeInfo(), exclusive, reverse);
+                    __prefix<T>(op, tx->buffer(), tx->shapeInfo(), tz->buffer(), tz->shapeInfo(), exclusive, reverse);
                 }
 
                 delete xTads;
                 delete zTads;
             };
 
-            template void _prefix<float, simdOps::Add<float>>(float* x, Nd4jLong* xShapeInfo, float* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse);
-            template void _prefix<float16, simdOps::Add<float16>>(float16* x, Nd4jLong* xShapeInfo, float16* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse);
-            template void _prefix<double, simdOps::Add<double>>(double* x, Nd4jLong* xShapeInfo, double* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse);
+            void _prefix(scalar::Ops op, NDArray* x, NDArray* z, std::vector<int>& dims, bool exclusive, bool reverse) {
+                BUILD_SINGLE_SELECTOR(x->dataType(), __prefix, (op, x, z, dims, exclusive, reverse), LIBND4J_TYPES);
+            }
 
-            template void _prefix<float, simdOps::Multiply<float>>(float* x, Nd4jLong* xShapeInfo, float* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse);
-            template void _prefix<float16, simdOps::Multiply<float16>>(float16* x, Nd4jLong* xShapeInfo, float16* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse);
-            template void _prefix<double, simdOps::Multiply<double>>(double* x, Nd4jLong* xShapeInfo, double* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse);
+            BUILD_SINGLE_TEMPLATE(template void __prefix, (scalar::Ops op, void* vx, Nd4jLong* xShapeInfo, void* vz, Nd4jLong* zShapeInfo, bool exclusive, bool reverse), LIBND4J_TYPES);
+            BUILD_SINGLE_TEMPLATE(template void __prefix, (scalar::Ops op, NDArray* x, NDArray* z, std::vector<int>& dims, bool exclusive, bool reverse), LIBND4J_TYPES);
 
 
-            template void _prefix<float, simdOps::Add<float>>(NDArray<float>* x, NDArray<float>* z, std::vector<int>& dims, bool exclusive, bool reverse);
-            template void _prefix<float16, simdOps::Add<float16>>(NDArray<float16>* x, NDArray<float16>* z, std::vector<int>& dims, bool exclusive, bool reverse);
-            template void _prefix<double, simdOps::Add<double>>(NDArray<double>* x, NDArray<double>* z, std::vector<int>& dims, bool exclusive, bool reverse);
 
-            template void _prefix<float, simdOps::Multiply<float>>(NDArray<float>* x, NDArray<float>* z, std::vector<int>& dims, bool exclusive, bool reverse);
-            template void _prefix<float16, simdOps::Multiply<float16>>(NDArray<float16>* x, NDArray<float16>* z, std::vector<int>& dims, bool exclusive, bool reverse);
-            template void _prefix<double, simdOps::Multiply<double>>(NDArray<double>* x, NDArray<double>* z, std::vector<int>& dims, bool exclusive, bool reverse);
         }
     }
 }

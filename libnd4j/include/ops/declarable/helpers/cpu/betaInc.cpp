@@ -21,6 +21,7 @@
 #include<cmath> 
 #include <DataTypeUtils.h>
 #include<ops/declarable/helpers/betaInc.h>
+#include <NDArrayFactory.h>
 
 namespace nd4j {
 namespace ops {
@@ -191,7 +192,7 @@ static T betaIncTA(T a, T b, T x) {
 
 template<typename T>
 NDArray betaIncT(const NDArray& a, const NDArray& b, const NDArray& x) {
-	NDArray result(&x, false, x.getWorkspace());
+	auto result = NDArrayFactory::_create(&x, false, x.getWorkspace());
 
 #pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
 	for(int i = 0; i < x.lengthOf(); ++i) {

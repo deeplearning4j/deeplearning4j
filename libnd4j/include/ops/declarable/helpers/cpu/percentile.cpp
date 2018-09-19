@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/helpers/percentile.h>
+#include <NDArrayFactory.h>
 #include "ResultSet.h"
 
 namespace nd4j    {
@@ -26,9 +27,9 @@ namespace ops     {
 namespace helpers {
 
 
-//////////////////////////////////////////////////////////////////////////    
+//////////////////////////////////////////////////////////////////////////
 template <typename T>
-void percentile(const NDArray<T>& input, NDArray<T>& output, std::vector<int>& axises, const T q, const int interpolation) {
+static void _percentile(const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation) {
     
     const int inputRank = input.rankOf();    
 
@@ -39,46 +40,49 @@ void percentile(const NDArray<T>& input, NDArray<T>& output, std::vector<int>& a
         shape::checkDimensions(inputRank, axises);          // check, sort dimensions and remove duplicates if they are present
 
 
-    ResultSet<T>* listOfSubArrs = input.allTensorsAlongDimension(axises);
+    auto listOfSubArrs = input.allTensorsAlongDimension(axises);
     
     std::vector<Nd4jLong> shapeOfSubArr(listOfSubArrs->at(0)->rankOf());
     for(int i=0; i<shapeOfSubArr.size(); ++i)
         shapeOfSubArr[i] = listOfSubArrs->at(0)->shapeOf()[i];
 
-    NDArray<T> flattenedArr('c', shapeOfSubArr, input.getWorkspace());    
+    auto flattenedArr = NDArrayFactory::_create('c', shapeOfSubArr, input.dataType(), input.getWorkspace());
     const int len = flattenedArr.lengthOf();
     
-    const T fraction = 1. - q / 100.;
-    int position = 0;
+    const float fraction = 1.f - q / 100.;
+    Nd4jLong position = 0;
     
     switch(interpolation) {
         case 0: // lower
-            position = math::nd4j_ceil<T>((len - 1) * fraction);
+            position = static_cast<Nd4jLong>(math::nd4j_ceil<float>((len - 1) * fraction));
             break;
         case 1: // higher
-            position = math::nd4j_floor<T>((len - 1) * fraction);
+            position = static_cast<Nd4jLong>(math::nd4j_floor<float>((len - 1) * fraction));
             break;
         case 2: // nearest
-            position = math::nd4j_round<T>((len - 1) * fraction);
+            position = static_cast<Nd4jLong>(math::nd4j_round<float>((len - 1) * fraction));
             break;
     }
     position = len - position - 1;
 
+    // FIXME: our sort impl should be used instead, so this operation might be implemented as generic
 #pragma omp parallel for schedule(guided) firstprivate(flattenedArr)
     for(int i=0; i<listOfSubArrs->size(); ++i) {
         
-        T* buff = flattenedArr.getBuffer();
+        T* buff = reinterpret_cast<T *>(flattenedArr.getBuffer());
         flattenedArr.assign(listOfSubArrs->at(i));
         std::sort(buff, buff + len);
-        output(i) = flattenedArr(position);
+        output.putScalar(i, flattenedArr.getScalar<T>(position));
     }
 
     delete listOfSubArrs;
 }
 
-template void percentile(const NDArray<float>& input, NDArray<float>& output, std::vector<int>& axises, const float q, const int interpolation);
-template void percentile(const NDArray<float16>& input, NDArray<float16>& output, std::vector<int>& axises, const float16 q, const int interpolation);
-template void percentile(const NDArray<double>& input, NDArray<double>& output, std::vector<int>& axises, const double q, const int interpolation);
+    void percentile(const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation) {
+        BUILD_SINGLE_SELECTOR(input.dataType(), _percentile, (input, output, axises, q, interpolation), LIBND4J_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void _percentile, (const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation), LIBND4J_TYPES);
 
 }
 }

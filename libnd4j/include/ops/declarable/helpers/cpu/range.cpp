@@ -29,23 +29,24 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 // be careful: outVector must have c-order and ews = 1 !!!
 template <typename T>
-void range(const T& start, const T& delta, NDArray<T>& outVector) {
+static void _range(const NDArray& start, const NDArray& delta, NDArray& outVector) {
         
     const Nd4jLong len = outVector.lengthOf();
 
-    T* const buff = outVector.getBuffer();
+    auto buff = reinterpret_cast<T *>(outVector.getBuffer());
 
 // #pragma omp parallel for simd if(len > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
 #pragma omp parallel for simd schedule(guided)
     for(Nd4jLong i = 0; i < len; ++i)
-    	buff[i] =  start + i * delta;
+    	buff[i] =  start.getScalar<T>(0) + i * delta.getScalar<T>(0);
         
 }
 
+    void range(const NDArray& start, const NDArray& delta, NDArray& outVector) {
+        BUILD_SINGLE_SELECTOR(outVector.dataType(), _range, (start, delta, outVector), LIBND4J_TYPES);
+    }
 
-template void range<float16>(const float16& start, const float16& delta, NDArray<float16>& outVector);
-template void range<float>(const float& start, const float& delta, NDArray<float>& outVector);
-template void range<double>(const double& start, const double& delta, NDArray<double>& outVector);
+BUILD_SINGLE_TEMPLATE(template void _range, (const NDArray& start, const NDArray& delta, NDArray& outVector), LIBND4J_TYPES);
 
 
 }

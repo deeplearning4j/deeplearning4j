@@ -112,6 +112,34 @@ namespace nd4j {
         return res;
     }
 
+    ////////////////////////////////////////////////////////////////////////
+    NDArray NDArrayFactory::_create(const NDArray *other, const bool copyStrides, nd4j::memory::Workspace* workspace) {
+        NDArray result;
+        //this->_length = shape::length(other->_shapeInfo);
+        auto shapeLength = shape::shapeInfoByteLength(other->getShapeInfo());
+
+        result.setWorkspace(workspace);
+        auto tLen = nd4j::DataTypeUtils::sizeOf(ArrayOptions::dataType(other->getShapeInfo()));
+
+        int8_t *buffer = nullptr;
+        Nd4jLong *shapeInfo = nullptr;
+        ALLOCATE(buffer, workspace, other->lengthOf() * tLen, int8_t);
+        ALLOCATE(shapeInfo, workspace, shape::shapeInfoByteLength(other->getShapeInfo()), Nd4jLong);
+        // FIXME: memcpy should be removed
+        // memcpy(_buffer, other->_buffer, arrLength*sizeOfT());      // copy other._buffer information into new array
+
+        memcpy(shapeInfo, other->getShapeInfo(), shapeLength);     // copy shape information into new array
+
+        if(!copyStrides)
+            shape::updateStrides(shapeInfo, other->ordering());
+
+        result.setBuffer(buffer);
+        result.setShapeInfo(shapeInfo);
+        result.triggerAllocationFlag(true, true);
+
+        return result;
+    }
+
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
     NDArray NDArrayFactory::_scalar(T scalar, nd4j::memory::Workspace* workspace) {
