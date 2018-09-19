@@ -32,10 +32,10 @@ public:
 
 
 TEST_F(ContextTests, Basic_Test_1) {
-    VariableSpace<float> variableSpace;
+    VariableSpace variableSpace;
 
-    auto _20 = new NDArray<float>('c', {2, 2});
-    auto _21 = new NDArray<float>('c', {2, 2});
+    auto _20 = NDArrayFactory::create<float>('c', {2, 2});
+    auto _21 = NDArrayFactory::create<float>('c', {2, 2});
 
     _20->assign(1.0f);
     _21->assign(2.0f);
@@ -43,7 +43,7 @@ TEST_F(ContextTests, Basic_Test_1) {
     variableSpace.putVariable(2, 0, _20);
     variableSpace.putVariable(2, 1, _21);
 
-    Context<float> block(1, &variableSpace);
+    Context block(1, &variableSpace);
 
     block.pickInput(2, 0);
     block.pickInput(2, 1);
@@ -54,16 +54,16 @@ TEST_F(ContextTests, Basic_Test_1) {
     ASSERT_TRUE(variableSpace.hasVariable(2, 0));
     ASSERT_TRUE(variableSpace.hasVariable(2, 1));
 
-    ASSERT_NEAR(1.0f, block.variable(0)->getNDArray()->meanNumber(), 1e-5);
-    ASSERT_NEAR(2.0f, block.variable(1)->getNDArray()->meanNumber(), 1e-5);
+    ASSERT_NEAR(1.0f, block.variable(0)->getNDArray()->meanNumber().getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(2.0f, block.variable(1)->getNDArray()->meanNumber().getScalar<float>(0), 1e-5);
 }
 
 
 TEST_F(ContextTests, Basic_Test_2) {
-    VariableSpace<float> variableSpace;
+    VariableSpace variableSpace;
 
-    auto _20 = new NDArray<float>('c', {2, 2});
-    auto _21 = new NDArray<float>('c', {2, 2});
+    auto _20 = NDArrayFactory::create<float>('c', {2, 2});
+    auto _21 = NDArrayFactory::create<float>('c', {2, 2});
 
     _20->assign(1.0f);
     _21->assign(2.0f);
@@ -71,7 +71,7 @@ TEST_F(ContextTests, Basic_Test_2) {
     variableSpace.putVariable(-1, _20);
     variableSpace.putVariable(-2, _21);
 
-    Context<float> block(1, &variableSpace);
+    Context block(1, &variableSpace);
 
     block.pickInput(-1);
     block.pickInput(-2);
@@ -82,17 +82,17 @@ TEST_F(ContextTests, Basic_Test_2) {
     ASSERT_TRUE(variableSpace.hasVariable(-1));
     ASSERT_TRUE(variableSpace.hasVariable(-2));
 
-    ASSERT_NEAR(1.0f, block.variable(0)->getNDArray()->meanNumber(), 1e-5);
-    ASSERT_NEAR(2.0f, block.variable(1)->getNDArray()->meanNumber(), 1e-5);
+    ASSERT_NEAR(1.0f, block.variable(0)->getNDArray()->meanNumber().getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(2.0f, block.variable(1)->getNDArray()->meanNumber().getScalar<float>(0), 1e-5);
 }
 
 
 TEST_F(ContextTests, Basic_Test_3) {
-    VariableSpace<float> variableSpace;
+    VariableSpace variableSpace;
 
-    Context<float> ctx(1, &variableSpace);
+    Context ctx(1, &variableSpace);
 
-    auto _20 = new NDArray<float>('c', {2, 2});
+    auto _20 = NDArrayFactory::create<float>('c', {2, 2});
 
     ctx.pushNDArrayToVariableSpace(1, 1, _20);
 
@@ -101,14 +101,14 @@ TEST_F(ContextTests, Basic_Test_3) {
 
 
 TEST_F(ContextTests, Basic_Test_4) {
-    VariableSpace<float> variableSpace;
+    VariableSpace variableSpace;
 
-    Context<float> ctx(1, &variableSpace);
+    Context ctx(1, &variableSpace);
 
-    auto _20 = new NDArray<float>('c', {2, 2});
+    auto _20 = NDArrayFactory::create<float>('c', {2, 2});
     _20->linspace(1);
 
-    auto _21 = new NDArray<float>('c', {2, 2});
+    auto _21 = NDArrayFactory::create<float>('c', {2, 2});
     _21->linspace(10);
 
     ctx.pushNDArrayToVariableSpace(1, 1, _20);
@@ -123,11 +123,11 @@ TEST_F(ContextTests, Basic_Test_4) {
 }
 
 TEST_F(ContextTests, Basic_Test_5) {
-    VariableSpace<float> variableSpace;
+    VariableSpace variableSpace;
 
-    Context<float> ctx(1, &variableSpace);
+    Context ctx(1, &variableSpace);
 
-    auto _20 = new NDArray<float>('c', {2, 2});
+    auto _20 = NDArrayFactory::create<float>('c', {2, 2});
     _20->linspace(1);
 
     auto exp = _20->dup();
@@ -149,9 +149,9 @@ TEST_F(ContextTests, Basic_Test_5) {
 
 
 TEST_F(ContextTests, Basic_Test_6) {
-    VariableSpace<float> variableSpace;
+    VariableSpace variableSpace;
 
-    Context<float> ctx(1, &variableSpace);
+    Context ctx(1, &variableSpace);
 
     auto v0 = ctx.ensureVariable();
     auto v1 = ctx.ensureVariable(1);
@@ -168,9 +168,9 @@ TEST_F(ContextTests, Basic_Test_6) {
 
 
 TEST_F(ContextTests, Basic_Test_7) {
-    VariableSpace<float> variableSpace;
+    VariableSpace variableSpace;
 
-    Context<float> ctx(1, &variableSpace);
+    Context ctx(1, &variableSpace);
 
     auto v0 = ctx.ensureVariable();
     auto v1 = ctx.ensureVariable(1);
@@ -185,10 +185,10 @@ TEST_F(ContextTests, Basic_Test_7) {
     ASSERT_TRUE(v1 == var1);
 
 
-    auto _10 = new NDArray<float>('c', {2, 2});
+    auto _10 = NDArrayFactory::create<float>('c', {2, 2});
     _10->linspace(1);
 
-    auto _11 = new NDArray<float>('c', {2, 2});
+    auto _11 = NDArrayFactory::create<float>('c', {2, 2});
     _11->linspace(10);
 
     ctx.pushNDArrayToVariableSpace(1, 0, _10);
@@ -202,14 +202,14 @@ TEST_F(ContextTests, Basic_Test_7) {
 }
 
 TEST_F(ContextTests, Basic_Test_8) {
-    VariableSpace<float> variableSpace;
+    VariableSpace variableSpace;
 
-    Context<float> ctx(1, &variableSpace);
+    Context ctx(1, &variableSpace);
 
-    auto _10 = new NDArray<float>('c', {2, 2});
+    auto _10 = NDArrayFactory::create<float>('c', {2, 2});
     _10->linspace(1);
 
-    auto _11 = new NDArray<float>('c', {2, 2});
+    auto _11 = NDArrayFactory::create<float>('c', {2, 2});
     _11->linspace(10);
 
     ctx.pushNDArrayToVariableSpace(1, 0, _10);
@@ -227,23 +227,23 @@ TEST_F(ContextTests, Basic_Test_8) {
 
 
 TEST_F(ContextTests, Basic_Test_9) {
-    VariableSpace<float> variableSpace;
+    VariableSpace variableSpace;
 
-    NDArray<float> in('c', {5, 5});
+    NDArray in('c', {5, 5});
 
-    Context<float> ctx(1, &variableSpace, true);
+    Context ctx(1, &variableSpace, true);
     ctx.pushNDArrayToVariableSpace(1, 1, &in, false);
 }
 
 TEST_F(ContextTests, Basic_Test_10) {
-    VariableSpace<float> variableSpace;
+    VariableSpace variableSpace;
 
-    Context<float> ctx(119, &variableSpace);
+    Context ctx(119, &variableSpace);
 }
 
 
 TEST_F(ContextTests, Prototype_Test_1) {
-    ContextPrototype<float> prototype(119, true);
+    ContextPrototype prototype(119, true);
     prototype.pickInput(12, 3);
     prototype.pickInput(12, 4);
 
@@ -253,7 +253,7 @@ TEST_F(ContextTests, Prototype_Test_1) {
     prototype.getIArguments()->push_back(17);
     prototype.getIArguments()->push_back(119);
 
-    Context<float> ctx(&prototype, nullptr);
+    Context ctx(&prototype, nullptr);
 
     ASSERT_EQ(ctx.nodeId(), prototype.nodeId());
     ASSERT_EQ(ctx.isInplace(), prototype.isInplace());
@@ -271,10 +271,10 @@ TEST_F(ContextTests, Prototype_Test_1) {
 
 
 TEST_F(ContextTests, Prototype_Test_2) {
-    ContextPrototype<float> prototype(119, false);
+    ContextPrototype prototype(119, false);
     prototype.setOpNum(179);
 
-    Context<float> ctx(&prototype, nullptr);
+    Context ctx(&prototype, nullptr);
 
     ASSERT_EQ(ctx.isInplace(), prototype.isInplace());
     ASSERT_EQ(ctx.opNum(), prototype.opNum());

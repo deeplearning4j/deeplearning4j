@@ -38,7 +38,7 @@ TEST_F(BroadcastMultiDimTest,MultimDimTest) {
     shape::TAD *tad = new shape::TAD(inputShapeBuffer,dimensions,dimensionLength);
     tad->createTadOnlyShapeInfo();
     tad-> createOffsets();
-    functions::broadcast::Broadcast<float>::exec(
+    functions::broadcast::Broadcast<float, float>::exec(
             opNum,
             inputData, //x
             inputShapeBuffer, //xShapeInfo

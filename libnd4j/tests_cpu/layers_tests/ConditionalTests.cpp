@@ -42,12 +42,12 @@ public:
 
 
 TEST_F(ConditionalTests, BasicTests_1) {
-    Graph<float> graph;
+    Graph graph;
 
-    auto x  =     NDArray<float>::valueOf({2, 2}, 1.0);
-    auto y0 =     NDArray<float>::valueOf({2, 2}, 5.0);
-    auto y1 =     NDArray<float>::valueOf({2, 2}, -5.0);
-    auto scalar = NDArray<float>::scalar(1.0);
+    auto x  =     NDArrayFactory::valueOf({2, 2}, 1.0f);
+    auto y0 =     NDArrayFactory::valueOf({2, 2}, 5.0f);
+    auto y1 =     NDArrayFactory::valueOf({2, 2}, -5.0f);
+    auto scalar = NDArrayFactory::scalar(1.0f);
 
     auto variableSpace = graph.getVariableSpace();
 
@@ -57,26 +57,26 @@ TEST_F(ConditionalTests, BasicTests_1) {
     variableSpace->putVariable(-4, scalar);
 
 
-    auto scopeCondition = new Node<float>(OpType_LOGIC, 10, 1);
+    auto scopeCondition = new Node(OpType_LOGIC, 10, 1);
     scopeCondition->setName("scopeCondition");
 
-    auto scopeFalse = new Node<float>(OpType_LOGIC, 10, 2);
+    auto scopeFalse = new Node(OpType_LOGIC, 10, 2);
     scopeFalse->setName("scopeFalse");
 
-    auto scopeTrue = new Node<float>(OpType_LOGIC, 10, 3);
+    auto scopeTrue = new Node(OpType_LOGIC, 10, 3);
     scopeTrue->setName("scopeTrue");
 
-    auto nodeF = new Node<float>(OpType_PAIRWISE, 0, 5, {-1, -2});
+    auto nodeF = new Node(OpType_PAIRWISE, 0, 5, {-1, -2});
     nodeF->setScopeInfo(2, "scopeFalse");
 
-    auto nodeT = new Node<float>(OpType_PAIRWISE, 1, 6, {-1, -2});
+    auto nodeT = new Node(OpType_PAIRWISE, 1, 6, {-1, -2});
     nodeT->setScopeInfo(3, "scopeTrue");
 
-    auto nodeC0 = new Node<float>(OpType_ACCUMULATION, 1, 7, {-1});
+    auto nodeC0 = new Node(OpType_ACCUMULATION, 1, 7, {-1});
     nodeC0->setScopeInfo(1, "scopeCondition");
 
-    auto nodeC1 = new Node<float>(OpType_BOOLEAN, 0, 8, {7, -4});
-    nd4j::ops::eq_scalar<float> op;
+    auto nodeC1 = new Node(OpType_BOOLEAN, 0, 8, {7, -4});
+    nd4j::ops::eq_scalar op;
     nodeC1->setCustomOp(&op);
     nodeC1->setScopeInfo(1, "scopeCondition");
 
@@ -92,35 +92,35 @@ TEST_F(ConditionalTests, BasicTests_1) {
     ASSERT_EQ(3, graph.totalNodes());
 
     // now we're adding Condition op, that'll take all of those in
-    auto nodeCondition = new Node<float>(OpType_LOGIC, 20, 10, {1, 2, 3});
+    auto nodeCondition = new Node(OpType_LOGIC, 20, 10, {1, 2, 3});
     graph.addNode(nodeCondition);
 
     ASSERT_EQ(4, graph.totalNodes());
 
-    Nd4jStatus status = GraphExecutioner<float>::execute(&graph);
+    Nd4jStatus status = GraphExecutioner::execute(&graph);
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
     ASSERT_TRUE(variableSpace->hasVariable(10, 0));
     auto conditionalResult = variableSpace->getVariable(10, 0)->getNDArray();
     ASSERT_NE(nullptr, conditionalResult);
 
-    ASSERT_NEAR(6.0, conditionalResult->meanNumber(), 1e-5);
+    ASSERT_NEAR(6.0, conditionalResult->meanNumber().getScalar<double>(0), 1e-5);
 }
 
 /**
  * Condition is False
  */
 TEST_F(ConditionalTests, Flat_Test_1) {
-    nd4j::ops::identity<float> op0;
+    nd4j::ops::identity op0;
 
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/simpleif_0_1.fb");
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/simpleif_0_1.fb");
     auto varSpace = graph->getVariableSpace();
     //varSpace->getVariable(1)->getNDArray()->assign(2.0);
     //varSpace->getVariable(2)->getNDArray()->assign(0.0);
 
     //graph->printOut();
 
-    auto status = GraphExecutioner<float>::execute(graph);
+    auto status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(varSpace->hasVariable(15));
@@ -129,7 +129,7 @@ TEST_F(ConditionalTests, Flat_Test_1) {
 
     ASSERT_NE(nullptr, z);
 
-    NDArray<float> exp('c', {2, 2}, {-2, -2, -2, -2});
+    auto exp = NDArrayFactory::_create<float>('c', {2, 2}, {-2, -2, -2, -2});
 
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -140,15 +140,15 @@ TEST_F(ConditionalTests, Flat_Test_1) {
  * Condition is True
  */
 TEST_F(ConditionalTests, Flat_Test_2) {
-    nd4j::ops::identity<float> op0;
+    nd4j::ops::identity op0;
 
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/simpleif_0.fb");
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/simpleif_0.fb");
     auto varSpace = graph->getVariableSpace();
     varSpace->getVariable(1)->getNDArray()->assign(-1.0);
 
     //graph->printOut();
 
-    auto status = GraphExecutioner<float>::execute(graph);
+    auto status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(varSpace->hasVariable(15));
@@ -157,7 +157,7 @@ TEST_F(ConditionalTests, Flat_Test_2) {
 
     ASSERT_NE(nullptr, z);
 
-    NDArray<float> exp('c', {2, 2}, {1, 1, 1, 1});
+    auto exp = NDArrayFactory::_create<float>('c', {2, 2}, {1, 1, 1, 1});
 
     ASSERT_TRUE(exp.equalsTo(z));
     delete graph;
@@ -168,15 +168,15 @@ TEST_F(ConditionalTests, Flat_Test_2) {
  * Condition is false here, so there loop will be skipped
  */
 TEST_F(ConditionalTests, Flat_Test_3) {
-    nd4j::ops::identity<float> op0;
+    nd4j::ops::identity op0;
 
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/simplewhile_0_3.fb");
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/simplewhile_0_3.fb");
     auto varSpace = graph->getVariableSpace();
     varSpace->getVariable(1)->getNDArray()->assign(1.0);
 
     //graph->printOut();
 
-    auto status = GraphExecutioner<float>::execute(graph);
+    auto status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(varSpace->hasVariable(17));
@@ -185,7 +185,7 @@ TEST_F(ConditionalTests, Flat_Test_3) {
 
     ASSERT_NE(nullptr, z);
 
-    NDArray<float> exp('c', {2, 2}, {1, 1, 1, 1});
+    auto exp = NDArrayFactory::_create<float>('c', {2, 2}, {1, 1, 1, 1});
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete graph;
@@ -195,15 +195,15 @@ TEST_F(ConditionalTests, Flat_Test_3) {
  * just one cycle in body
  */
 TEST_F(ConditionalTests, Flat_Test_4) {
-    nd4j::ops::identity<float> op0;
+    nd4j::ops::identity op0;
 
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/simplewhile_0_4.fb");
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/simplewhile_0_4.fb");
     auto varSpace = graph->getVariableSpace();
     varSpace->getVariable(2)->getNDArray()->assign(4.0);
 
     //graph->printOut();
 
-    auto status = GraphExecutioner<float>::execute(graph);
+    auto status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(varSpace->hasVariable(17));
@@ -213,7 +213,7 @@ TEST_F(ConditionalTests, Flat_Test_4) {
     ASSERT_NE(nullptr, z);
 
     // 0.0 + 2.0 = 2.0 in each element
-    NDArray<float> exp('c', {2, 2}, {2, 2, 2, 2});
+    auto exp = NDArrayFactory::_create<float>('c', {2, 2}, {2, 2, 2, 2});
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete graph;
@@ -224,15 +224,15 @@ TEST_F(ConditionalTests, Flat_Test_4) {
  * just two cycles in body
  */
 TEST_F(ConditionalTests, Flat_Test_5) {
-    nd4j::ops::identity<float> op0;
+    nd4j::ops::identity op0;
 
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/simplewhile_0_4.fb");
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/simplewhile_0_4.fb");
     auto varSpace = graph->getVariableSpace();
     varSpace->getVariable(2)->getNDArray()->assign(9.0);
 
     //graph->printOut();
 
-    auto status = GraphExecutioner<float>::execute(graph);
+    auto status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(varSpace->hasVariable(17));
@@ -242,7 +242,7 @@ TEST_F(ConditionalTests, Flat_Test_5) {
     ASSERT_NE(nullptr, z);
 
     // 0.0 + 2.0 + 2.0 = 4.0 in each element
-    NDArray<float> exp('c', {2, 2}, {4, 4, 4, 4});
+    auto exp = NDArrayFactory::_create<float>('c', {2, 2}, {4, 4, 4, 4});
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete graph;
@@ -252,16 +252,16 @@ TEST_F(ConditionalTests, Flat_Test_5) {
  * While loop with multiple variables
  */
 TEST_F(ConditionalTests, Flat_Test_6) {
-    nd4j::ops::identity<float> op0;
+    nd4j::ops::identity op0;
 
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/simplewhile_1.fb");
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/simplewhile_1.fb");
     auto varSpace = graph->getVariableSpace();
     varSpace->getVariable(1)->getNDArray()->assign(-4.0f);
     varSpace->getVariable(2)->getNDArray()->assign(1.0f);
 
     //graph->printOut();
 
-    auto status = GraphExecutioner<float>::execute(graph);
+    auto status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(varSpace->hasVariable(25));
@@ -272,23 +272,23 @@ TEST_F(ConditionalTests, Flat_Test_6) {
 
     //z->printIndexedBuffer();
 
-    NDArray<float> exp('c', {2, 2}, {-1, -1, -1, -1});
+    auto exp = NDArrayFactory::_create<float>('c', {2, 2}, {-1, -1, -1, -1});
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete graph;
 }
 
 TEST_F(ConditionalTests, Flat_Test_7) {
-    nd4j::ops::identity<float> op0;
+    nd4j::ops::identity op0;
 
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/simplewhile_1.fb");
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/simplewhile_1.fb");
     auto varSpace = graph->getVariableSpace();
     varSpace->getVariable(1)->getNDArray()->assign(-9.0f);
     varSpace->getVariable(2)->getNDArray()->assign(1.0f);
 
     //graph->printOut();
 
-    auto status = GraphExecutioner<float>::execute(graph);
+    auto status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(varSpace->hasVariable(25));
@@ -299,7 +299,7 @@ TEST_F(ConditionalTests, Flat_Test_7) {
 
     //z->printIndexedBuffer();
 
-    NDArray<float> exp('c', {2, 2}, {-3, -3, -3, -3});
+    auto exp = NDArrayFactory::_create<float>('c', {2, 2}, {-3, -3, -3, -3});
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete graph;
@@ -309,11 +309,11 @@ TEST_F(ConditionalTests, Flat_Test_7) {
  * This test checks nested while execution
  */
 TEST_F(ConditionalTests, Flat_Test_8) {
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/simplewhile_nested.fb");
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/simplewhile_nested.fb");
     auto varSpace = graph->getVariableSpace();
     //graph->printOut();
 
-    auto status = GraphExecutioner<float>::execute(graph);
+    auto status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(varSpace->hasVariable(52));
@@ -323,7 +323,7 @@ TEST_F(ConditionalTests, Flat_Test_8) {
     ASSERT_NE(nullptr, z);
 
     //val exp = Nd4j.create(2, 2).assign(15.0);
-    NDArray<float> exp('c', {2, 2}, {15, 15, 15, 15});
+    auto exp = NDArrayFactory::_create<float>('c', {2, 2}, {15, 15, 15, 15});
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete graph;
