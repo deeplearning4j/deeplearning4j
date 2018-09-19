@@ -47,6 +47,16 @@ public class BinarySerdeTest {
     }
 
     @Test
+    public void testToAndFromHeapBuffer() {
+        INDArray arr = Nd4j.scalar(1.0);
+        ByteBuffer buffer = BinarySerde.toByteBuffer(arr);
+        ByteBuffer heapBuffer = ByteBuffer.allocate(buffer.remaining());
+        heapBuffer.put(buffer);
+        INDArray back = BinarySerde.toArray(heapBuffer);
+        assertEquals(arr, back);
+    }
+
+    @Test
     public void testToAndFromCompressed() {
         INDArray arr = Nd4j.scalar(1.0);
         INDArray compress = Nd4j.getCompressor().compress(arr, "GZIP");
