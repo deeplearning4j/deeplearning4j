@@ -83,7 +83,7 @@ CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
 
     if (iC == 1) {
         nd4j_debug("SCONV2D OP: for input_channels = 1 this op is equivalent to standard conv2d\n","");
-        ConvolutionUtils::conv2d({input, weightsDepth, bias}, output, {kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW});
+        ConvolutionUtils::conv2d(input, weightsDepth, bias, output, kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW);
         return Status::OK();
     }
 
