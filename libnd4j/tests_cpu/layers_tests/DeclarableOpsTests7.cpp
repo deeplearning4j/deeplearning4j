@@ -1441,7 +1441,7 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentSqrtN_BP_1) {
 
     auto result = op.execute({&x, &idx, &eps}, {}, {5});
     ASSERT_EQ(result->status(), Status::OK());
-    result->at(0)->printIndexedBuffer("Hello Out:");
+//    result->at(0)->printIndexedBuffer("Hello Out:");
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
     delete result;
