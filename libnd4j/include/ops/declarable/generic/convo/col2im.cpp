@@ -43,7 +43,7 @@ namespace nd4j {
             int dX = INT_ARG(7);			//Dilation in width/x dimension
 
             LaunchContext ctx;
-            nd4j::ops::helpers::_col2im(ctx, z->specialBuffer(), x->specialBuffer(), z->specialShapeInfo(), x->specialShapeInfo(), strideY, strideX, padHeight, padWidth, imgHeight, imgWidth, dY, dX);
+            nd4j::ops::helpers::col2im(ctx, *z, *x, strideY, strideX, padHeight, padWidth, imgHeight, imgWidth, dY, dX);
 
             STORE_RESULT(*z);
 

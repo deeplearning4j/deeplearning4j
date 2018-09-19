@@ -210,7 +210,7 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 4) {
     auto weightsReshaped = weights->reshape(weights->ordering(),reshapeForWeights);
     auto gradWReshaped   = gradW  ->reshape(gradW->ordering(),  reshapeForWeights);
 
-    ConvolutionUtils::conv2dBP({inputReshaped, weightsReshaped, bias, gradOReshaped}, {gradIReshaped, gradWReshaped, gradB}, {1,kW,  1,sW,  0,pW,  1,1,  isSameMode,  isNCW});
+    ConvolutionUtils::conv2dBP(inputReshaped, weightsReshaped, bias, gradOReshaped, gradIReshaped, gradWReshaped, gradB, 1,kW,  1,sW,  0,pW,  1,1,  isSameMode,  isNCW);
 
     delete inputReshaped;
     delete gradIReshaped;

@@ -24,11 +24,14 @@
 #include <ops/declarable/helpers/helpers.h>
 
 namespace nd4j {
-    namespace ops {
-        namespace helpers {
-            void _col2im(nd4j::graph::LaunchContext& context, void *dst, void *src, Nd4jLong *outShape, Nd4jLong *inShape, int sY, int sX, int pY, int pX, int imgY, int imgX, int dY, int dX);
-        }
-    }
+namespace ops {
+namespace helpers {
+
+    void col2im(graph::LaunchContext& context, const NDArray& input,  NDArray& output, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW);
+
+
+}
+}
 }
 
 

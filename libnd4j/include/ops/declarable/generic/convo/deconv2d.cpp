@@ -23,8 +23,11 @@
 #if NOT_EXCLUDED(OP_deconv2d)
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/generic/helpers/convolutions.h>
 #include <MmulHelper.h>
+#include <declarable/generic/helpers/convolutions.h>
+#include <ops/declarable/helpers/im2col.h>
+#include <ops/declarable/helpers/col2im.h>
+
 
 namespace nd4j {
 namespace ops  {
@@ -73,14 +76,12 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
 
     NDArray columns(input->ordering(), {bS, oC, kH, kW, iH, iW}, block.getWorkspace());
 
-    // FIXME: get rid of transform call here, helper should be used
-    std::vector<double> extrasCol2Im({(double) sH, (double) sW, (double) pH, (double) pW, (double) oH, (double) oW, (double) dH, (double) dW});
-
     //----- calculation of output -----//
     // NHWC: [kH, kW, oC, iC] x [bS, iH, iW, iC] = [kH, kW, oC, bS, iH, iW]
     // NCHW: [iC, oC, kH, kW] x [bS, iC, iH, iW] = [oC, kH, kW, bS, iH, iW]
     nd4j::MmulHelper::tensorDot(weights, input, &columns, {indWiC}, {indIOioC}, permutForColumns);
-    columns.applyTransform(transform::Col2Im, output, extrasCol2Im.data());                            // [bS, oC, kH, kW, iH, iW] is de-convoluted to [bS, oC, oH, oW]
+    LaunchContext ctx;
+    helpers::col2im(ctx, columns, *output, sH, sW, pH, pW, oH, oW, dH, dW);     // [bS, oC, kH, kW, iH, iW] is de-convoluted to [bS, oC, oH, oW]
            
     //----- add biases if required -----//
     if(bias)
@@ -222,8 +223,8 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
     NDArray columns(input->ordering(), {bS, oC, kH, kW, iH, iW}, block.getWorkspace());
 
     // FIXME: get rid of transform call here, helpers should be used
-    std::vector<double> extrasIm2Col({(double) kH, (double) kW, (double) sH, (double) sW, (double) pH, (double) pW, (double) dH, (double) dW, (double)0.f, (double)0.f});
-    gradO->applyTransform(transform::Im2col, &columns, extrasIm2Col.data());                          // [bS, oC, oH, oW] is convoluted to [bS, oC, kH, kW, iH, iW]
+    LaunchContext ctx;
+    helpers::im2col(ctx, *gradO, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::_scalar(0.f, input->getWorkspace()));  // [bS, oC, oH, oW] is convoluted to [bS, oC, kH, kW, iH, iW]
     MmulHelper::tensorDot(input, &columns, gradW, inputAxesForDot, {0, 4, 5}, permutForGradW);           // [bS, iC, iH, iW]/[bS, iH, iW, iC] x [bS, oC, kH, kW, iH, iW] = [iC, oC, kH, kW]
 
     // ----- calculation of gradB ----- //

@@ -51,7 +51,7 @@ namespace nd4j {
 
             // FIXME: zeropad value is void
             LaunchContext ctx;
-            nd4j::ops::helpers::im2col(ctx, z, x, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX, isSameMode, NDArrayFactory::_scalar(zeroPadVal, block.getWorkspace()));
+            nd4j::ops::helpers::im2col(ctx, *z, *x, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX, NDArrayFactory::_scalar(zeroPadVal, block.getWorkspace()));
 
             STORE_RESULT(*z);
 
@@ -131,7 +131,7 @@ namespace nd4j {
 			
             LaunchContext ctx;
             // FIXME:: all helpers should accept NDArray
-			nd4j::ops::helpers::_col2im(ctx, z->specialBuffer(), gradAtOutput->specialBuffer(), z->specialShapeInfo(), gradAtOutput->specialShapeInfo(), strideY, strideX, pH, pW, imgH, imgW, dY, dX);
+			ops::helpers::col2im(ctx, *z, *gradAtOutput, strideY, strideX, pH, pW, imgH, imgW, dY, dX);
 
             STORE_RESULT(*z);
 
