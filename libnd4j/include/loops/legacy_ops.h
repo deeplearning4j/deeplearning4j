@@ -205,7 +205,8 @@
         (33, Pow) ,\
         (34, PowDerivative) ,\
         (35, CompareAndSet) ,\
-        (36, SXELogitsSmoother)
+        (36, SXELogitsSmoother), \
+        (37, LstmClip)
 
 
 

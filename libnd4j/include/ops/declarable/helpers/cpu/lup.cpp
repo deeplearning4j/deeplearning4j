@@ -20,51 +20,61 @@
 
 #include <ops/declarable/helpers/top_k.h>
 #include <MmulHelper.h>
+#include <NDArrayFactory.h>
+#include <Status.h>
 
 namespace nd4j {
 namespace ops {
 namespace helpers {
 
     template <typename T> 
-    void swapRows(NDArray<T>* matrix, int theFirst, int theSecond) {
+    static void _swapRows(NDArray* matrix, int theFirst, int theSecond) {
 
         if (theFirst != theSecond)
-        for (int i = 0; i < matrix->columns(); i++) {
-            std::swap((*matrix)(theFirst, i), (*matrix)(theSecond, i));
-        }
+            for (int i = 0; i < matrix->columns(); i++) {
+                T _e0 = matrix->getScalar<T>(theFirst, i);
+                T _e1 = matrix->getScalar<T>(theSecond, i);
+
+                matrix->putScalar<T>(theFirst, i, _e1);
+                matrix->putScalar<T>(theSecond, i, _e0);
+            }
     }
-    template void swapRows(NDArray<float>* matrix, int theFirst, int theSecond);
-    template void swapRows(NDArray<float16>* matrix, int theFirst, int theSecond);
-    template void swapRows(NDArray<double>* matrix, int theFirst, int theSecond);
+    BUILD_SINGLE_TEMPLATE(template void _swapRows, (NDArray* matrix, int theFirst, int theSecond), LIBND4J_TYPES);
+
+    void swapRows(NDArray* matrix, int theFirst, int theSecond) {
+        BUILD_SINGLE_SELECTOR(matrix->dataType(), _swapRows, (matrix, theFirst, theSecond), LIBND4J_TYPES);
+    }
 
     template <typename T>
-    void invertLowerMatrix(NDArray<T>* inputMatrix, NDArray<T>* invertedMatrix) {
+    static void _invertLowerMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
         int n = inputMatrix->rows();
         invertedMatrix->assign(T(0.0));
 #pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = 0; i < n; i++)
-            (*invertedMatrix)(i, i) = T(1.0);
+            invertedMatrix->putScalar(i, i, 1.0f);
 
         if (inputMatrix->isIdentityMatrix()) return;
 
 #pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = 1; i < n; i++)
-            (*invertedMatrix)(i, i - 1) = -(*inputMatrix)(i, i - 1);
+            invertedMatrix->putScalar(i, i - 1,  -inputMatrix->getScalar<T>(i, i - 1));
 
 #pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = 2; i < n; i++) {
             for (int j = i - 2; j > -1; --j) 
                 for (int k = 0; k < i; k++) 
-                    (*invertedMatrix)(i, j) -= (*invertedMatrix)(k, j) * (*inputMatrix)(i, k);
+                    invertedMatrix->putScalar(i, j, invertedMatrix->getScalar<T>(i, j) - (invertedMatrix->getScalar<T>(k, j) * inputMatrix->getScalar<T>(i, k)));
         }
     }
 
-    template void invertLowerMatrix(NDArray<float>* inputMatrix, NDArray<float>* invertedMatrix);
-    template void invertLowerMatrix(NDArray<float16>* inputMatrix, NDArray<float16>* invertedMatrix);
-    template void invertLowerMatrix(NDArray<double>* inputMatrix, NDArray<double>* invertedMatrix);
+    BUILD_SINGLE_TEMPLATE(template void _invertLowerMatrix, (NDArray* inputMatrix, NDArray* invertedMatrix);, LIBND4J_TYPES);
+
+    void invertLowerMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
+        BUILD_SINGLE_SELECTOR(inputMatrix->dataType(), _invertLowerMatrix, (inputMatrix, invertedMatrix), LIBND4J_TYPES);
+    }
 
     template <typename T>
-    void invertUpperMatrix(NDArray<T>* inputMatrix, NDArray<T>* invertedMatrix) {
+    static void _invertUpperMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
         int n = inputMatrix->rows();
         invertedMatrix->setIdentity();
 
@@ -74,33 +84,36 @@ namespace helpers {
 
 #pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = 0; i < n; i++)
-            (*invertedMatrix)(i, i)  /= (*inputMatrix)(i, i);
+            invertedMatrix->putScalar(i, i, invertedMatrix->getScalar<T>(i, i) / inputMatrix->getScalar<T>(i, i));
 
 #pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = 0; i < n - 1; i++)
-            (*invertedMatrix)(i, i + 1) -= (*inputMatrix)(i, i + 1) * (*invertedMatrix)(i + 1, i + 1) / (*inputMatrix)(i, i);
+            invertedMatrix->putScalar(i, i + 1, invertedMatrix->getScalar<T>(i, i+1) - (inputMatrix->getScalar<T>(i, i + 1) * invertedMatrix->getScalar<T>(i + 1, i + 1) / inputMatrix->getScalar<T>(i, i)));
 
 #pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = n - 2; i > - 1; i--) {
             for (int j = i + 2; j < n; j++) 
                 for (int k = i; k < n; k++) 
-                    (*invertedMatrix)(i, j) -= (*invertedMatrix)(k, j) * (*inputMatrix)(i, k) / (*inputMatrix)(i, i);
+                    invertedMatrix->putScalar(i, j, invertedMatrix->getScalar<T>(i, j) - ((invertedMatrix->getScalar<T>(k, j) * inputMatrix->getScalar<T>(i, k) / inputMatrix->getScalar<T>(i, i))));
         }
     }
 
-    template void invertUpperMatrix(NDArray<float>* inputMatrix, NDArray<float>* invertedMatrix);
-    template void invertUpperMatrix(NDArray<float16>* inputMatrix, NDArray<float16>* invertedMatrix);
-    template void invertUpperMatrix(NDArray<double>* inputMatrix, NDArray<double>* invertedMatrix);
+    BUILD_SINGLE_TEMPLATE(template void _invertUpperMatrix, (NDArray* inputMatrix, NDArray* invertedMatrix);, LIBND4J_TYPES);
+
+    void invertUpperMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
+        BUILD_SINGLE_SELECTOR(inputMatrix->dataType(), _invertUpperMatrix, (inputMatrix, invertedMatrix), LIBND4J_TYPES);
+    }
+
 
     template <typename T>
-    T lup(NDArray<T>* input, NDArray<T>* compound, NDArray<T>* permutation) {
+    static NDArray _lup(NDArray* input, NDArray* compound, NDArray* permutation) {
 
         const int rowNum = input->rows();
         const int columnNum = input->columns();
 
         T determinant = (T)1.0;
-        std::unique_ptr<NDArray<T>> compoundMatrix(input->dup()); // copy
-        std::unique_ptr<NDArray<T>> permutationMatrix(input->createUninitialized()); //put identity
+        std::unique_ptr<NDArray> compoundMatrix(input->dup()); // copy
+        std::unique_ptr<NDArray> permutationMatrix(input->createUninitialized()); //put identity
         permutationMatrix->setIdentity();
 
         T pivotValue; // = T(0.0);
@@ -112,8 +125,8 @@ namespace helpers {
             pivot = -1;
 
             for(int rowCounter = i; rowCounter < rowNum; rowCounter++ ) {
-                if(nd4j::math::nd4j_abs((*compoundMatrix)(rowCounter, i)) > pivotValue ) {
-                    pivotValue = nd4j::math::nd4j_abs((*compoundMatrix)(rowCounter, i));
+                if(nd4j::math::nd4j_abs(compoundMatrix->getScalar<T>(rowCounter, i)) > pivotValue ) {
+                    pivotValue = nd4j::math::nd4j_abs(compoundMatrix->getScalar<T>(rowCounter, i));
                     pivot = rowCounter;
                 }
             }
@@ -125,10 +138,11 @@ namespace helpers {
                     swapCount++;
 
                 for( int j = i + 1; j < rowNum; j++ ) {
-                    (*compoundMatrix)(j, i) /= (*compoundMatrix)(i, i);
+
+                    compoundMatrix->putScalar(j, i, compoundMatrix->getScalar<T>(j, i) / compoundMatrix->getScalar<T>(i, i));
                     for( int k = i + 1; k < rowNum; k++ ) {
-                        T arg = (*compoundMatrix)(j, i) * (*compoundMatrix)(i, k);
-                        (*compoundMatrix)(j, k) -= arg;
+                        T arg = compoundMatrix->getScalar<T>(j, i) * compoundMatrix->getScalar<T>(i, k);
+                        compoundMatrix->putScalar(j, k, compoundMatrix->getScalar<T>(j, k) - arg);
                     }
                 }
             }
@@ -138,7 +152,7 @@ namespace helpers {
 // if(rowNum > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < rowNum; e++) {
             // nd4j_printf("Compound matrix diag %i %f.\n", e, (*compoundMatrix)(e, e));
-            determinant *= (*compoundMatrix)(e, e);
+            determinant *= compoundMatrix->getScalar<T>(e, e);
         }
         if (swapCount % 2) determinant = -determinant;
         if (compound != nullptr)
@@ -146,39 +160,42 @@ namespace helpers {
         if (permutation != nullptr)
             *permutation = *permutationMatrix;
 
-        return determinant;
+
+        return NDArrayFactory::_scalar<T>(determinant, input->getWorkspace());
     }
 
-    template float lup(NDArray<float>* input, NDArray<float>* output, NDArray<float>* permutation);
-    template float16 lup(NDArray<float16>* input, NDArray<float16>* compound, NDArray<float16>* permutation);
-    template double lup(NDArray<double>* input, NDArray<double>* compound, NDArray<double>* permutation);
+    BUILD_SINGLE_TEMPLATE(template NDArray _lup, (NDArray* input, NDArray* output, NDArray* permutation), LIBND4J_TYPES);
+
 
 
     template <typename T>
-    int determinant(NDArray<T>* input, NDArray<T>* output) {
+    static int _determinant(NDArray* input, NDArray* output) {
 
         Nd4jLong n = input->sizeAt(-1);
         Nd4jLong n2 = n * n;
 
-        std::unique_ptr<NDArray<T>> matrix(new NDArray<T>({n, n})); //, block.getWorkspace());
+        auto matrix = NDArrayFactory::_create('c', {n, n}, input->dataType(), input->getWorkspace()); //, block.getWorkspace());
 //#pragma omp parallel for if(output->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < output->lengthOf(); e++) {
             for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
-                (*matrix)(row) = (*input)(k);
+                matrix.putScalar(row, input->getScalar<T>(k));
             }
 
-            (*output)(e) = lup(matrix.get(), (NDArray<T>*)nullptr, (NDArray<T>*)nullptr);
+            output->putScalar(e, _lup<T>(&matrix, (NDArray*)nullptr, (NDArray*)nullptr));
         }
 
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
 
-    template int determinant(NDArray<float>* input, NDArray<float>* output);
-    template int determinant(NDArray<float16>* input, NDArray<float16>* output);
-    template int determinant(NDArray<double>* input, NDArray<double>* output);
+    BUILD_SINGLE_TEMPLATE(template int _determinant, (NDArray* input, NDArray* output), LIBND4J_TYPES);
+
+    int determinant(NDArray* input, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), return _determinant, (input, output), LIBND4J_TYPES);
+    }
+
 
     template <typename T>
-    int inverse(NDArray<T>* input, NDArray<T>* output) {
+    int inverse(NDArray* input, NDArray* output) {
 
         auto n = input->sizeAt(-1);
         auto n2 = n * n;

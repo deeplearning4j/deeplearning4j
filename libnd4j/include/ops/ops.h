@@ -1360,6 +1360,22 @@ namespace simdOps {
 		}
 	};
 
+	template <typename X, typename Y>
+	class LstmClip {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static X op(X d1, Y d2, X *params) {
+			X _v = (X) d2;
+			if (d1 > _v)
+				return _v;
+			else if (d1 < _v)
+				return _v;
+			else return d1;
+		}
+	};
+
 	template <typename X>
 	class Swish {
 	public:

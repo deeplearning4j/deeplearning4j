@@ -31,7 +31,6 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 void sparseSoftmaxCrossEntropyLossWithLogits(const NDArray& labels, const NDArray& logits, NDArray& output) {
 
-
     auto maxAlongDim = logits.reduceAlongDims(reduce::Max, {-1}, true);
     auto logitsExp = (logits - maxAlongDim).transform(transform::Exp, nullptr);
     auto logSoftMax = ( logitsExp / logitsExp.reduceAlongDims(reduce::Sum, {-1}, true) ).transform(transform::Log);
