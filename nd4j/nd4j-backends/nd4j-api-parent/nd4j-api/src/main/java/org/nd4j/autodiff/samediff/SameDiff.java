@@ -2850,22 +2850,44 @@ public class SameDiff {
 
     /**
      * Batch norm operation.
+     * @see #batchNorm(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, double, int...)
      */
     public SDVariable batchNorm(SDVariable input, SDVariable mean,
                                 SDVariable variance, SDVariable gamma,
-                                SDVariable beta,
-                                boolean applyGamma, boolean applyBeta, double epsilon) {
-        return batchNorm(null, input, mean, variance, gamma, beta, applyGamma, applyBeta, epsilon);
+                                SDVariable beta, double epsilon, int... axis) {
+        return batchNorm(null, input, mean, variance, gamma, beta, true, true, epsilon, axis);
     }
 
     /**
-     * Batch norm operation.
+     * Neural network batch normalization operation.<br>
+     * For details, see <a href="http://arxiv.org/abs/1502.03167">http://arxiv.org/abs/1502.03167</a>
+     *
+     * @param name       Name of the output variable
+     * @param input      Input variable.
+     * @param mean       Mean value. For 1d axis, this should match input.size(axis)
+     * @param variance   Variance value. For 1d axis, this should match input.size(axis)
+     * @param gamma      Gamma value. For 1d axis, this should match input.size(axis)
+     * @param beta       Beta value. For 1d axis, this should match input.size(axis)
+     * @param epsilon    Epsilon constant for numerical stability (to avoid division by 0)
+     * @param axis       For 2d CNN activations: 1 for NCHW format activations, or 3 for NHWC format activations.<br>
+     *                   For 3d CNN activations: 1 for NCDHW format, 4 for NDHWC<br>
+     *                   For 1d/RNN activations: 1 for NCW format, 2 for NWC
+     * @return Output variable for batch normalization
      */
     public SDVariable batchNorm(String name, SDVariable input, SDVariable mean,
                                 SDVariable variance, SDVariable gamma,
-                                SDVariable beta,
-                                boolean applyGamma, boolean applyBeta, double epsilon) {
-        SDVariable res = f().batchNorm(input, mean, variance, gamma, beta, applyGamma, applyBeta, epsilon);
+                                SDVariable beta, double epsilon, int... axis) {
+        return batchNorm(name, input, mean, variance, gamma, beta, true, true, epsilon, axis);
+    }
+
+    /**
+     * Batch normalization with optional application of gamma/beta args.
+     * See {@link #batchNorm(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, double, int...)}
+     */
+    public SDVariable batchNorm(String name, SDVariable input, SDVariable mean,
+                                SDVariable variance, SDVariable gamma,
+                                SDVariable beta, boolean applyGamma, boolean applyBeta, double epsilon, int... axis) {
+        SDVariable res = f().batchNorm(input, mean, variance, gamma, beta, applyGamma, applyBeta, epsilon, axis);
         return updateVariableNameAndReference(res, name);
     }
 

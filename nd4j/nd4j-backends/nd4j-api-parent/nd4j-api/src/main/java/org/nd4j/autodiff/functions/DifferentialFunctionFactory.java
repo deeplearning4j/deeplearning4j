@@ -440,13 +440,14 @@ public class DifferentialFunctionFactory {
                                 SDVariable variance, SDVariable gamma,
                                 SDVariable beta,
                                 boolean applyGamma, boolean applyBeta,
-                                double epsilon) {
+                                double epsilon, int... axis) {
         BatchNorm batchNorm = BatchNorm.builder()
                 .inputFunctions(new SDVariable[]{input, mean, variance, gamma, beta})
                 .applyGamma(applyGamma)
                 .applyBeta(applyBeta)
                 .epsilon(epsilon)
                 .sameDiff(sameDiff())
+                .axis(axis)
                 .build();
 
         val outputVars = batchNorm.outputVariables();

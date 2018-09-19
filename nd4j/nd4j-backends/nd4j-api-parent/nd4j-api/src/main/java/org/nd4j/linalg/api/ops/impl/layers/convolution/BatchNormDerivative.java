@@ -35,8 +35,8 @@ public class BatchNormDerivative extends BatchNorm {
     @Builder(builderMethodName = "derivativeBuilder")
     public BatchNormDerivative(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays,
                                INDArray[] outputArrays, boolean inPlace, boolean applyGamma,
-                               boolean applyBeta, double epsilon) {
-        super(sameDiff, inputFunctions, inputArrays, outputArrays, inPlace, applyGamma, applyBeta, epsilon);
+                               boolean applyBeta, double epsilon, int[] axis) {
+        super(sameDiff, inputFunctions, inputArrays, outputArrays, inPlace, applyGamma, applyBeta, epsilon, axis);
     }
 
     public BatchNormDerivative() {}

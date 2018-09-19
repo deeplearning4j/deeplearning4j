@@ -23,11 +23,15 @@ import lombok.extern.slf4j.Slf4j;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -48,16 +52,20 @@ public class BatchNorm extends DynamicCustomOp {
     private boolean applyGamma;
     private boolean applyBeta;
     private double epsilon;
+    private int[] axis;
 
     @Builder(builderMethodName = "builder")
     public BatchNorm(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays, INDArray[]
-            outputArrays, boolean inPlace, boolean applyGamma, boolean applyBeta, double epsilon) {
+            outputArrays, boolean inPlace, boolean applyGamma, boolean applyBeta, double epsilon, int[] axis) {
         super(null,sameDiff, inputFunctions, inPlace);
+        Preconditions.checkState(axis != null && axis.length > 0, "Invalid axis argument: axis must be specified" +
+                "and length > 0. Got %s", axis);
         this.sameDiff = sameDiff;
 
         this.applyGamma = applyGamma;
         this.applyBeta = applyBeta;
         this.epsilon = epsilon;
+        this.axis = axis;
         if(inputArrays != null) {
             addInputArgument(inputArrays);
         }
@@ -70,6 +78,10 @@ public class BatchNorm extends DynamicCustomOp {
     public void addArgs() {
         addIArgument(ArrayUtil.fromBoolean(applyGamma));
         addIArgument(ArrayUtil.fromBoolean(applyBeta));
+        if(axis != null) {
+            //If null: op defaults to last dimension
+            addIArgument(axis);
+        }
         addTArgument(epsilon);
     }
 
@@ -80,6 +92,7 @@ public class BatchNorm extends DynamicCustomOp {
         ret.put("applyGamma", applyGamma);
         ret.put("applyBeta", applyBeta);
         ret.put("epsilon", epsilon);
+        ret.put("axis", axis);
         return ret;
     }
 
@@ -97,6 +110,25 @@ public class BatchNorm extends DynamicCustomOp {
         this.applyGamma = true;
         this.applyBeta = true;
         this.epsilon = attributesForNode.get("epsilon").getF();
+
+        if(attributesForNode.containsKey("data_format")){
+            String dataFormat = attributesForNode.get("data_format").getS().toStringUtf8();
+            //TODO not sure if these conv1d/3d cases appear. But BN definitely uses "NCHW" or "NHWC"
+            if(dataFormat.equalsIgnoreCase(Conv2DConfig.NCHW) || dataFormat.equalsIgnoreCase(Conv1DConfig.NCW) || dataFormat.equalsIgnoreCase(Conv3DConfig.NCDHW)){
+                axis = new int[]{1};
+            } else if(dataFormat.equalsIgnoreCase(Conv2DConfig.NHWC)){
+                axis = new int[]{3};
+            } else if(dataFormat.equalsIgnoreCase(Conv1DConfig.NWC)){
+                axis = new int[]{2};
+            } else if(dataFormat.equalsIgnoreCase(Conv3DConfig.NDHWC)){
+                axis = new int[]{4};
+            } else {
+                throw new IllegalStateException("Unknown data format: \"" + dataFormat + "\"" );
+            }
+        }
+
+
+
         addArgs();
     }
 
@@ -108,7 +140,7 @@ public class BatchNorm extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "batchnorm";
+        return "batchnorm_new";
     }
 
     @Override
