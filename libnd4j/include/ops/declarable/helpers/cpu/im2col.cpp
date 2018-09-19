@@ -27,14 +27,14 @@ namespace helpers {
 
 // input [bS, iC, iH, iW] is convoluted to output [bS, iC, kH, kW, oH, oW]
 template <typename T>
-void im2col_(nd4j::graph::LaunchContext& context, NDArray* im,  NDArray* col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const T zeroPadVal) {
+static void im2col_(nd4j::graph::LaunchContext& context, NDArray* input,  NDArray* output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const NDArray& zeroPadVal) {
 
 	// [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]        
    		
-	auto imBuff         = static_cast<T*>(im.getBuffer());
-	auto colBuff        = static_cast<T*>(col.getBuffer());
-	auto imShapeBuffer  = im.getShapeInfo();
-	auto colShapeBuffer = col.getShapeInfo();	
+	auto imBuff         = static_cast<T*>(input->getBuffer());
+	auto colBuff        = static_cast<T*>(output->getBuffer());
+	auto imShapeBuffer  = input->getShapeInfo();
+	auto colShapeBuffer = output->getShapeInfo();
     auto colShape       = shape::shapeOf(colShapeBuffer);
     auto colStride      = shape::stride(colShapeBuffer);
     auto imShape        = shape::shapeOf(imShapeBuffer);
@@ -62,6 +62,7 @@ void im2col_(nd4j::graph::LaunchContext& context, NDArray* im,  NDArray* col, co
             
     if (shape::order(imShapeBuffer) == 'c' &&  shape::order(colShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(imShapeBuffer) && shape::strideDescendingCAscendingF(colShapeBuffer)) {
 
+    T zp = zeroPadVal.getScalar<T>(0);
 #pragma omp parallel for schedule(static) proc_bind(close) private(col, im, imRow, imCol)
     	for (int b = 0; b < bS; b++) {
         	for (int c = 0; c < iC; ++c) {        
@@ -77,7 +78,7 @@ void im2col_(nd4j::graph::LaunchContext& context, NDArray* im,  NDArray* col, co
                                 im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3; 
                                                     
                                 if (static_cast<unsigned>(imRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(imCol) >= static_cast<unsigned>(iW))
-                                	*col = zeroPadVal;
+                                	*col = zp;
                                 else 
                                 	*col = *im;
                             }
@@ -88,7 +89,7 @@ void im2col_(nd4j::graph::LaunchContext& context, NDArray* im,  NDArray* col, co
         }  
     }
     else {
- 
+        T zp = zeroPadVal.getScalar<T>(0);
 #pragma omp parallel for schedule(static) proc_bind(close) private(im, col, imRow, imCol)    
     	for (int b = 0; b < bS; b++) {
         	for (int colH = 0; colH < oH; ++colH) {
@@ -104,7 +105,7 @@ void im2col_(nd4j::graph::LaunchContext& context, NDArray* im,  NDArray* col, co
                                 im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
                                                     
                                 if (static_cast<unsigned>(imRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(imCol) >= static_cast<unsigned>(iW))
-                                	*col = zeroPadVal;
+                                	*col = zp;
                                 else 
                                 	*col = *im;
                             }
@@ -117,12 +118,12 @@ void im2col_(nd4j::graph::LaunchContext& context, NDArray* im,  NDArray* col, co
 }
 
 
-void im2col(nd4j::graph::LaunchContext& context, NDArray* im,  NDArray* col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const T zeroPadVal) {
+void im2col(nd4j::graph::LaunchContext& context, NDArray* im,  NDArray* col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const NDArray& zeroPadVal) {
 
 	BUILD_SINGLE_SELECTOR(im->dataType(), im2col_, (context, im, col, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, zeroPadVal), LIBND4J_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void im2col_, (nd4j::graph::LaunchContext& context, NDArray* im,  NDArray* col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const T zeroPadVal), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void im2col_, (nd4j::graph::LaunchContext& context, NDArray* im,  NDArray* col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const NDArray& zeroPadVal), LIBND4J_TYPES);
 
 
 }
