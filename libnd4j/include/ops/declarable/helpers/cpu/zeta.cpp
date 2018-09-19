@@ -19,6 +19,7 @@
 //
 
 #include<ops/declarable/helpers/zeta.h>
+#include <NDArrayFactory.h>
 
 namespace nd4j {
 namespace ops {
@@ -34,7 +35,7 @@ const double coeff[] = { 12.0,-720.0,30240.0,-1209600.0,47900160.0,-1.8924375803
 //////////////////////////////////////////////////////////////////////////
 // slow implementation
 template <typename T>
-static T zetaSlow(const T x, const T q) {
+static FORCEINLINE T zetaSlow(const T x, const T q) {
 	
 	const T precision = (T)1e-7; 									// function stops the calculation of series when next item is <= precision
 		
@@ -64,7 +65,7 @@ static T zetaSlow(const T x, const T q) {
 //////////////////////////////////////////////////////////////////////////
 // fast implementation, it is based on Euler-Maclaurin summation formula
 template <typename T>
-T zeta(const T x, const T q) {
+static FORCEINLINE T zeta(const T x, const T q) {
 	
 	// if (x <= (T)1.) 
 	// 	throw("zeta function: x must be > 1 !");
@@ -74,14 +75,14 @@ T zeta(const T x, const T q) {
 
 	T a, b(0.), k, s, t, w;
 		
-	s = math::nd4j_pow(q, -x);
+	s = math::nd4j_pow<T, T, T>(q, -x);
 	a = q;
 	int i = 0;
 
 	while(i < 9 || a <= (T)9.) {
 		i += 1;
 		a += (T)1.0;
-		b = math::nd4j_pow(a, -x);
+		b = math::nd4j_pow<T, T, T>(a, -x);
 		s += b;
 		if(math::nd4j_abs(b / s) < (T)machep)
 			return s;
@@ -115,25 +116,22 @@ T zeta(const T x, const T q) {
 //////////////////////////////////////////////////////////////////////////
 // calculate the Hurwitz zeta function for arrays
 template <typename T>
-NDArray<T> zeta(const NDArray<T>& x, const NDArray<T>& q) {
+static NDArray zeta_(const NDArray& x, const NDArray& q) {
 
-	NDArray<T> result(&x, false, x.getWorkspace());
+	auto result = NDArrayFactory::_create(&x, false, x.getWorkspace());
 
 #pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)	
 	for(int i = 0; i < x.lengthOf(); ++i)
-		result(i) = zeta<T>(x(i), q(i));
+		result.putScalar(i, zeta<T>(x.getScalar<T>(i), q.getScalar<T>(i)));
 
 	return result;
 }
 
+	NDArray zeta(const NDArray& x, const NDArray& q) {
+		BUILD_SINGLE_SELECTOR(x.dataType(), zeta_, (x, q), FLOAT_TYPES);
+	}
 
-template float   zeta<float>  (const float   x, const float   q);
-template float16 zeta<float16>(const float16 x, const float16 q);
-template double  zeta<double> (const double  x, const double  q);
-
-template NDArray<float>   zeta<float>  (const NDArray<float>&   x, const NDArray<float>&   q);
-template NDArray<float16> zeta<float16>(const NDArray<float16>& x, const NDArray<float16>& q);
-template NDArray<double>  zeta<double> (const NDArray<double>&  x, const NDArray<double>&  q);
+	BUILD_SINGLE_TEMPLATE(template NDArray zeta_, (const NDArray& x, const NDArray& q), FLOAT_TYPES);
 
 
 }

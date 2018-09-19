@@ -25,21 +25,23 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void adjustWeights(NDArray<T>* input, NDArray<T>* weights, NDArray<T>* output, int minLength, int maxLength) {
+    static void adjustWeights_(NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
             for (int e = 0; e < input->lengthOf(); e++) {
-                int val = static_cast<int>((*input)(e));
+                int val = input->getScalar<int>(e);
                 if (val < maxLength) {
                     if (weights != nullptr)
-                        (*output)(val) += (*weights)(e);
+                        output->putScalar(val, output->getScalar<T>(val) + weights->getScalar<T>(e));
                     else
-                        (*output)(val)++;
+                        output->putScalar(val, output->getScalar<T>(val) + 1);
                 }
             }
     }
 
-    template void adjustWeights(NDArray<float>* input, NDArray<float>* weights, NDArray<float>* output, int minLength, int maxLength);
-    template void adjustWeights(NDArray<float16>* input, NDArray<float16>* weights, NDArray<float16>* output, int minLength, int maxLength);
-    template void adjustWeights(NDArray<double>* input, NDArray<double>* weights, NDArray<double>* output, int minLength, int maxLength);
+    void adjustWeights(NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
+        BUILD_SINGLE_SELECTOR(output->dataType(), adjustWeights_, (input, weights, output, minLength, maxLength), LIBND4J_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void adjustWeights_, (NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength), LIBND4J_TYPES);
 }
 }
 }

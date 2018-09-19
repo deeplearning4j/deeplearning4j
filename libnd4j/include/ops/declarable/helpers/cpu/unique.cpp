@@ -19,19 +19,20 @@
 //
 
 #include <ops/declarable/helpers/unique.h>
+#include <Status.h>
 
 namespace nd4j {
 namespace ops {
 namespace helpers {
 
     template <typename T>
-    int uniqueCount(NDArray<T>* input) {
-        int count = 0;
+    static Nd4jLong uniqueCount_(NDArray* input) {
+        Nd4jLong count = 0;
 
         std::vector<T> values;
 
         for (int e = 0; e < input->lengthOf(); e++) {
-            T v = (*input)(e);
+            T v = input->getScalar<T>(e);
             if (std::find(values.begin(), values.end(), v) == values.end()) {
                 values.push_back(v);
                 count++;
@@ -40,20 +41,22 @@ namespace helpers {
         return count;
     }
 
-    template int uniqueCount(NDArray<float>* input);
-    template int uniqueCount(NDArray<float16>* input);
-    template int uniqueCount(NDArray<double>* input);
+    Nd4jLong uniqueCount(NDArray* input) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), return uniqueCount_, (input), LIBND4J_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template Nd4jLong uniqueCount_, (NDArray* input), LIBND4J_TYPES);
 
 
     template <typename T>
-    int uniqueFunctor(NDArray<T>* input, NDArray<T>* values, NDArray<T>* indices, NDArray<T>* counts) { 
+    static Nd4jLong uniqueFunctor_(NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
     
         std::vector<T> valuesVector;
         std::map<T, int> indicesMap;
         std::map<T, int> countsMap;
 
         for (int e = 0; e < input->lengthOf(); e++) {
-            T v = (*input)(e);
+            T v = input->getScalar<T>(e);
             if (std::find(valuesVector.begin(), valuesVector.end(), v) == valuesVector.end()) {
                 valuesVector.push_back(v);
                 indicesMap[v] = e;
@@ -66,24 +69,25 @@ namespace helpers {
 
 #pragma omp parallel for if(values->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < values->lengthOf(); e++) {
-            (*values)(e) = valuesVector[e];
+            values->putScalar(e, valuesVector[e]);
             if (counts != nullptr) 
-                (*counts)(e) = countsMap[valuesVector[e]];
+                counts->putScalar(e, countsMap[valuesVector[e]]);
         }
 
 //#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < indices->lengthOf(); e++) {
-            auto posI = std::find(valuesVector.begin(), valuesVector.end(), (*input)(e));
-            (*indices)(e) = std::distance(valuesVector.begin(), posI);//indicesMap[(*input)(e)];
+            auto posI = std::find(valuesVector.begin(), valuesVector.end(), input->getScalar<T>(e));
+            indices->putScalar(e, std::distance(valuesVector.begin(), posI));//indicesMap[(*input)(e)];
         }
 
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
 
-    template int uniqueFunctor(NDArray<float>* input, NDArray<float>* values, NDArray<float>* indices, NDArray<float>* counts);
-    template int uniqueFunctor(NDArray<float16>* input, NDArray<float16>* values, NDArray<float16>* indices, NDArray<float16>* counts);
-    template int uniqueFunctor(NDArray<double>* input, NDArray<double>* values, NDArray<double>* indices, NDArray<double>* counts);
+    Nd4jLong uniqueFunctor(NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), uniqueFunctor_,(input, values, indices, counts), LIBND4J_TYPES);
+    }
 
+    BUILD_SINGLE_TEMPLATE(template Nd4jLong uniqueFunctor_, (NDArray* input, NDArray* values, NDArray* indices, NDArray* counts), LIBND4J_TYPES);
 }
 }
 }
