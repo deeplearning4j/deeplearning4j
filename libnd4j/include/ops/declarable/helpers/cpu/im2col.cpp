@@ -27,14 +27,14 @@ namespace helpers {
 
 // input [bS, iC, iH, iW] is convoluted to output [bS, iC, kH, kW, oH, oW]
 template <typename T>
-void im2col_(nd4j::graph::LaunchContext& context, NDArray& im,  NDArray& col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const NDArray& arrZeroPadVal) {
+static void im2col_(nd4j::graph::LaunchContext& context, NDArray& input,  NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const NDArray& arrZeroPadVal) {
 
 	// [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]        
    		
-	auto imBuff         = static_cast<T*>(im.getBuffer());
-	auto colBuff        = static_cast<T*>(col.getBuffer());
-	auto imShapeBuffer  = im.getShapeInfo();
-	auto colShapeBuffer = col.getShapeInfo();	
+	auto imBuff         = static_cast<T*>(input.getBuffer());
+	auto colBuff        = static_cast<T*>(output.getBuffer());
+	auto imShapeBuffer  = input.getShapeInfo();
+	auto colShapeBuffer = output.getShapeInfo();
     auto colShape       = shape::shapeOf(colShapeBuffer);
     auto colStride      = shape::stride(colShapeBuffer);
     auto imShape        = shape::shapeOf(imShapeBuffer);
@@ -120,11 +120,10 @@ void im2col_(nd4j::graph::LaunchContext& context, NDArray& im,  NDArray& col, co
 
 
 void im2col(nd4j::graph::LaunchContext& context, NDArray* im,  NDArray* col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const NDArray& arrZeroPadVal) {
-
-	BUILD_SINGLE_SELECTOR(im->dataType(), im2col_, (context, im, col, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, arrZeroPadVal), LIBND4J_TYPES);
+	BUILD_SINGLE_SELECTOR(im->dataType(), im2col_, (context, *im, *col, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, arrZeroPadVal), LIBND4J_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void im2col_, (nd4j::graph::LaunchContext& context, NDArray* im,  NDArray* col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const NDArray& arrZeroPadVal), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void im2col_, (nd4j::graph::LaunchContext& context, NDArray& im,  NDArray& col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const NDArray& arrZeroPadVal), LIBND4J_TYPES);
 
 
 }

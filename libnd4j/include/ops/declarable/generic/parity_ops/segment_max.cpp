@@ -30,10 +30,11 @@ namespace nd4j {
             REQUIRE_TRUE(idxSegments->isVector(), 0, "segment_max: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
             REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "segment_max: segment indexes array length should be equal to the input first dimension, but %i != %i.", idxSegments->lengthOf(), input->sizeAt(0));
 
-            // FIXME: float?
-            double expected = 0.f, wrong = 0.f;
 
-            REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_max: segment indices should be arranged, but %2.1f > %2.1f", expected, wrong);
+            auto expected = NDArrayFactory::_scalar(0.f, block.getWorkspace());
+            auto wrong = NDArrayFactory::_scalar(0.f, block.getWorkspace());
+
+            REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_max: segment indices should be arranged, but %2.1f > %2.1f", expected.getScalar<float>(0), wrong.getScalar<float>(0));
 
             helpers::segmentMaxFunctor(input, idxSegments, segmentedOutput);
 

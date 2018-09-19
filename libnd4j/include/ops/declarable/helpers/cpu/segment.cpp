@@ -26,7 +26,7 @@ namespace helpers {
 
     // segment max
     template <typename T>
-    void segmentMaxFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
+    static void segmentMaxFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
         int idx = indices->getScalar<int>(0);
@@ -81,7 +81,7 @@ namespace helpers {
 
     // segmen min 
     template <typename T>
-    void segmentMinFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
+    static void segmentMinFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
         int idx = indices->getScalar<int>(0);
@@ -123,7 +123,7 @@ namespace helpers {
                     }
                 }
                 else {
-                    idx = *indices->getScalar<T>(i);
+                    idx = indices->getScalar<T>(i);
                     minT = listOfOutTensors->at(idx);
                     minT->assign(listOfTensors->at(i));
                 }
@@ -133,7 +133,7 @@ namespace helpers {
 
     // segmen mean
     template <typename T>
-    void segmentMeanFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
+    static void segmentMeanFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
         int idx = indices->getScalar<int>(0);
@@ -195,23 +195,23 @@ namespace helpers {
     }
 
     template <typename T>
-    void segmentSumFunctor_(NDArray* input, NDArray<T>* indices, NDArray<T>* output) {
+    static void segmentSumFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
-        int idx = static_cast<int>((*indices)(0.));
+        int idx = indices->getScalar<int>(0);
         if (input->isVector()) {
             T val = T(0.f);
             int count = 0;
             for (int e = 0; e < indices->lengthOf(); e++) {
-                if (idx == static_cast<int>((*indices)(e))) {
+                if (idx == indices->getScalar<int>(e)) {
                    // sum 
-                   val += (*input)(e);
+                   val += input->getScalar<T>(e);
                 }
                 else {
-                    idx = static_cast<int>((*indices)(e));
-                    val = (*input)(e);
+                    idx = indices->getScalar<int>(e);
+                    val = input->getScalar<T>(e);
                 }
-                (*output)(idx) = val;
+                output->putScalar(idx, val);
             }
         }
         else {
@@ -219,21 +219,22 @@ namespace helpers {
 #pragma omp parallel for if(input->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
-            ResultSet<T>* listOfTensors = input->allTensorsAlongDimension(restDims);
-            ResultSet<T>* listOfOutTensors = output->allTensorsAlongDimension(restDims);
+
+            auto listOfTensors = input->allTensorsAlongDimension(restDims);
+            auto listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             int numOfClasses = output->sizeAt(0); // number of classes
-            std::vector<std::pair<NDArray<T>*, int>> outputs(numOfClasses);
-            NDArray<T>* sumT = listOfOutTensors->at(idx);
+            std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
+            auto sumT = listOfOutTensors->at(idx);
 
             for (int i = 0; i < indices->lengthOf(); i++) {
-                if (static_cast<int>((*indices)(i)) == idx) {
+                if (indices->getScalar<int>(i) == idx) {
                     for (int e = 0; e < sumT->lengthOf(); e++) {
-                       (*sumT)(e) += (*listOfTensors->at(i))(e);
+                       sumT->putScalar(e, sumT->getScalar<T>(e) +listOfTensors->at(i)->getScalar<T>(e));
                     }
                 }
                 else {
-                    idx = static_cast<int>((*indices)(i));
+                    idx = indices->getScalar<int>(i);
                     sumT = listOfOutTensors->at(idx);
                     sumT->assign(listOfTensors->at(i));
                 }
@@ -244,23 +245,23 @@ namespace helpers {
     }
 
     template <typename T>
-    void segmentProdFunctor(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* output) {
+    static void segmentProdFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
-        int idx = static_cast<int>((*indices)(0.));
+        int idx = indices->getScalar<int>(0);
         if (input->isVector()) {
-            T val = (*input)(0.);
+            T val = input->getScalar<T>(0);
             int count = 0;
             for (int e = 1; e < indices->lengthOf(); e++) {
-                if (idx == static_cast<int>((*indices)(e))) {
+                if (idx == indices->getScalar<int>(e)) {
                    // sum 
-                   val *= (*input)(e);
+                   val *= input->getScalar<T>(e);
                 }
                 else {
-                    idx = static_cast<int>((*indices)(e));
-                    val = (*input)(e);
+                    idx = indices->getScalar<int>(e);
+                    val = input->getScalar<T>(e);
                 }
-                (*output)(idx) = val;
+                output->putScalar(idx, val);
             }
         }
         else {
@@ -268,20 +269,21 @@ namespace helpers {
 #pragma omp parallel for if(input->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
-            ResultSet<T>* listOfTensors = input->allTensorsAlongDimension(restDims);
-            ResultSet<T>* listOfOutTensors = output->allTensorsAlongDimension(restDims);
+
+            auto listOfTensors = input->allTensorsAlongDimension(restDims);
+            auto listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             int numOfClasses = output->sizeAt(0); // number of classes
-            NDArray<T>* sumT = listOfOutTensors->at(idx);
+            auto sumT = listOfOutTensors->at(idx);
             sumT->assign(listOfTensors->at(0));
             for (int i = 1; i < indices->lengthOf(); i++) {
-                if (static_cast<int>((*indices)(i)) == idx) {
+                if (indices->getScalar<int>(i)  == idx) {
                     for (int e = 0; e < sumT->lengthOf(); e++) {
-                       (*sumT)(e) *= (*listOfTensors->at(i))(e);
+                       sumT->putScalar(e, sumT->getScalar<T>(e) * listOfTensors->at(i)->getScalar<T>(e));
                     }
                 }
                 else {
-                    idx = static_cast<int>((*indices)(i));
+                    idx = indices->getScalar<int>(i);
                     sumT = listOfOutTensors->at(idx);
                     sumT->assign(listOfTensors->at(i));
                 }
@@ -292,41 +294,48 @@ namespace helpers {
     }
 
     template <typename T>
-    bool segmentIndicesValidate(NDArray<T>* indices, T& expected, T& output) {
-            T val = (*indices)(0.);
+    static bool segmentIndicesValidate_(NDArray* indices, NDArray& aexpected, NDArray& aoutput) {
+            T val = indices->getScalar<T>(0);
             for (int e = 1; e < indices->lengthOf(); e++) {
-                output = (*indices)(e);
-                if (val > output) 
+                aoutput.putScalar<T>(Nd4jLong(0), indices->getScalar<T>(e));
+                if (val > aoutput.getScalar<T>(0))
                     return false;
-                val = (*indices)(e);
+                val = indices->getScalar<T>(e);
             }
+
             return true;
     }
 
-    template bool segmentIndicesValidate(NDArray<float>* indices, float& expected, float& output);
-    template bool segmentIndicesValidate(NDArray<float16>* indices, float16& expected, float16& output);
-    template bool segmentIndicesValidate(NDArray<double>* indices, double& expected, double& output);
+    void segmentMaxFunctor(NDArray* input, NDArray* indices, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), segmentMaxFunctor_, (input, indices, output), LIBND4J_TYPES);
+    }
 
-    template void segmentMaxFunctor<float>(NDArray<float>* input, NDArray<float>* indices, NDArray<float>* output);
-    template void segmentMaxFunctor<float16>(NDArray<float16>* input, NDArray<float16>* , NDArray<float16>* output);
-    template void segmentMaxFunctor<double>(NDArray<double>* input, NDArray<double>* , NDArray<double>* output);
+    void segmentMinFunctor(NDArray* input, NDArray* indices, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), segmentMinFunctor_, (input, indices, output), LIBND4J_TYPES);
+    }
 
-    template void segmentMinFunctor<float>(NDArray<float>* input, NDArray<float>* , NDArray<float>* output);
-    template void segmentMinFunctor<float16>(NDArray<float16>* input, NDArray<float16>* , NDArray<float16>* output);
-    template void segmentMinFunctor<double>(NDArray<double>* input, NDArray<double>* , NDArray<double>* output);
+    void segmentMeanFunctor(NDArray* input, NDArray* indices, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), segmentMeanFunctor_, (input, indices, output), LIBND4J_TYPES);
+    }
 
-    template void segmentMeanFunctor<float>(NDArray<float>* input, NDArray<float>* , NDArray<float>* output);
-    template void segmentMeanFunctor<float16>(NDArray<float16>* input, NDArray<float16>* , NDArray<float16>* output);
-    template void segmentMeanFunctor<double>(NDArray<double>* input, NDArray<double>* , NDArray<double>* output);
+    void segmentSumFunctor(NDArray* input, NDArray* indices, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), segmentSumFunctor_, (input, indices, output), LIBND4J_TYPES);
+    }
 
-    template void segmentSumFunctor<float>(NDArray<float>* input, NDArray<float>* , NDArray<float>* output);
-    template void segmentSumFunctor<float16>(NDArray<float16>* input, NDArray<float16>* , NDArray<float16>* output);
-    template void segmentSumFunctor<double>(NDArray<double>* input, NDArray<double>* , NDArray<double>* output);
+    void segmentProdFunctor(NDArray* input, NDArray* indices, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), segmentProdFunctor_, (input, indices, output), LIBND4J_TYPES);
+    }
 
-    template void segmentProdFunctor<float>(NDArray<float>* input, NDArray<float>* , NDArray<float>* output);
-    template void segmentProdFunctor<float16>(NDArray<float16>* input, NDArray<float16>* , NDArray<float16>* output);
-    template void segmentProdFunctor<double>(NDArray<double>* input, NDArray<double>* , NDArray<double>* output);
+    bool segmentIndicesValidate(NDArray* indices, NDArray& expected, NDArray& output) {
+        BUILD_SINGLE_SELECTOR(output.dataType(), return segmentIndicesValidate_, (indices, expected, output), LIBND4J_TYPES);
+    }
 
+    BUILD_SINGLE_TEMPLATE(template bool segmentIndicesValidate_, (NDArray*, NDArray&, NDArray&), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void segmentProdFunctor_, (NDArray* input, NDArray* indices, NDArray* output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void segmentSumFunctor_, (NDArray* input, NDArray* indices, NDArray* output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void segmentMeanFunctor_, (NDArray* input, NDArray* indices, NDArray* output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void segmentMinFunctor_, (NDArray* input, NDArray* indices, NDArray* output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void segmentMaxFunctor_, (NDArray* input, NDArray* indices, NDArray* output), LIBND4J_TYPES);
 }
 }
 }
