@@ -26,23 +26,23 @@ namespace helpers {
 
     // segment max
     template <typename T>
-    void segmentMaxFunctor(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* output) {
+    void segmentMaxFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
-        int idx = static_cast<int>((*indices)(0.));
+        int idx = indices->getScalar<int>(0);
         if (input->isVector()) {
-            T val = (*input)(0.);
+            T val = input->getScalar<T>(0);
 //#pragma omp parallel for
             for (int e = 1; e < indices->lengthOf(); e++) {
-                if (idx == static_cast<int>((*indices)(e))) {
+                if (idx == indices->getScalar<int>(e)) {
                    // max 
-                   val = nd4j::math::nd4j_max(val, (*input)(e));
+                   val = nd4j::math::nd4j_max<T>(val, input->getScalar<T>(e));
                 }
                 else {
-                    idx = static_cast<int>((*indices)(e));
-                    val = (*input)(e);
+                    idx = indices->getScalar<int>(e);
+                    val = input->getScalar<T>(e);
                 }
-                (*output)(idx) = val;
+                output->putScalar<T>(idx, val);
             }
         }
         else {
@@ -50,24 +50,25 @@ namespace helpers {
 #pragma omp parallel for
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
-            ResultSet<T>* listOfTensors = input->allTensorsAlongDimension(restDims);
-            ResultSet<T>* listOfOutTensors = output->allTensorsAlongDimension(restDims);
+
+            auto listOfTensors = input->allTensorsAlongDimension(restDims);
+            auto listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             int numOfClasses = output->sizeAt(0); // number of classes
-            std::vector<std::pair<NDArray<T>*, int>> outputs(numOfClasses);
-            NDArray<T>* maxT = listOfOutTensors->at(idx);
+            std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
+            auto maxT = listOfOutTensors->at(idx);
 
             int pos = 0;
             maxT->assign(listOfTensors->at(0));
             for (int i = 1; i < indices->lengthOf(); i++) {
-                if (static_cast<int>((*indices)(i)) == idx) {
+                if (indices->getScalar<int>(i) == idx) {
 #pragma omp parallel for
                     for (int e = 0; e < maxT->lengthOf(); e++) {
-                       (*maxT)(e) = nd4j::math::nd4j_max((*maxT)(e), (*listOfTensors->at(i))(e));
+                       maxT->putScalar<T>(e, nd4j::math::nd4j_max(maxT->getScalar<T>(e), listOfTensors->at(i)->getScalar<T>(e)));
                     }
                 }
                 else {
-                    idx = static_cast<int>((*indices)(i));
+                    idx = indices->getScalar<int>(i);
                     maxT = listOfOutTensors->at(idx);
                     maxT->assign(listOfTensors->at(i));
                 }
@@ -80,23 +81,23 @@ namespace helpers {
 
     // segmen min 
     template <typename T>
-    void segmentMinFunctor(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* output) {
+    void segmentMinFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
-        int idx = static_cast<int>((*indices)(0.));
+        int idx = indices->getScalar<int>(0);
         if (input->isVector()) {
-            T val = (*input)(0.);
+            T val = input->getScalar<T>(0);
 //#pragma omp parallel for
             for (int e = 1; e < indices->lengthOf(); e++) {
-                if (idx == static_cast<int>((*indices)(e))) {
+                if (idx == indices->getScalar<int>(e)) {
                    // min 
-                   val = nd4j::math::nd4j_min(val, (*input)(e));
+                   val = nd4j::math::nd4j_min<T>(val, input->getScalar<T>(e));
                 }
                 else {
-                    idx = static_cast<int>((*indices)(e));
-                    val = (*input)(e);
+                    idx = indices->getScalar<int>(e);
+                    val = input->getScalar<T>(e);
                 }
-                (*output)(idx) = val;
+                output->putScalar(idx, val);
             }
         }
         else {
@@ -105,24 +106,24 @@ namespace helpers {
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
-            std::unique_ptr<ResultSet<T>> listOfTensors( input->allTensorsAlongDimension(restDims) );
-            std::unique_ptr<ResultSet<T>> listOfOutTensors( output->allTensorsAlongDimension(restDims) );
+            std::unique_ptr<ResultSet> listOfTensors( input->allTensorsAlongDimension(restDims) );
+            std::unique_ptr<ResultSet> listOfOutTensors( output->allTensorsAlongDimension(restDims) );
 
             int numOfClasses = output->sizeAt(0); // number of classes
-            std::vector<std::pair<NDArray<T>*, int>> outputs(numOfClasses);
-            NDArray<T>* minT = listOfOutTensors->at(idx);
+            std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
+            auto minT = listOfOutTensors->at(idx);
 
             int pos = 0;
             minT->assign(listOfTensors->at(0));
             for (int i = 1; i < indices->lengthOf(); i++) {
-                if (static_cast<int>((*indices)(i)) == idx) {
+                if (indices->getScalar<T>(i) == idx) {
 #pragma omp parallel for if(minT->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                     for (int e = 0; e < minT->lengthOf(); e++) {
-                       (*minT)(e) = nd4j::math::nd4j_min((*minT)(e), (*listOfTensors->at(i))(e));
+                       minT->putScalar(e, nd4j::math::nd4j_min(minT->getScalar<T>(e), listOfTensors->at(i)->getScalar<T>(e)));
                     }
                 }
                 else {
-                    idx = static_cast<int>((*indices)(i));
+                    idx = *indices->getScalar<T>(i);
                     minT = listOfOutTensors->at(idx);
                     minT->assign(listOfTensors->at(i));
                 }
@@ -132,26 +133,26 @@ namespace helpers {
 
     // segmen mean
     template <typename T>
-    void segmentMeanFunctor(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* output) {
+    void segmentMeanFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
-        int idx = static_cast<int>((*indices)(0.));
+        int idx = indices->getScalar<int>(0);
         if (input->isVector()) {
             T val = T(0.f);
             int count = 0;
             for (int e = 0; e < indices->lengthOf(); e++) {
-                if (idx == static_cast<int>((*indices)(e))) {
+                if (idx == indices->getScalar<int>(e)) {
                    // mean 
-                   val += (*input)(e);
+                   val += input->getScalar<T>(e);
                    count++;
                 }
                 else {
-                   (*output)(idx) = val / count;
-                    idx = static_cast<int>((*indices)(e));
-                    val = (*input)(e);
+                   output->putScalar<T>(idx, val / count);
+                    idx = indices->getScalar<int>(e);
+                    val = input->getScalar<T>(e);
                     count = 1;
                 }
-                (*output)(idx) = val / count;
+                output->putScalar<T>(idx, val / count);
             }
         }
         else {
@@ -159,32 +160,33 @@ namespace helpers {
 #pragma omp parallel for if(input->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
-            ResultSet<T>* listOfTensors = input->allTensorsAlongDimension(restDims);
-            ResultSet<T>* listOfOutTensors = output->allTensorsAlongDimension(restDims);
+
+            auto listOfTensors = input->allTensorsAlongDimension(restDims);
+            auto listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             int numOfClasses = output->sizeAt(0); // number of classes
-            std::vector<std::pair<NDArray<T>*, int>> outputs(numOfClasses);
-            NDArray<T>* meanT = listOfOutTensors->at(idx);
-            T count = T(1.f);
-            NDArray<T>* meanV = meanT->dup();
+            std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
+            auto meanT = listOfOutTensors->at(idx);
+            int count = 1;
+            auto meanV = meanT->dup();
             meanV->assign(listOfTensors->at(0));
 //#pragma omp parallel for
             for (int i = 1; i < indices->lengthOf(); i++) {
-                if (static_cast<int>((*indices)(i)) == idx) {
+                if (indices->getScalar<int>(i) == idx) {
                     for (int e = 0; e < meanT->lengthOf(); e++) {
-                       (*meanV)(e) += (*listOfTensors->at(i))(e);
+                       meanV->putScalar<T>(e, meanV->getScalar<T>(e) + listOfTensors->at(i)->getScalar<T>(e));
                     }
-                    count += T(1.f);
+                    count++;
                 }
                 else {
                     //meanT->assign(meanV);
-                    meanV->template applyScalar<simdOps::Divide<T>>(count, meanT);
-                    idx = static_cast<int>((*indices)(i));
+                    meanV->applyScalar(scalar::Divide, count, meanT, nullptr);
+                    idx = indices->getScalar<int>(i);
                     meanT = listOfOutTensors->at(idx);
                     meanV->assign(listOfTensors->at(i));
-                    count = T(1.f);
+                    count = 1;
                 }
-                meanV->template applyScalar<simdOps::Divide<T>>(count, meanT);
+                meanV->applyScalar(scalar::Divide, count, meanT, nullptr);
             }
             delete meanV;
             delete listOfTensors;
@@ -193,7 +195,7 @@ namespace helpers {
     }
 
     template <typename T>
-    void segmentSumFunctor(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* output) {
+    void segmentSumFunctor_(NDArray* input, NDArray<T>* indices, NDArray<T>* output) {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
         int idx = static_cast<int>((*indices)(0.));

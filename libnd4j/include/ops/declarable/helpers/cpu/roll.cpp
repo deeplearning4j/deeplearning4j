@@ -25,8 +25,8 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void rollFunctorLinear(NDArray<T>* input, NDArray<T>* output, int shift, bool inplace){
-        NDArray<T>* source = input;
+    static void rollFunctorLinear_(NDArray* input, NDArray* output, int shift, bool inplace){
+        auto source = input;
         if (!inplace)
             output->assign(input);
 
@@ -46,7 +46,13 @@ namespace helpers {
 #pragma omp parallel for if (actualShift > Environment::getInstance()->elementwiseThreshold()) schedule(static)
             for (int e = 0; e < actualShift; ++e) {
                 int sourceIndex = fullLen - actualShift + e;
-                nd4j::math::nd4j_swap((*output)(e), (*output)(sourceIndex));
+
+                auto _e0 = output->getScalar<T>(e);
+                auto _e1 = output->getScalar<T>(sourceIndex);
+
+                //nd4j::math::nd4j_swap((*output)(e), (*output)(sourceIndex));
+                output->putScalar<T>(e, _e1);
+                output->putScalar<T>(sourceIndex, _e0);
             }
 
             // stage 2) swap swapped actualShift elements with rest remainShiftCount times.
@@ -55,28 +61,40 @@ namespace helpers {
                 for (int e = 0; e < actualShift; ++e) {
                     int destinationIndex = fullLen - (count + 1) * actualShift + e;
                     int sourceIndex = fullLen - count * actualShift + e;
-                    nd4j::math::nd4j_swap((*output)(destinationIndex), (*output)(sourceIndex));
+
+                    auto _e0 = output->getScalar<T>(destinationIndex);
+                    auto _e1 = output->getScalar<T>(sourceIndex);
+
+                    //nd4j::math::nd4j_swap((*output)(destinationIndex), (*output)(sourceIndex));
+                    output->putScalar<T>(destinationIndex, _e1);
+                    output->putScalar<T>(sourceIndex, _e0);
                 }
             }
             
             // stage 3) swap remainer of items.
             if (remainShift && shiftCount)
-            for (int i = actualShift; i < 2 * actualShift; ++i) 
-                nd4j::math::nd4j_swap((*output)(i), (*output)(i + remainShift));
+            for (int i = actualShift; i < 2 * actualShift; ++i) {
+                auto _e0 = output->getScalar<T>(i);
+                auto _e1 = output->getScalar<T>(i + remainShift);
+
+                //nd4j::math::nd4j_swap((*output)(i), (*output)(i + remainShift));
+
+                output->putScalar<T>(i, _e1);
+                output->putScalar<T>(i + remainShift, _e0);
+            }
         }
     }
 
-    template <typename T>
-    void rollFunctorFull(NDArray<T>* input, NDArray<T>* output, int shift, std::vector<int> const& axes, bool inplace){
+    void rollFunctorFull(NDArray* input, NDArray* output, int shift, std::vector<int> const& axes, bool inplace){
 
         if (!inplace)
             output->assign(input);
 
-        NDArray<T>* source = input;
+        auto source = input;
         for (int axe: axes) {
             if (axe == source->rankOf() - 1) {// last dimension
-                std::unique_ptr<ResultSet<T>> listOfTensors(source->allTensorsAlongDimension({axe}));
-                std::unique_ptr<ResultSet<T>> listOfOutTensors(output->allTensorsAlongDimension({axe}));
+                std::unique_ptr<ResultSet> listOfTensors(source->allTensorsAlongDimension({axe}));
+                std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension({axe}));
                 int fullLen = listOfTensors->size();
                 int theShift = shift;
                 if (theShift > 0) {
@@ -94,8 +112,8 @@ namespace helpers {
                 for (int i = 0; i < dims.size(); ++i)
                     dims[i] = axe + 1 + i;
 
-                std::unique_ptr<ResultSet<T>> listOfTensors(source->allTensorsAlongDimension({dims}));
-                std::unique_ptr<ResultSet<T>> listOfOutTensors(output->allTensorsAlongDimension({dims}));
+                std::unique_ptr<ResultSet> listOfTensors(source->allTensorsAlongDimension({dims}));
+                std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension({dims}));
             
                 int fullLen = listOfTensors->size();
                 int sizeAt = input->sizeAt(axe);
@@ -112,15 +130,15 @@ namespace helpers {
                 if (theShift) {
                     for (int dim = 0; dim < fullLen / sizeAt; ++dim) {
                         for (int e = theShift; e < sizeAt - theShift; ++e) {
-                            NDArray<T>* sourceM = listOfTensors->at(dim * sizeAt + e - theShift);
-                            NDArray<T>* targetM = listOfOutTensors->at(dim * sizeAt + e);
+                            auto sourceM = listOfTensors->at(dim * sizeAt + e - theShift);
+                            auto targetM = listOfOutTensors->at(dim * sizeAt + e);
                             sourceM->swapUnsafe(*targetM);
                         }
     
                         for (int e = 0; e < theShift; ++e) {
                             int sourceIndex = dim * sizeAt + sizeAt - theShift + e;
-                            NDArray<T>* sourceM = listOfTensors->at(sourceIndex);
-                            NDArray<T>* targetM = listOfOutTensors->at(dim * sizeAt + e);
+                            auto sourceM = listOfTensors->at(sourceIndex);
+                            auto targetM = listOfOutTensors->at(dim * sizeAt + e);
     
                             sourceM->swapUnsafe(*targetM);
                         }
@@ -132,12 +150,11 @@ namespace helpers {
         }
     }
 
-    template void rollFunctorLinear(NDArray<float>*   input, NDArray<float>*   output, int shift, bool inplace);
-    template void rollFunctorLinear(NDArray<float16>* input, NDArray<float16>* output, int shift, bool inplace);
-    template void rollFunctorLinear(NDArray<double>*  input, NDArray<double>*  output, int shift, bool inplace);
-    template void rollFunctorFull(NDArray<float>*   input, NDArray<float>* axisVector, int shift, std::vector<int> const& axes, bool inplace);
-    template void rollFunctorFull(NDArray<float16>* input, NDArray<float16>* axisVector, int shift, std::vector<int> const& axes, bool inplace);
-    template void rollFunctorFull(NDArray<double>*  input, NDArray<double>* axisVector, int shift, std::vector<int> const& axes, bool inplace);
+    void rollFunctorLinear(NDArray* input, NDArray* output, int shift, bool inplace){
+        BUILD_SINGLE_SELECTOR(input->dataType(), rollFunctorLinear_, (input, output, shift, inplace), LIBND4J_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void rollFunctorLinear_, (NDArray* input, NDArray* output, int shift, bool inplace), LIBND4J_TYPES);
 }
 }
 }

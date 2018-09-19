@@ -24,9 +24,9 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
     template <typename T>
-    void _spaceTodepth(NDArray<T> *input, NDArray<T> *output, int block_size, bool isNHWC) {
-            T *input_ptr = input->buffer();
-            T *output_ptr = output->buffer();
+    static void _spaceTodepth_(NDArray *input, NDArray *output, int block_size, bool isNHWC) {
+            auto input_ptr = reinterpret_cast<T *>(input->buffer());
+            auto output_ptr = reinterpret_cast<T *>(output->buffer());
 
             const int batch_size = input->sizeAt(0);
             const int input_depth = isNHWC ? input->sizeAt(3) : input->sizeAt(1);
@@ -89,9 +89,12 @@ namespace helpers {
         }
     }
 
-    template void _spaceTodepth<float>(NDArray<float> *input, NDArray<float> *output, int block_size, bool isNHWC);
-    template void _spaceTodepth<float16>(NDArray<float16> *input, NDArray<float16> *output, int block_size, bool isNHWC);
-    template void _spaceTodepth<double>(NDArray<double> *input, NDArray<double> *output, int block_size, bool isNHWC);
+    void _spaceTodepth(NDArray *input, NDArray *output, int block_size, bool isNHWC) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), _spaceTodepth_, (input, output, block_size, isNHWC), LIBND4J_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void _spaceTodepth_, (NDArray *input, NDArray *output, int block_size, bool isNHWC), LIBND4J_TYPES);
+
 }
 }
 }
