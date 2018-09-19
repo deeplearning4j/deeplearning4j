@@ -24,11 +24,12 @@
 #include <ops/declarable/helpers/helpers.h>
 
 namespace nd4j {
-    namespace ops {
-        namespace helpers {
-            void _im2col(nd4j::graph::LaunchContext& context, void *dst, void *src, Nd4jLong *outShape, Nd4jLong *inShape, int kY, int kX, int sY, int sX, int pY, int pX, int dY, int dX, bool isSameMode, void *zeroPadVal);
-        }
-    }
+namespace ops {
+namespace helpers {
+
+	void im2col(nd4j::graph::LaunchContext& context, NDArray* im,  NDArray* col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const T zeroPadVal);
+}
+}
 }
 
 #endif //LIBND4J_HELPERS_H
