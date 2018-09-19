@@ -29,7 +29,7 @@ namespace nd4j    {
 namespace ops     {
 namespace helpers {
 
-
+template <typename T>
 class SVD {
 
     public:
@@ -74,7 +74,7 @@ class SVD {
 
     void DivideAndConquer(int col1, int col2, int row1W, int col1W, int shift);
 
-    void exchangeUV(const HHsequence& hhU, const HHsequence& hhV, const NDArray U, const NDArray V);
+    void exchangeUV(const HHsequence& hhU, const HHsequence& hhV, const NDArray& U, const NDArray& V);
 
     void evalData(const NDArray& matrix);
 
