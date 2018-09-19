@@ -21,6 +21,8 @@
 #include <ops/declarable/LegacyRandomOp.h>
 #include <helpers/RandomLauncher.h>
 #include <NativeOpExcutioner.h>
+#include <NDArrayFactory.h>
+#include <Status.h>
 
 
 namespace nd4j {
@@ -37,9 +39,8 @@ namespace nd4j {
             return new LegacyRandomOp(this->_opNum);
         }
 
-        Nd4jStatus LegacyRandomOp::validateAndExecute(Context &block) {
-            REQUIRE_TRUE(block.getRNG() != nullptr, 0, "RNG should be provided for LegacyRandomOp, but got NULL instead at node_%i", block.nodeId())
-
+        template <typename T>
+        Nd4jStatus LegacyRandomOp::validateAndExecute_(Context &block) {
             auto input = INPUT_VARIABLE(0);
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
@@ -69,8 +70,8 @@ namespace nd4j {
                         REQUIRE_TRUE(arg1->isScalar(), 0, "Uniform: Second argument must be scalar");
                         REQUIRE_TRUE(arg2->isScalar(), 0, "Uniform: Third argument must be scalar");
 
-                        from = arg1->getScalar(0);
-                        to = arg2->getScalar(0);
+                        from = arg1->getScalar<T>(0);
+                        to = arg2->getScalar<T>(0);
                     } else if (block.getTArguments()->size() == 2) {
                         from = T_ARG(0);
                         to = T_ARG(1);
@@ -81,15 +82,16 @@ namespace nd4j {
                     REQUIRE_TRUE(input->isVector(), 0, "Uniform requires pure shape as first argument");
                     std::vector<Nd4jLong> shape(input->lengthOf());
                     for (int e = 0; e < input->lengthOf(); e++)
-                        shape[e] = (Nd4jLong) input->getScalar(e);
+                        shape[e] = input->getScalar<Nd4jLong>(e);
 
                     auto z = new NDArray('c', shape, block.getWorkspace());
 
                     RandomLauncher::fillUniform(block.getRNG(), z, from, to);
 
+                    // FIXME:
                     OVERWRITE_RESULT(z);
                 }
-                break;
+                    break;
                 case 1: {
                     auto z = OUTPUT_VARIABLE(0);
 
@@ -98,7 +100,7 @@ namespace nd4j {
                         auto arg = INPUT_VARIABLE(1);
                         REQUIRE_TRUE(arg->isScalar(), 0, "DropOut: Second argument must be scalar");
 
-                        prob = arg->getScalar(0);
+                        prob = arg->getScalar<T>(0);
                     } else if (block.getTArguments()->size() > 0) {
                         prob = T_ARG(0);
                     } else {
@@ -110,7 +112,7 @@ namespace nd4j {
 
                     RandomLauncher::applyDropOut(block.getRNG(), z, prob);
                 }
-                break;
+                    break;
                 case 2: {
                     auto z = OUTPUT_VARIABLE(0);
 
@@ -119,7 +121,7 @@ namespace nd4j {
                         auto arg = INPUT_VARIABLE(1);
                         REQUIRE_TRUE(arg->isScalar(), 0, "InvertedDropOut: Second argument must be scalar");
 
-                        prob = arg->getScalar(0);
+                        prob = arg->getScalar<T>(0);
                     } else if (block.getTArguments()->size() == 1) {
                         prob = T_ARG(0);
                     } else {
@@ -128,10 +130,10 @@ namespace nd4j {
 
                     if (!block.isInplace())
                         z->assign(input);
-                        
+
                     RandomLauncher::applyInvertedDropOut(block.getRNG(), z, prob);
                 }
-                break;
+                    break;
                 case 6: {
                     // gaussian distribution
                     T mean, stdev;
@@ -141,8 +143,8 @@ namespace nd4j {
                         REQUIRE_TRUE(arg1->isScalar(), 0, "Gaussian: Second argument must be scalar");
                         REQUIRE_TRUE(arg2->isScalar(), 0, "Gaussian: Third argument must be scalar");
 
-                        mean = arg1->getScalar(0);
-                        stdev = arg2->getScalar(0);
+                        mean = arg1->getScalar<T>(0);
+                        stdev = arg2->getScalar<T>(0);
                     } else if (block.getTArguments()->size() == 2) {
                         mean = T_ARG(0);
                         stdev = T_ARG(1);
@@ -154,15 +156,16 @@ namespace nd4j {
 
                     std::vector<Nd4jLong> shape(input->lengthOf());
                     for (int e = 0; e < input->lengthOf(); e++)
-                        shape[e] = (Nd4jLong) input->getScalar(e);
+                        shape[e] = input->getScalar<Nd4jLong>(e);
 
-                    auto z = new NDArray('c', shape, block.getWorkspace());
+                    auto z = NDArrayFactory::create<T>('c', shape, block.getWorkspace());
 
                     RandomLauncher::fillGaussian(block.getRNG(), z, mean, stdev);
 
+                    // FIXME: !!
                     OVERWRITE_RESULT(z);
                 }
-                break;
+                    break;
                 case 7: {
                     // bernoulli distribution
                     T prob;
@@ -170,7 +173,7 @@ namespace nd4j {
                         auto arg1 = INPUT_VARIABLE(1);
                         REQUIRE_TRUE(arg1->isScalar(), 0, "Bernoulli: Second argument must be scalar");
 
-                        prob = arg1->getScalar(0);
+                        prob = arg1->getScalar<T>(0);
                     } else if (block.getTArguments()->size() > 0) {
                         prob = T_ARG(0);
                     } else {
@@ -181,15 +184,16 @@ namespace nd4j {
 
                     std::vector<Nd4jLong> shape(input->lengthOf());
                     for (int e = 0; e < input->lengthOf(); e++)
-                        shape[e] = (Nd4jLong) input->getScalar(e);
+                        shape[e] = input->getScalar<Nd4jLong>(e);
 
-                    auto z = new NDArray('c', shape, block.getWorkspace());
+                    auto z = NDArrayFactory::create<T>('c', shape, block.getWorkspace());
 
                     RandomLauncher::fillBernoulli(block.getRNG(), z, prob);
 
+                    // FIXME:
                     OVERWRITE_RESULT(z);
                 }
-                break;
+                    break;
                 case 9: {
                     // BinomialEx distribution
                     T prob;
@@ -200,8 +204,8 @@ namespace nd4j {
                         REQUIRE_TRUE(arg1->isScalar(), 0, "Binomial: Second argument must be scalar");
                         REQUIRE_TRUE(arg2->isScalar(), 0, "Binomial: Third argument must be scalar");
 
-                        trials = (int) arg1->getScalar(0);
-                        prob = arg2->getScalar(0);
+                        trials = arg1->getScalar<int>(0);
+                        prob = arg2->getScalar<T>(0);
                     } else if (block.getTArguments()->size() == 1 && block.getIArguments()->size() == 1) {
                         trials = INT_ARG(0);
                         prob = T_ARG(0);
@@ -213,7 +217,7 @@ namespace nd4j {
 
                     std::vector<Nd4jLong> shape(input->lengthOf());
                     for (int e = 0; e < input->lengthOf(); e++)
-                        shape[e] = (Nd4jLong) input->getScalar(e);
+                        shape[e] = input->getScalar<Nd4jLong>(e);
 
                     auto z = new NDArray('c', shape, block.getWorkspace());
 
@@ -221,7 +225,7 @@ namespace nd4j {
 
                     OVERWRITE_RESULT(z);
                 }
-                break;
+                    break;
                 case 10: {
                     // lognorm distribution
                     T mean, stdev;
@@ -231,8 +235,8 @@ namespace nd4j {
                         REQUIRE_TRUE(arg1->isScalar(), 0, "LogNormal: Second argument must be scalar");
                         REQUIRE_TRUE(arg2->isScalar(), 0, "LogNormal: Third argument must be scalar");
 
-                        mean = arg1->getScalar(0);
-                        stdev = arg2->getScalar(0);
+                        mean = arg1->getScalar<T>(0);
+                        stdev = arg2->getScalar<T>(0);
                     } else if (block.getTArguments()->size() == 2) {
                         mean = T_ARG(0);
                         stdev = T_ARG(1);
@@ -244,15 +248,16 @@ namespace nd4j {
 
                     std::vector<Nd4jLong> shape(input->lengthOf());
                     for (int e = 0; e < input->lengthOf(); e++)
-                        shape[e] = (Nd4jLong) input->getScalar(e);
+                        shape[e] = input->getScalar<Nd4jLong>(e);
 
-                    auto z = new NDArray('c', shape, block.getWorkspace());
+                    auto z = NDArrayFactory::create<T>('c', shape, block.getWorkspace());
 
                     RandomLauncher::fillLogNormal(block.getRNG(), z, mean, stdev);
 
+                    // FIXME: !!
                     OVERWRITE_RESULT(z);
                 }
-                break;
+                    break;
                 case 11: {
                     // truncated norm distribution
                     T mean, stdev;
@@ -262,8 +267,8 @@ namespace nd4j {
                         REQUIRE_TRUE(arg1->isScalar(), 0, "TruncatedNormal: Second argument must be scalar");
                         REQUIRE_TRUE(arg2->isScalar(), 0, "TruncatedNormal: Third argument must be scalar");
 
-                        mean = arg1->getScalar(0);
-                        stdev = arg2->getScalar(0);
+                        mean = arg1->getScalar<T>(0);
+                        stdev = arg2->getScalar<T>(0);
                     } else if (block.getTArguments()->size() == 2) {
                         mean = T_ARG(0);
                         stdev = T_ARG(1);
@@ -275,15 +280,16 @@ namespace nd4j {
 
                     std::vector<Nd4jLong> shape(input->lengthOf());
                     for (int e = 0; e < input->lengthOf(); e++)
-                        shape[e] = (Nd4jLong) input->getScalar(e);
+                        shape[e] = input->getScalar<Nd4jLong>(e);
 
-                    auto z = new NDArray('c', shape, block.getWorkspace());
+                    auto z = NDArrayFactory::create<T>('c', shape, block.getWorkspace());
 
                     RandomLauncher::fillTruncatedNormal(block.getRNG(), z, mean, stdev);
 
+                    // FIXME: !!!
                     OVERWRITE_RESULT(z);
                 }
-                break;
+                    break;
                 case 12: {
                     auto z = OUTPUT_VARIABLE(0);
 
@@ -298,10 +304,10 @@ namespace nd4j {
                         REQUIRE_TRUE(arg3->isScalar(), 0, "AlphaDropOut: Fourth argument must be scalar");
                         REQUIRE_TRUE(arg4->isScalar(), 0, "AlphaDropOut: Fifth argument must be scalar");
 
-                        prob = arg1->getScalar(0);
-                        a = arg2->getScalar(0);
-                        b = arg3->getScalar(0);
-                        pa = arg4->getScalar(0);
+                        prob = arg1->getScalar<T>(0);
+                        a = arg2->getScalar<T>(0);
+                        b = arg3->getScalar<T>(0);
+                        pa = arg4->getScalar<T>(0);
                     } else if (block.getTArguments()->size() == 4) {
                         prob = T_ARG(0);
                         a = T_ARG(1);
@@ -313,17 +319,24 @@ namespace nd4j {
 
                     if (!block.isInplace())
                         z->assign(input);
-                        
+
                     RandomLauncher::applyAlphaDropOut(block.getRNG(), z, prob, a, b, pa);
                 }
-                break;
+                    break;
                 default: {
                     nd4j_printf("Unknown random op requested: [%i]\n", opNum);
                     return ND4J_STATUS_KERNEL_FAILURE;
                 }
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
+        }
+
+        Nd4jStatus LegacyRandomOp::validateAndExecute(Context &block) {
+            REQUIRE_TRUE(block.getRNG() != nullptr, 0, "RNG should be provided for LegacyRandomOp, but got NULL instead at node_%i", block.nodeId())
+
+            auto z = OUTPUT_VARIABLE(0);
+            BUILD_SINGLE_SELECTOR(z->dataType(), return validateAndExecute_, (block), FLOAT_TYPES);
         }
 
         /**
@@ -406,5 +419,7 @@ namespace nd4j {
 
             return arrayList;
         }
+
+        BUILD_SINGLE_TEMPLATE(template Nd4jStatus LegacyRandomOp::validateAndExecute_, (Context&), FLOAT_TYPES);
     }
 }

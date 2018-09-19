@@ -120,7 +120,7 @@ namespace nd4j {
             // basically we're should be putting 0.0 as FALSE, and any non-0.0 value will be treated as TRUE
             std::pair<int,int> p(block->nodeId(), 0);
             auto var = block->variable(p);
-            var->getNDArray()->putScalar(0, status == ND4J_STATUS_TRUE ?  1.0f : 0.0f);
+            var->getNDArray()->putScalar(Nd4jLong(0), status == ND4J_STATUS_TRUE ?  1.0f : 0.0f);
 
             if (status == ND4J_STATUS_FALSE || status == ND4J_STATUS_TRUE)
                 return ND4J_STATUS_OK;

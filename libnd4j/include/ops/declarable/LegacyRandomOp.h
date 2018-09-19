@@ -38,6 +38,9 @@ namespace nd4j {
             LegacyRandomOp(int opNum);
             ~LegacyRandomOp() = default;
 
+            template <typename T>
+            Nd4jStatus validateAndExecute_(Context &block);
+
             nd4j::ResultSet*  execute(nd4j::random::RandomBuffer* rng, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs, bool isInplace = false);
             nd4j::ResultSet*  execute(nd4j::random::RandomBuffer* rng, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs, bool isInplace = false);
             Nd4jStatus execute(Context* block);

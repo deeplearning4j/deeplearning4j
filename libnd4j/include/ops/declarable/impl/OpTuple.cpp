@@ -24,7 +24,7 @@ nd4j::ops::OpTuple::OpTuple(const char *opName) {
     _opName = opName;
 }
 
-nd4j::ops::OpTuple::OpTuple(const char *opName, std::initializer_list<nd4j::NDArray<float> *> &&inputs, std::initializer_list<double> &&tArgs, std::initializer_list<Nd4jLong> &&iArgs) {
+nd4j::ops::OpTuple::OpTuple(const char *opName, std::initializer_list<nd4j::NDArray *> &&inputs, std::initializer_list<double> &&tArgs, std::initializer_list<Nd4jLong> &&iArgs) {
     _opName = opName;
     _inputs = inputs;
     _iArgs = iArgs;

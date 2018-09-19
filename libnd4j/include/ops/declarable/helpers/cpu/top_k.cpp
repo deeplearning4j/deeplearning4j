@@ -110,7 +110,7 @@ namespace helpers {
             for (int i = 0; i < input->rankOf(); i++)
                 shapeV[i] = input->sizeAt(i);
             shapeV[input->rankOf()] = k;
-            std::unique_ptr<NDArray> indices(NDArrayFactory::_create<T>(input->ordering(), shapeV));
+            std::unique_ptr<NDArray> indices(NDArrayFactory::create<T>(input->ordering(), shapeV));
             NDArray* values = nullptr;
             int status = topKFunctor(input, values, indices.get(), k, true);
 

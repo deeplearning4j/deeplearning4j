@@ -19,6 +19,8 @@
 //
 
 #include <ops/declarable/LegacyScalarOp.h>
+#include <NDArrayFactory.h>
+#include <Status.h>
 
 
 namespace nd4j {
@@ -35,7 +37,7 @@ namespace nd4j {
             return new LegacyScalarOp(this->_opNum, this->_scalar);
         }
 
-        LegacyScalarOp::LegacyScalarOp(int opNum, T scalar)  : LegacyOp::LegacyOp(1, opNum){
+        LegacyScalarOp::LegacyScalarOp(int opNum, double scalar)  : LegacyOp::LegacyOp(1, opNum){
             _scalar = scalar;
         }
 
@@ -50,27 +52,28 @@ namespace nd4j {
 
         Nd4jStatus LegacyScalarOp::validateAndExecute(Context &block) {
             auto x = INPUT_VARIABLE(0);
-            T scalar = (T) 0.0f;
             int offset = 0;
-            if (block.width() > 1) {
-                auto y = INPUT_VARIABLE(1);
-                scalar = y->getScalar(0);
-            } else if (block.getTArguments()->size() > 0) {
-                scalar = T_ARG(0);
-                offset++;
-            } else {
-                scalar = _scalar;
-            }
-
             auto z = OUTPUT_VARIABLE(0);
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            NativeOpExcutioner::execScalar(opNum, x->getBuffer(), x->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), scalar, block.getTArguments()->data() + offset);
+            if (block.width() > 1) {
+                auto y = INPUT_VARIABLE(1);
+
+                NativeOpExcutioner::execScalar(opNum, x->getBuffer(), x->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), y->buffer(), y->shapeInfo(), block.getTArguments()->data() + offset);
+            } else if (block.getTArguments()->size() > 0) {
+                auto y = NDArrayFactory::_scalar(T_ARG(0), block.getWorkspace());
+                offset++;
+                NativeOpExcutioner::execScalar(opNum, x->getBuffer(), x->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), y.buffer(), y.shapeInfo(), block.getTArguments()->data() + offset);
+            } else {
+                auto y = NDArrayFactory::_scalar(_scalar, block.getWorkspace());
+
+                NativeOpExcutioner::execScalar(opNum, x->getBuffer(), x->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), y.buffer(), y.shapeInfo(), block.getTArguments()->data() + offset);
+            }
 
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
     }
 }

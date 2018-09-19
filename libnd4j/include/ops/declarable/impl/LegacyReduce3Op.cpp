@@ -34,8 +34,7 @@ namespace nd4j {
 
             if (x->isSameShape(y) && (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT))) {
                 // reduce3 to scalar
-                T scalar = NativeOpExcutioner::execReduce3Scalar(opNum, x->buffer(), x->shapeInfo(), block.getTArguments()->data(), y->buffer(), y->shapeInfo());
-                z->putScalar(0, scalar);
+                NativeOpExcutioner::execReduce3Scalar(opNum, x->buffer(), x->shapeInfo(), block.getTArguments()->data(), y->buffer(), y->shapeInfo(), z->buffer(), z->shapeInfo());
             } else {
                 std::vector<int> dims(*block.getIArguments());
                 for (int e = 0; e < dims.size(); e++)

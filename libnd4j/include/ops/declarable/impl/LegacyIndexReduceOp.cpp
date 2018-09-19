@@ -73,6 +73,10 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
+            if (z->dataType() != DataType_INT64) {
+                throw std::runtime_error("IndexReduce operations require output to be INT64");
+            }
+
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
             bool allAxes = false;
@@ -83,7 +87,7 @@ namespace nd4j {
                     // scalar
                     Nd4jLong res = NativeOpExcutioner::execIndexReduceScalar(opNum, x->getBuffer(), x->getShapeInfo(),
                                                                          block.getTArguments()->data());
-                    z->putScalar(0, res);
+                    z->putScalar(Nd4jLong(0), res);
                 } else {
                     // TAD
                     std::vector<int> dims(*block.getIArguments());
@@ -98,7 +102,8 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    NativeOpExcutioner::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);                }
+                    NativeOpExcutioner::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(),
+                                                        reinterpret_cast<Nd4jLong *>(z->getBuffer()), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);                }
             } else {
                 // TF mode
                 auto indices = INPUT_VARIABLE(1);
@@ -108,7 +113,7 @@ namespace nd4j {
                 std::vector<int> axis(indices->lengthOf());
                 for (int e = 0; e < indices->lengthOf(); e++) {
                     // lol otherwise we segfault on macOS
-                    int f = (int) indices->getScalar(e);
+                    int f = indices->getScalar<int>(e);
                     axis[e] = f >= 0 ? f : f += x->rankOf();
                 }
 
@@ -124,7 +129,8 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    NativeOpExcutioner::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    NativeOpExcutioner::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(),
+                                                        reinterpret_cast<Nd4jLong *>(z->getBuffer()), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
                 }
             }
 

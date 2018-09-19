@@ -54,8 +54,7 @@ namespace nd4j {
                 if ((block.getIArguments()->size() == 0) ||
                     (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
                     // scalar
-                    T res = NativeOpExcutioner::execReduceScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data());
-                    z->putScalar(0, res);
+                    NativeOpExcutioner::execReduceScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->buffer(), z->shapeInfo());
                 } else {
                     // TAD
                     std::vector<int> dims(*block.getIArguments());
@@ -86,7 +85,7 @@ namespace nd4j {
                 std::vector<int> axis(indices->lengthOf());
                 for (int e = 0; e < indices->lengthOf(); e++) {
                     // lol otherwise we segfault on macOS
-                    int f = (int) indices->getScalar(e);
+                    int f = indices->getScalar<int>(e);
                     axis[e] = f >= 0 ? f : f += x->rankOf();
                 }
 
@@ -100,8 +99,7 @@ namespace nd4j {
                     //x->printIndexedBuffer("x");
 
                     // scalar
-                    T res = NativeOpExcutioner::execReduceScalar(opNum, b, s, e);
-                    z->putScalar(0, res);
+                    NativeOpExcutioner::execReduceScalar(opNum, b, s, e, z->buffer(), z->shapeInfo());
                 } else {
                     // TAD
                     if (indices->lengthOf() > 1)
