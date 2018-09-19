@@ -367,6 +367,15 @@ public class SharedTrainingWrapper {
                     }
                 }
 
+                // propagate iteration/epoch numbers
+                if (originalModel instanceof MultiLayerNetwork) {
+                    ((MultiLayerNetwork) model).setIterationCount(ModelParameterServer.getInstance().getStartPosition().getFirst());
+                    ((MultiLayerNetwork) model).setEpochCount(ModelParameterServer.getInstance().getStartPosition().getSecond());
+                } else if (originalModel instanceof ComputationGraph) {
+                    ((ComputationGraph) model).getConfiguration().setIterationCount(ModelParameterServer.getInstance().getStartPosition().getFirst());
+                    ((ComputationGraph) model).getConfiguration().setEpochCount(ModelParameterServer.getInstance().getStartPosition().getSecond());
+                }
+
                 // if we're going to extend iteratation for debugging purposes - let's do that here
                 if (trainingConfiguration.getDebugLongerIterations() > 0) {
                     log.warn("Adding SleepyListener: {} ms", trainingConfiguration.getDebugLongerIterations());
