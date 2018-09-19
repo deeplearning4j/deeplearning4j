@@ -19,6 +19,9 @@
 //
 
 #include <ops/declarable/generic/helpers/convolutions.h>
+#include <ops/declarable/helpers/im2col.h>
+#include <NDArrayFactory.h>
+#include <MmulHelper.h>
 
 namespace nd4j {
 namespace ops  {
@@ -90,7 +93,7 @@ void ConvolutionUtils::getSizesAndIndexesConv2d(const bool isNCHW, const NDArray
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z>
-void _conv2d(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
+void conv2d_(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
 
     // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     // weights [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)
@@ -125,10 +128,10 @@ void _conv2d(const NDArray* input, const NDArray* weights, const NDArray* bias, 
 
     NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->getWorkspace());        
 
-    //----- calculation of output -----//
-    // std::vector<T> extrasIm2Col({(T) kH, (T) kW, (T) sH, (T) sW, (T) pH, (T) pW, (T) dH, (T) dW, (T)0.f, (T)0.f});
-    // input->template applyTransform<simdOps::Im2col<T>>(&columns, extrasIm2Col.data());                    // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-    // MmulHelper<T>::tensorDot(&columns, weights, output, {1,2,3}, weightsAxesForDot, permutForOutput); // [bS, iC, kH, kW, oH, oW] x [kH, kW, iC, oC]/[oC, iC, kH, kW] = [bS, oH, oW, oC]
+    //----- calculation of output -----//        
+    LaunchContext ctx;
+    helpers::im2col(ctx, input, &columns, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, NDArrayFactory::_scalar(0.f, input->getWorkspace()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+    MmulHelper::tensorDot(&columns, weights, output, {1,2,3}, weightsAxesForDot, permutForOutput);      // [bS, iC, kH, kW, oH, oW] x [kH, kW, iC, oC]/[oC, iC, kH, kW] = [bS, oH, oW, oC]
 
     //----- add biases if required -----//
     if(bias)
@@ -140,10 +143,10 @@ void _conv2d(const NDArray* input, const NDArray* weights, const NDArray* bias, 
 
 void ConvolutionUtils::conv2d(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
     
-    BUILD_TRIPLE_SELECTOR(input->dataType(), weights->dataType(), output->dataType(), _conv2d, (input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+    BUILD_TRIPLE_SELECTOR(input->dataType(), weights->dataType(), output->dataType(), conv2d_, (input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
 }
 
-BUILD_TRIPLE_TEMPLATE(template void _conv2d, (const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+BUILD_TRIPLE_TEMPLATE(template void conv2d_, (const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
 
 }
 }
