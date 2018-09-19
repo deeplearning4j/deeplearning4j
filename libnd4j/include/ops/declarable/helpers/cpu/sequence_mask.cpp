@@ -25,17 +25,19 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void sequenceMask(NDArray<T>* input, NDArray<T>* output, int maxIndex) {
+    static void sequenceMask_(NDArray* input, NDArray* output, int maxIndex) {
 #pragma omp parallel for if(maxIndex > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
         for (Nd4jLong i = 0; i < maxIndex; i++)
             for(Nd4jLong k = 0; k < input->lengthOf(); k++)
-                if (i < static_cast<int>((*input)(k)))
-                    (*output)(k * maxIndex + i) = T(1.0);
+                if (i < input->getScalar<int>(k))
+                    output->putScalar<T>(k * maxIndex + i,  T(1.0f));
     }
 
-    template void sequenceMask(NDArray<float>* input, NDArray<float>* output, int maxIndex);
-    template void sequenceMask(NDArray<float16>* input, NDArray<float16>* output, int maxIndex);
-    template void sequenceMask(NDArray<double>* input, NDArray<double>* output, int maxIndex);
+    void sequenceMask(NDArray* input, NDArray* output, int maxIndex) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), sequenceMask_, (input, output, maxIndex), LIBND4J_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void sequenceMask_, (NDArray* input, NDArray* output, int maxIndex), LIBND4J_TYPES);
 }
 }
 }
