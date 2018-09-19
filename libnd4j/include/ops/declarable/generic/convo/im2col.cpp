@@ -51,7 +51,7 @@ namespace nd4j {
 
             // FIXME: zeropad value is void
             LaunchContext ctx;
-            nd4j::ops::helpers::_im2col(ctx, z->buffer(), x->buffer(), z->shapeInfo(), x->shapeInfo(), kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX, isSameMode, &zeroPadVal);
+            nd4j::ops::helpers::im2col(ctx, z, x, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX, isSameMode, NDArrayFactory::_scalar(zeroPadVal, block.getWorkspace()));
 
             STORE_RESULT(*z);
 

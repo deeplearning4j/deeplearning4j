@@ -27,7 +27,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-	void im2col(nd4j::graph::LaunchContext& context, NDArray* im,  NDArray* col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const T zeroPadVal);
+	void im2col(nd4j::graph::LaunchContext& context, NDArray* im,  NDArray* col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const bool isSameMode, const NDArray& arrZeroPadVal);
 }
 }
 }
