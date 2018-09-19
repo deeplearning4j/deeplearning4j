@@ -46,5 +46,16 @@ public class HandshakeResponse extends BaseResponseMessage {
      */
     @Getter
     @Setter
+    @Builder.Default
     private boolean dead = false;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private int iteration = 0;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private int epoch = 0;
 }

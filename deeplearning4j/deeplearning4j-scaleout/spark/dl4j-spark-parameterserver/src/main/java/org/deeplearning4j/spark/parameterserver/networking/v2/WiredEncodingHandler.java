@@ -103,7 +103,7 @@ public class WiredEncodingHandler extends EncodingHandler {
      * @param message
      */
     @Override
-    protected void sendMessage(@NonNull INDArray message) {
+    protected void sendMessage(@NonNull INDArray message, int iterationNumber, int epochNumber) {
         // here we'll send our stuff to other executores over the wire
         // and let's pray for udp broadcast availability
 
@@ -113,11 +113,11 @@ public class WiredEncodingHandler extends EncodingHandler {
             long updateId = updatesCounter.getAndIncrement();
 
             val m = message.unsafeDuplication();
-            ModelParameterServer.getInstance().sendUpdate(m);
+            ModelParameterServer.getInstance().sendUpdate(m, iterationNumber, epochNumber);
         }
 
 
         // heere we update local queue
-        super.sendMessage(message);
+        super.sendMessage(message, iterationNumber, epochNumber);
     }
 }

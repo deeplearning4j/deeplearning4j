@@ -473,7 +473,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
      * @param array
      */
     @Override
-    public void storeUpdate(INDArray array) {
+    public void storeUpdate(INDArray array, int iterationNumber, int epochNumber) {
         try {
             if (accumulator.get() == null) {
                 // we don't want accumulator to be attached to workspaces
@@ -500,7 +500,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                 log.info("thread {} unlocking at Register", Thread.currentThread().getId());
 
             // propagate changes & modify accumulator
-            handler.broadcastUpdates(accumulator.get());
+            handler.broadcastUpdates(accumulator.get(), iterationNumber, epochNumber);
 
             // we're blocking here, untill all done broadcasting updates
             synchronize(currentConsumers.get());

@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.linalg.primitives.AtomicBoolean;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
@@ -51,6 +52,7 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -96,6 +98,10 @@ public final class ModelParameterServer {
     protected final AtomicBoolean gotFinalState = new AtomicBoolean(false);
 
     private Disposable disposable;
+
+
+    private AtomicInteger iterationNumber = new AtomicInteger(0);
+    private AtomicInteger epochNumber = new AtomicInteger(0);
 
     protected ModelParameterServer() {
         //
@@ -197,6 +203,14 @@ public final class ModelParameterServer {
     }
 
     /**
+     * This method returns pair of integers: iteration number and epoch number
+     * @return
+     */
+    public Pair<Integer, Integer> getStartPosition() {
+        return Pair.makePair(iterationNumber.get(), epochNumber.get());
+    }
+
+    /**
      * This method starts parameter server
      */
     public synchronized void launch() {
@@ -215,6 +229,10 @@ public final class ModelParameterServer {
                     ModelParametersMessage modelParams = transport.sendMessageBlocking(msg, rootId);
                     val mParams = modelParams.getPayload();
                     modelParamsSubsribers.forEach(s -> s.onNext(mParams));
+
+                    // updating starting points
+                    iterationNumber.set(modelParams.getIterationNumber());
+                    epochNumber.set(modelParams.getEpochNumber());
 
                     // updater parameters are optional, it's possible to have models without updater parameters (i.e. SGD)
                     UpdaterParametersMessage updaterParams = transport.sendMessageBlocking(new UpdaterParametersRequest(), rootId);
@@ -237,6 +255,8 @@ public final class ModelParameterServer {
                 // send model parameters somewhere
                 val msg = new ModelParametersMessage(java.util.UUID.randomUUID().toString(), updatesSubscribers.get(0).getParametersArray());
                 msg.setRequestId(modelParametersRequest.getRequestId());
+                msg.setIterationNumber(iterationNumber.get());
+                msg.setEpochNumber(epochNumber.get());
                 transport.sendMessage(msg, modelParametersRequest.getOriginatorId());
             }
         });
@@ -330,6 +350,14 @@ public final class ModelParameterServer {
              * We process messages here. Messages are either contain INDArrays, say, as gradients update, or as  model parameters.
              */
             if (message instanceof GradientsUpdateMessage) {
+                // we don't really care about synchronization here
+                val gum = (GradientsUpdateMessage) message;
+                if (iterationNumber.get() < gum.getIteration())
+                    iterationNumber.set(gum.getIteration());
+
+                if (epochNumber.get() < gum.getEpoch())
+                    epochNumber.set(gum.getEpoch());
+
                 // it's possible to get updates messages BEFORE model was properly initalized
                 if (updatesSubscribers.isEmpty()) {
                     log.info("Storing GradientsUpdateMessage into backlog queue...");
@@ -380,12 +408,13 @@ public final class ModelParameterServer {
         stopLock.set(true);
     }
 
-    public void sendUpdate(@NonNull INDArray array, int iteration) {
+    public void sendUpdate(@NonNull INDArray array, int iteration, int epoch) {
         try {
             //transport.outgoingConsumer().accept(new GradientsUpdateMessage(java.util.UUID.randomUUID().toString(), array));
             val msg = new GradientsUpdateMessage(java.util.UUID.randomUUID().toString(), array);
             msg.setOriginatorId(transport.id());
             msg.setIteration(iteration);
+            msg.setEpoch(epoch);
             transport.propagateMessage(msg, PropagationMode.BOTH_WAYS);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -396,7 +425,7 @@ public final class ModelParameterServer {
      * This method sends gradient updates to the cluster
      */
     public void sendUpdate(@NonNull INDArray array) {
-        sendUpdate(array, 0);
+        sendUpdate(array, 0, 0);
     }
 
     /**

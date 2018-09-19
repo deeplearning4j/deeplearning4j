@@ -223,13 +223,13 @@ public class EncodingHandler implements MessageHandler {
      * This method does loops encoded data back to updates queue
      * @param message
      */
-    protected void sendMessage(INDArray message) {
+    protected void sendMessage(INDArray message, int iterationNumber, int epochNumber) {
         //INDArray update = decodeUpdates(message);
         accumulator.receiveUpdate(message);
     }
 
     @Override
-    public boolean broadcastUpdates(INDArray updates) {
+    public boolean broadcastUpdates(INDArray updates, int iterationNumber, int epochNumber) {
         /*
             we want to do 2 things here:
             1) encode updates
@@ -237,7 +237,7 @@ public class EncodingHandler implements MessageHandler {
          */
         INDArray message = encodeUpdates(updates);
         if (message != null) {
-            sendMessage(message);
+            sendMessage(message, iterationNumber, epochNumber);
             return true;
         } else
             return false;

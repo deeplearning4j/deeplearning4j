@@ -20,6 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.api.TrainingListener;
@@ -67,7 +69,18 @@ public class StochasticGradientDescent extends BaseOptimizer {
         // if optimizer has GradientsAccumulator defined - go for it
         if (accumulator != null) {
             // we're propagating current update
-            accumulator.storeUpdate(gradient.gradient());
+            int epochNum = 0;
+            int iterationNum = 0;
+
+            if (model instanceof MultiLayerNetwork) {
+                iterationNum = ((MultiLayerNetwork) model).getIterationCount();
+                epochNum = ((MultiLayerNetwork) model).getEpochCount();
+            } else if (model instanceof ComputationGraph) {
+                iterationNum = ((ComputationGraph) model).getIterationCount();
+                epochNum = ((ComputationGraph) model).getEpochCount();
+            }
+
+            accumulator.storeUpdate(gradient.gradient(), iterationNum, epochNum);
 
             // and getting (possible) pending update from accumulator
             //INDArray pendingUpdate = accumulator.getUpdate();
