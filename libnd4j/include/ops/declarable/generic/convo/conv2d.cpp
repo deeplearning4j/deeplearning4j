@@ -181,7 +181,7 @@ CUSTOM_OP_IMPL(conv2d_bp, 3, 2, false, 0, 9) {
     if(bias)
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM CONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
 
-    ConvolutionUtils::conv2dBP({input, weights, bias, gradO}, {gradI, gradW, gradB}, {kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW});
+    ConvolutionUtils::conv2dBP(input, weights, bias, gradO, gradI, gradW, gradB, kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW);
     
     return Status::OK();
 }
@@ -293,7 +293,7 @@ CUSTOM_OP_IMPL(conv2d_input_bp, 3, 1, false, 0, 9) {
     REQUIRE_TRUE(expectedGradOShape == ShapeUtils::shapeAsString(gradO), 0,  "CUSTOM CONV2D_INPUT_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils::shapeAsString(gradO).c_str());
     REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weights), 0, "CUSTOM CONV2D_INPUT_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils::shapeAsString(weights).c_str());
 
-    ConvolutionUtils::conv2dBP({&input, weights, nullptr, gradO}, {gradI, nullptr, nullptr}, {kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW});
+    ConvolutionUtils::conv2dBP(&input, weights, nullptr, gradO, gradI, nullptr, nullptr, kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW);
     
     return Status::OK();
 }

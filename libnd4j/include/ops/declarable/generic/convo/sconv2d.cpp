@@ -266,7 +266,7 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
         auto gradIDepthShape = ShapeUtils::composeShapeUsingDimsAndIdx({bS,iC*mC,oH,oW,  0,indIOioC,indIiH,indIiH+1});
         auto gradIDepth = new NDArray(resultFF->ordering(), gradIDepthShape, block.getWorkspace());                 // [bS, oH, oW, iC*mC]  (NHWC) or [bS, iC*mC, oH, oW] (NCHW)
 
-        ConvolutionUtils::conv2dBP({resultFF, weightsPoint, bias, gradO}, {gradIDepth, gradWP, gradB}, {1,1, 1,1, 0,0, 1,1, isSameMode, isNCHW});    // in this case oH=iH and oW=iW
+        ConvolutionUtils::conv2dBP(resultFF, weightsPoint, bias, gradO,  gradIDepth, gradWP, gradB,  1,1, 1,1, 0,0, 1,1, isSameMode, isNCHW);    // in this case oH=iH and oW=iW
 
         gradO = gradIDepth;
         bias = gradB = nullptr;                     // if pointwise backprop was done then don't calculate gradB at depthwise_conv2d_bp step

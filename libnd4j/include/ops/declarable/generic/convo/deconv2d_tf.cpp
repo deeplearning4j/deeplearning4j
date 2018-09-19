@@ -71,7 +71,7 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
     REQUIRE_TRUE(expectedGradOShape == ShapeUtils::shapeAsString(gradO), 0,  "CUSTOM DECONV2D_TF OP: wrong shape of input array, basing on array with output shape expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils::shapeAsString(gradO).c_str());
     REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weights), 0, "CUSTOM DECONV2D_TF OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils::shapeAsString(weights).c_str());
 
-    ConvolutionUtils::conv2dBP({&input, weights, nullptr, gradO}, {gradI, nullptr, nullptr}, {kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW});
+    ConvolutionUtils::conv2dBP(&input, weights, nullptr, gradO,   gradI, nullptr, nullptr,  kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW);
     
     return Status::OK();
 }

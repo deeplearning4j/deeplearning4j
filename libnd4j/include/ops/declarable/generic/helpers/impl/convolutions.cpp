@@ -20,6 +20,7 @@
 
 #include <ops/declarable/generic/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
+#include <ops/declarable/helpers/col2im.h>
 #include <NDArrayFactory.h>
 #include <MmulHelper.h>
 
@@ -130,7 +131,7 @@ void conv2d_(const NDArray* input, const NDArray* weights, const NDArray* bias, 
 
     //----- calculation of output -----//        
     LaunchContext ctx;
-    helpers::im2col(ctx, input, &columns, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, NDArrayFactory::_scalar(0.f, input->getWorkspace()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+    helpers::im2col(ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, NDArrayFactory::_scalar(0.f, input->getWorkspace()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
     MmulHelper::tensorDot(&columns, weights, output, {1,2,3}, weightsAxesForDot, permutForOutput);      // [bS, iC, kH, kW, oH, oW] x [kH, kW, iC, oC]/[oC, iC, kH, kW] = [bS, oH, oW, oC]
 
     //----- add biases if required -----//
@@ -146,7 +147,93 @@ void ConvolutionUtils::conv2d(const NDArray* input, const NDArray* weights, cons
     BUILD_TRIPLE_SELECTOR(input->dataType(), weights->dataType(), output->dataType(), conv2d_, (input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
 }
 
-BUILD_TRIPLE_TEMPLATE(template void conv2d_, (const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+//////////////////////////////////////////////////////////////////////////
+template <typename X, typename Y, typename Z>
+void conv2dBP_(const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
+
+    // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    // weights [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)
+    // bias    [oC]
+    // gradO   [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
+    
+    // gradI    [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
+    // gradW    [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)
+    // gradB    [oC]
+                                     
+    // kH         filter(kernel) height
+    // kW         filter(kernel) width
+    // sH         strides height
+    // sW         strides width
+    // pH         paddings height
+    // pW         paddings width
+    // dH         dilations height
+    // dW         dilations width
+    // isSameMode 0-VALID, 1-SAME
+    // isNCHW     0-NHWC, 1-NCHW    
+
+    int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
+    int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
+    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
+
+    std::vector<int> gradOaxesForDot, permutForGradW, permutForColumns;    
+
+    if(!isNCHW) {
+        input = input->permute({0, 3, 1, 2});                                   // [bS, iH, iW, iC] -> [bS, iC, iH, iW]                        
+        gradI = gradI->permute({0, 3, 1, 2});                                   // [bS, iH, iW, iC] -> [bS, iC, iH, iW]                        
+        gradOaxesForDot  = {0, 1, 2};                                           // bS, oH, oW        
+        permutForGradW   = {2, 0, 1, 3};                                        // [kH, kW, iC, oC] -> [iC, kH, kW, oC]        
+        permutForColumns = {2, 3, 1, 0, 4, 5};                                  // [bS, iC, kH, kW, oH, oW] -> [kH, kW, iC, bS, oH, oW]
+    }
+    else {
+        gradOaxesForDot  = {0, 2, 3};                                           // bS, oH, oW
+        permutForGradW   = {1, 2, 3, 0};                                        // [oC, iC, kH, kW] -> [iC, kH, kW, oC]
+        permutForColumns = {1, 2, 3, 0, 4, 5};                                  // [bS, iC, kH, kW, oH, oW] -> [iC, kH, kW, bS, oH, oW]
+    }
+    
+    if(isSameMode)                       // SAME        
+        ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
+   
+    NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->getWorkspace());
+    
+    // ----- calculation of gradW ----- // 
+    if(gradW) {
+        LaunchContext ctx;
+        helpers::im2col(ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, NDArrayFactory::_scalar(0.f, input->getWorkspace()));   // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]        
+        nd4j::MmulHelper::tensorDot(&columns, gradO, gradW, {0,4,5}, gradOaxesForDot, permutForGradW);       // [bS, iC, kH, kW, oH, oW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, oC]
+    }
+
+    // ----- calculation of gradB ----- // 
+    if(gradB) {        
+        NDArray* gradBR = gradB;
+        if(gradB->rankOf() == 2) 
+            gradBR = gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()});
+        gradO->reduceAlongDimension(reduce::Sum, gradBR, gradOaxesForDot);                          // sum over bS, oH, oW
+        if(gradBR != gradB) 
+            delete gradBR;
+    }
+
+    //----- calculation of gradI -----//
+    nd4j::MmulHelper::tensorDot(weights, gradO, &columns, {indWoC}, {indIOioC}, permutForColumns);  // [kH, kW, iC, oC]/[oC, iC, kH, kW]] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [kH, kW, iC, bS, oH, oW]/[iC, kH, kW, bS, oH, oW]
+    LaunchContext ctx;
+    helpers::col2im(ctx, columns, *gradI, sH, sW, pH, pW, iH, iW, dH, dW);                          // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]    
+  
+    if(!isNCHW) {
+        delete input;
+        delete gradI;
+    }
+}
+void ConvolutionUtils::conv2dBP(const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
+    
+    BUILD_TRIPLE_SELECTOR(input->dataType(), weights->dataType(), gradO->dataType(), conv2dBP_, (input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+}
+
+
+
+
+
+
+BUILD_TRIPLE_TEMPLATE(template void conv2d_,   (const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+BUILD_TRIPLE_TEMPLATE(template void conv2dBP_, (const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
 
 }
 }
