@@ -76,7 +76,7 @@ namespace nd4j {
 
     template <typename T>
     NDArray* NDArray::asT() {
-        auto result = new NDArray(this->ordering(), this->getShapeAsVector());
+        auto result = new NDArray(this->ordering(), this->getShapeAsVector(), DataTypeUtils::fromT<T>());
         auto l = this->lengthOf();
 
         // FIXME: we want to avoid put/get indexed scalars here really
@@ -643,7 +643,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
 
     ////////////////////////////////////////////////////////////////////////
-    NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &shape, nd4j::memory::Workspace* workspace) {
+    NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
 
         int rank = (int) shape.size();
 
@@ -673,6 +673,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
                 shape::shapeBuffer(rank, shapeOf, _shapeInfo);
         }
 
+        ArrayOptions::setDataType(_shapeInfo, dtype);
         this->_length = shape::length(_shapeInfo);
 
         _isBuffAlloc = false;
@@ -878,6 +879,14 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         auto y = *(reinterpret_cast<Y *>(value));
 
         t[offset] = static_cast<T>(y);
+    }
+
+    void NDArray::setWorkspace(memory::Workspace* workspace) {
+        this->_workspace = workspace;
+    }
+
+    void* NDArray::bufferWithOffset(Nd4jLong offset) {
+        BUILD_SINGLE_SELECTOR(this->dataType(), return templatedPointerShift, (this->buffer(), offset), LIBND4J_TYPES);
     }
 /*
     template <typename T>
@@ -1144,6 +1153,11 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         array->_isView = true;
 
         return array;
+    }
+
+    template <typename T>
+    void* NDArray::templatedPointerShift(void *buffer, Nd4jLong offset) const {
+        return reinterpret_cast<T*>(buffer) + offset;
     }
 
 // method makes copy of this array and applies to the copy transpose operation, this array remains unaffected 
@@ -1781,7 +1795,7 @@ NDArray NDArray::transp() const {
         for (int i = 0; i < rank; i++)
             newShape[i] = outShape[i];
 
-        auto ret = new NDArray('c', outShape, _workspace);
+        auto ret = new NDArray('c', outShape, this->dataType(),  _workspace);
 
         auto repeatDelta = shape::prodLong(newShape, rank) / this->lengthOf();
         auto numTads = this->tensorsAlongDimension({dimension});
@@ -2365,6 +2379,12 @@ NDArray NDArray::transp() const {
         BUILD_DOUBLE_SELECTOR(xType, yType, templatedSet, (this->_buffer, i, value._buffer), LIBND4J_TYPES, LIBND4J_TYPES);
     }
 
+    template <typename T, typename R>
+    R NDArray::templatedGet(void *buffer, Nd4jLong index) const {
+        auto b = reinterpret_cast<T*>(buffer);
+        return static_cast<R>(b[index]);
+    }
+
 //////////////////////////////////////////////////////////////////////////
 // This method sets value in linear buffer to position i
     template <typename T>
@@ -2529,9 +2549,9 @@ NDArray NDArray::transp() const {
         return result;
     }
 
-    NDArray* NDArray::cast(DataType dtype) {
-        // TODO: to be implemented
-        return nullptr;
+
+    NDArray* NDArray::asT(DataType dtype) {
+        BUILD_SINGLE_SELECTOR(dtype, return asT, (), LIBND4J_TYPES);
     }
 
     void NDArray::cast(NDArray* target, DataType dtype) {

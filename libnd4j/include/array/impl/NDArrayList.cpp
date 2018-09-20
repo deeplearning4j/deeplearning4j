@@ -164,7 +164,7 @@ namespace nd4j {
         //shape.insert(shape.begin() + _axis, indices.size());
         shape[_axis] = indices.size();
         // do we have to enforce C order here?
-        auto array = new NDArray('c', shape, _workspace);
+        auto array = new NDArray('c', shape, _chunks[0]->dataType(), _workspace);
         std::vector<int> axis = ShapeUtils::convertAxisToTadTarget(shape.size(), {_axis});
         auto tads = array->allTensorsAlongDimension(axis);
 

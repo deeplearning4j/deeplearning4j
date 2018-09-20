@@ -43,7 +43,7 @@ namespace nd4j {
                         shape.emplace_back(shapeInfo.at(i + 1));
                     }
 
-                    array = new NDArray((char) shapeInfo.at(shapeInfo.size() - 1), shape);
+                    array = new NDArray((char) shapeInfo.at(shapeInfo.size() - 1), shape, );
                 } else {
                     nd4j_printf("Either shape or NDArray should be defined in FlatResult variable\n","");
                     throw std::runtime_error("Empty variable");

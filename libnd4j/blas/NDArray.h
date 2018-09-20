@@ -85,10 +85,10 @@ namespace nd4j {
 
         template <typename T, typename R>
         R templatedGet(void *buffer, Nd4jLong index) const;
-
+/*
         template <typename T, typename R>
-        R templatedGet(void *buffer, Nd4jLong *indices) const;
-
+        R templatedGetIndex(void *buffer, Nd4jLong *indices) const;
+*/
         template <typename T>
         void* templatedPointerShift(void *buffer, Nd4jLong offset) const;
     protected:
@@ -171,21 +171,14 @@ namespace nd4j {
 		NDArray(const Nd4jLong* shapeInfo, const bool copyStrides = false, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
-        *  this constructor creates new array using shape information contained in vector argument    
+        *  this constructor creates new array using shape information contained in vector argument
         */
-        NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::memory::Workspace* workspace = nullptr);
-
-        /**
-        * This constructor creates new array with elements copied from data and using shape information stored in shape
-        *
-        * PLEASE NOTE: data will be copied AS IS, without respect to specified order. You must ensure order match here.
-        */
-        NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double> &data, nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
         *  this constructor creates new array using given buffer (without memory allocating) and shape information stored in shape
         */
-        NDArray(void *buffer, const char order, const std::vector<Nd4jLong> &shape , nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(void *buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
         *  copy assignment operator
@@ -999,6 +992,8 @@ namespace nd4j {
 
         template <typename N>
         NDArray* asT();
+
+        NDArray* asT(DataType dtype);
 
         template <typename T>
         void linspace(const T start);

@@ -214,7 +214,7 @@ namespace nd4j {
     ////////////////////////////////////////////////////////////////////////
     template <typename T>
     NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const T value, const char order) {
-        auto result = new NDArray(order, shape);
+        auto result = new NDArray(order, shape, DataTypeUtils::fromT<T>());
         result->assign(value);
         return result;
     }
