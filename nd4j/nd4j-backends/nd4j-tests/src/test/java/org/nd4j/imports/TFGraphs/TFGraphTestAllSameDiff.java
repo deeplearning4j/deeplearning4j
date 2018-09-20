@@ -111,9 +111,6 @@ public class TFGraphTestAllSameDiff {
             //scatter_nd: one minor validation issue mentioned tu Yurii, already fixed but not merged (should validate vs. shape array length, not rank)
             "scatter_nd/.*",
 
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6312
-//            "cnn1d_layers/channels_last_b1_k2_s1_d2_SAME",
-
             //https://github.com/deeplearning4j/deeplearning4j/issues/6421
             "conv2d_transpose/.*",
 
@@ -149,16 +146,9 @@ public class TFGraphTestAllSameDiff {
             // this test with a set of more thorough/isolated strided slice tests
             "g_07",
 
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6435
-            "avg_pooling3d/.*",
-            "max_pooling3d/.*",
-
             //https://github.com/deeplearning4j/deeplearning4j/issues/6447
             "cnn1d_layers/channels_first_b2_k2_s1_d2_SAME",
             "cnn2d_layers/channels_first_b1_k12_s1_d12_SAME",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6448
-            "sepconv2d_layers/.*",
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6441
             "matrix_determinant/rank2_5,5",
@@ -177,9 +167,6 @@ public class TFGraphTestAllSameDiff {
 
             //Bad test, no outputs (but there are non-output ("inbetween") results)
             "g_10",
-
-            //Bad test, to be deleted
-            "transpose_00",
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6464
             "cnn2d_nn/nchw_b1_k12_s12_d12_SAME",
@@ -205,10 +192,8 @@ public class TFGraphTestAllSameDiff {
 
     @Parameterized.Parameters(name="{2}")
     public static Collection<Object[]> data() throws IOException {
-        System.out.println("TESTING");
         File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
         List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
-        System.out.println("PARAMS: " + params);
         return params;
     }
 

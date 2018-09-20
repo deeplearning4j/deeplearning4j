@@ -489,7 +489,6 @@ public class LayerOpValidation extends BaseOpValidation {
                             SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
                             out = sd.conv3d(in, w0, b0, Conv3DConfig.builder()
                                     .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
-                                    .isNCDHW(ncdhw)
                                     .isValidMode(false)
                                     .kH(2).kW(2).kD(2)
                                     .sD(1).sH(1).sW(1)
