@@ -125,30 +125,6 @@ public:
                                       void *extraParams);
 
     /**
-    *
-    * @param opNum
-    * @param dx
-    * @param xStride
-    * @param y
-    * @param yStride
-    * @param result
-    * @param resultStride
-    * @param extraParams
-    * @param n
-    */
-    static void execPairwiseTransform(int opNum,
-                                      void *dx,
-                                      Nd4jLong *xShapeInfo,
-                                      void *y,
-                                      Nd4jLong *yShapeInfo,
-                                      void *result,
-                                      Nd4jLong *resultShapeInfo,
-                                      void *extraParams,
-                                      Nd4jLong *xIndexes,
-                                      Nd4jLong *yIndexes,
-                                      Nd4jLong *resultIndexes);
-
-    /**
      *
      * @param opNum
      * @param x

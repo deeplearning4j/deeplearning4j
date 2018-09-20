@@ -25,29 +25,6 @@ using namespace simdOps;
 
 namespace functions {
     namespace pairwise_transforms {
-        template <typename X, typename Y>
-        void PairWiseTransform<X, Y>::exec(
-                const int opNum,
-                void *dx,
-                Nd4jLong *xShapeBuffer,
-                void *y,
-                Nd4jLong *yShapeBuffer,
-                void *result,
-                Nd4jLong *resultShapeBuffer,
-                void *extraParams,
-                Nd4jLong *indexes,
-                Nd4jLong *yIndexes,
-                Nd4jLong *resultIndexes) {
-            DISPATCH_BY_OPNUM_TT(exec, PARAMS(dx,
-                                              xShapeBuffer,
-                                              y,
-                                              yShapeBuffer,
-                                              result, resultShapeBuffer,
-                                              extraParams,
-                                              indexes,
-                                              yIndexes,
-                                              resultIndexes), PAIRWISE_TRANSFORM_OPS);
-        };
 
         template <typename X, typename Y>
         void PairWiseTransform<X, Y>::exec(
@@ -90,32 +67,6 @@ namespace functions {
                                               n), PAIRWISE_TRANSFORM_OPS);
         };
 
-        template <typename X, typename Y>
-        template <typename OpType>
-        void PairWiseTransform<X, Y>::exec(
-                void *vx,
-                Nd4jLong* xShapeBuffer,
-                void *vy,
-                Nd4jLong* yShapeBuffer,
-                void *vresult,
-                Nd4jLong* resultShapeBuffer,
-                void *vextraParams,
-                Nd4jLong *indexes,
-                Nd4jLong *yIndexes,
-                Nd4jLong *resultIndexes) {
-            auto dx = reinterpret_cast<X *>(vx);
-            auto y = reinterpret_cast<Y *>(vy);
-            auto result = reinterpret_cast<X *>(vresult);
-            auto extraParams = reinterpret_cast<X *>(vextraParams);
-
-            Nd4jLong n = shape::length(xShapeBuffer);
-
-#pragma omp parallel for simd schedule(guided) proc_bind(AFFINITY) default(shared)
-            for (Nd4jLong i = 0; i < n; i++) {
-                result[resultIndexes[i]] = OpType::op(dx[indexes[i]], y[yIndexes[i]], extraParams);
-
-            }
-        };
 
 
         template <typename X, typename Y>

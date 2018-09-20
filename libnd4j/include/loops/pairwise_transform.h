@@ -85,20 +85,8 @@ namespace functions {
 
 #endif
         public:
-			static void exec(
-				const int opNum,
-				void *dx,
-				Nd4jLong *xShapeBuffer,
-				void *y,
-				Nd4jLong *yShapeBuffer,
-				void *result,
-				Nd4jLong *resultShapeBuffer,
-				void *extraParams,
-				Nd4jLong *indexes,
-				Nd4jLong *yIndexes,
-				Nd4jLong *resultIndexes);
 
-			static void exec(
+            static void exec(
 				const int opNum,
 				void *dx,
 				Nd4jLong *xShapeBuffer,
@@ -119,18 +107,6 @@ namespace functions {
 				void *extraParams,
 				Nd4jLong n);
 
-			template<typename OpType>
-			static void exec(
-                    void *vx,
-                    Nd4jLong* xShapeBuffer,
-                    void *vy,
-                    Nd4jLong* yShapeBuffer,
-                    void *vresult,
-                    Nd4jLong* resultShapeBuffer,
-                    void *vextraParams,
-                    Nd4jLong *indexes,
-                    Nd4jLong *yIndexes,
-                    Nd4jLong *resultIndexes);
 
 			template<typename OpType>
 			static void exec(

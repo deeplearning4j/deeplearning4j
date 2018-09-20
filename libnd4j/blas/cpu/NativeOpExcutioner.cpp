@@ -108,25 +108,6 @@ void NativeOpExcutioner::execPairwiseTransform(int opNum, void *dx, Nd4jLong *xS
     BUILD_DOUBLE_SELECTOR(xType, yType, functions::pairwise_transforms::PairWiseTransform, ::exec(opNum, dx, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, extraParams), LIBND4J_TYPES, LIBND4J_TYPES);
 }
 
-////////////////////////////////////////////////////////////////////////
-/**
-*
-* @param opNum
-* @param dx
-* @param xStride
-* @param y
-* @param yStride
-* @param result
-* @param resultStride
-* @param extraParams
-* @param n
-*/
-void NativeOpExcutioner::execPairwiseTransform(int opNum, void *dx, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *xIndexes, Nd4jLong *yIndexes, Nd4jLong *resultIndexes) {
-    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
-    auto yType = nd4j::ArrayOptions::dataType(yShapeInfo);
-
-    BUILD_DOUBLE_SELECTOR(xType, yType, functions::pairwise_transforms::PairWiseTransform, ::exec(opNum, dx, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, extraParams, xIndexes, yIndexes, resultIndexes), LIBND4J_TYPES, LIBND4J_TYPES);
-}
 
 ////////////////////////////////////////////////////////////////////////
 /**
