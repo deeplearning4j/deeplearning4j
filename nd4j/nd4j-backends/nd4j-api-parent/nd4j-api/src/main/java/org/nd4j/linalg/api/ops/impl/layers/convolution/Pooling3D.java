@@ -117,8 +117,9 @@ public class Pooling3D extends DynamicCustomOp {
         addIArgument(config.getDD());
         addIArgument(config.getDW());
         addIArgument(config.getDH());
-        addIArgument(config.isCeilingMode() ? 1 : 0);       //Ceiling mode == same mode???
-        addIArgument(config.isNCDHW() ? 1 : 0);
+        addIArgument(config.isCeilingMode() ? 1 : 0);       //Ceiling mode == same mode
+        addIArgument(0);                                    //0 == "exclude padding from average count"
+        addIArgument(config.isNCDHW() ? 0 : 1);
 
     }
 
