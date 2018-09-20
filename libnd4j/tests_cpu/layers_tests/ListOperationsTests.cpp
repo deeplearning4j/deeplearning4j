@@ -31,11 +31,11 @@ class ListOperationsTests : public testing::Test {
 };
 
 TEST_F(ListOperationsTests, BasicTest_Write_1) {
-    NDArrayList<double> list(5);
-    NDArray<double> x('c', {1, 128});
+    NDArrayList list(5);
+    auto x = NDArrayFactory::_create<double>('c', {1, 128});
     x.linspace(1);
 
-    nd4j::ops::write_list<double> op;
+    nd4j::ops::write_list op;
 
     auto result = op.execute(&list, {&x}, {}, {1});
 
@@ -52,17 +52,17 @@ TEST_F(ListOperationsTests, BasicTest_Write_1) {
 }
 
 TEST_F(ListOperationsTests, BasicTest_Stack_1) {
-    NDArrayList<double> list(10);
-    NDArray<double> exp('c', {10, 100});
+    NDArrayList list(10);
+    auto exp = NDArrayFactory::_create<double>('c', {10, 100});
     auto tads = exp.allTensorsAlongDimension({1});
     for (int e = 0; e < 10; e++) {
-        auto row = new NDArray<double>('c', {1, 100});
+        auto row = NDArrayFactory::create<double>('c', {1, 100});
         row->assign((double) e);
         list.write(e, row);
         tads->at(e)->assign(row);
     }
 
-    nd4j::ops::stack_list<double> op;
+    nd4j::ops::stack_list op;
 
     auto result = op.execute(&list, {}, {}, {1});
 
@@ -79,19 +79,19 @@ TEST_F(ListOperationsTests, BasicTest_Stack_1) {
 
 
 TEST_F(ListOperationsTests, BasicTest_Read_1) {
-    NDArrayList<double> list(10);
-    NDArray<double> exp('c', {1, 100});
+    NDArrayList list(10);
+    auto exp = NDArrayFactory::_create<double>('c', {1, 100});
     exp.assign(4.0f);
 
     for (int e = 0; e < 10; e++) {
-        auto row = new NDArray<double>('c', {1, 100});
+        auto row = NDArrayFactory::create<double>('c', {1, 100});
         row->assign((double) e);
         list.write(e, row->dup());
 
         delete row;
     }
 
-    nd4j::ops::read_list<double> op;
+    nd4j::ops::read_list op;
 
     auto result = op.execute(&list, {}, {}, {4});
 
@@ -106,11 +106,11 @@ TEST_F(ListOperationsTests, BasicTest_Read_1) {
 }
 
 TEST_F(ListOperationsTests, BasicTest_Pick_1) {
-    NDArrayList<double> list(10);
-    NDArray<double> exp('c', {4, 100});
+    NDArrayList list(10);
+    auto exp = NDArrayFactory::_create<double>('c', {4, 100});
 
     for (int e = 0; e < 10; e++) {
-        auto row = new NDArray<double>('c', {1, 100});
+        auto row = NDArrayFactory::create<double>('c', {1, 100});
         row->assign((double) e);
         list.write(e, row->dup());
 
@@ -124,7 +124,7 @@ TEST_F(ListOperationsTests, BasicTest_Pick_1) {
     tads->at(3)->assign(3.0f);
 
 
-    nd4j::ops::pick_list<double> op;
+    nd4j::ops::pick_list op;
     auto result = op.execute(&list, {}, {}, {1, 1, 3, 3});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -139,18 +139,18 @@ TEST_F(ListOperationsTests, BasicTest_Pick_1) {
 }
 
 TEST_F(ListOperationsTests, BasicTest_Size_1) {
-    NDArrayList<double> list(10);
-    NDArray<double> exp('c', {1, 1});
+    NDArrayList list(10);
+    auto exp = NDArrayFactory::_create<double>('c', {1, 1});
     exp.putScalar(0, 10);
     for (int e = 0; e < 10; e++) {
-        auto row = new NDArray<double>('c', {1, 100});
+        auto row = NDArrayFactory::create<double>('c', {1, 100});
         row->assign((double) e);
         list.write(e, row->dup());
 
         delete row;
     }
 
-    nd4j::ops::size_list<double> op;
+    nd4j::ops::size_list op;
 
     auto result = op.execute(&list, {}, {}, {1});
 
@@ -165,10 +165,10 @@ TEST_F(ListOperationsTests, BasicTest_Size_1) {
 }
 
 TEST_F(ListOperationsTests, BasicTest_Create_1) {
-    NDArray<double> matrix('c', {3, 2});
+    auto matrix = NDArrayFactory::_create<double>('c', {3, 2});
     matrix.linspace(1);
 
-    nd4j::ops::create_list<double> op;
+    nd4j::ops::create_list op;
 
     auto result = op.execute(nullptr, {&matrix}, {}, {1, 1});
 
@@ -181,15 +181,15 @@ TEST_F(ListOperationsTests, BasicTest_Create_1) {
 }
 
 TEST_F(ListOperationsTests, BasicTest_Split_1) {
-    NDArrayList<double> list(0, true);
+    NDArrayList list(0, true);
 
-    NDArray<double> exp0('c', {2, 5});
-    NDArray<double> exp1('c', {3, 5});
-    NDArray<double> exp2('c', {5, 5});
+    auto exp0 = NDArrayFactory::_create<double>('c', {2, 5});
+    auto exp1 = NDArrayFactory::_create<double>('c', {3, 5});
+    auto exp2 = NDArrayFactory::_create<double>('c', {5, 5});
 
-    NDArray<double> matrix('c', {10, 5});
+    auto matrix = NDArrayFactory::_create<double>('c', {10, 5});
 
-    NDArray<double> lengths('c', {1, 3});
+    auto lengths = NDArrayFactory::_create<double>('c', {1, 3});
     lengths.putScalar(0, 2);
     lengths.putScalar(1, 3);
     lengths.putScalar(2, 5);
@@ -204,7 +204,7 @@ TEST_F(ListOperationsTests, BasicTest_Split_1) {
     int cnt1 = 0;
     int cnt2 = 0;
     for (int e = 0; e < 10; e++) {
-        auto row = new NDArray<double>('c', {1, 5});
+        auto row = NDArrayFactory::create<double>('c', {1, 5});
         row->assign((double) e);
         tads->at(e)->assign(row);
 
@@ -218,7 +218,7 @@ TEST_F(ListOperationsTests, BasicTest_Split_1) {
         delete row;
     }
 
-    nd4j::ops::split_list<double> op;
+    nd4j::ops::split_list op;
     auto result = op.execute(&list, {&matrix, &lengths}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -241,23 +241,23 @@ TEST_F(ListOperationsTests, BasicTest_Split_1) {
 }
 
 TEST_F(ListOperationsTests, BasicTest_Scatter_1) {
-    NDArrayList<double> list(0, true);
-    NDArray<double> s(0.0);
+    NDArrayList list(0, true);
+    auto s = NDArrayFactory::_create<double>(0.0);
 
-    NDArray<double> matrix('c', {10, 5});
+    auto matrix = NDArrayFactory::_create<double>('c', {10, 5});
     auto tads = matrix.allTensorsAlongDimension({1});
     for (int e = 0; e < 10; e++) {
-        auto row = new NDArray<double>('c', {1, 5});
+        auto row = NDArrayFactory::create<double>('c', {1, 5});
         row->assign((double) e);
         tads->at(e)->assign(row);
 
         delete row;
     }
-    NDArray<double> indices('c', {1, 10});
+    auto indices = NDArrayFactory::_create<double>('c', {1, 10});
     for (int e = 0; e < matrix.rows(); e++)
         indices.putScalar(e, 9 - e);
 
-    nd4j::ops::scatter_list<double> op;
+    nd4j::ops::scatter_list op;
     auto result = op.execute(&list, {&indices, &matrix, &s}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -276,10 +276,10 @@ TEST_F(ListOperationsTests, BasicTest_Scatter_1) {
 }
 
 TEST_F(ListOperationsTests, BasicTest_Clone_1) {
-    auto list = new NDArrayList<double>(0, true);
+    auto list = new NDArrayList(0, true);
 
-    VariableSpace<double> variableSpace;
-    auto var = new Variable<double>(nullptr, nullptr, -1, 0);
+    VariableSpace variableSpace;
+    auto var = new Variable(nullptr, nullptr, -1, 0);
     var->setNDArrayList(list);
 
     variableSpace.putVariable(-1, var);
@@ -288,7 +288,7 @@ TEST_F(ListOperationsTests, BasicTest_Clone_1) {
     Context block(1, &variableSpace);
     block.pickInput(-1);
 
-    nd4j::ops::clone_list<double> op;
+    nd4j::ops::clone_list op;
 
     ASSERT_TRUE(list == block.variable(0)->getNDArrayList());
 
@@ -306,26 +306,26 @@ TEST_F(ListOperationsTests, BasicTest_Clone_1) {
 }
 
 TEST_F(ListOperationsTests, BasicTest_Gather_1) {
-    NDArrayList<double> list(0, true);
+    NDArrayList list(0, true);
     for (int e = 0; e < 10; e++) {
-        auto row = new NDArray<double>('c', {3});
+        auto row = NDArrayFactory::create<double>('c', {3});
         row->assign((double) e);
         list.write(e, row->dup());
 
         delete row;
     }
 
-    NDArray<double> exp('c', {10, 3});
+    auto exp = NDArrayFactory::_create<double>('c', {10, 3});
     auto tads = exp.allTensorsAlongDimension({1});
     for (int e = 0; e < 10; e++) {
         auto tad = tads->at(9 - e);
         tad->assign(e);
     }
 
-    NDArray<double> indices('c', {1, 10});
+    auto indices = NDArrayFactory::_create<double>('c', {1, 10});
     indices.linspace(9, -1);
 
-    nd4j::ops::gather_list<double> op;
+    nd4j::ops::gather_list op;
     auto result = op.execute(&list, {&indices}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -345,23 +345,23 @@ TEST_F(ListOperationsTests, BasicTest_Gather_1) {
 }
 
 TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
-    Graph<float> graph;
+    Graph graph;
 
-    auto matrix = new NDArray<float>('c', {3, 3});
+    auto matrix  = NDArrayFactory::create<float>('c', {3, 3});
     auto tads = matrix->allTensorsAlongDimension({1});
     for (int e = 0; e < tads->size(); e++) {
         tads->at(e)->assign((float) (e+1));
     }
 
 
-    NDArray<float> exp('c', {3, 3});
+    auto exp = NDArrayFactory::_create<float>('c', {3, 3});
     auto tadsExp = exp.allTensorsAlongDimension({1});
     tadsExp->at(0)->assign(0.f);
     tadsExp->at(1)->assign(-1.f);
     tadsExp->at(2)->assign(-2.f);
     delete tadsExp;
 
-    auto indices = NDArray<float>::valueOf({1, 3}, 1.0f, 'c');
+    auto indices = NDArrayFactory::valueOf({1, 3}, 1.0f, 'c');
     //indices->linspace(0);
 
 
@@ -370,49 +370,49 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
     variableSpace->putVariable(-2, indices);
 
 
-    auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1});
+    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1});
 
     // creating list
-    auto nodeB = new Node<float>(OpType_CUSTOM, 0, 2, {1},{},{}, 0.0f, {}, {0, 1});
-    nd4j::ops::create_list<float> opB;
+    auto nodeB = new Node(OpType_CUSTOM, 0, 2, {1},{},{}, 0.0f, {}, {0, 1});
+    nd4j::ops::create_list opB;
     nodeB->setCustomOp(&opB);
 
     // filling list with matrix
-    auto nodeC = new Node<float>(OpType_CUSTOM, 0, 3, {2, 1, -2});
+    auto nodeC = new Node(OpType_CUSTOM, 0, 3, {2, 1, -2});
 
-    nd4j::ops::split_list<float> opC;
+    nd4j::ops::split_list opC;
     nodeC->setCustomOp(&opC);
 
     // reading chunks from List. We're adding op number 3 in inputs, to ensure graph will execute this node after split
-    auto nodeD0 = new Node<float>(OpType_CUSTOM, 0, 5, {2, 3}, {},{}, 0.0f, {}, {0});
-    auto nodeD1 = new Node<float>(OpType_CUSTOM, 0, 6, {2, 3}, {},{}, 0.0f, {}, {1});
-    auto nodeD2 = new Node<float>(OpType_CUSTOM, 0, 7, {2, 3}, {},{}, 0.0f, {}, {2});
+    auto nodeD0 = new Node(OpType_CUSTOM, 0, 5, {2, 3}, {},{}, 0.0f, {}, {0});
+    auto nodeD1 = new Node(OpType_CUSTOM, 0, 6, {2, 3}, {},{}, 0.0f, {}, {1});
+    auto nodeD2 = new Node(OpType_CUSTOM, 0, 7, {2, 3}, {},{}, 0.0f, {}, {2});
 
-    nd4j::ops::read_list<float> opD;
+    nd4j::ops::read_list opD;
     nodeD0->setCustomOp(&opD);
     nodeD1->setCustomOp(&opD);
     nodeD2->setCustomOp(&opD);
 
     // using OneMinus on each chunk separately
-    auto nodeE0 = new Node<float>(OpType_TRANSFORM, 35, 10, {5});
-    auto nodeE1 = new Node<float>(OpType_TRANSFORM, 35, 11, {6});
-    auto nodeE2 = new Node<float>(OpType_TRANSFORM, 35, 12, {7});
+    auto nodeE0 = new Node(OpType_TRANSFORM, 35, 10, {5});
+    auto nodeE1 = new Node(OpType_TRANSFORM, 35, 11, {6});
+    auto nodeE2 = new Node(OpType_TRANSFORM, 35, 12, {7});
 
     // writing chunks back to the List
-    auto nodeF0 = new Node<float>(OpType_CUSTOM, 0, 15, {2, 10}, {},{}, 0.0f, {}, {0});
-    auto nodeF1 = new Node<float>(OpType_CUSTOM, 0, 16, {2, 11}, {},{}, 0.0f, {}, {1});
-    auto nodeF2 = new Node<float>(OpType_CUSTOM, 0, 17, {2, 12}, {},{}, 0.0f, {}, {2});
+    auto nodeF0 = new Node(OpType_CUSTOM, 0, 15, {2, 10}, {},{}, 0.0f, {}, {0});
+    auto nodeF1 = new Node(OpType_CUSTOM, 0, 16, {2, 11}, {},{}, 0.0f, {}, {1});
+    auto nodeF2 = new Node(OpType_CUSTOM, 0, 17, {2, 12}, {},{}, 0.0f, {}, {2});
 
-    nd4j::ops::write_list<float> opF;
+    nd4j::ops::write_list opF;
     nodeF0->setCustomOp(&opF);
     nodeF1->setCustomOp(&opF);
     nodeF2->setCustomOp(&opF);
 
     // now we're stacking chunks back to matrix state 
-    auto nodeG = new Node<float>(OpType_CUSTOM, 0, 20, {2, 15, 16, 17});
+    auto nodeG = new Node(OpType_CUSTOM, 0, 20, {2, 15, 16, 17});
     //auto nodeG = new Node<float>(OpType_CUSTOM, 0, 20, {2});
 
-    nd4j::ops::stack_list<float> opG;
+    nd4j::ops::stack_list opG;
     nodeG->setCustomOp(&opG);
 
 
@@ -453,7 +453,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
 
     ASSERT_EQ(6, nodeG->getLayer());
 
-    auto result = GraphExecutioner<float>::execute(&graph);
+    auto result = GraphExecutioner::execute(&graph);
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
     ASSERT_TRUE(variableSpace->hasVariable(2));
@@ -479,24 +479,24 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
 
 
 TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
-    Graph<float> graph;
+    Graph graph;
 
-    auto scalar = new NDArray<float>(0.0f);
-    auto matrix = new NDArray<float>('c', {3, 3});
+    auto scalar = NDArrayFactory::create<double>(0.0f);
+    auto matrix = NDArrayFactory::create<double>('c', {3, 3});
     auto tads = matrix->allTensorsAlongDimension({1});
     for (int e = 0; e < tads->size(); e++) {
         tads->at(e)->assign((float) (e+1));
     }
 
 
-    NDArray<float> exp('c', {3, 3});
+    auto exp = NDArrayFactory::_create<double>('c', {3, 3});
     auto tadsExp = exp.allTensorsAlongDimension({1});
     tadsExp->at(0)->assign(0.f);
     tadsExp->at(1)->assign(-1.f);
     tadsExp->at(2)->assign(-2.f);
 
     //auto indices = NDArray<float>::valueOf({1, 3}, 1.0f, 'c');
-    auto indices = new NDArray<float>('c', {1, 3});
+    auto indices = NDArrayFactory::create<double>('c', {1, 3});
     indices->linspace(0);
 
 
@@ -506,49 +506,49 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
     variableSpace->putVariable(-3, scalar);
 
 
-    auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1});
+    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1});
 
     // creating list
-    auto nodeB = new Node<float>(OpType_CUSTOM, 0, 2, {1},{},{}, 0.0f, {}, {0, 1});
-    nd4j::ops::create_list<float> opB;
+    auto nodeB = new Node(OpType_CUSTOM, 0, 2, {1},{},{}, 0.0f, {}, {0, 1});
+    nd4j::ops::create_list opB;
     nodeB->setCustomOp(&opB);
 
     // filling list with matrix
-    auto nodeC = new Node<float>(OpType_CUSTOM, 0, 3, {2, -2, 1, -3});
+    auto nodeC = new Node(OpType_CUSTOM, 0, 3, {2, -2, 1, -3});
     
-    nd4j::ops::scatter_list<float> opC;
+    nd4j::ops::scatter_list opC;
     nodeC->setCustomOp(&opC);
 
-    auto nodeD0 = new Node<float>(OpType_CUSTOM, 0, 5, {2, 3}, {},{}, 0.0f, {}, {0});
-    auto nodeD1 = new Node<float>(OpType_CUSTOM, 0, 6, {2, 3, 15}, {},{}, 0.0f, {}, {1});
-    auto nodeD2 = new Node<float>(OpType_CUSTOM, 0, 7, {2, 3, 16}, {},{}, 0.0f, {}, {2});
+    auto nodeD0 = new Node(OpType_CUSTOM, 0, 5, {2, 3}, {},{}, 0.0f, {}, {0});
+    auto nodeD1 = new Node(OpType_CUSTOM, 0, 6, {2, 3, 15}, {},{}, 0.0f, {}, {1});
+    auto nodeD2 = new Node(OpType_CUSTOM, 0, 7, {2, 3, 16}, {},{}, 0.0f, {}, {2});
 
-    nd4j::ops::read_list<float> opD;
+    nd4j::ops::read_list opD;
     nodeD0->setCustomOp(&opD);
     nodeD1->setCustomOp(&opD);
     nodeD2->setCustomOp(&opD);
 
 
     // using OneMinus on each chunk separately
-    auto nodeE0 = new Node<float>(OpType_TRANSFORM, 35, 10, {5});
-    auto nodeE1 = new Node<float>(OpType_TRANSFORM, 35, 11, {6});
-    auto nodeE2 = new Node<float>(OpType_TRANSFORM, 35, 12, {7});
+    auto nodeE0 = new Node(OpType_TRANSFORM, 35, 10, {5});
+    auto nodeE1 = new Node(OpType_TRANSFORM, 35, 11, {6});
+    auto nodeE2 = new Node(OpType_TRANSFORM, 35, 12, {7});
 
     // writing chunks back to the List
-    auto nodeF0 = new Node<float>(OpType_CUSTOM, 0, 15, {2, 10}, {},{}, 0.0f, {}, {0});
-    auto nodeF1 = new Node<float>(OpType_CUSTOM, 0, 16, {2, 11}, {},{}, 0.0f, {}, {1});
-    auto nodeF2 = new Node<float>(OpType_CUSTOM, 0, 17, {2, 12}, {},{}, 0.0f, {}, {2});
+    auto nodeF0 = new Node(OpType_CUSTOM, 0, 15, {2, 10}, {},{}, 0.0f, {}, {0});
+    auto nodeF1 = new Node(OpType_CUSTOM, 0, 16, {2, 11}, {},{}, 0.0f, {}, {1});
+    auto nodeF2 = new Node(OpType_CUSTOM, 0, 17, {2, 12}, {},{}, 0.0f, {}, {2});
 
-    nd4j::ops::write_list<float> opF;
+    nd4j::ops::write_list opF;
     nodeF0->setCustomOp(&opF);
     nodeF1->setCustomOp(&opF);
     nodeF2->setCustomOp(&opF);
 
     // now we're gathering chunks back to matrix state 
-    auto nodeG = new Node<float>(OpType_CUSTOM, 0, 20, {2, -2, 15, 16, 17});
+    auto nodeG = new Node(OpType_CUSTOM, 0, 20, {2, -2, 15, 16, 17});
     //auto nodeG = new Node<float>(OpType_CUSTOM, 0, 20, {2});
 
-    nd4j::ops::pick_list<float> opG;
+    nd4j::ops::pick_list opG;
     nodeG->setCustomOp(&opG);
 
     graph.addNode(nodeA);
@@ -589,7 +589,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
     ASSERT_EQ(12, nodeG->getLayer());
 
 
-    auto result = GraphExecutioner<float>::execute(&graph);
+    auto result = GraphExecutioner::execute(&graph);
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
     ASSERT_TRUE(variableSpace->hasVariable(2));

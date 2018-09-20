@@ -31,10 +31,10 @@ public:
 
 
 TEST_F(NDArrayListTests, BasicTests_1) {
-    NDArrayList<float> list(false);
+    NDArrayList list(false);
 
-    NDArray<float> x('c', {1, 10});
-    NDArray<float> y('c', {1, 10});
+    auto x = NDArrayFactory::_create<float>('c', {1, 10});
+    auto y = NDArrayFactory::_create<float>('c', {1, 10});
 
     ASSERT_EQ(ND4J_STATUS_OK, list.write(1, x.dup()));
 
@@ -42,10 +42,10 @@ TEST_F(NDArrayListTests, BasicTests_1) {
 }
 
 TEST_F(NDArrayListTests, BasicTests_2) {
-    NDArrayList<float> list(false);
+    NDArrayList list(false);
 
-    NDArray<float> x('c', {1, 10});
-    NDArray<float> y('c', {1, 7});
+    auto x = NDArrayFactory::_create<float>('c', {1, 10});
+    auto y = NDArrayFactory::_create<float>('c', {1, 7});
 
     ASSERT_EQ(ND4J_STATUS_OK, list.write(1, x.dup()));
 
@@ -54,10 +54,10 @@ TEST_F(NDArrayListTests, BasicTests_2) {
 
 
 TEST_F(NDArrayListTests, Test_Stack_UnStack_1) {
-    NDArray<float> input('c', {10, 10});
+    auto input = NDArrayFactory::_create<float>('c', {10, 10});
     input.linspace(1);
 
-    NDArrayList<float> list(false);
+    NDArrayList list(false);
 
     list.unstack(&input, 0);
 
