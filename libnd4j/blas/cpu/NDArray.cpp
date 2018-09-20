@@ -2319,6 +2319,15 @@ NDArray NDArray::transp() const {
     T NDArray::getScalar(const Nd4jLong i) const {
         return getIndexedScalar<T>(i);
     }
+    template double NDArray::getScalar(const Nd4jLong i) const;
+    template float NDArray::getScalar(const Nd4jLong i) const;
+    template float16 NDArray::getScalar(const Nd4jLong i) const;
+    template Nd4jLong NDArray::getScalar(const Nd4jLong i) const;
+    template int NDArray::getScalar(const Nd4jLong i) const;
+    template int8_t NDArray::getScalar(const Nd4jLong i) const;
+    template uint8_t NDArray::getScalar(const Nd4jLong i) const;
+    template int16_t NDArray::getScalar(const Nd4jLong i) const;
+    template bool NDArray::getScalar(const Nd4jLong i) const;
 
 //////////////////////////////////////////////////////////////////////////
     template <typename T>
@@ -2341,6 +2350,15 @@ NDArray NDArray::transp() const {
         //return (*this)(i, j);
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
     }
+    template double NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const;
+    template float NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const;
+    template float16 NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const;
+    template Nd4jLong NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const;
+    template int NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const;
+    template int8_t NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const;
+    template uint8_t NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const;
+    template int16_t NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const;
+    template bool NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const;
 
 //////////////////////////////////////////////////////////////////////////
 // returns value from 3D tensor by coordinates
@@ -2355,6 +2373,15 @@ NDArray NDArray::transp() const {
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
     }
+    template double NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
+    template float NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
+    template float16 NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
+    template Nd4jLong NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
+    template int NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
+    template int8_t NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
+    template uint8_t NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
+    template int16_t NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
+    template bool NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
 
     // returns value from 3D tensor by coordinates
     template <typename T>
@@ -2368,6 +2395,15 @@ NDArray NDArray::transp() const {
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
     }
+    template double NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
+    template float NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
+    template float16 NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
+    template Nd4jLong NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
+    template int NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
+    template int8_t NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
+    template uint8_t NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
+    template int16_t NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
+    template bool NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
 
 //////////////////////////////////////////////////////////////////////////
     void NDArray::putIndexedScalar(const Nd4jLong i, const NDArray& value) {
@@ -2391,8 +2427,19 @@ NDArray NDArray::transp() const {
     void NDArray::putScalar(const Nd4jLong i, const T value) {
         auto xType = this->dataType();
 
-        BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, i, &value), LIBND4J_TYPES);
+        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
+        BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, i, p), LIBND4J_TYPES);
     }
+    template void NDArray::putScalar(const Nd4jLong i, const double value);
+    template void NDArray::putScalar(const Nd4jLong i, const float value);
+    template void NDArray::putScalar(const Nd4jLong i, const float16 value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong value);
+    template void NDArray::putScalar(const Nd4jLong i, const int value);
+    template void NDArray::putScalar(const Nd4jLong i, const int8_t value);
+    template void NDArray::putScalar(const Nd4jLong i, const uint8_t value);
+    template void NDArray::putScalar(const Nd4jLong i, const int16_t value);
+    template void NDArray::putScalar(const Nd4jLong i, const bool value);
+
 
 //////////////////////////////////////////////////////////////////////////
 // This method sets value in 2D matrix to position i, j
@@ -2401,22 +2448,42 @@ NDArray NDArray::transp() const {
     void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const T value) {
         //(*this)(i,j) = value;
 
+        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
         auto xType = this->dataType();
         Nd4jLong coords[2] = {i, j};
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
-        BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, xOffset, &value), LIBND4J_TYPES);
+        BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, xOffset, p), LIBND4J_TYPES);
     }
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const double value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const float value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const float16 value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const int value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const int8_t value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const uint8_t value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const int16_t value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const bool value);
 
 //////////////////////////////////////////////////////////////////////////
 // This method sets value in 3D matrix to position i,j,k
     template <typename T>
     void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const T value) {
         //(*this)(i,j,k) = value;
+        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
         auto xType = this->dataType();
         Nd4jLong coords[3] = {i, j, k};
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
-        BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, xOffset, &value), LIBND4J_TYPES);
+        BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, xOffset, p), LIBND4J_TYPES);
     }
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const double value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const float value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const float16 value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int8_t value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const uint8_t value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int16_t value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const bool value);
 
     ////////////////////////////////////////////////////////////////////////
     NDArray* NDArray::subarray(IndicesList& idx, std::vector<Nd4jLong>& strides) const {
