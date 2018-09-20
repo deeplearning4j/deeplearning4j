@@ -642,7 +642,7 @@ static void mergeMax_(const std::vector<NDArray*>& inArrs, NDArray& output) {
 
 #pragma omp parallel for if(x->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided) proc_bind(close)
      for (Nd4jLong e = 0; e < x->lengthOf(); e++) {
-        T max = -MAX_FLOAT;
+        T max = -DataTypeUtils::max<T>();
         for (int i = 0; i < numArgs; i++) {
             T v = inArrs[i]->getScalar<T>(e);
             if (v > max)

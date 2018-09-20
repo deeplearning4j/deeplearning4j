@@ -382,5 +382,5 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
         return retVal;
     }
 
-    BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT SpecialMethods, , LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template class SpecialMethods, , LIBND4J_TYPES);
 }

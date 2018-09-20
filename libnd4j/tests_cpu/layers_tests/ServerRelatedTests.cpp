@@ -86,7 +86,7 @@ TEST_F(ServerRelatedTests, Basic_Execution_Test_1) {
     auto oGraph = GraphExecutioner::importFromFlatBuffers("./resources/reduce_dim_false.fb");
     oGraph->printOut();
 
-    auto exp = NDArrayFactory::create<float>('c', {3}, {3.f, 3.f, 3.f});
+    auto exp = NDArrayFactory::_create<float>('c', {3}, {3.f, 3.f, 3.f});
 
     GraphHolder::getInstance()->registerGraph(11901L, oGraph);
 

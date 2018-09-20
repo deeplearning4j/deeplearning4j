@@ -58,5 +58,5 @@ TEST_F(SanityTests, Graph_1) {
     graph.getVariableSpace()->putVariable(1, 1, new Variable(NDArrayFactory::create<float>('c', {3, 3})));
 
     std::pair<int, int> pair(1, 2);
-    graph.getVariableSpace()->putVariable(pair, new Variable(NDArrayFactory::_create<float>('c', {3, 3})));
+    graph.getVariableSpace()->putVariable(pair, new Variable(NDArrayFactory::create<float>('c', {3, 3})));
 }

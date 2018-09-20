@@ -40,7 +40,7 @@ public:
 
 TEST_F(DeclarableOpsTests10, Test_ArgMax_1) {
     auto x = NDArrayFactory::_create<double>('c', {3, 3});
-    auto e(8);
+    auto e = NDArrayFactory::_create<double>(8);
 
     x.linspace(1.0);
 

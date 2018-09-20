@@ -97,7 +97,7 @@ TEST_F(NDArrayTest, NDArrayOrder1) {
     ASSERT_EQ('c', arrayC2->ordering());
 
     for (int i = 0; i < 4; i++) {
-        ASSERT_EQ(f[i], arrayF->getBuffer()[i]);
+        ASSERT_EQ(f[i], arrayF->bufferAsT<float>()[i]);
     }
 
     for (int i = 0; i < 8; i++) {
@@ -327,8 +327,8 @@ TEST_F(NDArrayTest, TestSum1) {
 
     auto array = new NDArray(c, cShape);
 
-    ASSERT_EQ(10.0f, array->sumNumber());
-    ASSERT_EQ(2.5f, array->meanNumber());
+    ASSERT_EQ(10.0f, array->sumNumber().getScalar<float>(0));
+    ASSERT_EQ(2.5f, array->meanNumber().getScalar<float>(0));
 
     delete[] c;
     delete array;
@@ -465,12 +465,12 @@ TEST_F(NDArrayTest, TestSumAlongDimension2) {
     float *c = new float[4] {1, 2, 3, 4};
     auto array = new NDArray(c, cShape);
 
-    auto res = array->sum({1});
+    auto res = array->reduceAlongDimension(reduce::Sum, {1});
 
     ASSERT_EQ(2, res->lengthOf());
 
-    ASSERT_EQ(3.0f, res->getScalar(0));
-    ASSERT_EQ(7.0f, res->getScalar(1));
+    ASSERT_EQ(3.0f, res->getScalar<float>(0));
+    ASSERT_EQ(7.0f, res->getScalar<float>(1));
 
     delete[] c;
     delete array;

@@ -111,6 +111,9 @@ namespace nd4j {
         static NDArray* create(std::initializer_list<T> values, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
+        static NDArray _create(std::initializer_list<T> values, nd4j::memory::Workspace* workspace = nullptr);
+
+        template <typename T>
         static NDArray* create(std::vector<T> &values, nd4j::memory::Workspace* workspace = nullptr);
 #endif
     };
