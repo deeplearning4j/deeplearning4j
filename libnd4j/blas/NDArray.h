@@ -286,6 +286,9 @@ namespace nd4j {
         void* getBuffer() const;
         void* buffer();
 
+        template <typename T>
+        T* bufferAsT();
+
         /**
         *   returns _shapeInfo
         */

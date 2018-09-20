@@ -191,6 +191,9 @@ namespace nd4j {
             // clone Node
             Node* clone();
 
+            template <typename T>
+            Node* asT();
+
             FORCEINLINE void pullValues(Node *other) {
 
                 if (this->_protoContext != nullptr)

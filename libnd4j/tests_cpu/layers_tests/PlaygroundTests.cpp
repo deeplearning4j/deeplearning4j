@@ -44,7 +44,7 @@ public:
 
 
 TEST_F(PlaygroundTests, LambdaTest_1) {
-    NDArray<float> array('c', {8192, 1024});
+    auto array = NDArrayFactory::_create<float>('c', {8192, 1024});
     array.linspace(1);
 
     auto lambda = LAMBDA_F(_x) {
@@ -54,7 +54,7 @@ TEST_F(PlaygroundTests, LambdaTest_1) {
     auto timeStart = std::chrono::system_clock::now();
 
     for (int e = 0; e < numIterations; e++) {
-        array.applyLambda(lambda);
+        array.applyLambda<float>(lambda);
     }
 
 
@@ -69,8 +69,8 @@ TEST_F(PlaygroundTests, LambdaTest_1) {
 
 
 TEST_F(PlaygroundTests, LambdaTest_2) {
-    NDArray<float> array('c', {8192, 1024});
-    NDArray<float> row('c', {1, 1024});
+    auto array = NDArrayFactory::_create<float>('c', {8192, 1024});
+    auto row = NDArrayFactory::_create<float>('c', {1, 1024});
     array.linspace(1);
 
     auto lambda = LAMBDA_F(_x) {
@@ -80,7 +80,7 @@ TEST_F(PlaygroundTests, LambdaTest_2) {
     auto timeStart = std::chrono::system_clock::now();
 
     for (int e = 0; e < numIterations; e++) {
-        array.template applyBroadcast<simdOps::Add<float>>({1}, &row);
+        array.applyBroadcast(broadcast::Add, {1}, &row);
     }
 
 
@@ -93,8 +93,8 @@ TEST_F(PlaygroundTests, LambdaTest_2) {
 
 
 TEST_F(PlaygroundTests, NoCacheTest_1) {
-    std::vector<NDArray<float> *> pool(poolSize);
-    NDArray<float> source('c', {8192, 1024});
+    std::vector<NDArray*> pool(poolSize);
+    auto source = NDArrayFactory::_create<float>('c', {8192, 1024});
     for (int e = 0; e < pool.size(); e++)
         pool[e] = source.dup();
 
@@ -106,7 +106,7 @@ TEST_F(PlaygroundTests, NoCacheTest_1) {
     int cnt = 0;
     for (int e = 0; e < numIterations; e++) {
         auto v = pool[poolSize - 1 - (cnt++)];
-        v->applyLambda(lambda);
+        v->applyLambda<float>(lambda);
 
         if (cnt == poolSize)
             cnt = 0;
@@ -124,9 +124,9 @@ TEST_F(PlaygroundTests, NoCacheTest_1) {
 
 
 TEST_F(PlaygroundTests, NoCacheTest_2) {
-    std::vector<NDArray<float> *> pool1(poolSize);
-    std::vector<NDArray<float> *> pool2(poolSize);
-    NDArray<float> source('c', {8192, 1024});
+    std::vector<NDArray*> pool1(poolSize);
+    std::vector<NDArray*> pool2(poolSize);
+    auto source = NDArrayFactory::_create<float>('c', {8192, 1024});
     for (int e = 0; e < pool1.size(); e++) {
         pool1[e] = source.dup();
         pool2[e] = source.dup();
@@ -141,7 +141,7 @@ TEST_F(PlaygroundTests, NoCacheTest_2) {
     for (int e = 0; e < numIterations; e++) {
         auto v1 = pool1[poolSize - 1 - cnt];
         auto v2 = pool2[cnt++];
-        v1->applyPairwiseLambda(v2, lambda);
+        v1->applyPairwiseLambda<float>(v2, lambda);
 
         if (cnt == poolSize)
             cnt = 0;
@@ -162,9 +162,9 @@ TEST_F(PlaygroundTests, NoCacheTest_2) {
 
 
 TEST_F(PlaygroundTests, ReductionTest_1) {
-    std::vector<NDArray<float> *> pool1(poolSize);
-    std::vector<NDArray<float> *> pool2(poolSize);
-    NDArray<float> source('c', {1, 100});
+    std::vector<NDArray*> pool1(poolSize);
+    std::vector<NDArray*> pool2(poolSize);
+    auto source = NDArrayFactory::_create<float>('c', {1, 100});
     for (int e = 0; e < pool1.size(); e++) {
         pool1[e] = source.dup();
         pool2[e] = source.dup();
@@ -196,9 +196,9 @@ TEST_F(PlaygroundTests, ReductionTest_1) {
 
 
 TEST_F(PlaygroundTests, ScalarTest_1) {
-    std::vector<NDArray<float> *> pool1(poolSize);
-    std::vector<NDArray<float> *> pool2(poolSize);
-    NDArray<float> source('c', {1, 100});
+    std::vector<NDArray*> pool1(poolSize);
+    std::vector<NDArray*> pool2(poolSize);
+    auto source = NDArrayFactory::_create<float>('c', {1, 100});
     for (int e = 0; e < pool1.size(); e++) {
         pool1[e] = source.dup();
         pool2[e] = source.dup();
@@ -207,11 +207,11 @@ TEST_F(PlaygroundTests, ScalarTest_1) {
 
     auto timeStart = std::chrono::system_clock::now();
     int cnt = 0;
-    float *buff = source.buffer();
+    float *buff = reinterpret_cast<float*>(source.buffer());
     for (int e = 0; e < 100000; e++) {
         //auto v = pool1[poolSize - 1 - cnt];
         //v->template applyScalar<simdOps::Add<float>>(2.0f);
-        source.template applyScalar<simdOps::Add<float>>(2.0f);
+        source.applyScalar(scalar::Add,2.0f);
         //functions::scalar::ScalarTransform<float>::template transformEx<simdOps::Add<float>>(source.buffer(), 1, source.buffer(), 1, 2.0f, nullptr, source.lengthOf());
         //functions::scalar::ScalarTransform<float>::template transform<simdOps::Add<float>>(buff, 1, buff, 1, 2.0f, nullptr, 100);
 
@@ -235,9 +235,9 @@ TEST_F(PlaygroundTests, ScalarTest_1) {
 
 
 TEST_F(PlaygroundTests, ScalarTest_2) {
-    std::vector<NDArray<float> *> pool1(poolSize);
-    std::vector<NDArray<float> *> pool2(poolSize);
-    NDArray<float> source('c', {1, 100});
+    std::vector<NDArray*> pool1(poolSize);
+    std::vector<NDArray*> pool2(poolSize);
+    auto source = NDArrayFactory::_create<float>('c', {1, 100});
     for (int e = 0; e < pool1.size(); e++) {
         pool1[e] = source.dup();
         pool2[e] = source.dup();
@@ -246,12 +246,12 @@ TEST_F(PlaygroundTests, ScalarTest_2) {
 
     auto timeStart = std::chrono::system_clock::now();
     int cnt = 0;
-    float * array = source.buffer();
+    float * array = reinterpret_cast<float*>(source.buffer());
     for (int e = 0; e < 100000; e++) {
 
 #pragma omp simd
         for (int i = 0; i < source.lengthOf(); i++) {
-            array[i] = simdOps::Add<float>::op(array[i], 2.0f);
+            array[i] = simdOps::Add<float, float>::op(array[i], 2.0f);
         }
 
         cnt++;
@@ -314,9 +314,9 @@ TEST_F(PlaygroundTests, Test_Profile_1) {
 
 TEST_F(PlaygroundTests, Test_Profile_2) {
     Environment::getInstance()->setProfiling(true);
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/ae_00.fb");
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/ae_00.fb");
 
-    auto profile = GraphProfilingHelper<float>::profile(graph, 2);
+    auto profile = GraphProfilingHelper::profile(graph, 2);
     // profile->printOut();
 
     delete graph;
@@ -329,13 +329,13 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
     int        oH=55, oW=55;
     int iterations = 1;
 
-    NDArray<float> input('c', {bS, iC, iH, iW});
-    NDArray<float> output('c', {bS, iC, kH, kW, oH, oW});
+    auto input = NDArrayFactory::_create<float>('c', {bS, iC, iH, iW});
+    auto output = NDArrayFactory::_create<float>('c', {bS, iC, kH, kW, oH, oW});
 
-    NDArray<float> outputPermuted('c', {bS, oH, oW, iC, kH, kW});
+    auto outputPermuted = NDArrayFactory::_create<float>('c', {bS, oH, oW, iC, kH, kW});
     outputPermuted.permutei({0, 3, 4, 5, 1, 2});
 
-    nd4j::ops::im2col<float> op;    
+    nd4j::ops::im2col op;
 
     auto timeStart = std::chrono::system_clock::now();
 
@@ -364,7 +364,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
 
     float extra[] = {(float)kH, (float)kW, (float)sH, (float)sW, (float)pH, (float)pW, (float)dH, (float)dW, 0.f, 0.f};
     for (int e = 0; e < iterations; e++) {
-        input.template applyTransform<simdOps::Im2col<float>>(&output, extra);
+        input.applyTransform(transform::Im2col, &output, extra);
     }
 
     auto legacyEnd = std::chrono::system_clock::now();
@@ -374,7 +374,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
     auto legacyPermStart = std::chrono::system_clock::now();
 
     for (int e = 0; e < iterations; e++) {
-        input.template applyTransform<simdOps::Im2col<float>>(&outputPermuted, extra);
+        input.applyTransform(transform::Im2col, &outputPermuted, extra);
     }
 
     auto legacyPermEnd = std::chrono::system_clock::now();
@@ -393,7 +393,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
     auto javaStart = std::chrono::system_clock::now();
 
     for (int e = 0; e < iterations; e++) {
-        nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), inputBuffers, inputShapes, 1, outputBuffers, outputShapes, 1, nullptr, 0, iArgs, 9, false);
+        nativeOps.execCustomOp(nullptr, op.getOpHash(), inputBuffers, inputShapes, 1, outputBuffers, outputShapes, 1, nullptr, 0, iArgs, 9, false);
     }
 
     auto javaEnd = std::chrono::system_clock::now();
@@ -407,7 +407,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
 
 
     for (int e = 0; e < iterations; e++) {
-        nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), inputBuffers, inputShapes, 1, outputPermBuffers, outputPermShapes, 1, nullptr, 0, iArgs, 9, false);
+        nativeOps.execCustomOp(nullptr, op.getOpHash(), inputBuffers, inputShapes, 1, outputPermBuffers, outputPermShapes, 1, nullptr, 0, iArgs, 9, false);
     }
 
     auto javaPermEnd = std::chrono::system_clock::now();
@@ -422,13 +422,13 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
 }
 
 TEST_F(PlaygroundTests, Test_Im2Col_2) {
-    NDArray<float> input('c', {16, 3, 224, 224});
-    NDArray<float> output('c', {16, 3, 11, 11, 55, 55});
+    auto input = NDArrayFactory::_create<float>('c', {16, 3, 224, 224});
+    auto output = NDArrayFactory::_create<float>('c', {16, 3, 11, 11, 55, 55});
 
-    NDArray<float> outputPermuted('c', {16, 55, 55, 3, 11, 11});
+    auto outputPermuted = NDArrayFactory::_create<float>('c', {16, 55, 55, 3, 11, 11});
     outputPermuted.permutei({0, 3, 4, 5, 1, 2});
 
-    nd4j::ops::im2col<float> op;
+    nd4j::ops::im2col op;
 
     Nd4jLong iArgs[] = {11, 11, 4, 4, 2, 2, 1, 1, 0};
     Nd4jPointer inputBuffers[] = {input.buffer()};
@@ -439,7 +439,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_2) {
 
     NativeOps nativeOps;
 
-    nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), inputBuffers, inputShapes, 1, outputPermBuffers, outputPermShapes, 1, nullptr, 0, iArgs, 9, false);
+    nativeOps.execCustomOp(nullptr, op.getOpHash(), inputBuffers, inputShapes, 1, outputPermBuffers, outputPermShapes, 1, nullptr, 0, iArgs, 9, false);
 }
 
 TEST_F(PlaygroundTests, Test_Col2Im_1) {
@@ -448,12 +448,12 @@ TEST_F(PlaygroundTests, Test_Col2Im_1) {
     int        oH=55, oW=55;
     int iterations = 1;
 
-    NDArray<float> input('c', {bS, iC, kH, kW, oH, oW});
-    NDArray<float> output('c', {bS, iC, iH, iW});
+    auto input = NDArrayFactory::_create<float>('c', {bS, iC, kH, kW, oH, oW});
+    auto output = NDArrayFactory::_create<float>('c', {bS, iC, iH, iW});
     
-    NDArray<float> inputPermuted('c', {bS, oH, oW, iC, kH, kW});
+    auto inputPermuted = NDArrayFactory::_create<float>('c', {bS, oH, oW, iC, kH, kW});
     inputPermuted.permutei({0, 3, 4, 5, 1, 2});
-    NDArray<float> outputPermuted('c', {bS, iH, iW, iC});
+    auto outputPermuted = NDArrayFactory::_create<float>('c', {bS, iH, iW, iC});
     outputPermuted.permutei({0, 3, 1, 2});
 
     input = 10.;
@@ -462,7 +462,7 @@ TEST_F(PlaygroundTests, Test_Col2Im_1) {
     inputPermuted = 10.;
     outputPermuted = 2.;
 
-    nd4j::ops::col2im<float> op;    
+    nd4j::ops::col2im op;
 
     auto timeStart = std::chrono::system_clock::now();
 
@@ -494,12 +494,12 @@ TEST_F(PlaygroundTests, Test_Im2Col_3) {
     int        oH=55, oW=55;
     int iterations = 1;
 
-    NDArray<float> output('c', {bS, iC, kH, kW, oH, oW});
-    NDArray<float> input('c', {bS, iC, iH, iW});
+    auto output = NDArrayFactory::_create<float>('c', {bS, iC, kH, kW, oH, oW});
+    auto input = NDArrayFactory::_create<float>('c', {bS, iC, iH, iW});
     
-    NDArray<float> outputPermuted('c', {bS, oH, oW, iC, kH, kW});
+    auto outputPermuted = NDArrayFactory::_create<float>('c', {bS, oH, oW, iC, kH, kW});
     outputPermuted.permutei({0, 3, 4, 5, 1, 2});
-    NDArray<float> inputPermuted('c', {bS, iH, iW, iC});
+    auto inputPermuted = NDArrayFactory::_create<float>('c', {bS, iH, iW, iC});
     inputPermuted.permutei({0, 3, 1, 2});
 
     input = 10.;
@@ -508,7 +508,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_3) {
     inputPermuted = 10.;
     outputPermuted = 2.;
 
-    nd4j::ops::im2col<float> op;    
+    nd4j::ops::im2col op;
 
     auto timeStart = std::chrono::system_clock::now();
 
@@ -537,8 +537,8 @@ TEST_F(PlaygroundTests, Test_Im2Col_3) {
 
 TEST_F(PlaygroundTests, loop_test_1) {
 
-    NDArray<float> f('c', {2}, {5000, 10000});
-    nd4j::ops::randomuniform<float> op;
+    auto f = NDArrayFactory::_create<float>('c', {2}, {5000, 10000});
+    nd4j::ops::randomuniform op;
 
     auto result = op.execute({&f}, {-1.0f, 1.0f}, {});
     ASSERT_EQ(Status::OK(), result->status());
@@ -620,11 +620,11 @@ TEST_F(PlaygroundTests, loop_test_1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, ndarray_tile_test1) {
 
-    NDArray<float> x('c', {20, 30});
-    NDArray<float> exp('c', {2,40,60});
+    auto x = NDArrayFactory::_create<float>('c', {20, 30});
+    auto exp = NDArrayFactory::_create<float>('c', {2,40,60});
 
     auto timeStart = std::chrono::system_clock::now();
-    NDArray<float> tiled = x.tile({2,2,2});
+    auto tiled = x.tile({2,2,2});
     auto timeEnd = std::chrono::system_clock::now();
     auto time = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
     // nd4j_printf("c-order time: %d;\n", time);
@@ -636,11 +636,11 @@ TEST_F(PlaygroundTests, ndarray_tile_test1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, ndarray_tile_test2) {
 
-    NDArray<float> x('f', {20, 30});
-    NDArray<float> exp('f', {2,40,60});
+    auto x = NDArrayFactory::_create<float>('f', {20, 30});
+    auto exp = NDArrayFactory::_create<float>('f', {2,40,60});
 
     auto timeStart = std::chrono::system_clock::now();
-    NDArray<float> tiled = x.tile({2,2,2});
+    auto tiled = x.tile({2,2,2});
     auto timeEnd = std::chrono::system_clock::now();
     auto time = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
     // nd4j_printf("f-order time: %d;\n", time);

@@ -34,11 +34,14 @@ public:
 
 
 TEST_F(EqualsTest,Eps) {
-    float val = functions::reduce3::Reduce3<float>::execScalar(opNum,
+    auto val = nd4j::NDArrayFactory::_create(0.0f);
+    functions::reduce3::Reduce3<float, float>::execScalar(opNum,
                                                                data,
                                                                firstShapeBuffer,
                                                                extraArgs,
                                                                dataSecond,
-                                                               secondShapeBuffer);
-    ASSERT_TRUE(val < 0.5);
+                                                               secondShapeBuffer,
+                                                               val.buffer(),
+                                                               val.shapeInfo());
+    ASSERT_TRUE(val.getScalar<float>(0) < 0.5);
 }
