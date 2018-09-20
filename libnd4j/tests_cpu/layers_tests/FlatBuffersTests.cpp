@@ -97,7 +97,7 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto fArray = CreateFlatArray(builder, fShape, fBuffer, nd4j::graph::DataType::DataType_FLOAT);
     auto fVid = CreateIntPair(builder, -1);
 
-    auto fVar = CreateFlatVariable(builder, fVid, 0, 0, fArray);
+    auto fVar = CreateFlatVariable(builder, fVid, 0, nd4j::graph::DataType::DataType_FLOAT, 0, fArray);
 
     std::vector<int> outputs1, outputs2, inputs1, inputs2;
     outputs1.push_back(2);

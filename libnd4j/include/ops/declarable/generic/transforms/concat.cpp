@@ -40,7 +40,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
         if(!INPUT_VARIABLE(i)->isEmpty()) {
             
             if(INPUT_VARIABLE(i)->rankOf() == 0) {
-                auto vec = new NDArray('c', {1}, block.getWorkspace());
+                auto vec = new NDArray('c', {1}, INPUT_VARIABLE(0)->dataType(), block.getWorkspace());
                 (*vec) = *INPUT_VARIABLE(i);
                 nonEmptyArrs.push_back(vec);
                 arrsToDelete.push_back(index);

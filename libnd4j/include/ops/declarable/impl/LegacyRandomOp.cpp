@@ -84,7 +84,7 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = input->getScalar<Nd4jLong>(e);
 
-                    auto z = new NDArray('c', shape, block.getWorkspace());
+                    auto z = new NDArray('c', shape, block.dataType(), block.getWorkspace());
 
                     RandomLauncher::fillUniform(block.getRNG(), z, from, to);
 
@@ -219,10 +219,11 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = input->getScalar<Nd4jLong>(e);
 
-                    auto z = new NDArray('c', shape, block.getWorkspace());
+                    auto z = new NDArray('c', shape, block.dataType(), block.getWorkspace());
 
                     RandomLauncher::fillBinomial(block.getRNG(), z, trials, prob);
 
+                    // FIXME: !!!
                     OVERWRITE_RESULT(z);
                 }
                     break;

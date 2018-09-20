@@ -89,8 +89,9 @@ CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
     hFWFinal->assign(resultsFW->at(1));
 
     auto seqLen = maxTimeStep;
-    if(seqLen == nullptr) {    	
-    	seqLen = new NDArray(x->ordering(), {bS}, block.getWorkspace());
+    if(seqLen == nullptr) {
+        // FIXME: which datatype should be used here?
+    	seqLen = new NDArray(x->ordering(), {bS}, x->dataType(), block.getWorkspace());
     	*seqLen = time;                                        // set each element of seqLen to be equal to time
     }
 

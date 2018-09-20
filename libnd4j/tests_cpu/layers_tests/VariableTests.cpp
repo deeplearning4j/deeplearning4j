@@ -75,7 +75,7 @@ TEST_F(VariableTests, Test_FlatVariableDataType_1) {
 
     auto fArray = CreateFlatArray(builder, fShape, fBuffer, nd4j::graph::DataType::DataType_FLOAT);
 
-    auto flatVar = CreateFlatVariable(builder, fVid, 0, 0, fArray);
+    auto flatVar = CreateFlatVariable(builder, fVid, 0, nd4j::graph::DataType::DataType_FLOAT, 0, fArray);
 
     builder.Finish(flatVar);
 
@@ -109,7 +109,7 @@ TEST_F(VariableTests, Test_FlatVariableDataType_2) {
 
     auto fArray = CreateFlatArray(builder, fShape, fBuffer, nd4j::graph::DataType::DataType_DOUBLE);
 
-    auto flatVar = CreateFlatVariable(builder, fVid, 0, 0, fArray);
+    auto flatVar = CreateFlatVariable(builder, fVid, 0, nd4j::graph::DataType::DataType_DOUBLE, 0, fArray);
 
     builder.Finish(flatVar);
 
@@ -146,7 +146,7 @@ TEST_F(VariableTests, Test_FlatVariableDataType_3) {
 
     auto fArray = CreateFlatArray(builder, fShape, fBuffer, nd4j::graph::DataType::DataType_DOUBLE);
 
-    auto flatVar = CreateFlatVariable(builder, fVid, 0, 0, fArray);
+    auto flatVar = CreateFlatVariable(builder, fVid, 0, nd4j::graph::DataType::DataType_DOUBLE, 0, fArray);
 
     builder.Finish(flatVar);
 
@@ -178,7 +178,7 @@ TEST_F(VariableTests, Test_FlatVariableDataType_4) {
     auto fShape = builder.CreateVector(original.getShapeInfoAsFlatVector());
     auto fVid = CreateIntPair(builder, 37, 12);
 
-    auto flatVar = CreateFlatVariable(builder, fVid, 0, fShape, 0);
+    auto flatVar = CreateFlatVariable(builder, fVid, 0, nd4j::graph::DataType::DataType_FLOAT, fShape, 0);
 
     builder.Finish(flatVar);
 

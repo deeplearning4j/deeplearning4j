@@ -229,7 +229,7 @@ TEST_F(ContextTests, Basic_Test_8) {
 TEST_F(ContextTests, Basic_Test_9) {
     VariableSpace variableSpace;
 
-    NDArray in('c', {5, 5});
+    auto in = NDArrayFactory::_create<float>('c', {5, 5});
 
     Context ctx(1, &variableSpace, true);
     ctx.pushNDArrayToVariableSpace(1, 1, &in, false);

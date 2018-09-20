@@ -325,7 +325,7 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
             throw std::runtime_error("MmulHelper<T>::mmulNxN op: shape of C array is not suitable for AxB matrix multiplication !");
     }
     else 
-        C = new NDArray('c', cExpectedShape);
+        C = new NDArray('c', cExpectedShape, B->dataType());
         
     // multiplication
     std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(C->rankOf(), {-2, -1});

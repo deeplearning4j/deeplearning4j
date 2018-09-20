@@ -67,7 +67,7 @@ TEST_F(IndexingTests, StridedSlice_2) {
     auto x = NDArrayFactory::_create<float>('c', {5, 5, 5});
 
     float _expB[] = {86.f,   87.f,   88.f,  91.f,   92.f,   93.f,  96.f,   97.f,   98.f,   111.f,  112.f,  113.f,  116.f,  117.f,  118.f,  121.f,  122.f,  123.f,};
-    NDArray exp('c', {2, 3, 3});
+    auto exp = NDArrayFactory::_create<float>('c', {2, 3, 3});
     exp.setBuffer(_expB);
 
     x.linspace(1);
@@ -90,7 +90,7 @@ TEST_F(IndexingTests, StridedSlice_3) {
     auto x = NDArrayFactory::_create<float>('c', {5, 5, 5});
 
     float _expB[] = {86.f, 88.f,  91.f, 93.f, 96.f, 98.f, 111.f,  113.f,  116.f, 118.f,  121.f,  123.f,};
-    NDArray exp('c', {2, 3, 2});
+    auto exp = NDArrayFactory::_create<float>('c', {2, 3, 2});
     exp.setBuffer(_expB);
 
     x.linspace(1);

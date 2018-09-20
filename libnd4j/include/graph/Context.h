@@ -50,6 +50,7 @@ namespace nd4j {
             std::pair<Nd4jLong, Nd4jLong> _executionTime;
             nd4j::random::RandomBuffer* _rng = nullptr;
 
+            nd4j::DataType _dataType;
             // branch for divergent_op
             int _branch = 0;
         public:
@@ -73,6 +74,8 @@ namespace nd4j {
             void setInnerTime(Nd4jLong time);
             Nd4jLong getOuterTime();
             Nd4jLong getInnerTime();
+
+            nd4j::DataType dataType();
 
             // these methods are related to Workspace abstraction
             bool hasWorkspaceProvided();

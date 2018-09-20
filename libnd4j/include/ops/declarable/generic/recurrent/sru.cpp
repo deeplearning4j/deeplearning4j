@@ -167,7 +167,7 @@ CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
 
     NDArray* xt(nullptr), *zt(nullptr), *ft(nullptr), *rt(nullptr), *ct(nullptr), *ht(nullptr);
     auto ct_1 = c0->dup(c0->ordering());
-    auto gct  = new NDArray(state->ordering(), {bS, inSize});
+    auto gct  = new NDArray(state->ordering(), {bS, inSize}, state->dataType(), state->getWorkspace());
     auto xmt  = x->dup(x->ordering());
     //  x = x * mask
     if(applyMask)
@@ -365,16 +365,16 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     const int K       = x->shapeOf()[1];
     const int N       = x->shapeOf()[2];                     // N - number of time steps
     
-    auto gradBias = new NDArray(x->ordering(), {bS, 2*K, N});
-    auto gradU    = new NDArray(x->ordering(), {bS, 3*K, N});
-    auto gradHX   = new NDArray(x->ordering(), {bS, K, N});
-    auto gct      = new NDArray(c->ordering(), {bS, K});
-    auto gradTanh = new NDArray(c->ordering(), {bS, K});
-    auto gradCt   = new NDArray(c->ordering(), {bS, K});
-    auto ftMinus  = new NDArray(c->ordering(), {bS, K});
-    auto rtMinus  = new NDArray(c->ordering(), {bS, K});
-    auto temp1    = new NDArray(c->ordering(), {bS, K});
-    auto temp2    = new NDArray(c->ordering(), {bS, K});
+    auto gradBias = new NDArray(x->ordering(), {bS, 2*K, N}, gradX->dataType(), block.getWorkspace());
+    auto gradU    = new NDArray(x->ordering(), {bS, 3*K, N}, gradX->dataType(), block.getWorkspace());
+    auto gradHX   = new NDArray(x->ordering(), {bS, K, N}, gradX->dataType(), block.getWorkspace());
+    auto gct      = new NDArray(c->ordering(), {bS, K}, gradX->dataType(), block.getWorkspace());
+    auto gradTanh = new NDArray(c->ordering(), {bS, K}, gradX->dataType(), block.getWorkspace());
+    auto gradCt   = new NDArray(c->ordering(), {bS, K}, gradX->dataType(), block.getWorkspace());
+    auto ftMinus  = new NDArray(c->ordering(), {bS, K}, gradX->dataType(), block.getWorkspace());
+    auto rtMinus  = new NDArray(c->ordering(), {bS, K}, gradX->dataType(), block.getWorkspace());
+    auto temp1    = new NDArray(c->ordering(), {bS, K}, gradX->dataType(), block.getWorkspace());
+    auto temp2    = new NDArray(c->ordering(), {bS, K}, gradX->dataType(), block.getWorkspace());
 
     //  x = x * mask
     if(applyMask)
