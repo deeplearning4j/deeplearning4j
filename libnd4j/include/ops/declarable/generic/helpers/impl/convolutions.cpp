@@ -407,7 +407,7 @@ void conv2d_(const NDArray* input, const NDArray* weights, const NDArray* bias, 
     if(isSameMode)                       // SAME        
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-    NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->getWorkspace());        
+    NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getWorkspace());
 
     //----- calculation of output -----//
     LaunchContext ctx;
@@ -468,7 +468,7 @@ void conv2dBP_(const NDArray* input, const NDArray* weights, const NDArray* bias
     if(isSameMode)                       // SAME        
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
    
-    NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->getWorkspace());
+    NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getWorkspace());
     
     // ----- calculation of gradW ----- // 
     if(gradW) {
@@ -544,7 +544,7 @@ void depthwiseConv2d_(const NDArray* input, const NDArray* weights, const NDArra
     if(isSameMode)                       // SAME        
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-    NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->getWorkspace());                
+    NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getWorkspace());
     NDArray* outputReshaped = output->reshape(output->ordering(), outReShape);
     
     LaunchContext ctx;
@@ -613,7 +613,7 @@ void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, const NDAr
     if(isSameMode)                       // SAME        
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-    NDArray  columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->getWorkspace());        
+    NDArray  columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getWorkspace());
     NDArray* gradOreshaped = gradO->reshape(gradO->ordering(), gradOreShape);    
     
     // ----- calculation of gradW and gradB ----- //            
