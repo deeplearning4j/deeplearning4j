@@ -23,29 +23,35 @@
 
 //#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/CustomOperations.h>
-
+#include <ops/declarable/helpers/image_resize.h>
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(resize_bilinear, 1, 1, false, 0, -2) {
 
-            NDArray<T>* values = INPUT_VARIABLE(0);
-            
+            NDArray<T>* image = INPUT_VARIABLE(0);
+            NDArray<T>* output = OUTPUT_VARIABLE(0);
             int width;
             int height;
+            int center = 0; // false - default value
             if (block.width() > 1) {
                 auto newImageSize = INPUT_VARIABLE(1);
                 REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_linear: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
-                REQUIRE_TRUE(block.numI() == 0, 0, "resize_linear: Resize params already given by the second param. Int params are expensive.");
+                REQUIRE_TRUE(block.numI() <= 1, 0, "resize_linear: Resize params already given by the second param. Int params are expensive.");
                 width = int(newImageSize->getScalar(0));
                 height = int(newImageSize->getScalar(1));
+                if (block.numI() == 1) {
+                    center = INT_ARG(0);
+                }
             }
             else {
-                REQUIRE_TRUE(block.numI() == 2, 0, "resize_linear: Neither resize width nor height are provided.");
+                REQUIRE_TRUE(block.numI() <= 3, 0, "resize_linear: Neither resize width nor height are provided.");
                 width = INT_ARG(0);
                 height = INT_ARG(1);
+                if (block.numI() == 3)
+                    center = INT_ARG(2);
             }
 
-            return ND4J_STATUS_OK;
+            return helpers::resizeBilinearFunctor(image, width, height, output);
         }
 
         DECLARE_SHAPE_FN(resize_bilinear) {

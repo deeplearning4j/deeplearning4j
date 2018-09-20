@@ -17,8 +17,8 @@
 //
 //  @author sgazeos@gmail.com
 //
-#ifndef __DROP_OUT_HELPERS__
-#define __DROP_OUT_HELPERS__
+#ifndef __RANDOM_CROP_HELPERS__
+#define __RANDOM_CROP_HELPERS__
 #include <op_boilerplate.h>
 #include <NDArray.h>
 

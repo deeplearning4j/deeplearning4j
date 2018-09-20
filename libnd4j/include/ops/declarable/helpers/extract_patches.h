@@ -17,8 +17,8 @@
 //
 //  @author sgazeos@gmail.com
 //
-#ifndef __AXIS_H_HELPERS__
-#define __AXIS_H_HELPERS__
+#ifndef __EXTRACT_PATCHES_H_HELPERS__
+#define __EXTRACT_PATCHES_H_HELPERS__
 #include <op_boilerplate.h>
 #include <NDArray.h>
 
