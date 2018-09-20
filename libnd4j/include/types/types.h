@@ -39,11 +39,12 @@
         (nd4j::DataType::DataType_INT8, int8_t), \
         (nd4j::DataType::DataType_UINT8, uint8_t), \
         (nd4j::DataType::DataType_INT16, int16_t), \
-        (nd4j::DataType::DataType_UINT16, uint16_t), \
         (nd4j::DataType::DataType_INT32, int32_t), \
-        (nd4j::DataType::DataType_UINT32, uint32_t), \
-        (nd4j::DataType::DataType_INT64, Nd4jLong), \
-        (nd4j::DataType::DataType_UINT64, Nd4jULong)
+        (nd4j::DataType::DataType_INT64, Nd4jLong)
+
+        //(nd4j::DataType::DataType_UINT16, uint16_t), \
+        //(nd4j::DataType::DataType_UINT64, Nd4jULong)
+        //(nd4j::DataType::DataType_UINT32, uint32_t), \
 
 #define FLOAT_TYPES \
         (nd4j::DataType::DataType_HALF, float16), \
@@ -54,11 +55,8 @@
         (nd4j::DataType::DataType_INT8, int8_t), \
         (nd4j::DataType::DataType_UINT8, uint8_t), \
         (nd4j::DataType::DataType_INT16, int16_t), \
-        (nd4j::DataType::DataType_UINT16, uint16_t), \
         (nd4j::DataType::DataType_INT32, int32_t), \
-        (nd4j::DataType::DataType_UINT32, uint32_t), \
-        (nd4j::DataType::DataType_INT64, Nd4jLong), \
-        (nd4j::DataType::DataType_UINT64, Nd4jULong)
+        (nd4j::DataType::DataType_INT64, Nd4jLong)
 
 
 #define NUMERIC_TYPES \
@@ -68,11 +66,8 @@
         (nd4j::DataType::DataType_INT8, int8_t), \
         (nd4j::DataType::DataType_UINT8, uint8_t), \
         (nd4j::DataType::DataType_INT16, int16_t), \
-        (nd4j::DataType::DataType_UINT16, uint16_t), \
         (nd4j::DataType::DataType_INT32, int32_t), \
-        (nd4j::DataType::DataType_UINT32, uint32_t), \
-        (nd4j::DataType::DataType_INT64, Nd4jLong), \
-        (nd4j::DataType::DataType_UINT64, Nd4jULong)
+        (nd4j::DataType::DataType_INT64, Nd4jLong)
 
 
 
