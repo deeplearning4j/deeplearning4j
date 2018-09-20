@@ -78,6 +78,9 @@ namespace nd4j {
         void templatedSet(void *buffer, const Nd4jLong xOffset, void *value);
 
         template <typename T>
+        void templatedSet(void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, void *value);
+
+        template <typename T>
         void templatedSwap(void *xBuffer, void *yBuffer, Nd4jLong length);
 
         template <typename T>
