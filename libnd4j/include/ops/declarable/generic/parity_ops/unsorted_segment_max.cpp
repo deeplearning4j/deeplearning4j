@@ -33,8 +33,8 @@ namespace nd4j {
 
             Nd4jLong wrong;
 
-            REQUIRE_TRUE(helpers::unsortedSegmentIndicesValidate(idxSegments, numOfClasses, wrong), 0, "unsorted_segment_max: segment indices should be arranged, but %i > %i",
-                    numOfClasses, wrong);
+            REQUIRE_TRUE(helpers::unsortedSegmentIndicesValidate(idxSegments, numOfClasses, wrong), 0, "unsorted_segment_max: segment indices should be in range [0, %i), but %i > %i",
+                    numOfClasses, wrong, numOfClasses);
 
             helpers::unsortedSegmentMaxFunctor(input, idxSegments, numOfClasses, segmentedOutput);
 
