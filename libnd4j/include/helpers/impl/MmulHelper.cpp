@@ -547,12 +547,12 @@ NDArray* MmulHelper::simpleMMul(const NDArray* a, const NDArray* b, NDArray* c, 
 
     NDArray* dot = c;
     if(c == nullptr) 
-        c = NDArrayFactory::create(b->dataType(), 'f', {a->shapeOf()[0], b->shapeOf()[1]}, a->getWorkspace());
+        c = NDArrayFactory::create('f', {a->shapeOf()[0], b->shapeOf()[1]}, b->dataType(), a->getWorkspace());
     else {
         if( c->shapeOf()[0] != a->shapeOf()[0] || c->shapeOf()[1] != b->shapeOf()[1])
             throw std::runtime_error("NDArrayFactory::simpleMMul static function: wrong shape of C array !");
         if(beta != 0. ) {
-            dot = NDArrayFactory::create(c->dataType(), c->ordering(), {a->shapeOf()[0], b->shapeOf()[1]},  a->getWorkspace());
+            dot = NDArrayFactory::create(c->ordering(), {a->shapeOf()[0], b->shapeOf()[1]}, c->dataType(), a->getWorkspace());
             if( beta != 1.)
                 c->applyScalar(scalar::Multiply, beta, c, nullptr);
         }        
