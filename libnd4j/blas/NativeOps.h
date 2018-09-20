@@ -180,34 +180,6 @@ public:
      * @param resultShapeInfo
      * @param extraParams
      * @param n
-     * @param xIndexes
-     * @param yIndexes
-     * @param resultIndexes
-     */
-    void execPairwiseTransform(Nd4jPointer *extraPointers,
-                                     int opNum,
-                                     void *dx,
-                                     Nd4jLong *xInfo,
-                                     void *y,
-                                     Nd4jLong *yInfo,
-                                     void *result,
-                                     Nd4jLong *resultShapeInfo,
-                                     void *extraParams,
-                                     Nd4jLong *xIndexes,
-                                     Nd4jLong *yIndexes,
-                                     Nd4jLong *resultIndexes);
-
-    /**
-     *
-     * @param opNum
-     * @param dx
-     * @param xShapeInfo
-     * @param y
-     * @param yShapeInfo
-     * @param result
-     * @param resultShapeInfo
-     * @param extraParams
-     * @param n
      */
     void execPairwiseTransform(
             Nd4jPointer *extraPointers,

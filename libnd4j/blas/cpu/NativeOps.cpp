@@ -169,49 +169,6 @@ void NativeOps::execBroadcast(Nd4jPointer *extraPointers,
 }
 
 
-
-/**
- *
- * @param opNum
- * @param dx
- * @param xShapeInfo
- * @param y
- * @param yShapeInfo
- * @param result
- * @param resultShapeInfo
- * @param extraParams
- * @param n
- * @param xIndexes
- * @param yIndexes
- * @param resultIndexes
- */
-void NativeOps::execPairwiseTransform(
-        Nd4jPointer *extraPointers,
-        int opNum,
-        void *dx,
-        Nd4jLong *xShapeInfo,
-        void *y,
-        Nd4jLong *yShapeInfo,
-        void *result,
-        Nd4jLong *resultShapeInfo,
-        void *extraParams,
-        Nd4jLong *xIndexes,
-        Nd4jLong *yIndexes,
-        Nd4jLong *resultIndexes) {
-    NativeOpExcutioner::execPairwiseTransform(
-            opNum,
-            dx,
-            xShapeInfo,
-            y,
-            yShapeInfo,
-            result,
-            resultShapeInfo,
-            extraParams,
-            xIndexes,
-            yIndexes,
-            resultIndexes);
-}
-
 /**
  *
  * @param opNum
