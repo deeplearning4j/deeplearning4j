@@ -208,7 +208,7 @@ namespace nd4j {
                     shape[i] = shapeInfo.at(i + 1);
                 }
 
-                _ndarray = new NDArray((char) shapeInfo.at(shapeInfo.size() - 1), shape);
+                _ndarray = new NDArray((char) shapeInfo.at(shapeInfo.size() - 1), shape, DataTypeUtils::fromFlatDataType(flatVariable->dtype()));
             } else {
                 nd4j_printf("Either shape or NDArray should be defined in FlatResult variable\n","");
                 throw std::runtime_error("Empty variable");
@@ -303,7 +303,7 @@ namespace nd4j {
                     stringId = builder.CreateString(this->_name);
 
                 // returning array
-                return CreateFlatVariable(builder, fVid, stringId, 0, fArray);
+                return CreateFlatVariable(builder, fVid, stringId, static_cast<nd4j::graph::DataType>(array->dataType()), 0, fArray);
             }
         }
     }

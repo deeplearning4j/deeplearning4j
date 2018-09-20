@@ -588,7 +588,7 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
         auto fName = builder.CreateString(*(var->getName()));
         auto id = CreateIntPair(builder, var->id(), var->index());
 
-        auto fv = CreateFlatVariable(builder, id, fName, 0, fArray);
+        auto fv = CreateFlatVariable(builder, id, fName, static_cast<nd4j::graph::DataType>(array->dataType()), 0, fArray);
 
         variables_vector.push_back(fv);
         arrays++;

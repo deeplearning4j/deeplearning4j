@@ -678,7 +678,7 @@ void sconv2d_(const NDArray* input, const NDArray* weightsDepth, const NDArray* 
 
     NDArray* outputDepth = output;
     if(weightsPoint)                        // if pointwise convolution is expected
-        outputDepth = new NDArray(output->ordering(), !isNCHW ? std::vector<Nd4jLong>({bS, oH, oW, iC*mC}) : std::vector<Nd4jLong>({bS, iC*mC, oH, oW}), input->getWorkspace());
+        outputDepth = new NDArray(output->ordering(), !isNCHW ? std::vector<Nd4jLong>({bS, oH, oW, iC*mC}) : std::vector<Nd4jLong>({bS, iC*mC, oH, oW}), input->dataType(), input->getWorkspace());
 
     // ----- perform depthwise convolution (if weightsPoint is absent then oC = iC*mC) ----- //    
     ConvolutionUtils::depthwiseConv2d(input, weightsDepth, weightsPoint ? nullptr : bias, outputDepth, kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW);

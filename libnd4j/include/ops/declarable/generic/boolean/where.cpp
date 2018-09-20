@@ -86,12 +86,12 @@ namespace nd4j {
                 Nd4jLong idx[MAX_RANK];
                 for (int e = 0; e < condition->lengthOf(); e++) {
                     if (!condition->getIndexedScalar<bool>(e)) {
-                        auto array = new NDArray('c', {1, condition->rankOf()});
+                        //auto array = new NDArray('c', {1, condition->rankOf()});
                         throw std::runtime_error("Not implemented properly");
                         //for (int f = 0; f < condition->rankOf(); f++)
                             //array->putIndexedScalar(e, (T) idx[f]);
 
-                        list.write(cnt++, array);
+                        //list.write(cnt++, array);
                     }
                 }
 

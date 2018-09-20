@@ -46,7 +46,7 @@ namespace nd4j {
                 }
             }
 
-            auto result = new NDArray('c', shape);
+            auto result = new NDArray('c', shape, list->dataType());
             int skipPosition = 0;
             for (int e = 0; e < indices->lengthOf(); e++) {
                 auto idx = indices->getIndexedScalar<int>(e);

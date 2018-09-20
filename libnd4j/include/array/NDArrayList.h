@@ -39,6 +39,8 @@ namespace nd4j {
         std::pair<int, int> _id;
         std::string _name;
 
+        nd4j::DataType _dtype;
+
         // stored chunks
         std::map<int, nd4j::NDArray*> _chunks;
 
@@ -60,6 +62,8 @@ namespace nd4j {
     public:
         NDArrayList(int height, bool expandable = false);
         ~NDArrayList();
+
+        nd4j::DataType dataType();
 
         NDArray* read(int idx);
         NDArray* readRaw(int idx);
