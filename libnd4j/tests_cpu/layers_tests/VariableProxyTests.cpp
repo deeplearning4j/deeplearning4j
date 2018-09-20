@@ -31,26 +31,26 @@ public:
 
 
 TEST_F(VariableProxyTests, Test_Simple_1) {
-    auto x = new NDArray<float>('c', {2, 2}, {1, 2, 3, 4});
-    VariableSpace<float> ref;
+    auto x = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    VariableSpace ref;
 
     ref.putVariable(119, x);
 
     ASSERT_TRUE(ref.hasVariable(119));
 
-    VariableProxy<float> proxy(&ref);
+    VariableProxy proxy(&ref);
 
     ASSERT_TRUE(proxy.hasVariable(119));
 }
 
 
 TEST_F(VariableProxyTests, Test_Simple_2) {
-    auto x = new NDArray<float>('c', {2, 2}, {1, 2, 3, 4});
-    VariableSpace<float> ref;
+    auto x = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    VariableSpace ref;
 
     ASSERT_FALSE(ref.hasVariable(119));
 
-    VariableProxy<float> proxy(&ref);
+    VariableProxy proxy(&ref);
 
     ASSERT_FALSE(proxy.hasVariable(119));
 
@@ -63,15 +63,15 @@ TEST_F(VariableProxyTests, Test_Simple_2) {
 
 
 TEST_F(VariableProxyTests, Test_Simple_3) {
-    auto x = new NDArray<float>('c', {2, 2}, {1, 2, 3, 4});
-    auto y = new NDArray<float>('c', {2, 2}, {4, 2, 3, 1});
-    VariableSpace<float> ref;
+    auto x = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto y = NDArrayFactory::create<float>('c', {2, 2}, {4, 2, 3, 1});
+    VariableSpace ref;
 
     ref.putVariable(119, x);
 
     ASSERT_TRUE(ref.hasVariable(119));
 
-    VariableProxy<float> proxy(&ref);
+    VariableProxy proxy(&ref);
 
     ASSERT_TRUE(proxy.hasVariable(119));
 
@@ -90,17 +90,17 @@ TEST_F(VariableProxyTests, Test_Simple_3) {
 }
 
 TEST_F(VariableProxyTests, Test_Simple_4) {
-    auto x = new NDArray<float>('c', {2, 2}, {1, 2, 3, 4});
-    auto y = new NDArray<float>('c', {2, 2}, {4, 2, 3, 1});
-    auto z = new NDArray<float>('c', {2, 2}, {4, 1, 3, 2});
-    VariableSpace<float> ref;
+    auto x = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto y = NDArrayFactory::create<float>('c', {2, 2}, {4, 2, 3, 1});
+    auto z = NDArrayFactory::create<float>('c', {2, 2}, {4, 1, 3, 2});
+    VariableSpace ref;
 
     ref.putVariable(119, x);
     ref.putVariable(118, z);
 
     ASSERT_TRUE(ref.hasVariable(119));
 
-    VariableProxy<float> proxy(&ref);
+    VariableProxy proxy(&ref);
 
     ASSERT_TRUE(proxy.hasVariable(119));
 
@@ -122,16 +122,16 @@ TEST_F(VariableProxyTests, Test_Simple_4) {
 
 
 TEST_F(VariableProxyTests, Test_Cast_1) {
-    auto x = new NDArray<float>('c', {2, 2}, {1, 2, 3, 4});
-    auto y = new NDArray<float>('c', {2, 2}, {4, 2, 3, 1});
-    VariableSpace<float> ref;
+    auto x = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto y = NDArrayFactory::create<float>('c', {2, 2}, {4, 2, 3, 1});
+    VariableSpace ref;
 
     ref.putVariable(-119, x);
 
     ASSERT_TRUE(ref.hasVariable(-119));
 
-    VariableProxy<float> proxy(&ref);
-    auto cast = (VariableSpace<float> *) &proxy;
+    VariableProxy proxy(&ref);
+    auto cast = (VariableSpace *) &proxy;
 
     ASSERT_TRUE(cast->hasVariable(-119));
 
@@ -151,13 +151,13 @@ TEST_F(VariableProxyTests, Test_Cast_1) {
 
 
 TEST_F(VariableProxyTests, Test_Clone_1) {
-    auto x = new NDArray<float>('c', {2, 2}, {1, 2, 3, 4});
-    auto y = new NDArray<float>('c', {2, 2}, {4, 2, 3, 1});
-    VariableSpace<float> ref;
+    auto x = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto y = NDArrayFactory::create<float>('c', {2, 2}, {4, 2, 3, 1});
+    VariableSpace ref;
 
     ref.putVariable(118, x);
 
-    VariableProxy<float> proxy(&ref);
+    VariableProxy proxy(&ref);
 
     proxy.putVariable(119, y);
 

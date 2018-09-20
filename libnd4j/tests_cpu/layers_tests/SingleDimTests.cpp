@@ -33,7 +33,7 @@ public:
 };
 
 TEST_F(SingleDimTests, Test_Create_1) {
-    NDArray<float> x('c', {5}, {1, 2, 3, 4, 5});
+    auto x = NDArrayFactory::_create<float>('c', {5}, {1, 2, 3, 4, 5});
     ASSERT_EQ(5, x.lengthOf());
     ASSERT_EQ(1, x.rankOf());
     ASSERT_TRUE(x.isVector());
@@ -42,8 +42,8 @@ TEST_F(SingleDimTests, Test_Create_1) {
 }
 
 TEST_F(SingleDimTests, Test_Add_1) {
-    NDArray<float> x('c', {3}, {1, 2, 3});
-    NDArray<float> exp('c', {3}, {2, 3, 4});
+    auto x = NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
+    auto exp = NDArrayFactory::_create<float>('c', {3}, {2, 3, 4});
 
     x += 1.0f;
 
@@ -53,8 +53,8 @@ TEST_F(SingleDimTests, Test_Add_1) {
 
 
 TEST_F(SingleDimTests, Test_Pairwise_1) {
-    NDArray<float> x('c', {3}, {1, 2, 3});
-    NDArray<float> exp('c', {3}, {2, 4, 6});
+    auto x = NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
+    auto exp = NDArrayFactory::_create<float>('c', {3}, {2, 4, 6});
 
     x += x;
 
@@ -63,11 +63,11 @@ TEST_F(SingleDimTests, Test_Pairwise_1) {
 }
 
 TEST_F(SingleDimTests, Test_Concat_1) {
-    NDArray<float> x('c', {3}, {1, 2, 3});
-    NDArray<float> y('c', {3}, {4, 5, 6});
-    NDArray<float> exp('c', {6}, {1, 2, 3, 4, 5, 6});
+    auto x = NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
+    auto y = NDArrayFactory::_create<float>('c', {3}, {4, 5, 6});
+    auto exp = NDArrayFactory::_create<float>('c', {6}, {1, 2, 3, 4, 5, 6});
 
-    nd4j::ops::concat<float> op;
+    nd4j::ops::concat op;
     auto result = op.execute({&x, &y}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -81,27 +81,27 @@ TEST_F(SingleDimTests, Test_Concat_1) {
 }
 
 TEST_F(SingleDimTests, Test_Reduce_1) {
-    NDArray<float> x('c', {3}, {1, 2, 3});
+    auto x = NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
 
-    float r = x.template reduceNumber<simdOps::Sum<float>>();
+    float r = x.reduceNumber(reduce::Sum).getScalar<float>(0);
 
     ASSERT_NEAR(6.0f, r, 1e-5f);
 }
 
 TEST_F(SingleDimTests, Test_IndexReduce_1) {
-    NDArray<float> x('c', {3}, {1, 2, 3});
+    auto x = NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
 
-    float r = x.template indexReduceNumber<simdOps::IndexMax<float>>();
+    auto r = x.indexReduceNumber(indexreduce::IndexMax);
 
-    ASSERT_NEAR(2.0f, r, 1e-5f);
+    ASSERT_NEAR(2, r, 1e-5f);
 }
 
 
 TEST_F(SingleDimTests, Test_ExpandDims_1) {
-    NDArray<float> x('c', {3}, {1, 2, 3});
-    NDArray<float> exp('c', {1, 3}, {1, 2, 3});
+    auto x = NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
+    auto exp = NDArrayFactory::_create<float>('c', {1, 3}, {1, 2, 3});
 
-    nd4j::ops::expand_dims<float> op;
+    nd4j::ops::expand_dims op;
     auto result = op.execute({&x}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -116,10 +116,10 @@ TEST_F(SingleDimTests, Test_ExpandDims_1) {
 
 
 TEST_F(SingleDimTests, Test_ExpandDims_2) {
-    NDArray<float> x('c', {3}, {1, 2, 3});
-    NDArray<float> exp('c', {3, 1}, {1, 2, 3});
+    auto x = NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
+    auto exp = NDArrayFactory::_create<float>('c', {3, 1}, {1, 2, 3});
 
-    nd4j::ops::expand_dims<float> op;
+    nd4j::ops::expand_dims op;
     auto result = op.execute({&x}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -136,10 +136,10 @@ TEST_F(SingleDimTests, Test_ExpandDims_2) {
 TEST_F(SingleDimTests, Test_Squeeze_1) {
     std::vector<Nd4jLong> vecS({1});
     std::vector<float> vecB({3.0f});
-    NDArray<float> x('c', vecS, vecB);
-    NDArray<float> exp(3.0f);
+    auto x = NDArrayFactory::_create<float>('c', vecS, vecB);
+    auto exp = NDArrayFactory::_create<float>(3.0f);
 
-    nd4j::ops::squeeze<float> op;
+    nd4j::ops::squeeze op;
     auto result = op.execute({&x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -153,10 +153,10 @@ TEST_F(SingleDimTests, Test_Squeeze_1) {
 }
 
 TEST_F(SingleDimTests, Test_Squeeze_2) {
-    NDArray<float> x('c', {3}, {1, 2, 3});
-    NDArray<float> exp('c', {3}, {1, 2, 3});
+    auto x = NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
+    auto exp = NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
 
-    nd4j::ops::squeeze<float> op;
+    nd4j::ops::squeeze op;
     auto result = op.execute({&x}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -169,10 +169,10 @@ TEST_F(SingleDimTests, Test_Squeeze_2) {
 }
 
 TEST_F(SingleDimTests, Test_Reshape_1) {
-    NDArray<float> x('c', {1, 3}, {1, 2, 3});
-    NDArray<float> exp('c', {3}, {1, 2, 3});
+    auto x = NDArrayFactory::_create<float>('c', {1, 3}, {1, 2, 3});
+    auto exp = NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
 
-    nd4j::ops::reshape<float> op;
+    nd4j::ops::reshape op;
     auto result = op.execute({&x}, {}, {-99, 3});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -185,10 +185,10 @@ TEST_F(SingleDimTests, Test_Reshape_1) {
 }
 
 TEST_F(SingleDimTests, Test_Reshape_2) {
-    NDArray<float> x('c', {3}, {1, 2, 3});
-    NDArray<float> exp('c', {1, 3}, {1, 2, 3});
+    auto x = NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
+    auto exp = NDArrayFactory::_create<float>('c', {1, 3}, {1, 2, 3});
 
-    nd4j::ops::reshape<float> op;
+    nd4j::ops::reshape op;
     auto result = op.execute({&x}, {}, {-99, 1, 3});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -202,10 +202,10 @@ TEST_F(SingleDimTests, Test_Reshape_2) {
 
 
 TEST_F(SingleDimTests, Test_Permute_1) {
-    NDArray<float> x('c', {3}, {1, 2, 3});
-    NDArray<float> exp('c', {3}, {1, 2, 3});
+    auto x = NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
+    auto exp = NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
 
-    nd4j::ops::permute<float> op;
+    nd4j::ops::permute op;
     auto result = op.execute({&x}, {}, {0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 

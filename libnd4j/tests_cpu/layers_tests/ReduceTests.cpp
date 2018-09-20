@@ -62,9 +62,9 @@ public:
 
 TEST_F(EuclideanDistanceTest,Test1) {
     //int *tadShapeBuffer = shape::computeResultShape(shapeBuffer,dimension,dimensionLength);
-    auto tadShapeBuffer = nd4j::ShapeUtils<float>::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);
+    auto tadShapeBuffer = nd4j::ShapeUtils::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);
     //shape::printShapeInfoLinear("tadShape", tadShapeBuffer);
-    functions::reduce3::Reduce3<float>::exec(opNum,
+    functions::reduce3::Reduce3<float, float>::exec(opNum,
                                              x,
                                              shapeBuffer,
                                              extraVals,
@@ -83,7 +83,7 @@ TEST_F(EuclideanDistanceTest,Test1) {
 TEST_F(StdTest,MultiDimTest) {
     auto xShapeInfo = shape::shapeBuffer(4, examplesShape);
     //int *resultShapeInfo = shape::computeResultShape(xShapeInfo,dimensionsForStd,dimensionLength);
-    auto resultShapeInfo = nd4j::ShapeUtils<float>::evalReduceShapeInfo('c', dimsForStd, xShapeInfo, false, true, nullptr);
+    auto resultShapeInfo = nd4j::ShapeUtils::evalReduceShapeInfo('c', dimsForStd, xShapeInfo, false, true, nullptr);
     int resultLengthAssertion = 5;
     ASSERT_EQ(resultLengthAssertion,shape::length(resultShapeInfo));
     shape::TAD *tad = new shape::TAD(xShapeInfo,dimensionsForStd,dimensionLength);
@@ -122,7 +122,7 @@ TEST_F(ReduceTest,MatrixTest) {
     int opNum = 4;
     auto xShapeInfo = shape::shapeBuffer(2, shape);
     //int *resultShapeInfo = shape::computeResultShape(xShapeInfo,dimension,dimensionLength);
-    auto resultShapeInfo = nd4j::ShapeUtils<float>::evalReduceShapeInfo('c', dim, xShapeInfo, false, true, nullptr);
+    auto resultShapeInfo = nd4j::ShapeUtils::evalReduceShapeInfo('c', dim, xShapeInfo, false, true, nullptr);
     int resultLengthAssertion = 3;
     ASSERT_EQ(resultLengthAssertion,shape::length(resultShapeInfo));
     shape::TAD *tad = new shape::TAD(xShapeInfo,dimension,dimensionLength);

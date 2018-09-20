@@ -41,8 +41,8 @@ TEST_F(QuantizationTests, Basic_Test_2) {
 }
 
 TEST_F(QuantizationTests, Compression_Test_1) {
-    NDArray<float> x('c', {10});
-    NDArray<float> z('c', {10});
+    auto x = NDArrayFactory::_create<float>('c', {10});
+    auto z = NDArrayFactory::_create<float>('c', {10});
     x.linspace(1.0f);
 
     auto q = new char[TypeCast::estimateQuantizedSize(x.lengthOf())];

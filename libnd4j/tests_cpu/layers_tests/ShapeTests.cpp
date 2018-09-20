@@ -220,7 +220,7 @@ TEST_F(ShapeTests, Test_Transpose_4) {
 }
 
 TEST_F(ShapeTests, Test_Edge_1) {
-    NDArray<float> x('f', {1, 4, 1, 4});
+    auto x = NDArrayFactory::_create<float>('f', {1, 4, 1, 4});
     x.linspace(1);
 
     x.reshapei('c', {4, 4});
@@ -235,7 +235,7 @@ TEST_F(ShapeTests, Test_Edge_1) {
 }
 
 TEST_F(ShapeTests, Test_Edge_2) {
-    NDArray<float> x('c', {1, 4, 1, 3});
+    auto x = NDArrayFactory::_create<float>('c', {1, 4, 1, 3});
 
     x.reshapei('f', {3, 4});
 
@@ -305,16 +305,16 @@ TEST_F(ShapeTests, Test_Remove_Index_6) {
 }
 
 TEST_F(ShapeTests, Tests_Transpose_119_1) {
-    NDArray<float> x('c', {3, 2});
-    NDArray<float> y('c', {2}, {1.0f, 0.0f});
-    NDArray<float> z('c', {2, 3});
+    auto x = NDArrayFactory::_create<float>('c', {3, 2});
+    auto y = NDArrayFactory::_create<float>('c', {2}, {1.0f, 0.0f});
+    auto z = NDArrayFactory::_create<float>('c', {2, 3});
 
     x.linspace(1.f);
 
     auto e = x.permute({1, 0});
     e->streamline('c');
 
-    nd4j::ops::transpose<float> op;
+    nd4j::ops::transpose op;
     auto result = op.execute({&x, &y}, {&z}, {}, {});
 
     ASSERT_EQ(Status::OK(), result);
@@ -325,12 +325,12 @@ TEST_F(ShapeTests, Tests_Transpose_119_1) {
 }
 
 TEST_F(ShapeTests, Tests_Transpose_119_2) {
-    NDArray<float> x('c', {3, 5});
+    auto x = NDArrayFactory::_create<float>('c', {3, 5});
     x.linspace(1.f);
 
     auto exp = x.transpose();
 
-    nd4j::ops::transpose<float> op;
+    nd4j::ops::transpose op;
     auto result = op.execute({&x},{}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
@@ -344,14 +344,14 @@ TEST_F(ShapeTests, Tests_Transpose_119_2) {
 }
 
 TEST_F(ShapeTests, Tests_Transpose_119_3) {
-    NDArray<float> x('c', {3, 5});
+    auto x = NDArrayFactory::_create<float>('c', {3, 5});
     x.linspace(1.f);
 
-    NDArray<float> z('c', {5, 3});
+    auto z = NDArrayFactory::_create<float>('c', {5, 3});
 
     auto exp = x.transpose();
 
-    nd4j::ops::transpose<float> op;
+    nd4j::ops::transpose op;
     auto result = op.execute({&x}, {&z}, {}, {});
     ASSERT_EQ(Status::OK(), result);
 

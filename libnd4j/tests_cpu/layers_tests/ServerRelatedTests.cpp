@@ -42,19 +42,19 @@ public:
 TEST_F(ServerRelatedTests, Basic_Output_Test_1) {
     flatbuffers::FlatBufferBuilder builder(4096);
 
-    auto array1 = new NDArray<float>('c', {10, 10});
-    auto array2 = new NDArray<float>('c', {10, 10});
-    auto array3 = new NDArray<float>('c', {10, 10});
+    auto array1 = NDArrayFactory::create<float>('c', {10, 10});
+    auto array2 = NDArrayFactory::create<float>('c', {10, 10});
+    auto array3 = NDArrayFactory::create<float>('c', {10, 10});
 
     array1->assign(1.0f);
     array2->assign(2.0f);
     array3->assign(3.0f);
 
-    Variable<float> var1(array1, "first", 1);
-    Variable<float> var2(array2, "second", 2);
-    Variable<float> var3(array3, "second indexed", 2, 1);
+    Variable var1(array1, "first", 1);
+    Variable var2(array2, "second", 2);
+    Variable var3(array3, "second indexed", 2, 1);
 
-    ExecutionResult<float> result({&var1, &var2, &var3});
+    ExecutionResult result({&var1, &var2, &var3});
 
     ASSERT_EQ(*array1, *result.at(0)->getNDArray());
     ASSERT_EQ(*array2, *result.at(1)->getNDArray());
@@ -69,7 +69,7 @@ TEST_F(ServerRelatedTests, Basic_Output_Test_1) {
     auto ptr = builder.GetBufferPointer();
     auto received = GetFlatResult(ptr);
 
-    ExecutionResult<float> restored(received);
+    ExecutionResult restored(received);
     ASSERT_EQ(3, restored.size());
 
     ASSERT_EQ(*array1, *restored.at(0)->getNDArray());
@@ -83,24 +83,24 @@ TEST_F(ServerRelatedTests, Basic_Output_Test_1) {
 
 TEST_F(ServerRelatedTests, Basic_Execution_Test_1) {
     flatbuffers::FlatBufferBuilder builder(4096);
-    auto oGraph = GraphExecutioner<float>::importFromFlatBuffers("./resources/reduce_dim_false.fb");
+    auto oGraph = GraphExecutioner::importFromFlatBuffers("./resources/reduce_dim_false.fb");
     oGraph->printOut();
 
-    NDArray<float> exp('c', {3}, {3.f, 3.f, 3.f});
+    auto exp = NDArrayFactory::create<float>('c', {3}, {3.f, 3.f, 3.f});
 
-    GraphHolder::getInstance()->registerGraph<float>(11901L, oGraph);
+    GraphHolder::getInstance()->registerGraph(11901L, oGraph);
 
-    auto cGraph = GraphHolder::getInstance()->cloneGraph<float>(11901L);
+    auto cGraph = GraphHolder::getInstance()->cloneGraph(11901L);
 
     ASSERT_TRUE(oGraph != cGraph);
 
-    auto flatResult = GraphExecutioner<float>::execute(cGraph, builder, nullptr);
+    auto flatResult = GraphExecutioner::execute(cGraph, builder, nullptr);
 
     builder.Finish(flatResult);
     auto ptr = builder.GetBufferPointer();
     auto received = GetFlatResult(ptr);
 
-    ExecutionResult<float> restored(received);
+    ExecutionResult restored(received);
     ASSERT_EQ(1, restored.size());
 
     ASSERT_EQ(exp, *restored.at(0)->getNDArray());
@@ -113,20 +113,20 @@ TEST_F(ServerRelatedTests, Basic_Execution_Test_1) {
 TEST_F(ServerRelatedTests, Basic_Execution_Test_2) {
     flatbuffers::FlatBufferBuilder builder(4096);
     flatbuffers::FlatBufferBuilder otherBuilder(4096);
-    auto oGraph = GraphExecutioner<float>::importFromFlatBuffers("./resources/reduce_dim_false.fb");
+    auto oGraph = GraphExecutioner::importFromFlatBuffers("./resources/reduce_dim_false.fb");
     oGraph->printOut();
 
-    NDArray<float> input0('c', {3, 3}, {2.f,2.f,2.f, 2.f,2.f,2.f, 2.f,2.f,2.f});
-    NDArray<float> exp('c', {3}, {6.f, 6.f, 6.f});
+    auto input0 = NDArrayFactory::_create<float>('c', {3, 3}, {2.f,2.f,2.f, 2.f,2.f,2.f, 2.f,2.f,2.f});
+    auto exp = NDArrayFactory::_create<float>('c', {3}, {6.f, 6.f, 6.f});
 
-    GraphHolder::getInstance()->registerGraph<float>(11902L, oGraph);
+    GraphHolder::getInstance()->registerGraph(11902L, oGraph);
 
-    auto cGraph = GraphHolder::getInstance()->cloneGraph<float>(11902L);
+    auto cGraph = GraphHolder::getInstance()->cloneGraph(11902L);
 
     ASSERT_TRUE(oGraph != cGraph);
 
     // mastering InferenceRequest
-    InferenceRequest<float> ir(11902L);
+    InferenceRequest ir(11902L);
     ir.appendVariable(1, 0, &input0);
 
     auto af = ir.asFlatInferenceRequest(otherBuilder);
@@ -134,13 +134,13 @@ TEST_F(ServerRelatedTests, Basic_Execution_Test_2) {
     auto fptr = otherBuilder.GetBufferPointer();
     auto fir = GetFlatInferenceRequest(fptr);
 
-    auto flatResult = GraphExecutioner<float>::execute(cGraph, builder, fir);
+    auto flatResult = GraphExecutioner::execute(cGraph, builder, fir);
 
     builder.Finish(flatResult);
     auto ptr = builder.GetBufferPointer();
     auto received = GetFlatResult(ptr);
 
-    ExecutionResult<float> restored(received);
+    ExecutionResult restored(received);
     ASSERT_EQ(1, restored.size());
 
     ASSERT_EQ(exp, *restored.at(0)->getNDArray());
@@ -153,16 +153,16 @@ TEST_F(ServerRelatedTests, Basic_Execution_Test_2) {
 TEST_F(ServerRelatedTests, BasicExecutionTests_3) {
     flatbuffers::FlatBufferBuilder builder(4096);
     flatbuffers::FlatBufferBuilder otherBuilder(4096);
-    auto oGraph = GraphExecutioner<float>::importFromFlatBuffers("./resources/reduce_dim_false.fb");
+    auto oGraph = GraphExecutioner::importFromFlatBuffers("./resources/reduce_dim_false.fb");
     oGraph->printOut();
 
-    NDArray<float> input0('c', {3, 3}, {2.f,2.f,2.f, 2.f,2.f,2.f, 2.f,2.f,2.f});
-    NDArray<float> exp('c', {3}, {6.f, 6.f, 6.f});
+    auto input0 = NDArrayFactory::_create<float>('c', {3, 3}, {2.f,2.f,2.f, 2.f,2.f,2.f, 2.f,2.f,2.f});
+    auto exp = NDArrayFactory::_create<float>('c', {3}, {6.f, 6.f, 6.f});
 
-    GraphHolder::getInstance()->registerGraph<float>(11903L, oGraph);
+    GraphHolder::getInstance()->registerGraph(11903L, oGraph);
 
     // mastering InferenceRequest
-    InferenceRequest<float> ir(11903L);
+    InferenceRequest ir(11903L);
     ir.appendVariable(1, 0, &input0);
 
     auto af = ir.asFlatInferenceRequest(otherBuilder);
@@ -177,7 +177,7 @@ TEST_F(ServerRelatedTests, BasicExecutionTests_3) {
     auto ptr = builder.GetBufferPointer();
     auto received = GetFlatResult(ptr);
 
-    ExecutionResult<float> restored(received);
+    ExecutionResult restored(received);
     ASSERT_EQ(1, restored.size());
 
     ASSERT_EQ(exp, *restored.at(0)->getNDArray());

@@ -31,19 +31,19 @@ public:
 };
 
 TEST_F(SwitchTests, SwitchTest1) {
-    Graph<float> graph;
+    Graph graph;
 
     FlowPath flowPath;
 
     auto variableSpace = graph.getVariableSpace();
     variableSpace->setFlowPath(&flowPath);
 
-    auto input = new NDArray<float>('c',{32, 100});
+    auto input = NDArrayFactory::create<float>('c',{32, 100});
     input->assign(-119.0f);
 
-    auto condtionX = new NDArray<float>('c', {1, 1});
+    auto condtionX = NDArrayFactory::create<float>('c', {1, 1});
     condtionX->putScalar(0, 0.0f);
-    auto condtionY = new NDArray<float>('c', {1, 1});
+    auto condtionY = NDArrayFactory::create<float>('c', {1, 1});
     condtionY->putScalar(0, 0.0f);
 
     variableSpace->putVariable(-1, input);
@@ -51,29 +51,29 @@ TEST_F(SwitchTests, SwitchTest1) {
     variableSpace->putVariable(-3, condtionY);
 
     // this is just 2 ops, that are executed sequentially. We don't really care bout them
-    auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node<float>(OpType_TRANSFORM, 0, 2, {1}, {3});
+    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM, 0, 2, {1}, {3});
 
     // this is our condition op, we'll be using Equals condition, on variables conditionX and conditionY (ids -2 and -3 respectively)
-    auto nodeCondition = new Node<float>(OpType_BOOLEAN, 0, 119, {-2, -3});
+    auto nodeCondition = new Node(OpType_BOOLEAN, 0, 119, {-2, -3});
 
     // we're creating this op manually in tests, as always.
-    nd4j::ops::eq_scalar<float> eqOp;
+    nd4j::ops::eq_scalar eqOp;
     nodeCondition->setCustomOp(&eqOp);
 
     // now, this is Switch operation. It takes BooleanOperation operation in,
     // and based on evaluation result (true/false) - it'll pass data via :0 or :1 output
     // other idx will be considered disabled, and that graph branch won't be executed
-    auto nodeSwitch = new Node<float>(OpType_CUSTOM, 0, 3, {2, 119}, {4, 5});
+    auto nodeSwitch = new Node(OpType_CUSTOM, 0, 3, {2, 119}, {4, 5});
 
-    nd4j::ops::Switch<float> switchOp;
+    nd4j::ops::Switch switchOp;
     nodeSwitch->setCustomOp(&switchOp);
 
 
     // these 2 ops are connected to FALSE and TRUE outputs. output :0 considered FALSE, and output :1 considered TRUE
-    auto nodeZ0 = new Node<float>(OpType_TRANSFORM, 0, 4, {}, {});
+    auto nodeZ0 = new Node(OpType_TRANSFORM, 0, 4, {}, {});
     nodeZ0->pickInput(3, 0);
-    auto nodeZ1 = new Node<float>(OpType_TRANSFORM, 35, 5, {}, {});
+    auto nodeZ1 = new Node(OpType_TRANSFORM, 35, 5, {}, {});
     nodeZ1->pickInput(3, 1);
 
 
@@ -99,7 +99,7 @@ TEST_F(SwitchTests, SwitchTest1) {
     ASSERT_EQ(3, nodeZ1->getLayer());
 
     // executing graph
-    Nd4jStatus status = GraphExecutioner<float>::execute(&graph);
+    Nd4jStatus status = GraphExecutioner::execute(&graph);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
@@ -119,22 +119,22 @@ TEST_F(SwitchTests, SwitchTest1) {
     auto output = variableSpace->getVariable(expectedResultIndex)->getNDArray();
 
     // and veryfing it against known expected value
-    ASSERT_NEAR(-118.0f, output->getScalar(0), 1e-5f);
+    ASSERT_NEAR(-118.0f, output->getScalar<float>(0), 1e-5f);
 }
 
 TEST_F(SwitchTests, SwitchTest2) {
-    Graph<float> graph;
+    Graph graph;
 
     FlowPath flowPath;
     auto variableSpace = graph.getVariableSpace();
     variableSpace->setFlowPath(&flowPath);
 
-    auto input = new NDArray<float>('c',{32, 100});
+    auto input = NDArrayFactory::create<float>('c',{32, 100});
     input->assign(-119.0f);
 
-    auto condtionX = new NDArray<float>('c', {1, 1});
+    auto condtionX = NDArrayFactory::create<float>('c', {1, 1});
     condtionX->putScalar(0, 1.0f);
-    auto condtionY = new NDArray<float>('c', {1, 1});
+    auto condtionY = NDArrayFactory::create<float>('c', {1, 1});
     condtionY->putScalar(0, 1.0f);
 
 
@@ -143,28 +143,28 @@ TEST_F(SwitchTests, SwitchTest2) {
     variableSpace->putVariable(-3, condtionY);
 
 
-    auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node<float>(OpType_TRANSFORM, 0, 2, {1}, {3});
+    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM, 0, 2, {1}, {3});
 
-    auto scopeCondition = new Node<float>(OpType_LOGIC, 10, 3);
+    auto scopeCondition = new Node(OpType_LOGIC, 10, 3);
     scopeCondition->setName("scopeCondition");
 
-    auto nodeCondition = new Node<float>(OpType_BOOLEAN, 0, 119, {-2, -3});
+    auto nodeCondition = new Node(OpType_BOOLEAN, 0, 119, {-2, -3});
     nodeCondition->setScopeInfo(3, "scopeCondition");
 
-    nd4j::ops::eq_scalar<float> eqOp;
+    nd4j::ops::eq_scalar eqOp;
     nodeCondition->setCustomOp(&eqOp);
 
-    auto nodeSwitch = new Node<float>(OpType_LOGIC, 30, 5, {3, 2});
+    auto nodeSwitch = new Node(OpType_LOGIC, 30, 5, {3, 2});
 
-    nd4j::ops::Switch<float> switchOp;
+    nd4j::ops::Switch switchOp;
     nodeSwitch->setCustomOp(&switchOp);
 
 
     // these 2 ops are connected to FALSE and TRUE outputs. output :0 considered FALSE, and output :1 considered TRUE
-    auto nodeZ0 = new Node<float>(OpType_TRANSFORM, 0, 6, {}, {});
+    auto nodeZ0 = new Node(OpType_TRANSFORM, 0, 6, {}, {});
     nodeZ0->pickInput(5, 0);
-    auto nodeZ1 = new Node<float>(OpType_TRANSFORM, 35, 7, {}, {});
+    auto nodeZ1 = new Node(OpType_TRANSFORM, 35, 7, {}, {});
     nodeZ1->pickInput(5, 1);
 
     graph.addNode(nodeA);
@@ -175,7 +175,7 @@ TEST_F(SwitchTests, SwitchTest2) {
     graph.addNode(nodeZ0);
     graph.addNode(nodeZ1);
 
-    Nd4jStatus status = GraphExecutioner<float>::execute(&graph);
+    Nd4jStatus status = GraphExecutioner::execute(&graph);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
@@ -185,22 +185,22 @@ TEST_F(SwitchTests, SwitchTest2) {
     auto z = graph.getVariableSpace()->getVariable(7)->getNDArray();
 
     // abs(-119) = 119; 1 - 119 = -118
-    ASSERT_NEAR(-118.f, z->getScalar(0), 1e-5);
+    ASSERT_NEAR(-118.f, z->getScalar<float>(0), 1e-5);
 }
 
 TEST_F(SwitchTests, SwitchTest3) {
-    Graph<float> graph;
+    Graph graph;
 
     FlowPath flowPath;
     auto variableSpace = graph.getVariableSpace();
     variableSpace->setFlowPath(&flowPath);
 
-    auto input = new NDArray<float>('c',{32, 100});
+    auto input = NDArrayFactory::create<float>('c',{32, 100});
     input->assign(-119.0f);
 
-    auto condtionX = new NDArray<float>('c', {1, 1});
+    auto condtionX = NDArrayFactory::create<float>('c', {1, 1});
     condtionX->putScalar(0, 2.0f);
-    auto condtionY = new NDArray<float>('c', {1, 1});
+    auto condtionY = NDArrayFactory::create<float>('c', {1, 1});
     condtionY->putScalar(0, 1.0f);
 
 
@@ -209,28 +209,28 @@ TEST_F(SwitchTests, SwitchTest3) {
     variableSpace->putVariable(-3, condtionY);
 
 
-    auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node<float>(OpType_TRANSFORM, 0, 2, {1}, {3});
+    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM, 0, 2, {1}, {3});
 
-    auto scopeCondition = new Node<float>(OpType_LOGIC, 10, 3);
+    auto scopeCondition = new Node(OpType_LOGIC, 10, 3);
     scopeCondition->setName("scopeCondition");
 
-    auto nodeCondition = new Node<float>(OpType_BOOLEAN, 0, 119, {-2, -3});
+    auto nodeCondition = new Node(OpType_BOOLEAN, 0, 119, {-2, -3});
     nodeCondition->setScopeInfo(3, "scopeCondition");
 
-    nd4j::ops::eq_scalar<float> eqOp;
+    nd4j::ops::eq_scalar eqOp;
     nodeCondition->setCustomOp(&eqOp);
 
-    auto nodeSwitch = new Node<float>(OpType_LOGIC, 30, 5, {3, 2});
+    auto nodeSwitch = new Node(OpType_LOGIC, 30, 5, {3, 2});
 
-    nd4j::ops::Switch<float> switchOp;
+    nd4j::ops::Switch switchOp;
     nodeSwitch->setCustomOp(&switchOp);
 
 
     // these 2 ops are connected to FALSE and TRUE outputs. output :0 considered FALSE, and output :1 considered TRUE
-    auto nodeZ0 = new Node<float>(OpType_TRANSFORM, 6, 6, {}, {});
+    auto nodeZ0 = new Node(OpType_TRANSFORM, 6, 6, {}, {});
     nodeZ0->pickInput(5, 0);
-    auto nodeZ1 = new Node<float>(OpType_TRANSFORM, 35, 7, {}, {});
+    auto nodeZ1 = new Node(OpType_TRANSFORM, 35, 7, {}, {});
     nodeZ1->pickInput(5, 1);
 
     graph.addNode(nodeA);
@@ -241,7 +241,7 @@ TEST_F(SwitchTests, SwitchTest3) {
     graph.addNode(nodeZ0);
     graph.addNode(nodeZ1);
 
-    Nd4jStatus status = GraphExecutioner<float>::execute(&graph);
+    Nd4jStatus status = GraphExecutioner::execute(&graph);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
@@ -251,5 +251,5 @@ TEST_F(SwitchTests, SwitchTest3) {
     auto z = graph.getVariableSpace()->getVariable(6)->getNDArray();
 
     // abs(-119) = 119; Neg(119) = 119
-    ASSERT_NEAR(-119.f, z->getScalar(0), 1e-5);
+    ASSERT_NEAR(-119.f, z->getScalar<float>(0), 1e-5);
 }

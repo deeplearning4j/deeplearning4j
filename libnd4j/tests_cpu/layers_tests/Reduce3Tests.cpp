@@ -43,8 +43,8 @@ TEST_F(EuclideanTest,Test1) {
     auto xShapeBuffer = shape::shapeBuffer(2,xShape);
 
     //int *tadShapeBuffer = shape::computeResultShape(shapeBuffer,dimension,dimensionLength);
-    auto tadShapeBuffer = nd4j::ShapeUtils<float>::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);
-            functions::reduce3::Reduce3<float>::exec(opNum,
+    auto tadShapeBuffer = nd4j::ShapeUtils::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);
+            functions::reduce3::Reduce3<float, float>::exec(opNum,
                                              x,
                                              xShapeBuffer,
                                              extraVals,
