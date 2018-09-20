@@ -53,14 +53,14 @@ public:
 TEST_F(GraphStateTests, Basic_Tests_1) {
     NativeOps nativeOps;
 
-    auto state = (GraphState<float> *) nativeOps.getGraphStateFloat(117L);
+    auto state = (GraphState *) nativeOps.getGraphState(117L);
     ASSERT_EQ(117L, state->id());
 
     // this call will create scope internally
     state->registerScope(119);
 
-    nd4j::ops::add<float> opA;
-    nd4j::ops::LegacyTransformOp<float> opB(6); // simdOps::Neg
+    nd4j::ops::add opA;
+    nd4j::ops::LegacyTransformOp opB(6); // simdOps::Neg
 
     ArgumentsList argsA;
     ArgumentsList argsB;
@@ -72,21 +72,21 @@ TEST_F(GraphStateTests, Basic_Tests_1) {
     ASSERT_TRUE(scope != nullptr);
     ASSERT_EQ(2, scope->size());    
 
-    nativeOps.deleteGraphStateFloat(state);
+    nativeOps.deleteGraphState(state);
 }
 
 // just separate case for doubles wrapper in NativeOps, nothing else
 TEST_F(GraphStateTests, Basic_Tests_2) {
     NativeOps nativeOps;
 
-    auto state = (GraphState<double> *) nativeOps.getGraphStateDouble(117L);
+    auto state = (GraphState *) nativeOps.getGraphState(117L);
     ASSERT_EQ(117L, state->id());
 
     // this call will create scope internally
     state->registerScope(119);
 
-    nd4j::ops::add<double> opA;
-    nd4j::ops::LegacyTransformOp<double> opB(6); // simdOps::Neg
+    nd4j::ops::add opA;
+    nd4j::ops::LegacyTransformOp opB(6); // simdOps::Neg
 
     ArgumentsList argsA;
     ArgumentsList argsB;
@@ -98,36 +98,36 @@ TEST_F(GraphStateTests, Basic_Tests_2) {
     ASSERT_TRUE(scope != nullptr);
     ASSERT_EQ(2, scope->size());    
 
-    nativeOps.deleteGraphStateDouble(state);
+    nativeOps.deleteGraphState(state);
 }
 
 TEST_F(GraphStateTests, Stateful_Execution_1) {
     NativeOps nativeOps;
 
-    auto state = nativeOps.getGraphStateFloat(117L);
+    auto state = nativeOps.getGraphState(117L);
 
     Nd4jLong scopes[] = {22, 33};
-    auto status = nativeOps.execCustomOpWithScopeFloat(nullptr, state, 10, scopes, 2, nullptr, nullptr, 0, nullptr, nullptr, 0);
+    auto status = nativeOps.execCustomOpWithScope(nullptr, state, 10, scopes, 2, nullptr, nullptr, 0, nullptr, nullptr, 0);
     ASSERT_EQ(Status::THROW(), status);
 
-    nativeOps.deleteGraphStateFloat(state);
+    nativeOps.deleteGraphState(state);
 }
 
 TEST_F(GraphStateTests, Stateful_Execution_2) {
     NativeOps nativeOps;
 
-    auto state = (GraphState<float> *) nativeOps.getGraphStateFloat(117L);
+    auto state = (GraphState *) nativeOps.getGraphState(117L);
 
     state->registerScope(22);
     state->registerScope(33);
 
     Nd4jLong scopes[] = {22, 33};
-    auto status = nativeOps.execCustomOpWithScopeFloat(nullptr, state, 10, scopes, 2, nullptr, nullptr, 0, nullptr, nullptr, 0);
+    auto status = nativeOps.execCustomOpWithScope(nullptr, state, 10, scopes, 2, nullptr, nullptr, 0, nullptr, nullptr, 0);
     
     // it's no-op: just LogicScope
     ASSERT_EQ(Status::OK(), status);
 
-    nativeOps.deleteGraphStateFloat(state);
+    nativeOps.deleteGraphState(state);
 }
 
 /**
@@ -136,16 +136,16 @@ TEST_F(GraphStateTests, Stateful_Execution_2) {
 TEST_F(GraphStateTests, Stateful_Execution_3) {
     NativeOps nativeOps;
 
-    NDArray<float> var0('c', {2, 2}, {1, 2, 3, 4});
-    NDArray<float> var1(11.0f);
-    NDArray<float> var2(2.0f);
+    auto var0 = NDArrayFactory::_create<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto var1 = NDArrayFactory::_create<float>(11.0f);
+    auto var2 = NDArrayFactory::_create<float>(2.0f);
 
-    NDArray<float> res0('c', {2, 2});
-    NDArray<float> res1(0.0f);
-    NDArray<float> res2(0.0f);
+    auto res0 = NDArrayFactory::_create<float>('c', {2, 2});
+    auto res1 = NDArrayFactory::_create<float>(0.0f);
+    auto res2 = NDArrayFactory::_create<float>(0.0f);
 
     // registering our GraphState holder
-    auto state = (GraphState<float> *) nativeOps.getGraphStateFloat(117L);
+    auto state = (GraphState *) nativeOps.getGraphState(117L);
 
     // we're prepping pointers to input/output buffers
     Nd4jPointer ptrBuffers[] = {(Nd4jPointer) var0.buffer(), (Nd4jPointer) var1.buffer(), (Nd4jPointer)var2.buffer()};
@@ -157,8 +157,8 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
     // conditional scope
     state->registerScope(22);
 
-    nd4j::ops::LegacyReduceOp<float> op1(1);
-    nd4j::ops::lt_scalar<float> op2;
+    nd4j::ops::LegacyReduceOp op1(1);
+    nd4j::ops::lt_scalar op2;
 
     // while sum(var0) < var1
     // this op takes sum
@@ -180,8 +180,8 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
     // this op is result of previous op + 1
     ArgumentsList args4({{3, 0}, {0, 2}});
 
-    nd4j::ops::add<float> op3;
-    nd4j::ops::add<float> op4;
+    nd4j::ops::add op3;
+    nd4j::ops::add op4;
 
     state->attachOpToScope(33, 3, &op3, args3);
     state->attachOpToScope(33, 4, &op4, args4);
@@ -195,11 +195,11 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
     Nd4jLong scopes[] = {22, 33};
 
     // we're executing while loop
-    auto status = nativeOps.execCustomOpWithScopeFloat(nullptr, state, 0, scopes, 2, ptrBuffers, ptrShapes, 3, outBuffers, outShapes, 3);
+    auto status = nativeOps.execCustomOpWithScope(nullptr, state, 0, scopes, 2, ptrBuffers, ptrShapes, 3, outBuffers, outShapes, 3);
     ASSERT_EQ(Status::OK(), status);
 
     // now we check provided result array
-    float sum = res0.template reduceNumber<simdOps::Sum<float>>();
+    float sum = res0.reduceNumber(reduce::Sum).getScalar<float>(0);
 
     /*
      * Expected result is {1, 2, 3, 4} + {2} elementwise + {2} elementwise, which gives { 5, 6, 7, 8}, and sum should be 26
@@ -209,7 +209,7 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
 
     // nd4j_printf("0 ------------------\n","");
 
-    nativeOps.deleteGraphStateFloat(state);
+    nativeOps.deleteGraphState(state);
 
     // nd4j_printf("1 ------------------\n","");
 }
@@ -220,17 +220,17 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
 TEST_F(GraphStateTests, Stateful_Execution_4) {
     NativeOps nativeOps;
 
-    NDArray<float> var0('c', {2, 2}, {1, 2, 3, 4});
-    NDArray<float> var1(5.0f);
+    auto var0 = NDArrayFactory::_create<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto var1 = NDArrayFactory::_create<float>(5.0f);
 
-    NDArray<float> res0('c', {2, 2});
-    NDArray<float> res1(0.0f);
+    auto res0 = NDArrayFactory::_create<float>('c', {2, 2});
+    auto res1 = NDArrayFactory::_create<float>(0.0f);
 
-    NDArray<float> exp('c', {2, 2}, {-4, -3, -2, -1});
+    auto exp = NDArrayFactory::_create<float>('c', {2, 2}, {-4, -3, -2, -1});
 
 
     // registering our GraphState holder
-    auto state = (GraphState<float> *) nativeOps.getGraphStateFloat(117L);
+    auto state = (GraphState *) nativeOps.getGraphState(117L);
 
     // we're prepping pointers to input/output buffers
     Nd4jPointer ptrBuffers[] = {(Nd4jPointer) var0.buffer(), (Nd4jPointer) var1.buffer()};
@@ -242,8 +242,8 @@ TEST_F(GraphStateTests, Stateful_Execution_4) {
     // conditional scope
     state->registerScope(22);
 
-    nd4j::ops::LegacyReduceOp<float> op1(1);
-    nd4j::ops::lt_scalar<float> op2;
+    nd4j::ops::LegacyReduceOp op1(1);
+    nd4j::ops::lt_scalar op2;
 
     // if sum(var0) < var1
     // this op takes sum
@@ -259,7 +259,7 @@ TEST_F(GraphStateTests, Stateful_Execution_4) {
     state->registerScope(33);
 
     ArgumentsList args3({{0, 0}, {0, 1}});
-    nd4j::ops::subtract<float> op3;
+    nd4j::ops::subtract op3;
     state->attachOpToScope(33, 3, &op3, args3);
 
     // return for false scope
@@ -270,7 +270,7 @@ TEST_F(GraphStateTests, Stateful_Execution_4) {
     state->registerScope(44);
 
     ArgumentsList args4({{0, 0}, {0, 1}});
-    nd4j::ops::add<float> op4;
+    nd4j::ops::add op4;
     state->attachOpToScope(44, 4, &op4, args4);
 
     // return for false scope
@@ -281,14 +281,14 @@ TEST_F(GraphStateTests, Stateful_Execution_4) {
     Nd4jLong scopes[] = {22, 33, 44};
 
     // we're executing conditional op
-    auto status = nativeOps.execCustomOpWithScopeFloat(nullptr, state, 20, scopes, 3, ptrBuffers, ptrShapes, 2, outBuffers, outShapes, 2);
+    auto status = nativeOps.execCustomOpWithScope(nullptr, state, 20, scopes, 3, ptrBuffers, ptrShapes, 2, outBuffers, outShapes, 2);
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(exp.isSameShape(&res0));
     ASSERT_TRUE(exp.equalsTo(&res0));
 
 
-    nativeOps.deleteGraphStateFloat(state);
+    nativeOps.deleteGraphState(state);
 }
 
 
@@ -298,17 +298,17 @@ TEST_F(GraphStateTests, Stateful_Execution_4) {
 TEST_F(GraphStateTests, Stateful_Execution_5) {
     NativeOps nativeOps;
 
-    NDArray<float> var0('c', {2, 2}, {1, 2, 3, 4});
-    NDArray<float> var1(5.0f);
+    auto var0 = NDArrayFactory::_create<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto var1 = NDArrayFactory::_create<float>(5.0f);
 
-    NDArray<float> res0('c', {2, 2});
-    NDArray<float> res1(0.0f);
+    auto res0 = NDArrayFactory::_create<float>('c', {2, 2});
+    auto res1 = NDArrayFactory::_create<float>(0.0f);
 
-    NDArray<float> exp('c', {2, 2}, {6, 7, 8, 9});
+    auto exp = NDArrayFactory::_create<float>('c', {2, 2}, {6, 7, 8, 9});
 
 
     // registering our GraphState holder
-    auto state = (GraphState<float> *) nativeOps.getGraphStateFloat(117L);
+    auto state = (GraphState *) nativeOps.getGraphState(117L);
 
     // we're prepping pointers to input/output buffers
     Nd4jPointer ptrBuffers[] = {(Nd4jPointer) var0.buffer(), (Nd4jPointer) var1.buffer()};
@@ -320,8 +320,8 @@ TEST_F(GraphStateTests, Stateful_Execution_5) {
     // conditional scope
     state->registerScope(22);
 
-    nd4j::ops::LegacyReduceOp<float> op1(1);
-    nd4j::ops::gt_scalar<float> op2;
+    nd4j::ops::LegacyReduceOp op1(1);
+    nd4j::ops::gt_scalar op2;
 
     // if sum(var0) < var1
     // this op takes sum
@@ -337,7 +337,7 @@ TEST_F(GraphStateTests, Stateful_Execution_5) {
     state->registerScope(33);
 
     ArgumentsList args3({{0, 0}, {0, 1}});
-    nd4j::ops::subtract<float> op3;
+    nd4j::ops::subtract op3;
     state->attachOpToScope(33, 3, &op3, args3);
 
     // return for false scope
@@ -348,7 +348,7 @@ TEST_F(GraphStateTests, Stateful_Execution_5) {
     state->registerScope(44);
 
     ArgumentsList args4({{0, 0}, {0, 1}});
-    nd4j::ops::add<float> op4;
+    nd4j::ops::add op4;
     state->attachOpToScope(44, 4, &op4, args4);
 
     // return for false scope
@@ -359,12 +359,12 @@ TEST_F(GraphStateTests, Stateful_Execution_5) {
     Nd4jLong scopes[] = {22, 33, 44};
 
     // we're executing conditional op
-    auto status = nativeOps.execCustomOpWithScopeFloat(nullptr, state, 20, scopes, 3, ptrBuffers, ptrShapes, 2, outBuffers, outShapes, 2);
+    auto status = nativeOps.execCustomOpWithScope(nullptr, state, 20, scopes, 3, ptrBuffers, ptrShapes, 2, outBuffers, outShapes, 2);
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(exp.isSameShape(&res0));
     ASSERT_TRUE(exp.equalsTo(&res0));
 
 
-    nativeOps.deleteGraphStateFloat(state);
+    nativeOps.deleteGraphState(state);
 }

@@ -31,34 +31,34 @@ public:
 };
 
 TEST_F(GraphHolderTests, SimpleTests_1) {
-    Graph<float> graph;
+    Graph graph;
     Nd4jLong graphId = 119;
     GraphHolder::getInstance()->registerGraph(graphId, &graph);
 
-    ASSERT_TRUE(GraphHolder::getInstance()->hasGraph<float>(graphId));
+    ASSERT_TRUE(GraphHolder::getInstance()->hasGraph(graphId));
 
-    GraphHolder::getInstance()->forgetGraph<float>(graphId);
+    GraphHolder::getInstance()->forgetGraph(graphId);
 
-    ASSERT_FALSE(GraphHolder::getInstance()->hasGraph<float>(graphId));
+    ASSERT_FALSE(GraphHolder::getInstance()->hasGraph(graphId));
 }
 
 
 
 TEST_F(GraphHolderTests, SimpleTests_2) {
-    auto graph = new Graph<float>;
+    auto graph = new Graph;
     Nd4jLong graphId = 117;
     GraphHolder::getInstance()->registerGraph(graphId, graph);
 
-    ASSERT_TRUE(GraphHolder::getInstance()->hasGraph<float>(graphId));
+    ASSERT_TRUE(GraphHolder::getInstance()->hasGraph(graphId));
 
-    auto graph2 = GraphHolder::getInstance()->cloneGraph<float>(graphId);
+    auto graph2 = GraphHolder::getInstance()->cloneGraph(graphId);
 
     ASSERT_TRUE(graph != graph2);
     ASSERT_TRUE(graph2 != nullptr);
 
-    GraphHolder::getInstance()->forgetGraph<float>(graphId);
+    GraphHolder::getInstance()->forgetGraph(graphId);
 
-    ASSERT_FALSE(GraphHolder::getInstance()->hasGraph<float>(graphId));
+    ASSERT_FALSE(GraphHolder::getInstance()->hasGraph(graphId));
 
     delete graph;
     delete graph2;
@@ -66,20 +66,20 @@ TEST_F(GraphHolderTests, SimpleTests_2) {
 
 
 TEST_F(GraphHolderTests, SimpleTests_3) {
-    auto graph = new Graph<float>;
+    auto graph = new Graph;
     Nd4jLong graphId = 117;
     GraphHolder::getInstance()->registerGraph(graphId, graph);
 
-    ASSERT_TRUE(GraphHolder::getInstance()->hasGraph<float>(graphId));
+    ASSERT_TRUE(GraphHolder::getInstance()->hasGraph(graphId));
 
-    auto graph2 = GraphHolder::getInstance()->cloneGraph<float>(graphId);
+    auto graph2 = GraphHolder::getInstance()->cloneGraph(graphId);
 
     ASSERT_TRUE(graph != graph2);
     ASSERT_TRUE(graph2 != nullptr);
 
-    GraphHolder::getInstance()->dropGraph<float>(graphId);
+    GraphHolder::getInstance()->dropGraph(graphId);
 
-    ASSERT_FALSE(GraphHolder::getInstance()->hasGraph<float>(graphId));
+    ASSERT_FALSE(GraphHolder::getInstance()->hasGraph(graphId));
 
 
     delete graph2;
