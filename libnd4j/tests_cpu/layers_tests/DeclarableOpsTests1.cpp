@@ -1939,49 +1939,6 @@ TEST_F(DeclarableOpsTests1, TestArgumentsValidation1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, Conv3D_ff_Test1) {
-    auto input = NDArrayFactory::create<float>('c', {4, 3, 3, 56, 56});
-    auto weights = NDArrayFactory::create<float>('f', {2, 3, 3, 5, 5});
-    auto bias = NDArrayFactory::create<float>('c', {1, 2});
-
-    input->assign(1.0);
-    weights->assign(2.0);
-    bias->putScalar(0, 1.0f);
-    bias->putScalar(1, 1.0f);
-
-    auto output = NDArrayFactory::create<float>('c', {4, 2, 1, 11, 11});
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, input);
-    variableSpace->putVariable(-2, weights);
-    variableSpace->putVariable(-3, bias);
-    variableSpace->putVariable(1, output);
-
-    auto block = new Context(1, variableSpace, false);  // not-in-place
-    block->fillInputs({-1, -2, -3});
-
-    block->getIArguments()->push_back(1);
-    block->getIArguments()->push_back(2);
-    block->getIArguments()->push_back(5);
-    block->getIArguments()->push_back(5);
-    block->getIArguments()->push_back(0);
-    block->getIArguments()->push_back(0);
-    block->getIArguments()->push_back(0);
-
-    nd4j::ops::conv3d conv3d;
-
-    Nd4jStatus result = conv3d.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, result);
-
-    //output.printBuffer("Result");
-
-    ASSERT_NEAR(451.0f, output->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
-
-    delete block;
-    delete variableSpace;
-}
-
-//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, TestReductionShape1) {
     auto input = NDArrayFactory::create<float>('c', {4, 5, 5, 10, 10});
 

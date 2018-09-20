@@ -251,22 +251,6 @@ namespace nd4j {
         #endif
 
         /**
-         * 3D convolution implementation
-         * 
-         * IntArgs:
-         * 0: dilation T
-         * 1: dilation W
-         * 2: dilation H
-         * 4: padding T
-         * 5: padding W
-         * 6: padding H
-         */
-        #if NOT_EXCLUDED(OP_conv3d)
-        DECLARE_CUSTOM_OP(conv3d, 2, 1, false, 0, 7);
-        DECLARE_CONFIGURABLE_OP(conv3d_bp, 3, 1, false, 0, 7); // TODO: to be implemented        
-        #endif
-
-        /**
          * This op produces binary matrix wrt to target dimension.
          * Maximum value within each TAD is replaced with 1, other values are set to true.
          * 
