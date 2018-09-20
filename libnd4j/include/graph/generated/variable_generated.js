@@ -66,11 +66,19 @@ nd4j.graph.FlatVariable.prototype.name = function(optionalEncoding) {
 };
 
 /**
+ * @returns {nd4j.graph.DataType}
+ */
+nd4j.graph.FlatVariable.prototype.dtype = function() {
+  var offset = this.bb.__offset(this.bb_pos, 8);
+  return offset ? /** @type {nd4j.graph.DataType} */ (this.bb.readInt8(this.bb_pos + offset)) : nd4j.graph.DataType.INHERIT;
+};
+
+/**
  * @param {number} index
  * @returns {flatbuffers.Long}
  */
 nd4j.graph.FlatVariable.prototype.shape = function(index) {
-  var offset = this.bb.__offset(this.bb_pos, 8);
+  var offset = this.bb.__offset(this.bb_pos, 10);
   return offset ? this.bb.readInt64(this.bb.__vector(this.bb_pos + offset) + index * 8) : this.bb.createLong(0, 0);
 };
 
@@ -78,7 +86,7 @@ nd4j.graph.FlatVariable.prototype.shape = function(index) {
  * @returns {number}
  */
 nd4j.graph.FlatVariable.prototype.shapeLength = function() {
-  var offset = this.bb.__offset(this.bb_pos, 8);
+  var offset = this.bb.__offset(this.bb_pos, 10);
   return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -87,7 +95,7 @@ nd4j.graph.FlatVariable.prototype.shapeLength = function() {
  * @returns {nd4j.graph.FlatArray|null}
  */
 nd4j.graph.FlatVariable.prototype.ndarray = function(obj) {
-  var offset = this.bb.__offset(this.bb_pos, 10);
+  var offset = this.bb.__offset(this.bb_pos, 12);
   return offset ? (obj || new nd4j.graph.FlatArray).__init(this.bb.__indirect(this.bb_pos + offset), this.bb) : null;
 };
 
@@ -95,7 +103,7 @@ nd4j.graph.FlatVariable.prototype.ndarray = function(obj) {
  * @returns {number}
  */
 nd4j.graph.FlatVariable.prototype.device = function() {
-  var offset = this.bb.__offset(this.bb_pos, 12);
+  var offset = this.bb.__offset(this.bb_pos, 14);
   return offset ? this.bb.readInt32(this.bb_pos + offset) : 0;
 };
 
@@ -103,7 +111,7 @@ nd4j.graph.FlatVariable.prototype.device = function() {
  * @param {flatbuffers.Builder} builder
  */
 nd4j.graph.FlatVariable.startFlatVariable = function(builder) {
-  builder.startObject(5);
+  builder.startObject(6);
 };
 
 /**
@@ -124,10 +132,18 @@ nd4j.graph.FlatVariable.addName = function(builder, nameOffset) {
 
 /**
  * @param {flatbuffers.Builder} builder
+ * @param {nd4j.graph.DataType} dtype
+ */
+nd4j.graph.FlatVariable.addDtype = function(builder, dtype) {
+  builder.addFieldInt8(2, dtype, nd4j.graph.DataType.INHERIT);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
  * @param {flatbuffers.Offset} shapeOffset
  */
 nd4j.graph.FlatVariable.addShape = function(builder, shapeOffset) {
-  builder.addFieldOffset(2, shapeOffset, 0);
+  builder.addFieldOffset(3, shapeOffset, 0);
 };
 
 /**
@@ -156,7 +172,7 @@ nd4j.graph.FlatVariable.startShapeVector = function(builder, numElems) {
  * @param {flatbuffers.Offset} ndarrayOffset
  */
 nd4j.graph.FlatVariable.addNdarray = function(builder, ndarrayOffset) {
-  builder.addFieldOffset(3, ndarrayOffset, 0);
+  builder.addFieldOffset(4, ndarrayOffset, 0);
 };
 
 /**
@@ -164,7 +180,7 @@ nd4j.graph.FlatVariable.addNdarray = function(builder, ndarrayOffset) {
  * @param {number} device
  */
 nd4j.graph.FlatVariable.addDevice = function(builder, device) {
-  builder.addFieldInt32(4, device, 0);
+  builder.addFieldInt32(5, device, 0);
 };
 
 /**

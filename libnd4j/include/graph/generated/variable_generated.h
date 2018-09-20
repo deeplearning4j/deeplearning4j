@@ -18,15 +18,19 @@ struct FlatVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_ID = 4,
     VT_NAME = 6,
-    VT_SHAPE = 8,
-    VT_NDARRAY = 10,
-    VT_DEVICE = 12
+    VT_DTYPE = 8,
+    VT_SHAPE = 10,
+    VT_NDARRAY = 12,
+    VT_DEVICE = 14
   };
   const IntPair *id() const {
     return GetPointer<const IntPair *>(VT_ID);
   }
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
+  }
+  DataType dtype() const {
+    return static_cast<DataType>(GetField<int8_t>(VT_DTYPE, 0));
   }
   const flatbuffers::Vector<int64_t> *shape() const {
     return GetPointer<const flatbuffers::Vector<int64_t> *>(VT_SHAPE);
@@ -43,6 +47,7 @@ struct FlatVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyTable(id()) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.Verify(name()) &&
+           VerifyField<int8_t>(verifier, VT_DTYPE) &&
            VerifyOffset(verifier, VT_SHAPE) &&
            verifier.Verify(shape()) &&
            VerifyOffset(verifier, VT_NDARRAY) &&
@@ -60,6 +65,9 @@ struct FlatVariableBuilder {
   }
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
     fbb_.AddOffset(FlatVariable::VT_NAME, name);
+  }
+  void add_dtype(DataType dtype) {
+    fbb_.AddElement<int8_t>(FlatVariable::VT_DTYPE, static_cast<int8_t>(dtype), 0);
   }
   void add_shape(flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape) {
     fbb_.AddOffset(FlatVariable::VT_SHAPE, shape);
@@ -86,6 +94,7 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariable(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<IntPair> id = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
+    DataType dtype = DataType_INHERIT,
     flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape = 0,
     flatbuffers::Offset<FlatArray> ndarray = 0,
     int32_t device = 0) {
@@ -95,6 +104,7 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariable(
   builder_.add_shape(shape);
   builder_.add_name(name);
   builder_.add_id(id);
+  builder_.add_dtype(dtype);
   return builder_.Finish();
 }
 
@@ -102,6 +112,7 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariableDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<IntPair> id = 0,
     const char *name = nullptr,
+    DataType dtype = DataType_INHERIT,
     const std::vector<int64_t> *shape = nullptr,
     flatbuffers::Offset<FlatArray> ndarray = 0,
     int32_t device = 0) {
@@ -109,6 +120,7 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariableDirect(
       _fbb,
       id,
       name ? _fbb.CreateString(name) : 0,
+      dtype,
       shape ? _fbb.CreateVector<int64_t>(*shape) : 0,
       ndarray,
       device);
