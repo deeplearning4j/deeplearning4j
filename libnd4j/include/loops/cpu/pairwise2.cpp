@@ -114,6 +114,6 @@ namespace functions {
         }
 
 
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT PairWiseTransform, , LIBND4J_TYPES, LIBND4J_TYPES);
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT PairWiseTransform, , FLOAT_TYPES, FLOAT_TYPES);
     }
 }
