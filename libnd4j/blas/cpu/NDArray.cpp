@@ -879,12 +879,13 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
         t[offset] = static_cast<T>(y);
     }
-
+/*
     template <typename T>
     void NDArray::putScalar(const Nd4jLong* indices, const T value) {
         auto xType = this->dataType();
         BUILD_SINGLE_SELECTOR(xType, templatedSet,(this->_buffer, indices, value), LIBND4J_TYPES);
     }
+    */
 
 //////////////////////////////////////////////////////////////////////////
 // eventually method reduces array by excluding its shapes along axes present in dimensions vector

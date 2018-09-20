@@ -50,12 +50,6 @@ namespace nd4j {
         static NDArray* create(const T value, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
-        static NDArray _create(const std::initializer_list<T> value, nd4j::memory::Workspace* workspace = nullptr);
-
-        template <typename T>
-        static NDArray* create(const std::initializer_list<T> value, nd4j::memory::Workspace* workspace = nullptr);
-
-        template <typename T>
         static NDArray _create(T* buffer, char order, std::initializer_list<Nd4jLong> shape, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
@@ -115,6 +109,9 @@ namespace nd4j {
          */
         template <typename T>
         static NDArray* create(std::initializer_list<T> values, nd4j::memory::Workspace* workspace = nullptr);
+
+        template <typename T>
+        static NDArray _create(const std::initializer_list<T> value, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
         static NDArray* create(std::vector<T> &values, nd4j::memory::Workspace* workspace = nullptr);
