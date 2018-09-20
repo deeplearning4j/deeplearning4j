@@ -2588,16 +2588,16 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test9) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test1) {
     
-    auto labels('c', {2,3,4});
-    auto predictions('c', {2,3,4});
-    auto weights('c', {2,3,4}); 
-    auto expected('c', {2,3,4}, {0.125, 0.5, 1.125, 2., 3.125, 4.5, 6.125, 8.,10.125,12.5,15.125,18.,21.125,24.5,28.125,32.,36.125,40.5,45.125,50.,55.125,60.5,66.125,72.});
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto predictions = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto expected = NDArrayFactory::_create<double>('c', {2,3,4}, {0.125, 0.5, 1.125, 2., 3.125, 4.5, 6.125, 8.,10.125,12.5,15.125,18.,21.125,24.5,28.125,32.,36.125,40.5,45.125,50.,55.125,60.5,66.125,72.});
                                             
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);    
 
-    nd4j::ops::mean_sqerr_loss<double> op;
+    nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2613,16 +2613,16 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test1) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test2) {
     
-    auto labels('c', {2,3,4});
-    auto predictions('c', {2,3,4});
-    auto weights('c', {2,1,4}); 
-    auto expected('c', {2,3,4}, {0.125, 0.5, 1.125, 2., 3.125, 4.5, 6.125, 8.,10.125,12.5,15.125,18.,21.125,24.5,28.125,32.,36.125,40.5,45.125,50.,55.125,60.5,66.125,72.});
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto predictions = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,1,4});
+    auto expected = NDArrayFactory::_create<double>('c', {2,3,4}, {0.125, 0.5, 1.125, 2., 3.125, 4.5, 6.125, 8.,10.125,12.5,15.125,18.,21.125,24.5,28.125,32.,36.125,40.5,45.125,50.,55.125,60.5,66.125,72.});
                                             
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);    
 
-    nd4j::ops::mean_sqerr_loss<double> op;
+    nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2638,16 +2638,16 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test2) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test3) {
     
-    auto labels('c', {2,3,4});
-    auto predictions('c', {2,3,4});
-    auto weights('c', {2,1,1}); 
-    auto expected('c', {2,3,4}, {0.125, 0.5, 1.125, 2., 3.125, 4.5, 6.125, 8.,10.125,12.5,15.125,18.,21.125,24.5,28.125,32.,36.125,40.5,45.125,50.,55.125,60.5,66.125,72.});
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto predictions = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,1,1});
+    auto expected = NDArrayFactory::_create<double>('c', {2,3,4}, {0.125, 0.5, 1.125, 2., 3.125, 4.5, 6.125, 8.,10.125,12.5,15.125,18.,21.125,24.5,28.125,32.,36.125,40.5,45.125,50.,55.125,60.5,66.125,72.});
                                             
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);    
 
-    nd4j::ops::mean_sqerr_loss<double> op;
+    nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2663,20 +2663,20 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test3) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test4) {
     
-    auto labels('c', {2,3,4});
-    auto predictions('c', {2,3,4});
-    auto weights('c', {2,3,4}); 
-    auto expected('c', {2,3,4}, {0., 0., 0., 0., 3.125, 4.5, 6.125, 8.,10.125,12.5,15.125,18.,21.125,24.5,28.125,32.,36.125,40.5,45.125,50.,55.125,60.5,66.125,72.});
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto predictions = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto expected = NDArrayFactory::_create<double>('c', {2,3,4}, {0., 0., 0., 0., 3.125, 4.5, 6.125, 8.,10.125,12.5,15.125,18.,21.125,24.5,28.125,32.,36.125,40.5,45.125,50.,55.125,60.5,66.125,72.});
                                             
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);    
-    weights(0.) = 0.;
-    weights(1) = 0.;
-    weights(2) = 0.;
-    weights(3) = 0.;
+    weights.putScalar(0, 0.);
+    weights.putScalar(1, 0.);
+    weights.putScalar(2, 0.);
+    weights.putScalar(3, 0.);
 
-    nd4j::ops::mean_sqerr_loss<double> op;
+    nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2692,15 +2692,15 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test4) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test5) {
     
-    auto labels('c', {2,3,4});
-    auto predictions('c', {2,3,4});
-    auto weights('c', {2,3,4}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto predictions = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3,4});
                                             
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);    
 
-    nd4j::ops::mean_sqerr_loss<double> op;
+    nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2716,15 +2716,15 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test5) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test6) {
     
-    auto labels('c', {2,3,4});
-    auto predictions('c', {2,3,4});
-    auto weights('c', {1,1,4}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto predictions = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {1,1,4});
                                             
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);    
 
-    nd4j::ops::mean_sqerr_loss<double> op;
+    nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2740,15 +2740,15 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test6) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test7) {
     
-    auto labels('c', {2,3,4});
-    auto predictions('c', {2,3,4});
-    auto weights('c', {1,1}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto predictions = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {1,1});
                                             
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);    
 
-    nd4j::ops::mean_sqerr_loss<double> op;
+    nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2764,19 +2764,19 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test7) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test8) {
     
-    auto labels('c', {2,3,4});
-    auto predictions('c', {2,3,4});
-    auto weights('c', {2,3,4}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto predictions = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3,4});
                                             
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);    
-    weights(0.) = 0.;
-    weights(1) = 0.;
-    weights(2) = 0.;
-    weights(3) = 0.;
+    weights.putScalar(0, 0.);
+    weights.putScalar(1, 0.);
+    weights.putScalar(2, 0.);
+    weights.putScalar(3, 0.);
 
-    nd4j::ops::mean_sqerr_loss<double> op;
+    nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2792,15 +2792,15 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test8) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test9) {
     
-    auto labels('c', {2,3,4});
-    auto predictions('c', {2,3,4});
-    auto weights('c', {2,3,4}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto predictions = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3,4});
                                             
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);        
 
-    nd4j::ops::mean_sqerr_loss<double> op;
+    nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2816,15 +2816,15 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test9) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test10) {
     
-    auto labels('c', {2,3,4});
-    auto predictions('c', {2,3,4});
-    auto weights('c', {1,3,1}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto predictions = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {1,3,1});
                                             
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);        
 
-    nd4j::ops::mean_sqerr_loss<double> op;
+    nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2840,15 +2840,15 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test10) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test11) {
     
-    auto labels('c', {2,3,4});
-    auto predictions('c', {2,3,4});
-    auto weights('c', {1,1}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto predictions = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {1,1});
                                             
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);        
 
-    nd4j::ops::mean_sqerr_loss<double> op;
+    nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2864,18 +2864,18 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test11) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test12) {
     
-    auto labels('c', {2,3,4});
-    auto predictions('c', {2,3,4});
-    auto weights('c', {2,3,1}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto predictions = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3,1});
                                             
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);        
-    weights(0.) = 0.;
-    weights(1) = 0.;
-    weights(2) = 0.;    
+    weights.putScalar(0, 0.);
+    weights.putScalar(1, 0.);
+    weights.putScalar(2, 0.);
 
-    nd4j::ops::mean_sqerr_loss<double> op;
+    nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2891,15 +2891,15 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test12) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test13) {
     
-    auto labels('c', {2,3,4});
-    auto predictions('c', {2,3,4});
-    auto weights('c', {2,3,4}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto predictions = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3,4});
                                             
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);        
 
-    nd4j::ops::mean_sqerr_loss<double> op;
+    nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2915,15 +2915,15 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test13) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test14) {
     
-    auto labels('c', {2,3,4});
-    auto predictions('c', {2,3,4});
-    auto weights('c', {2,1,4}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto predictions = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,1,4});
                                             
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);        
 
-    nd4j::ops::mean_sqerr_loss<double> op;
+    nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2939,15 +2939,15 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test14) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test15) {
     
-    auto labels('c', {2,3,4});
-    auto predictions('c', {2,3,4});
-    auto weights('c', {1,1}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto predictions = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {1,1});
                                             
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);        
 
-    nd4j::ops::mean_sqerr_loss<double> op;
+    nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2963,18 +2963,18 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test15) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test16) {
     
-    auto labels('c', {2,3,4});
-    auto predictions('c', {2,3,4});
-    auto weights('c', {2,3,1}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto predictions = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3,1});
                                             
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);        
-    weights(0.) = 0.;
-    weights(1) = 0.;
-    weights(2) = 0.;
+    weights.putScalar(0, 0.);
+    weights.putScalar(1, 0.);
+    weights.putScalar(2, 0.);
 
-    nd4j::ops::mean_sqerr_loss<double> op;
+    nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2990,15 +2990,15 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test16) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test1) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {2,3,4}); 
-    auto expected('c', {2,3,4}, {0.37219834,0.29906943,0.27717763,0.45650762,0.23703849,0.51874399,0.20159303,0.58555031,0.17057693,0.65663081,0.14366767,0.73164123,0.12050423,0.81020868,0.10070664,0.89195037,0.08389302,0.97648883,1.01969337,0.06346401,0.05775976,1.15254164,0.04777273,1.2434181 });
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto expected = NDArrayFactory::_create<double>('c', {2,3,4}, {0.37219834,0.29906943,0.27717763,0.45650762,0.23703849,0.51874399,0.20159303,0.58555031,0.17057693,0.65663081,0.14366767,0.73164123,0.12050423,0.81020868,0.10070664,0.89195037,0.08389302,0.97648883,1.01969337,0.06346401,0.05775976,1.15254164,0.04777273,1.2434181 });
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigm_cross_entropy_loss<double> op;
+    nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3014,15 +3014,15 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test1) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test2) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {2,1,1}); 
-    auto expected('c', {2,3,4}, {0.37219834,0.29906943,0.27717763,0.45650762,0.23703849,0.51874399,0.20159303,0.58555031,0.17057693,0.65663081,0.14366767,0.73164123,0.12050423,0.81020868,0.10070664,0.89195037,0.08389302,0.97648883,1.01969337,0.06346401,0.05775976,1.15254164,0.04777273,1.2434181 });
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,1,1});
+    auto expected = NDArrayFactory::_create<double>('c', {2,3,4}, {0.37219834,0.29906943,0.27717763,0.45650762,0.23703849,0.51874399,0.20159303,0.58555031,0.17057693,0.65663081,0.14366767,0.73164123,0.12050423,0.81020868,0.10070664,0.89195037,0.08389302,0.97648883,1.01969337,0.06346401,0.05775976,1.15254164,0.04777273,1.2434181 });
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigm_cross_entropy_loss<double> op;
+    nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3038,15 +3038,15 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test2) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test3) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {1,1}); 
-    auto expected('c', {2,3,4}, {0.37219834,0.29906943,0.27717763,0.45650762,0.23703849,0.51874399,0.20159303,0.58555031,0.17057693,0.65663081,0.14366767,0.73164123,0.12050423,0.81020868,0.10070664,0.89195037,0.08389302,0.97648883,1.01969337,0.06346401,0.05775976,1.15254164,0.04777273,1.2434181 });
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {1,1});
+    auto expected = NDArrayFactory::_create<double>('c', {2,3,4}, {0.37219834,0.29906943,0.27717763,0.45650762,0.23703849,0.51874399,0.20159303,0.58555031,0.17057693,0.65663081,0.14366767,0.73164123,0.12050423,0.81020868,0.10070664,0.89195037,0.08389302,0.97648883,1.01969337,0.06346401,0.05775976,1.15254164,0.04777273,1.2434181 });
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigm_cross_entropy_loss<double> op;
+    nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3062,15 +3062,15 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test3) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test4) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {2,3,4}); 
-    auto expected('c', {2,3,4}, {0.24719833, 0.54906946, 0.65217763,-0.04349237,0.86203849,-0.23125602, 1.07659304,-0.41444966,1.29557693,-0.59336919, 1.5186677 ,-0.76835877,1.74550426,-0.93979132, 1.9757067 ,-1.10804963,2.20889306,-1.27351117,-1.35530663, 2.56346393,2.68275976,-1.59745836, 2.92277265,-1.7565819 });
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto expected = NDArrayFactory::_create<double>('c', {2,3,4}, {0.24719833, 0.54906946, 0.65217763,-0.04349237,0.86203849,-0.23125602, 1.07659304,-0.41444966,1.29557693,-0.59336919, 1.5186677 ,-0.76835877,1.74550426,-0.93979132, 1.9757067 ,-1.10804963,2.20889306,-1.27351117,-1.35530663, 2.56346393,2.68275976,-1.59745836, 2.92277265,-1.7565819 });
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigm_cross_entropy_loss<double> op;
+    nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3086,14 +3086,14 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test4) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test5) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {2,3,4}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3,4});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigm_cross_entropy_loss<double> op;
+    nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3109,14 +3109,14 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test5) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test6) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {2,3,1}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3,1});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigm_cross_entropy_loss<double> op;
+    nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3132,14 +3132,14 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test6) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test7) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {1,1}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {1,1});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigm_cross_entropy_loss<double> op;
+    nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3155,14 +3155,14 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test7) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test8) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {2,3,4}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3,4});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigm_cross_entropy_loss<double> op;
+    nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3179,17 +3179,17 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test8) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test9) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {2,3,1}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3,1});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
-    weights(0.) = 0.;
-    weights(1) = 0.;
-    weights(2) = 0.;
+    weights.putScalar(0, 0.);
+    weights.putScalar(1, 0.);
+    weights.putScalar(2, 0.);
 
-    nd4j::ops::sigm_cross_entropy_loss<double> op;
+    nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3205,14 +3205,14 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test9) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test10) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {2,3,4}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3,4});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigm_cross_entropy_loss<double> op;
+    nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3228,14 +3228,14 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test10) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test11) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {1,1,4}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {1,1,4});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigm_cross_entropy_loss<double> op;
+    nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3251,14 +3251,14 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test11) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test12) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {1,1}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {1,1});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigm_cross_entropy_loss<double> op;
+    nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3274,17 +3274,17 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test12) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test13) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {2,3,1}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3,1});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
-    weights(0.) = 0.;
-    weights(1) = 0.;
-    weights(2) = 0.;
+    weights.putScalar(0, 0.);
+    weights.putScalar(1, 0.);
+    weights.putScalar(2, 0.);
 
-    nd4j::ops::sigm_cross_entropy_loss<double> op;
+    nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3300,14 +3300,14 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test13) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test14) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {2,3,4}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3,4});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigm_cross_entropy_loss<double> op;
+    nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3323,14 +3323,14 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test14) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test15) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {1,3,1}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {1,3,1});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigm_cross_entropy_loss<double> op;
+    nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3346,14 +3346,14 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test15) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test16) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {1,1}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {1,1});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigm_cross_entropy_loss<double> op;
+    nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3369,17 +3369,17 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test16) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test17) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {2,3,1}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3,1});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
-    weights(0.) = 0.;
-    weights(1) = 0.;
-    weights(2) = 0.;
+    weights.putScalar(0, 0.);
+    weights.putScalar(1, 0.);
+    weights.putScalar(2, 0.);
 
-    nd4j::ops::sigm_cross_entropy_loss<double> op;
+    nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3395,15 +3395,15 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test17) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test1) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {2,3}); 
-    auto expected('c', {2,3}, {1.39253557,1.44253552,1.44253552,1.44253552,1.39253557,1.44253552});
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3});
+    auto expected = NDArrayFactory::_create<double>('c', {2,3}, {1.39253557,1.44253552,1.44253552,1.44253552,1.39253557,1.44253552});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmax_cross_entropy_loss<double> op;
+    nd4j::ops::softmax_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3419,15 +3419,15 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test1) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test2) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {2,3}); 
-    auto expected('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3});
+    auto expected = NDArrayFactory::_create<double>('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmax_cross_entropy_loss<double> op;
+    nd4j::ops::softmax_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3443,15 +3443,15 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test2) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test3) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {2,1}); 
-    auto expected('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,1});
+    auto expected = NDArrayFactory::_create<double>('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmax_cross_entropy_loss<double> op;
+    nd4j::ops::softmax_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3467,15 +3467,15 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test3) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test4) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {1,3}); 
-    auto expected('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {1,3});
+    auto expected = NDArrayFactory::_create<double>('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmax_cross_entropy_loss<double> op;
+    nd4j::ops::softmax_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3491,15 +3491,15 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test4) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test5) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {1,1}); 
-    auto expected('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {1,1});
+    auto expected = NDArrayFactory::_create<double>('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmax_cross_entropy_loss<double> op;
+    nd4j::ops::softmax_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3515,14 +3515,14 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test5) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test6) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {2,3}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmax_cross_entropy_loss<double> op;
+    nd4j::ops::softmax_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3538,14 +3538,14 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test6) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test7) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {2,3}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,3});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmax_cross_entropy_loss<double> op;
+    nd4j::ops::softmax_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3561,14 +3561,14 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test7) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test8) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {1,1}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {1,1});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmax_cross_entropy_loss<double> op;
+    nd4j::ops::softmax_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3584,14 +3584,14 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test8) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test9) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {1,3}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {1,3});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmax_cross_entropy_loss<double> op;
+    nd4j::ops::softmax_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3607,14 +3607,14 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test9) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test10) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {1,3}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {1,3});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmax_cross_entropy_loss<double> op;
+    nd4j::ops::softmax_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3630,14 +3630,14 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test10) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test11) {
     
-    auto labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    auto logits('c', {2,3,4});
-    auto weights('c', {1,3}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,3,4});
+    auto weights = NDArrayFactory::_create<double>('c', {1,3});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmax_cross_entropy_loss<double> op;
+    nd4j::ops::softmax_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3653,14 +3653,14 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test11) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test12) {
     
-    auto labels('c', {2,4},{0,1,1,0,1,0,1,0});
-    auto logits('c', {2,4});
-    auto weights('c', {2,1}); 
+    auto labels = NDArrayFactory::_create<double>('c', {2,4},{0,1,1,0,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,1});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmax_cross_entropy_loss<double> op;
+    nd4j::ops::softmax_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3676,15 +3676,15 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test12) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test13) {
     
-    auto labels('c', {2,4},{0,1,1,0,1,0,1,0});
-    auto logits('c', {2,4});
-    auto weights('c', {2,1}); 
-    auto expected('c', {2,1}, {1.39253557,1.44253552});
+    auto labels = NDArrayFactory::_create<double>('c', {2,4},{0,1,1,0,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,1});
+    auto expected = NDArrayFactory::_create<double>('c', {2,1}, {1.39253557,1.44253552});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmax_cross_entropy_loss<double> op;
+    nd4j::ops::softmax_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3702,15 +3702,15 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test13) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test14) {
     
-    auto labels('c', {2,4},{0,1,1,0,1,0,1,0});
-    auto logits('c', {2,4});
-    auto weights('c', {2,1}); 
-    auto expected('c', {2,1}, {-2.08880329, -2.28880334});
+    auto labels = NDArrayFactory::_create<double>('c', {2,4},{0,1,1,0,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,4});
+    auto weights = NDArrayFactory::_create<double>('c', {2,1});
+    auto expected = NDArrayFactory::_create<double>('c', {2,1}, {-2.08880329, -2.28880334});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmax_cross_entropy_loss<double> op;
+    nd4j::ops::softmax_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3726,15 +3726,15 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test14) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test15) {
     
-    auto labels('c', {2,4},{0,1,1,0,1,0,1,0});
-    auto logits('c', {2,4});
-    auto weights('c', {1,1}); 
-    auto expected('c', {2,1}, {-2.08880329, -2.28880334});
+    auto labels = NDArrayFactory::_create<double>('c', {2,4},{0,1,1,0,1,0,1,0});
+    auto logits = NDArrayFactory::_create<double>('c', {2,4});
+    auto weights = NDArrayFactory::_create<double>('c', {1,1});
+    auto expected = NDArrayFactory::_create<double>('c', {2,1}, {-2.08880329, -2.28880334});
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmax_cross_entropy_loss<double> op;
+    nd4j::ops::softmax_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3755,14 +3755,14 @@ TEST_F(DeclarableOpsTests2, lstmCell_test1) {
     const int numProj   = 4;
     const int numUnits  = 4;
 
-    auto xt  ('c', {batchSize, inSize});
-    auto ht_1('c', {batchSize, numProj});
-    auto ct_1('c', {batchSize, numUnits});
-    auto Wx  ('c', {inSize, 4*numUnits});
-    auto Wh  ('c', {numProj, 4*numUnits});
-    auto Wc  ('c', {3*numUnits});
-    auto Wp  ('c', {numUnits, numProj});
-    auto b   ('c', {4*numUnits});
+    auto xt   = NDArrayFactory::_create<double>('c', {batchSize, inSize});
+    auto ht_1 = NDArrayFactory::_create<double>('c', {batchSize, numProj});
+    auto ct_1 = NDArrayFactory::_create<double>('c', {batchSize, numUnits});
+    auto Wx   = NDArrayFactory::_create<double>('c', {inSize, 4*numUnits});
+    auto Wh   = NDArrayFactory::_create<double>('c', {numProj, 4*numUnits});
+    auto Wc   = NDArrayFactory::_create<double>('c', {3*numUnits});
+    auto Wp   = NDArrayFactory::_create<double>('c', {numUnits, numProj});
+    auto b    = NDArrayFactory::_create<double>('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -3773,10 +3773,10 @@ TEST_F(DeclarableOpsTests2, lstmCell_test1) {
     Wp.assign(0.5);
     b.assign(0.7);
 
-    auto expHt('c', {batchSize, numProj}, {0.99926789,0.99926789,0.99926789,0.99926789,0.99926789,0.99926789,0.99926789,0.99926789});
-    auto expCt('c', {batchSize, numUnits},{3.99987108,3.99987108,3.99987108,3.99987108,3.99987108,3.99987108,3.99987108,3.99987108});
+    auto expHt = NDArrayFactory::_create<double>('c', {batchSize, numProj}, {0.99926789,0.99926789,0.99926789,0.99926789,0.99926789,0.99926789,0.99926789,0.99926789});
+    auto expCt = NDArrayFactory::_create<double>('c', {batchSize, numUnits},{3.99987108,3.99987108,3.99987108,3.99987108,3.99987108,3.99987108,3.99987108,3.99987108});
 
-    nd4j::ops::lstmCell<double> op;
+    nd4j::ops::lstmCell op;
     auto results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0., 0., 1.}, {0, 0});    
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3800,14 +3800,14 @@ TEST_F(DeclarableOpsTests2, lstmCell_test2) {
     const int numProj   = 4;
     const int numUnits  = 4;
 
-    auto xt  ('c', {batchSize, inSize});
-    auto ht_1('c', {batchSize, numProj});
-    auto ct_1('c', {batchSize, numUnits});
-    auto Wx  ('c', {inSize, 4*numUnits});
-    auto Wh  ('c', {numProj, 4*numUnits});
-    auto Wc  ('c', {3*numUnits});
-    auto Wp  ('c', {numUnits, numProj});
-    auto b   ('c', {4*numUnits});
+    auto xt   = NDArrayFactory::_create<double>('c', {batchSize, inSize});
+    auto ht_1 = NDArrayFactory::_create<double>('c', {batchSize, numProj});
+    auto ct_1 = NDArrayFactory::_create<double>('c', {batchSize, numUnits});
+    auto Wx   = NDArrayFactory::_create<double>('c', {inSize, 4*numUnits});
+    auto Wh   = NDArrayFactory::_create<double>('c', {numProj, 4*numUnits});
+    auto Wc   = NDArrayFactory::_create<double>('c', {3*numUnits});
+    auto Wp   = NDArrayFactory::_create<double>('c', {numUnits, numProj});
+    auto b    = NDArrayFactory::_create<double>('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -3818,10 +3818,10 @@ TEST_F(DeclarableOpsTests2, lstmCell_test2) {
     Wp.assign(0.5);
     b.assign(0.7);
 
-    auto expHt('c', {batchSize, numProj}, {0.95867589,0.95867589,0.95867589,0.95867589,0.95867589,0.95867589,0.95867589,0.95867589});
-    auto expCt('c', {batchSize, numUnits},{1.93001527,1.93001527,1.93001527,1.93001527, 1.93001527,1.93001527,1.93001527,1.93001527});
+    auto expHt = NDArrayFactory::_create<double>('c', {batchSize, numProj}, {0.95867589,0.95867589,0.95867589,0.95867589,0.95867589,0.95867589,0.95867589,0.95867589});
+    auto expCt = NDArrayFactory::_create<double>('c', {batchSize, numUnits},{1.93001527,1.93001527,1.93001527,1.93001527, 1.93001527,1.93001527,1.93001527,1.93001527});
 
-    nd4j::ops::lstmCell<double> op;
+    nd4j::ops::lstmCell op;
     auto results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0., 0., -10.5}, {0, 0});    
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3845,14 +3845,14 @@ TEST_F(DeclarableOpsTests2, lstmCell_test3) {
     const int numProj   = 4;
     const int numUnits  = 4;
 
-    auto xt  ('c', {batchSize, inSize});
-    auto ht_1('c', {batchSize, numProj});
-    auto ct_1('c', {batchSize, numUnits});
-    auto Wx  ('c', {inSize, 4*numUnits});
-    auto Wh  ('c', {numProj, 4*numUnits});
-    auto Wc  ('c', {3*numUnits});
-    auto Wp  ('c', {numUnits, numProj});
-    auto b   ('c', {4*numUnits});
+    auto xt   = NDArrayFactory::_create<double>('c', {batchSize, inSize});
+    auto ht_1 = NDArrayFactory::_create<double>('c', {batchSize, numProj});
+    auto ct_1 = NDArrayFactory::_create<double>('c', {batchSize, numUnits});
+    auto Wx   = NDArrayFactory::_create<double>('c', {inSize, 4*numUnits});
+    auto Wh   = NDArrayFactory::_create<double>('c', {numProj, 4*numUnits});
+    auto Wc   = NDArrayFactory::_create<double>('c', {3*numUnits});
+    auto Wp   = NDArrayFactory::_create<double>('c', {numUnits, numProj});
+    auto b    = NDArrayFactory::_create<double>('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -3863,10 +3863,10 @@ TEST_F(DeclarableOpsTests2, lstmCell_test3) {
     Wp.assign(0.5);
     b.assign(0.7);
 
-    auto expHt('c', {batchSize, numProj}, {0.37992568,0.37992568,0.37992568,0.37992568,0.37992568,0.37992568,0.37992568,0.37992568});
-    auto expCt('c', {batchSize, numUnits},{0.4,  0.4,  0.4,  0.4,   0.4,  0.4,  0.4,  0.4});
+    auto expHt = NDArrayFactory::_create<double>('c', {batchSize, numProj}, {0.37992568,0.37992568,0.37992568,0.37992568,0.37992568,0.37992568,0.37992568,0.37992568});
+    auto expCt = NDArrayFactory::_create<double>('c', {batchSize, numUnits},{0.4,  0.4,  0.4,  0.4,   0.4,  0.4,  0.4,  0.4});
 
-    nd4j::ops::lstmCell<double> op;
+    nd4j::ops::lstmCell op;
     auto results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0.4, 0., 1.5}, {0, 0});    
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3890,14 +3890,14 @@ TEST_F(DeclarableOpsTests2, lstmCell_test4) {
     const int numProj   = 4;
     const int numUnits  = 4;
 
-    auto xt  ('c', {batchSize, inSize});
-    auto ht_1('c', {batchSize, numProj});
-    auto ct_1('c', {batchSize, numUnits});
-    auto Wx  ('c', {inSize, 4*numUnits});
-    auto Wh  ('c', {numProj, 4*numUnits});
-    auto Wc  ('c', {3*numUnits});
-    auto Wp  ('c', {numUnits, numProj});
-    auto b   ('c', {4*numUnits});
+    auto xt   = NDArrayFactory::_create<double>('c', {batchSize, inSize});
+    auto ht_1 = NDArrayFactory::_create<double>('c', {batchSize, numProj});
+    auto ct_1 = NDArrayFactory::_create<double>('c', {batchSize, numUnits});
+    auto Wx   = NDArrayFactory::_create<double>('c', {inSize, 4*numUnits});
+    auto Wh   = NDArrayFactory::_create<double>('c', {numProj, 4*numUnits});
+    auto Wc   = NDArrayFactory::_create<double>('c', {3*numUnits});
+    auto Wp   = NDArrayFactory::_create<double>('c', {numUnits, numProj});
+    auto b    = NDArrayFactory::_create<double>('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -3908,10 +3908,10 @@ TEST_F(DeclarableOpsTests2, lstmCell_test4) {
     Wp.assign(0.5);
     b.assign(0.7);
 
-    auto expHt('c', {batchSize, numProj}, {0.37992568,0.37992568,0.37992568,0.37992568,0.37992568,0.37992568,0.37992568,0.37992568});
-    auto expCt('c', {batchSize, numUnits},{0.4,  0.4,  0.4,  0.4,   0.4,  0.4,  0.4,  0.4});
+    auto expHt = NDArrayFactory::_create<double>('c', {batchSize, numProj}, {0.37992568,0.37992568,0.37992568,0.37992568,0.37992568,0.37992568,0.37992568,0.37992568});
+    auto expCt = NDArrayFactory::_create<double>('c', {batchSize, numUnits},{0.4,  0.4,  0.4,  0.4,   0.4,  0.4,  0.4,  0.4});
 
-    nd4j::ops::lstmCell<double> op;
+    nd4j::ops::lstmCell op;
     auto results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0.4, 0.3, 1.5}, {0, 0});    
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3935,14 +3935,14 @@ TEST_F(DeclarableOpsTests2, lstmCell_test5) {
     const int numProj   = 3;
     const int numUnits  = 4;
 
-    auto xt  ('c', {batchSize, inSize});
-    auto ht_1('c', {batchSize, numProj});
-    auto ct_1('c', {batchSize, numUnits});
-    auto Wx  ('c', {inSize, 4*numUnits});
-    auto Wh  ('c', {numProj, 4*numUnits});
-    auto Wc  ('c', {3*numUnits});
-    auto Wp  ('c', {numUnits, numProj});
-    auto b   ('c', {4*numUnits});
+    auto xt   = NDArrayFactory::_create<double>('c', {batchSize, inSize});
+    auto ht_1 = NDArrayFactory::_create<double>('c', {batchSize, numProj});
+    auto ct_1 = NDArrayFactory::_create<double>('c', {batchSize, numUnits});
+    auto Wx   = NDArrayFactory::_create<double>('c', {inSize, 4*numUnits});
+    auto Wh   = NDArrayFactory::_create<double>('c', {numProj, 4*numUnits});
+    auto Wc   = NDArrayFactory::_create<double>('c', {3*numUnits});
+    auto Wp   = NDArrayFactory::_create<double>('c', {numUnits, numProj});
+    auto b    = NDArrayFactory::_create<double>('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -3953,10 +3953,10 @@ TEST_F(DeclarableOpsTests2, lstmCell_test5) {
     Wp.assign(0.5);
     b.assign(0.7);
 
-    auto expHt('c', {batchSize, numProj}, {0.3,0.3,0.3,0.3,0.3,0.3});
-    auto expCt('c', {batchSize, numUnits},{0.4,  0.4,  0.4,  0.4,   0.4,  0.4,  0.4,  0.4});
+    auto expHt = NDArrayFactory::_create<double>('c', {batchSize, numProj}, {0.3,0.3,0.3,0.3,0.3,0.3});
+    auto expCt = NDArrayFactory::_create<double>('c', {batchSize, numUnits},{0.4,  0.4,  0.4,  0.4,   0.4,  0.4,  0.4,  0.4});
 
-    nd4j::ops::lstmCell<double> op;
+    nd4j::ops::lstmCell op;
     auto results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0.4, 0.3, 1.5}, {0, 1});    
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3980,14 +3980,14 @@ TEST_F(DeclarableOpsTests2, lstmCell_test6) {
     const int numProj   = 3;
     const int numUnits  = 4;
 
-    auto xt  ('c', {batchSize, inSize});
-    auto ht_1('c', {batchSize, numProj});
-    auto ct_1('c', {batchSize, numUnits});
-    auto Wx  ('c', {inSize, 4*numUnits});
-    auto Wh  ('c', {numProj, 4*numUnits});
-    auto Wc  ('c', {3*numUnits});
-    auto Wp  ('c', {numUnits, numProj});
-    auto b   ('c', {4*numUnits});
+    auto xt   = NDArrayFactory::_create<double>('c', {batchSize, inSize});
+    auto ht_1 = NDArrayFactory::_create<double>('c', {batchSize, numProj});
+    auto ct_1 = NDArrayFactory::_create<double>('c', {batchSize, numUnits});
+    auto Wx   = NDArrayFactory::_create<double>('c', {inSize, 4*numUnits});
+    auto Wh   = NDArrayFactory::_create<double>('c', {numProj, 4*numUnits});
+    auto Wc   = NDArrayFactory::_create<double>('c', {3*numUnits});
+    auto Wp   = NDArrayFactory::_create<double>('c', {numUnits, numProj});
+    auto b    = NDArrayFactory::_create<double>('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -3998,10 +3998,10 @@ TEST_F(DeclarableOpsTests2, lstmCell_test6) {
     Wp.assign(0.5);
     b.assign(0.7);
 
-    auto expHt('c', {batchSize, numProj}, {1.99832496,1.99832496,1.99832496,1.99832496,1.99832496,1.99832496});
-    auto expCt('c', {batchSize, numUnits},{3.99972188,3.99972188,3.99972188,3.99972188,3.99972188,3.99972188,3.99972188,3.99972188});
+    auto expHt = NDArrayFactory::_create<double>('c', {batchSize, numProj}, {1.99832496,1.99832496,1.99832496,1.99832496,1.99832496,1.99832496});
+    auto expCt = NDArrayFactory::_create<double>('c', {batchSize, numUnits},{3.99972188,3.99972188,3.99972188,3.99972188,3.99972188,3.99972188,3.99972188,3.99972188});
 
-    nd4j::ops::lstmCell<double> op;
+    nd4j::ops::lstmCell op;
     auto results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0., 0., 1.5}, {0, 1});    
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -4025,14 +4025,14 @@ TEST_F(DeclarableOpsTests2, lstmCell_test7) {
     const int numProj   = 3;
     const int numUnits  = 4;
 
-    auto xt  ('c', {batchSize, inSize});
-    auto ht_1('c', {batchSize, numProj});
-    auto ct_1('c', {batchSize, numUnits});
-    auto Wx  ('c', {inSize, 4*numUnits});
-    auto Wh  ('c', {numProj, 4*numUnits});
-    auto Wc  ('c', {3*numUnits});
-    auto Wp  ('c', {numUnits, numProj});
-    auto b   ('c', {4*numUnits});
+    auto xt   = NDArrayFactory::_create<double>('c', {batchSize, inSize});
+    auto ht_1 = NDArrayFactory::_create<double>('c', {batchSize, numProj});
+    auto ct_1 = NDArrayFactory::_create<double>('c', {batchSize, numUnits});
+    auto Wx   = NDArrayFactory::_create<double>('c', {inSize, 4*numUnits});
+    auto Wh   = NDArrayFactory::_create<double>('c', {numProj, 4*numUnits});
+    auto Wc   = NDArrayFactory::_create<double>('c', {3*numUnits});
+    auto Wp   = NDArrayFactory::_create<double>('c', {numUnits, numProj});
+    auto b    = NDArrayFactory::_create<double>('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -4043,10 +4043,10 @@ TEST_F(DeclarableOpsTests2, lstmCell_test7) {
     Wp.assign(0.5);
     b.assign(0.7);
 
-    auto expHt('c', {batchSize, numProj}, {0.75977136,0.75977136,0.75977136,0.75977136,0.75977136,0.75977136});
-    auto expCt('c', {batchSize, numUnits},{0.4,  0.4,  0.4,  0.4,   0.4,  0.4,  0.4,  0.4});
+    auto expHt = NDArrayFactory::_create<double>('c', {batchSize, numProj}, {0.75977136,0.75977136,0.75977136,0.75977136,0.75977136,0.75977136});
+    auto expCt = NDArrayFactory::_create<double>('c', {batchSize, numUnits},{0.4,  0.4,  0.4,  0.4,   0.4,  0.4,  0.4,  0.4});
 
-    nd4j::ops::lstmCell<double> op;
+    nd4j::ops::lstmCell op;
     auto results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0.4, 0., 1.5}, {0, 1});    
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -4071,14 +4071,14 @@ TEST_F(DeclarableOpsTests2, lstmCell_test8) {
     const int numProj   = 4;
     const int numUnits  = 4;
 
-    auto xt  ('c', {batchSize, inSize});
-    auto ht_1('c', {batchSize, numProj});
-    auto ct_1('c', {batchSize, numUnits});
-    auto Wx  ('c', {inSize, 4*numUnits});
-    auto Wh  ('c', {numProj, 4*numUnits});
-    auto Wc  ('c', {3*numUnits});
-    auto Wp  ('c', {numUnits, numProj});
-    auto b   ('c', {4*numUnits});
+    auto xt   = NDArrayFactory::_create<double>('c', {batchSize, inSize});
+    auto ht_1 = NDArrayFactory::_create<double>('c', {batchSize, numProj});
+    auto ct_1 = NDArrayFactory::_create<double>('c', {batchSize, numUnits});
+    auto Wx   = NDArrayFactory::_create<double>('c', {inSize, 4*numUnits});
+    auto Wh   = NDArrayFactory::_create<double>('c', {numProj, 4*numUnits});
+    auto Wc   = NDArrayFactory::_create<double>('c', {3*numUnits});
+    auto Wp   = NDArrayFactory::_create<double>('c', {numUnits, numProj});
+    auto b    = NDArrayFactory::_create<double>('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -4089,10 +4089,10 @@ TEST_F(DeclarableOpsTests2, lstmCell_test8) {
     Wp.assign(0.5);
     b.assign(0.7);
 
-    auto expHt('c', {batchSize, numProj}, {0.99930672,0.99930672,0.99930672,0.99930672, 0.99930672,0.99930672,0.99930672,0.99930672});
-    auto expCt('c', {batchSize, numUnits},{3.99996277,3.99996277,3.99996277,3.99996277,3.99996277,3.99996277,3.99996277,3.99996277});
+    auto expHt = NDArrayFactory::_create<double>('c', {batchSize, numProj}, {0.99930672,0.99930672,0.99930672,0.99930672, 0.99930672,0.99930672,0.99930672,0.99930672});
+    auto expCt = NDArrayFactory::_create<double>('c', {batchSize, numUnits},{3.99996277,3.99996277,3.99996277,3.99996277,3.99996277,3.99996277,3.99996277,3.99996277});
 
-    nd4j::ops::lstmCell<double> op;
+    nd4j::ops::lstmCell op;
     auto results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0., 0., 10.5}, {1, 0});    
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -4116,14 +4116,14 @@ TEST_F(DeclarableOpsTests2, lstmCell_test9) {
     const int numProj   = 4;
     const int numUnits  = 4;
 
-    auto xt  ('c', {batchSize, inSize});
-    auto ht_1('c', {batchSize, numProj});
-    auto ct_1('c', {batchSize, numUnits});
-    auto Wx  ('c', {inSize, 4*numUnits});
-    auto Wh  ('c', {numProj, 4*numUnits});
-    auto Wc  ('c', {3*numUnits});
-    auto Wp  ('c', {numUnits, numProj});
-    auto b   ('c', {4*numUnits});
+    auto xt   = NDArrayFactory::_create<double>('c', {batchSize, inSize});
+    auto ht_1 = NDArrayFactory::_create<double>('c', {batchSize, numProj});
+    auto ct_1 = NDArrayFactory::_create<double>('c', {batchSize, numUnits});
+    auto Wx   = NDArrayFactory::_create<double>('c', {inSize, 4*numUnits});
+    auto Wh   = NDArrayFactory::_create<double>('c', {numProj, 4*numUnits});
+    auto Wc   = NDArrayFactory::_create<double>('c', {3*numUnits});
+    auto Wp   = NDArrayFactory::_create<double>('c', {numUnits, numProj});
+    auto b    = NDArrayFactory::_create<double>('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -4134,10 +4134,10 @@ TEST_F(DeclarableOpsTests2, lstmCell_test9) {
     Wp.assign(0.5);
     b.assign(0.7);
 
-    auto expHt('c', {batchSize, numProj}, {0.99501777,0.99501777,0.99501777,0.99501777,0.99501777,0.99501777,0.99501777,0.99501777});
-    auto expCt('c', {batchSize, numUnits},{3.,3.,3.,3.,3.,3.,3.,3.});
+    auto expHt = NDArrayFactory::_create<double>('c', {batchSize, numProj}, {0.99501777,0.99501777,0.99501777,0.99501777,0.99501777,0.99501777,0.99501777,0.99501777});
+    auto expCt = NDArrayFactory::_create<double>('c', {batchSize, numUnits},{3.,3.,3.,3.,3.,3.,3.,3.});
 
-    nd4j::ops::lstmCell<double> op;
+    nd4j::ops::lstmCell op;
     auto results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {3., 0., 10.5}, {1, 0});    
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -4161,14 +4161,14 @@ TEST_F(DeclarableOpsTests2, lstmCell_test10) {
     const int numProj   = 3;
     const int numUnits  = 4;
 
-    auto xt  ('c', {batchSize, inSize});
-    auto ht_1('c', {batchSize, numProj});
-    auto ct_1('c', {batchSize, numUnits});
-    auto Wx  ('c', {inSize, 4*numUnits});
-    auto Wh  ('c', {numProj, 4*numUnits});
-    auto Wc  ('c', {3*numUnits});
-    auto Wp  ('c', {numUnits, numProj});
-    auto b   ('c', {4*numUnits});
+    auto xt   = NDArrayFactory::_create<double>('c', {batchSize, inSize});
+    auto ht_1 = NDArrayFactory::_create<double>('c', {batchSize, numProj});
+    auto ct_1 = NDArrayFactory::_create<double>('c', {batchSize, numUnits});
+    auto Wx   = NDArrayFactory::_create<double>('c', {inSize, 4*numUnits});
+    auto Wh   = NDArrayFactory::_create<double>('c', {numProj, 4*numUnits});
+    auto Wc   = NDArrayFactory::_create<double>('c', {3*numUnits});
+    auto Wp   = NDArrayFactory::_create<double>('c', {numUnits, numProj});
+    auto b    = NDArrayFactory::_create<double>('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -4179,10 +4179,10 @@ TEST_F(DeclarableOpsTests2, lstmCell_test10) {
     Wp.assign(0.5);
     b.assign(0.7);
 
-    auto expHt('c', {batchSize, numProj}, {1.99861344,1.99861344,1.99861344,1.99861344,1.99861344,1.99861344});
-    auto expCt('c', {batchSize, numUnits},{3.99996277,  3.99996277,  3.99996277,  3.99996277,3.99996277,  3.99996277,  3.99996277,  3.99996277});
+    auto expHt = NDArrayFactory::_create<double>('c', {batchSize, numProj}, {1.99861344,1.99861344,1.99861344,1.99861344,1.99861344,1.99861344});
+    auto expCt = NDArrayFactory::_create<double>('c', {batchSize, numUnits},{3.99996277,  3.99996277,  3.99996277,  3.99996277,3.99996277,  3.99996277,  3.99996277,  3.99996277});
 
-    nd4j::ops::lstmCell<double> op;
+    nd4j::ops::lstmCell op;
     auto results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0., 0., 10.5}, {1, 1});    
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -4206,14 +4206,14 @@ TEST_F(DeclarableOpsTests2, lstmCell_test11) {
     const int numProj   = 3;
     const int numUnits  = 4;
 
-    auto xt  ('c', {batchSize, inSize});
-    auto ht_1('c', {batchSize, numProj});
-    auto ct_1('c', {batchSize, numUnits});
-    auto Wx  ('c', {inSize, 4*numUnits});
-    auto Wh  ('c', {numProj, 4*numUnits});
-    auto Wc  ('c', {3*numUnits});
-    auto Wp  ('c', {numUnits, numProj});
-    auto b   ('c', {4*numUnits});
+    auto xt   = NDArrayFactory::_create<double>('c', {batchSize, inSize});
+    auto ht_1 = NDArrayFactory::_create<double>('c', {batchSize, numProj});
+    auto ct_1 = NDArrayFactory::_create<double>('c', {batchSize, numUnits});
+    auto Wx   = NDArrayFactory::_create<double>('c', {inSize, 4*numUnits});
+    auto Wh   = NDArrayFactory::_create<double>('c', {numProj, 4*numUnits});
+    auto Wc   = NDArrayFactory::_create<double>('c', {3*numUnits});
+    auto Wp   = NDArrayFactory::_create<double>('c', {numUnits, numProj});
+    auto b    = NDArrayFactory::_create<double>('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -4224,10 +4224,10 @@ TEST_F(DeclarableOpsTests2, lstmCell_test11) {
     Wp.assign(0.5);
     b.assign(0.7);
 
-    auto expHt('c', {batchSize, numProj}, {1.99003554,1.99003554,1.99003554,1.99003554,1.99003554,1.99003554});
-    auto expCt('c', {batchSize, numUnits},{3.,3.,3.,3.,3.,3.,3.,3.});
+    auto expHt = NDArrayFactory::_create<double>('c', {batchSize, numProj}, {1.99003554,1.99003554,1.99003554,1.99003554,1.99003554,1.99003554});
+    auto expCt = NDArrayFactory::_create<double>('c', {batchSize, numUnits},{3.,3.,3.,3.,3.,3.,3.,3.});
 
-    nd4j::ops::lstmCell<double> op;
+    nd4j::ops::lstmCell op;
     auto results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {3., 0., 10.5}, {1, 1});    
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -4251,14 +4251,14 @@ TEST_F(DeclarableOpsTests2, lstmCell_test12) {
     const int numProj   = 3;
     const int numUnits  = 4;
 
-    auto xt  ('c', {batchSize, inSize});
-    auto ht_1('c', {batchSize, numProj});
-    auto ct_1('c', {batchSize, numUnits});
-    auto Wx  ('c', {inSize, 4*numUnits});
-    auto Wh  ('c', {numProj, 4*numUnits});
-    auto Wc  ('c', {3*numUnits});
-    auto Wp  ('c', {numUnits, numProj});
-    auto b   ('c', {4*numUnits});
+    auto xt   = NDArrayFactory::_create<double>('c', {batchSize, inSize});
+    auto ht_1 = NDArrayFactory::_create<double>('c', {batchSize, numProj});
+    auto ct_1 = NDArrayFactory::_create<double>('c', {batchSize, numUnits});
+    auto Wx   = NDArrayFactory::_create<double>('c', {inSize, 4*numUnits});
+    auto Wh   = NDArrayFactory::_create<double>('c', {numProj, 4*numUnits});
+    auto Wc   = NDArrayFactory::_create<double>('c', {3*numUnits});
+    auto Wp   = NDArrayFactory::_create<double>('c', {numUnits, numProj});
+    auto b    = NDArrayFactory::_create<double>('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -4269,10 +4269,10 @@ TEST_F(DeclarableOpsTests2, lstmCell_test12) {
     Wp.assign(0.5);
     b.assign(0.7);
 
-    auto expHt('c', {batchSize, numProj}, {1.,1.,1.,1.,1.,1.});
-    auto expCt('c', {batchSize, numUnits},{3.,3.,3.,3.,3.,3.,3.,3.});
+    auto expHt = NDArrayFactory::_create<double>('c', {batchSize, numProj}, {1.,1.,1.,1.,1.,1.});
+    auto expCt = NDArrayFactory::_create<double>('c', {batchSize, numUnits},{3.,3.,3.,3.,3.,3.,3.,3.});
 
-    nd4j::ops::lstmCell<double> op;
+    nd4j::ops::lstmCell op;
     auto results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {3., 1.,-5.}, {1, 1});    
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
