@@ -619,12 +619,21 @@ NDArray& NDArray::operator=(NDArray&& other) noexcept {
     return *this;
 }
 
-////////////////////////////////////////////////////////////////////////
-template<typename T>
-NDArray& NDArray::operator=(const T scalar) {
-    this->assign(scalar);
-    return *this;
-}
+    ////////////////////////////////////////////////////////////////////////
+    template<typename T>
+    NDArray& NDArray::operator=(const T scalar) {
+        this->assign(scalar);
+        return *this;
+    }
+    template NDArray& NDArray::operator=(const double scalar);
+    template NDArray& NDArray::operator=(const float scalar);
+    template NDArray& NDArray::operator=(const float16 scalar);
+    template NDArray& NDArray::operator=(const Nd4jLong scalar);
+    template NDArray& NDArray::operator=(const int scalar);
+    template NDArray& NDArray::operator=(const int8_t scalar);
+    template NDArray& NDArray::operator=(const uint8_t scalar);
+    template NDArray& NDArray::operator=(const int16_t scalar);
+    template NDArray& NDArray::operator=(const bool scalar);
 
 
 void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool releaseExisting ) {
@@ -748,6 +757,15 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         auto temp = NDArrayFactory::_scalar(value, this->_workspace);
         NativeOpExcutioner::execScalar(nd4j::scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
     }
+    template void NDArray::assign(const double value);
+    template void NDArray::assign(const float value);
+    template void NDArray::assign(const float16 value);
+    template void NDArray::assign(const Nd4jLong value);
+    template void NDArray::assign(const int value);
+    template void NDArray::assign(const int8_t value);
+    template void NDArray::assign(const uint8_t value);
+    template void NDArray::assign(const int16_t value);
+    template void NDArray::assign(const bool value);
 
     NDArray* NDArray::detach() {
         if (!isAttached())
@@ -872,6 +890,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), indices, rankOf());
         t[xOffset] = static_cast<T>(y);
     }
+    BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, void *value), LIBND4J_TYPES, LIBND4J_TYPES);
 
     template <typename T, typename Y>
     void NDArray::templatedSet(void *buffer, const Nd4jLong offset, void *value) {
@@ -880,6 +899,8 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
         t[offset] = static_cast<T>(y);
     }
+    BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong offset, void *value), LIBND4J_TYPES, LIBND4J_TYPES);
+
 
     void NDArray::setWorkspace(memory::Workspace* workspace) {
         this->_workspace = workspace;
