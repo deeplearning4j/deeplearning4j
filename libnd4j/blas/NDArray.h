@@ -1000,6 +1000,9 @@ namespace nd4j {
         template <typename T>
         void linspace(const T start);
 
+        template <typename T>
+        void linspace(const T start, const T step);
+
         /**
         *  calculates the trace of an array, that is sum of elements on main diagonal = sum array[i, i, i, ...]
         */
