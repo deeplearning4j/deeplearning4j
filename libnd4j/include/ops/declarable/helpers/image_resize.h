@@ -17,22 +17,18 @@
 //
 //  @author sgazeos@gmail.com
 //
-
-#include <ops/declarable/helpers/image_resize.h>
+#ifndef __IMAGE_RESIZE_HELPERS__
+#define __IMAGE_RESIZE_HELPERS__
+#include <op_boilerplate.h>
+#include <NDArray.h>
 
 namespace nd4j {
 namespace ops {
 namespace helpers {
 
     template <typename T>
-    int resizeBilinearFunctor(NDArray<T> const* image, int width, int height, bool center, NDArray<T>* output) {
-
-        return ND4J_STATUS_OK;
-    }
-    template int resizeBilinearFunctor(NDArray<float> const* image, int width, int height, bool center, NDArray<float>* output);
-    template int resizeBilinearFunctor(NDArray<float16> const* image, int width, int height, bool center, NDArray<float16>* output);
-    template int resizeBilinearFunctor(NDArray<double> const* image, int width, int height, bool center, NDArray<double>* output);
-
+    int resizeBilinearFunctor(NDArray<T> const* image, int width, int height, bool center, NDArray<T>* output);
 }
 }
 }
+#endif

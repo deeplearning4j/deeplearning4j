@@ -1372,6 +1372,52 @@ TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test2) {
 }
 
 ////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test3) {
+
+    NDArray<float> input   ('c', {1, 2,3,4});
+    //NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
+    //NDArray<float> expected('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
+    NDArray<float> expected('c', {1, 10, 10, 4});
+    //input = 1.f;
+    input.linspace(1);
+
+    nd4j::ops::resize_bilinear<float> op;
+    auto results = op.execute({&input}, {}, {10, 10, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    //ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test4) {
+
+    NDArray<float> input   ('c', {1, 2,3,4});
+    NDArray<float> size({10.f, 10.f});
+    //NDArray<float> expected('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
+    NDArray<float> expected('c', {1, 10, 10, 4});
+    //input = 1.f;
+    input.linspace(1);
+
+    nd4j::ops::resize_bilinear<float> op;
+    auto results = op.execute({&input, &size}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    //ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, pad_tests10) {
 
     NDArray<float> input   ('c', {2,3,4});

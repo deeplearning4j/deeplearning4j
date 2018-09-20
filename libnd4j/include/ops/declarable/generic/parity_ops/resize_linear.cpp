@@ -32,7 +32,7 @@ namespace nd4j {
             NDArray<T>* output = OUTPUT_VARIABLE(0);
             int width;
             int height;
-            int center = 0; // false - default value
+            bool center = false; // - default value
             if (block.width() > 1) {
                 auto newImageSize = INPUT_VARIABLE(1);
                 REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_linear: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
@@ -40,7 +40,7 @@ namespace nd4j {
                 width = int(newImageSize->getScalar(0));
                 height = int(newImageSize->getScalar(1));
                 if (block.numI() == 1) {
-                    center = INT_ARG(0);
+                    center = 0 != INT_ARG(0);
                 }
             }
             else {
@@ -48,10 +48,10 @@ namespace nd4j {
                 width = INT_ARG(0);
                 height = INT_ARG(1);
                 if (block.numI() == 3)
-                    center = INT_ARG(2);
+                    center = 0 != INT_ARG(2);
             }
 
-            return helpers::resizeBilinearFunctor(image, width, height, output);
+            return helpers::resizeBilinearFunctor(image, width, height, center, output);
         }
 
         DECLARE_SHAPE_FN(resize_bilinear) {
