@@ -35,13 +35,13 @@ public:
 
 
 TEST_F(DeclarableOpsTests3, Test_Tile_1) {
-    NDArray<float> x('c', {2, 3}, {1, 2, 3, 4, 5, 6});
-    NDArray<float> rep_vector('c', {1, 2}, {2, 2});
+    auto x= NDArrayFactory::_create<float>('c', {2, 3}, {1, 2, 3, 4, 5, 6});
+    auto rep_vector= NDArrayFactory::_create<float>('c', {1, 2}, {2, 2});
     std::vector<Nd4jLong> reps({2, 2});
 
     auto exp = x.tile(reps);
 
-    nd4j::ops::tile<float> op;
+    nd4j::ops::tile op;
     auto result = op.execute({&x, &rep_vector}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -54,12 +54,12 @@ TEST_F(DeclarableOpsTests3, Test_Tile_1) {
 
 
 TEST_F(DeclarableOpsTests3, Test_Tile_2) {
-    NDArray<float> x('c', {2, 3}, {1, 2, 3, 4, 5, 6});
+    auto x= NDArrayFactory::_create<float>('c', {2, 3}, {1, 2, 3, 4, 5, 6});
     std::vector<Nd4jLong> reps({2, 2});
 
     auto exp = x.tile(reps);
 
-    nd4j::ops::tile<float> op;
+    nd4j::ops::tile op;
     auto result = op.execute({&x}, {}, {2, 2});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -71,11 +71,11 @@ TEST_F(DeclarableOpsTests3, Test_Tile_2) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Permute_1) {
-    NDArray<float> x('c', {2, 3, 4});
-    NDArray<float> permute('c', {1, 3}, {0, 2, 1});
-    NDArray<float> exp('c', {2, 4, 3});
+    auto x= NDArrayFactory::_create<float>('c', {2, 3, 4});
+    auto permute= NDArrayFactory::_create<float>('c', {1, 3}, {0, 2, 1});
+    auto exp= NDArrayFactory::_create<float>('c', {2, 4, 3});
 
-    nd4j::ops::permute<float> op;
+    nd4j::ops::permute op;
     auto result = op.execute({&x, &permute}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -87,10 +87,10 @@ TEST_F(DeclarableOpsTests3, Test_Permute_1) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Permute_2) {
-    NDArray<float> x('c', {2, 3, 4});
-    NDArray<float> exp('c', {4, 3, 2});
+    auto x= NDArrayFactory::_create<float>('c', {2, 3, 4});
+    auto exp= NDArrayFactory::_create<float>('c', {4, 3, 2});
 
-    nd4j::ops::permute<float> op;
+    nd4j::ops::permute op;
     auto result = op.execute({&x}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -103,12 +103,12 @@ TEST_F(DeclarableOpsTests3, Test_Permute_2) {
 
 
 TEST_F(DeclarableOpsTests3, Test_Unique_1) {
-    NDArray<float> x('c', {1, 5}, {1, 2, 1, 2, 3});
-    NDArray<float> expV('c', {3}, {1, 2, 3});
-    NDArray<float> expI('c', {5}, {0, 1, 0, 1, 2});
-//    NDArray<float> expI('c', {3}, {0, 1, 4});
+    auto x= NDArrayFactory::_create<float>('c', {1, 5}, {1, 2, 1, 2, 3});
+    auto expV= NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
+    auto expI= NDArrayFactory::_create<float>('c', {5}, {0, 1, 0, 1, 2});
+//    auto expI= NDArrayFactory::_create<float>('c', {3}, {0, 1, 4});
 
-    nd4j::ops::unique<float> op;
+    nd4j::ops::unique op;
     auto result = op.execute({&x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -127,12 +127,12 @@ TEST_F(DeclarableOpsTests3, Test_Unique_1) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Unique_2) {
-    NDArray<float> x('c', {1, 5}, {1, 2, 1, 2, 3});
-    NDArray<float> expV('c', {3}, {1, 2, 3});
-    NDArray<float> expI('c', {5}, {0, 1, 0, 1, 2});
-    NDArray<float> expC('c', {3}, {2, 2, 1});
+    auto x= NDArrayFactory::_create<float>('c', {1, 5}, {1, 2, 1, 2, 3});
+    auto expV= NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
+    auto expI= NDArrayFactory::_create<float>('c', {5}, {0, 1, 0, 1, 2});
+    auto expC= NDArrayFactory::_create<float>('c', {3}, {2, 2, 1});
 
-    nd4j::ops::unique_with_counts<float> op;
+    nd4j::ops::unique_with_counts op;
     auto result = op.execute({&x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -162,10 +162,10 @@ TEST_F(DeclarableOpsTests3, Test_Unique_2) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Rint_1) {
-    NDArray<float> x('c', {1, 7}, {-1.7, -1.5, -0.2, 0.2, 1.5, 1.7, 2.0});
-    NDArray<float> exp('c', {1, 7}, {-2., -2., -0., 0., 2., 2., 2.});
+    auto x= NDArrayFactory::_create<float>('c', {1, 7}, {-1.7, -1.5, -0.2, 0.2, 1.5, 1.7, 2.0});
+    auto exp= NDArrayFactory::_create<float>('c', {1, 7}, {-2., -2., -0., 0., 2., 2., 2.});
 
-    nd4j::ops::rint<float> op;
+    nd4j::ops::rint op;
     auto result = op.execute({&x}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -178,17 +178,17 @@ TEST_F(DeclarableOpsTests3, Test_Rint_1) {
 
 
 TEST_F(DeclarableOpsTests3, Test_Norm_1) {
-    NDArray<double> x('c', {100, 100});
+    auto x = NDArrayFactory::_create<double>('c', {100, 100});
     x.linspace(1);
 
     std::vector<int> empty;
     std::vector<int> dims({1});
-    nd4j::ops::norm<double> op;
+    nd4j::ops::norm op;
 
     auto result0 = op.execute({&x}, {0}, {});
 
     auto z0 = result0->at(0);
-    auto exp0 = x.template reduceAlongDims<simdOps::NormFrobenius<double>>(empty, false, true);
+    auto exp0 = x.reduceAlongDims(reduce::NormFrobenius, empty, false, true);
     ASSERT_TRUE(exp0.isSameShape(z0));
     ASSERT_TRUE(exp0.equalsTo(z0));
 
@@ -197,7 +197,7 @@ TEST_F(DeclarableOpsTests3, Test_Norm_1) {
     auto result1 = op.execute({&x}, {1}, {1});
 
     auto z1 = result1->at(0);
-    auto exp1 = x.template reduceAlongDims<simdOps::Norm2<double>>(dims, false, true);
+    auto exp1 = x.reduceAlongDims(reduce::Norm2, dims, false, true);
     ASSERT_TRUE(exp1.isSameShape(z1));
     ASSERT_TRUE(exp1.equalsTo(z1));
 
@@ -206,7 +206,7 @@ TEST_F(DeclarableOpsTests3, Test_Norm_1) {
     auto result4 = op.execute({&x}, {4}, {1});
 
     auto z4 = result4->at(0);
-    auto exp4= x.template reduceAlongDims<simdOps::NormMax<double>>(dims, false, true);
+    auto exp4= x.reduceAlongDims(reduce::NormMax, dims, false, true);
     ASSERT_TRUE(exp4.isSameShape(z4));
     ASSERT_TRUE(exp4.equalsTo(z4));
 
@@ -215,18 +215,18 @@ TEST_F(DeclarableOpsTests3, Test_Norm_1) {
 
 
 TEST_F(DeclarableOpsTests3, Test_Norm_2) {
-    NDArray<double> x('c', {100, 100});
+    auto x = NDArrayFactory::_create<double>('c', {100, 100});
     x.linspace(1);
-    NDArray<double> axis('c', {1, 1}, {1});
+    auto axis= NDArrayFactory::_create<double>('c', {1, 1}, {1});
 
     std::vector<int> empty;
     std::vector<int> dims({1});
-    nd4j::ops::norm<double> op;
+    nd4j::ops::norm op;
 
     auto result0 = op.execute({&x}, {0}, {});
 
     auto z0 = result0->at(0);
-    auto exp0 = x.template reduceAlongDims<simdOps::NormFrobenius<double>>(empty, false, true);
+    auto exp0 = x.reduceAlongDims(reduce::NormFrobenius, empty, false, true);
     ASSERT_TRUE(exp0.isSameShape(z0));
     ASSERT_TRUE(exp0.equalsTo(z0));
 
@@ -235,7 +235,7 @@ TEST_F(DeclarableOpsTests3, Test_Norm_2) {
     auto result1 = op.execute({&x, &axis}, {1}, {});
 
     auto z1 = result1->at(0);
-    auto exp1 = x.template reduceAlongDims<simdOps::Norm2<double>>(dims, false, true);
+    auto exp1 = x.reduceAlongDims(reduce::Norm2, dims, false, true);
     ASSERT_TRUE(exp1.isSameShape(z1));
     ASSERT_TRUE(exp1.equalsTo(z1));
 
@@ -244,7 +244,7 @@ TEST_F(DeclarableOpsTests3, Test_Norm_2) {
     auto result4 = op.execute({&x, &axis}, {4}, {});
 
     auto z4 = result4->at(0);
-    auto exp4= x.template reduceAlongDims<simdOps::NormMax<double>>(dims, false, true);
+    auto exp4= x.reduceAlongDims(reduce::NormMax, dims, false, true);
     ASSERT_TRUE(exp4.isSameShape(z4));
     ASSERT_TRUE(exp4.equalsTo(z4));
 
@@ -253,10 +253,10 @@ TEST_F(DeclarableOpsTests3, Test_Norm_2) {
 
 
 TEST_F(DeclarableOpsTests3, Test_ClipByAvgNorm_1) {
-    NDArray<double> x('c', {2, 3}, {-3.0, 0.0, 0.0, 4.0, 0.0, 0.0});
-    NDArray<double> exp('c', {2, 3}, {-2.88, 0.0, 0.0, 3.84, 0.0, 0.0});
+    auto x = NDArrayFactory::_create<double>('c', {2, 3}, {-3.0, 0.0, 0.0, 4.0, 0.0, 0.0});
+    auto exp = NDArrayFactory::_create<double>('c', {2, 3}, {-2.88, 0.0, 0.0, 3.84, 0.0, 0.0});
 
-    nd4j::ops::clipbyavgnorm<double> op;
+    nd4j::ops::clipbyavgnorm op;
     auto result = op.execute({&x}, {0.8}, {});
 
     auto z = result->at(0);
@@ -268,10 +268,10 @@ TEST_F(DeclarableOpsTests3, Test_ClipByAvgNorm_1) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_ClipByAvgNorm_2) {
-    NDArray<double> x('c', {2, 3}, {-3.0, 0.0, 0.0, 4.0, 0.0, 0.0});
-    NDArray<double> exp('c', {2, 3}, {-3, 0.0, 0.0, 4, 0.0, 0.0});
+    auto x= NDArrayFactory::_create<float>('c', {2, 3}, {-3.0, 0.0, 0.0, 4.0, 0.0, 0.0});
+    auto exp= NDArrayFactory::_create<float>('c', {2, 3}, {-3, 0.0, 0.0, 4, 0.0, 0.0});
 
-    nd4j::ops::clipbyavgnorm<double> op;
+    nd4j::ops::clipbyavgnorm op;
     auto result = op.execute({&x}, {0.9}, {});
 
     auto z = result->at(0);
@@ -284,10 +284,10 @@ TEST_F(DeclarableOpsTests3, Test_ClipByAvgNorm_2) {
 
 
 TEST_F(DeclarableOpsTests3, Test_ClipByNorm_1) {
-    NDArray<double> x('c', {2, 3}, {-3.0, 0.0, 0.0, 4.0, 0.0, 0.0});
-    NDArray<double> exp('c', {2, 3}, {-2.4, 0.0, 0.0, 3.2, 0.0, 0.0});
+    auto x= NDArrayFactory::_create<float>('c', {2, 3}, {-3.0, 0.0, 0.0, 4.0, 0.0, 0.0});
+    auto exp= NDArrayFactory::_create<float>('c', {2, 3}, {-2.4, 0.0, 0.0, 3.2, 0.0, 0.0});
 
-    nd4j::ops::clipbynorm<double> op;
+    nd4j::ops::clipbynorm op;
     auto result = op.execute({&x}, {4.0}, {});
 
     auto z = result->at(0);
@@ -299,10 +299,10 @@ TEST_F(DeclarableOpsTests3, Test_ClipByNorm_1) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_ClipByNorm_2) {
-    NDArray<double> x('c', {2, 3}, {-3.0, 0.0, 0.0, 4.0, 0.0, 0.0});
-    NDArray<double> exp('c', {2, 3}, {-3.0, 0.0, 0.0, 4.0, 0.0, 0.0});
+    auto x= NDArrayFactory::_create<float>('c', {2, 3}, {-3.0, 0.0, 0.0, 4.0, 0.0, 0.0});
+    auto exp= NDArrayFactory::_create<float>('c', {2, 3}, {-3.0, 0.0, 0.0, 4.0, 0.0, 0.0});
 
-    nd4j::ops::clipbynorm<double> op;
+    nd4j::ops::clipbynorm op;
     auto result = op.execute({&x}, {6.0}, {});
 
     auto z = result->at(0);
@@ -315,10 +315,10 @@ TEST_F(DeclarableOpsTests3, Test_ClipByNorm_2) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_CumSum_1) {
-    NDArray<float> x('c', {1, 4}, {1, 2, 3, 4});
-    NDArray<float> exp('c', {1, 4}, {1, 3, 6, 10});
+    auto x= NDArrayFactory::_create<float>('c', {1, 4}, {1, 2, 3, 4});
+    auto exp= NDArrayFactory::_create<float>('c', {1, 4}, {1, 3, 6, 10});
 
-    nd4j::ops::cumsum<float> op;
+    nd4j::ops::cumsum op;
     auto result = op.execute({&x}, {}, {0, 0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -331,10 +331,10 @@ TEST_F(DeclarableOpsTests3, Test_CumSum_1) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_CumSum_2) {
-    NDArray<float> x('c', {2, 4}, {1, 2, 3, 4, 1, 2, 3, 4});
-    NDArray<float> exp('c', {2, 4}, {1, 3, 6, 10, 1, 3, 6, 10});
+    auto x= NDArrayFactory::_create<float>('c', {2, 4}, {1, 2, 3, 4, 1, 2, 3, 4});
+    auto exp= NDArrayFactory::_create<float>('c', {2, 4}, {1, 3, 6, 10, 1, 3, 6, 10});
 
-    nd4j::ops::cumsum<float> op;
+    nd4j::ops::cumsum op;
     auto result = op.execute({&x}, {}, {0, 0, 1});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -347,10 +347,10 @@ TEST_F(DeclarableOpsTests3, Test_CumSum_2) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_CumSum_3) {
-    NDArray<float> x('c', {2, 4}, {1, 2, 3, 4, 1, 2, 3, 4});
-    NDArray<float> exp('c', {2, 4}, {1, 2, 3, 4, 2, 4, 6, 8});
+    auto x= NDArrayFactory::_create<float>('c', {2, 4}, {1, 2, 3, 4, 1, 2, 3, 4});
+    auto exp= NDArrayFactory::_create<float>('c', {2, 4}, {1, 2, 3, 4, 2, 4, 6, 8});
 
-    nd4j::ops::cumsum<float> op;
+    nd4j::ops::cumsum op;
     auto result = op.execute({&x}, {}, {0, 0, 0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -363,13 +363,13 @@ TEST_F(DeclarableOpsTests3, Test_CumSum_3) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_ListDiff_1) {
-    NDArray<float> x('c', {6}, {1, 2, 3, 4, 5, 6});
-    NDArray<float> y('c', {3}, {1, 3, 5});
+    auto x= NDArrayFactory::_create<float>('c', {6}, {1, 2, 3, 4, 5, 6});
+    auto y= NDArrayFactory::_create<float>('c', {3}, {1, 3, 5});
 
-    NDArray<float> exp0('c', {3}, {2, 4, 6});
-    NDArray<float> exp1('c', {3}, {1, 3, 5});
+    auto exp0= NDArrayFactory::_create<float>('c', {3}, {2, 4, 6});
+    auto exp1= NDArrayFactory::_create<float>('c', {3}, {1, 3, 5});
 
-    nd4j::ops::listdiff<float> op;
+    nd4j::ops::listdiff op;
     auto result = op.execute({&x, &y}, {}, {});
 
     ASSERT_EQ(Status::OK(), result->status());
@@ -387,12 +387,12 @@ TEST_F(DeclarableOpsTests3, Test_ListDiff_1) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Range_1) {
-    NDArray<float> start(0.3);
-    NDArray<float> stop(-5);
-    NDArray<float> step(-0.33);
-    NDArray<float> exp('c', {17}, { 0.3 , -0.03, -0.36, -0.69, -1.02, -1.35, -1.68, -2.01, -2.34, -2.67,-3. , -3.33, -3.66, -3.99, -4.32, -4.65, -4.98});
+    auto start = NDArrayFactory::_create<float>(0.3);
+    auto stop = NDArrayFactory::_create<float>(-5);
+    auto step = NDArrayFactory::_create<float>(-0.33);
+    auto exp= NDArrayFactory::_create<float>('c', {17}, { 0.3 , -0.03, -0.36, -0.69, -1.02, -1.35, -1.68, -2.01, -2.34, -2.67,-3. , -3.33, -3.66, -3.99, -4.32, -4.65, -4.98});
 
-    nd4j::ops::range<float> op;
+    nd4j::ops::range op;
     auto result = op.execute({&start, &stop, &step}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -407,12 +407,12 @@ TEST_F(DeclarableOpsTests3, Test_Range_1) {
 
 
 TEST_F(DeclarableOpsTests3, Test_Range_2) {
-    NDArray<float> start('c', {1, 1}, {2});
-    NDArray<float> stop('c', {1, 1}, {0});
-    NDArray<float> step('c', {1, 1}, {-1});
-    NDArray<float> exp('c', {2}, {2, 1});
+    auto start= NDArrayFactory::_create<float>('c', {1, 1}, {2});
+    auto stop= NDArrayFactory::_create<float>('c', {1, 1}, {0});
+    auto step= NDArrayFactory::_create<float>('c', {1, 1}, {-1});
+    auto exp= NDArrayFactory::_create<float>('c', {2}, {2, 1});
 
-    nd4j::ops::range<float> op;
+    nd4j::ops::range op;
     auto result = op.execute({&start, &stop, &step}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -426,12 +426,12 @@ TEST_F(DeclarableOpsTests3, Test_Range_2) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Range_3) {
-    NDArray<float> start('c', {1, 1}, {0});
-    NDArray<float> stop('c', {1, 1}, {2});
-    NDArray<float> step('c', {1, 1}, {1});
-    NDArray<float> exp('c', {2}, {0, 1});
+    auto start= NDArrayFactory::_create<float>('c', {1, 1}, {0});
+    auto stop= NDArrayFactory::_create<float>('c', {1, 1}, {2});
+    auto step= NDArrayFactory::_create<float>('c', {1, 1}, {1});
+    auto exp= NDArrayFactory::_create<float>('c', {2}, {0, 1});
 
-    nd4j::ops::range<float> op;
+    nd4j::ops::range op;
     auto result = op.execute({&start, &stop, &step}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -446,9 +446,9 @@ TEST_F(DeclarableOpsTests3, Test_Range_3) {
 
 
 TEST_F(DeclarableOpsTests3, Test_Range_4) {
-    NDArray<float> exp('c', {13}, {-10.,  -8.334,  -6.668,  -5.002,  -3.336,  -1.67 ,  -0.004,   1.662,   3.328,   4.994,   6.66 ,   8.326,   9.992});
+    auto exp= NDArrayFactory::_create<float>('c', {13}, {-10.,  -8.334,  -6.668,  -5.002,  -3.336,  -1.67 ,  -0.004,   1.662,   3.328,   4.994,   6.66 ,   8.326,   9.992});
 
-    nd4j::ops::range<float> op;
+    nd4j::ops::range op;
     auto result = op.execute({}, {-10., 10., 1.666}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -463,9 +463,9 @@ TEST_F(DeclarableOpsTests3, Test_Range_4) {
 
 
 TEST_F(DeclarableOpsTests3, Test_Range_5) {
-    NDArray<float> exp('c', {2}, {2, 1});
+    auto exp= NDArrayFactory::_create<float>('c', {2}, {2, 1});
 
-    nd4j::ops::range<float> op;
+    nd4j::ops::range op;
     auto result = op.execute({}, {2, 0, -1}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -479,9 +479,9 @@ TEST_F(DeclarableOpsTests3, Test_Range_5) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Range_6) {
-    NDArray<float> exp('c', {2}, {0, 1});
+    auto exp= NDArrayFactory::_create<float>('c', {2}, {0, 1});
 
-    nd4j::ops::range<float> op;
+    nd4j::ops::range op;
     auto result = op.execute({}, {0, 2, 1}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -495,9 +495,9 @@ TEST_F(DeclarableOpsTests3, Test_Range_6) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Range_7) {
-    NDArray<float> exp('c', {10}, {10.,  8.334,  6.668,  5.002,  3.336,  1.67 ,  0.004, -1.662, -3.328, -4.994});
+    auto exp= NDArrayFactory::_create<float>('c', {10}, {10.,  8.334,  6.668,  5.002,  3.336,  1.67 ,  0.004, -1.662, -3.328, -4.994});
 
-    nd4j::ops::range<float> op;
+    nd4j::ops::range op;
     auto result = op.execute({}, {10,-5,-1.666}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -513,9 +513,9 @@ TEST_F(DeclarableOpsTests3, Test_Range_7) {
 
 
 TEST_F(DeclarableOpsTests3, Test_Range_8) {
-    NDArray<float> exp('c', {2}, {2, 1});
+    auto exp= NDArrayFactory::_create<float>('c', {2}, {2, 1});
 
-    nd4j::ops::range<float> op;
+    nd4j::ops::range op;
     auto result = op.execute({}, {}, {2, 0, -1});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -529,9 +529,9 @@ TEST_F(DeclarableOpsTests3, Test_Range_8) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Range_9) {
-    NDArray<float> exp('c', {2}, {0, 1});
+    auto exp= NDArrayFactory::_create<float>('c', {2}, {0, 1});
 
-    nd4j::ops::range<float> op;
+    nd4j::ops::range op;
     auto result = op.execute({}, {}, {0, 2, 1});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -545,14 +545,14 @@ TEST_F(DeclarableOpsTests3, Test_Range_9) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_1) {
-    NDArray<double> a('c', {1, 3}, {1, 1, 1});
-    NDArray<double> b('c', {1, 3}, {0, 0, 0});
-    NDArray<double> x('f', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
-    NDArray<double> y('f', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    auto a= NDArrayFactory::_create<float>('c', {1, 3}, {1, 1, 1});
+    auto b= NDArrayFactory::_create<float>('c', {1, 3}, {0, 0, 0});
+    auto x= NDArrayFactory::_create<float>('f', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    auto y= NDArrayFactory::_create<float>('f', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
 
-    auto exp = MmulHelper<double>::mmul(&x, &y);
+    auto exp = MmulHelper::mmul(&x, &y);
 
-    nd4j::ops::batched_gemm<double> op;
+    nd4j::ops::batched_gemm op;
     auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {111, 111, 3, 3, 3, 3, 3, 3, 3});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -573,14 +573,14 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_1) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_2) {
-    NDArray<double> a('c', {1, 3}, {1, 1, 1});
-    NDArray<double> b('c', {1, 3}, {0, 0, 0});
-    NDArray<double> x('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
-    NDArray<double> y('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    auto a= NDArrayFactory::_create<float>('c', {1, 3}, {1, 1, 1});
+    auto b= NDArrayFactory::_create<float>('c', {1, 3}, {0, 0, 0});
+    auto x= NDArrayFactory::_create<float>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    auto y= NDArrayFactory::_create<float>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
 
-    auto exp = MmulHelper<double>::mmul(&x, &y);
+    auto exp = MmulHelper::mmul(&x, &y);
 
-    nd4j::ops::batched_gemm<double> op;
+    nd4j::ops::batched_gemm op;
     auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {112, 112, 3, 3, 3, 3, 3, 3, 3});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -601,14 +601,14 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_2) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_3) {
-    NDArray<double> a('c', {1, 3}, {1, 1, 1});
-    NDArray<double> b('c', {1, 3}, {0, 0, 0});
-    NDArray<double> x('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
-    NDArray<double> y('f', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    auto a= NDArrayFactory::_create<float>('c', {1, 3}, {1, 1, 1});
+    auto b= NDArrayFactory::_create<float>('c', {1, 3}, {0, 0, 0});
+    auto x= NDArrayFactory::_create<float>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    auto y= NDArrayFactory::_create<float>('f', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
 
-    auto exp = MmulHelper<double>::mmul(&x, &y);
+    auto exp = MmulHelper::mmul(&x, &y);
 
-    nd4j::ops::batched_gemm<double> op;
+    nd4j::ops::batched_gemm op;
     auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {112, 111, 3, 3, 3, 3, 3, 3, 3});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -629,14 +629,14 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_3) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_4) {
-    NDArray<double> a('c', {1, 3}, {1, 1, 1});
-    NDArray<double> b('c', {1, 3}, {0, 0, 0});
-    NDArray<double> x('f', {5, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
-    NDArray<double> y('f', {3, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+    auto a= NDArrayFactory::_create<float>('c', {1, 3}, {1, 1, 1});
+    auto b= NDArrayFactory::_create<float>('c', {1, 3}, {0, 0, 0});
+    auto x= NDArrayFactory::_create<float>('f', {5, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+    auto y= NDArrayFactory::_create<float>('f', {3, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
 
-    auto exp = MmulHelper<double>::mmul(&x, &y);
+    auto exp = MmulHelper::mmul(&x, &y);
 
-    nd4j::ops::batched_gemm<double> op;
+    nd4j::ops::batched_gemm op;
     auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {111, 111, 5, 4, 3, 5, 3, 5, 3});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -657,14 +657,14 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_4) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_5) {
-    NDArray<double> a('c', {1, 3}, {1, 1, 1});
-    NDArray<double> b('c', {1, 3}, {0, 0, 0});
-    NDArray<double> x('c', {5, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
-    NDArray<double> y('c', {3, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+    auto a= NDArrayFactory::_create<float>('c', {1, 3}, {1, 1, 1});
+    auto b= NDArrayFactory::_create<float>('c', {1, 3}, {0, 0, 0});
+    auto x= NDArrayFactory::_create<float>('c', {5, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+    auto y= NDArrayFactory::_create<float>('c', {3, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
 
-    auto exp = MmulHelper<double>::mmul(&x, &y);
+    auto exp = MmulHelper::mmul(&x, &y);
 
-    nd4j::ops::batched_gemm<double> op;
+    nd4j::ops::batched_gemm op;
     auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {112, 112, 5, 4, 3, 3, 4, 5, 3});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -686,14 +686,14 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_5) {
 
 
 TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_6) {
-    NDArray<double> a('c', {1, 3}, {1, 1, 1});
-    NDArray<double> b('c', {1, 3}, {0, 0, 0});
-    NDArray<double> x('f', {2, 5}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
-    NDArray<double> y('f', {5, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+    auto a= NDArrayFactory::_create<float>('c', {1, 3}, {1, 1, 1});
+    auto b= NDArrayFactory::_create<float>('c', {1, 3}, {0, 0, 0});
+    auto x= NDArrayFactory::_create<float>('f', {2, 5}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+    auto y= NDArrayFactory::_create<float>('f', {5, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 
-    auto exp = MmulHelper<double>::mmul(&x, &y);
+    auto exp = MmulHelper::mmul(&x, &y);
 
-    nd4j::ops::batched_gemm<double> op;
+    nd4j::ops::batched_gemm op;
     auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {111, 111, 2, 3, 5, 2, 5, 2, 3});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -714,14 +714,14 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_6) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_7) {
-    NDArray<double> a('c', {1, 3}, {1, 1, 1});
-    NDArray<double> b('c', {1, 3}, {0, 0, 0});
-    NDArray<double> x('c', {2, 5}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
-    NDArray<double> y('c', {5, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+    auto a= NDArrayFactory::_create<float>('c', {1, 3}, {1, 1, 1});
+    auto b= NDArrayFactory::_create<float>('c', {1, 3}, {0, 0, 0});
+    auto x= NDArrayFactory::_create<float>('c', {2, 5}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+    auto y= NDArrayFactory::_create<float>('c', {5, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 
-    auto exp = MmulHelper<double>::mmul(&x, &y);
+    auto exp = MmulHelper::mmul(&x, &y);
 
-    nd4j::ops::batched_gemm<double> op;
+    nd4j::ops::batched_gemm op;
     auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {112, 112, 2, 3, 5, 5, 3, 2, 3});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -742,11 +742,11 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_7) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_1) {
-    NDArray<double> x('c', {3, 4}, {1, 2, 3, 4, 5, 6, 7, 8 , 9, 10, 11, 12});
-    NDArray<double> y('c', {4, 3}, {1, 2, 3, 4, 5, 6, 7, 8 , 9, 10, 11, 12});
-    NDArray<double> exp('f', {4, 4}, {38.0, 44.0, 50.0, 56.0, 83.0, 98.0, 113.0, 128.0, 128.0, 152.0, 176.0, 200.0, 173.0, 206.0, 239.0, 272.0});
+    auto x= NDArrayFactory::_create<float>('c', {3, 4}, {1, 2, 3, 4, 5, 6, 7, 8 , 9, 10, 11, 12});
+    auto y= NDArrayFactory::_create<float>('c', {4, 3}, {1, 2, 3, 4, 5, 6, 7, 8 , 9, 10, 11, 12});
+    auto exp= NDArrayFactory::_create<float>('f', {4, 4}, {38.0, 44.0, 50.0, 56.0, 83.0, 98.0, 113.0, 128.0, 128.0, 152.0, 176.0, 200.0, 173.0, 206.0, 239.0, 272.0});
 
-    nd4j::ops::matmul<double> op;
+    nd4j::ops::matmul op;
     auto result = op.execute({&x, &y}, {}, {1, 1});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -761,11 +761,11 @@ TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_1) {
 
 
 TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_2) {
-    NDArray<double> x('c', {3, 4}, {1, 2, 3, 4, 5, 6, 7, 8 , 9, 10, 11, 12});
-    NDArray<double> y('c', {4, 3}, {1, 2, 3, 4, 5, 6, 7, 8 , 9, 10, 11, 12});
-    NDArray<double> exp('f', {3, 3}, {70.0, 158.0, 246.0, 80.0, 184.0, 288.0, 90.0, 210.0, 330.0});
+    auto x= NDArrayFactory::_create<float>('c', {3, 4}, {1, 2, 3, 4, 5, 6, 7, 8 , 9, 10, 11, 12});
+    auto y= NDArrayFactory::_create<float>('c', {4, 3}, {1, 2, 3, 4, 5, 6, 7, 8 , 9, 10, 11, 12});
+    auto exp= NDArrayFactory::_create<float>('f', {3, 3}, {70.0, 158.0, 246.0, 80.0, 184.0, 288.0, 90.0, 210.0, 330.0});
 
-    nd4j::ops::matmul<double> op;
+    nd4j::ops::matmul op;
     auto result = op.execute({&x, &y}, {}, {0, 0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -780,11 +780,11 @@ TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_2) {
 
 
 TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_3) {
-    NDArray<double> x('c', {1, 3}, {1, 2, 3});
-    NDArray<double> y('c', {1, 4}, {1, 2, 3, 4});
-    NDArray<double> exp('f', {3, 4}, {1.0, 2.0, 3.0, 2.0, 4.0, 6.0, 3.0, 6.0, 9.0, 4.0, 8.0, 12.0});
+    auto x= NDArrayFactory::_create<float>('c', {1, 3}, {1, 2, 3});
+    auto y= NDArrayFactory::_create<float>('c', {1, 4}, {1, 2, 3, 4});
+    auto exp= NDArrayFactory::_create<float>('f', {3, 4}, {1.0, 2.0, 3.0, 2.0, 4.0, 6.0, 3.0, 6.0, 9.0, 4.0, 8.0, 12.0});
 
-    nd4j::ops::matmul<double> op;
+    nd4j::ops::matmul op;
     auto result = op.execute({&x, &y}, {}, {1, 0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -799,11 +799,11 @@ TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_3) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_4) {
-    NDArray<double> x('c', {3, 1}, {1, 2, 3});
-    NDArray<double> y('c', {4, 1}, {1, 2, 3, 4});
-    NDArray<double> exp('f', {3, 4}, {1.0, 2.0, 3.0, 2.0, 4.0, 6.0, 3.0, 6.0, 9.0, 4.0, 8.0, 12.0});
+    auto x= NDArrayFactory::_create<float>('c', {3, 1}, {1, 2, 3});
+    auto y= NDArrayFactory::_create<float>('c', {4, 1}, {1, 2, 3, 4});
+    auto exp= NDArrayFactory::_create<float>('f', {3, 4}, {1.0, 2.0, 3.0, 2.0, 4.0, 6.0, 3.0, 6.0, 9.0, 4.0, 8.0, 12.0});
 
-    nd4j::ops::matmul<double> op;
+    nd4j::ops::matmul op;
     auto result = op.execute({&x, &y}, {}, {0, 1});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -818,11 +818,11 @@ TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_4) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_5) {
-    NDArray<double> x('c', {3, 1}, {1, 2, 3});
-    NDArray<double> y('c', {1, 4}, {1, 2, 3, 4});
-    NDArray<double> exp('f', {3, 4}, {1.0, 2.0, 3.0, 2.0, 4.0, 6.0, 3.0, 6.0, 9.0, 4.0, 8.0, 12.0});
+    auto x= NDArrayFactory::_create<float>('c', {3, 1}, {1, 2, 3});
+    auto y= NDArrayFactory::_create<float>('c', {1, 4}, {1, 2, 3, 4});
+    auto exp= NDArrayFactory::_create<float>('f', {3, 4}, {1.0, 2.0, 3.0, 2.0, 4.0, 6.0, 3.0, 6.0, 9.0, 4.0, 8.0, 12.0});
 
-    nd4j::ops::matmul<double> op;
+    nd4j::ops::matmul op;
     auto result = op.execute({&x, &y}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -837,11 +837,11 @@ TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_5) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_6) {
-    NDArray<double> x('c', {4, 1}, {1, 2, 3, 4});
-    NDArray<double> y('c', {1, 4}, {1, 2, 3, 4});
-    NDArray<double> exp('f', {4, 4}, {1,2, 3, 4,2,4, 6, 8,3,6, 9,12,4,8,12,16});
+    auto x= NDArrayFactory::_create<float>('c', {4, 1}, {1, 2, 3, 4});
+    auto y= NDArrayFactory::_create<float>('c', {1, 4}, {1, 2, 3, 4});
+    auto exp= NDArrayFactory::_create<float>('f', {4, 4}, {1,2, 3, 4,2,4, 6, 8,3,6, 9,12,4,8,12,16});
 
-    nd4j::ops::matmul<double> op;
+    nd4j::ops::matmul op;
     auto result = op.execute({&x, &y}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -856,10 +856,10 @@ TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_6) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_AvgPool_1) {
-    NDArray<float> x('c', {2, 10, 10, 3});
+    auto x= NDArrayFactory::_create<float>('c', {2, 10, 10, 3});
     x.linspace(1);
 
-    nd4j::ops::avgpool2d<float> op;
+    nd4j::ops::avgpool2d op;
     //                                  kY  kX  sY  sX  pY  pX  dY  dX  M   P
     auto result = op.execute({&x}, {}, {3,  3,  3,  3,  0,  0,  1,  1,  1,  0,  1});
     //                                  0   1   2   3   4   5   6   7   8   9   10
@@ -872,11 +872,11 @@ TEST_F(DeclarableOpsTests3, Test_AvgPool_1) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_ReverseDivide_1) {
-    NDArray<float> x('c', {1, 3}, {2, 2, 2});
-    NDArray<float> y('c', {1, 3}, {4, 6, 8});
-    NDArray<float> exp('c', {1, 3}, {2, 3, 4});
+    auto x= NDArrayFactory::_create<float>('c', {1, 3}, {2, 2, 2});
+    auto y= NDArrayFactory::_create<float>('c', {1, 3}, {4, 6, 8});
+    auto exp= NDArrayFactory::_create<float>('c', {1, 3}, {2, 3, 4});
 
-    nd4j::ops::reversedivide<float> op;
+    nd4j::ops::reversedivide op;
     auto result = op.execute({&x, &y}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -894,26 +894,26 @@ TEST_F(DeclarableOpsTests3, sruCell_test1) {
     const int batchSize = 2;
     const int inSize    = 5;
 
-    NDArray<double> xt  ('c', {batchSize, inSize});
-    NDArray<double> ct_1('c', {batchSize, inSize});
-    NDArray<double> w   ('c', {inSize, 3*inSize});
-    NDArray<double> b   ('c', {2*inSize});
+    auto xt  = NDArrayFactory::_create<float>('c', {batchSize, inSize});
+    auto ct_1= NDArrayFactory::_create<float>('c', {batchSize, inSize});
+    auto w   = NDArrayFactory::_create<float>('c', {inSize, 3*inSize});
+    auto b   = NDArrayFactory::_create<float>('c', {2*inSize});
 
     xt.assign(1.);
     ct_1.assign(2.);
     w.assign(0.5);
     b.assign(0.7);
 
-    NDArray<double> expHt('c', {batchSize, inSize}, {0.96674103,0.96674103,0.96674103,0.96674103,0.96674103,0.96674103,0.96674103,0.96674103,0.96674103,0.96674103});
-    NDArray<double> expCt('c', {batchSize, inSize}, {2.01958286,2.01958286,2.01958286,2.01958286,2.01958286, 2.01958286,2.01958286,2.01958286,2.01958286,2.01958286});
+    auto expHt= NDArrayFactory::_create<float>('c', {batchSize, inSize}, {0.96674103,0.96674103,0.96674103,0.96674103,0.96674103,0.96674103,0.96674103,0.96674103,0.96674103,0.96674103});
+    auto expCt= NDArrayFactory::_create<float>('c', {batchSize, inSize}, {2.01958286,2.01958286,2.01958286,2.01958286,2.01958286, 2.01958286,2.01958286,2.01958286,2.01958286,2.01958286});
 
-    nd4j::ops::sruCell<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&xt, &ct_1, &w, &b}, {}, {});
+    nd4j::ops::sruCell op;
+    auto results = op.execute({&xt, &ct_1, &w, &b}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *ht = results->at(0);
-    NDArray<double> *ct = results->at(1);
+    auto *ht = results->at(0);
+    auto *ct = results->at(1);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -930,26 +930,26 @@ TEST_F(DeclarableOpsTests3, sruCell_test2) {
     const int batchSize = 2;
     const int inSize    = 5;
 
-    NDArray<double> xt  ('c', {batchSize, inSize});
-    NDArray<double> ct_1('c', {batchSize, inSize});
-    NDArray<double> w   ('c', {inSize, 3*inSize});
-    NDArray<double> b   ('c', {2*inSize});
+    auto xt  = NDArrayFactory::_create<float>('c', {batchSize, inSize});
+    auto ct_1= NDArrayFactory::_create<float>('c', {batchSize, inSize});
+    auto w   = NDArrayFactory::_create<float>('c', {inSize, 3*inSize});
+    auto b   = NDArrayFactory::_create<float>('c', {2*inSize});
 
     xt.assign(1.);
     ct_1.assign(2.);
     w.assign(0.5);
     b.assign(-1.);
 
-    NDArray<double> expHt('c', {batchSize, inSize}, {0.97542038,0.97542038,0.97542038,0.97542038,0.97542038,0.97542038,0.97542038,0.97542038,0.97542038,0.97542038});
-    NDArray<double> expCt('c', {batchSize, inSize}, {2.09121276,2.09121276,2.09121276,2.09121276,2.09121276,2.09121276,2.09121276,2.09121276,2.09121276,2.09121276});
+    auto expHt= NDArrayFactory::_create<float>('c', {batchSize, inSize}, {0.97542038,0.97542038,0.97542038,0.97542038,0.97542038,0.97542038,0.97542038,0.97542038,0.97542038,0.97542038});
+    auto expCt= NDArrayFactory::_create<float>('c', {batchSize, inSize}, {2.09121276,2.09121276,2.09121276,2.09121276,2.09121276,2.09121276,2.09121276,2.09121276,2.09121276,2.09121276});
 
-    nd4j::ops::sruCell<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&xt, &ct_1, &w, &b}, {}, {});
+    nd4j::ops::sruCell op;
+    auto results = op.execute({&xt, &ct_1, &w, &b}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *ht = results->at(0);
-    NDArray<double> *ct = results->at(1);
+    auto *ht = results->at(0);
+    auto *ct = results->at(1);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -965,26 +965,26 @@ TEST_F(DeclarableOpsTests3, sruCell_test3) {
     const int batchSize = 2;
     const int inSize    = 5;
 
-    NDArray<double> xt  ('c', {batchSize, inSize});
-    NDArray<double> ct_1('c', {batchSize, inSize});
-    NDArray<double> w   ('c', {inSize, 3*inSize});
-    NDArray<double> b   ('c', {2*inSize});
+    auto xt  = NDArrayFactory::_create<float>('c', {batchSize, inSize});
+    auto ct_1= NDArrayFactory::_create<float>('c', {batchSize, inSize});
+    auto w   = NDArrayFactory::_create<float>('c', {inSize, 3*inSize});
+    auto b   = NDArrayFactory::_create<float>('c', {2*inSize});
 
     xt.assign(10.);
     ct_1.assign(1.);
     w.assign(0.5);
     b.assign(-1.);
 
-    NDArray<double> expHt('c', {batchSize, inSize}, {0.76159416,0.76159416,0.76159416,0.76159416,0.76159416,0.76159416,0.76159416,0.76159416,0.76159416,0.76159416});
-    NDArray<double> expCt('c', {batchSize, inSize}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.});
+    auto expHt= NDArrayFactory::_create<float>('c', {batchSize, inSize}, {0.76159416,0.76159416,0.76159416,0.76159416,0.76159416,0.76159416,0.76159416,0.76159416,0.76159416,0.76159416});
+    auto expCt= NDArrayFactory::_create<float>('c', {batchSize, inSize}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.});
 
-    nd4j::ops::sruCell<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&xt, &ct_1, &w, &b}, {}, {});
+    nd4j::ops::sruCell op;
+    auto results = op.execute({&xt, &ct_1, &w, &b}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *ht = results->at(0);
-    NDArray<double> *ct = results->at(1);
+    auto *ht = results->at(0);
+    auto *ct = results->at(1);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1001,11 +1001,11 @@ TEST_F(DeclarableOpsTests3, gruCell_test1) {
     const int inSize    = 10;
     const int numUnits  = 4;
 
-    NDArray<double> xt  ('c', {batchSize, inSize});
-    NDArray<double> ht_1('c', {batchSize, numUnits});
-    NDArray<double> Wx  ('c', {inSize, 3*numUnits});
-    NDArray<double> Wh  ('c', {numUnits, 3*numUnits});
-    NDArray<double> b   ('c', {3*numUnits});
+    auto xt  = NDArrayFactory::_create<float>('c', {batchSize, inSize});
+    auto ht_1= NDArrayFactory::_create<float>('c', {batchSize, numUnits});
+    auto Wx  = NDArrayFactory::_create<float>('c', {inSize, 3*numUnits});
+    auto Wh  = NDArrayFactory::_create<float>('c', {numUnits, 3*numUnits});
+    auto b   = NDArrayFactory::_create<float>('c', {3*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -1013,14 +1013,14 @@ TEST_F(DeclarableOpsTests3, gruCell_test1) {
     Wh.assign(0.5);
     b.assign(0.7);
 
-    NDArray<double> expHt('c', {batchSize, numUnits}, {1.99993872,1.99993872,1.99993872,1.99993872,1.99993872,1.99993872,1.99993872,1.99993872});
+    auto expHt= NDArrayFactory::_create<float>('c', {batchSize, numUnits}, {1.99993872,1.99993872,1.99993872,1.99993872,1.99993872,1.99993872,1.99993872,1.99993872});
 
-    nd4j::ops::gruCell<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&xt, &ht_1, &Wx, &Wh, &b}, {}, {});
+    nd4j::ops::gruCell op;
+    auto results = op.execute({&xt, &ht_1, &Wx, &Wh, &b}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *ht = results->at(0);
+    auto *ht = results->at(0);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1035,11 +1035,11 @@ TEST_F(DeclarableOpsTests3, gruCell_test2) {
     const int inSize    = 10;
     const int numUnits  = 4;
 
-    NDArray<double> xt  ('c', {batchSize, inSize});
-    NDArray<double> ht_1('c', {batchSize, numUnits});
-    NDArray<double> Wx  ('c', {inSize, 3*numUnits});
-    NDArray<double> Wh  ('c', {numUnits, 3*numUnits});
-    NDArray<double> b   ('c', {3*numUnits});
+    auto xt  = NDArrayFactory::_create<float>('c', {batchSize, inSize});
+    auto ht_1= NDArrayFactory::_create<float>('c', {batchSize, numUnits});
+    auto Wx  = NDArrayFactory::_create<float>('c', {inSize, 3*numUnits});
+    auto Wh  = NDArrayFactory::_create<float>('c', {numUnits, 3*numUnits});
+    auto b   = NDArrayFactory::_create<float>('c', {3*numUnits});
 
     xt.assign(1.);
     ht_1.assign(0.);
@@ -1047,14 +1047,14 @@ TEST_F(DeclarableOpsTests3, gruCell_test2) {
     Wh.assign(1.5);
     b.assign(-10);
 
-    NDArray<double> expHt('c', {batchSize, numUnits}, {0.00669224,0.00669224,0.00669224,0.00669224,0.00669224,0.00669224,0.00669224,0.00669224});
+    auto expHt= NDArrayFactory::_create<float>('c', {batchSize, numUnits}, {0.00669224,0.00669224,0.00669224,0.00669224,0.00669224,0.00669224,0.00669224,0.00669224});
 
-    nd4j::ops::gruCell<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&xt, &ht_1, &Wx, &Wh, &b}, {}, {});
+    nd4j::ops::gruCell op;
+    auto results = op.execute({&xt, &ht_1, &Wx, &Wh, &b}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *ht = results->at(0);
+    auto *ht = results->at(0);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1069,11 +1069,11 @@ TEST_F(DeclarableOpsTests3, gruCell_test3) {
     const int inSize    = 10;
     const int numUnits  = 4;
 
-    NDArray<double> xt  ('c', {batchSize, inSize});
-    NDArray<double> ht_1('c', {batchSize, numUnits});
-    NDArray<double> Wx  ('c', {inSize, 3*numUnits});
-    NDArray<double> Wh  ('c', {numUnits, 3*numUnits});
-    NDArray<double> b   ('c', {3*numUnits});
+    auto xt  = NDArrayFactory::_create<float>('c', {batchSize, inSize});
+    auto ht_1= NDArrayFactory::_create<float>('c', {batchSize, numUnits});
+    auto Wx  = NDArrayFactory::_create<float>('c', {inSize, 3*numUnits});
+    auto Wh  = NDArrayFactory::_create<float>('c', {numUnits, 3*numUnits});
+    auto b   = NDArrayFactory::_create<float>('c', {3*numUnits});
 
     xt.assign(1.);
     ht_1.assign(0.);
@@ -1081,14 +1081,14 @@ TEST_F(DeclarableOpsTests3, gruCell_test3) {
     Wh.assign(0.1);
     b.assign(1);
 
-    NDArray<double> expHt('c', {batchSize, numUnits}, {0.1149149,0.1149149,0.1149149,0.1149149,0.1149149,0.1149149,0.1149149,0.1149149});
+    auto expHt= NDArrayFactory::_create<float>('c', {batchSize, numUnits}, {0.1149149,0.1149149,0.1149149,0.1149149,0.1149149,0.1149149,0.1149149,0.1149149});
 
-    nd4j::ops::gruCell<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&xt, &ht_1, &Wx, &Wh, &b}, {}, {});
+    nd4j::ops::gruCell op;
+    auto results = op.execute({&xt, &ht_1, &Wx, &Wh, &b}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *ht = results->at(0);
+    auto *ht = results->at(0);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1099,15 +1099,15 @@ TEST_F(DeclarableOpsTests3, gruCell_test3) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, invertPermutation_test1) {
 
-    NDArray<double> input('c', {1, 8}, {5,2,7,4,6,3,1,0});
-    NDArray<double> expected('c', {1, 8}, {7, 6, 1, 5, 3, 0, 4, 2});
+    auto input= NDArrayFactory::_create<float>('c', {1, 8}, {5,2,7,4,6,3,1,0});
+    auto expected= NDArrayFactory::_create<float>('c', {1, 8}, {7, 6, 1, 5, 3, 0, 4, 2});
 
-    nd4j::ops::invert_permutation<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&input}, {}, {});
+    nd4j::ops::invert_permutation op;
+    auto results = op.execute({&input}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1118,15 +1118,15 @@ TEST_F(DeclarableOpsTests3, invertPermutation_test1) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, invertPermutation_test2) {
 
-    NDArray<double> input('c', {1, 8}, {5,2,7,4,6,3,1,0});
-    NDArray<double> expected('c', {1, 8}, {7, 6, 1, 5, 3, 0, 4, 2});
+    auto input= NDArrayFactory::_create<float>('c', {1, 8}, {5,2,7,4,6,3,1,0});
+    auto expected= NDArrayFactory::_create<float>('c', {1, 8}, {7, 6, 1, 5, 3, 0, 4, 2});
 
-    nd4j::ops::invert_permutation<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&input}, {}, {});
+    nd4j::ops::invert_permutation op;
+    auto results = op.execute({&input}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1137,15 +1137,15 @@ TEST_F(DeclarableOpsTests3, invertPermutation_test2) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, invertPermutation_test3) {
 
-    NDArray<double> input('c', {1, 8}, {1,2,0,4,6,3,5,7});
-    NDArray<double> expected('c', {1, 8}, {2, 0, 1, 5, 3, 6, 4, 7});
+    auto input= NDArrayFactory::_create<float>('c', {1, 8}, {1,2,0,4,6,3,5,7});
+    auto expected= NDArrayFactory::_create<float>('c', {1, 8}, {2, 0, 1, 5, 3, 6, 4, 7});
 
-    nd4j::ops::invert_permutation<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&input}, {}, {});
+    nd4j::ops::invert_permutation op;
+    auto results = op.execute({&input}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1156,17 +1156,17 @@ TEST_F(DeclarableOpsTests3, invertPermutation_test3) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, diag_test1) {
 
-    NDArray<float> input('c', {3, 2});
+    auto input= NDArrayFactory::_create<float>('c', {3, 2});
     input.linspace(1);
 
-    NDArray<float> expected('c', {3,2,3,2}, {1,0,0,0,0,0, 0,2,0,0,0,0, 0,0,3,0,0,0, 0,0,0,4,0,0, 0,0,0,0,5,0, 0,0,0,0,0,6});
+    auto expected= NDArrayFactory::_create<float>('c', {3,2,3,2}, {1,0,0,0,0,0, 0,2,0,0,0,0, 0,0,3,0,0,0, 0,0,0,4,0,0, 0,0,0,0,5,0, 0,0,0,0,0,6});
 
-    nd4j::ops::diag<float> op;
-    nd4j::ResultSet<float>* results = op.execute({&input}, {}, {});
+    nd4j::ops::diag op;
+    auto results = op.execute({&input}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<float> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1177,17 +1177,17 @@ TEST_F(DeclarableOpsTests3, diag_test1) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, diag_test2) {
 
-    NDArray<float> input('c', {2, 3});
+    auto input= NDArrayFactory::_create<float>('c', {2, 3});
     input.linspace(1);
 
-    NDArray<float> expected('c', {2,3,2,3}, {1,0,0,0,0,0, 0,2,0,0,0,0, 0,0,3,0,0,0, 0,0,0,4,0,0, 0,0,0,0,5,0, 0,0,0,0,0,6});
+    auto expected= NDArrayFactory::_create<float>('c', {2,3,2,3}, {1,0,0,0,0,0, 0,2,0,0,0,0, 0,0,3,0,0,0, 0,0,0,4,0,0, 0,0,0,0,5,0, 0,0,0,0,0,6});
 
-    nd4j::ops::diag<float> op;
-    nd4j::ResultSet<float>* results = op.execute({&input}, {}, {});
+    nd4j::ops::diag op;
+    auto results = op.execute({&input}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<float> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1200,15 +1200,15 @@ TEST_F(DeclarableOpsTests3, diag_test2) {
 TEST_F(DeclarableOpsTests3, diag_test_vector) {
 
 
-    NDArray<float> *input = NDArray<float>::linspace(1,4,4);
-    NDArray<float> expected('c', {4,4}, {1,0,0,0, 0,2,0,0, 0,0,3,0,0,0,0,4});
+    auto input = NDArrayFactory::linspace(1,4,4);
+    auto expected= NDArrayFactory::_create<float>('c', {4,4}, {1,0,0,0, 0,2,0,0, 0,0,3,0,0,0,0,4});
 
-    nd4j::ops::diag<float> op;
-    nd4j::ResultSet<float>* results = op.execute({input}, {}, {});
+    nd4j::ops::diag op;
+    auto results = op.execute({input}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<float> *output = results->at(0);
+    auto output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1223,16 +1223,16 @@ TEST_F(DeclarableOpsTests3, diag_test_vector) {
 TEST_F(DeclarableOpsTests3, diag_test_col_vector) {
 
 
-    NDArray<float> *input = NDArray<float>::linspace(1,4,4);
+    auto *input = NDArrayFactory::linspace(1,4,4);
     input->reshapei({4,1});
-    NDArray<float> expected('c', {4,4}, {1,0,0,0, 0,2,0,0, 0,0,3,0,0,0,0,4});
+    auto expected= NDArrayFactory::_create<float>('c', {4,4}, {1,0,0,0, 0,2,0,0, 0,0,3,0,0,0,0,4});
 
-    nd4j::ops::diag<float> op;
-    nd4j::ResultSet<float>* results = op.execute({input}, {}, {});
+    nd4j::ops::diag op;
+    auto results = op.execute({input}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<float> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1243,17 +1243,17 @@ TEST_F(DeclarableOpsTests3, diag_test_col_vector) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, diag_test3) {
 
-    NDArray<float> input('c', {1, 3});
+    auto input= NDArrayFactory::_create<float>('c', {1, 3});
     input.linspace(1);
 
-    NDArray<float> expected('c', {3,3}, {1,0,0, 0,2,0, 0,0,3});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {1,0,0, 0,2,0, 0,0,3});
 
-    nd4j::ops::diag<float> op;
-    nd4j::ResultSet<float>* results = op.execute({&input}, {}, {});
+    nd4j::ops::diag op;
+    auto results = op.execute({&input}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<float> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1264,17 +1264,17 @@ TEST_F(DeclarableOpsTests3, diag_test3) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, diag_test4) {
 
-    NDArray<float> input('c', {3, 1});
+    auto input= NDArrayFactory::_create<float>('c', {3, 1});
     input.linspace(1);
 
-    NDArray<float> expected('c', {3,3}, {1,0,0, 0,2,0, 0,0,3});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {1,0,0, 0,2,0, 0,0,3});
 
-    nd4j::ops::diag<float> op;
-    nd4j::ResultSet<float>* results = op.execute({&input}, {}, {});
+    nd4j::ops::diag op;
+    auto results = op.execute({&input}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<float> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1285,17 +1285,17 @@ TEST_F(DeclarableOpsTests3, diag_test4) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, diag_test5) {
 
-    NDArray<float> input('c', {1, 1});
+    auto input= NDArrayFactory::_create<float>('c', {1, 1});
     input.linspace(2);
 
-    NDArray<float> expected('c', {1,1}, {2});
+    auto expected= NDArrayFactory::_create<float>('c', {1,1}, {2});
 
-    nd4j::ops::diag<float> op;
-    nd4j::ResultSet<float>* results = op.execute({&input}, {}, {});
+    nd4j::ops::diag op;
+    auto results = op.execute({&input}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<float> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1306,17 +1306,17 @@ TEST_F(DeclarableOpsTests3, diag_test5) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, diag_test6) {
 
-    NDArray<float> input('c', {2,2,2});
+    auto input= NDArrayFactory::_create<float>('c', {2,2,2});
     input.linspace(1);
 
-    NDArray<float> expected('c', {2,2,2,2,2,2}, {1,0,0,0, 0,0,0,0, 0,2,0,0, 0,0,0,0, 0,0,3,0, 0,0,0,0, 0,0,0,4, 0,0,0,0, 0,0,0,0, 5,0,0,0, 0,0,0,0, 0,6,0,0, 0,0,0,0, 0,0,7,0, 0,0,0,0, 0,0,0,8});
+    auto expected= NDArrayFactory::_create<float>('c', {2,2,2,2,2,2}, {1,0,0,0, 0,0,0,0, 0,2,0,0, 0,0,0,0, 0,0,3,0, 0,0,0,0, 0,0,0,4, 0,0,0,0, 0,0,0,0, 5,0,0,0, 0,0,0,0, 0,6,0,0, 0,0,0,0, 0,0,7,0, 0,0,0,0, 0,0,0,8});
 
-    nd4j::ops::diag<float> op;
-    nd4j::ResultSet<float>* results = op.execute({&input}, {}, {});
+    nd4j::ops::diag op;
+    auto results = op.execute({&input}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<float> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1327,19 +1327,19 @@ TEST_F(DeclarableOpsTests3, diag_test6) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, matrixSetDiag_test1) {
 
-    NDArray<float> input('c', {4,3,2});
-    NDArray<float> diagonal('c', {4,2});
+    auto input= NDArrayFactory::_create<float>('c', {4,3,2});
+    auto diagonal= NDArrayFactory::_create<float>('c', {4,2});
     input.assign(0.);
     diagonal.assign(1.);
 
-    NDArray<float> expected('c', {4,3,2}, {1,0,0,1,0,0, 1,0,0,1,0,0, 1,0,0,1,0,0, 1,0,0,1,0,0});
+    auto expected= NDArrayFactory::_create<float>('c', {4,3,2}, {1,0,0,1,0,0, 1,0,0,1,0,0, 1,0,0,1,0,0, 1,0,0,1,0,0});
 
-    nd4j::ops::matrix_set_diag<float> op;
-    nd4j::ResultSet<float>* results = op.execute({&input, &diagonal}, {}, {});
+    nd4j::ops::matrix_set_diag op;
+    auto results = op.execute({&input, &diagonal}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<float> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1350,19 +1350,19 @@ TEST_F(DeclarableOpsTests3, matrixSetDiag_test1) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, matrixSetDiag_test2) {
 
-    NDArray<float> input('c', {1,1,2});
-    NDArray<float> diagonal('c', {1,1});
+    auto input= NDArrayFactory::_create<float>('c', {1,1,2});
+    auto diagonal= NDArrayFactory::_create<float>('c', {1,1});
     input.assign(0.);
     diagonal.assign(1.);
 
-    NDArray<float> expected('c', {1,1,2}, {1,0});
+    auto expected= NDArrayFactory::_create<float>('c', {1,1,2}, {1,0});
 
-    nd4j::ops::matrix_set_diag<float> op;
-    nd4j::ResultSet<float>* results = op.execute({&input, &diagonal}, {}, {});
+    nd4j::ops::matrix_set_diag op;
+    auto results = op.execute({&input, &diagonal}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<float> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1373,19 +1373,19 @@ TEST_F(DeclarableOpsTests3, matrixSetDiag_test2) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, matrixSetDiag_test3) {
 
-    NDArray<float> input('c', {2,1,4});
-    NDArray<float> diagonal('c', {2,1});
+    auto input= NDArrayFactory::_create<float>('c', {2,1,4});
+    auto diagonal= NDArrayFactory::_create<float>('c', {2,1});
     input.assign(0.);
     diagonal.assign(1.);
 
-    NDArray<float> expected('c', {2,1,4}, {1,0,0,0,1,0,0,0});
+    auto expected= NDArrayFactory::_create<float>('c', {2,1,4}, {1,0,0,0,1,0,0,0});
 
-    nd4j::ops::matrix_set_diag<float> op;
-    nd4j::ResultSet<float>* results = op.execute({&input, &diagonal}, {}, {});
+    nd4j::ops::matrix_set_diag op;
+    auto results = op.execute({&input, &diagonal}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<float> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1396,19 +1396,19 @@ TEST_F(DeclarableOpsTests3, matrixSetDiag_test3) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, matrixSetDiag_test4) {
 
-    NDArray<float> input('c', {2,1,4,1});
-    NDArray<float> diagonal('c', {2,1,1});
+    auto input= NDArrayFactory::_create<float>('c', {2,1,4,1});
+    auto diagonal= NDArrayFactory::_create<float>('c', {2,1,1});
     input.assign(0.);
     diagonal.assign(1.);
 
-    NDArray<float> expected('c', {2,1,4,1}, {1,0,0,0,1,0,0,0});
+    auto expected= NDArrayFactory::_create<float>('c', {2,1,4,1}, {1,0,0,0,1,0,0,0});
 
-    nd4j::ops::matrix_set_diag<float> op;
-    nd4j::ResultSet<float>* results = op.execute({&input, &diagonal}, {}, {});
+    nd4j::ops::matrix_set_diag op;
+    auto results = op.execute({&input, &diagonal}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<float> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1419,17 +1419,17 @@ TEST_F(DeclarableOpsTests3, matrixSetDiag_test4) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, diagPart_test1) {
 
-    NDArray<float> input('c', {2,2});
+    auto input= NDArrayFactory::_create<float>('c', {2,2});
     input.linspace(1);
 
-    NDArray<float> expected('c', {2}, {1,4});
+    auto expected= NDArrayFactory::_create<float>('c', {2}, {1,4});
 
-    nd4j::ops::diag_part<float> op;
-    nd4j::ResultSet<float>* results = op.execute({&input}, {}, {});
+    nd4j::ops::diag_part op;
+    auto results = op.execute({&input}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<float> *output = results->at(0);
+    auto *output = results->at(0);
     // output->printBuffer();
 
     ASSERT_TRUE(expected.isSameShape(output));
@@ -1441,17 +1441,17 @@ TEST_F(DeclarableOpsTests3, diagPart_test1) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, diagPart_test2) {
 
-    NDArray<float> input('c', {2,2,2,2});
+    auto input= NDArrayFactory::_create<float>('c', {2,2,2,2});
     input.linspace(1);
 
-    NDArray<float> expected('c', {2,2}, {1,6,11,16});
+    auto expected= NDArrayFactory::_create<float>('c', {2,2}, {1,6,11,16});
 
-    nd4j::ops::diag_part<float> op;
-    nd4j::ResultSet<float>* results = op.execute({&input}, {}, {});
+    nd4j::ops::diag_part op;
+    auto results = op.execute({&input}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<float> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1462,17 +1462,17 @@ TEST_F(DeclarableOpsTests3, diagPart_test2) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, diagPart_test3) {
 
-    NDArray<float> input('c', {2,2,2,2,2,2});
+    auto input= NDArrayFactory::_create<float>('c', {2,2,2,2,2,2});
     input.linspace(1);
 
-    NDArray<float> expected('c', {2,2,2}, {1,10,19,28,37,46,55,64});
+    auto expected= NDArrayFactory::_create<float>('c', {2,2,2}, {1,10,19,28,37,46,55,64});
 
-    nd4j::ops::diag_part<float> op;
-    nd4j::ResultSet<float>* results = op.execute({&input}, {}, {});
+    nd4j::ops::diag_part op;
+    auto results = op.execute({&input}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<float> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1483,22 +1483,22 @@ TEST_F(DeclarableOpsTests3, diagPart_test3) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, betainc_test1) {
 
-    NDArray<float16> a('c', {3,3});
-    NDArray<float16> b('c', {3,3});
-    NDArray<float16> x('c', {3,3});
+    auto a = NDArrayFactory::_create<float16>('c', {3,3});
+    auto b = NDArrayFactory::_create<float16>('c', {3,3});
+    auto x = NDArrayFactory::_create<float16>('c', {3,3});
 
     a.linspace((float16)0.1, (float16)0.1);
     b.linspace((float16)0.1, (float16)0.1);
     x.assign(0.1);
 
-    NDArray<float16> expected('c', {3,3}, {0.40638509,0.33668978,0.28271242,0.23973916,0.20483276,0.17604725,0.15203027,0.13180567,0.114647});
+    auto expected = NDArrayFactory::_create<float16>('c', {3,3}, {0.40638509,0.33668978,0.28271242,0.23973916,0.20483276,0.17604725,0.15203027,0.13180567,0.114647});
 
-    nd4j::ops::betainc<float16> op;
-    nd4j::ResultSet<float16>* results = op.execute({&a, &b, &x}, {}, {});
+    nd4j::ops::betainc op;
+    auto results = op.execute({&a, &b, &x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<float16> *output = results->at(0);
+    auto output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output, 1e-2));
@@ -1509,22 +1509,22 @@ TEST_F(DeclarableOpsTests3, betainc_test1) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, betainc_test2) {
 
-    NDArray<float> a('c', {3,3});
-    NDArray<float> b('c', {3,3});
-    NDArray<float> x('c', {3,3});
+    auto a= NDArrayFactory::_create<float>('c', {3,3});
+    auto b= NDArrayFactory::_create<float>('c', {3,3});
+    auto x= NDArrayFactory::_create<float>('c', {3,3});
 
     a.linspace(0.1, 0.1);
     b.linspace(0.1, 0.1);
     x.assign(0.1);
 
-    NDArray<float> expected('c', {3,3}, {0.40638509,0.33668978,0.28271242,0.23973916,0.20483276,0.17604725,0.15203027,0.13180567,0.114647});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {0.40638509,0.33668978,0.28271242,0.23973916,0.20483276,0.17604725,0.15203027,0.13180567,0.114647});
 
-    nd4j::ops::betainc<float> op;
-    nd4j::ResultSet<float>* results = op.execute({&a, &b, &x}, {}, {});
+    nd4j::ops::betainc op;
+    auto results = op.execute({&a, &b, &x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<float> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1535,22 +1535,22 @@ TEST_F(DeclarableOpsTests3, betainc_test2) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, betainc_test3) {
 
-    NDArray<double> a('c', {3,3});
-    NDArray<double> b('c', {3,3});
-    NDArray<double> x('c', {3,3});
+    auto a= NDArrayFactory::_create<float>('c', {3,3});
+    auto b= NDArrayFactory::_create<float>('c', {3,3});
+    auto x= NDArrayFactory::_create<float>('c', {3,3});
 
     a.linspace(0.1, 0.1);
     b.linspace(0.1, 0.1);
     x.assign(0.1);
 
-    NDArray<double> expected('c', {3,3}, {0.40638509,0.33668978,0.28271242,0.23973916,0.20483276,0.17604725,0.15203027,0.13180567,0.114647});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {0.40638509,0.33668978,0.28271242,0.23973916,0.20483276,0.17604725,0.15203027,0.13180567,0.114647});
 
-    nd4j::ops::betainc<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&a, &b, &x}, {}, {});
+    nd4j::ops::betainc op;
+    auto results = op.execute({&a, &b, &x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1561,22 +1561,22 @@ TEST_F(DeclarableOpsTests3, betainc_test3) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, betainc_test4) {
 
-    NDArray<double> a('c', {3,3});
-    NDArray<double> b('c', {3,3});
-    NDArray<double> x('c', {3,3});
+    auto a= NDArrayFactory::_create<float>('c', {3,3});
+    auto b= NDArrayFactory::_create<float>('c', {3,3});
+    auto x= NDArrayFactory::_create<float>('c', {3,3});
 
     a.linspace(1);
     b.linspace(1);
     x.assign(0.1);
 
-    NDArray<double> expected('c', {3,3}, {1.00000000e-01,2.80000000e-02,8.56000000e-03,2.72800000e-03,8.90920000e-04,2.95706080e-04,9.92854864e-05,3.36248880e-05,1.14644360e-05});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {1.00000000e-01,2.80000000e-02,8.56000000e-03,2.72800000e-03,8.90920000e-04,2.95706080e-04,9.92854864e-05,3.36248880e-05,1.14644360e-05});
 
-    nd4j::ops::betainc<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&a, &b, &x}, {}, {});
+    nd4j::ops::betainc op;
+    auto results = op.execute({&a, &b, &x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output, 1e-6));
@@ -1587,22 +1587,22 @@ TEST_F(DeclarableOpsTests3, betainc_test4) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, betainc_test5) {
 
-    NDArray<double> a('c', {3,3});
-    NDArray<double> b('c', {3,3});
-    NDArray<double> x('c', {3,3});
+    auto a= NDArrayFactory::_create<float>('c', {3,3});
+    auto b= NDArrayFactory::_create<float>('c', {3,3});
+    auto x= NDArrayFactory::_create<float>('c', {3,3});
 
     a.linspace(3200.);
     b.linspace(3200.);
     x.assign(0.1);
 
-    NDArray<double> expected('c', {3,3}, {0.,0.,0.,0.,0.,0.,0.,0.,0.});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {0.,0.,0.,0.,0.,0.,0.,0.,0.});
 
-    nd4j::ops::betainc<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&a, &b, &x}, {}, {});
+    nd4j::ops::betainc op;
+    auto results = op.execute({&a, &b, &x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output, 1e-6));
@@ -1613,22 +1613,22 @@ TEST_F(DeclarableOpsTests3, betainc_test5) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, betainc_test6) {
 
-    NDArray<double> a('c', {3,3});
-    NDArray<double> b('c', {3,3});
-    NDArray<double> x('c', {3,3});
+    auto a= NDArrayFactory::_create<float>('c', {3,3});
+    auto b= NDArrayFactory::_create<float>('c', {3,3});
+    auto x= NDArrayFactory::_create<float>('c', {3,3});
 
     a.linspace(10.);
     b.linspace(10.);
     x.assign(0.1);
 
-    NDArray<double> expected('c', {3,3}, {3.92988233e-06,1.35306497e-06,4.67576826e-07,1.62083416e-07,5.63356971e-08,1.96261318e-08,6.85120307e-09,2.39594668e-09,8.39227685e-10});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {3.92988233e-06,1.35306497e-06,4.67576826e-07,1.62083416e-07,5.63356971e-08,1.96261318e-08,6.85120307e-09,2.39594668e-09,8.39227685e-10});
 
-    nd4j::ops::betainc<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&a, &b, &x}, {}, {});
+    nd4j::ops::betainc op;
+    auto results = op.execute({&a, &b, &x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output, 1e-6));
@@ -1639,22 +1639,22 @@ TEST_F(DeclarableOpsTests3, betainc_test6) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, betainc_test7) {
 
-    NDArray<double> a('c', {3,3});
-    NDArray<double> b('c', {3,3});
-    NDArray<double> x('c', {3,3});
+    auto a= NDArrayFactory::_create<float>('c', {3,3});
+    auto b= NDArrayFactory::_create<float>('c', {3,3});
+    auto x= NDArrayFactory::_create<float>('c', {3,3});
 
     a.linspace(10.);
     b.linspace(10.);
     x.assign(0.9);
 
-    NDArray<double> expected('c', {3,3}, {0.99999607,0.99999865,0.99999953,0.99999984,0.99999994,0.99999998,0.99999999,1.,1.});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {0.99999607,0.99999865,0.99999953,0.99999984,0.99999994,0.99999998,0.99999999,1.,1.});
 
-    nd4j::ops::betainc<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&a, &b, &x}, {}, {});
+    nd4j::ops::betainc op;
+    auto results = op.execute({&a, &b, &x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output, 1e-6));
@@ -1665,22 +1665,22 @@ TEST_F(DeclarableOpsTests3, betainc_test7) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, betainc_test8) {
 
-    NDArray<double> a('c', {3,3});
-    NDArray<double> b('c', {3,3});
-    NDArray<double> x('c', {3,3});
+    auto a= NDArrayFactory::_create<float>('c', {3,3});
+    auto b= NDArrayFactory::_create<float>('c', {3,3});
+    auto x= NDArrayFactory::_create<float>('c', {3,3});
 
     a.linspace(10.);
     b.linspace(10.);
     x.assign(1.);
 
-    NDArray<double> expected('c', {3,3}, {1.,1.,1.,1.,1.,1.,1.,1.,1.});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {1.,1.,1.,1.,1.,1.,1.,1.,1.});
 
-    nd4j::ops::betainc<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&a, &b, &x}, {}, {});
+    nd4j::ops::betainc op;
+    auto results = op.execute({&a, &b, &x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output, 1e-6));
@@ -1691,22 +1691,22 @@ TEST_F(DeclarableOpsTests3, betainc_test8) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, betainc_test9) {
 
-    NDArray<double> a('c', {3,3});
-    NDArray<double> b('c', {3,3});
-    NDArray<double> x('c', {3,3});
+    auto a= NDArrayFactory::_create<float>('c', {3,3});
+    auto b= NDArrayFactory::_create<float>('c', {3,3});
+    auto x= NDArrayFactory::_create<float>('c', {3,3});
 
     a.linspace(10.);
     b.linspace(10.);
     x.assign(0.);
 
-    NDArray<double> expected('c', {3,3}, {0.,0.,0.,0.,0.,0.,0.,0.,0.});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {0.,0.,0.,0.,0.,0.,0.,0.,0.});
 
-    nd4j::ops::betainc<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&a, &b, &x}, {}, {});
+    nd4j::ops::betainc op;
+    auto results = op.execute({&a, &b, &x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1717,22 +1717,22 @@ TEST_F(DeclarableOpsTests3, betainc_test9) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, betainc_test10) {
 
-    NDArray<double> a('c', {3,3});
-    NDArray<double> b('c', {3,3});
-    NDArray<double> x('c', {3,3});
+    auto a= NDArrayFactory::_create<float>('c', {3,3});
+    auto b= NDArrayFactory::_create<float>('c', {3,3});
+    auto x= NDArrayFactory::_create<float>('c', {3,3});
 
     a.linspace(10.);
     b.linspace(10.);
     x.assign(0.5);
 
-    NDArray<double> expected('c', {3,3}, {0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5});
 
-    nd4j::ops::betainc<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&a, &b, &x}, {}, {});
+    nd4j::ops::betainc op;
+    auto results = op.execute({&a, &b, &x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1743,20 +1743,20 @@ TEST_F(DeclarableOpsTests3, betainc_test10) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, zeta_test1) {
 
-    NDArray<double> x('c', {3,3});
-    NDArray<double> q('c', {3,3});
+    auto x= NDArrayFactory::_create<float>('c', {3,3});
+    auto q= NDArrayFactory::_create<float>('c', {3,3});
 
     q.linspace(1.);
     x.assign(2.);
 
-    NDArray<double> expected('c', {3,3}, {1.64493407,0.64493407,0.39493407,0.28382296,0.22132296,0.18132296,0.15354518,0.13313701,0.11751201});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {1.64493407,0.64493407,0.39493407,0.28382296,0.22132296,0.18132296,0.15354518,0.13313701,0.11751201});
 
-    nd4j::ops::zeta<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&x, &q}, {}, {});
+    nd4j::ops::zeta op;
+    auto results = op.execute({&x, &q}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1767,20 +1767,20 @@ TEST_F(DeclarableOpsTests3, zeta_test1) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, zeta_test2) {
 
-    NDArray<double> x('c', {3,3});
-    NDArray<double> q('c', {3,3});
+    auto x= NDArrayFactory::_create<float>('c', {3,3});
+    auto q= NDArrayFactory::_create<float>('c', {3,3});
 
     q.linspace(10.);
     x.assign(2.);
 
-    NDArray<double> expected('c', {3,3}, {0.10516634,0.09516634,0.08690187,0.07995743,0.07404027,0.06893823,0.06449378,0.06058753,0.05712733});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {0.10516634,0.09516634,0.08690187,0.07995743,0.07404027,0.06893823,0.06449378,0.06058753,0.05712733});
 
-    nd4j::ops::zeta<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&x, &q}, {}, {});
+    nd4j::ops::zeta op;
+    auto results = op.execute({&x, &q}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1791,20 +1791,20 @@ TEST_F(DeclarableOpsTests3, zeta_test2) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, zeta_test3) {
 
-    NDArray<double> x('c', {3,3});
-    NDArray<double> q('c', {3,3});
+    auto x= NDArrayFactory::_create<float>('c', {3,3});
+    auto q= NDArrayFactory::_create<float>('c', {3,3});
 
     q.linspace(100.);
     x.assign(2.);
 
-    NDArray<double> expected('c', {3,3}, {0.01005017,0.00995017,0.00985214,0.00975602,0.00966176,0.0095693 ,0.0094786 ,0.0093896 ,0.00930226});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {0.01005017,0.00995017,0.00985214,0.00975602,0.00966176,0.0095693 ,0.0094786 ,0.0093896 ,0.00930226});
 
-    nd4j::ops::zeta<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&x, &q}, {}, {});
+    nd4j::ops::zeta op;
+    auto results = op.execute({&x, &q}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1816,20 +1816,20 @@ TEST_F(DeclarableOpsTests3, zeta_test3) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, zeta_test4) {
 
-    NDArray<double> x('c', {3,3});
-    NDArray<double> q('c', {3,3});
+    auto x= NDArrayFactory::_create<float>('c', {3,3});
+    auto q= NDArrayFactory::_create<float>('c', {3,3});
 
     q.linspace(100.);
     x.assign(2.);
 
-    NDArray<double> expected('c', {3,3}, {0.01005017,0.00995017,0.00985214,0.00975602,0.00966176,0.0095693 ,0.0094786 ,0.0093896 ,0.00930226});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {0.01005017,0.00995017,0.00985214,0.00975602,0.00966176,0.0095693 ,0.0094786 ,0.0093896 ,0.00930226});
 
-    nd4j::ops::zeta<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&x, &q}, {}, {});
+    nd4j::ops::zeta op;
+    auto results = op.execute({&x, &q}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1840,20 +1840,20 @@ TEST_F(DeclarableOpsTests3, zeta_test4) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, zeta_test5) {
 
-    NDArray<double> x('c', {3,3});
-    NDArray<double> q('c', {3,3});
+    auto x= NDArrayFactory::_create<float>('c', {3,3});
+    auto q= NDArrayFactory::_create<float>('c', {3,3});
 
     q.linspace(1.);
     x.assign(1.1);
 
-    NDArray<double> expected('c', {3,3}, {10.58444846,9.58444846,9.11793197, 8.81927915,8.60164151,8.43137352, 8.29204706,8.17445116,8.07291961});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {10.58444846,9.58444846,9.11793197, 8.81927915,8.60164151,8.43137352, 8.29204706,8.17445116,8.07291961});
 
-    nd4j::ops::zeta<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&x, &q}, {}, {});
+    nd4j::ops::zeta op;
+    auto results = op.execute({&x, &q}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1864,20 +1864,20 @@ TEST_F(DeclarableOpsTests3, zeta_test5) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, zeta_test6) {
 
-    NDArray<double> x('c', {3,3});
-    NDArray<double> q('c', {3,3});
+    auto x= NDArrayFactory::_create<float>('c', {3,3});
+    auto q= NDArrayFactory::_create<float>('c', {3,3});
 
     q.linspace(1.);
     x.assign(1.01);
 
-    NDArray<double> expected('c', {3,3}, {100.57794334,99.57794334,99.08139709, 98.75170576,98.50514758,98.30834069, 98.1446337 ,98.00452955,97.88210202});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {100.57794334,99.57794334,99.08139709, 98.75170576,98.50514758,98.30834069, 98.1446337 ,98.00452955,97.88210202});
 
-    nd4j::ops::zeta<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&x, &q}, {}, {});
+    nd4j::ops::zeta op;
+    auto results = op.execute({&x, &q}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1888,20 +1888,20 @@ TEST_F(DeclarableOpsTests3, zeta_test6) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, zeta_test7) {
 
-    NDArray<double> x('c', {3,3});
-    NDArray<double> q('c', {3,3});
+    auto x= NDArrayFactory::_create<float>('c', {3,3});
+    auto q= NDArrayFactory::_create<float>('c', {3,3});
 
     q.linspace(1.);
     x.assign(10.);
 
-    NDArray<double> expected('c', {3,3}, {1.00099458e+00,9.94575128e-04,1.80126278e-05,1.07754001e-06,1.23865693e-07,2.14656932e-08,4.92752156e-09,1.38738839e-09,4.56065812e-10});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {1.00099458e+00,9.94575128e-04,1.80126278e-05,1.07754001e-06,1.23865693e-07,2.14656932e-08,4.92752156e-09,1.38738839e-09,4.56065812e-10});
 
-    nd4j::ops::zeta<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&x, &q}, {}, {});
+    nd4j::ops::zeta op;
+    auto results = op.execute({&x, &q}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1912,20 +1912,20 @@ TEST_F(DeclarableOpsTests3, zeta_test7) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, polygamma_test1) {
 
-    NDArray<double> n('c', {3,3});
-    NDArray<double> x('c', {3,3});
+    auto n= NDArrayFactory::_create<float>('c', {3,3});
+    auto x= NDArrayFactory::_create<float>('c', {3,3});
 
     n.linspace(1.);
     x.assign(0.5);
 
-    NDArray<double> expected('c', {3,3}, {4.934802, -16.828796, 97.409088, -771.474243, 7691.113770, -92203.460938, 1290440.250000, -20644900.000000, 3.71595e+08});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {4.934802, -16.828796, 97.409088, -771.474243, 7691.113770, -92203.460938, 1290440.250000, -20644900.000000, 3.71595e+08});
 
-    nd4j::ops::polygamma<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&n, &x}, {}, {});
+    nd4j::ops::polygamma op;
+    auto results = op.execute({&n, &x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
     // output->printBuffer();
 
     ASSERT_TRUE(expected.isSameShape(output));
@@ -1937,20 +1937,20 @@ TEST_F(DeclarableOpsTests3, polygamma_test1) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, polygamma_test2) {
 
-    NDArray<double> n('c', {3,3});
-    NDArray<double> x('c', {3,3});
+    auto n= NDArrayFactory::_create<float>('c', {3,3});
+    auto x= NDArrayFactory::_create<float>('c', {3,3});
 
     n.linspace(10.);
     x.linspace(0.5);
 
-    NDArray<double> expected('c', {3,3}, {-7.43182451e+09, 3.08334759e+05,-3.25669798e+03, 1.55186197e+02,-1.46220433e+01, 2.00905201e+00,-3.48791235e-01, 7.08016273e-02,-1.60476052e-02});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {-7.43182451e+09, 3.08334759e+05,-3.25669798e+03, 1.55186197e+02,-1.46220433e+01, 2.00905201e+00,-3.48791235e-01, 7.08016273e-02,-1.60476052e-02});
 
-    nd4j::ops::polygamma<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&n, &x}, {}, {});
+    nd4j::ops::polygamma op;
+    auto results = op.execute({&n, &x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1961,20 +1961,20 @@ TEST_F(DeclarableOpsTests3, polygamma_test2) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, polygamma_test3) {
 
-    NDArray<double> n('c', {3,3});
-    NDArray<double> x('c', {3,3});
+    auto n= NDArrayFactory::_create<float>('c', {3,3});
+    auto x= NDArrayFactory::_create<float>('c', {3,3});
 
     n.linspace(1.);
     x.linspace(10.);
 
-    NDArray<double> expected('c', {3,3}, {1.05166336e-01,-9.04983497e-03, 1.31009323e-03,-2.44459433e-04, 5.31593880e-05,-1.28049888e-05, 3.31755364e-06,-9.07408791e-07, 2.58758130e-07});
+    auto expected= NDArrayFactory::_create<float>('c', {3,3}, {1.05166336e-01,-9.04983497e-03, 1.31009323e-03,-2.44459433e-04, 5.31593880e-05,-1.28049888e-05, 3.31755364e-06,-9.07408791e-07, 2.58758130e-07});
 
-    nd4j::ops::polygamma<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&n, &x}, {}, {});
+    nd4j::ops::polygamma op;
+    auto results = op.execute({&n, &x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *output = results->at(0);
+    auto *output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1985,19 +1985,19 @@ TEST_F(DeclarableOpsTests3, polygamma_test3) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, svd_test1) {
 
-    NDArray<double> x('c', {6,6}, {0. ,-9. ,-6 ,9 ,-10 ,-12 ,2 ,13 ,5 ,-11 ,20 ,-17 ,1 ,-2 ,-11 ,3 ,-8 ,3 ,-14 ,19 ,-20 ,20 ,-17 ,-5 ,6 ,-16 ,0 ,-1 ,-16 ,11 ,7 ,-19 ,2 ,-17 ,17 ,-16});
-    NDArray<double> expS('c', {6}, {54.12775, 38.79293, 25.89287, 9.82168, 6.07227, 2.91827});
-    NDArray<double> expU('c', {6,6}, {0.14692,-0.11132,-0.69568, 0.59282,-0.14881, 0.32935,-0.38751, 0.60378,-0.04927,-0.01397,-0.69456,-0.01581, 0.19293,-0.12795,-0.18682,-0.69065,-0.20597, 0.62617, 0.66806, 0.4314 ,-0.33849,-0.22166, 0.04099,-0.44967, 0.11121,-0.64065,-0.02138,-0.07378,-0.60568,-0.45216,-0.5765 ,-0.1007 ,-0.60305,-0.34175, 0.29068,-0.3042});
-    NDArray<double> expV('c', {6,6}, {-0.24577,-0.24512, 0.00401,-0.04585,-0.62058, 0.70162, 0.27937, 0.75961, 0.43885,-0.06857,-0.3839 , 0.01669,-0.35944,-0.09629, 0.44593, 0.78602,-0.09103,-0.19125, 0.53973, 0.07613,-0.10721, 0.49559, 0.35687, 0.56431,-0.6226 , 0.39742, 0.12785,-0.15716, 0.52372, 0.37297, 0.23113,-0.43578, 0.76204,-0.32414, 0.23996, 0.11543});
+    auto x= NDArrayFactory::_create<float>('c', {6,6}, {0. ,-9. ,-6 ,9 ,-10 ,-12 ,2 ,13 ,5 ,-11 ,20 ,-17 ,1 ,-2 ,-11 ,3 ,-8 ,3 ,-14 ,19 ,-20 ,20 ,-17 ,-5 ,6 ,-16 ,0 ,-1 ,-16 ,11 ,7 ,-19 ,2 ,-17 ,17 ,-16});
+    auto expS= NDArrayFactory::_create<float>('c', {6}, {54.12775, 38.79293, 25.89287, 9.82168, 6.07227, 2.91827});
+    auto expU= NDArrayFactory::_create<float>('c', {6,6}, {0.14692,-0.11132,-0.69568, 0.59282,-0.14881, 0.32935,-0.38751, 0.60378,-0.04927,-0.01397,-0.69456,-0.01581, 0.19293,-0.12795,-0.18682,-0.69065,-0.20597, 0.62617, 0.66806, 0.4314 ,-0.33849,-0.22166, 0.04099,-0.44967, 0.11121,-0.64065,-0.02138,-0.07378,-0.60568,-0.45216,-0.5765 ,-0.1007 ,-0.60305,-0.34175, 0.29068,-0.3042});
+    auto expV= NDArrayFactory::_create<float>('c', {6,6}, {-0.24577,-0.24512, 0.00401,-0.04585,-0.62058, 0.70162, 0.27937, 0.75961, 0.43885,-0.06857,-0.3839 , 0.01669,-0.35944,-0.09629, 0.44593, 0.78602,-0.09103,-0.19125, 0.53973, 0.07613,-0.10721, 0.49559, 0.35687, 0.56431,-0.6226 , 0.39742, 0.12785,-0.15716, 0.52372, 0.37297, 0.23113,-0.43578, 0.76204,-0.32414, 0.23996, 0.11543});
 
-    nd4j::ops::svd<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&x}, {}, {1, 1, 16});
+    nd4j::ops::svd op;
+    auto results = op.execute({&x}, {}, {1, 1, 16});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *s = results->at(0);
-    NDArray<double> *u = results->at(1);
-    NDArray<double> *v = results->at(2);
+    auto *s = results->at(0);
+    auto *u = results->at(1);
+    auto *v = results->at(2);
 
     ASSERT_TRUE(expS.equalsTo(s));
     ASSERT_TRUE(expU.equalsTo(u));
@@ -2013,19 +2013,19 @@ TEST_F(DeclarableOpsTests3, svd_test1) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, svd_test2) {
 
-    NDArray<double> x('c', {7,6}, {0. ,-9. ,-6 ,9 ,-10 ,-12 ,2 ,13 ,5 ,-11 ,20 ,-17 ,1 ,-2 ,-11 ,3 ,-8 ,3 ,-14 ,19 ,-20 ,20 ,-17 ,-5 ,6 ,-16 ,0 ,-1 ,-16 ,11 ,7 ,-19 ,2 ,-17 ,17 ,-16, 4, -9, 1, -15, 7, -2});
-    NDArray<double> expS('c', {6}, {56.76573,  39.11776,  26.00713,  11.83606, 6.16578, 3.99672});
-    NDArray<double> expU('c', {7,7}, {-0.13417,-0.12443, -0.68854,  0.5196 ,  0.21706,  0.03974,  0.41683, 0.347  , 0.62666, -0.04964, -0.01912,  0.66932,  0.1457 , -0.12183,-0.17329,-0.14666, -0.19639, -0.55355,  0.0614 ,  0.75729,  0.1619 ,-0.64703, 0.37056, -0.37398, -0.32922, -0.0186 , -0.35656, -0.26134,-0.08027,-0.64405, -0.0127 , -0.06934,  0.59287, -0.14956, -0.44712, 0.55906,-0.06235, -0.58017, -0.12911, -0.359  , -0.00393, -0.44877, 0.30645,-0.11953, -0.09083, -0.54163,  0.14283, -0.50417,  0.56178});
-    NDArray<double> expV('c', {6,6}, {0.2508 ,-0.2265 , 0.01689,  0.04486,  0.53132,  0.77537,-0.32281, 0.74559, 0.41845, -0.13821,  0.37642,  0.06315, 0.33139,-0.05528, 0.47186,  0.73171,  0.18905, -0.3055 ,-0.57263, 0.06276,-0.09542,  0.59396, -0.36152,  0.419  , 0.59193, 0.4361 , 0.13557, -0.03632, -0.5755 ,  0.32944,-0.21165,-0.44227, 0.75794, -0.29895, -0.27993,  0.13187});
+    auto x= NDArrayFactory::_create<float>('c', {7,6}, {0. ,-9. ,-6 ,9 ,-10 ,-12 ,2 ,13 ,5 ,-11 ,20 ,-17 ,1 ,-2 ,-11 ,3 ,-8 ,3 ,-14 ,19 ,-20 ,20 ,-17 ,-5 ,6 ,-16 ,0 ,-1 ,-16 ,11 ,7 ,-19 ,2 ,-17 ,17 ,-16, 4, -9, 1, -15, 7, -2});
+    auto expS= NDArrayFactory::_create<float>('c', {6}, {56.76573,  39.11776,  26.00713,  11.83606, 6.16578, 3.99672});
+    auto expU= NDArrayFactory::_create<float>('c', {7,7}, {-0.13417,-0.12443, -0.68854,  0.5196 ,  0.21706,  0.03974,  0.41683, 0.347  , 0.62666, -0.04964, -0.01912,  0.66932,  0.1457 , -0.12183,-0.17329,-0.14666, -0.19639, -0.55355,  0.0614 ,  0.75729,  0.1619 ,-0.64703, 0.37056, -0.37398, -0.32922, -0.0186 , -0.35656, -0.26134,-0.08027,-0.64405, -0.0127 , -0.06934,  0.59287, -0.14956, -0.44712, 0.55906,-0.06235, -0.58017, -0.12911, -0.359  , -0.00393, -0.44877, 0.30645,-0.11953, -0.09083, -0.54163,  0.14283, -0.50417,  0.56178});
+    auto expV= NDArrayFactory::_create<float>('c', {6,6}, {0.2508 ,-0.2265 , 0.01689,  0.04486,  0.53132,  0.77537,-0.32281, 0.74559, 0.41845, -0.13821,  0.37642,  0.06315, 0.33139,-0.05528, 0.47186,  0.73171,  0.18905, -0.3055 ,-0.57263, 0.06276,-0.09542,  0.59396, -0.36152,  0.419  , 0.59193, 0.4361 , 0.13557, -0.03632, -0.5755 ,  0.32944,-0.21165,-0.44227, 0.75794, -0.29895, -0.27993,  0.13187});
 
-    nd4j::ops::svd<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&x}, {}, {1, 1, 16});
+    nd4j::ops::svd op;
+    auto results = op.execute({&x}, {}, {1, 1, 16});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *s = results->at(0);
-    NDArray<double> *u = results->at(1);
-    NDArray<double> *v = results->at(2);
+    auto *s = results->at(0);
+    auto *u = results->at(1);
+    auto *v = results->at(2);
 
     ASSERT_TRUE(expS.equalsTo(s));
     ASSERT_TRUE(expU.equalsTo(u));
@@ -2041,19 +2041,19 @@ TEST_F(DeclarableOpsTests3, svd_test2) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, svd_test3) {
 
-    NDArray<double> x('c', {7,6}, {0. ,-9. ,-6 ,9 ,-10 ,-12 ,2 ,13 ,5 ,-11 ,20 ,-17 ,1 ,-2 ,-11 ,3 ,-8 ,3 ,-14 ,19 ,-20 ,20 ,-17 ,-5 ,6 ,-16 ,0 ,-1 ,-16 ,11 ,7 ,-19 ,2 ,-17 ,17 ,-16, 4, -9, 1, -15, 7, -2});
-    NDArray<double> expS('c', {6}, {56.76573,  39.11776,  26.00713,  11.83606, 6.16578, 3.99672});
-    NDArray<double> expU('c', {7,6}, {-0.13417, -0.12443, -0.68854,  0.5196 ,  0.21706,  0.03974, 0.347  ,  0.62666, -0.04964, -0.01912,  0.66932,  0.1457 ,-0.17329, -0.14666, -0.19639, -0.55355,  0.0614 ,  0.75729,-0.64703,  0.37056, -0.37398, -0.32922, -0.0186 , -0.35656,-0.08027, -0.64405, -0.0127 , -0.06934,  0.59287, -0.14956, 0.55906, -0.06235, -0.58017, -0.12911, -0.359  , -0.00393, 0.30645, -0.11953, -0.09083, -0.54163,  0.14283, -0.50417});
-    NDArray<double> expV('c', {6,6}, {0.2508 ,-0.2265 , 0.01689,  0.04486,  0.53132,  0.77537,-0.32281, 0.74559, 0.41845, -0.13821,  0.37642,  0.06315, 0.33139,-0.05528, 0.47186,  0.73171,  0.18905, -0.3055 ,-0.57263, 0.06276,-0.09542,  0.59396, -0.36152,  0.419  , 0.59193, 0.4361 , 0.13557, -0.03632, -0.5755 ,  0.32944,-0.21165,-0.44227, 0.75794, -0.29895, -0.27993,  0.13187});
+    auto x= NDArrayFactory::_create<float>('c', {7,6}, {0. ,-9. ,-6 ,9 ,-10 ,-12 ,2 ,13 ,5 ,-11 ,20 ,-17 ,1 ,-2 ,-11 ,3 ,-8 ,3 ,-14 ,19 ,-20 ,20 ,-17 ,-5 ,6 ,-16 ,0 ,-1 ,-16 ,11 ,7 ,-19 ,2 ,-17 ,17 ,-16, 4, -9, 1, -15, 7, -2});
+    auto expS= NDArrayFactory::_create<float>('c', {6}, {56.76573,  39.11776,  26.00713,  11.83606, 6.16578, 3.99672});
+    auto expU= NDArrayFactory::_create<float>('c', {7,6}, {-0.13417, -0.12443, -0.68854,  0.5196 ,  0.21706,  0.03974, 0.347  ,  0.62666, -0.04964, -0.01912,  0.66932,  0.1457 ,-0.17329, -0.14666, -0.19639, -0.55355,  0.0614 ,  0.75729,-0.64703,  0.37056, -0.37398, -0.32922, -0.0186 , -0.35656,-0.08027, -0.64405, -0.0127 , -0.06934,  0.59287, -0.14956, 0.55906, -0.06235, -0.58017, -0.12911, -0.359  , -0.00393, 0.30645, -0.11953, -0.09083, -0.54163,  0.14283, -0.50417});
+    auto expV= NDArrayFactory::_create<float>('c', {6,6}, {0.2508 ,-0.2265 , 0.01689,  0.04486,  0.53132,  0.77537,-0.32281, 0.74559, 0.41845, -0.13821,  0.37642,  0.06315, 0.33139,-0.05528, 0.47186,  0.73171,  0.18905, -0.3055 ,-0.57263, 0.06276,-0.09542,  0.59396, -0.36152,  0.419  , 0.59193, 0.4361 , 0.13557, -0.03632, -0.5755 ,  0.32944,-0.21165,-0.44227, 0.75794, -0.29895, -0.27993,  0.13187});
 
-    nd4j::ops::svd<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&x}, {}, {0, 1, 16});
+    nd4j::ops::svd op;
+    auto results = op.execute({&x}, {}, {0, 1, 16});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *s = results->at(0);
-    NDArray<double> *u = results->at(1);
-    NDArray<double> *v = results->at(2);
+    auto *s = results->at(0);
+    auto *u = results->at(1);
+    auto *v = results->at(2);
 
     ASSERT_TRUE(expS.equalsTo(s));
     ASSERT_TRUE(expU.equalsTo(u));
@@ -2069,19 +2069,19 @@ TEST_F(DeclarableOpsTests3, svd_test3) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, svd_test4) {
 
-    NDArray<double> x('c', {6,7}, {0. ,-9. ,-6 ,9 ,-10 ,-12 ,2 ,13 ,5 ,-11 ,20 ,-17 ,1 ,-2 ,-11 ,3 ,-8 ,3 ,-14 ,19 ,-20 ,20 ,-17 ,-5 ,6 ,-16 ,0 ,-1 ,-16 ,11 ,7 ,-19 ,2 ,-17 ,17 ,-16, 4, -9, 1, -15, 7, -2});
-    NDArray<double> expS('c', {6}, {53.11053,  39.09542,  28.1987,   17.7468,   11.61684,   5.36217});
-    NDArray<double> expU('c', {6,6}, {-0.16541, 0.21276,  0.51284,  0.20472,  0.74797,  0.25102,-0.49879, 0.12076,  0.37629, -0.7211 , -0.24585,  0.12086,-0.36569,-0.70218, -0.08012,  0.21274, -0.07314,  0.56231,-0.44508, 0.4329 ,  0.1356 ,  0.60909, -0.47398, -0.02164, 0.61238,-0.05674,  0.59489,  0.06588, -0.3874 ,  0.33685,-0.13044,-0.50644,  0.46552,  0.13236, -0.00474, -0.70161});
-    NDArray<double> expV('c', {7,7}, {-0.35914,  0.68966, -0.30077, -0.15238, -0.48179,  0.14716, -0.16709, 0.21989, -0.34343,  0.11086, -0.78381, -0.37902,  0.24224, -0.06862, 0.32179,  0.12812, -0.25812,  0.0691 , -0.12891,  0.26979,  0.84807,-0.50833,  0.13793,  0.06658, -0.53001,  0.52572, -0.16194,  0.36692, 0.48118,  0.15876, -0.65132, -0.24602,  0.3963 , -0.16651, -0.27155,-0.31605, -0.46947, -0.50195,  0.0378 , -0.34937, -0.53062,  0.15069, 0.35957,  0.35408,  0.38732, -0.12154, -0.22827, -0.7151 ,  0.13065});
+    auto x= NDArrayFactory::_create<float>('c', {6,7}, {0. ,-9. ,-6 ,9 ,-10 ,-12 ,2 ,13 ,5 ,-11 ,20 ,-17 ,1 ,-2 ,-11 ,3 ,-8 ,3 ,-14 ,19 ,-20 ,20 ,-17 ,-5 ,6 ,-16 ,0 ,-1 ,-16 ,11 ,7 ,-19 ,2 ,-17 ,17 ,-16, 4, -9, 1, -15, 7, -2});
+    auto expS= NDArrayFactory::_create<float>('c', {6}, {53.11053,  39.09542,  28.1987,   17.7468,   11.61684,   5.36217});
+    auto expU= NDArrayFactory::_create<float>('c', {6,6}, {-0.16541, 0.21276,  0.51284,  0.20472,  0.74797,  0.25102,-0.49879, 0.12076,  0.37629, -0.7211 , -0.24585,  0.12086,-0.36569,-0.70218, -0.08012,  0.21274, -0.07314,  0.56231,-0.44508, 0.4329 ,  0.1356 ,  0.60909, -0.47398, -0.02164, 0.61238,-0.05674,  0.59489,  0.06588, -0.3874 ,  0.33685,-0.13044,-0.50644,  0.46552,  0.13236, -0.00474, -0.70161});
+    auto expV= NDArrayFactory::_create<float>('c', {7,7}, {-0.35914,  0.68966, -0.30077, -0.15238, -0.48179,  0.14716, -0.16709, 0.21989, -0.34343,  0.11086, -0.78381, -0.37902,  0.24224, -0.06862, 0.32179,  0.12812, -0.25812,  0.0691 , -0.12891,  0.26979,  0.84807,-0.50833,  0.13793,  0.06658, -0.53001,  0.52572, -0.16194,  0.36692, 0.48118,  0.15876, -0.65132, -0.24602,  0.3963 , -0.16651, -0.27155,-0.31605, -0.46947, -0.50195,  0.0378 , -0.34937, -0.53062,  0.15069, 0.35957,  0.35408,  0.38732, -0.12154, -0.22827, -0.7151 ,  0.13065});
 
-    nd4j::ops::svd<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&x}, {}, {1, 1, 16});
+    nd4j::ops::svd op;
+    auto results = op.execute({&x}, {}, {1, 1, 16});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *s = results->at(0);
-    NDArray<double> *u = results->at(1);
-    NDArray<double> *v = results->at(2);
+    auto *s = results->at(0);
+    auto *u = results->at(1);
+    auto *v = results->at(2);
 
     ASSERT_TRUE(expS.equalsTo(s));
     ASSERT_TRUE(expU.equalsTo(u));
@@ -2097,19 +2097,19 @@ TEST_F(DeclarableOpsTests3, svd_test4) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, svd_test5) {
 
-    NDArray<double> x('c', {6,7}, {0. ,-9. ,-6 ,9 ,-10 ,-12 ,2 ,13 ,5 ,-11 ,20 ,-17 ,1 ,-2 ,-11 ,3 ,-8 ,3 ,-14 ,19 ,-20 ,20 ,-17 ,-5 ,6 ,-16 ,0 ,-1 ,-16 ,11 ,7 ,-19 ,2 ,-17 ,17 ,-16, 4, -9, 1, -15, 7, -2});
-    NDArray<double> expS('c', {6}, {53.11053,  39.09542,  28.1987,   17.7468,   11.61684,   5.36217});
-    NDArray<double> expU('c', {6,6}, {-0.16541, 0.21276,  0.51284,  0.20472,  0.74797,  0.25102,-0.49879, 0.12076,  0.37629, -0.7211 , -0.24585,  0.12086,-0.36569,-0.70218, -0.08012,  0.21274, -0.07314,  0.56231,-0.44508, 0.4329 ,  0.1356 ,  0.60909, -0.47398, -0.02164, 0.61238,-0.05674,  0.59489,  0.06588, -0.3874 ,  0.33685,-0.13044,-0.50644,  0.46552,  0.13236, -0.00474, -0.70161});
-    NDArray<double> expV('c', {7,6}, {-0.35914,  0.68966, -0.30077, -0.15238, -0.48179,  0.14716, 0.21989, -0.34343,  0.11086, -0.78381, -0.37902,  0.24224, 0.32179,  0.12812, -0.25812,  0.0691 , -0.12891,  0.26979,-0.50833,  0.13793,  0.06658, -0.53001,  0.52572, -0.16194, 0.48118,  0.15876, -0.65132, -0.24602,  0.3963 , -0.16651,-0.31605, -0.46947, -0.50195,  0.0378 , -0.34937, -0.53062, 0.35957,  0.35408,  0.38732, -0.12154, -0.22827, -0.7151});
+    auto x= NDArrayFactory::_create<float>('c', {6,7}, {0. ,-9. ,-6 ,9 ,-10 ,-12 ,2 ,13 ,5 ,-11 ,20 ,-17 ,1 ,-2 ,-11 ,3 ,-8 ,3 ,-14 ,19 ,-20 ,20 ,-17 ,-5 ,6 ,-16 ,0 ,-1 ,-16 ,11 ,7 ,-19 ,2 ,-17 ,17 ,-16, 4, -9, 1, -15, 7, -2});
+    auto expS= NDArrayFactory::_create<float>('c', {6}, {53.11053,  39.09542,  28.1987,   17.7468,   11.61684,   5.36217});
+    auto expU= NDArrayFactory::_create<float>('c', {6,6}, {-0.16541, 0.21276,  0.51284,  0.20472,  0.74797,  0.25102,-0.49879, 0.12076,  0.37629, -0.7211 , -0.24585,  0.12086,-0.36569,-0.70218, -0.08012,  0.21274, -0.07314,  0.56231,-0.44508, 0.4329 ,  0.1356 ,  0.60909, -0.47398, -0.02164, 0.61238,-0.05674,  0.59489,  0.06588, -0.3874 ,  0.33685,-0.13044,-0.50644,  0.46552,  0.13236, -0.00474, -0.70161});
+    auto expV= NDArrayFactory::_create<float>('c', {7,6}, {-0.35914,  0.68966, -0.30077, -0.15238, -0.48179,  0.14716, 0.21989, -0.34343,  0.11086, -0.78381, -0.37902,  0.24224, 0.32179,  0.12812, -0.25812,  0.0691 , -0.12891,  0.26979,-0.50833,  0.13793,  0.06658, -0.53001,  0.52572, -0.16194, 0.48118,  0.15876, -0.65132, -0.24602,  0.3963 , -0.16651,-0.31605, -0.46947, -0.50195,  0.0378 , -0.34937, -0.53062, 0.35957,  0.35408,  0.38732, -0.12154, -0.22827, -0.7151});
 
-    nd4j::ops::svd<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&x}, {}, {0, 1, 16});
+    nd4j::ops::svd op;
+    auto results = op.execute({&x}, {}, {0, 1, 16});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *s = results->at(0);
-    NDArray<double> *u = results->at(1);
-    NDArray<double> *v = results->at(2);
+    auto *s = results->at(0);
+    auto *u = results->at(1);
+    auto *v = results->at(2);
 
     ASSERT_TRUE(expS.equalsTo(s));
     ASSERT_TRUE(expU.equalsTo(u));
@@ -2125,18 +2125,18 @@ TEST_F(DeclarableOpsTests3, svd_test5) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, svd_test6) {
 
-    NDArray<double> x('c', {2,2,5,5}, {-7. ,17 ,4 ,-10 ,5 ,1 ,-5 ,-19 ,13 ,-8 ,9 ,13 ,19 ,13 ,-2
+    auto x= NDArrayFactory::_create<float>('c', {2,2,5,5}, {-7. ,17 ,4 ,-10 ,5 ,1 ,-5 ,-19 ,13 ,-8 ,9 ,13 ,19 ,13 ,-2
             ,-8 ,10 ,-9 ,0 ,-20 ,-2 ,14 ,19 ,5 ,-18 ,4 ,-13 ,12 ,-10
             ,5 ,-10 ,-10 ,17 ,-5 ,-2 ,10 ,5 ,-4 ,-11 ,15 ,-3 ,15 ,-17
             ,-20 ,-10 ,-4 ,12 ,-9 ,16 ,13 ,10 ,-19 ,2 ,-9 ,-10 ,8 ,-2
             ,-4 ,3 ,7 ,10 ,-19 ,-11 ,-4 ,-6 ,2 ,-12 ,6 ,-4 ,-14 ,14
             ,16 ,7 ,19 ,-17 ,2 ,-14 ,5 ,-1 ,16 ,19 ,-11 ,-14 ,-16
             ,-19 ,15 ,-18 ,-12 ,-16 ,16 ,1 ,5 ,7 ,8 ,2 ,13 ,-3 ,6 ,2 ,-5});
-    NDArray<double> expS('c', {2,2,5}, {40.95395,  31.46869,  24.79993,  12.33768,   1.80031,
+    auto expS= NDArrayFactory::_create<float>('c', {2,2,5}, {40.95395,  31.46869,  24.79993,  12.33768,   1.80031,
                                         38.18412,  31.52287,  23.52755,  11.79484,   1.90195,
                                         39.34498,  32.54861,  17.52492,   7.03003,   2.2399,
                                         44.72126,  32.3164 ,  16.60139,   6.88783,   0.78122});
-    NDArray<double> expU('c', {2,2,5,5},  {0.25441,  0.16908, -0.68564,  0.58844, -0.30054,
+    auto expU= NDArrayFactory::_create<float>('c', {2,2,5,5},  {0.25441,  0.16908, -0.68564,  0.58844, -0.30054,
                                            -0.32285, -0.58332,  0.3451 ,  0.4746 , -0.45953,
                                            0.58332,  0.10605,  0.51533,  0.50234,  0.36136,
                                            0.12588, -0.73123, -0.37812, -0.00215,  0.55361,
@@ -2156,7 +2156,7 @@ TEST_F(DeclarableOpsTests3, svd_test6) {
                                            0.68116,  0.49852, -0.13441,  0.51374, -0.07421,
                                            -0.20066,  0.04504,  0.42865,  0.44418,  0.75939,
                                            0.12113, -0.13826,  0.83651,  0.11988, -0.50209});
-    NDArray<double> expV('c', {2,2,5,5}, {0.01858,  0.17863,  0.51259,  0.14048,  0.82781,
+    auto expV= NDArrayFactory::_create<float>('c', {2,2,5,5}, {0.01858,  0.17863,  0.51259,  0.14048,  0.82781,
                                           0.59651, -0.13439, -0.395  ,  0.66979,  0.14654,
                                           0.73731,  0.47061,  0.19357, -0.41127, -0.16817,
                                           0.1047 , -0.29727,  0.73711,  0.38235, -0.45951,
@@ -2177,14 +2177,14 @@ TEST_F(DeclarableOpsTests3, svd_test6) {
                                           -0.51981,  0.03325,  0.37603,  0.05147,  0.76462,
                                           -0.01282,  0.92491, -0.08042,  0.36977, -0.03428});
 
-    nd4j::ops::svd<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&x}, {}, {1, 1, 16});
+    nd4j::ops::svd op;
+    auto results = op.execute({&x}, {}, {1, 1, 16});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *s = results->at(0);
-    NDArray<double> *u = results->at(1);
-    NDArray<double> *v = results->at(2);
+    auto *s = results->at(0);
+    auto *u = results->at(1);
+    auto *v = results->at(2);
 
     ASSERT_TRUE(expS.equalsTo(s));
     ASSERT_TRUE(expU.equalsTo(u));
@@ -2200,24 +2200,24 @@ TEST_F(DeclarableOpsTests3, svd_test6) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, svd_test7) {
 
-    NDArray<double> x('c', {2,2,5,5}, {-7. ,17 ,4 ,-10 ,5 ,1 ,-5 ,-19 ,13 ,-8 ,9 ,13 ,19 ,13 ,-2
+    auto x= NDArrayFactory::_create<float>('c', {2,2,5,5}, {-7. ,17 ,4 ,-10 ,5 ,1 ,-5 ,-19 ,13 ,-8 ,9 ,13 ,19 ,13 ,-2
             ,-8 ,10 ,-9 ,0 ,-20 ,-2 ,14 ,19 ,5 ,-18 ,4 ,-13 ,12 ,-10
             ,5 ,-10 ,-10 ,17 ,-5 ,-2 ,10 ,5 ,-4 ,-11 ,15 ,-3 ,15 ,-17
             ,-20 ,-10 ,-4 ,12 ,-9 ,16 ,13 ,10 ,-19 ,2 ,-9 ,-10 ,8 ,-2
             ,-4 ,3 ,7 ,10 ,-19 ,-11 ,-4 ,-6 ,2 ,-12 ,6 ,-4 ,-14 ,14
             ,16 ,7 ,19 ,-17 ,2 ,-14 ,5 ,-1 ,16 ,19 ,-11 ,-14 ,-16
             ,-19 ,15 ,-18 ,-12 ,-16 ,16 ,1 ,5 ,7 ,8 ,2 ,13 ,-3 ,6 ,2 ,-5});
-    NDArray<double> expS('c', {2,2,5}, {40.95395,  31.46869,  24.79993,  12.33768,   1.80031,
+    auto expS= NDArrayFactory::_create<float>('c', {2,2,5}, {40.95395,  31.46869,  24.79993,  12.33768,   1.80031,
                                         38.18412,  31.52287,  23.52755,  11.79484,   1.90195,
                                         39.34498,  32.54861,  17.52492,   7.03003,   2.2399,
                                         44.72126,  32.3164 ,  16.60139,   6.88783,   0.78122});
 
-    nd4j::ops::svd<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&x}, {}, {0, 0, 16});
+    nd4j::ops::svd op;
+    auto results = op.execute({&x}, {}, {0, 0, 16});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *s = results->at(0);
+    auto *s = results->at(0);
 
     ASSERT_TRUE(expS.equalsTo(s));
     ASSERT_TRUE(expS.isSameShape(s));
@@ -2227,7 +2227,7 @@ TEST_F(DeclarableOpsTests3, svd_test7) {
 ///////////////////////////////////////////////////////////////////
 // TEST_F(DeclarableOpsTests3, svd_test8) {
 
-//    NDArray<double> x('c', {2,2,11,10}, {3 ,-8 ,0 ,3 ,-5 ,16 ,-3 ,7 ,-4 ,19 ,19 ,13 ,15 ,15 ,9 ,6 ,-7 ,-5 ,-9 ,-12 ,7 ,-1 ,-1 ,6 ,19
+//    auto x= NDArrayFactory::_create<float>('c', {2,2,11,10}, {3 ,-8 ,0 ,3 ,-5 ,16 ,-3 ,7 ,-4 ,19 ,19 ,13 ,15 ,15 ,9 ,6 ,-7 ,-5 ,-9 ,-12 ,7 ,-1 ,-1 ,6 ,19
 //            ,-6 ,16 ,0 ,16 ,16 ,7 ,14 ,18. ,0 ,18 ,-4 ,10 ,-16 ,-17 ,15 ,13 ,-17 ,-14 ,-17 ,-5 ,-9 ,-1 ,-19
 //            ,-18 ,5 ,-5 ,-13 ,17 ,-19 ,-5 ,18 ,4 ,10 ,17 ,-7 ,-10 ,16 ,10 ,8 ,-10 ,-3 ,10 ,1 ,-4 ,-16 ,-1
 //            ,-1 ,5 ,5 ,17 ,14 ,20 ,15 ,-6 ,19 ,14 ,17 ,0 ,-17 ,-16 ,-8 ,-6 ,3 ,-6 ,-11 ,-4 ,-2 ,-7 ,4 ,-6
@@ -2247,7 +2247,7 @@ TEST_F(DeclarableOpsTests3, svd_test7) {
 //                                         -14 ,18 ,-10 ,4 ,13 ,-5 ,13 ,-6 ,12 ,-10 ,19 ,4 ,-7 ,-17 ,20 ,8 ,6 ,-3 ,3 ,-7 ,-18 ,17 ,
 //                                         -13 ,18 ,-20 ,-16 ,-5 ,12 ,5 ,17 ,-4 ,4 ,7 ,8 ,17 ,-9 ,-12 ,-10 ,8 ,-14 ,-11 ,7 ,19 ,-17});
 
-//    NDArray<double> expS('c', {2,2,10}, { 64.12636,  54.37044,  50.63744,  48.10308,  33.7364 ,  29.96456,
+//    auto expS= NDArrayFactory::_create<float>('c', {2,2,10}, { 64.12636,  54.37044,  50.63744,  48.10308,  33.7364 ,  29.96456,
 //                                          25.53945,  19.31856,  15.30939,   9.31349,
 //                                          67.41342,  59.64963,  58.72687,  39.22496,  32.39772,  29.30833,
 //                                          23.1491 ,  16.92442,   6.38613,   3.49563,
@@ -2256,7 +2256,7 @@ TEST_F(DeclarableOpsTests3, svd_test7) {
 //                                          65.47447,  56.31305,  54.13371,  46.26955,  43.47755,  30.25799,
 //                                          20.71463,  16.89671,  10.39572,   7.81631});
 
-//    NDArray<double> expU('c', {2,2,11,11},  {-0.177870, -0.149461, -0.196911, 0.036990, -0.338237, 0.548901,
+//    auto expU= NDArrayFactory::_create<float>('c', {2,2,11,11},  {-0.177870, -0.149461, -0.196911, 0.036990, -0.338237, 0.548901,
 //                                             -0.074396, 0.497067, -0.083636, -0.111810, -0.466989, -0.010465, 0.434732, 0.337198, 0.305239, -0.292813,
 //                                             0.041280, -0.517144, 0.121499, 0.464908, 0.003658, 0.135017, -0.446916, -0.098318, 0.073571, -0.200521,
 //                                             0.186776, -0.353022, -0.435582, -0.225959, 0.052972, 0.032390, -0.583801, -0.402790, 0.562809, 0.102744,
@@ -2307,7 +2307,7 @@ TEST_F(DeclarableOpsTests3, svd_test7) {
 //                                             0.124463, 0.039719, -0.221319, -0.224785, 0.096356, -0.302131, -0.462598, 0.194320});
 
 
-//    NDArray<double> expV('c', {2,2,10,10}, {-0.050761, 0.370975, -0.061567, -0.125530, 0.024081, 0.275524, -0.800334,
+//    auto expV= NDArrayFactory::_create<float>('c', {2,2,10,10}, {-0.050761, 0.370975, -0.061567, -0.125530, 0.024081, 0.275524, -0.800334,
 //                                            -0.025855, 0.348132, 0.036882, 0.034921, 0.307295, 0.629837, 0.014276, 0.265687, 0.188407, -0.035481, 0.082827,
 //                                            -0.490175, 0.391118, -0.180180, 0.169108, 0.206663, 0.623321, 0.260009, 0.081943, 0.004485, 0.136199, 0.060353,
 //                                            -0.641224, -0.181559, -0.041761, 0.578416, -0.161798, -0.573128, -0.187563, 0.012533, 0.368041, 0.314619,
@@ -2348,14 +2348,14 @@ TEST_F(DeclarableOpsTests3, svd_test7) {
 //                                            -0.286167, -0.101052, -0.181529, -0.419406, -0.032204, -0.732282, 0.106833, -0.288881, 0.171516, -0.096242,
 //                                            -0.331834, -0.493188, 0.393195, 0.358365, 0.049125, 0.123457, 0.438169, -0.105015, 0.092386, -0.130413, -0.476991});
 
-//    nd4j::ops::svd<double> op;
-//    nd4j::ResultSet<double>* results = op.execute({&x}, {}, {1, 1, 7});
+//    nd4j::ops::svd op;
+//    auto results = op.execute({&x}, {}, {1, 1, 7});
 
 //    ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-//    NDArray<double> *s = results->at(0);
-//    NDArray<double> *u = results->at(1);
-//    NDArray<double> *v = results->at(2);
+//    auto *s = results->at(0);
+//    auto *u = results->at(1);
+//    auto *v = results->at(2);
 
 //    ASSERT_TRUE(expS.isSameShape(s));
 //    ASSERT_TRUE(expU.isSameShape(u));
@@ -2371,18 +2371,18 @@ TEST_F(DeclarableOpsTests3, svd_test7) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, svd_test9) {
 
-    NDArray<double> x('c', {2,2,5,6}, {17 ,-11 ,20 ,-10 ,19 ,13 ,-18 ,6 ,-2 ,-6 ,-10 ,4 ,-6 ,-4 ,3 ,16 ,12 ,
+    auto x= NDArrayFactory::_create<float>('c', {2,2,5,6}, {17 ,-11 ,20 ,-10 ,19 ,13 ,-18 ,6 ,-2 ,-6 ,-10 ,4 ,-6 ,-4 ,3 ,16 ,12 ,
                                        -15 ,8 ,-8 ,12 ,-1 ,20 ,19 ,-13 ,0 ,20 ,17 ,-8 ,16 ,-19 ,7 ,-16 ,-14 ,-5 ,7 ,7 ,-5 ,12 ,-15 ,7 ,8 ,
                                        1 ,-8 ,-17 ,10 ,-11 ,8 ,-10 ,1 ,-6 ,10 ,15 ,19 ,-15 ,8 ,2 ,8 ,12 ,7 ,-5 ,1 ,8 ,4 ,-13 ,2 ,19 ,-2 ,-10 ,
                                        -8 ,11 ,1 ,20 ,-11 ,4 ,1 ,-17 ,-15 ,0 ,-9 ,-4 ,-1 ,-6 ,-9 ,-13 ,10 ,7 ,-2 ,15 ,-10 ,-1 ,11 ,-20 ,-2 ,
                                        -1 ,-18 ,12 ,16 ,8 ,-9 ,-20 ,-7 ,-20 ,3 ,-9 ,12 ,8 ,-19 ,-2 ,2 ,1 ,7 ,10 ,-18 ,13 ,6 ,14 ,0 ,19 ,8});
 
-    NDArray<double> expS('c', {2,2,5}, {50.46507,  35.75599,  28.12787,  12.45245,   9.08545,
+    auto expS= NDArrayFactory::_create<float>('c', {2,2,5}, {50.46507,  35.75599,  28.12787,  12.45245,   9.08545,
                                         38.56035,  30.62846,  26.31646,  19.42605,   3.01162,
                                         38.56369,  29.18881,  19.54565,  10.89746,   2.017  ,
                                         44.99108,  34.95059,  26.00453,  15.43898,   7.18752});
 
-    NDArray<double> expU('c', {2,2,5,5},  {-0.73644, -0.10751,  0.10081, -0.00325,  0.66025,
+    auto expU= NDArrayFactory::_create<float>('c', {2,2,5,5},  {-0.73644, -0.10751,  0.10081, -0.00325,  0.66025,
                                            0.26329,  0.3079 ,  0.38582,  0.77696,  0.28872,
                                            0.03076,  0.03015, -0.9128 ,  0.36387,  0.18039,
                                            -0.61335,  0.10076,  0.01381,  0.40922, -0.66783,
@@ -2403,7 +2403,7 @@ TEST_F(DeclarableOpsTests3, svd_test9) {
                                            0.34555,  0.12488, -0.50703, -0.29269,  0.72267,
                                            -0.34713,  0.3847 , -0.7532 ,  0.22176, -0.33913});
 
-    NDArray<double> expV('c', {2,2,6,6}, {-4.15640000e-01,  -5.30190000e-01,   5.29200000e-02,  -7.15710000e-01,
+    auto expV= NDArrayFactory::_create<float>('c', {2,2,6,6}, {-4.15640000e-01,  -5.30190000e-01,   5.29200000e-02,  -7.15710000e-01,
                                           -1.10690000e-01,   1.37280000e-01,
                                           2.86620000e-01,   5.88200000e-02,   1.68760000e-01,  -2.55000000e-03,
                                           -1.00090000e-01,   9.35890000e-01,
@@ -2452,14 +2452,14 @@ TEST_F(DeclarableOpsTests3, svd_test9) {
                                           -6.57270000e-01,   2.91000000e-01,   4.17280000e-01,   2.52880000e-01,
                                           -4.63400000e-01,  -1.74620000e-01});
 
-    nd4j::ops::svd<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&x}, {}, {1, 1, 16});
+    nd4j::ops::svd op;
+    auto results = op.execute({&x}, {}, {1, 1, 16});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *s = results->at(0);
-    NDArray<double> *u = results->at(1);
-    NDArray<double> *v = results->at(2);
+    auto *s = results->at(0);
+    auto *u = results->at(1);
+    auto *v = results->at(2);
 
     ASSERT_TRUE(expS.equalsTo(s));
     ASSERT_TRUE(expU.equalsTo(u));
@@ -2475,18 +2475,18 @@ TEST_F(DeclarableOpsTests3, svd_test9) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, svd_test10) {
 
-    NDArray<double> x('c', {2,2,5,6}, {17 ,-11 ,20 ,-10 ,19 ,13 ,-18 ,6 ,-2 ,-6 ,-10 ,4 ,-6 ,-4 ,3 ,16 ,12 ,
+    auto x= NDArrayFactory::_create<float>('c', {2,2,5,6}, {17 ,-11 ,20 ,-10 ,19 ,13 ,-18 ,6 ,-2 ,-6 ,-10 ,4 ,-6 ,-4 ,3 ,16 ,12 ,
                                        -15 ,8 ,-8 ,12 ,-1 ,20 ,19 ,-13 ,0 ,20 ,17 ,-8 ,16 ,-19 ,7 ,-16 ,-14 ,-5 ,7 ,7 ,-5 ,12 ,-15 ,7 ,8 ,
                                        1 ,-8 ,-17 ,10 ,-11 ,8 ,-10 ,1 ,-6 ,10 ,15 ,19 ,-15 ,8 ,2 ,8 ,12 ,7 ,-5 ,1 ,8 ,4 ,-13 ,2 ,19 ,-2 ,-10 ,
                                        -8 ,11 ,1 ,20 ,-11 ,4 ,1 ,-17 ,-15 ,0 ,-9 ,-4 ,-1 ,-6 ,-9 ,-13 ,10 ,7 ,-2 ,15 ,-10 ,-1 ,11 ,-20 ,-2 ,
                                        -1 ,-18 ,12 ,16 ,8 ,-9 ,-20 ,-7 ,-20 ,3 ,-9 ,12 ,8 ,-19 ,-2 ,2 ,1 ,7 ,10 ,-18 ,13 ,6 ,14 ,0 ,19 ,8});
 
-    NDArray<double> expS('c', {2,2,5}, {50.46507,  35.75599,  28.12787,  12.45245,   9.08545,
+    auto expS= NDArrayFactory::_create<float>('c', {2,2,5}, {50.46507,  35.75599,  28.12787,  12.45245,   9.08545,
                                         38.56035,  30.62846,  26.31646,  19.42605,   3.01162,
                                         38.56369,  29.18881,  19.54565,  10.89746,   2.017  ,
                                         44.99108,  34.95059,  26.00453,  15.43898,   7.18752});
 
-    NDArray<double> expU('c', {2,2,5,5},  {-0.73644, -0.10751,  0.10081, -0.00325,  0.66025,
+    auto expU= NDArrayFactory::_create<float>('c', {2,2,5,5},  {-0.73644, -0.10751,  0.10081, -0.00325,  0.66025,
                                            0.26329,  0.3079 ,  0.38582,  0.77696,  0.28872,
                                            0.03076,  0.03015, -0.9128 ,  0.36387,  0.18039,
                                            -0.61335,  0.10076,  0.01381,  0.40922, -0.66783,
@@ -2507,7 +2507,7 @@ TEST_F(DeclarableOpsTests3, svd_test10) {
                                            0.34555,  0.12488, -0.50703, -0.29269,  0.72267,
                                            -0.34713,  0.3847 , -0.7532 ,  0.22176, -0.33913});
 
-    NDArray<double> expV('c', {2,2,6,5}, {  -4.15640000e-01,  -5.30190000e-01,   5.29200000e-02,  -7.15710000e-01,
+    auto expV= NDArrayFactory::_create<float>('c', {2,2,6,5}, {  -4.15640000e-01,  -5.30190000e-01,   5.29200000e-02,  -7.15710000e-01,
                                             -1.10690000e-01,
                                             2.86620000e-01,   5.88200000e-02,   1.68760000e-01,  -2.55000000e-03,
                                             -1.00090000e-01,
@@ -2556,14 +2556,14 @@ TEST_F(DeclarableOpsTests3, svd_test10) {
                                             -6.57270000e-01,   2.91000000e-01,   4.17280000e-01,   2.52880000e-01,
                                             -4.63400000e-01});
 
-    nd4j::ops::svd<double> op;
-    nd4j::ResultSet<double>* results = op.execute({&x}, {}, {0, 1, 16});
+    nd4j::ops::svd op;
+    auto results = op.execute({&x}, {}, {0, 1, 16});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    NDArray<double> *s = results->at(0);
-    NDArray<double> *u = results->at(1);
-    NDArray<double> *v = results->at(2);
+    auto *s = results->at(0);
+    auto *u = results->at(1);
+    auto *v = results->at(2);
 
     ASSERT_TRUE(expS.equalsTo(s));
     ASSERT_TRUE(expU.equalsTo(u));
