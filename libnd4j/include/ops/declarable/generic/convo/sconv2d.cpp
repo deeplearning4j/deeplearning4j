@@ -31,12 +31,13 @@ namespace ops  {
 
 
 CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
-    auto input        = INPUT_VARIABLE(0);                                           // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
-    auto weightsDepth = INPUT_VARIABLE(1);                                           // [kH, kW, iC, mC]  (NHWC) or [mC, iC, kH, kW]  (NCHW)
-    NDArray *weightsPoint = nullptr;                                                     // [1, 1, iC*mC, oC] (NHWC) or [oC, iC*mC, 1, 1] (NCHW)
+    
+    NDArray *input        = INPUT_VARIABLE(0);                                           // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
+    NDArray *weightsDepth = INPUT_VARIABLE(1);                                           // [kH, kW, iC, mC]  always
+    NDArray *weightsPoint = nullptr;                                                     // [1, 1, iC*mC, oC] always 
     NDArray *bias         = nullptr;                                                     // [oC], oC = iC*mC if weightsPoint=nullptr
 
-    auto output       = OUTPUT_VARIABLE(0);                                          // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW]  (NCHW)
+    NDArray *output    = OUTPUT_VARIABLE(0);                                          // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW]  (NCHW)
 
     if(block.width() == 3) {
         if((INPUT_VARIABLE(2))->rankOf() == 4)
@@ -65,17 +66,17 @@ CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
     int dH = INT_ARG(6);                                                        // dilations height
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
-    int isNCHW     = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;       // 1-NCHW,  0-NHWC
+    int isNCHW     = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;       // INT_ARG(9): 0-NCHW,  1-NHWC
 
     int bS, iC, iH, iW, mC, oC, oH, oW;                     // batch size, input channels, input height/width, channels multiplier, output channels, output height/width
     int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;   // corresponding indexes
     ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWmC, indWkH, indOoH);
     mC = weightsDepth->sizeAt(indWmC);                      // channels multiplier
 
-    std::string expectedWeightsDShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({mC,iC,kH,kW,  indWmC,indWiC,indWkH,indWkH+1}));
+    std::string expectedWeightsDShape = ShapeUtils::shapeAsString({kH, kW, iC, mC});
     REQUIRE_TRUE(expectedWeightsDShape == ShapeUtils::shapeAsString(weightsDepth), 0, " SCONV2D OP: wrong shape of weightsDepth array, expected is %s, but got %s instead !", expectedWeightsDShape.c_str(), ShapeUtils::shapeAsString(weightsDepth).c_str());
     if(weightsPoint) {
-        std::string expectedWeightsPShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({oC,iC*mC,1,1,  indWmC,indWiC,indWkH,indWkH+1}));
+        std::string expectedWeightsPShape = ShapeUtils::shapeAsString({1, 1, iC*mC, oC});
         REQUIRE_TRUE(expectedWeightsPShape == ShapeUtils::shapeAsString(weightsPoint), 0, " SCONV2D OP: wrong shape of weightsPoint array, expected is %s, but got %s instead !", expectedWeightsPShape.c_str(), ShapeUtils::shapeAsString(weightsPoint).c_str());
     }
     if (bias)
@@ -87,7 +88,7 @@ CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
         return Status::OK();
     }
 
-    ConvolutionUtils::sconv2d({input, weightsDepth, weightsPoint, bias}, output, {kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW});
+    ConvolutionUtils::sconv2d(input, weightsDepth, weightsPoint, bias, output, kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW);
 
     return Status::OK();
 }
@@ -96,9 +97,9 @@ CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
 DECLARE_SHAPE_FN(sconv2d) {
 
     auto inputShapeInfo    = inputShape->at(0);         // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
-    auto weightsDShapeInfo = inputShape->at(1);         // [kH, kW, iC, mC]  (NHWC) or [mC, iC, kH, kW]  (NCHW)
-    Nd4jLong* weightsPShapeInfo = nullptr;                   // [1, 1, iC*mC, oC] (NHWC) or [oC, iC*mC, 1, 1] (NCHW)
-    Nd4jLong* biasShapeInfo     = nullptr;                   // [oC], oC = iC*mC if weightsPoint=nullptr
+    auto weightsDShapeInfo = inputShape->at(1);         // [kH, kW, iC, mC]  always
+    Nd4jLong* weightsPShapeInfo = nullptr;              // [1, 1, iC*mC, oC] always
+    Nd4jLong* biasShapeInfo     = nullptr;              // [oC], oC = iC*mC if weightsPoint=nullptr
 
     if(block.width() == 3)
         if(inputShape->at(2)[0] == 4)
@@ -127,14 +128,14 @@ DECLARE_SHAPE_FN(sconv2d) {
     int dH = INT_ARG(6);                                                        // dilations height
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
-    int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // 0-NDHWC, 1-NCDHW
+    int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // INT_ARG(9): 1-NHWC, 0-NCHW
 
-    int indIOioC, indIiH, indWkH, indWmC, indWiC;
+    int indIOioC, indIiH, indWmC(3);
     if(!isNCHW) {
-        indIOioC = 3; indIiH = 1; indWkH = 0; indWmC = 3; indWiC = 2;
+        indIOioC = 3; indIiH = 1;
     }
     else {
-        indIOioC = 1; indIiH = 2; indWkH = 2; indWmC = 0; indWiC = 1;
+        indIOioC = 1; indIiH = 2;
     }
 
     const int bS = inputShapeInfo[1];                                               // batch size
@@ -144,10 +145,10 @@ DECLARE_SHAPE_FN(sconv2d) {
     const int mC = weightsDShapeInfo[indWmC+1];                                      // channel multiplier
     const int oC = weightsPShapeInfo ? weightsPShapeInfo[indWmC+1] : iC*mC;       // output channels (oC or iC*mC)
 
-    std::string expectedWeightsDShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({iC,mC,kH,kW,  indWiC,indWmC,indWkH,indWkH+1}));
+    std::string expectedWeightsDShape = ShapeUtils::shapeAsString({kH, kW, iC, mC});
     REQUIRE_TRUE(expectedWeightsDShape == ShapeUtils::shapeAsString(weightsDShapeInfo), 0, "SCONV2D OP: wrong shape of depth weights array, expected is %s, but got %s instead !", expectedWeightsDShape.c_str(), ShapeUtils::shapeAsString(weightsDShapeInfo).c_str());
     if(weightsPShapeInfo) {
-        std::string expectedWeightsPShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({iC*mC,oC,1,1,  indWiC,indWmC,indWkH,indWkH+1}));
+        std::string expectedWeightsPShape = ShapeUtils::shapeAsString({1, 1, iC*mC, oC});
         REQUIRE_TRUE(expectedWeightsPShape == ShapeUtils::shapeAsString(weightsPShapeInfo), 0, "SCONV2D OP: wrong shape of point array, expected is %s, but got %s instead !", expectedWeightsPShape.c_str(), ShapeUtils::shapeAsString(weightsPShapeInfo).c_str());
     }
     if (biasShapeInfo)
@@ -180,15 +181,16 @@ DECLARE_SHAPE_FN(sconv2d) {
 
 ////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
-    auto input        = INPUT_VARIABLE(0);                                           // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
-    auto gradO        = INPUT_VARIABLE(1);                                           // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
-    auto weightsDepth = INPUT_VARIABLE(2);                                           // [kH, kW, iC, mC]  (NHWC) or [mC, iC, kH, kW]  (NCHW)
-    NDArray *weightsPoint = nullptr;                                                     // [1, 1, iC*mC, oC] (NHWC) or [oC, iC*mC, 1, 1] (NCHW)
+    
+    NDArray *input        = INPUT_VARIABLE(0);                                           // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
+    NDArray *gradO        = INPUT_VARIABLE(1);                                           // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
+    NDArray *weightsDepth = INPUT_VARIABLE(2);                                           // [kH, kW, iC, mC] always
+    NDArray *weightsPoint = nullptr;                                                     // [1, 1, iC*mC, oC] always
     NDArray *bias         = nullptr;                                                     // [oC], oC = iC*mC if weightsPoint=nullptr
 
-    auto gradI  = OUTPUT_VARIABLE(0);                                                // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
-    auto gradWD = OUTPUT_VARIABLE(1);                                                // [kH, kW, iC, mC]  (NHWC) or [mC, iC, kH, kW] (NCHW)
-    NDArray *gradWP = nullptr;                                                           // [1, 1, iC*mC, oC] (NHWC) or [oC, iC*mC, 1, 1] (NCHW)
+    NDArray *gradI  = OUTPUT_VARIABLE(0);                                                // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
+    NDArray *gradWD = OUTPUT_VARIABLE(1);                                                // [kH, kW, iC, mC] always
+    NDArray *gradWP = nullptr;                                                           // [1, 1, iC*mC, oC] always
     NDArray *gradB  = nullptr;                                                           // [oC]
 
     if(block.width() == 4) {
@@ -230,18 +232,18 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
     int dH = INT_ARG(6);                                                        // dilations height
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
-    int isNCHW     = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;       // 1-NCHW,  0-NHWC
+    int isNCHW     = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;       // INT_ARG(9): 0-NCHW,  1-NHWC
 
     int bS, iC, iH, iW, mC, oC, oH, oW;                     // batch size, input channels, input height/width, channels multiplier, output channels, output height/width
     int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;   // corresponding indexes
     ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWmC, indWkH, indOoH);
     mC = weightsDepth->sizeAt(indWmC);                      // channels multiplier
 
-    std::string expectedWeightsDShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({mC,iC,kH,kW,  indWmC,indWiC,indWkH,indWkH+1}));
+    std::string expectedWeightsDShape = ShapeUtils::shapeAsString({kH, kW, iC, mC});
     REQUIRE_TRUE(expectedWeightsDShape == ShapeUtils::shapeAsString(weightsDepth), 0, " SCONV2D_BP OP: wrong shape of weightsDepth array, expected is %s, but got %s instead !", expectedWeightsDShape.c_str(), ShapeUtils::shapeAsString(weightsDepth).c_str());
     REQUIRE_TRUE(expectedWeightsDShape == ShapeUtils::shapeAsString(gradWD),       0, " SCONV2D_BP OP: wrong shape of gradWD array, expected is %s, but got %s instead !", expectedWeightsDShape.c_str(), ShapeUtils::shapeAsString(gradWD).c_str());
     if(weightsPoint) {
-        std::string expectedWeightsPShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({oC,iC*mC,1,1,  indWmC,indWiC,indWkH,indWkH+1}));
+        std::string expectedWeightsPShape = ShapeUtils::shapeAsString({1, 1, iC*mC, oC});
         REQUIRE_TRUE(expectedWeightsPShape == ShapeUtils::shapeAsString(weightsPoint), 0, " SCONV2D_BP OP: wrong shape of weightsPoint array, expected is %s, but got %s instead !", expectedWeightsPShape.c_str(), ShapeUtils::shapeAsString(weightsPoint).c_str());
         REQUIRE_TRUE(expectedWeightsPShape == ShapeUtils::shapeAsString(gradWP),       0, " SCONV2D_BP OP: wrong shape of gradWP array, expected is %s, but got %s instead !", expectedWeightsPShape.c_str(), ShapeUtils::shapeAsString(gradWP).c_str());
     }
@@ -252,7 +254,7 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
 
     // if (iC == 1) {
     //     nd4j_debug(" SCONV2D_BP OP: for input_channels=1 this op is equivalent to standard conv2d_bp \n","");
-    //     nd4j::ops::conv2d_bp<T> op;
+    //     nd4j::ops::conv2d_bp op;
     //     return op.execute(&block);
     // }
 
@@ -260,13 +262,13 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
     if (weightsPoint){
 
         auto resultFFShape = isNCHW ? std::vector<Nd4jLong>({bS, mC*iC, oH, oW}) : std::vector<Nd4jLong>({bS, oH, oW, mC*iC});
-        auto resultFF = new NDArray(input->ordering(), resultFFShape, block.getWorkspace());
-        ConvolutionUtils::sconv2d({input, weightsDepth, nullptr, nullptr}, resultFF, {kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW});
+        NDArray* resultFF = new NDArray(input->ordering(), resultFFShape, block.getWorkspace());
+        ConvolutionUtils::sconv2d(input, weightsDepth, nullptr, nullptr, resultFF, kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW);
 
         auto gradIDepthShape = ShapeUtils::composeShapeUsingDimsAndIdx({bS,iC*mC,oH,oW,  0,indIOioC,indIiH,indIiH+1});
-        auto gradIDepth = new NDArray(resultFF->ordering(), gradIDepthShape, block.getWorkspace());                 // [bS, oH, oW, iC*mC]  (NHWC) or [bS, iC*mC, oH, oW] (NCHW)
+        NDArray* gradIDepth = new NDArray(resultFF->ordering(), gradIDepthShape, block.getWorkspace());                 // [bS, oH, oW, iC*mC]  (NHWC) or [bS, iC*mC, oH, oW] (NCHW)
 
-        ConvolutionUtils::conv2dBP(resultFF, weightsPoint, bias, gradO,  gradIDepth, gradWP, gradB,  1,1, 1,1, 0,0, 1,1, isSameMode, isNCHW);    // in this case oH=iH and oW=iW
+        ConvolutionUtils::conv2dBP(resultFF, weightsPoint, bias, gradO, gradIDepth, gradWP, gradB, 1,1, 1,1, 0,0, 1,1, isSameMode, isNCHW);    // in this case oH=iH and oW=iW
 
         gradO = gradIDepth;
         bias = gradB = nullptr;                     // if pointwise backprop was done then don't calculate gradB at depthwise_conv2d_bp step
@@ -275,7 +277,7 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
     }
 
     // ----- apply depthwise_conv2d_bp ----- //
-    ConvolutionUtils::depthwiseConv2dBP(input, weightsDepth, bias, gradO,  gradI, gradWD, gradB,  kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW);
+    ConvolutionUtils::depthwiseConv2dBP(input, weightsDepth, bias, gradO, gradI, gradWD, gradB, kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW);
 
     if(weightsPoint)
         delete gradO;
@@ -288,9 +290,9 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
 
     auto inputShapeInfo    = inputShape->at(0);                 // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
     auto gradOShapeInfo    = inputShape->at(1);                 // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
-    auto weightsDShapeInfo = inputShape->at(2);                 // [kH, kW, iC, mC]  (NHWC) or [mC, iC, kH, kW]  (NCHW)
-    Nd4jLong* weightsPShapeInfo = nullptr;                           // [1, 1, iC*mC, oC] (NHWC) or [oC, iC*mC, 1, 1] (NCHW)
-    Nd4jLong* biasShapeInfo     = nullptr;                           // [oC], oC = iC*mC if weightsPoint=nullptr
+    auto weightsDShapeInfo = inputShape->at(2);                 // [kH, kW, iC, mC]  always
+    Nd4jLong* weightsPShapeInfo = nullptr;                      // [1, 1, iC*mC, oC] always
+    Nd4jLong* biasShapeInfo     = nullptr;                      // [oC], oC = iC*mC if weightsPoint=nullptr
 
     if(block.width() == 4) {
         if(inputShape->at(3)[0] == 4)
@@ -321,14 +323,14 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
     int dH = INT_ARG(6);                                                        // dilations height
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
-    int isNCHW     = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;       // 1-NCHW,  0-NHWC
+    int isNCHW     = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;       // INT_ARG(9): 0-NCHW,  1-NHWC
 
-    int indIOioC, indIiH, indWkH, indWmC, indWiC;
+    int indIOioC, indIiH, indWmC(3);
     if(!isNCHW) {
-        indIOioC = 3; indIiH = 1; indWkH = 0; indWmC = 3; indWiC = 2;
+        indIOioC = 3; indIiH = 1;
     }
     else {
-        indIOioC = 1; indIiH = 2; indWkH = 2; indWmC = 0; indWiC = 1;
+        indIOioC = 1; indIiH = 2;
     }
 
     const int bS = inputShapeInfo[1];                                               // batch size
@@ -343,10 +345,10 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
 
     std::string expectedGradOShapeInfo = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({bS,oC,trueoH,trueoW,  0,indIOioC,indIiH,indIiH+1}));
     REQUIRE_TRUE(expectedGradOShapeInfo == ShapeUtils::shapeAsString(gradOShapeInfo), 0, "SCONV2D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShapeInfo.c_str(), ShapeUtils::shapeAsString(gradOShapeInfo).c_str());
-    std::string expectedWeightsDShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({iC,mC,kH,kW,  indWiC,indWmC,indWkH,indWkH+1}));
+    std::string expectedWeightsDShape = ShapeUtils::shapeAsString({kH, kW, iC, mC});
     REQUIRE_TRUE(expectedWeightsDShape == ShapeUtils::shapeAsString(weightsDShapeInfo), 0, "SCONV2D_BP OP: wrong shape of depth weights array, expected is %s, but got %s instead !", expectedWeightsDShape.c_str(), ShapeUtils::shapeAsString(weightsDShapeInfo).c_str());
     if(weightsPShapeInfo) {
-        std::string expectedWeightsPShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({iC*mC,oC,1,1,  indWiC,indWmC,indWkH,indWkH+1}));
+        std::string expectedWeightsPShape = ShapeUtils::shapeAsString({1, 1, iC*mC, oC});
         REQUIRE_TRUE(expectedWeightsPShape == ShapeUtils::shapeAsString(weightsPShapeInfo), 0, "SCONV2D_BP OP: wrong shape of point array, expected is %s, but got %s instead !", expectedWeightsPShape.c_str(), ShapeUtils::shapeAsString(weightsPShapeInfo).c_str());
     }
     if (biasShapeInfo)

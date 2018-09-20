@@ -76,7 +76,7 @@ namespace ops {
 
         REQUIRE_TRUE(out_rows > 0 && out_cols > 0, 0, "Dilation2D: outY and outX should have positive values, but got [%i, %i] instead", out_rows, out_cols);
 
-        helpers::_dilation2d(input, weights, output, stride_rows, stride_cols, rate_rows, rate_cols, pad_top, pad_left);
+        helpers::dilation2d(input, weights, output, stride_rows, stride_cols, rate_rows, rate_cols, pad_top, pad_left);
 
         return Status::OK();
     }
