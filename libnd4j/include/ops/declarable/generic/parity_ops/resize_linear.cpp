@@ -65,12 +65,12 @@ namespace nd4j {
             if (block.width() > 1) {
                 auto newImageSize = INPUT_VARIABLE(1);
                 REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_linear: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
-                REQUIRE_TRUE(block.numI() == 0, 0, "resize_linear: Resize params already given by the second param. Int params are expensive.");
+                REQUIRE_TRUE(block.numI() <= 1, 0, "resize_linear: Resize params already given by the second param. Int params are expensive.");
                 width = int(newImageSize->getScalar(0));
                 height = int(newImageSize->getScalar(1));
             }
             else {
-                REQUIRE_TRUE(block.numI() == 2, 0, "resize_linear: Neither resize width nor height are provided.");
+                REQUIRE_TRUE(block.numI() <= 3, 0, "resize_linear: Neither resize width nor height are provided.");
                 width = INT_ARG(0);
                 height = INT_ARG(1);
             }
