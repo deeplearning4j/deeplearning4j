@@ -1191,8 +1191,8 @@ namespace nd4j {
         template <typename T>
         void putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const T value);
 
-        template <typename T>
-        void putScalar(const Nd4jLong* indices, const T value);
+        //template <typename T>
+        //void putScalar(const Nd4jLong* indices, const T value);
 
         /**
         *  returns true if array is 2D
