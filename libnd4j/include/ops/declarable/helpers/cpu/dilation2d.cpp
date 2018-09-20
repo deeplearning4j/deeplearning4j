@@ -25,7 +25,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
     template <typename X, typename Y, typename Z>
-    static void __dilation2d(NDArray *input, NDArray *weights, NDArray *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left) {
+    static void dilation2d_(NDArray *input, NDArray *weights, NDArray *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left) {
         const int batch = input->sizeAt(0);
         const int input_rows = input->sizeAt(1);
         const int input_cols = input->sizeAt(2);
@@ -66,15 +66,15 @@ namespace helpers {
         }
     };
 
-    void _dilation2d(NDArray *input, NDArray *weights, NDArray *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left) {
+    void dilation2d(NDArray *input, NDArray *weights, NDArray *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left) {
         auto xType = input->dataType();
         auto yType = weights->dataType();
         auto zType = output->dataType();
 
-        BUILD_TRIPLE_SELECTOR(xType, yType, zType, __dilation2d, (input, weights, output, stride_rows, stride_cols, rate_rows, rate_cols, pad_top, pad_left);, LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+        BUILD_TRIPLE_SELECTOR(xType, yType, zType, dilation2d_, (input, weights, output, stride_rows, stride_cols, rate_rows, rate_cols, pad_top, pad_left);, LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
     }
 
-    BUILD_TRIPLE_TEMPLATE(template void __dilation2d, (NDArray *input, NDArray *weights, NDArray *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left);, LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+    BUILD_TRIPLE_TEMPLATE(template void dilation2d_, (NDArray *input, NDArray *weights, NDArray *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left);, LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
     }
 }
 }

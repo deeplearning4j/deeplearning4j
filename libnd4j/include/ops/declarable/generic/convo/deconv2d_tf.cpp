@@ -28,11 +28,11 @@
 namespace nd4j {
 namespace ops  {
 
-
 ////////////////////////////////////////////////////////////////////////// 
 CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
+    
     auto gradO      = INPUT_VARIABLE(2);                                                // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
-    auto weights    = INPUT_VARIABLE(1);                                                // [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)
+    auto weights    = INPUT_VARIABLE(1);                                                // [kH, kW, iC, oC] always
     auto gradIShape = INPUT_VARIABLE(0);                                                // [4] - shape of input of conv2d (that is shape of gradI)
             
     auto gradI = OUTPUT_VARIABLE(0);                                                  // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
@@ -46,7 +46,7 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
     int dH = INT_ARG(6);                                                        // dilations height
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
-    int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // 0-NHWC, 1-NCHW    
+    int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // INT_ARG(9): 1-NHWC, 0-NCHW
 
     const int rank = gradO->rankOf();
 
@@ -54,9 +54,8 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
     REQUIRE_TRUE(gradIShape->rankOf() == 1, 0, "CUSTOM DECONV2D_TF OP: rank of array with output shape must be equal to 1, but got %i instead !", gradIShape->rankOf());
     REQUIRE_TRUE(gradIShape->lengthOf() == rank, 0, "CUSTOM DECONV2D_TF OP: length of array with output shape must be equal to 4, but got %i instead !", gradIShape->lengthOf());    
 
-    // create empty conv2d input array    
-    auto gradIShapeAsVector = gradIShape->asVectorT<Nd4jLong>();
-    NDArray input(gradO->ordering(), gradIShapeAsVector, block.getWorkspace());
+    // create empty conv2d input array        
+    NDArray input(gradO->ordering(), gradIShape->asVectorT<Nd4jLong>(), block.getWorkspace());
     
                                      
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
@@ -66,20 +65,21 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
     int trueoH, trueoW;          // true output height, width
     ConvolutionUtils::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
-    std::string expectedGradOShape   = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({bS,oC,trueoH,trueoW,  0,indIOioC,indOoH,indOoH+1}));
-    std::string expectedWeightsShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({iC,oC,kH,kW,  indWiC,indWoC,indWkH,indWkH+1}));
+    std::string expectedGradOShape   = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({bS,oC,trueoH,trueoW,  0,indIOioC,indOoH,indOoH+1}));            
+    std::string expectedWeightsShape = ShapeUtils::shapeAsString({kH, kW, iC, oC});
     REQUIRE_TRUE(expectedGradOShape == ShapeUtils::shapeAsString(gradO), 0,  "CUSTOM DECONV2D_TF OP: wrong shape of input array, basing on array with output shape expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils::shapeAsString(gradO).c_str());
-    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weights), 0, "CUSTOM DECONV2D_TF OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils::shapeAsString(weights).c_str());
+    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weights), 0, "CUSTOM DECONV2D_TF OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils::shapeAsString(weights).c_str());        
 
-    ConvolutionUtils::conv2dBP(&input, weights, nullptr, gradO,   gradI, nullptr, nullptr,  kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW);
+    ConvolutionUtils::conv2dBP(&input, weights, nullptr, gradO, gradI, nullptr, nullptr, kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW);
     
     return Status::OK();
 }
 
 DECLARE_SHAPE_FN(deconv2d_tf) {
+
     auto gradOShapeInfo   = inputShape->at(2);                                                // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
-    auto weightsShapeInfo = inputShape->at(1);                                                // [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)
-    auto gradIShapeShapeInfo = inputShape->at(0);                                               // [4]
+    auto weightsShapeInfo = inputShape->at(1);                                                // [kH, kW, iC, oC] always
+    auto gradIShapeShapeInfo = inputShape->at(0);                                             // [4]
 
     const int rank = 4;
     
@@ -97,14 +97,14 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
     const int dH = INT_ARG(6);                                                        // dilations height
     const int dW = INT_ARG(7);                                                        // dilations width
     const int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
-    const int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // 0-NHWC, 1-NCHW    
+    const int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // INT_ARG(9): 1-NHWC, 0-NCHW
 
-    int indIOioC, indIiH, indWkH, indWoC, indWiC, indOoH;
+    int indIOioC, indIiH, indWoC(3), indOoH;
     if(!isNCHW) {
-        indIOioC = 3; indIiH = 1; indWkH = 0; indWoC = 3; indWiC = 2, indOoH = 1;
+        indIOioC = 3; indIiH = 1; indOoH = 1;
     }
     else {        
-        indIOioC = 1; indIiH = 2; indWkH = 2; indWoC = 0; indWiC = 1, indOoH = 2;              
+        indIOioC = 1; indIiH = 2; indOoH = 2;
     }    
 
     std::vector<Nd4jLong> gradIShape = INPUT_VARIABLE(0)->template asVectorT<Nd4jLong>();
@@ -120,8 +120,8 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
     int trueiH, trueiW;                                         // output height, width
     ConvolutionUtils::calcOutSizeDeconv2D(trueiH, trueiW, kH, kW, sH, sW, pH, pW, dH, dW, oH, oW, isSameMode);
     
-    std::string expectedGradIShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({bS,iC,trueiH,trueiW,  0,indIOioC,indIiH,indIiH+1}));
-    std::string expectedWeightsShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({iC,oC,kH,kW,  indWiC,indWoC,indWkH,indWkH+1}));
+    std::string expectedGradIShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({bS,iC,trueiH,trueiW,  0,indIOioC,indIiH,indIiH+1}));                    
+    std::string expectedWeightsShape = ShapeUtils::shapeAsString({kH, kW, iC, oC});
     REQUIRE_TRUE(expectedGradIShape == ShapeUtils::shapeAsString(gradIShape), 0,  "CUSTOM DECONV2D_TF OP: wrong shape of array with output shape, expected is %s, but got %s instead !", expectedGradIShape.c_str(), ShapeUtils::shapeAsString(gradIShape).c_str());
     REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weightsShapeInfo), 0, "CUSTOM DECONV2D_TF OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
     
@@ -146,6 +146,8 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
     return SHAPELIST(gradIshapeInfo);        
 
 }
+
+
 
 /*
 
