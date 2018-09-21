@@ -39,6 +39,9 @@ HHcolPivQR::HHcolPivQR(const NDArray& matrix) {
     evalData();    
 }
 
+    void HHcolPivQR::evalData() {
+        BUILD_SINGLE_SELECTOR(_qr.dataType(), _evalData, (), FLOAT_TYPES);
+    }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
