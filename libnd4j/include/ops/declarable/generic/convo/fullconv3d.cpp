@@ -420,7 +420,6 @@ namespace nd4j {
             // return list;
             return SHAPELIST();
         }
-
     }
 }
 
