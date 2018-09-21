@@ -1534,15 +1534,15 @@ NDArray NDArray::transp() const {
     template void NDArray::applyScalar(nd4j::scalar::Ops op, bool scalar, NDArray *target, void *extraParams) const;
 
 
-    void NDArray::applyScalar(nd4j::scalar::Ops op, NDArray& scalar, NDArray* target, void *extraParams) const {
-        if (!scalar.isScalar()) {
+    void NDArray::applyScalar(nd4j::scalar::Ops op, NDArray* scalar, NDArray* target, void *extraParams) const {
+        if (!scalar->isScalar()) {
             throw std::runtime_error("Operand is not a scalar!");
         }
 
         if (target == nullptr)
-            NativeOpExcutioner::execScalar(op, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, scalar.buffer(), scalar.shapeInfo(), extraParams);
+            NativeOpExcutioner::execScalar(op, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, scalar->buffer(), scalar->shapeInfo(), extraParams);
         else
-            NativeOpExcutioner::execScalar(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, scalar.buffer(), scalar.shapeInfo(), extraParams);
+            NativeOpExcutioner::execScalar(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, scalar->buffer(), scalar->shapeInfo(), extraParams);
     }
 
 

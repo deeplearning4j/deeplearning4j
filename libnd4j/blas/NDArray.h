@@ -537,7 +537,7 @@ namespace nd4j {
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */ 
-        void applyScalar(nd4j::scalar::Ops op, NDArray& scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
+        void applyScalar(nd4j::scalar::Ops op, NDArray* scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
 
 
 #ifndef __JAVACPP_HACK__

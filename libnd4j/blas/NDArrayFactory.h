@@ -54,6 +54,7 @@ namespace nd4j {
 
         template <typename T>
         static NDArray _scalar(const T value, nd4j::memory::Workspace* workspace = nullptr);
+
         template <typename T>
         static NDArray _create(const T value, nd4j::memory::Workspace* workspace = nullptr);
         static NDArray _create(nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr);

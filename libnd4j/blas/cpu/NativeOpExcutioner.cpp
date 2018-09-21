@@ -285,7 +285,7 @@ double NativeOpExcutioner::execSummaryStatsScalar(int opNum, void *x, Nd4jLong *
 void NativeOpExcutioner::execSummaryStats(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, bool biasCorrected) {
     auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::summarystats::SummaryStatsReduce, ::exec(opNum, biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, functions::summarystats::SummaryStatsReduce, ::exec(opNum, biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength), FLOAT_TYPES);
 }
 
 

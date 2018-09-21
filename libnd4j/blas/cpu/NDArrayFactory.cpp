@@ -261,6 +261,22 @@ namespace nd4j {
     }
 
 ////////////////////////////////////////////////////////////////////////
+    template <>
+    NDArray NDArrayFactory::_scalar(nd4j::DataType dataType, nd4j::memory::Workspace* workspace) {
+        NDArray res;
+        int8_t *buffer;
+        ALLOCATE(buffer, workspace, 1 * DataTypeUtils::sizeOfElement(dataType), int8_t);
+
+        auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
+
+        res.setShapeInfo(shapeInfo);
+        res.setBuffer(buffer);
+        res.triggerAllocationFlag(true, true);
+        res.setWorkspace(workspace);
+
+        return res;
+    }
+
     template <typename T>
     NDArray NDArrayFactory::_scalar(T scalar, nd4j::memory::Workspace* workspace) {
         NDArray res;
