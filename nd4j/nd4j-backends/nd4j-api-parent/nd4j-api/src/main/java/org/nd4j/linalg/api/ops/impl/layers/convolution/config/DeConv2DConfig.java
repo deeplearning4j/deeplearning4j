@@ -55,6 +55,7 @@ public class DeConv2DConfig extends BaseConvolutionConfig {
         ret.put("dH", dH);
         ret.put("dW", dW);
         ret.put("isSameMode", isSameMode);
+        ret.put("dataFormat", dataFormat);
         return ret;
     }
 }
