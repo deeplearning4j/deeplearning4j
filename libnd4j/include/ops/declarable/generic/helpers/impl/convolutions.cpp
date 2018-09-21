@@ -407,7 +407,7 @@ void conv2d_(const NDArray* input, const NDArray* weights, const NDArray* bias, 
     if(isSameMode)                       // SAME        
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-    NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getWorkspace());
+    auto columns = NDArrayFactory::_create(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getWorkspace());
 
     //----- calculation of output -----//
     LaunchContext ctx;

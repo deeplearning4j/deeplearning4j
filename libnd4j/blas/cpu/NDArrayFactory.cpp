@@ -527,7 +527,7 @@ namespace nd4j {
     BUILD_SINGLE_TEMPLATE(template NDArray* NDArrayFactory::empty, (nd4j::memory::Workspace* workspace), LIBND4J_TYPES);
 
     NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const NDArray& value, const char order, nd4j::memory::Workspace* workspace) {
-        auto res = new NDArray(order, shape, value.dataType(), workspace);
+        auto res = NDArrayFactory::create(order, shape, value.dataType(), workspace);
         res->assign(value);
         return res;
     }

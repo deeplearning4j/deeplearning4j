@@ -142,7 +142,7 @@ HHsequence BiDiagonalUp::_makeHHsequence(const char type) const {
 	if(type == 'u') {
 
     	const int diagSize = _HHbidiag.sizeAt(0);
-    	NDArray colOfCoeffs(_HHmatrix.ordering(),  {diagSize, 1}, _HHmatrix.dataType(), _HHmatrix.getWorkspace());
+    	auto colOfCoeffs = NDArrayFactory::_create(_HHmatrix.ordering(),  {diagSize, 1}, _HHmatrix.dataType(), _HHmatrix.getWorkspace());
 
 	    for(int i = 0; i < diagSize; ++i)
 	        colOfCoeffs.putScalar(i, _HHmatrix.getScalar<T>(i,i));
@@ -152,7 +152,7 @@ HHsequence BiDiagonalUp::_makeHHsequence(const char type) const {
     else {
 
     	const int diagUpSize = _HHbidiag.sizeAt(0) - 1;
-		NDArray colOfCoeffs(_HHmatrix.ordering(), {diagUpSize, 1}, _HHmatrix.dataType(), _HHmatrix.getWorkspace());
+		NDArray colOfCoeffs = NDArrayFactory::_create(_HHmatrix.ordering(), {diagUpSize, 1}, _HHmatrix.dataType(), _HHmatrix.getWorkspace());
 
     	for(int i = 0; i < diagUpSize; ++i)
         	colOfCoeffs.putScalar(i, _HHmatrix.getScalar<T>(i,i+1));

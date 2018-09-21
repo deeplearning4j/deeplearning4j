@@ -142,12 +142,22 @@ namespace nd4j {
                 delete zTads;
             };
 
+            template <typename T>
+            static void __prefix(scalar::Ops op, NDArray* x, NDArray* z, bool exclusive, bool reverse) {
+                    __prefix<T>(op, x->buffer(), x->shapeInfo(), x->buffer(), x->shapeInfo(), exclusive, reverse);
+            };
+
+            void _prefix(scalar::Ops op, NDArray* x, NDArray* z, bool exclusive, bool reverse) {
+                BUILD_SINGLE_SELECTOR(x->dataType(), __prefix, (op, x, z, exclusive, reverse), LIBND4J_TYPES);
+            }
+
             void _prefix(scalar::Ops op, NDArray* x, NDArray* z, std::vector<int>& dims, bool exclusive, bool reverse) {
                 BUILD_SINGLE_SELECTOR(x->dataType(), __prefix, (op, x, z, dims, exclusive, reverse), LIBND4J_TYPES);
             }
 
             BUILD_SINGLE_TEMPLATE(template void __prefix, (scalar::Ops op, void* vx, Nd4jLong* xShapeInfo, void* vz, Nd4jLong* zShapeInfo, bool exclusive, bool reverse), LIBND4J_TYPES);
             BUILD_SINGLE_TEMPLATE(template void __prefix, (scalar::Ops op, NDArray* x, NDArray* z, std::vector<int>& dims, bool exclusive, bool reverse), LIBND4J_TYPES);
+            BUILD_SINGLE_TEMPLATE(template void __prefix, (scalar::Ops op, NDArray* x, NDArray* z, bool exclusive, bool reverse), LIBND4J_TYPES);
 
 
 

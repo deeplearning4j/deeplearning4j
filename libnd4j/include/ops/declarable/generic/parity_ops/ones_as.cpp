@@ -28,7 +28,7 @@ namespace nd4j {
         OP_IMPL(ones_as, 1, 1, false) {
             auto output = OUTPUT_VARIABLE(0);
 
-            output->assign(1L);
+            output->assign(1);
 
             return Status::OK();
         }
