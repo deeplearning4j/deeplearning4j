@@ -2122,7 +2122,7 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd
         } else if (dstType == ND4J_INT16) {
             nd4j::TypeCast::convertGeneric<int8_t, int16_t>(nullptr, dx, N, dz);
         } else if (dstType == ND4J_UINT16) {
-            nd4j::TypeCast::convertGeneric<int8_t, uint16_t>(nullptr, dx, N, dz);
+            //nd4j::TypeCast::convertGeneric<int8_t, uint16_t>(nullptr, dx, N, dz);
         } else if (dstType == ND4J_FLOAT24) {
             // TODO: eventually we might want to add it
         } else if (dstType == ND4J_FLOAT32) {
@@ -2144,7 +2144,7 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd
         } else if (dstType == ND4J_INT16) {
             nd4j::TypeCast::convertGeneric<uint8_t, int16_t>(nullptr, dx, N, dz);
         } else if (dstType == ND4J_UINT16) {
-            nd4j::TypeCast::convertGeneric<uint8_t, uint16_t>(nullptr, dx, N, dz);
+     //       nd4j::TypeCast::convertGeneric<uint8_t, uint16_t>(nullptr, dx, N, dz);
         } else if (dstType == ND4J_FLOAT24) {
             // TODO: still might want to add
         } else if (dstType == ND4J_FLOAT32) {
@@ -2166,7 +2166,7 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd
         } else if (dstType == ND4J_INT16) {
             nd4j::TypeCast::convertGeneric<float16, int16_t>(nullptr, dx, N, dz);
         } else if (dstType == ND4J_UINT16) {
-            nd4j::TypeCast::convertGeneric<float16, uint16_t>(nullptr, dx, N, dz);
+//            nd4j::TypeCast::convertGeneric<float16, uint16_t>(nullptr, dx, N, dz);
         } else if (dstType == ND4J_FLOAT24) {
             // TODO: .... ^^^
         } else if (dstType == ND4J_FLOAT32) {
@@ -2190,7 +2190,7 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd
         } else if (dstType == ND4J_INT16) {
             //nd4j::TypeCast::convertGeneric<int16_t, int16_t>(nullptr, dx, N, dz);
         } else if (dstType == ND4J_UINT16) {
-            nd4j::TypeCast::convertGeneric<int16_t, uint16_t>(nullptr, dx, N, dz);
+//            nd4j::TypeCast::convertGeneric<int16_t, uint16_t>(nullptr, dx, N, dz);
         } else if (dstType == ND4J_FLOAT24) {
             // TODO...
         } else if (dstType == ND4J_FLOAT32) {
@@ -2214,7 +2214,7 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd
         } else if (dstType == ND4J_INT16) {
             nd4j::TypeCast::convertGeneric<float, int16_t>(nullptr, dx, N, dz);
         } else if (dstType == ND4J_UINT16) {
-            nd4j::TypeCast::convertGeneric<float, uint16_t>(nullptr, dx, N, dz);
+//            nd4j::TypeCast::convertGeneric<float, uint16_t>(nullptr, dx, N, dz);
         } else if (dstType == ND4J_FLOAT24) {
 
         } else if (dstType == ND4J_DOUBLE) {
@@ -2236,7 +2236,7 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd
         } else if (dstType == ND4J_INT16) {
             nd4j::TypeCast::convertGeneric<double, int16_t>(nullptr, dx, N, dz);
         } else if (dstType == ND4J_UINT16) {
-            nd4j::TypeCast::convertGeneric<double, uint16_t>(nullptr, dx, N, dz);
+//            nd4j::TypeCast::convertGeneric<double, uint16_t>(nullptr, dx, N, dz);
         } else if (dstType == ND4J_FLOAT24) {
 
         } else if (dstType == ND4J_FLOAT32) {

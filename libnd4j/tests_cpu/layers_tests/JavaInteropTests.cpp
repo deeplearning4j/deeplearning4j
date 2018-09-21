@@ -205,7 +205,7 @@ TEST_F(JavaInteropTests, TestSconv2d_2) {
     ASSERT_NEAR(1, output.getScalar<float>(0), 1e-5);
 }
 
-
+/*
 TEST_F(JavaInteropTests, TestPooling2d_1) {
     auto input = NDArrayFactory::_create<float>('c', {1, 2, 4, 5});
     auto output = NDArrayFactory::_create<float>('c', {1, 2, 4, 5});
@@ -227,6 +227,7 @@ TEST_F(JavaInteropTests, TestPooling2d_1) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
 }
+*/
 
 
 TEST_F(JavaInteropTests, TestMaxPooling2d_1) {

@@ -161,7 +161,6 @@ namespace nd4j {
         NDArray(NDArray&& other) noexcept;
 
 
-
         /**
         *  constructor, create empty array stored at given workspace
         */
@@ -665,7 +664,7 @@ namespace nd4j {
         /**
         *  returns number of bytes used by _buffer & _shapeInfo
         */
-        Nd4jLong memoryFootprint();
+        FORCEINLINE Nd4jLong memoryFootprint();
         
         /**
         *  these methods suited for FlatBuffers use
@@ -1680,8 +1679,7 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
 
     //////////////////////////////////////////////////////////////////////////
-
-    Nd4jLong  NDArray::memoryFootprint() {
+    Nd4jLong FORCEINLINE NDArray::memoryFootprint() {
         Nd4jLong size = this->lengthOf() * this->sizeOfT();
         size += shape::shapeInfoByteLength(this->rankOf());
         return size;
