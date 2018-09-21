@@ -174,6 +174,12 @@ public class VoidConfiguration implements Serializable {
     private int maxChunkSize = 65536;
 
     /**
+     * This variable defines max number of allowed reconnects per node
+     */
+    @Builder.Default
+    private int maxFailuresPerNode = 3;
+
+    /**
      * This optional variable defines IP address of the box which acts as master for gradients training.
      * Leave it null, and Spark Master node will be used as Master for parameter server as well.
      */

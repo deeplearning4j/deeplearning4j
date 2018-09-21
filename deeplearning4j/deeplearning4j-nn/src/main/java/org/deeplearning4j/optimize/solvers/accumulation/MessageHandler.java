@@ -41,5 +41,5 @@ public interface MessageHandler extends Serializable {
      * @param updates
      * @return TRUE if something was sent, FALSE otherwise
      */
-    boolean broadcastUpdates(INDArray updates);
+    boolean broadcastUpdates(INDArray updates, int iterationNumber, int epochNumber);
 }

@@ -18,12 +18,16 @@ package org.nd4j.imports.TFGraphs;
 
 import org.junit.After;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,58 +46,11 @@ import java.util.Map;
 @RunWith(Parameterized.class)
 @Ignore
 public class TFGraphTestList {
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     public static String[] modelNames = new String[]{
-//            "bincount/rank0",
-//            "bincount/rank0_minmax",
-//            "bincount/rank1_minmax",
-//            "bincount/rank1_min10",
-//            "bincount/rank1_max5",
-//            "bincount/rank1_minmax_weights",
-//            "scatter_nd/rank2shape_2indices",
-            /*"add_n",
-            "ae",
-            "ae_00",
-            "bias_add",
-            "norm_tests/norm_0",
-            "concat",
-            "conv_0",
-            "conv_1", //Raver is working on this
-            "conv_2", //missing SpaceToBatchND
-            "conv_3", //fails due to 4d input: this seems to be related to Conv2d being mapped to Dilation2D which takes 3d input
-           // "deep_mnist", //broadcast bug? double check with raver
-          //  "deep_mnist_no_dropout",
-            "expand_dim",
-            "g_00",
-            "g_01",
-            "g_01",
-            "g_02",
-            "g_03", //op missing?
-            "g_04",
-            "g_05",
-            "gru_mnist",
-            "lstm_mnist",
-            "math_mul_order",
-            "mlp_00",
-            "mnist_00",
-            //"node_multiple_out",
-            "non2d_0",
-            "non2d_0A",
-            "pool_0",
-            "pool_1",
-            "primitive_gru",
-            "primitive_gru_dynamic", //while loop related NullPointer, double check import here
-            "primitive_lstm",
-          "ssd_mobilenet_v1_coco",
-            "stack",
-            "stack_1d",
-            "stack_scalar",
-            "simpleif_0",
-            "simple_cond", //JVM crash
-            "simple_while",  //Functions not being added: Need to finish while import
-            "transform_0",
-            "transpose_00",
-            "unstack",
-            //"yolov2_608x608"*/
+            "matrix_determinant/rank2_5,5"
 
     };
 
@@ -108,7 +65,8 @@ public class TFGraphTestList {
 //    public static TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.LIBND4J;
     // public static TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.JUST_PRINT;
 
-    public static String modelDir = TFGraphTestAllHelper.COMMON_BASE_DIR; //this is for later if we want to check in models separately for samediff and libnd4j
+    public static final String MODEL_DIR = "tf_graphs/examples";
+    public static final String MODEL_FILENAME = "frozen_model.pb";
 
     private String modelName;
 
@@ -128,16 +86,22 @@ public class TFGraphTestList {
 
     @Test
     public void testOutputOnly() throws IOException {
-        Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, modelDir);
-        Map<String, INDArray> predictions = TFGraphTestAllHelper.outputVars(modelName, modelDir);
-        Double precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
-        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, modelDir, executeWith, precisionOverride);
+        File dir = testDir.newFolder();
+        Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);
+        Map<String, INDArray> predictions = TFGraphTestAllHelper.outputVars(modelName, MODEL_DIR, dir);
+        Pair<Double,Double> precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
+        Double maxRE = (precisionOverride == null ? null : precisionOverride.getFirst());
+        Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());
+
+        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, MODEL_DIR, MODEL_FILENAME, executeWith,
+                TFGraphTestAllHelper.LOADER, maxRE, minAbs);
     }
 
     @Test
     public void testAlsoIntermediate() throws IOException {
-        Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, modelDir);
-        TFGraphTestAllHelper.checkIntermediate(inputs, modelName, executeWith);
+        File dir = testDir.newFolder();
+        Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);
+        TFGraphTestAllHelper.checkIntermediate(inputs, modelName, MODEL_DIR, MODEL_FILENAME, executeWith, dir);
 
     }
 }

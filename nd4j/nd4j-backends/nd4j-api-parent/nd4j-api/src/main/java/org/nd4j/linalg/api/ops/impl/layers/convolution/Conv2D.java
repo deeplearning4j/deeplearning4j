@@ -77,7 +77,7 @@ public class Conv2D extends DynamicCustomOp {
                 config.getDH(),
                 config.getDW(),
                 ArrayUtil.fromBoolean(config.isSameMode()),
-                ArrayUtil.fromBoolean(config.isNHWC()));
+                config.getDataFormat().equalsIgnoreCase(Conv2DConfig.NCHW) ? 0 : 1);
     }
 
     @Override
@@ -142,10 +142,11 @@ public class Conv2D extends DynamicCustomOp {
         //TF uses [kH, kW, inC, outC] always for weights
         tfMappings.put("kH", new NDArrayShapeAdapter(0));
         tfMappings.put("kW", new NDArrayShapeAdapter(1));
-        tfMappings.put("sH", new IntArrayIntIndexAdpater(1));
-        tfMappings.put("sW", new IntArrayIntIndexAdpater(2));
+        tfMappings.put("sH", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 2, 1, fields.get("dataFormat")));
+        tfMappings.put("sW", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 3, 2, fields.get("dataFormat")));
+        tfMappings.put("dH", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 2, 1, fields.get("dataFormat")));
+        tfMappings.put("dW", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 3, 2, fields.get("dataFormat")));
         tfMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
-        tfMappings.put("isNHWC", new StringEqualsAdapter("NHWC"));
 
 
         Map<String, AttributeAdapter> onnxMappings = new HashMap<>();
@@ -156,7 +157,6 @@ public class Conv2D extends DynamicCustomOp {
         onnxMappings.put("sH", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
         onnxMappings.put("sW", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
         onnxMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
-        onnxMappings.put("isNHWC", new StringEqualsAdapter("NHWC"));
 
         ret.put(tensorflowName(), tfMappings);
         ret.put(onnxName(), onnxMappings);
@@ -191,19 +191,13 @@ public class Conv2D extends DynamicCustomOp {
         val dilationMapping = PropertyMapping.builder()
                 .onnxAttrName("dilations")
                 .propertyNames(new String[]{"dW", "dH"})
-                .tfAttrName("rates")
+                .tfAttrName("dilations")
                 .build();
 
         val dataFormat = PropertyMapping.builder()
                 .onnxAttrName("data_format")
                 .tfAttrName("data_format")
                 .propertyNames(new String[]{"dataFormat"})
-                .build();
-
-        val nhwc = PropertyMapping.builder()
-                .onnxAttrName("data_format")
-                .tfAttrName("data_format")
-                .propertyNames(new String[]{"isNHWC"})
                 .build();
 
         val sameMode = PropertyMapping.builder()
@@ -228,7 +222,6 @@ public class Conv2D extends DynamicCustomOp {
         map.put("pH", paddingWidthHeight);
         map.put("pW", paddingWidthHeight);
         map.put("dataFormat", dataFormat);
-        map.put("isNHWC", nhwc);
 
         try {
             ret.put(onnxName(), map);

@@ -44,9 +44,12 @@ public class Squeeze extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
-        if (squeezeDims != null)
-            addIArgument(squeezeDims);
+        nodeDef.getAttrMap().get("squeeze_dims");
+        List<Long> dimList = attributesForNode.get("squeeze_dims").getList().getIList();
+        squeezeDims = new int[dimList.size()];
+        for( int i=0; i<dimList.size(); i++ )
+            squeezeDims[i] = dimList.get(i).intValue();
+        addIArgument(squeezeDims);
     }
 
     @Override
@@ -65,19 +68,6 @@ public class Squeeze extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "Squeeze";
-    }
-
-    @Override
-    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
-        Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
-        Map<String, PropertyMapping> mapping = new LinkedHashMap<>();
-        val squeezeDims = PropertyMapping.builder()
-                .tfAttrName("squeeze_dims")
-                .propertyNames(new String[]{"squeezeDims"})
-                .build();
-        mapping.put("squeezeDims", squeezeDims);
-        ret.put(tensorflowName(), mapping);
-        return ret;
     }
 
     @Override

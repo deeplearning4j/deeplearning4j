@@ -55,7 +55,7 @@ public interface GradientsAccumulator extends Serializable {
      *
      * @param array
      */
-    void storeUpdate(INDArray array);
+    void storeUpdate(INDArray array, int iterationNumber, int epochNumber);
 
     /**
      * This method accepts updates suitable for StepFunction and puts them to the queue, which is used in backpropagation loop
@@ -75,4 +75,10 @@ public interface GradientsAccumulator extends Serializable {
      * This method does initialization of given worker wrt Thread-Device Affinity
      */
     void touch();
+
+    /**
+     * This method checks if there are any (probably external) updates available
+     * @return
+     */
+    boolean hasAnything();
 }

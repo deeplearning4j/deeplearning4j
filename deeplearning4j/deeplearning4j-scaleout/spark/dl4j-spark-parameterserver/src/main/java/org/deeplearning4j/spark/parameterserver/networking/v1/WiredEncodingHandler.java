@@ -101,7 +101,7 @@ public class WiredEncodingHandler extends EncodingHandler {
      * @param message
      */
     @Override
-    protected void sendMessage(INDArray message) {
+    protected void sendMessage(INDArray message, int iterationNumber, int epochNumber) {
         // here we'll send our stuff to other executores over the wire
         // and let's pray for udp broadcast availability
 
@@ -116,6 +116,6 @@ public class WiredEncodingHandler extends EncodingHandler {
 
 
         // heere we update local queue
-        super.sendMessage(message);
+        super.sendMessage(message, iterationNumber, epochNumber);
     }
 }
