@@ -2606,6 +2606,26 @@ NDArray NDArray::transp() const {
     template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int16_t value);
     template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const bool value);
 
+    template <typename T>
+    void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const T value) {
+        //(*this)(i,j,k) = value;
+        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
+        auto xType = this->dataType();
+        Nd4jLong coords[3] = {i, j, k};
+        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+        BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, xOffset, p), LIBND4J_TYPES);
+    }
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const double value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const float value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const float16 value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const Nd4jLong value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int8_t value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const uint8_t value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int16_t value);
+    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const bool value);
+
+
     ////////////////////////////////////////////////////////////////////////
     NDArray* NDArray::subarray(IndicesList& idx, std::vector<Nd4jLong>& strides) const {
         auto raw = subarray(idx);
