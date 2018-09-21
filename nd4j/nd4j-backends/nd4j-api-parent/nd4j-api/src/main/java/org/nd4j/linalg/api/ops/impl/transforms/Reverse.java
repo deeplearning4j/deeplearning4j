@@ -46,8 +46,8 @@ public class Reverse extends DynamicCustomOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "Reverse";
+    public String[] tensorflowNames() {
+        return new String[]{"Reverse", "ReverseV2"};
     }
 
     @Override

@@ -19,39 +19,57 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
-import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * This is compatibility op for ReverseV2
+ * Histogram fixed with op
+ *
+ * @author Alex Black
  */
-public class ReverseV2 extends DynamicCustomOp {
-    protected final boolean isLegacy = true;
+public class HistogramFixedWidth extends DynamicCustomOp {
 
-    public ReverseV2() {
-        iArguments.add(isLegacy ? 1L : 0L);
+    public HistogramFixedWidth(SameDiff sameDiff, SDVariable values, SDVariable valuesRange, SDVariable numBins) {
+        super(sameDiff, new SDVariable[]{values, valuesRange}, false);
+    }
+
+    public HistogramFixedWidth() {
+        //no-op
     }
 
     @Override
     public String opName() {
-        return "reverse_v2";
+        return "histogram_fixed_width";
     }
+
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
     public String tensorflowName() {
-        return "ReverseV2";
+        return "HistogramFixedWidth";
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException("BP mode isn't supported for this op");
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        //No op - just need the inputs
     }
 
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        throw new UnsupportedOperationException("Not supported");
+    }
 }
