@@ -51,6 +51,14 @@ public class UnsortedSegmentMin extends DynamicCustomOp {
     }
 
     @Override
+    public void resolvePropertiesFromSameDiffBeforeExecution() {
+        if(args().length == 3 && iArguments == null || iArguments.size() == 0){
+            addIArgument(arg(2).getArr().getInt(0));
+        }
+        super.resolvePropertiesFromSameDiffBeforeExecution();
+    }
+
+    @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients){
         return Arrays.asList(f().unsortedSegmentMinBp(arg(0), arg(1), gradients.get(0), numSegments));
     }
