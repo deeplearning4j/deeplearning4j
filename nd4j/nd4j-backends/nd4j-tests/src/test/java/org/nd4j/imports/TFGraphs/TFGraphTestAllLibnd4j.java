@@ -26,8 +26,10 @@ import org.nd4j.OpValidationSuite;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -56,7 +58,12 @@ public class TFGraphTestAllLibnd4j {
     private Map<String, INDArray> inputs;
     private Map<String, INDArray> predictions;
     private String modelName;
+    private File localTestDir;
+
     private static final TFGraphTestAllHelper.ExecuteWith EXECUTE_WITH = TFGraphTestAllHelper.ExecuteWith.LIBND4J;
+    private static final String BASE_DIR = "tf_graphs/examples";
+    private static final String MODEL_FILENAME = "frozen_model.pb";
+
     private static final String[] SKIP_ARR = new String[] {
             "deep_mnist",
             "deep_mnist_no_dropout",
@@ -90,7 +97,10 @@ public class TFGraphTestAllLibnd4j {
             "logsumexp/.*",
             "reduce_all/.*",
             "reduce_any/.*",
-            "split/.*"
+            "split/.*",
+
+            "reductions/count_nonzero.*",
+            "sufficient_statistics.*"
     };
 
     @BeforeClass
@@ -111,13 +121,15 @@ public class TFGraphTestAllLibnd4j {
 
     @Parameterized.Parameters(name="{2}")
     public static Collection<Object[]> data() throws IOException {
-        return TFGraphTestAllHelper.fetchTestParams(EXECUTE_WITH);
+        File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
+        return TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
     }
 
-    public TFGraphTestAllLibnd4j(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName) throws IOException {
+    public TFGraphTestAllLibnd4j(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws IOException {
         this.inputs = inputs;
         this.predictions = predictions;
         this.modelName = modelName;
+        this.localTestDir = localTestDir;
     }
 
     @Test(timeout = 25000L)
@@ -141,9 +153,12 @@ public class TFGraphTestAllLibnd4j {
             }
         }
 
-        Double precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
+        Pair<Double,Double> precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
+        Double maxRE = (precisionOverride == null ? null : precisionOverride.getFirst());
+        Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());
 
-        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, EXECUTE_WITH, precisionOverride);
+        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH,
+                TFGraphTestAllHelper.LOADER, maxRE, minAbs);
         //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
     }
 

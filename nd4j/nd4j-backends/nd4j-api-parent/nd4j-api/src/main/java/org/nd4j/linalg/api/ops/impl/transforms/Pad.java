@@ -50,8 +50,8 @@ public class Pad extends DynamicCustomOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "PadV2";
+    public String[] tensorflowNames() {
+        return new String[]{"Pad", "PadV2"};
     }
 
     @Override

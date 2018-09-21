@@ -16,8 +16,10 @@
 
 package org.nd4j.parameterserver.distributed.v2.messages.pairs.params;
 
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.Setter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.parameterserver.distributed.v2.messages.ResponseMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseINDArrayMessage;
@@ -29,6 +31,10 @@ import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseINDArrayMe
 @NoArgsConstructor
 public final class UpdaterParametersMessage extends BaseINDArrayMessage implements ResponseMessage {
     private static final long serialVersionUID = 1L;
+
+    @Getter
+    @Setter
+    protected boolean finalState = false;
 
     public UpdaterParametersMessage(@NonNull String messageId, INDArray payload) {
         super(messageId, payload);

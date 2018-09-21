@@ -25,7 +25,7 @@
 
     <artifactId>datavec-spark-inference-server_2.11</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.0_spark_1-SNAPSHOT</version>
+    <version>1.0.0_spark_2-SNAPSHOT</version>
     <name>datavec-spark-inference-server</name>
 
     <properties>

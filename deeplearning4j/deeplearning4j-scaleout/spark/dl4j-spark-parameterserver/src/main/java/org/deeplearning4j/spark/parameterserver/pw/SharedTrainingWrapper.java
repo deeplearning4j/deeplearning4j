@@ -24,8 +24,10 @@ import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.config.DL4JEnvironmentVars;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.updater.BaseMultiLayerUpdater;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.SleepyTrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodedGradientsAccumulator;
@@ -52,6 +54,7 @@ import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.TransportType;
 import org.nd4j.parameterserver.distributed.util.NetworkOrganizer;
 import org.nd4j.parameterserver.distributed.v2.ModelParameterServer;
+import org.nd4j.parameterserver.distributed.v2.transport.UpdaterParametersProvider;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.AeronUdpTransport;
 
 import java.util.ArrayList;
@@ -298,6 +301,9 @@ public class SharedTrainingWrapper {
 
                     log.debug("Checking for ModelParameterServer existence");
 
+                    // we're saving reference to original model
+                    originalModel = model;
+
                     // if we're running in spark localhost mode - we don't want double initialization
                     if (!ModelParameterServer.getInstance().isInitialized()) {
                         log.info("Initializing transport [{}:{}] with root as [{}:{}]...", localIP, voidConfiguration.getUnicastPort(), voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort());
@@ -310,25 +316,64 @@ public class SharedTrainingWrapper {
 
                         consumer = UpdatesConsumer.builder()
                                 .accumulator(accumulator)
+                                .params(model.params())
                                 .build();
 
                         accumulator.setExternalSource(consumer.getUpdatesQueue());
 
                         log.debug("Configuring transport...");
                         //  pass values right away
-                        ModelParameterServer.getInstance().configure(voidConfiguration, transport, false);
+                        ModelParameterServer.getInstance().configure(voidConfiguration, transport, new UpdaterParametersProvider() {
+                            @Override
+                            public INDArray getUpdaterParameters() {
+                                log.info("Serving updater parameters...");
+                                Updater updater = null;
+                                if (originalModel instanceof MultiLayerNetwork) {
+                                    updater = ((MultiLayerNetwork) originalModel).getUpdater();
+                                } else if (originalModel instanceof ComputationGraph) {
+                                    updater = ((ComputationGraph) originalModel).getUpdater();
+                                }
+
+                                if (updater != null) {
+                                    if (updater instanceof BaseMultiLayerUpdater) {
+                                        return ((BaseMultiLayerUpdater) updater).getStateViewArrayCopy();
+                                    } else {
+                                        log.error("Updater doesn't implement getStateViewArrayCopy()");
+                                        return null;
+                                    }
+                                } else {
+                                    log.warn("No Updater in the model");
+                                    return null;
+                                }
+                            };
+                        });
+
                         ModelParameterServer.getInstance().addUpdatesSubscriber(consumer);
                         ModelParameterServer.getInstance().addModelParamsSubscriber(modelParamsSupplier);
                         ModelParameterServer.getInstance().addUpdaterParamsSubscriber(updateParamsSupplier);
                     }
 
-
-                    // we're saving reference to original model
-                    originalModel = model;
-
                     log.debug("Starting ModelParameterServer...");
                     // after initialization finished, we're ok to actually start training
                     ModelParameterServer.getInstance().launch();
+
+                    // waiting for introduction. probably no-op in 99.9999% cases
+                    while (!ModelParameterServer.getInstance().getTransport().isIntroduced()) {
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+
+                // propagate iteration/epoch numbers
+                if (originalModel instanceof MultiLayerNetwork) {
+                    ((MultiLayerNetwork) model).setIterationCount(ModelParameterServer.getInstance().getStartPosition().getFirst());
+                    ((MultiLayerNetwork) model).setEpochCount(ModelParameterServer.getInstance().getStartPosition().getSecond());
+                } else if (originalModel instanceof ComputationGraph) {
+                    ((ComputationGraph) model).getConfiguration().setIterationCount(ModelParameterServer.getInstance().getStartPosition().getFirst());
+                    ((ComputationGraph) model).getConfiguration().setEpochCount(ModelParameterServer.getInstance().getStartPosition().getSecond());
                 }
 
                 // if we're going to extend iteratation for debugging purposes - let's do that here
@@ -358,6 +403,13 @@ public class SharedTrainingWrapper {
                     // since there'll be only one consumer, we don't need complex sync logic anymore
                     accumulator.fallbackToSingleConsumerMode(true);
                     accumulator.touch();
+
+                    // checking if there were updated params received (i.e. if that's failover routine
+                    val mParams = modelParamsSupplier.get();
+                    if (mParams != null) {
+                        log.info("Updating model params to the most recent ones...");
+                        originalModel.params().assign(mParams);
+                    }
 
                     // ok. attaching accumulator to model
                     if (model instanceof ComputationGraph) {
@@ -434,7 +486,7 @@ public class SharedTrainingWrapper {
 
             isFirst.set(false);
 
-            log.debug("Master thread done...");
+            log.info("Master thread done...");
 
             INDArray updaterState = null;
             if (model instanceof ComputationGraph) {
@@ -455,7 +507,7 @@ public class SharedTrainingWrapper {
                 observer.get().waitTillDone();
                 //observer.get().wait();
 
-                log.debug("Feeder thread done...");
+                log.info("Feeder [{}] thread done...", Thread.currentThread().getName());
 
                 if(exceptionEncountered.get()){
                     //Propagate exception

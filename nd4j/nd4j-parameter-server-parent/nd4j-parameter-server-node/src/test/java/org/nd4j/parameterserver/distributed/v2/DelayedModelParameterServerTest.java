@@ -37,6 +37,7 @@ import org.nd4j.parameterserver.distributed.v2.transport.MessageCallable;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.DelayedDummyTransport;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.DummyTransport;
 import org.nd4j.parameterserver.distributed.v2.util.AbstractSubscriber;
+import org.nd4j.parameterserver.distributed.v2.util.AbstractUpdatesHandler;
 import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
 
 import java.util.ArrayList;
@@ -208,7 +209,12 @@ public class DelayedModelParameterServerTest {
 
             val f = e;
 
-            clientServer.addUpdatesSubscriber(new AbstractSubscriber<INDArray>() {
+            clientServer.addUpdatesSubscriber(new AbstractUpdatesHandler() {
+                @Override
+                public INDArray getParametersArray() {
+                    return null;
+                }
+
                 @Override
                 public void onNext(INDArray array) {
                     assertNotNull(array);
@@ -257,7 +263,12 @@ public class DelayedModelParameterServerTest {
             }
         });
 
-        clientServer.addUpdatesSubscriber(new AbstractSubscriber<INDArray>() {
+        clientServer.addUpdatesSubscriber(new AbstractUpdatesHandler() {
+            @Override
+            public INDArray getParametersArray() {
+                return null;
+            }
+
             @Override
             public void onNext(INDArray array) {
                 assertNotNull(array);
@@ -321,7 +332,12 @@ public class DelayedModelParameterServerTest {
 
             val f = e;
             counters[f] = new AtomicInteger(0);
-            clientServer.addUpdatesSubscriber(new AbstractSubscriber<INDArray>() {
+            clientServer.addUpdatesSubscriber(new AbstractUpdatesHandler() {
+                @Override
+                public INDArray getParametersArray() {
+                    return null;
+                }
+
                 @Override
                 public void onNext(INDArray array) {
                     assertNotNull(array);
@@ -396,7 +412,12 @@ public class DelayedModelParameterServerTest {
 
             val f = e;
             counters[f] = new AtomicInteger(0);
-            clientServer.addUpdatesSubscriber(new AbstractSubscriber<INDArray>() {
+            clientServer.addUpdatesSubscriber(new AbstractUpdatesHandler() {
+                @Override
+                public INDArray getParametersArray() {
+                    return null;
+                }
+
                 @Override
                 public void onNext(INDArray array) {
                     assertNotNull(array);

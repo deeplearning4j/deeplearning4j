@@ -29,6 +29,9 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class DeConv2DConfig extends BaseConvolutionConfig {
+    public static final String NCHW = "NCHW";
+    public static final String NHWC = "NHWC";
+
     @Builder.Default private long kH = -1L;
     @Builder.Default private long kW = -1L;
     @Builder.Default private long sH = 1L;
@@ -38,8 +41,7 @@ public class DeConv2DConfig extends BaseConvolutionConfig {
     @Builder.Default private long dH = 1L;
     @Builder.Default private long dW = 1L;
     @Builder.Default private boolean isSameMode = false;
-    @Builder.Default private String dataFormat = "NWHC";
-    @Builder.Default private boolean isNHWC = false;
+    @Builder.Default private String dataFormat = NCHW;
 
 
     public Map<String, Object> toProperties() {
@@ -53,7 +55,6 @@ public class DeConv2DConfig extends BaseConvolutionConfig {
         ret.put("dH", dH);
         ret.put("dW", dW);
         ret.put("isSameMode", isSameMode);
-        ret.put("isNWHC", isNHWC);
         return ret;
     }
 }
