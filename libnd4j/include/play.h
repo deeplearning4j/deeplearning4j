@@ -36,10 +36,12 @@
         (DATA_UINT16, uint16_t)
 
 
+BUILD_SINGLE_UNCHAINED_TEMPLATE(functionName , (signature), Y_TYPES);
+
 //BUILD_TRIPLE_SELECTOR(xType, yType, zType, functionName, (signature), DATA_TYPES, Y_TYPES, Z_TYPES)
 
 
-BUILD_TRIPLE_TEMPLATE(functionName, (signature), DATA_TYPES, Y_TYPES, Z_TYPES)
+//BUILD_TRIPLE_TEMPLATE(functionName, (signature), DATA_TYPES, Y_TYPES, Z_TYPES)
 
 //BUILD_ENUMERATION(DATA_TYPES)
 
