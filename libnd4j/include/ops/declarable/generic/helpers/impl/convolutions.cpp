@@ -157,6 +157,24 @@ void ConvolutionUtils::calcOutSizePool2D(int& oH, int& oW, const int kH, const i
 }
 
 //////////////////////////////////////////////////////////////////////////
+// calculation of output depth, height and width in conv3d procedure        
+void calcOutSizePool3D(int& oD, int& oH, int& oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int iD, const int iH, const int iW, const int isSameMode) {
+
+    if(!isSameMode) {                                           // valid
+                
+        oD = (iD - (kD + (kD - 1) * (dD - 1)) + 2 * pD) / sD + 1;
+        oH = (iH - (kH + (kH - 1) * (dH - 1)) + 2 * pH) / sH + 1;
+        oW = (iW - (kW + (kW - 1) * (dW - 1)) + 2 * pW) / sW + 1;
+    }
+    else {                                                      // same
+                
+        oD = (int) nd4j::math::nd4j_ceil(iD * 1.f / sD);
+        oH = (int) nd4j::math::nd4j_ceil(iH * 1.f / sH);
+        oW = (int) nd4j::math::nd4j_ceil(iW * 1.f / sW);
+        }
+}
+
+//////////////////////////////////////////////////////////////////////////
 // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]        
 template <typename T>
 static void vol2col_(const NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
@@ -735,6 +753,87 @@ static void upsampling3d_(const NDArray& input, NDArray& output, const int facto
         }
     }    
 }
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+static void upsampling2dBP_(const NDArray& gradO, NDArray& gradI, const bool isNCHW) {
+    // gradO has shape [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
+    // gradI has shape [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)     
+    std::vector<Nd4jLong> indIn  = {0,0,  0,0,  0,0,  0,0};
+    std::vector<Nd4jLong> indOut = {0,0,  0,0,  0,0,  0,0};
+    const int dimIH = isNCHW ? 2 : 1;    
+    const int factorH = gradO.sizeAt(dimIH)   / gradI.sizeAt(dimIH);
+    const int factorW = gradO.sizeAt(dimIH+1) / gradI.sizeAt(dimIH+1);
+    const int j0 = 2*dimIH;
+    const int j1 = j0+1, j2 = j0+2, j3 = j0+3;
+    const int size0 = gradI.sizeAt(dimIH) * gradI.sizeAt(dimIH+1);
+
+#pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indIn, indOut) 
+    for(int ih = 0; ih < gradI.sizeAt(dimIH); ++ih) {
+        for(int iw = 0; iw < gradI.sizeAt(dimIH+1); ++iw) {
+            indIn[j0] = ih; indIn[j1] = ih+1; 
+            indIn[j2] = iw; indIn[j3] = iw+1; 
+            NDArray subGradI = gradI(indIn);
+
+            for(int fh = 0; fh < factorH; ++fh) {
+                for(int fw = 0; fw < factorW; ++fw) {                    
+                    indOut[j0] = ih * factorH + fh; indOut[j1] = indOut[j0] + 1; 
+                    indOut[j2] = iw * factorW + fw; indOut[j3] = indOut[j2] + 1;                     
+                    auto o = gradO(indOut);
+                    if(!fh && !fw) {                        
+                        subGradI.assign(o);
+                    }
+                    else
+                        subGradI += o;
+                }
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+static void upsampling3dBP_(const NDArray& gradO, NDArray& gradI, const bool isNCDHW) {
+    // input  has shape [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC) 
+    // output has shape [bS, iC, factorD*iD, factorH*iH, factorW*iW ] (NCDHW) or [bS, factorD*iD, factorH*iH, factorW*iW, iC] (NDHWC)
+    std::vector<Nd4jLong> indIn  = {0,0,  0,0,  0,0,  0,0,  0,0};
+    std::vector<Nd4jLong> indOut = {0,0,  0,0,  0,0,  0,0,  0,0};
+    const int dimID = isNCDHW ? 2 : 1;
+    const int factorD = gradO.sizeAt(dimID)   / gradI.sizeAt(dimID);
+    const int factorH = gradO.sizeAt(dimID+1) / gradI.sizeAt(dimID+1);
+    const int factorW = gradO.sizeAt(dimID+2) / gradI.sizeAt(dimID+2);
+    const int j0 = 2*dimID;
+    const int j1 = j0+1, j2 = j0+2, j3 = j0+3, j4 = j0+4, j5 = j0+5;;
+    const int size0 = gradI.sizeAt(dimID) * gradI.sizeAt(dimID+1) * gradI.sizeAt(dimID+2);
+
+#pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(3) firstprivate(indOut, indIn) 
+    for(int id = 0; id < gradI.sizeAt(dimID); ++id) {
+        for(int ih = 0; ih < gradI.sizeAt(dimID+1); ++ih) {
+            for(int iw = 0; iw < gradI.sizeAt(dimID+2); ++iw) {
+                indIn[j0] = id; indIn[j1] = id+1;
+                indIn[j2] = ih; indIn[j3] = ih+1;
+                indIn[j4] = iw; indIn[j5] = iw+1;
+                NDArray subGradI = gradI(indIn);
+
+            for(int fd = 0; fd < factorD; ++fd) {
+                for(int fh = 0; fh < factorH; ++fh) {
+                    for(int fw = 0; fw < factorW; ++fw) {
+                            indOut[j0] = id * factorD + fd; indOut[j1] = indOut[j0] + 1; 
+                            indOut[j2] = ih * factorH + fh; indOut[j3] = indOut[j2] + 1; 
+                            indOut[j4] = iw * factorW + fw; indOut[j5] = indOut[j4] + 1;                     
+                            auto o = gradO(indOut);
+                            if(!fd && !fh && !fw)
+                                subGradI.assign(o);
+                            else
+                                subGradI += o;
+                        }
+                    }
+                }
+            }
+        }
+    }    
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -1557,11 +1656,6 @@ void ConvolutionUtils::depthwiseConv2dBP(const NDArray* input, const NDArray* we
 void ConvolutionUtils::sconv2d(const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {    
     BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), sconv2d_, (input, weightsDepth, weightsPoint, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
 }
-
-
-void ConvolutionUtils::upsampling3d(const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
-    BUILD_SINGLE_SELECTOR(input.dataType(), upsampling3d_, (input, output, factorD, factorH, factorW, isNCDHW), LIBND4J_TYPES);
-}
 void ConvolutionUtils::vol2col(const NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
     BUILD_SINGLE_SELECTOR(volume.dataType(), vol2col_, (volume, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW), LIBND4J_TYPES);
 }
@@ -1571,6 +1665,18 @@ void ConvolutionUtils::col2vol(const NDArray& columns, NDArray& volume, const in
 void ConvolutionUtils::upsampling2d(const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW) {
     BUILD_SINGLE_SELECTOR(input.dataType(), upsampling2d_, (input, output, factorH, factorW, isNCHW), LIBND4J_TYPES);
 }
+void ConvolutionUtils::upsampling3d(const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
+    BUILD_SINGLE_SELECTOR(input.dataType(), upsampling3d_, (input, output, factorD, factorH, factorW, isNCDHW), LIBND4J_TYPES);
+}
+void ConvolutionUtils::upsampling2dBP(const NDArray& gradO, NDArray& gradI, const bool isNCHW) {
+    BUILD_SINGLE_SELECTOR(gradO.dataType(), upsampling2dBP_, (gradO, gradI, isNCHW), LIBND4J_TYPES);
+}
+void ConvolutionUtils::upsampling3dBP(const NDArray& gradO, NDArray& gradI, const bool isNCHW) {
+    BUILD_SINGLE_SELECTOR(gradO.dataType(), upsampling3dBP_, (gradO, gradI, isNCHW), LIBND4J_TYPES);
+}
+
+
+
 void ConvolutionUtils::pooling2d(const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {    
     BUILD_SINGLE_SELECTOR(input.dataType(), pooling2d_, (input, output, kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
 }
@@ -1591,14 +1697,16 @@ BUILD_DOUBLE_TEMPLATE(template void depthwiseConv2d_,   (const NDArray* input, c
 BUILD_DOUBLE_TEMPLATE(template void depthwiseConv2dBP_, (const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
 BUILD_DOUBLE_TEMPLATE(template void sconv2d_,           (const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
 
-BUILD_SINGLE_TEMPLATE(template void upsampling2d_, (const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW), LIBND4J_TYPES);
-BUILD_SINGLE_TEMPLATE(template void upsampling3d_, (const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW), LIBND4J_TYPES);
-BUILD_SINGLE_TEMPLATE(template void vol2col_,      (const NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW), LIBND4J_TYPES);
-BUILD_SINGLE_TEMPLATE(template void col2vol_,      (const NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW), LIBND4J_TYPES);
-BUILD_SINGLE_TEMPLATE(template void pooling2d_,    (const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
-BUILD_SINGLE_TEMPLATE(template void pooling3d_,    (const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
-BUILD_SINGLE_TEMPLATE(template void pooling2dBP_,  (const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
-BUILD_SINGLE_TEMPLATE(template void pooling3dBP_,  (const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void upsampling2d_,   (const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void upsampling3d_,   (const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void upsampling2dBP_, (const NDArray& gradO, NDArray& gradI, const bool isNCHW), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void upsampling3dBP_, (const NDArray& gradO, NDArray& gradI, const bool isNCHW), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void vol2col_,        (const NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void col2vol_,        (const NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void pooling2d_,      (const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void pooling3d_,      (const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void pooling2dBP_,    (const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void pooling3dBP_,    (const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
 
 }
 }
