@@ -28,35 +28,6 @@ namespace nd4j {
 
         class ConvolutionUtils {
         public:
-            static Nd4jLong convsize(Nd4jLong x, Nd4jLong k, Nd4jLong s, const char* vf);
-
-            template <typename T>
-            static Nd4jStatus conv3D(T* output_data, T alpha, T* ptr_input, Nd4jLong nInputDepth, Nd4jLong nInputRows, Nd4jLong nInputCols, T* ptr_weight, Nd4jLong nKernelDepth, Nd4jLong nKernelRows, Nd4jLong nKernelCols, Nd4jLong sdepth, Nd4jLong srow, Nd4jLong scol, const char *vf, const char *xc);
-
-            static Nd4jStatus conv3Dmv(NDArray* r_, double beta, double alpha, NDArray* t_, NDArray* k_, Nd4jLong sdepth, Nd4jLong srow, Nd4jLong scol, const char *vf, const char *xc);
-
-            template <typename T>
-            static void fullXCorr3Dptr(T*r_, T alpha, T *t_, Nd4jLong it, Nd4jLong ir, Nd4jLong ic, T *k_, Nd4jLong kt, Nd4jLong kr, Nd4jLong kc, Nd4jLong st, Nd4jLong sr, Nd4jLong sc);
-
-            template <typename T>
-            static void fullConv3Dptr(T*r_, T alpha, T *t_, Nd4jLong it, Nd4jLong ir, Nd4jLong ic, T *k_, Nd4jLong kt, Nd4jLong kr, Nd4jLong kc, Nd4jLong st, Nd4jLong sr, Nd4jLong sc);
-
-            template <typename T>
-            static void validXCorr3Dptr(T*r_, T alpha, T *t_, Nd4jLong it, Nd4jLong ir, Nd4jLong ic, T *k_, Nd4jLong kt, Nd4jLong kr, Nd4jLong kc, Nd4jLong st, Nd4jLong sr, Nd4jLong sc);
-
-            template <typename T>
-            static void validConv3Dptr(T*r_, T alpha, T *t_, Nd4jLong it, Nd4jLong ir, Nd4jLong ic, T *k_, Nd4jLong kt, Nd4jLong kr, Nd4jLong kc, Nd4jLong st, Nd4jLong sr, Nd4jLong sc);
-
-            template <typename T>
-            static void _dilatedMaxPool3D(T *input_p, T *output_p, T *indz_p, Nd4jLong nslices, Nd4jLong itime, Nd4jLong iwidth, Nd4jLong iheight, Nd4jLong otime, Nd4jLong owidth, Nd4jLong oheight, int kT, int kW, int kH, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH);
-
-            template <typename T>
-            static void _dilatedMaxPool3D_bp(T *gradInput_p, T *gradOutput_p, T *indz_p, Nd4jLong nslices, Nd4jLong  itime, Nd4jLong  iwidth, Nd4jLong  iheight, Nd4jLong otime, Nd4jLong owidth, Nd4jLong oheight, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH);
-
-            static void avgPool3D(NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const bool count_include_pad);
-
-            static void avgPool3DBP(NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const bool count_include_pad);
-            
             static void calcOutSizePool2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int iH, const int iW, const int isSameMode);
 
             static void calcOutSizePool3D(int& oD, int& oH, int& oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int iD, const int iH, const int iW, const int isSameMode);
@@ -85,9 +56,9 @@ namespace nd4j {
 
             static void sconv2d(const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW);
 
-            static void vol2col(NDArray& vol, NDArray& col, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW);
+            static void vol2col(const NDArray& vol, NDArray& col, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW);
 
-            static void col2vol(NDArray& col, NDArray& vol, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW);
+            static void col2vol(const NDArray& col, NDArray& vol, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW);
 
             static void upsampling2d(const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW);
 
@@ -97,13 +68,11 @@ namespace nd4j {
 
             static void upsampling3dBP(const NDArray& gradO, NDArray& gradI, const bool isNCDHW);
 
-            static void maxPool2d(NDArray* input, NDArray* output, const std::vector<int>& params, NDArray* indices);
-
             static void pooling3d(NDArray& input, NDArray& output, const void* extraParams);
 
-            static void pooling2d(NDArray& input, NDArray& output, const void* extraParams);
+            static void pooling2d(const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0);
 
-            static void pooling2dBP(NDArray& input, NDArray& gradO, NDArray& gradI, const void* extraParams);
+            static void pooling2dBP(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0);
 
             static void pooling3dBP(NDArray& input, NDArray& gradO, NDArray& gradI, const void* extraParams);
 

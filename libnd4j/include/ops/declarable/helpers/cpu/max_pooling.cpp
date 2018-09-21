@@ -27,7 +27,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    static void _maxPoolingFunctor(NDArray* input, NDArray* values, std::vector<int> const& params, NDArray* indices) {
+    static void maxPoolingFunctor_(NDArray* input, NDArray* values, std::vector<int> const& params, NDArray* indices) {
 
             int kY = params[0];
             int kX = params[1];
@@ -55,13 +55,9 @@ namespace helpers {
 
             if (isSameMode)
                 ConvolutionUtils::calcPadding2D(pY, pX, oY, oX, inY, inX, params[0], params[1], params[2], params[3], params[6], params[7]);
-            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
 
-            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
-            // FIXME: get rid of this vector shit
-            std::vector<T> argT = {(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T)dX, (T)1.f, (T)0.f, (T)1.f};
-            void *ts = argT.data();
-            ConvolutionUtils::pooling2d(*input, *values, const_cast<const void *>(ts));
+            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;
+            ConvolutionUtils::pooling2d(*input, *values, kY, kX, sY, sX, pY, pX, dY, dX, 0, 1);
             
             if (nullptr != indices) {
                 // for max_pool_with_argmax 
@@ -77,11 +73,11 @@ namespace helpers {
     }
 
     void maxPoolingFunctor(NDArray* input, NDArray* values, std::vector<int> const& params, NDArray* indices) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), _maxPoolingFunctor, (input, values, params, indices), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), maxPoolingFunctor_, (input, values, params, indices), FLOAT_TYPES);
     }
 
 
-    BUILD_SINGLE_TEMPLATE(template void _maxPoolingFunctor, (NDArray* input, NDArray* values, std::vector<int> const& params, NDArray* indices), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void maxPoolingFunctor_, (NDArray* input, NDArray* values, std::vector<int> const& params, NDArray* indices), FLOAT_TYPES);
 
 }
 }

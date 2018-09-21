@@ -68,20 +68,7 @@ namespace nd4j {
                 ConvolutionUtils::calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
 
             // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;
-            std::vector<double> argT; /* = {
-                    static_cast<T>(kY),
-                    static_cast<T>(kX),
-                    static_cast<T>(sY),
-                    static_cast<T>(sX),
-                    static_cast<T>(pY),
-                    static_cast<T>(pX),
-                    static_cast<T>(dY),
-                    static_cast<T>(dX),
-                    static_cast<T>(2.f),
-                    static_cast<T>(extraParam0)};
-            */
-            // FIXME: get rid of this vector shit
-            ConvolutionUtils::pooling2d(*input, *output, argT.data());
+            ConvolutionUtils::pooling2d(*input, *output, kY, kX, sY, sX, pY, pX, dY, dX, 2, extraParam0);            
 
             if (!isNCHW) {
                 delete input;
@@ -211,10 +198,8 @@ CUSTOM_OP_IMPL(pnormpool2d_bp, 2, 1, false, 1, 10) {
     // columns2d->muliColumnVector(denomVec);
     
     // columns->template applyTransform<simdOps::Col2Im<T>>(gradI, std::vector<T>({(T)sH, (T)sW, (T)pH, (T)pW, (T)iH, (T)iW, (T)dH, (T)dW}).data());
-    
-    std::vector<double> argT; // = {(T) kH, (T) kW, (T) sH, (T) sW, (T) pH, (T) pW, (T) dH, (T)dW, 2., (T)pnorm};
-    // FIXME: get rid of this vector shit
-    ConvolutionUtils::pooling2dBP(*input, *gradO, *gradI, argT.data());
+        
+    ConvolutionUtils::pooling2dBP(*input, *gradO, *gradI, kH, kW, sH, sW, pH, pW, dH, dW, 2, pnorm);
 
     if(!isNCHW) {
         delete input;

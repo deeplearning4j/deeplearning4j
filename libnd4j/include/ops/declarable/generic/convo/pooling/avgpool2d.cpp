@@ -70,9 +70,7 @@ CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
             
     // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;
-    // FIXME: double!
-    double extraParams[] = {static_cast<double>(kH), static_cast<double>(kW), static_cast<double>(sH), static_cast<double>(sW), static_cast<double>(pH), static_cast<double>(pW), static_cast<double>(dH), static_cast<double>(dW), static_cast<double>(1.f), static_cast<double>(extraParam0)};
-    ConvolutionUtils::pooling2d(*input, *output, extraParams);
+    ConvolutionUtils::pooling2d(*input, *output, kH, kW, sH, sW, pH, pW, dH, dW, 1, extraParam0);
 
     if (!isNCHW) {
         delete input;
@@ -191,10 +189,8 @@ CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
     // *gradI /= kH*kW; 
         
     NDArray temp;    // does not mean anything, just to fit pooling2dBP signature
-    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;
-    std::vector<double > argT = {(double) kH, (double) kW, (double) sH, (double) sW, (double) pH, (double) pW, (double) dH, (double)dW, 1., (double)extraParam0};
-    // FIXME: get rid of this vector shit
-    ConvolutionUtils::pooling2dBP(temp, *gradO, *gradI, argT.data());
+    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;    
+    ConvolutionUtils::pooling2dBP(temp, *gradO, *gradI, kH, kW, sH, sW, pH, pW, dH, dW, 1, extraParam0);
 
     if(!isNCHW) {
         delete gradI;

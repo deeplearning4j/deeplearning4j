@@ -37,7 +37,6 @@ CUSTOM_OP_IMPL(maxpool2d, 1, 1, false, 0, 9) {
     REQUIRE_TRUE(input->rankOf() == 4, 0, "MAXPOOL2D OP: input array should have rank of 4, but got %i instead", input->rankOf());
 
     // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-    std::vector<int> argI = *(block.getIArguments());
     auto output = OUTPUT_VARIABLE(0);
 
     const int kH = INT_ARG(0);
@@ -70,10 +69,8 @@ CUSTOM_OP_IMPL(maxpool2d, 1, 1, false, 0, 9) {
     if (isSameMode)
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; poolingMode; 9 - divisor;            
-    //T extraParams[] = {(T)kH, (T)kW, (T)sH, (T)sW, (T)pH, (T)pW, (T)dH, (T)dW, 0.f, 1.f};
-    // FIXME: get rid of extraParams
-    ConvolutionUtils::pooling2d(*input, *output, nullptr);
+    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; poolingMode; 9 - divisor;    
+    ConvolutionUtils::pooling2d(*input, *output, kH, kW, sH, sW, pH, pW, dH, dW, 0, 1);
             
     if (!isNCHW) {
         delete input;
@@ -87,56 +84,55 @@ DECLARE_SYN(MaxPool2D, maxpool2d);
 DECLARE_SYN(MaxPool, maxpool2d);
 DECLARE_SYN(maxpool, maxpool2d);
 
-        DECLARE_SHAPE_FN(maxpool2d) {
+DECLARE_SHAPE_FN(maxpool2d) {
             
-            //NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            Nd4jLong* inShape = inputShape->at(0);
-            Nd4jLong* shapeOf = shape::shapeOf(inShape);
-            // 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode;
-            std::vector<int> argI = *(block.getIArguments());
-            int kH = INT_ARG(0);
-            int kW = INT_ARG(1);
-            int sH = INT_ARG(2);
-            int sW = INT_ARG(3);
-            int pH = INT_ARG(4);
-            int pW = INT_ARG(5);
-            int dH = INT_ARG(6);
-            int dW = INT_ARG(7);
-            int isSameMode = INT_ARG(8);
-            int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;           // 0-NHWC, 1-NCHW
+    //NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+    Nd4jLong* inShape = inputShape->at(0);
+    Nd4jLong* shapeOf = shape::shapeOf(inShape);
+    // 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode;
+    int kH = INT_ARG(0);
+    int kW = INT_ARG(1);
+    int sH = INT_ARG(2);
+    int sW = INT_ARG(3);
+    int pH = INT_ARG(4);
+    int pW = INT_ARG(5);
+    int dH = INT_ARG(6);
+    int dW = INT_ARG(7);
+    int isSameMode = INT_ARG(8);
+    int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;           // 0-NHWC, 1-NCHW
 
-            REQUIRE_TRUE(dH != 0 && dW != 0, 0, "MAXPOOL2D op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
+    REQUIRE_TRUE(dH != 0 && dW != 0, 0, "MAXPOOL2D op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
 
-            int bS = shapeOf[0];
-            int iC = isNCHW ? shapeOf[1] : shapeOf[3];
-            int iH = isNCHW ? shapeOf[2] : shapeOf[1];
-            int iW = isNCHW ? shapeOf[3] : shapeOf[2];
+    int bS = shapeOf[0];
+    int iC = isNCHW ? shapeOf[1] : shapeOf[3];
+    int iH = isNCHW ? shapeOf[2] : shapeOf[1];
+    int iW = isNCHW ? shapeOf[3] : shapeOf[2];
 
-            char order = shape::order(inShape); // output order must be equal to input order
+    char order = shape::order(inShape); // output order must be equal to input order
 
-            // calculate output Height/Width
-            int oH, oW;
-            ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+    // calculate output Height/Width
+    int oH, oW;
+    ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
             
-            // allocate memory for new shape
-            Nd4jLong* newShapeInfo = nullptr;
-            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, Nd4jLong);
+    // allocate memory for new shape
+    Nd4jLong* newShapeInfo = nullptr;
+    ALLOCATE(newShapeInfo, block.getWorkspace(), 12, Nd4jLong);
             
-            newShapeInfo[0] = 4;        // rank
-            newShapeInfo[1] = bS;
-            if (isNCHW) {
-                newShapeInfo[2] = iC;
-                newShapeInfo[3] = oH;
-                newShapeInfo[4] = oW;
-            } else {
-                newShapeInfo[2] = oH;
-                newShapeInfo[3] = oW;
-                newShapeInfo[4] = iC;
-            }
-            shape::updateStrides(newShapeInfo, order);
+    newShapeInfo[0] = 4;        // rank
+    newShapeInfo[1] = bS;
+    if (isNCHW) {
+        newShapeInfo[2] = iC;
+        newShapeInfo[3] = oH;
+        newShapeInfo[4] = oW;
+    } else {
+        newShapeInfo[2] = oH;
+        newShapeInfo[3] = oW;
+        newShapeInfo[4] = iC;
+    }
+    shape::updateStrides(newShapeInfo, order);
 
-            return SHAPELIST(newShapeInfo);
-        }
+    return SHAPELIST(newShapeInfo);
+}
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 10) {
@@ -190,10 +186,7 @@ CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 10) {
     
     // columns->template applyTransform<simdOps::Col2Im<T>>(gradI, std::vector<T>({(T)sH, (T)sW, (T)pH, (T)pW, (T)iH, (T)iW, (T)dH, (T)dW}).data());
     
-    std::vector<double> argT;// = {(T) kH, (T) kW, (T) sH, (T) sW, (T) pH, (T) pW, (T) dH, (T)dW, 0., 1.};
-    // FIXME: get rid of this vector shit
-    ConvolutionUtils::pooling2dBP(*input, *gradO, *gradI, argT.data());
-
+    ConvolutionUtils::pooling2dBP(*input, *gradO, *gradI, kH, kW, sH, sW, pH, pW, dH, dW, 0., 1.);
 
     if(!isNCHW) {
         delete input;

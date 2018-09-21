@@ -2038,66 +2038,6 @@ TEST_F(DeclarableOpsTests1, TestCustomShape1) {
     delete inshapes;
 }
 
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, DilatedMaxPool3D_ff_Test1) {
-    auto input = NDArrayFactory::create<float>('c', {4, 2, 1, 11, 11});
-
-    input->assign(451.0);
-
-    auto output = NDArrayFactory::create<float>('c', {4, 2, 1, 10, 10});
-    auto indices = NDArrayFactory::create<float>('c', {4, 2, 1, 10, 10});
-
-
-    std::pair<int, int> pair0(1,0);
-    std::pair<int, int> pair1(1,1);
-
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, input);
-
-    variableSpace->putVariable(pair0, output);
-    variableSpace->putVariable(pair1, indices);
-
-    auto block = new Context(1, variableSpace, false);  // not-in-place
-    block->fillInputs({-1});
-
-    // kernel params
-    block->getIArguments()->push_back(1);
-    block->getIArguments()->push_back(2);
-    block->getIArguments()->push_back(2);
-
-    // stride
-    block->getIArguments()->push_back(1);
-    block->getIArguments()->push_back(1);
-    block->getIArguments()->push_back(1);
-
-    // padding
-    block->getIArguments()->push_back(0);
-    block->getIArguments()->push_back(0);
-    block->getIArguments()->push_back(0);
-
-    // dilation
-    block->getIArguments()->push_back(1);
-    block->getIArguments()->push_back(1);
-    block->getIArguments()->push_back(1);
-
-    // ceiling
-    block->getIArguments()->push_back(1);
-
-
-
-    nd4j::ops::maxpool3d maxpool3d;
-
-    Nd4jStatus result = maxpool3d.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, result);
-
-    //output.printBuffer("Result");
-
-    ASSERT_NEAR(451.0f, output->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
-
-    delete variableSpace;
-    delete block;
-}
 
 //////////////////////////////////////////////////////////////////////
 /*
