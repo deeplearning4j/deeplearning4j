@@ -796,7 +796,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
 // This method assigns values of given NDArray to this one, wrt order
-    void NDArray::assign(const NDArray *other) {
+    void NDArray::assign(NDArray *other) {
         if (this->isScalar() && other->isScalar()) {
             this ->_buffer[0] = other->_buffer[0];
             return;
@@ -826,7 +826,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
 // This method assigns values of given NDArray to this one
-    void NDArray::assign(const NDArray& other) {
+    void NDArray::assign(NDArray& other) {
         if (this->isScalar() && other.isScalar()) {
             this->_buffer[0] = other._buffer[0];
             return;
@@ -854,34 +854,61 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         }
     }
 
-    template <>
-    void NDArray::assign(const NDArray* value) {
-        // just fire scalar
-        NativeOpExcutioner::execScalar(nd4j::scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, value->getBuffer(), value->getShapeInfo(), nullptr);
-    }
-
-    template <>
-    void NDArray::assign(const NDArray& value) {
-        // just fire scalar
-        NativeOpExcutioner::execScalar(nd4j::scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, value.getBuffer(), value.getShapeInfo(), nullptr);
-    }
 
 // This method assigns given value to all elements in this NDArray
-    template<typename T>
-    void NDArray::assign(const T value) {
+    void NDArray::assign(const double value) {
         // just fire scalar
         auto temp = NDArrayFactory::_scalar(value, this->_workspace);
         NativeOpExcutioner::execScalar(nd4j::scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
     }
-    template void NDArray::assign(const double value);
-    template void NDArray::assign(const float value);
-    template void NDArray::assign(const float16 value);
-    template void NDArray::assign(const Nd4jLong value);
-    template void NDArray::assign(const int value);
-    template void NDArray::assign(const int8_t value);
-    template void NDArray::assign(const uint8_t value);
-    template void NDArray::assign(const int16_t value);
-    template void NDArray::assign(const bool value);
+
+    void NDArray::assign(const float value) {
+        // just fire scalar
+        auto temp = NDArrayFactory::_scalar(value, this->_workspace);
+        NativeOpExcutioner::execScalar(nd4j::scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
+    }
+
+    void NDArray::assign(const float16 value) {
+        // just fire scalar
+        auto temp = NDArrayFactory::_scalar(value, this->_workspace);
+        NativeOpExcutioner::execScalar(nd4j::scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
+    }
+
+    void NDArray::assign(const Nd4jLong value) {
+        // just fire scalar
+        auto temp = NDArrayFactory::_scalar(value, this->_workspace);
+        NativeOpExcutioner::execScalar(nd4j::scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
+    }
+
+    void NDArray::assign(const int value) {
+        // just fire scalar
+        auto temp = NDArrayFactory::_scalar(value, this->_workspace);
+        NativeOpExcutioner::execScalar(nd4j::scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
+    }
+
+    void NDArray::assign(const int16_t value) {
+        // just fire scalar
+        auto temp = NDArrayFactory::_scalar(value, this->_workspace);
+        NativeOpExcutioner::execScalar(nd4j::scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
+    }
+
+    void NDArray::assign(const uint8_t value) {
+        // just fire scalar
+        auto temp = NDArrayFactory::_scalar(value, this->_workspace);
+        NativeOpExcutioner::execScalar(nd4j::scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
+    }
+
+    void NDArray::assign(const int8_t value) {
+        // just fire scalar
+        auto temp = NDArrayFactory::_scalar(value, this->_workspace);
+        NativeOpExcutioner::execScalar(nd4j::scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
+    }
+
+    void NDArray::assign(const bool value) {
+        // just fire scalar
+        auto temp = NDArrayFactory::_scalar(value, this->_workspace);
+        NativeOpExcutioner::execScalar(nd4j::scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
+    }
 
     NDArray* NDArray::detach() {
         if (!isAttached())

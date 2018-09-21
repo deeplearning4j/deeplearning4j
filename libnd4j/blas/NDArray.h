@@ -379,18 +379,25 @@ namespace nd4j {
         /**
         *  this method assigns values of given array to this one
         */ 
-        void assign(const NDArray* other);
+        void assign(NDArray* other);
 
         /**
         *  this method assigns values of given array to this one
         */ 
-        void assign(const NDArray& other);
+        void assign(NDArray& other);
 
         /**
         *  this method assigns given value to all elements in array
         */
-        template <typename T>
-        void assign(const T value);
+        void assign(const double value);
+        void assign(const float value);
+        void assign(const float16 value);
+        void assign(const Nd4jLong value);
+        void assign(const int value);
+        void assign(const int16_t value);
+        void assign(const uint8_t value);
+        void assign(const int8_t value);
+        void assign(const bool value);
 
         /**
         *  returns new copy of this array, optionally in different order

@@ -273,6 +273,8 @@ namespace nd4j {
         res.setBuffer(buffer);
         res.triggerAllocationFlag(true, true);
         res.setWorkspace(workspace);
+        const int v = 0;
+        res.assign(v);
 
         return res;
     }
@@ -568,7 +570,7 @@ namespace nd4j {
 
     NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const NDArray& value, const char order, nd4j::memory::Workspace* workspace) {
         auto res = NDArrayFactory::create(order, shape, value.dataType(), workspace);
-        res->assign(value);
+        res->assign(const_cast<NDArray&>(value));
         return res;
     }
 

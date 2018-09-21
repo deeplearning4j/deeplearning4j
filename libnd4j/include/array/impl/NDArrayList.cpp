@@ -47,6 +47,10 @@ namespace nd4j {
         return readRaw(idx)->dup();
     }
 
+    nd4j::DataType NDArrayList::dataType() {
+        return _dtype;
+    }
+
     NDArray* NDArrayList::readRaw(int idx) {
         if (_chunks.count(idx) < 1) {
             nd4j_printf("Non-existent chunk requested: [%i]\n", idx);
@@ -65,10 +69,14 @@ namespace nd4j {
 
 
         // we store reference shape on first write
-        if (_chunks.size() == 0) {
+        if (_chunks.empty()) {
+            _dtype = array->dataType();
             for (int e = 0; e < array->rankOf(); e++)
                 _shape.emplace_back(array->sizeAt(e));
         } else {
+            if (array->dataType() != _dtype)
+                return Status::CODE(ND4J_STATUS_BAD_INPUT, "NDArrayList: all arrays must have same data type");
+
             if (array->rankOf() != _shape.size())
                 return ND4J_STATUS_BAD_DIMENSIONS;
 
