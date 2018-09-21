@@ -26,7 +26,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void _adjust_saturation_single(NDArray *array, NDArray *output, double delta, bool isNHWC) {
+    static void _adjust_saturation_single(NDArray *array, NDArray *output, float delta, bool isNHWC) {
         // we're 100% sure it's 3
         const int numChannels = 3;
         int tuples = array->lengthOf() /  numChannels;
@@ -83,8 +83,10 @@ namespace helpers {
         }
     }
 
-    void _adjust_saturation(NDArray *array, NDArray *output, double delta, bool isNHWC) {
+    void _adjust_saturation(NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
         auto xType = array->dataType();
+
+        float d = delta->getScalar<float>(0);
         if (array->rankOf() == 4) {
             auto tadsIn = array->allTensorsAlongDimension({0});
             auto tadsOut = output->allTensorsAlongDimension({0});
@@ -92,18 +94,18 @@ namespace helpers {
             // FIXME: template selector should be moved out of loop
 #pragma omp parallel for
             for (int e = 0; e < tadsIn->size(); e++) {
-                BUILD_SINGLE_SELECTOR(xType, _adjust_saturation_single, (tadsIn->at(e), tadsOut->at(e), delta, isNHWC);, FLOAT_TYPES);
+                BUILD_SINGLE_SELECTOR(xType, _adjust_saturation_single, (tadsIn->at(e), tadsOut->at(e), d, isNHWC);, FLOAT_TYPES);
             }
             
 
             delete tadsIn;
             delete tadsOut;
         } else {
-            BUILD_SINGLE_SELECTOR(xType, _adjust_saturation_single, (array, output, delta, isNHWC);, FLOAT_TYPES);
+            BUILD_SINGLE_SELECTOR(xType, _adjust_saturation_single, (array, output, d, isNHWC);, FLOAT_TYPES);
         }
     }
 
-    BUILD_SINGLE_TEMPLATE(template void _adjust_saturation_single, (NDArray *array, NDArray *output, double delta, bool isNHWC), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void _adjust_saturation_single, (NDArray *array, NDArray *output, float delta, bool isNHWC), FLOAT_TYPES);
 
 }
 }
