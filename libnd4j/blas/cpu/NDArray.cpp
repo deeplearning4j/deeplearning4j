@@ -857,7 +857,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     template <>
     void NDArray::assign(const NDArray* value) {
         // just fire scalar
-        NativeOpExcutioner::execScalar(nd4j::scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, value.getBuffer(), value->getShapeInfo(), nullptr);
+        NativeOpExcutioner::execScalar(nd4j::scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, value->getBuffer(), value->getShapeInfo(), nullptr);
     }
 
     template <>
