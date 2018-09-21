@@ -21,6 +21,7 @@
 #include "ops/declarable/BooleanOp.h"
 #include <vector>
 #include <initializer_list>
+#include <NDArrayFactory.h>
 
 namespace nd4j {
     namespace ops {
@@ -90,7 +91,7 @@ namespace nd4j {
                 auto var = ctx.variable(pair);
 
                 if (var->getNDArray() == nullptr) {
-                    var->setNDArray(new NDArray('c', {1, 1}, DataType_BOOL, ctx.getWorkspace()));
+                    var->setNDArray(NDArrayFactory::create('c', {1, 1}, DataType_BOOL, ctx.getWorkspace()));
                     var->markRemovable(true);
                 }
             }

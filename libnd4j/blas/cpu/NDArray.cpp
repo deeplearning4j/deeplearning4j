@@ -2534,6 +2534,26 @@ NDArray NDArray::transp() const {
     template void NDArray::putScalar(const Nd4jLong i, const bool value);
 
 
+    template <typename T>
+    void NDArray::putIndexedScalar(const Nd4jLong i, const T value) {
+        putScalar<T>(i, value);
+    }
+    template void NDArray::putIndexedScalar(const Nd4jLong i, const double value);
+    template void NDArray::putIndexedScalar(const Nd4jLong i, const float value);
+    template void NDArray::putIndexedScalar(const Nd4jLong i, const float16 value);
+    template void NDArray::putIndexedScalar(const Nd4jLong i, const Nd4jLong value);
+    template void NDArray::putIndexedScalar(const Nd4jLong i, const int value);
+    template void NDArray::putIndexedScalar(const Nd4jLong i, const int8_t value);
+    template void NDArray::putIndexedScalar(const Nd4jLong i, const uint8_t value);
+    template void NDArray::putIndexedScalar(const Nd4jLong i, const int16_t value);
+    template void NDArray::putIndexedScalar(const Nd4jLong i, const bool value);
+
+    template <typename T>
+    T* NDArray::bufferAsT() {
+        return reinterpret_cast<T*>(_buffer);
+    }
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template, * NDArray::bufferAsT(), LIBND4J_TYPES);
+
 //////////////////////////////////////////////////////////////////////////
 // This method sets value in 2D matrix to position i, j
 

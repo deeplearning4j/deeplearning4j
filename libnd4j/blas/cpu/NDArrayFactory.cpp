@@ -87,15 +87,15 @@ namespace nd4j {
         std::vector<T> vec(values);
         return _create<T>(vec, workspace);
     }
-    template NDArray NDArrayFactory::_create(std::initializer_list<double> &values, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::_create(std::initializer_list<float> &values, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::_create(std::initializer_list<float16> &values, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::_create(std::initializer_list<Nd4jLong> &values, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::_create(std::initializer_list<int> &values, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::_create(std::initializer_list<int16_t> &values, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::_create(std::initializer_list<int8_t> &values, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::_create(std::initializer_list<uint8_t> &values, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::_create(std::initializer_list<bool> &values, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::_create(std::initializer_list<double> values, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::_create(std::initializer_list<float> values, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::_create(std::initializer_list<float16> values, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::_create(std::initializer_list<Nd4jLong> values, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::_create(std::initializer_list<int> values, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::_create(std::initializer_list<int16_t> values, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::_create(std::initializer_list<int8_t> values, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::_create(std::initializer_list<uint8_t> values, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::_create(std::initializer_list<bool> values, nd4j::memory::Workspace* workspace);
 
 
     template <typename T>
