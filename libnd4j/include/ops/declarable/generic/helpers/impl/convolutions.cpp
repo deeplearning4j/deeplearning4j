@@ -159,7 +159,7 @@ void ConvolutionUtils::calcOutSizePool2D(int& oH, int& oW, const int kH, const i
 //////////////////////////////////////////////////////////////////////////
 // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]        
 template <typename T>
-void vol2col_(NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
+static void vol2col_(NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
 
     const Nd4jLong bS = volume.sizeAt(0);
     const Nd4jLong iC = volume.sizeAt(1);
@@ -260,7 +260,7 @@ else
 //////////////////////////////////////////////////////////////////////////
 // [bS, iC, kD, kH, kW, oD, oH, oW] is de-convoluted to [bS, iC, iD, iH, iW]
 template <typename T>
-void col2vol_(NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
+static void col2vol_(NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
 
     const Nd4jLong bS = volume.sizeAt(0);
     const Nd4jLong iC = volume.sizeAt(1);
@@ -366,7 +366,7 @@ else
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-void conv2d_(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
+static void conv2d_(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
 
     // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     // weights [kH, kW, iC, oC] always
@@ -416,7 +416,7 @@ void conv2d_(const NDArray* input, const NDArray* weights, const NDArray* bias, 
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-void conv2dBP_(const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
+static void conv2dBP_(const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
 
     // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     // weights [kH, kW, iC, oC] always
@@ -487,7 +487,7 @@ void conv2dBP_(const NDArray* input, const NDArray* weights, const NDArray* bias
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-void depthwiseConv2d_(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {    
+static void depthwiseConv2d_(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {    
 
     // input     [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     // weights   [kH, kW, iC, mC] always
@@ -545,7 +545,7 @@ void depthwiseConv2d_(const NDArray* input, const NDArray* weights, const NDArra
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
+static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
 
     // input    [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW)
     // weights  [kH, kW, iC, mC] always
@@ -624,7 +624,7 @@ void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, const NDAr
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-void sconv2d_(const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
+static void sconv2d_(const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
 
     // input         [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
     // weightsDepth  [kH, kW, iC, mC]  always
@@ -664,7 +664,7 @@ void sconv2d_(const NDArray* input, const NDArray* weightsDepth, const NDArray* 
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void upsampling2d_(const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW) {
+static void upsampling2d_(const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW) {
     // input  has shape [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC) 
     // output has shape [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
     
@@ -699,7 +699,7 @@ void upsampling2d_(const NDArray& input, NDArray& output, const int factorH, con
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void upsampling3d_(const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
+static void upsampling3d_(const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
     // input  has shape [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC) 
     // output has shape [bS, iC, factorD*iD, factorH*iH, factorW*iW ] (NCDHW) or [bS, factorD*iD, factorH*iH, factorW*iW, iC] (NDHWC)
     std::vector<Nd4jLong> indIn  = {0,0,  0,0,  0,0,  0,0,  0,0};
