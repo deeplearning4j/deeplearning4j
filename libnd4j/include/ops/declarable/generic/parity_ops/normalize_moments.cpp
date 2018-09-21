@@ -40,13 +40,13 @@ namespace nd4j {
                 shift = T_ARG(0);
             }
 
-            means->applyScalar(scalar::Divide, *counts, resMeans, nullptr);
+            means->applyScalar(scalar::Divide, counts, resMeans, nullptr);
 
             std::unique_ptr<NDArray> squareMeans(resMeans->dup('c'));
             std::unique_ptr<NDArray> tempVariances(resVariances->dup('c'));
 
             squareMeans->applyTransform(transform::Square, squareMeans.get(), nullptr);
-            variances->applyScalar(scalar::Divide, *counts, tempVariances.get(), nullptr);
+            variances->applyScalar(scalar::Divide, counts, tempVariances.get(), nullptr);
 //            tempVariances->printIndexedBuffer("varianced divided by count");
             tempVariances->applyPairwiseTransform(pairwise::Subtract, squareMeans.get(), resVariances, nullptr);
 

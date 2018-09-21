@@ -34,7 +34,7 @@ namespace nd4j {
                 if (!x->isScalar() && !y->isScalar() && x->isSameShape(y)) {
 				    x->applyPairwiseTransform(op.p, y, z, nullptr);
                 } else if (!x->isScalar() && y->isScalar()) {
-                    x->applyScalar(op.s, *y, z);
+                    x->applyScalar(op.s, y, z);
                 } else if (x->isScalar() && !y->isScalar()) {
                     if (z->isSameShape(y)) {
                         z->assign(x);
@@ -42,7 +42,7 @@ namespace nd4j {
                         return z;
                     } else {
                         auto v = y->getShapeAsVector();
-                        auto tZ = NDArrayFactory::valueOf(v, *y, y->ordering());
+                        auto tZ = NDArrayFactory::valueOf(v, y, y->ordering());
                         tZ->applyPairwiseTransform(op.p, y, extraArgs);
                         return tZ;
                     }

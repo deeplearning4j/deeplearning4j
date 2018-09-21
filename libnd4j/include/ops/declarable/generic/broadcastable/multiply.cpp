@@ -70,11 +70,11 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     }
     else if(xLen == 1) {            // x is scalar and y is not
         (*dLdx) = (*y * *dLdz).reduceNumber(reduce::Sum);
-        dLdz->applyScalar(scalar::Multiply, *x, dLdy, nullptr);
+        dLdz->applyScalar(scalar::Multiply, x, dLdy, nullptr);
     }
     else if(yLen == 1) {            // y is scalar and x is not
         (*dLdy) = (*x * *dLdz).reduceNumber(reduce::Sum);
-        dLdz->applyScalar(scalar::Multiply, (*y), dLdx);
+        dLdz->applyScalar(scalar::Multiply, y, dLdx);
     }    
     else if(x->isSameShape(y)) {
         x->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy, nullptr);

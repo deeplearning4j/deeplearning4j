@@ -383,7 +383,14 @@ namespace nd4j {
     template NDArray* NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<bool> &data, nd4j::memory::Workspace* workspace);
 
 
-        ////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////
+    template <>
+    NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, NDArray* value, const char order, nd4j::memory::Workspace* workspace) {
+        auto result = create(order, shape, value->dataType());
+        result->assign(value);
+        return result;
+    }
+
     template <typename T>
     NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const T value, const char order, nd4j::memory::Workspace* workspace) {
         auto result = create(order, shape, DataTypeUtils::fromT<T>());
