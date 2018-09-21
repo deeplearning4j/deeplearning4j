@@ -2512,34 +2512,6 @@ TEST_F(DeclarableOpsTests1, IsMax1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, Pooling2d1) {
-
-    auto x = NDArrayFactory::create<float>('c', {bS,iD,iH,iW});
-    auto exp = NDArrayFactory::_create<float>('c',{bS,iD,oH,oW});
-    // auto z('c',{bS,iD,oH,oW});
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-    // variableSpace->putVariable(1, &z);
-
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1});
-    std::vector<int>* argI = block->getIArguments();
-        
-    *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0, 2, 3};      // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode; 9 - pooling mode; 10 - divisor extraParam0 for pnorm case
-
-    nd4j::ops::pooling2d pooling;
-    Nd4jStatus status = pooling.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-    
-    auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    ASSERT_TRUE(exp.isSameShape(result));
-
-    delete variableSpace;
-    delete block;
-}
-
-//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, MaxPool2d_bp1) {
 
     auto input = NDArrayFactory::create<float>('c', {bS,iD,iH,iW});

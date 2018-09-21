@@ -24,7 +24,7 @@
 namespace nd4j {
 namespace ops {
 namespace helpers {
-    template <typename X, typename Y, typename Z>
+    template <typename X, typename Y>
     static void dilation2d_(NDArray *input, NDArray *weights, NDArray *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left) {
         const int batch = input->sizeAt(0);
         const int input_rows = input->sizeAt(1);
@@ -44,14 +44,14 @@ namespace helpers {
                 for (int w_out = 0; w_out < output_cols; ++w_out) {
                     int w_beg = w_out * stride_cols - pad_left;
                     for (int d = 0; d < depth; ++d) {
-                        Z cur_val = -DataTypeUtils::max<Z>();
+                        Y cur_val = -DataTypeUtils::max<Y>();
                         for (int h = 0; h < filter_rows; ++h) {
                             const int h_in = h_beg + h * rate_rows;
                             if (h_in >= 0 && h_in < input_rows) {
                                 for (int w = 0; w < filter_cols; ++w) {
                                     const int w_in = w_beg + w * rate_cols;
                                     if (w_in >= 0 && w_in < input_cols) {
-                                        const Z val = (*input).getScalar<Z>(b, h_in, w_in, d) + (*weights).getScalar<Z>(h, w, d);
+                                        const Y val = (*input).getScalar<Y>(b, h_in, w_in, d) + (*weights).getScalar<Y>(h, w, d);
                                         if (val > cur_val) {
                                             cur_val = val;
                                         }
@@ -59,22 +59,19 @@ namespace helpers {
                                 }
                             }
                         }
-                        (*output).putScalar<Z>(b, h_out, w_out, d, cur_val);
+                        (*output).putScalar<Y>(b, h_out, w_out, d, cur_val);
                     }
                 }
             }
         }
     };
 
-    void dilation2d(NDArray *input, NDArray *weights, NDArray *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left) {
-        auto xType = input->dataType();
-        auto yType = weights->dataType();
-        auto zType = output->dataType();
-
-        BUILD_TRIPLE_SELECTOR(xType, yType, zType, dilation2d_, (input, weights, output, stride_rows, stride_cols, rate_rows, rate_cols, pad_top, pad_left);, LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+    void dilation2d(NDArray *input, NDArray *weights, NDArray *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left) {        
+        BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), dilation2d_, (input, weights, output, stride_rows, stride_cols, rate_rows, rate_cols, pad_top, pad_left), LIBND4J_TYPES, FLOAT_TYPES);
     }
 
-    BUILD_TRIPLE_TEMPLATE(template void dilation2d_, (NDArray *input, NDArray *weights, NDArray *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left);, LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
-    }
+    BUILD_DOUBLE_TEMPLATE(template void dilation2d_, (NDArray *input, NDArray *weights, NDArray *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left), LIBND4J_TYPES, FLOAT_TYPES);
+
+}
 }
 }

@@ -178,14 +178,6 @@ namespace nd4j {
         #endif
 
         /**
-         *  Universal pooling op, combines max/avg/pnorm pooling.
-         *  Shouldn't be used directly, consider using corresponding operations instead.
-         */
-        #if NOT_EXCLUDED(OP_pooling2d)
-        DECLARE_CUSTOM_OP(pooling2d, 1, 1, false, 0, 11);
-        #endif
-
-        /**
          * This op implements im2col algorithm, widely used in convolution neural networks
          * Input: 4D input expected
          * 
