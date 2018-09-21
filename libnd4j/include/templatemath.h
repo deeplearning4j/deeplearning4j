@@ -651,6 +651,31 @@ template<typename T>
 		}
 
 		template<>
+        math_def inline bool nd4j_ceil<bool>(bool val) {
+			return ceil((float) val);
+		}
+
+		template<>
+        math_def inline unsigned char nd4j_ceil<unsigned char>(unsigned char val) {
+			return ceil((float) val);
+		}
+		
+		template<>
+        math_def inline signed char nd4j_ceil<signed char>(signed char val) {
+			return ceil((float) val);
+		}
+
+		template<>
+        math_def inline short int nd4j_ceil<short int>(short int val) {
+			return ceil((float) val);
+		}
+
+		template<>
+        math_def inline long long int nd4j_ceil<long long int>(long long int val) {
+			return ceil((float) val);
+		}
+
+		template<>
         math_def inline float16 nd4j_cos<float16>(float16 val) {
 #ifdef NATIVE_HALFS
 			return hcos(val.data);

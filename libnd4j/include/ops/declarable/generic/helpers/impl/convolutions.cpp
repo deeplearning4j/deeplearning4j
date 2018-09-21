@@ -159,7 +159,7 @@ void ConvolutionUtils::calcOutSizePool2D(int& oH, int& oW, const int kH, const i
 //////////////////////////////////////////////////////////////////////////
 // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]        
 template <typename T>
-static void vol2col_(NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
+static void vol2col_(const NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
 
     const Nd4jLong bS = volume.sizeAt(0);
     const Nd4jLong iC = volume.sizeAt(1);
@@ -186,8 +186,8 @@ static void vol2col_(NDArray& volume, NDArray& columns, const int sD, const int 
     const Nd4jLong volStride3 = volume.stridesOf()[3];
     const Nd4jLong volStride4 = volume.stridesOf()[4];    
     
-    T* colBuff = static_cast<T*>(columns.getBuffer());
-    T* volBuff = static_cast<T*>(volume.getBuffer());
+    T* colBuff = columns.bufferAsT<T>();
+    T* volBuff = const_cast<NDArray&>(volume).bufferAsT<T>();
 
     T *col, *vol;
     int volDep, volRow, volCol;
@@ -260,7 +260,7 @@ else
 //////////////////////////////////////////////////////////////////////////
 // [bS, iC, kD, kH, kW, oD, oH, oW] is de-convoluted to [bS, iC, iD, iH, iW]
 template <typename T>
-static void col2vol_(NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
+static void col2vol_(const NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
 
     const Nd4jLong bS = volume.sizeAt(0);
     const Nd4jLong iC = volume.sizeAt(1);
@@ -287,8 +287,8 @@ static void col2vol_(NDArray& columns, NDArray& volume, const int sD, const int 
     const Nd4jLong volStride3 = volume.stridesOf()[3];
     const Nd4jLong volStride4 = volume.stridesOf()[4];    
     
-    T* volBuff = static_cast<T*>(volume.getBuffer());
-    T* colBuff = static_cast<T*>(columns.getBuffer());
+    T* volBuff = volume.bufferAsT<T>();
+    T* colBuff = const_cast<NDArray&>(columns).bufferAsT<T>();
 
     // initial zeroing of volume content
     const Nd4jLong volEWS = nd4j::math::nd4j_abs<Nd4jLong>(volume.ews());
@@ -736,6 +736,366 @@ static void upsampling3d_(const NDArray& input, NDArray& output, const int facto
     }    
 }
 
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+static void pooling2d_(const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+    // input is  [bS, iC, iH, iW]
+    // output is [bS, iC, oH, oW]
+    T* out = output.bufferAsT<T>();
+    T* in  = const_cast<NDArray&>(input).bufferAsT<T>();
+
+    const int kHEff = kH + (kH-1)*(dH-1);
+    const int kWEff = kW + (kW-1)*(dW-1);
+
+    const Nd4jLong bS = input.sizeAt(0);
+    const Nd4jLong iC = input.sizeAt(1);
+    const Nd4jLong iH = input.sizeAt(2);
+    const Nd4jLong iW = input.sizeAt(3);
+    const Nd4jLong oH = output.sizeAt(2);
+    const Nd4jLong oW = output.sizeAt(3);
+    const Nd4jLong iStride0 = input.stridesOf()[0];
+    const Nd4jLong iStride1 = input.stridesOf()[1];
+    const Nd4jLong iStride2 = input.stridesOf()[2];
+    const Nd4jLong iStride3 = input.stridesOf()[3];    
+    const Nd4jLong oStride0 = output.stridesOf()[0];
+    const Nd4jLong oStride1 = output.stridesOf()[1];
+    const Nd4jLong oStride2 = output.stridesOf()[2];
+    const Nd4jLong oStride3 = output.stridesOf()[3];
+    
+    const Nd4jLong iStep2   = dH*iStride2;
+    const Nd4jLong iStep3   = dW*iStride3;    
+    const Nd4jLong kProd   = kH*kW;
+
+    Nd4jLong hstart, wstart, hend, wend;
+    T sum, *pIn;
+
+    if(poolingMode == 0) {        // max 
+#pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)
+        for(int b = 0; b < bS; ++b) {
+            for(int c = 0; c < iC; ++c) {                                                            
+                for(int oh = 0; oh < oH; ++oh) {
+                    for(int ow = 0; ow < oW; ++ow) {
+                        
+                        pIn  = in  + b * iStride0 + c * iStride1;
+                        
+                        hstart = oh * sH - pH;
+                        wstart = ow * sW - pW;                        
+                        hend = hstart + kHEff;
+                        wend = wstart + kWEff;
+                        
+                        if(hstart < 0)
+                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                        if(wstart < 0)
+                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-wstart) / static_cast<T>(dW));                            
+                        if(hend > iH)
+                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                        if(wend > iW)
+                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(wend-iW) / static_cast<T>(dW));                            
+
+                        hstart *= iStride2;
+                        hend   *= iStride2;
+                        wstart *= iStride3;
+                        wend   *= iStride3;
+
+                        sum = -DataTypeUtils::max<T>();
+                                                                    
+                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
+                                T val = pIn[kh + kw];
+                                    if (val > sum)
+                                        sum = val;
+                                    }
+                        out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
+                    }
+                }
+            }
+        }    
+    }
+/*************************************************************************/    
+    else if(poolingMode == 1) {      // avg
+// #pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)        
+        for(int b = 0; b < bS; ++b) {
+            for(int c = 0; c < iC; ++c) {                                                            
+                for(int oh = 0; oh < oH; ++oh) {
+                    for(int ow = 0; ow < oW; ++ow) {
+                        
+                        pIn  = in  + b * iStride0 + c * iStride1;
+
+                        hstart = oh * sH - pH;
+                        wstart = ow * sW - pW;
+                        hend = hstart + kHEff;
+                        wend = wstart + kWEff;
+
+                        if(hstart < 0)
+                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                        if(wstart < 0)
+                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                        if(hend > iH)
+                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                        if(wend > iW)
+                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+
+                        hstart *= iStride2;
+                        hend   *= iStride2;
+                        wstart *= iStride3;
+                        wend   *= iStride3;
+
+                        sum = static_cast<T>(0.f);
+                                            
+                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                sum += pIn[kh + kw];
+                                
+                        if (extraParam0 == 0)         //Exclude padding
+                            sum /= static_cast<T>(nd4j::math::nd4j_ceil<double>(static_cast<double>(hend-hstart) / static_cast<double>(iStep2))) * static_cast<T>(nd4j::math::nd4j_ceil<double>(static_cast<double>(wend-wstart) / static_cast<double>(iStep3)));   //Accounts for dilation
+
+                        else if (extraParam0 == 1)    //Include padding
+                            sum /= kProd;
+                
+                        out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
+                    }
+                }
+            }
+        }
+    }    
+/*************************************************************************/    
+    else if(poolingMode == 2) {  // pnorm
+#pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)    
+        for(int b = 0; b < bS; ++b) {
+            for(int c = 0; c < iC; ++c) {                                                            
+                for(int oh = 0; oh < oH; ++oh) {
+                    for(int ow = 0; ow < oW; ++ow) {
+                        
+                        pIn  = in  + b * iStride0 + c * iStride1;
+
+                        hstart = oh * sH - pH;
+                        wstart = ow * sW - pW;
+                        hend = hstart + kHEff;
+                        wend = wstart + kWEff;
+
+                        if(hstart < 0)
+                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                        if(wstart < 0)
+                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                        if(hend > iH)
+                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                        if(wend > iW)
+                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+
+                        hstart *= iStride2;
+                        hend   *= iStride2;
+                        wstart *= iStride3;
+                        wend   *= iStride3;
+
+                        sum = static_cast<T>(0.f);
+                                                                    
+                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
+                                
+                        sum = nd4j::math::nd4j_pow<T,T,T>(sum, static_cast<T>((T)1.f) / extraParam0);
+                                                          
+                        out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
+                    }
+                }
+            }
+        }
+    }
+    else {
+        nd4j_printf("ConvolutionUtils::pooling2d: pooling mode argument can take three values only: 0, 1, 2, but got %i instead !\n", poolingMode);
+        throw "";
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+static void pooling2dBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+    // input [bS, iC, iH, iW]
+    // gradI [bS, iC, iH, iW] -> gradI is output in this function
+    // gradO [bS, iC, oH, oW]    
+
+    T* in = const_cast<NDArray&>(input).bufferAsT<T>();
+    T* gO = const_cast<NDArray&>(gradO).bufferAsT<T>();
+    T* gI = gradI.bufferAsT<T>();
+
+    // initial zeroing of gradI
+    const Nd4jLong gradIEWS = nd4j::math::nd4j_abs<Nd4jLong>(gradI.ews());
+    if(gradIEWS == 1)
+        memset(gI, 0, gradI.lengthOf() * sizeof(T));
+    else
+#pragma omp parallel for schedule(static) proc_bind(close)
+        for (int i = 0; i < gradI.lengthOf() * gradIEWS; i += gradIEWS) 
+            gI[i] = static_cast<T>(0.f);
+
+    const int kHEff = kH + (kH-1)*(dH-1);
+    const int kWEff = kW + (kW-1)*(dW-1);
+
+    const Nd4jLong bS = gradI.sizeAt(0);
+    const Nd4jLong iC = gradI.sizeAt(1);
+    const Nd4jLong iH = gradI.sizeAt(2);
+    const Nd4jLong iW = gradI.sizeAt(3);
+    const Nd4jLong oH = gradO.sizeAt(2);
+    const Nd4jLong oW = gradO.sizeAt(3);
+    const Nd4jLong iStride0 = gradI.stridesOf()[0];
+    const Nd4jLong iStride1 = gradI.stridesOf()[1];
+    const Nd4jLong iStride2 = gradI.stridesOf()[2];
+    const Nd4jLong iStride3 = gradI.stridesOf()[3];
+    const Nd4jLong oStride0 = gradO.stridesOf()[0];
+    const Nd4jLong oStride1 = gradO.stridesOf()[1];
+    const Nd4jLong oStride2 = gradO.stridesOf()[2];
+    const Nd4jLong oStride3 = gradO.stridesOf()[3];
+    const Nd4jLong iStep2   = dH*iStride2;
+    const Nd4jLong iStep3   = dW*iStride3;
+    const Nd4jLong kProd    = kH*kW;
+    const T iStep2Inv = 1./iStep2;
+    const T iStep3Inv = 1./iStep3;
+
+    Nd4jLong hstart, wstart,hend, wend, maxKH, maxKW;
+    T sum, valO, *pIn, *pgI;
+
+    if(poolingMode == 0) {        // max 
+#pragma omp parallel for schedule(guided) private(pIn, valO, sum, hstart, wstart, hend, wend, maxKH, maxKW)
+        for(int b = 0; b < bS; ++b) {
+            for(int c = 0; c < iC; ++c) {                                            
+                for(int oh = 0; oh < oH; ++oh) {
+                    for(int ow = 0; ow < oW; ++ow) {
+                    
+                        pIn = in + b * iStride0 + c * iStride1;
+
+                        hstart = oh * sH - pH;
+                        wstart = ow * sW - pW;
+                        hend = hstart + kHEff;
+                        wend = wstart + kWEff;
+
+                        if(hstart < 0)
+                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                        if(wstart < 0)
+                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                        if(hend > iH)
+                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                        if(wend > iW)
+                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+
+                        hstart *= iStride2;
+                        hend   *= iStride2;
+                        wstart *= iStride3;
+                        wend   *= iStride3;
+
+                        sum = -DataTypeUtils::max<T>();
+                        valO = gO[b*oStride0 + c*oStride1 + oh*oStride2 + ow*oStride3];
+                                                    
+                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
+                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
+                                T valIn = pIn[kh + kw];
+                                if (valIn > sum) {
+                                    sum = valIn;
+                                    maxKH = kh;
+                                    maxKW = kw;
+                                }
+                            }
+                        gI[pIn - in + maxKH + maxKW] += valO;
+                    }
+                }
+            }
+        }
+    }  
+/*************************************************************************/    
+    else if(poolingMode == 1) {     // avg        
+#pragma omp parallel for schedule(guided) private(pgI, valO, hstart, wstart, hend, wend)        
+        for(int b = 0; b < bS; ++b) {
+            for(int c = 0; c < iC; ++c) {                                            
+                for(int oh = 0; oh < oH; ++oh) {
+                    for(int ow = 0; ow < oW; ++ow) {
+                        
+                        pgI  = gI + b * iStride0 + c * iStride1;
+
+                        hstart = oh * sH - pH;
+                        wstart = ow * sW - pW;
+                        hend = hstart + kHEff;
+                        wend = wstart + kWEff;
+
+                        if(hstart < 0)
+                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                        if(wstart < 0)
+                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                        if(hend > iH)
+                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                        if(wend > iW)
+                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+
+                        hstart *= iStride2;
+                        hend   *= iStride2;
+                        wstart *= iStride3;
+                        wend   *= iStride3;
+
+                        valO = gO[b*oStride0 + c*oStride1 + oh*oStride2 + ow*oStride3];
+                                            
+                        if ((int) extraParam0 == 0)         //Exclude padding                            
+                            valO /= static_cast<T>(nd4j::math::nd4j_ceil<double>(static_cast<double>(hend-hstart) / static_cast<double>(iStep2))) * static_cast<T>(nd4j::math::nd4j_ceil<double>(static_cast<double>(wend-wstart) / static_cast<double>(iStep3)));   //Accounts for dilation
+                        else if ((int) extraParam0 == 1)    //Include padding
+                            valO /= kProd;
+
+                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                pgI[kh + kw] += valO;
+                    }
+                }
+            }
+        }
+    }
+/*************************************************************************/    
+    else if(poolingMode == 2) {  // pnorm
+#pragma omp parallel for schedule(guided) private(pIn, valO, pgI, sum, hstart, wstart, hend, wend)    
+        for(int b = 0; b < bS; ++b) {
+            for(int c = 0; c < iC; ++c) {                                            
+                for(int oh = 0; oh < oH; ++oh) {
+                    for(int ow = 0; ow < oW; ++ow) {
+                        
+                        pIn  = in + b * iStride0 + c * iStride1;
+                        pgI  = gI + (pIn - in);
+
+                        hstart = oh * sH - pH;
+                        wstart = ow * sW - pW;
+                        hend = hstart + kHEff;
+                        wend = wstart + kWEff;
+
+                        if(hstart < 0)
+                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                        if(wstart < 0)
+                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                        if(hend > iH)
+                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                        if(wend > iW)
+                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+
+                        hstart *= iStride2;
+                        hend   *= iStride2;
+                        wstart *= iStride3;
+                        wend   *= iStride3;
+
+                        sum = static_cast<T>(0.f);
+                        valO = gO[b*oStride0 + c*oStride1 + oh*oStride2 + ow*oStride3];
+                                            
+                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
+                                
+                        valO *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1. - extraParam0) / extraParam0);
+
+                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                pgI[kh + kw] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0 - 1.f);
+                    }
+                }
+            }
+        }
+    }
+    else {
+        nd4j_printf("ConvolutionUtils::pooling2dBP: pooling mode argument can take three values only: 0, 1, 2, but got %i instead !\n", poolingMode);
+        throw "";
+    }
+}
+
 
 
 
@@ -759,27 +1119,34 @@ void ConvolutionUtils::sconv2d(const NDArray* input, const NDArray* weightsDepth
 void ConvolutionUtils::upsampling3d(const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
     BUILD_SINGLE_SELECTOR(input.dataType(), upsampling3d_, (input, output, factorD, factorH, factorW, isNCDHW), LIBND4J_TYPES);
 }
-void ConvolutionUtils::vol2col(NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
+void ConvolutionUtils::vol2col(const NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
     BUILD_SINGLE_SELECTOR(volume.dataType(), vol2col_, (volume, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW), LIBND4J_TYPES);
 }
-void ConvolutionUtils::col2vol(NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
+void ConvolutionUtils::col2vol(const NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
     BUILD_SINGLE_SELECTOR(volume.dataType(), col2vol_, (columns, volume, sD, sH, sW, pD, pH, pW, dD, dH, dW), LIBND4J_TYPES);
 }
 void ConvolutionUtils::upsampling2d(const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW) {
     BUILD_SINGLE_SELECTOR(input.dataType(), upsampling2d_, (input, output, factorH, factorW, isNCHW), LIBND4J_TYPES);
 }
+void ConvolutionUtils::pooling2d(const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {    
+    BUILD_SINGLE_SELECTOR(input.dataType(), pooling2d_, (input, output, kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
+}
+void ConvolutionUtils::pooling2dBP(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {    
+    BUILD_SINGLE_SELECTOR(input.dataType(), pooling2dBP_, (input, gradO, gradI, kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
+}
 
-
-BUILD_DOUBLE_TEMPLATE(template void conv2d_,   (const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
-BUILD_DOUBLE_TEMPLATE(template void conv2dBP_, (const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
+BUILD_DOUBLE_TEMPLATE(template void conv2d_,            (const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
+BUILD_DOUBLE_TEMPLATE(template void conv2dBP_,          (const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
 BUILD_DOUBLE_TEMPLATE(template void depthwiseConv2d_,   (const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
 BUILD_DOUBLE_TEMPLATE(template void depthwiseConv2dBP_, (const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
-BUILD_DOUBLE_TEMPLATE(template void sconv2d_,   (const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
+BUILD_DOUBLE_TEMPLATE(template void sconv2d_,           (const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
 
 BUILD_SINGLE_TEMPLATE(template void upsampling2d_, (const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void upsampling3d_, (const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW), LIBND4J_TYPES);
-BUILD_SINGLE_TEMPLATE(template void vol2col_,      (NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW), LIBND4J_TYPES);
-BUILD_SINGLE_TEMPLATE(template void col2vol_,      (NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void vol2col_,      (const NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void col2vol_,      (const NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void pooling2d_,    (const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void pooling2dBP_,  (const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
 
 }
 }
