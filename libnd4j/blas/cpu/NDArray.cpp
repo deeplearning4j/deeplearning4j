@@ -1245,6 +1245,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     void* NDArray::templatedPointerShift(void *buffer, Nd4jLong offset) const {
         return reinterpret_cast<T*>(buffer) + offset;
     }
+    BUILD_SINGLE_TEMPLATE(template void* NDArray::templatedPointerShift, (void *buffer, Nd4jLong offset) const, LIBND4J_TYPES);
 
 // method makes copy of this array and applies to the copy transpose operation, this array remains unaffected 
     NDArray* NDArray::transpose() const {
@@ -2370,6 +2371,7 @@ NDArray NDArray::transp() const {
 
         return result;
     }
+    BUILD_SINGLE_TEMPLATE(template std::vector, NDArray::asVectorT(), LIBND4J_TYPES);
 
     //////////////////////////////////////////////////////////////////////////
     // check whether array is identity matrix
@@ -3465,7 +3467,7 @@ NDArray NDArray::transp() const {
                 for(Nd4jLong i = 0; i < rows; ++i)
                     for(Nd4jLong j = 0; j < cols; ++j)
                         if (i + diag <= j)
-                            putScalar<T>(i, j) = value;
+                            putScalar<T>(i, j, value);
                 break;
 
             case 'l':                           // fill lower triangular block
@@ -3473,12 +3475,21 @@ NDArray NDArray::transp() const {
                 for(Nd4jLong i = 0; i < rows; ++i)
                     for(Nd4jLong j = 0; j < cols; ++j)
                         if (i + diag >= j)
-                            putScalar<T>(i, j) = value;
+                            putScalar<T>(i, j, value);
                 break;
             default:
                 throw std::string("NDArray::setValueInDiagMatrix method: wrong value of direction argument, expected is 'u' or 'l', but got " + std::string(1,direction) + " instead !");
         }
     }
+    template void NDArray::setValueInDiagMatrix(const double& value, const int diag, const char direction);
+    template void NDArray::setValueInDiagMatrix(const float& value, const int diag, const char direction);
+    template void NDArray::setValueInDiagMatrix(const float16& value, const int diag, const char direction);
+    template void NDArray::setValueInDiagMatrix(const Nd4jLong& value, const int diag, const char direction);
+    template void NDArray::setValueInDiagMatrix(const int& value, const int diag, const char direction);
+    template void NDArray::setValueInDiagMatrix(const int16_t& value, const int diag, const char direction);
+    template void NDArray::setValueInDiagMatrix(const uint8_t& value, const int diag, const char direction);
+    template void NDArray::setValueInDiagMatrix(const int8_t& value, const int diag, const char direction);
+    template void NDArray::setValueInDiagMatrix(const bool& value, const int diag, const char direction);
 
     ////////////////////////////////////////////////////////////////////////
     // default destructor
