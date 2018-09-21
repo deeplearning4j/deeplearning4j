@@ -161,16 +161,6 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(pnormpool2d_bp, 2, 1, false, 1, 10);
         #endif
 
-        #if NOT_EXCLUDED(OP_maxpool3d)
-        DECLARE_CUSTOM_OP(maxpool3d, 1, 2, true, 0, 14); 
-        DECLARE_CUSTOM_OP(maxpool3d_bp, 3, 1, true, 0, 14);
-        #endif
-
-        #if NOT_EXCLUDED(OP_avgpool3d)
-        DECLARE_CUSTOM_OP(avgpool3d, 1, 1, true, 0, 14);
-        DECLARE_CUSTOM_OP(avgpool3d_bp, 2, 1, true, 0, 14);
-        #endif
-
         #if NOT_EXCLUDED(OP_fullconv3d)
         DECLARE_CUSTOM_OP(fullconv3d, 5, 1, false, 0, 13);
         DECLARE_CUSTOM_OP(fullconv3d_bp, 5, 1, false, 0, 13);
