@@ -65,6 +65,16 @@ public class HistogramFixedWidth extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         //No op - just need the inputs
+        System.out.println(nodeDef);
+    }
+
+    @Override
+    public void resolvePropertiesFromSameDiffBeforeExecution() {
+        if(args().length == 3 && iArguments.isEmpty()){
+            //Num bins is 3rd array
+            addIArgument(arg(2).getArr().getInt(0));
+        }
+        super.resolvePropertiesFromSameDiffBeforeExecution();
     }
 
 
