@@ -84,7 +84,7 @@ void NativeOpExcutioner::execBroadcast(int opNum, void *x, Nd4jLong *xShapeInfo,
     auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(yShapeInfo);
 
-    BUILD_DOUBLE_SELECTOR(xType, yType, functions::broadcast::Broadcast, ::exec(opNum, x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);, LIBND4J_TYPES, LIBND4J_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, yType, functions::broadcast::Broadcast, ::exec(opNum, x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);, FLOAT_TYPES, FLOAT_TYPES);
 }
 
 
@@ -225,7 +225,7 @@ void NativeOpExcutioner::execScalar(int opNum, void *x, Nd4jLong *xShapeInfo, vo
     auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(scalarShapeInfo);
 
-    BUILD_DOUBLE_SELECTOR(xType, yType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, result, resultShapeInfo, scalar, extraParams), LIBND4J_TYPES, LIBND4J_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, yType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, result, resultShapeInfo, scalar, extraParams), FLOAT_TYPES, FLOAT_TYPES);
 }
 
 
@@ -234,7 +234,7 @@ void NativeOpExcutioner::execScalar(int opNum, void *x, Nd4jLong *xShapeInfo, vo
     auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(scalarShapeInfo);
 
-    BUILD_DOUBLE_SELECTOR(xType, yType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, yType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), FLOAT_TYPES, FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////

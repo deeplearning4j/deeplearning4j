@@ -370,7 +370,7 @@ namespace nd4j {
         ////////////////////////////////////////////////////////////////////////
     template <typename T>
     NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const T value, const char order, nd4j::memory::Workspace* workspace) {
-        auto result = new NDArray(order, shape, DataTypeUtils::fromT<T>());
+        auto result = create(order, shape, DataTypeUtils::fromT<T>());
         result->assign(value);
         return result;
     }
