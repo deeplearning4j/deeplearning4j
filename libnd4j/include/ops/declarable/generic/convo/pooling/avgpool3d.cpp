@@ -68,9 +68,8 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 14) {
     if(isSameMode)                       // SAME
         ConvolutionUtils::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
     
-    //T extraParams[] = {(T)kD, (T)kH, (T)kW, (T)sD, (T)sH, (T)sW, (T)pD, (T)pH, (T)pW, (T)dD, (T)dH, (T)dW, 1, (T)extraParam0};
-    // FIXME: get rid of this extraparams shit
-    ConvolutionUtils::pooling3d(*input, *output, nullptr);
+    //T extraParams[] = {};    
+    ConvolutionUtils::pooling3d(*input, *output, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, 1, extraParam0);
    
     if(!isNCDHW) {              
         delete input;
@@ -183,10 +182,7 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 14) {
 
     NDArray temp;    // does not mean anything, just to fit pooling3dBP signature
     // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;    
-    //std::vector<T> argT = {(T) kD, (T) kH, (T) kW, (T) sD, (T) sH, (T) sW, (T) pD, (T) pH, (T) pW, (T) dD, (T) dH, (T)dW, 1., (T)extraParam0};
-    std::vector<double> argT;
-    // FIXME: get rid of this vector shit
-    ConvolutionUtils::pooling3dBP(temp, *gradO, *gradI, argT.data());
+    ConvolutionUtils::pooling3dBP(temp, *gradO, *gradI, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, 1, extraParam0);
 
     if(!isNCDHW) {
         delete gradI;
