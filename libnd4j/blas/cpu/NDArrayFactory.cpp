@@ -387,6 +387,13 @@ namespace nd4j {
     template <>
     NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, NDArray* value, const char order, nd4j::memory::Workspace* workspace) {
         auto result = create(order, shape, value->dataType());
+        result->assign(*value);
+        return result;
+    }
+
+    template <>
+    NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, NDArray& value, const char order, nd4j::memory::Workspace* workspace) {
+        auto result = create(order, shape, value.dataType());
         result->assign(value);
         return result;
     }
@@ -414,11 +421,21 @@ namespace nd4j {
         auto result = NDArrayFactory::vector<T>(numElements);
 
         for (Nd4jLong e = 0; e < numElements; e++) {
-            T step = (T) e / ((T) numElements - (T) 1.0f);
-            reinterpret_cast<T *>(result->getBuffer())[e] = (from * ((T) 1.0f - step) + step * to);
+            T step = (T) e / ((T) numElements - (T) 1);
+            reinterpret_cast<T *>(result->getBuffer())[e] = (from * ((T) 1 - step) + step * to);
         }
         return result;
     }
+    template NDArray* NDArrayFactory::linspace(const double from, const double to, const Nd4jLong numElements);
+    template NDArray* NDArrayFactory::linspace(const float from, const float to, const Nd4jLong numElements);
+    template NDArray* NDArrayFactory::linspace(const float16 from, const float16 to, const Nd4jLong numElements);
+    template NDArray* NDArrayFactory::linspace(const Nd4jLong from, const Nd4jLong to, const Nd4jLong numElements);
+    template NDArray* NDArrayFactory::linspace(const int from, const int to, const Nd4jLong numElements);
+    template NDArray* NDArrayFactory::linspace(const int16_t from, const int16_t to, const Nd4jLong numElements);
+    template NDArray* NDArrayFactory::linspace(const uint8_t from, const uint8_t to, const Nd4jLong numElements);
+    template NDArray* NDArrayFactory::linspace(const int8_t from, const int8_t to, const Nd4jLong numElements);
+    template NDArray* NDArrayFactory::linspace(const bool from, const bool to, const Nd4jLong numElements);
+
 
     template <typename T>
     NDArray* NDArrayFactory::vector(Nd4jLong length, const T startingValue, nd4j::memory::Workspace *workspace) {

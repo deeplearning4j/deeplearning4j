@@ -854,6 +854,18 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         }
     }
 
+    template <>
+    void NDArray::assign(const NDArray* value) {
+        // just fire scalar
+        NativeOpExcutioner::execScalar(nd4j::scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, value.getBuffer(), value->getShapeInfo(), nullptr);
+    }
+
+    template <>
+    void NDArray::assign(const NDArray& value) {
+        // just fire scalar
+        NativeOpExcutioner::execScalar(nd4j::scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, value.getBuffer(), value.getShapeInfo(), nullptr);
+    }
+
 // This method assigns given value to all elements in this NDArray
     template<typename T>
     void NDArray::assign(const T value) {
