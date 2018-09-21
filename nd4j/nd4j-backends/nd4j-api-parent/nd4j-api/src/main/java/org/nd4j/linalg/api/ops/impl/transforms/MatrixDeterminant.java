@@ -58,9 +58,11 @@ public class MatrixDeterminant extends DynamicCustomOp {
         //Derivative of matrix determinant
         //From: Matrix Cookbook - Petersen & Pedersen
         // z=det(X) then dz/dx = z * tr(X^-1)
-        SDVariable transpose = f().matrixInverse(arg());
-        SDVariable trace = f().diagPart(transpose).sum(-1);
-        SDVariable dOutdIn = outputVariable().mul(trace);
-        return Collections.singletonList(i_v.get(0).mul(dOutdIn));
+        //Unfortunately: this is NOT passing gradient checks :(
+//        SDVariable inverse = f().matrixInverse(arg());
+//        SDVariable trace = f().trace(inverse.mul(sameDiff.onesLike(arg())));
+//        SDVariable dOutdIn = outputVariable().mul(trace);
+//        return Collections.singletonList(i_v.get(0).mul(dOutdIn).mul(sameDiff.onesLike(arg())));
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 }

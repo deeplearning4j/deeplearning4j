@@ -1424,7 +1424,6 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
     @Test
-    @Ignore
     public void testBooleanAnd(){
         Nd4j.setDataType(DataBuffer.Type.FLOAT);
         INDArray arr1 = Nd4j.create(new long[]{3,4});
@@ -1450,7 +1449,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
 
     @Test
-    @Ignore
     public void testScatterOpsScalar(){
         for(String s : new String[]{"add", "sub", "mul", "div"}) {
             INDArray ref = Nd4j.linspace(1, 30, 30).reshape(10, 3);
@@ -1599,7 +1597,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testUnique(){
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6173
         INDArray in = Nd4j.trueVector(new double[]{3, 4, 3, 1, 3, 0, 2, 4, 2, 4});
 
         INDArray expUnique = Nd4j.trueVector(new double[]{3, 4, 1, 0, 2});
@@ -1622,7 +1619,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testTopK(){
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6177
+        OpValidationSuite.ignoreFailing();  //Can't assume sorted here
         INDArray in = Nd4j.trueVector(new double[]{7, 3, 1, 2, 5, 0, 4, 6, 9, 8});
 
         INDArray expTopK = Nd4j.trueVector(new double[]{7, 5, 6, 9, 8});
@@ -1651,8 +1648,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testInTopK() {
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6179
-
         for( int k=4; k>= 1; k--){
             log.info("Testing: k=" + k);
             INDArray in = Nd4j.linspace(1, 20, 20).reshape(4, 5);

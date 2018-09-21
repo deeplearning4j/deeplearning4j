@@ -489,6 +489,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testTrace(){
+        //TODO need to work out how to handle shape_op for scalars...
         OpValidationSuite.ignoreFailing();
         Nd4j.getRandom().setSeed(12345);
         for( int[] inShape : new int[][]{{3,3}}){
@@ -596,8 +597,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testMmulGradientManual() {
-        OpValidationSuite.ignoreFailing();
-
         SameDiff sameDiff = SameDiff.create();
         INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         Map<String, INDArray> inputs = new HashMap<>();
@@ -616,7 +615,6 @@ public class MiscOpValidation extends BaseOpValidation {
         }, inputs);
 
         List<DifferentialFunction> ops = sameDiff.getFunction("mmulGradient").execBackwards().getRight();
-        String print = sameDiff.asFlatPrint();
 
 
         assumeNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad"));
@@ -1187,8 +1185,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testLinspace(){
-        OpValidationSuite.ignoreFailing();
-
         SameDiff sd = SameDiff.create();
         SDVariable out = sd.linspace("linspace", 1,10,10);
         SDVariable loss = out.std(true);
