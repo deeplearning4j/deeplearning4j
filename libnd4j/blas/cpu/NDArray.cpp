@@ -2511,11 +2511,6 @@ NDArray NDArray::transp() const {
         BUILD_DOUBLE_SELECTOR(xType, yType, templatedSet, (this->_buffer, i, value._buffer), LIBND4J_TYPES, LIBND4J_TYPES);
     }
 
-    template <typename T, typename R>
-    R NDArray::templatedGet(void *buffer, Nd4jLong index) const {
-        auto b = reinterpret_cast<T*>(buffer);
-        return static_cast<R>(b[index]);
-    }
 
 //////////////////////////////////////////////////////////////////////////
 // This method sets value in linear buffer to position i
@@ -3012,6 +3007,15 @@ NDArray NDArray::transp() const {
 
         return result;
     }
+    template NDArray NDArray::operator+(const double scalar) const;
+    template NDArray NDArray::operator+(const float scalar) const;
+    template NDArray NDArray::operator+(const float16 scalar) const;
+    template NDArray NDArray::operator+(const Nd4jLong scalar) const;
+    template NDArray NDArray::operator+(const int scalar) const;
+    template NDArray NDArray::operator+(const int16_t scalar) const;
+    template NDArray NDArray::operator+(const int8_t scalar) const;
+    template NDArray NDArray::operator+(const uint8_t scalar) const;
+    template NDArray NDArray::operator+(const bool scalar) const;
 
     ////////////////////////////////////////////////////////////////////////
     // addition operator scalar + array
@@ -3195,6 +3199,9 @@ NDArray NDArray::transp() const {
     template NDArray NDArray::operator*(const float16 scalar) const;
     template NDArray NDArray::operator*(const Nd4jLong scalar) const;
     template NDArray NDArray::operator*(const int scalar) const;
+    template NDArray NDArray::operator*(const uint8_t scalar) const;
+    template NDArray NDArray::operator*(const int8_t scalar) const;
+    template NDArray NDArray::operator*(const int16_t scalar) const;
     template NDArray NDArray::operator*(const bool scalar) const;
 
     ////////////////////////////////////////////////////////////////////////
@@ -3230,6 +3237,9 @@ NDArray NDArray::transp() const {
     template void NDArray::operator*=(const float16 scalar);
     template void NDArray::operator*=(const Nd4jLong scalar);
     template void NDArray::operator*=(const int scalar);
+    template void NDArray::operator*=(const int16_t scalar);
+    template void NDArray::operator*=(const int8_t scalar);
+    template void NDArray::operator*=(const uint8_t scalar);
     template void NDArray::operator*=(const bool scalar);
 
 
@@ -3264,6 +3274,9 @@ NDArray NDArray::transp() const {
     template NDArray NDArray::operator/(const float16 scalar) const;
     template NDArray NDArray::operator/(const Nd4jLong scalar) const;
     template NDArray NDArray::operator/(const int scalar) const;
+    template NDArray NDArray::operator/(const int8_t scalar) const;
+    template NDArray NDArray::operator/(const uint8_t scalar) const;
+    template NDArray NDArray::operator/(const int16_t scalar) const;
     template NDArray NDArray::operator/(const bool scalar) const;
 
     ////////////////////////////////////////////////////////////////////////
@@ -3293,7 +3306,14 @@ NDArray NDArray::transp() const {
         NativeOpExcutioner::execScalar(nd4j::scalar::Divide, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
     }
     template void NDArray::operator/=(const double scalar);
-
+    template void NDArray::operator/=(const float scalar);
+    template void NDArray::operator/=(const float16 scalar);
+    template void NDArray::operator/=(const Nd4jLong scalar);
+    template void NDArray::operator/=(const int scalar);
+    template void NDArray::operator/=(const int16_t scalar);
+    template void NDArray::operator/=(const int8_t scalar);
+    template void NDArray::operator/=(const uint8_t scalar);
+    template void NDArray::operator/=(const bool scalar);
 
     ////////////////////////////////////////////////////////////////////////
     // mathematical multiplication of two arrays

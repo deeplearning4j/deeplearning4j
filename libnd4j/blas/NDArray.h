@@ -87,7 +87,7 @@ namespace nd4j {
         void templatedAssign(void *xBuffer, Nd4jLong xOffset, void *yBuffer, Nd4jLong yOffset) const;
 
         template <typename T, typename R>
-        R templatedGet(void *buffer, Nd4jLong index) const;
+        FORCEINLINE R templatedGet(void *buffer, Nd4jLong index) const;
 /*
         template <typename T, typename R>
         R templatedGetIndex(void *buffer, Nd4jLong *indices) const;
@@ -1318,6 +1318,12 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////
     bool NDArray::isAttached() {
         return this->_workspace != nullptr;
+    }
+
+    template <typename T, typename R>
+    FORCEINLINE R NDArray::templatedGet(void *buffer, Nd4jLong index) const {
+            auto b = reinterpret_cast<T*>(buffer);
+            return static_cast<R>(b[index]);
     }
 
     //////////////////////////////////////////////////////////////////////////
