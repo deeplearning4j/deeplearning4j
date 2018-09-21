@@ -69,7 +69,7 @@ namespace helpers {
 
 #pragma omp parallel for if(values->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < values->lengthOf(); e++) {
-            values->putScalar(e, valuesVector[e]);
+            values->putScalar(e, static_cast<T>(valuesVector[e]));
             if (counts != nullptr) 
                 counts->putScalar(e, countsMap[valuesVector[e]]);
         }

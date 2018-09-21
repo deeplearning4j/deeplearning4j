@@ -294,6 +294,14 @@ namespace nd4j {
             return &_scope_name;
         }
 
+        template <typename T>
+        Node* Node::asT() {
+            auto node = this->clone();
+            node->_dataType = DataTypeUtils::fromT<T>();
+            return node;
+        }
+        BUILD_SINGLE_TEMPLATE(template Node* Node::asT, (), LIBND4J_TYPES);
+
         nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
             this->_opType = opType;
             this->_id = id;

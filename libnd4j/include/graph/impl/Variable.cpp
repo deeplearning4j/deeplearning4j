@@ -49,6 +49,7 @@ namespace nd4j {
 
             return result;
         }
+        BUILD_SINGLE_TEMPLATE(template Variable* Variable::asT, (), LIBND4J_TYPES);
 
         nd4j::graph::Variable* nd4j::graph::Variable::clone() {
             auto result = new Variable(this->isPlaceholder());
