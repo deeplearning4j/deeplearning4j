@@ -2574,6 +2574,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     public void computeGradientAndScore() {
+
+        if (!(getOutputLayer() instanceof IOutputLayer)) {
+            throw new DL4JException(
+                    "Cannot calculate gradient and score with respect to labels: final layer is not an IOutputLayer. " +
+                            "Final layer class: " + getOutputLayer().getClass() + ". To calculate gradients and fit a network " +
+                            "using backpropagation, the final layer must be an output layer");
+        }
+
         //Note: Workspace manager is only ose here for score calculation... other workspace managers are used in the
         // various FF/backprop methds
         LayerWorkspaceMgr mgr;
@@ -2623,10 +2631,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             this.gradient = (pair == null ? null : pair.getFirst());
 
             //Calculate score
-            if (!(getOutputLayer() instanceof IOutputLayer)) {
-                throw new DL4JException(
-                        "Cannot calculate gradient and score with respect to labels: final layer is not an IOutputLayer");
-            }
             try(MemoryWorkspace wsFF = mgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
                 score = ((IOutputLayer) getOutputLayer()).computeScore(calcL1(true), calcL2(true), true, mgr);
             }
