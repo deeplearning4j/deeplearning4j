@@ -471,7 +471,20 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
         return result;
     }
 
-////////////////////////////////////////////////////////////////////////
+    void NDArray::linspace(const double start) {
+        linspace(start, 1);
+    }
+
+    void NDArray::linspace(const double start, const double step) {
+        Nd4jLong numElements = this->lengthOf();
+
+        for (Nd4jLong e = 0; e < numElements; e++) {
+            this->putScalar(e, step * (e + 1));
+        }
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////
 // copy constructor
 NDArray::NDArray(const NDArray& other) {
 
