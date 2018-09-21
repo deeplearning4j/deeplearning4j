@@ -15,29 +15,24 @@
  ******************************************************************************/
 
 //
-// @author raver119@gmail.com, created on 29/10/17.
-// @author Yurii Shyrma (iuriish@yahoo.com)
+// @author Yurii Shyrma, created on 21.09.2018
+// @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_ismax)
+#ifndef LIBND4J_ISMAX_H
+#define LIBND4J_ISMAX_H
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/helpers.h>
 
-namespace nd4j {
-namespace ops  {
+namespace nd4j    {
+namespace ops     {
+namespace helpers {
 
-CONFIGURABLE_OP_IMPL(ismax, 1, 1, true, 0, -1) {
-                
-    auto x = INPUT_VARIABLE(0);
-    auto z = OUTPUT_VARIABLE(0);
-    std::vector<int> dimensions = *(block.getIArguments());			// argI
-
-    return Status::OK();
-}
-DECLARE_SYN(IsMax, ismax);
+	void ismax(const NDArray* input, NDArray* output, const std::vector<int>& dimensions);	    
 
 }
 }
+}
 
-#endif
+
+#endif //LIBND4J_LSTM_H

@@ -205,30 +205,6 @@ TEST_F(JavaInteropTests, TestSconv2d_2) {
     ASSERT_NEAR(1, output.getScalar<float>(0), 1e-5);
 }
 
-/*
-TEST_F(JavaInteropTests, TestPooling2d_1) {
-    auto input = NDArrayFactory::_create<float>('c', {1, 2, 4, 5});
-    auto output = NDArrayFactory::_create<float>('c', {1, 2, 4, 5});
-
-
-    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer()};
-    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo()};
-
-    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer()};
-    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo()};
-
-    std::vector<Nd4jLong> iArgs({2, 2, 1, 1, 0, 0, 1, 1, 1 , 1, 1});
-
-    nd4j::ops::pooling2d op;
-
-    NativeOps nativeOps;
-
-    Nd4jStatus status = nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs.data(), 11, false);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-
-}
-*/
-
 
 TEST_F(JavaInteropTests, TestMaxPooling2d_1) {
     auto input = NDArrayFactory::_create<float>('c', {1, 2, 4, 5});
