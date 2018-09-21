@@ -16,38 +16,34 @@
 
 package org.deeplearning4j.optimize.solvers.accumulation;
 
-import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * MessageHandler implementation suited for ParallelWrapper running on single box
- *
- * PLEASE NOTE: This handler does NOT provide any network connectivity.
- *
- * @author raver119@gmail.com
- */
-public class LocalHandler implements MessageHandler {
-    protected transient GradientsAccumulator accumulator;
+import java.util.concurrent.LinkedBlockingQueue;
 
-    public LocalHandler() {
-        //
-    }
+import static org.junit.Assert.*;
 
-    @Override
-    public void initialize(@NonNull GradientsAccumulator accumulator) {
-        this.accumulator = accumulator;
-    }
+@Slf4j
+public class SmartFancyBlockingQueueTest {
+    @Test
+    public void testSFBQ_1() throws Exception {
+        val queue = new SmartFancyBlockingQueue(8, Nd4j.create(5, 5));
 
-    @Override
-    public boolean broadcastUpdates(INDArray updates, int iterationNumber, int epochNumber) {
-        // we just loop back data immediately
-        accumulator.receiveUpdate(updates);
+        val array = Nd4j.create(5, 5);
 
-        updates.assign(0.0);
+        for (int e = 0; e < 6; e++) {
+            queue.put(Nd4j.create(5, 5).assign(e));
+        };
 
-        Nd4j.getExecutioner().commit();
+        assertEquals(6, queue.size());
 
-        return true;
+        for (int e = 6; e < 10; e++) {
+            queue.put(Nd4j.create(5, 5).assign(e));
+        }
+
+        assertEquals(1, queue.size());
     }
 }

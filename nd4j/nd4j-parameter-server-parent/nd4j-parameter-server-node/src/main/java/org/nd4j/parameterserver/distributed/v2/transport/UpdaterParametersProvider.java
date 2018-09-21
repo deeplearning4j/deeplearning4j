@@ -14,33 +14,20 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.v2.messages.pairs.params;
+package org.nd4j.parameterserver.distributed.v2.transport;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.Setter;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.parameterserver.distributed.v2.messages.ResponseMessage;
-import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseINDArrayMessage;
 
 /**
- * This message holds INDArray with model parameters
+ * This interface describes simple abstraction that provides DL4J MLN/CG updater state view array
+ *
  * @author raver119@gmail.com
  */
-@NoArgsConstructor
-public final class ModelParametersMessage extends BaseINDArrayMessage implements ResponseMessage {
-    private static final long serialVersionUID = 1L;
+public interface UpdaterParametersProvider {
 
-    @Getter
-    @Setter
-    private int iterationNumber = 0;
-
-    @Getter
-    @Setter
-    private int epochNumber = 0;
-
-    public ModelParametersMessage(@NonNull String messageId, INDArray payload) {
-        super(messageId, payload);
-    }
+    /**
+     * This method provides *safe* copy of updater parameters state
+     * @return
+     */
+    INDArray getUpdaterParameters();
 }

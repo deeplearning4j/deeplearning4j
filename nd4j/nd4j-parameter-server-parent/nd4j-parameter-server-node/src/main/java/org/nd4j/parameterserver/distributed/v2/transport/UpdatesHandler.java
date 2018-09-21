@@ -14,37 +14,18 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver.distributed.v2.messages.impl.base;
+package org.nd4j.parameterserver.distributed.v2.transport;
 
-import lombok.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
+import org.reactivestreams.Subscriber;
 
 /**
- * This message holds some INDArray
- * @author raver119@gmail.com
+ * This interface describes Subscriber capable of providing safe access to underlying parameters
  */
-@NoArgsConstructor
-@AllArgsConstructor
-public abstract class BaseINDArrayMessage implements INDArrayMessage {
-    private static final long serialVersionUID = 1L;
-
-    @Getter
-    protected String messageId;
-
-    @Getter
-    @Setter
-    protected String originatorId;
-
-    @Getter
-    @Setter
-    protected String requestId;
-
-    @Getter
-    protected INDArray payload;
-
-    protected BaseINDArrayMessage(@NonNull String messageId, INDArray payload) {
-        this.messageId = messageId;
-        this.payload = payload;
-    }
+public interface UpdatesHandler extends Subscriber<INDArray> {
+    /**
+     * This method returns parameters array maintained by this handler
+     * @return
+     */
+    INDArray getParametersArray();
 }

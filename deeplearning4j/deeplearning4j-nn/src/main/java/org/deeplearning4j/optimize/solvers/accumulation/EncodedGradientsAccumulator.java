@@ -23,6 +23,7 @@ import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.util.ThreadUtils;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
@@ -297,25 +298,33 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                     if (relocatable) {
                         try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
                                         .getAndActivateWorkspace(appliedConfiguration, "CGA_APPLY")) {
-                            INDArray compressed_copy = compressed.unsafeDuplication(true);
+                            if (compressed.isCompressed() || compressed.data().dataType() == DataBuffer.Type.INT) {
+                                INDArray compressed_copy = compressed.unsafeDuplication(true);
 
-                            int encoding = compressed.data().getInt(3);
-                            if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
-                                Nd4j.getExecutioner().thresholdDecode(compressed_copy, updates);
-                            else if (encoding == ThresholdCompression.BITMAP_ENCODING)
-                                Nd4j.getExecutioner().bitmapDecode(compressed_copy, updates);
-                            else
-                                throw new DL4JInvalidConfigException(
-                                                "Unknown compression header received: " + encoding);
+                                int encoding = compressed.data().getInt(3);
+                                if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
+                                    Nd4j.getExecutioner().thresholdDecode(compressed_copy, updates);
+                                else if (encoding == ThresholdCompression.BITMAP_ENCODING)
+                                    Nd4j.getExecutioner().bitmapDecode(compressed_copy, updates);
+                                else
+                                    throw new DL4JInvalidConfigException(
+                                            "Unknown compression header received: " + encoding);
+                            } else {
+                                updates.addi(compressed);
+                            }
                         }
                     } else {
-                        int encoding = compressed.data().getInt(3);
-                        if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
-                            Nd4j.getExecutioner().thresholdDecode(compressed, updates);
-                        else if (encoding == ThresholdCompression.BITMAP_ENCODING)
-                            Nd4j.getExecutioner().bitmapDecode(compressed, updates);
-                        else
-                            throw new DL4JInvalidConfigException("Unknown compression header received: " + encoding);
+                        if (compressed.isCompressed() || compressed.data().dataType() == DataBuffer.Type.INT) {
+                            int encoding = compressed.data().getInt(3);
+                            if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
+                                Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+                            else if (encoding == ThresholdCompression.BITMAP_ENCODING)
+                                Nd4j.getExecutioner().bitmapDecode(compressed, updates);
+                            else
+                                throw new DL4JInvalidConfigException("Unknown compression header received: " + encoding);
+                        } else {
+                            updates.addi(compressed);
+                        }
                     }
                     cnt++;
                     ent++;
@@ -464,7 +473,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
      * @param array
      */
     @Override
-    public void storeUpdate(INDArray array) {
+    public void storeUpdate(INDArray array, int iterationNumber, int epochNumber) {
         try {
             if (accumulator.get() == null) {
                 // we don't want accumulator to be attached to workspaces
@@ -491,7 +500,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                 log.info("thread {} unlocking at Register", Thread.currentThread().getId());
 
             // propagate changes & modify accumulator
-            handler.broadcastUpdates(accumulator.get());
+            handler.broadcastUpdates(accumulator.get(), iterationNumber, epochNumber);
 
             // we're blocking here, untill all done broadcasting updates
             synchronize(currentConsumers.get());
@@ -565,6 +574,11 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
         for (int i = 0; i < parties; i++) {
             messages.get(i).clear();
         }
+    }
+
+    @Override
+    public boolean hasAnything() {
+        return !externalSource.isEmpty();
     }
 
     public static class Builder {
