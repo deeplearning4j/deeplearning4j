@@ -100,7 +100,12 @@ public class TFGraphTestAllLibnd4j {
             "split/.*",
 
             "reductions/count_nonzero.*",
-            "sufficient_statistics.*"
+            "sufficient_statistics.*",
+
+            "ae",
+            "histogram_fixed.*",
+            "unsorted_segment.*",
+            ""
     };
 
     @BeforeClass

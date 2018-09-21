@@ -73,10 +73,6 @@ public class TFGraphTestAllSameDiff {
     };
 
     public static final String[] IGNORE_REGEXES = new String[]{
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6154
-            "transforms/atan2_3,1,4_1,2,4",
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6142
-            "reverse/shape5.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6172
             "pad/rank1.*",
             "pad/rank2Pone_const10",
@@ -92,12 +88,12 @@ public class TFGraphTestAllSameDiff {
             //https://github.com/deeplearning4j/deeplearning4j/issues/6182
             "zeta.*",
 
+            //TODO look into this:
+            "reverse/shape5-.*",
+
             //https://github.com/deeplearning4j/deeplearning4j/issues/6281
             "log_determinant/.*",
             "slogdet/.*",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6285
-            "histogram_fixed_width/.*",
 
             //TODO need unsorted segment sum - then need to change libnd4j impl slightly (need to know format first)
             "bincount/.*",
@@ -111,20 +107,11 @@ public class TFGraphTestAllSameDiff {
             //scatter_nd: one minor validation issue mentioned tu Yurii, already fixed but not merged (should validate vs. shape array length, not rank)
             "scatter_nd/.*",
 
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6421
-            "conv2d_transpose/.*",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6311
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6476
             "embedding_lookup/.*",
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6315
             "nth_element/.*",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6290
-            "unsorted_segment/.*",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6321
-            "broadcast_to/.*",
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6322
             "broadcast_dynamic_shape/.*",
@@ -149,9 +136,6 @@ public class TFGraphTestAllSameDiff {
             //https://github.com/deeplearning4j/deeplearning4j/issues/6447
             "cnn1d_layers/channels_first_b2_k2_s1_d2_SAME",
             "cnn2d_layers/channels_first_b1_k12_s1_d12_SAME",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6441
-            "matrix_determinant/rank2_5,5",
 
             //These have a random component so can't be validated using simple .equals... should still be compared, however
             "alpha_dropout/.*",
