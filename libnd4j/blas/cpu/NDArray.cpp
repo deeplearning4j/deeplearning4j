@@ -2554,6 +2554,14 @@ NDArray NDArray::transp() const {
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template, * NDArray::bufferAsT(), LIBND4J_TYPES);
 
+
+    void NDArray::putScalar(const Nd4jLong i, const NDArray& value) {
+        // probqbly wrong args order
+        BUILD_SINGLE_SELECTOR(value.dataType(), templatedSet, (_buffer, i, value.dataType(), value.getBuffer()), LIBND4J_TYPES);
+        // void NDArray::templatedSet(void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, void *value)
+    }
+
+
 //////////////////////////////////////////////////////////////////////////
 // This method sets value in 2D matrix to position i, j
 
