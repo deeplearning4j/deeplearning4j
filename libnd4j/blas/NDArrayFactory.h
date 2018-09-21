@@ -29,6 +29,9 @@
 
 namespace nd4j {
     class NDArrayFactory {
+    private:
+        template <typename T>
+        static void _memcpy(void *ptr, std::vector<T> &vector);
     public:
         template <typename T>
         static NDArray* empty(nd4j::memory::Workspace* workspace = nullptr);
