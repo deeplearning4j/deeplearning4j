@@ -88,6 +88,36 @@ namespace nd4j {
     }
 
     template <>
+    bool BlasHelper::hasGEMV<bool>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasGEMV<int>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasGEMV<int8_t>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasGEMV<uint8_t>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasGEMV<int16_t>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasGEMV<Nd4jLong>() {
+        return false;
+    }
+
+    template <>
     bool BlasHelper::hasGEMM<float>() {
         return _hasSgemm;
     }
@@ -104,6 +134,26 @@ namespace nd4j {
 
     template <>
     bool BlasHelper::hasGEMM<int>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasGEMM<uint8_t>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasGEMM<int8_t>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasGEMM<int16_t>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasGEMM<bool>() {
         return false;
     }
 
@@ -127,6 +177,35 @@ namespace nd4j {
         return false;
     }
 
+    template <>
+    bool BlasHelper::hasBatchedGEMM<Nd4jLong>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasBatchedGEMM<int>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasBatchedGEMM<int8_t>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasBatchedGEMM<uint8_t>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasBatchedGEMM<int16_t>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasBatchedGEMM<bool>() {
+        return false;
+    }
 
     CblasSgemv BlasHelper::sgemv() {
         return this->cblasSgemv;
