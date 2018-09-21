@@ -24,9 +24,47 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
+    static int gcd(int one, int two) {
+        // modified Euclidian algorithm
+        if (one == two) return one;
+        if (one > two) {
+            if (one % two == 0) return two;
+            return gcd(one - two, two);
+        }
+        if (two % one == 0) return one;
+        return gcd(one, two - one);
+    }
+
     template <typename T>
     int resizeBilinearFunctor(NDArray<T> const* image, int width, int height, bool center, NDArray<T>* output) {
+        int oldWidth = image->sizeAt(1);
+        int oldHeight = image->sizeAt(2);
+        int sX =  (oldWidth - 1) / gcd(oldWidth - 1, width - 1);
+        int sY =  (oldHeight - 1) / gcd(oldHeight - 1, height - 1);
+        int kX =  (width - 1) / gcd(oldWidth - 1, width - 1);
+        int kY =  (height - 1) / gcd(oldHeight - 1, height - 1);
 
+        //Convolution(kX * kX, sX, kX, kX - 1);
+        if (oldWidth == width && oldHeight == height)
+            output->assign(image);
+        else {
+            if (center) { //centered approach
+
+            }
+            else { // default approach
+                std::unique_ptr<ResultSet<T>> inputChannels(image->allTensorsAlongDimension({3}));
+                std::unique_ptr<ResultSet<T>> outputChannels(output->allTensorsAlongDimension({3}));
+                outputChannels->at(0)->assign(inputChannels->at(0));
+                T step = (inputChannels->at(1)->getScalar(0) - inputChannels->at(0)->getScalar(0)) / T(kX);
+                Nd4jLong channelNum = 0;
+                for (size_t e = 1; e < inputChannels->size(); ++e) {
+//                    outputChannels->at(channelNum++)->assign(inputChannels->at(e));
+                    for (int k = 0; k < 4; ++k)
+                        outputChannels->at(channelNum)->putScalar(k, inputChannels->at(e)->getScalar(k) + step);
+                    channelNum++;
+                }
+            }
+        }
         return ND4J_STATUS_OK;
     }
     template int resizeBilinearFunctor(NDArray<float> const* image, int width, int height, bool center, NDArray<float>* output);
