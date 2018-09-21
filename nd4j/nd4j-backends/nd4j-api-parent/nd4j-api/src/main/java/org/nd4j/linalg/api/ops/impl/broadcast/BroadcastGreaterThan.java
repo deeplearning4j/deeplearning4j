@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.broadcast;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseBroadcastOp;
 
@@ -76,12 +77,12 @@ public class BroadcastGreaterThan extends BaseBroadcastOp {
 
 
     @Override
-    public String onnxName() {
-        return "Greater";
+    public String onnxName(){
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
-    public String tensorflowName() {
-        return "greater";
+    public String tensorflowName(){
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 }

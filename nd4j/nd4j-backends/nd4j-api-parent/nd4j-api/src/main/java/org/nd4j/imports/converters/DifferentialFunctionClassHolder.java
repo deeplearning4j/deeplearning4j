@@ -187,8 +187,13 @@ public class DifferentialFunctionClassHolder {
                     //log.info("Adding converter for [" + name + "]");
                     nodeConverters.put(name, node);
                     try {
-                        for(String s : node.tensorflowNames())
-                            tensorFlowNames.put(s,node);
+                        for(String s : node.tensorflowNames()) {
+                            if(tensorFlowNames.containsKey(s)){
+                                throw new IllegalStateException("Duplicate TensorFlow op mapping found: TensorFlow name \"" + s
+                                        + "\" is mapped to ops " + node.getClass().getName() + " and " + tensorFlowNames.get(s).getClass().getName());
+                            }
+                            tensorFlowNames.put(s, node);
+                        }
                     }catch (NoOpNameFoundException e) {
                         log.trace("Skipping op " + name + " for tensorflow.");
                     }
