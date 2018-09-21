@@ -50,7 +50,7 @@ namespace nd4j {
             std::pair<Nd4jLong, Nd4jLong> _executionTime;
             nd4j::random::RandomBuffer* _rng = nullptr;
 
-            nd4j::DataType _dataType;
+            nd4j::DataType _dataType = nd4j::DataType::DataType_FLOAT;
             // branch for divergent_op
             int _branch = 0;
         public:

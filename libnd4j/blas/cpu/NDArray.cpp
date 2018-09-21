@@ -3151,7 +3151,8 @@ NDArray NDArray::transp() const {
         NativeOpExcutioner::execScalar(nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
 
         return result;
-    }        
+    }
+
     ND4J_EXPORT NDArray operator-(const double scalar, const NDArray& arr) {
         auto tmp = NDArrayFactory::_scalar(scalar);
 
@@ -3159,8 +3160,54 @@ NDArray NDArray::transp() const {
         NativeOpExcutioner::execScalar(nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
 
         return result;
-    }    
-    
+    }
+
+    ND4J_EXPORT NDArray operator-(const Nd4jLong scalar, const NDArray& arr) {
+        auto tmp = NDArrayFactory::_scalar(scalar);
+
+        NDArray result(arr.getShapeInfo(), arr.getWorkspace());
+        NativeOpExcutioner::execScalar(nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
+
+        return result;
+    }
+
+    ND4J_EXPORT NDArray operator*(const float16 scalar, const NDArray & arr) {
+        auto tmp = NDArrayFactory::_scalar(scalar);
+
+        NDArray result(arr.getShapeInfo(), arr.getWorkspace());
+        NativeOpExcutioner::execScalar(nd4j::scalar::Multiply, arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
+
+        return result;
+
+    }
+
+    ND4J_EXPORT NDArray operator*(const float scalar, const NDArray& arr) {
+        auto tmp = NDArrayFactory::_scalar(scalar);
+
+        NDArray result(arr.getShapeInfo(), arr.getWorkspace());
+        NativeOpExcutioner::execScalar(nd4j::scalar::Multiply, arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
+
+        return result;
+    }
+
+    ND4J_EXPORT NDArray operator*(const double scalar, const NDArray& arr) {
+        auto tmp = NDArrayFactory::_scalar(scalar);
+
+        NDArray result(arr.getShapeInfo(), arr.getWorkspace());
+        NativeOpExcutioner::execScalar(nd4j::scalar::Multiply, arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
+
+        return result;
+    }
+
+    ND4J_EXPORT NDArray operator*(const Nd4jLong scalar, const NDArray& arr) {
+        auto tmp = NDArrayFactory::_scalar(scalar);
+
+        NDArray result(arr.getShapeInfo(), arr.getWorkspace());
+        NativeOpExcutioner::execScalar(nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
+
+        return result;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     void NDArray::operator+=(const NDArray& other) {
         if (!this->isScalar() && other.isScalar()) {

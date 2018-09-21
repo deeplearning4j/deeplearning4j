@@ -22,7 +22,7 @@
 #define ND4J_CONTEXT_PROTOTYPE_H
 
 #include <vector>
-
+#include <array/DataType.h>
 
 namespace nd4j {
     namespace graph {
@@ -34,7 +34,7 @@ namespace nd4j {
             int _nodeId;
             std::vector<double> _tArgs;
             std::vector<int> _iArgs;            
-			
+			nd4j::DataType _dataType = nd4j::DataType::DataType_FLOAT;
 			bool _isInplace;
 
             // opNum for legacy XYZ ops
@@ -49,6 +49,8 @@ namespace nd4j {
 
             // this method returns true, if inputs are defined
             bool hasVariablesFilled();
+
+            nd4j::DataType dataType();
 
             bool isInplace();
             void markInplace(bool reallyInplace);

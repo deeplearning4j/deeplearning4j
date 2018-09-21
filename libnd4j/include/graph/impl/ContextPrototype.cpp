@@ -93,6 +93,10 @@ namespace nd4j {
             return getNodeId();
         }
 
+        nd4j::DataType ContextPrototype::dataType() {
+            return _dataType;
+        }
+
         int ContextPrototype::numT() {
             return (int) _tArgs.size();
         }

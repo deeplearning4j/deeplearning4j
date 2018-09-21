@@ -20,11 +20,14 @@
 
 #include <Context.h>
 #include <helpers/ShapeUtils.h>
+#include <graph/Context.h>
+
 
 namespace nd4j {
     namespace graph {
         Context::Context(ContextPrototype* prototype, VariableSpace* variableSpace) {
             _variableSpace = variableSpace;
+            _dataType = prototype->dataType();
 
             if (prototype != nullptr) {
                 for (const auto &v: *(prototype->inputs())) {
@@ -63,6 +66,10 @@ namespace nd4j {
 
             if (variableSpace != nullptr && variableSpace->workspace() != nullptr)
                 this->_workspace = variableSpace->workspace();
+        }
+
+        nd4j::DataType Context::dataType() {
+            return _dataType;
         }
 
         Context::Context(int nodeId, VariableSpace *variableSpace, bool isInplace) : Context(nodeId, variableSpace) {

@@ -75,7 +75,7 @@ namespace nd4j {
                 gradY->assign(tmp * -tmpX / ((*y) * (*y)));
                 
                 //epsNext->applyLambda(lambdaS, gradX);
-                epsNext->applyScalar(scalar::Divide, *y, gradX, nullptr);
+                epsNext->applyScalar(scalar::Divide, y, gradX, nullptr);
             } else {
                 // broadcast case
 
