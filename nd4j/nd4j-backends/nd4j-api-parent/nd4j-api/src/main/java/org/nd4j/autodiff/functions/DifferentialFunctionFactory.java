@@ -1590,6 +1590,10 @@ public class DifferentialFunctionFactory {
                 .outputVariables();
     }
 
+    public SDVariable[] dynamicPartitionBp(SDVariable input, SDVariable partitions, SDVariable[] grads, int numPartitions){
+        return new DynamicPartitionBp(sameDiff(), input, partitions, grads, numPartitions).outputVariables();
+    }
+
     public SDVariable dynamicStitch(SDVariable[] indices, SDVariable[] differentialFunctions) {
         for (SDVariable df : differentialFunctions)
             validateDifferentialFunctionsameDiff(df);

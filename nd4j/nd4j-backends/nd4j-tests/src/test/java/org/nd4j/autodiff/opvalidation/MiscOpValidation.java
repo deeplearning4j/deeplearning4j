@@ -1129,15 +1129,30 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
     @Test
-    public void testOneHot3() {
-        OpValidationSuite.ignoreFailing();
+    public void testOneHot2() {
 
+        INDArray indicesArr = Nd4j.trueVector(new double[]{0, 2, -1, 1});
+
+        SameDiff sd = SameDiff.create();
+        SDVariable indices = sd.var("indices", indicesArr);
+        int depth = 3;
+        int axis = -1;
+        SDVariable oneHot = sd.oneHot("oneHot", indices, depth, axis, 5.0, 0.0);
+
+        INDArray exp = Nd4j.create(new double[][]{{5, 0, 0}, {0,0,5}, {0,0,0}, {0, 5, 0}});
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expected(oneHot, exp)
+                .gradientCheck(false));
+
+        assertNull(err);
+    }
+
+    @Test
+    public void testOneHot3() {
         //https://www.tensorflow.org/api_docs/python/tf/one_hot
         //indices = [[0, 2], [1, -1]]
-        INDArray indicesArr = Nd4j.zeros(2, 2);
-        indicesArr.put(0, 1, 2);
-        indicesArr.put(1, 0, 1);
-        indicesArr.put(1, 1, -1);
+        INDArray indicesArr = Nd4j.create(new double[][]{{0, 2}, {1, -1}});
         INDArray expectedOut = Nd4j.zeros(new long[]{2, 2, 3});
         /*
         # output: [2 x 2 x 3]
@@ -1150,8 +1165,10 @@ public class MiscOpValidation extends BaseOpValidation {
         expectedOut.putScalar(0, 1, 2, 1.0);
         expectedOut.putScalar(1, 0, 1, 1.0);
 
+        System.out.println(expectedOut);
+
         SameDiff sd = SameDiff.create();
-        SDVariable indices = sd.var("indices", new long[]{2, 2});
+        SDVariable indices = sd.var("indices", indicesArr);
 
         int depth = 3;
         int axis = -1;
@@ -1160,7 +1177,8 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable loss = oneHot.std(true);
 
         String err = OpValidation.validate(new TestCase(sd)
-                .expected(oneHot, expectedOut));
+                .expected(oneHot, expectedOut)
+                .gradCheckSkipVariables("indices"));
 
         assertNull(err);
     }

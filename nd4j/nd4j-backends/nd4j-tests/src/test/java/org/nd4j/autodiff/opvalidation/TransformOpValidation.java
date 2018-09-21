@@ -372,15 +372,14 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testDynamicPartition() {
-        OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
 
-        INDArray ia = Nd4j.create(new float[]{4, 3, 5, 7, 8, 0}, new int[]{1, 6});
-        INDArray partitions = Nd4j.create(new float[]{1, 0, 1, 0, 0, 1});
+        INDArray ia = Nd4j.trueVector(new float[]{4, 3, 5, 7, 8, 0});
+        INDArray partitions = Nd4j.trueVector(new float[]{1, 0, 1, 0, 0, 1});
         int numPartitions = 2;
 
-        SDVariable in = sd.var("in", new int[]{1, 6});
-        SDVariable sdPartitions = sd.var("partitions", new int[]{1, 6});
+        SDVariable in = sd.var("in", new long[]{6});
+        SDVariable sdPartitions = sd.var("partitions", new long[]{6});
 
         INDArray expOut1 = Nd4j.create(3L);
         INDArray expOut2 = Nd4j.create(3L);
@@ -400,8 +399,11 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable loss = sd.mean("loss", t);
 
         sd.associateArrayWithVariable(ia, in);
+        sd.associateArrayWithVariable(partitions, sdPartitions);
 
         String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true)
+                .gradCheckSkipVariables("partitions")
                 .expectedOutput("dp0", expOut[0])
                 .expectedOutput("dp1", expOut[1])
                 .gradientCheck(true));

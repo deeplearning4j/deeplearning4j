@@ -954,7 +954,6 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testConv3dBasic() {
-        OpValidationSuite.ignoreFailing();
         int nIn = 3;
         int nOut = 4;
         int kH = 2;
@@ -967,9 +966,9 @@ public class LayerOpValidation extends BaseOpValidation {
         int imgT = 8;
 
         SameDiff sd = SameDiff.create();
-        INDArray wArr = Nd4j.create(nOut, nIn, kD, kH, kW); //As per DL4J
-        INDArray bArr = Nd4j.create(1, nOut);
-        INDArray inArr = Nd4j.create(mb, nIn, imgT, imgH, imgW);
+        INDArray wArr = Nd4j.rand(new int[]{kD, kH, kW, nIn, nOut});
+        INDArray bArr = Nd4j.rand(1, nOut);
+        INDArray inArr = Nd4j.rand(new int[]{mb, nIn, imgT, imgH, imgW});
 
         SDVariable in = sd.var("in", inArr);
         SDVariable w = sd.var("W", wArr);
@@ -981,6 +980,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .dH(1).dW(1).dD(1)
                 .isValidMode(false) //samemode = true
                 .biasUsed(false)
+                .dataFormat(Conv3DConfig.NCDHW)
                 .build();
 
         SDVariable out = sd.conv3d(in, w, b, conv3DConfig);
