@@ -591,6 +591,7 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
     ////////////////////////////////////////////////////////////////////////
 // copy constructor
 NDArray::NDArray(const NDArray& other) {
+     nd4j_printf("Copy constructor...\n","")
 
     this->_length = shape::length(other._shapeInfo);
     auto shapeLength = shape::shapeInfoByteLength(other._shapeInfo);
@@ -610,6 +611,7 @@ NDArray::NDArray(const NDArray& other) {
 ////////////////////////////////////////////////////////////////////////
 // move constructor
 NDArray::NDArray(NDArray&& other) noexcept {
+    nd4j_printf("Move constructor...\n","");
 
     _isView       = other._isView;
     _buffer       = other._buffer; 
@@ -676,6 +678,8 @@ NDArray::NDArray(NDArray&& other) noexcept {
 ////////////////////////////////////////////////////////////////////////
 // assignment operator
     NDArray& NDArray::operator=(const NDArray& other) {
+        nd4j_printf("Move operator...\n","")
+
 	if (this == &other) return *this;
 
     if (_shapeInfo != nullptr && _buffer != nullptr && shape::equalsSoft(_shapeInfo, other._shapeInfo))
@@ -710,6 +714,8 @@ NDArray::NDArray(NDArray&& other) noexcept {
 ////////////////////////////////////////////////////////////////////////
 // move assignment operator
 NDArray& NDArray::operator=(NDArray&& other) noexcept {
+
+    nd4j_printf("Move operator...\n","")
 
     if (this == &other) 
         return *this;
