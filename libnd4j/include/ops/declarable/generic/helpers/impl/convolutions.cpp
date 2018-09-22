@@ -157,8 +157,8 @@ void ConvolutionUtils::calcOutSizePool2D(int& oH, int& oW, const int kH, const i
 }
 
 //////////////////////////////////////////////////////////////////////////
-// calculation of output depth, height and width in conv3d procedure        
-void calcOutSizePool3D(int& oD, int& oH, int& oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int iD, const int iH, const int iW, const int isSameMode) {
+// calculation of output depth, height and width in conv3d procedure
+void ConvolutionUtils::calcOutSizePool3D(int& oD, int& oH, int& oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int iD, const int iH, const int iW, const int isSameMode) {
 
     if(!isSameMode) {                                           // valid
                 
