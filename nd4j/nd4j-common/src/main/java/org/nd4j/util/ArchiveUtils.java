@@ -17,15 +17,19 @@
 package org.nd4j.util;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.nd4j.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -134,5 +138,50 @@ public class ArchiveUtils {
                     file);
         }
         target.delete();
+    }
+
+    /**
+     * List all of the files and directories in the specified tar.gz file
+     *
+     * @param tarGzFile A tar.gz file
+     * @return List of files and directories
+     */
+    public static List<String> tarGzListFiles(File tarGzFile) throws IOException {
+        try(TarArchiveInputStream tin = new TarArchiveInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(tarGzFile))))) {
+            ArchiveEntry entry;
+            List<String> out = new ArrayList<>();
+            while((entry = tin.getNextTarEntry()) != null){
+                String name = entry.getName();
+                out.add(name);
+            }
+            return out;
+        }
+    }
+
+    /**
+     * Extract a single file from a tar.gz file. Does not support directories.
+     * NOTE: This should not be used for batch extraction of files, due to the need to iterate over the entries until the
+     * specified entry is found. Use {@link #unzipFileTo(String, String)} for batch extraction instead
+     *
+     * @param tarGz       A tar.gz file
+     * @param destination The destination file to extract to
+     * @param pathInTarGz The path in the tar.gz file to extract
+     */
+    public static void tarGzExtractSingleFile(File tarGz, File destination, String pathInTarGz) throws IOException {
+        try(TarArchiveInputStream tin = new TarArchiveInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(tarGz))))) {
+            ArchiveEntry entry;
+            List<String> out = new ArrayList<>();
+            boolean extracted = false;
+            while((entry = tin.getNextTarEntry()) != null){
+                String name = entry.getName();
+                if(pathInTarGz.equals(name)){
+                    try(OutputStream os = new BufferedOutputStream(new FileOutputStream(destination))){
+                        IOUtils.copy(tin, os);
+                    }
+                    extracted = true;
+                }
+            }
+            Preconditions.checkState(extracted, "No file was extracted. File not found? %s", pathInTarGz);
+        }
     }
 }

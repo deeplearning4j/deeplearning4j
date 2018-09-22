@@ -116,6 +116,8 @@ public class SameDiff {
     private Map<String, int[]> permuteOrder;
     private boolean shouldBootStrap = true;
     private Set<String> importedVarName;
+    @Getter @Setter
+    private Set<String> importedConstants;
     //map a function's instance id to a base name, used for propagating variable names
     //for output during import
     private Map<String, String> baseNameForFunctionInstanceId;
@@ -2848,22 +2850,44 @@ public class SameDiff {
 
     /**
      * Batch norm operation.
+     * @see #batchNorm(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, double, int...)
      */
     public SDVariable batchNorm(SDVariable input, SDVariable mean,
                                 SDVariable variance, SDVariable gamma,
-                                SDVariable beta,
-                                boolean applyGamma, boolean applyBeta, double epsilon) {
-        return batchNorm(null, input, mean, variance, gamma, beta, applyGamma, applyBeta, epsilon);
+                                SDVariable beta, double epsilon, int... axis) {
+        return batchNorm(null, input, mean, variance, gamma, beta, true, true, epsilon, axis);
     }
 
     /**
-     * Batch norm operation.
+     * Neural network batch normalization operation.<br>
+     * For details, see <a href="http://arxiv.org/abs/1502.03167">http://arxiv.org/abs/1502.03167</a>
+     *
+     * @param name       Name of the output variable
+     * @param input      Input variable.
+     * @param mean       Mean value. For 1d axis, this should match input.size(axis)
+     * @param variance   Variance value. For 1d axis, this should match input.size(axis)
+     * @param gamma      Gamma value. For 1d axis, this should match input.size(axis)
+     * @param beta       Beta value. For 1d axis, this should match input.size(axis)
+     * @param epsilon    Epsilon constant for numerical stability (to avoid division by 0)
+     * @param axis       For 2d CNN activations: 1 for NCHW format activations, or 3 for NHWC format activations.<br>
+     *                   For 3d CNN activations: 1 for NCDHW format, 4 for NDHWC<br>
+     *                   For 1d/RNN activations: 1 for NCW format, 2 for NWC
+     * @return Output variable for batch normalization
      */
     public SDVariable batchNorm(String name, SDVariable input, SDVariable mean,
                                 SDVariable variance, SDVariable gamma,
-                                SDVariable beta,
-                                boolean applyGamma, boolean applyBeta, double epsilon) {
-        SDVariable res = f().batchNorm(input, mean, variance, gamma, beta, applyGamma, applyBeta, epsilon);
+                                SDVariable beta, double epsilon, int... axis) {
+        return batchNorm(name, input, mean, variance, gamma, beta, true, true, epsilon, axis);
+    }
+
+    /**
+     * Batch normalization with optional application of gamma/beta args.
+     * See {@link #batchNorm(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, double, int...)}
+     */
+    public SDVariable batchNorm(String name, SDVariable input, SDVariable mean,
+                                SDVariable variance, SDVariable gamma,
+                                SDVariable beta, boolean applyGamma, boolean applyBeta, double epsilon, int... axis) {
+        SDVariable res = f().batchNorm(input, mean, variance, gamma, beta, applyGamma, applyBeta, epsilon, axis);
         return updateVariableNameAndReference(res, name);
     }
 
@@ -4799,7 +4823,10 @@ public class SameDiff {
      * Segment max operation.<br>
      * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
      * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-     * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)
+     * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)]<br>
+     * Note that the segment IDs must be sorted from smallest to largest segment.
+     * See {@link #unsortedSegmentMax(String, SDVariable, SDVariable, int)}
+     * for the same op without this sorted requirement
      *
      * @param name       Name of the output variable. May be null
      * @param data       Data to perform segment max on
@@ -4808,6 +4835,31 @@ public class SameDiff {
      */
     public SDVariable segmentMax(String name, SDVariable data, SDVariable segmentIds){
         SDVariable ret = f().segmentMax(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * See {@link #unsortedSegmentMax(String, SDVariable, SDVariable, int)}
+     */
+    public SDVariable unsortedSegmentMax(SDVariable data, SDVariable segmentIds, int numSegments){
+        return unsortedSegmentMax(null, data, segmentIds, numSegments);
+    }
+
+    /**
+     * Unsorted segment max operation. As per {@link #segmentMax(String, SDVariable, SDVariable)} but without
+     * the requirement for the indices to be sorted.<br>
+     * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+     * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+     * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)]<br>
+     *
+     * @param name        Name of the output variable
+     * @param data        Data (variable) to perform unsorted segment max on
+     * @param segmentIds  Variable for the segment IDs
+     * @param numSegments Number of segments
+     * @return Unsorted segment max output
+     */
+    public SDVariable unsortedSegmentMax(String name, SDVariable data, SDVariable segmentIds, int numSegments){
+        SDVariable ret = f().unsortedSegmentMax(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -4822,7 +4874,9 @@ public class SameDiff {
      * Segment min operation.<br>
      * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
      * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-     * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)
+     * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)]<br>
+     * Note that the segment IDs must be sorted from smallest to largest segment.
+     * See {@link #unsortedSegmentMin(String, SDVariable, SDVariable, int)} for the same op without this sorted requirement
      *
      * @param name       Name of the output variable. May be null
      * @param data       Data to perform segment max on
@@ -4831,6 +4885,31 @@ public class SameDiff {
      */
     public SDVariable segmentMin(String name, SDVariable data, SDVariable segmentIds){
         SDVariable ret = f().segmentMin(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * See {@link #unsortedSegmentMin(String, SDVariable, SDVariable, int)}
+     */
+    public SDVariable unsortedSegmentMin(SDVariable data, SDVariable segmentIds, int numSegments){
+        return unsortedSegmentMin(null, data, segmentIds, numSegments);
+    }
+
+    /**
+     * Unsorted segment min operation. As per {@link #segmentMin(String, SDVariable, SDVariable)} but without
+     * the requirement for the indices to be sorted.<br>
+     * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+     * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+     * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)]<br>
+     *
+     * @param name        Name of the output variable
+     * @param data        Data (variable) to perform unsorted segment min on
+     * @param segmentIds  Variable for the segment IDs
+     * @param numSegments Number of segments
+     * @return Unsorted segment min output
+     */
+    public SDVariable unsortedSegmentMin(String name, SDVariable data, SDVariable segmentIds, int numSegments){
+        SDVariable ret = f().unsortedSegmentMin(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -4845,7 +4924,9 @@ public class SameDiff {
      * Segment mean operation.<br>
      * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
      * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-     * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)
+     * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+     * Note that the segment IDs must be sorted from smallest to largest segment.
+     * See {@link #unsortedSegmentMean(String, SDVariable, SDVariable, int)} for the same op without this sorted requirement
      *
      * @param name       Name of the output variable. May be null
      * @param data       Data to perform segment max on
@@ -4854,6 +4935,31 @@ public class SameDiff {
      */
     public SDVariable segmentMean(String name, SDVariable data, SDVariable segmentIds){
         SDVariable ret = f().segmentMean(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * See {@link #unsortedSegmentMean(String, SDVariable, SDVariable, int)}
+     */
+    public SDVariable unsortedSegmentMean(SDVariable data, SDVariable segmentIds, int numSegments){
+        return unsortedSegmentMean(null, data, segmentIds, numSegments);
+    }
+
+    /**
+     * Unsorted segment mean operation. As per {@link #segmentMean(String, SDVariable, SDVariable)} but without
+     * the requirement for the indices to be sorted.<br>
+     * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+     * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+     * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+     *
+     * @param name        Name of the output variable
+     * @param data        Data (variable) to perform unsorted segment mean on
+     * @param segmentIds  Variable for the segment IDs
+     * @param numSegments Number of segments
+     * @return Unsorted segment mean output
+     */
+    public SDVariable unsortedSegmentMean(String name, SDVariable data, SDVariable segmentIds, int numSegments){
+        SDVariable ret = f().unsortedSegmentMean(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -4868,7 +4974,9 @@ public class SameDiff {
      * Segment product operation.<br>
      * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
      * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-     * then output = [18, 36, 16] = [prod(3,6), prod(1,4,9), prod(2,8)
+     * then output = [18, 36, 16] = [prod(3,6), prod(1,4,9), prod(2,8)]<br>
+     * Note that the segment IDs must be sorted from smallest to largest segment.
+     * See {@link #unsortedSegmentProd(String, SDVariable, SDVariable)} for the same op without this sorted requirement
      *
      * @param name       Name of the output variable. May be null
      * @param data       Data to perform segment max on
@@ -4877,6 +4985,30 @@ public class SameDiff {
      */
     public SDVariable segmentProd(String name, SDVariable data, SDVariable segmentIds){
         SDVariable ret = f().segmentProd(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * See {@link #unsortedSegmentProd(String, SDVariable, SDVariable, int)}
+     */
+    public SDVariable unsortedSegmentProd(SDVariable data, SDVariable segmentIds, int numSegments){
+        return unsortedSegmentProd(null, data, segmentIds, numSegments);
+    }
+
+    /**
+     * Unsorted segment product operation. As per {@link #segmentProd(String, SDVariable, SDVariable)} but without
+     * the requirement for the indices to be sorted.<br>
+     * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+     * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+     * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+     *
+     * @param name       Name of the output variable
+     * @param data       Data (variable) to perform unsorted segment product on
+     * @param segmentIds Variable for the segment IDs
+     * @return Unsorted segment product output
+     */
+    public SDVariable unsortedSegmentProd(String name, SDVariable data, SDVariable segmentIds, int numSegments){
+        SDVariable ret = f().unsortedSegmentProd(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -4891,7 +5023,9 @@ public class SameDiff {
      * Segment sum operation.<br>
      * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
      * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-     * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)
+     * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)]<br>
+     * Note that the segment IDs must be sorted from smallest to largest segment.
+     * See {@link #unsortedSegmentSum(String, SDVariable, SDVariable)} for the same op without this sorted requirement
      *
      * @param name       Name of the output variable. May be null
      * @param data       Data to perform segment max on
@@ -4900,6 +5034,54 @@ public class SameDiff {
      */
     public SDVariable segmentSum(String name, SDVariable data, SDVariable segmentIds){
         SDVariable ret = f().segmentSum(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * See {@link #unsortedSegmentSum(String, SDVariable, SDVariable, int)}
+     */
+    public SDVariable unsortedSegmentSum(SDVariable data, SDVariable segmentIds, int numSegments){
+        return unsortedSegmentSum(null, data, segmentIds, numSegments);
+    }
+
+    /**
+     * Unsorted segment sum operation. As per {@link #segmentSum(String, SDVariable, SDVariable)} but without
+     * the requirement for the indices to be sorted.<br>
+     * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+     * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+     * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)]<br>
+     *
+     * @param name        Name of the output variable
+     * @param data        Data (variable) to perform unsorted segment sum on
+     * @param segmentIds  Variable for the segment IDs
+     * @param numSegments Number of segments
+     * @return Unsorted segment sum output
+     */
+    public SDVariable unsortedSegmentSum(String name, SDVariable data, SDVariable segmentIds, int numSegments){
+        SDVariable ret = f().unsortedSegmentSum(data, segmentIds, numSegments);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * See {@link #unsortedSegmentSqrtN(String, SDVariable, SDVariable, int)}
+     */
+    public SDVariable unsortedSegmentSqrtN(SDVariable data, SDVariable segmentIds, int numSegments){
+        return unsortedSegmentSqrtN(null, data, segmentIds, numSegments);
+    }
+
+    /**
+     * Unsorted segment sqrtN operation. Simply returns the sqrt of the count of the number of values in each segment<br>
+     * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+     * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+     * then output = [1.414, 1.732, 1.414] = [sqrt(2), sqrtN(3), sqrtN(2)]<br>
+     *
+     * @param name       Name of the output variable
+     * @param data       Data (variable) to perform unsorted segment sqrtN on
+     * @param segmentIds Variable for the segment IDs
+     * @return Unsorted segment sqrtN output
+     */
+    public SDVariable unsortedSegmentSqrtN(String name, SDVariable data, SDVariable segmentIds, int numSegments){
+        SDVariable ret = f().unsortedSegmentSqrtN(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -9654,6 +9836,19 @@ public class SameDiff {
         }
     }
 
+    /**
+     * Undo an {@link #addAsPlaceHolder(String)} call - i.e., the variable will still be present in the SameDiff
+     * graph, but it will no longer be marked as a placeholder. If the variable was not marked as a placeholder
+     * initially, this operation will be a no-op.
+     * Note that this function should not generally be used by users - it is intended for developer/internal use.
+     *
+     * @param varName Variable name
+     */
+    public void removeAsPlaceholder(String varName) {
+        placeHolderVarNames.remove(varName);
+        placeHolderOriginalShapes.remove(varName);
+    }
+
 
     /**
      * Resolve all ndarrays by updating the variables for each array specified in the given map.
@@ -11305,6 +11500,112 @@ public class SameDiff {
                 return OpType.SUMMARYSTATS;
             default:
                 throw new UnsupportedOperationException("Unknown op type passed in: " + type);
+        }
+    }
+
+    /**
+     * This method checks the order of ops defined in the current SameDiff instance, and shuffles them if required
+     * such that the order is valid for execution. An example of an invalid order is the graph "A -> B" but B is scheduled
+     * for execution before A. The order of a graph directly after importing it may not be valid in all cases.<br>
+     * This method generally shouldn't be used by users (i.e., isn't necessary).
+     * It is useful for situations such as graph import
+     */
+    public void validateExecutionOrder(){
+        //First: check order. SameDiff.exec() iterates over functionInstancesById (a linked hash map)
+        Set<String> seen = new HashSet<>();
+        boolean valid = true;
+        for(Map.Entry<String,DifferentialFunction> e : functionInstancesById.entrySet()){
+            String[] inputs = incomingArgsReverse.get(e.getKey());
+            if(inputs != null) {
+                for (String s : inputs) {
+                    if(!seen.contains(s)){
+                        valid = false;
+                        break;
+                    }
+                }
+            }
+            if(!valid){
+                break;
+            }
+
+            String[] outputs = outgoingArgsReverse.get(e.getKey());
+            if(outputs != null){
+                Collections.addAll(seen, outputs);
+            }
+        }
+
+
+        if(!valid){
+            //Need to re-order
+            //Algorithm here: add all ops to a queue. Take the first one for
+            // this keeps the current order as much as possible
+            // O(n) best case, O(n^2) worst case
+            LinkedList<Map.Entry<String,DifferentialFunction>> queue = new LinkedList<>();
+            for(Map.Entry<String,DifferentialFunction> e : functionInstancesById.entrySet()){
+                queue.add(e);
+            }
+
+            Map<String,DifferentialFunction> newMap = new LinkedHashMap<>();
+            seen.clear();
+            //Add all placeholders and constants - these are available at the start of execution
+            seen.addAll(placeHolderVarNames);
+            if(importedConstants != null){
+                seen.addAll(importedConstants);
+            }
+
+            while(!queue.isEmpty()) {
+                Iterator<Map.Entry<String, DifferentialFunction>> iterator = queue.iterator();
+                boolean anySeen = false;
+                while (iterator.hasNext()) {
+                    Map.Entry<String, DifferentialFunction> e = iterator.next();
+                    boolean allSeen = true;
+                    for (String in : incomingArgsReverse.get(e.getKey())) {
+                        if (!seen.contains(in)) {
+                            allSeen = false;
+                            break;
+                        }
+                    }
+
+                    if (allSeen){
+                        newMap.put(e.getKey(), e.getValue());
+                        anySeen = true;
+                        iterator.remove();
+                        SDVariable[] outputVars = e.getValue().outputVariables();
+//                        String[] outputs = outgoingArgsReverse.get(e.getKey());
+//                        Collections.addAll(seen, outputs);
+                        for(SDVariable s : outputVars){
+                            seen.add(s.getVarName());
+                        }
+                        break;  //Restart loop over remaining queue elements
+                    }
+                }
+
+                if(!anySeen){
+                    iterator = queue.iterator();
+                    while (iterator.hasNext()) {
+                        Map.Entry<String, DifferentialFunction> e = iterator.next();
+                        boolean allSeen = true;
+                        StringBuilder sb = new StringBuilder();
+                        sb.append(e.getKey()).append(" - missing: ");
+                        boolean first = true;
+                        for (String in : incomingArgsReverse.get(e.getKey())) {
+                            if (!seen.contains(in)) {
+                                sb.append(in);
+                                if(!first){
+                                    sb.append(", ");
+                                }
+                                first = false;
+                            }
+                        }
+                        log.info(sb.toString());
+                    }
+                }
+
+                Preconditions.checkState(anySeen, "No ops available with all inputs previously calculated." +
+                        " Graph structure is invalid?");
+            }
+
+            functionInstancesById = newMap;
         }
     }
 

@@ -245,7 +245,9 @@ public class ClassPathResource extends AbstractFileResolvingResource {
         if (is == null) {
             throw new FileNotFoundException(path + " cannot be opened because it does not exist");
         } else {
-            return is;
+            if(is instanceof BufferedInputStream)
+                return is;
+            return new BufferedInputStream(is);
         }
     }
 

@@ -19,12 +19,15 @@ package org.nd4j.parameterserver.distributed.v2;
 import io.reactivex.Flowable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.linalg.primitives.AtomicBoolean;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
@@ -35,14 +38,22 @@ import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.UpdaterPara
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.UpdaterParametersRequest;
 import org.nd4j.parameterserver.distributed.v2.transport.RestartCallback;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
+import org.nd4j.parameterserver.distributed.v2.transport.UpdaterParametersProvider;
+import org.nd4j.parameterserver.distributed.v2.transport.UpdatesHandler;
+import org.nd4j.parameterserver.distributed.v2.util.AbstractSubscriber;
+import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
+import org.nd4j.parameterserver.distributed.v2.util.UpdaterParametersHolder;
 import org.reactivestreams.Subscriber;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  *
@@ -51,13 +62,22 @@ import java.util.concurrent.LinkedBlockingQueue;
 public final class ModelParameterServer {
     protected static final ModelParameterServer INSTANCE = new ModelParameterServer();
 
+    @Getter
     private Transport transport;
+
+    @Getter
+    private INDArray masterModelParams;
+
+    @Getter
+    private INDArray masterUpdaterParams;
+
+    private UpdaterParametersProvider updaterParametersProvider;
 
     // queue is used only if there's no subscribers defined
     private final BlockingQueue<INDArray> updatesQueue = new LinkedBlockingQueue<>(4096);
 
     // subsribers that are connected to actual model
-    protected final List<Subscriber<INDArray>> updatesSubscribers = new CopyOnWriteArrayList<>();
+    protected final List<UpdatesHandler> updatesSubscribers = new CopyOnWriteArrayList<>();
     protected final List<Subscriber<INDArray>> modelParamsSubsribers = new CopyOnWriteArrayList<>();
     protected final List<Subscriber<INDArray>> updaterParamsSubscribers = new CopyOnWriteArrayList<>();
 
@@ -69,7 +89,19 @@ public final class ModelParameterServer {
     private final AtomicBoolean launchLock = new AtomicBoolean(false);
     private final AtomicBoolean stopLock = new AtomicBoolean(false);
 
+    // this queue is used as temporary storage for updates received during restart event.
+    protected BlockingQueue<INDArray> updatesBacklog = new LinkedBlockingQueue<>();
+
+    // these two fields only used at master node, to store latest updater copy
+    protected final Atomic<UpdaterParametersHolder> updaterParameters = new Atomic<>();
+    protected final ReentrantReadWriteLock updaterParamsLock = new ReentrantReadWriteLock();
+    protected final AtomicBoolean gotFinalState = new AtomicBoolean(false);
+
     private Disposable disposable;
+
+
+    private AtomicInteger iterationNumber = new AtomicInteger(0);
+    private AtomicInteger epochNumber = new AtomicInteger(0);
 
     protected ModelParameterServer() {
         //
@@ -111,7 +143,8 @@ public final class ModelParameterServer {
     }
 
     /**
-     * This method applies
+     * This method stores provided entities for MPS internal use
+     *
      * @param configuration
      * @param transport
      * @param isMasterNode
@@ -123,12 +156,25 @@ public final class ModelParameterServer {
     }
 
     /**
+     * This method stores provided entities for MPS internal use
+     *
+     * @param configuration
+     * @param transport
+     * @param isMasterNode
+     */
+    public void configure(@NonNull VoidConfiguration configuration, @NonNull Transport transport, @NonNull UpdaterParametersProvider updaterProvider) {
+        this.transport = transport;
+        this.masterMode = false;
+        this.configuration = configuration;
+        this.updaterParametersProvider = updaterProvider;
+    }
+
+    /**
      * This method adds subcriber that will be called upon gradients update receival
      * @param s
      */
-    public void addUpdatesSubscriber(@NonNull Subscriber<INDArray> s) {
+    public void addUpdatesSubscriber(@NonNull UpdatesHandler s) {
         updatesSubscribers.add(s);
-
     }
 
     /**
@@ -157,9 +203,18 @@ public final class ModelParameterServer {
     }
 
     /**
+     * This method returns pair of integers: iteration number and epoch number
+     * @return
+     */
+    public Pair<Integer, Integer> getStartPosition() {
+        return Pair.makePair(iterationNumber.get(), epochNumber.get());
+    }
+
+    /**
      * This method starts parameter server
      */
     public synchronized void launch() {
+        log.info("ModelParameterServer starts");
         if (launchLock.get())
             return;
 
@@ -168,17 +223,26 @@ public final class ModelParameterServer {
             public void call(HandshakeResponse response) {
                 // upon restart command we'll request current parameters from the current upstream (without any propagation
                 try {
+                    log.info("Restart callback started...");
                     val msg = new ModelParametersRequest();
                     val rootId = transport.getRootId();
                     ModelParametersMessage modelParams = transport.sendMessageBlocking(msg, rootId);
                     val mParams = modelParams.getPayload();
                     modelParamsSubsribers.forEach(s -> s.onNext(mParams));
 
+                    // updating starting points
+                    iterationNumber.set(modelParams.getIterationNumber());
+                    epochNumber.set(modelParams.getEpochNumber());
+
                     // updater parameters are optional, it's possible to have models without updater parameters (i.e. SGD)
                     UpdaterParametersMessage updaterParams = transport.sendMessageBlocking(new UpdaterParametersRequest(), rootId);
                     val uParams = updaterParams.getPayload();
-                    updaterParamsSubscribers.forEach(s -> s.onNext(uParams));
+                    if (uParams != null) {
+                        updaterParamsSubscribers.forEach(s -> s.onNext(uParams));
+                        log.info("Updater parameters propagated...");
+                    }
                 } catch (Exception e) {
+                    log.error("RestartCallback processing exception: {}", e);
                     throw new RuntimeException(e);
                 }
             }
@@ -189,22 +253,96 @@ public final class ModelParameterServer {
             @Override
             public void accept(ModelParametersRequest modelParametersRequest) throws Exception {
                 // send model parameters somewhere
-                val msg = new ModelParametersMessage("msg", Nd4j.create(10, 10));
+                val msg = new ModelParametersMessage(java.util.UUID.randomUUID().toString(), updatesSubscribers.get(0).getParametersArray());
                 msg.setRequestId(modelParametersRequest.getRequestId());
+                msg.setIterationNumber(iterationNumber.get());
+                msg.setEpochNumber(epochNumber.get());
                 transport.sendMessage(msg, modelParametersRequest.getOriginatorId());
             }
         });
 
-        // listener for updater params requests
-        transport.addRequestConsumer(UpdaterParametersRequest.class, new Consumer<UpdaterParametersRequest>() {
-            @Override
-            public void accept(UpdaterParametersRequest updaterParametersRequest) throws Exception {
-                // send updater parameters somewhere
-                val msg = new UpdaterParametersMessage("msg", Nd4j.create(10, 10));
-                msg.setRequestId(updaterParametersRequest.getRequestId());
-                transport.sendMessage(msg, updaterParametersRequest.getOriginatorId());
-            }
-        });
+        if (masterMode) {
+            // on master node when updater params come - we're just storing them
+            addUpdaterParamsSubscriber(new AbstractSubscriber<INDArray>() {
+                @Override
+                public void onNext(INDArray array) {
+                    // we're keeping first final updater params state
+                    if (gotFinalState.get())
+                        return;
+                    try {
+                        updaterParamsLock.writeLock().lock();
+
+                        // just store new array
+                        updaterParameters.get().setParameters(array);
+                        updaterParameters.get().setTimeReceived(System.currentTimeMillis());
+                    } finally {
+                        updaterParamsLock.writeLock().unlock();
+                    }
+                }
+            });
+
+            // listener for updater params requests
+            transport.addRequestConsumer(UpdaterParametersRequest.class, new Consumer<UpdaterParametersRequest>() {
+                @Override
+                public void accept(UpdaterParametersRequest updaterParametersRequest) throws Exception {
+                    // master mode physically can't have own updater parameters, so we're acting as proxy here
+
+                    // we're not requesting updater params if
+                    if (!gotFinalState.get()) {
+                        val tId = transport.getRandomDownstreamFrom(transport.getRootId(), updaterParametersRequest.getOriginatorId());
+                        log.info("Sending UpdaterParameters request to [{}]", tId);
+
+                        // trying to get updaters from root downstreams, excluding original message sender
+                        UpdaterParametersMessage updaterParams = transport.sendMessageBlocking(new UpdaterParametersRequest(), tId);
+                        val uParams = updaterParams.getPayload();
+
+                        try {
+                            updaterParamsLock.writeLock().lock();
+
+                            if (updaterParameters.get() == null) {
+                                updaterParameters.set(new UpdaterParametersHolder(uParams, System.currentTimeMillis(), false));
+                            } else
+                                updaterParameters.get().setParameters(uParams);
+
+                        } finally {
+                            updaterParamsLock.writeLock().unlock();
+                        }
+                    }
+
+                    try {
+                        updaterParamsLock.readLock().lock();
+
+                        // send updater parameters somewhere
+                        log.info("Trying to send back Updater parameters...");
+                        val msg = new UpdaterParametersMessage(java.util.UUID.randomUUID().toString(), updaterParameters.get().getParameters());
+                        msg.setRequestId(updaterParametersRequest.getRequestId());
+                        transport.sendMessage(msg, updaterParametersRequest.getOriginatorId());
+                    } finally {
+                        updaterParamsLock.readLock().unlock();
+                    }
+                }
+            });
+        } else {
+            // in case of regular
+            transport.addRequestConsumer(UpdaterParametersRequest.class, new Consumer<UpdaterParametersRequest>() {
+                @Override
+                public void accept(UpdaterParametersRequest updaterParametersRequest) throws Exception {
+                    // master mode physically can't have updater parameters
+                    log.info("Trying to send back Updater parameters...");
+                    if (updaterParametersProvider == null) {
+                        log.warn("UpdaterParametersProvider wasn't set!");
+                        val msg = new UpdaterParametersMessage(java.util.UUID.randomUUID().toString(), null);
+                        msg.setRequestId(updaterParametersRequest.getRequestId());
+                        transport.sendMessage(msg, updaterParametersRequest.getOriginatorId());
+                    } else {
+                        // send updater parameters back
+                        val msg = new UpdaterParametersMessage(java.util.UUID.randomUUID().toString(), updaterParametersProvider.getUpdaterParameters());
+                        msg.setRequestId(updaterParametersRequest.getRequestId());
+                        transport.sendMessage(msg, updaterParametersRequest.getOriginatorId());
+                    }
+                }
+            });
+        }
 
         // this flow will be providing INDArray messages
         disposable = Flowable.fromPublisher(transport.incomingPublisher()).subscribe(message -> {
@@ -212,10 +350,22 @@ public final class ModelParameterServer {
              * We process messages here. Messages are either contain INDArrays, say, as gradients update, or as  model parameters.
              */
             if (message instanceof GradientsUpdateMessage) {
-                if (updatesSubscribers.isEmpty())
+                // we don't really care about synchronization here
+                val gum = (GradientsUpdateMessage) message;
+                if (iterationNumber.get() < gum.getIteration())
+                    iterationNumber.set(gum.getIteration());
+
+                if (epochNumber.get() < gum.getEpoch())
+                    epochNumber.set(gum.getEpoch());
+
+                // it's possible to get updates messages BEFORE model was properly initalized
+                if (updatesSubscribers.isEmpty()) {
+                    log.info("Storing GradientsUpdateMessage into backlog queue...");
                     updatesQueue.add(message.getPayload());
-                else
+                } else {
+                    log.info("Propagating GradientsUpdateMessage to subscribers: [{}]", updatesSubscribers.size());
                     updatesSubscribers.forEach(s -> s.onNext(message.getPayload()));
+                }
             } else
                 throw new UnsupportedOperationException("Unknown message received: [" + message.getClass().getCanonicalName() + "]");
         });
@@ -258,18 +408,24 @@ public final class ModelParameterServer {
         stopLock.set(true);
     }
 
-    /**
-     * This method sends gradient updates to the cluster
-     */
-    public void sendUpdate(@NonNull INDArray array) {
+    public void sendUpdate(@NonNull INDArray array, int iteration, int epoch) {
         try {
             //transport.outgoingConsumer().accept(new GradientsUpdateMessage(java.util.UUID.randomUUID().toString(), array));
             val msg = new GradientsUpdateMessage(java.util.UUID.randomUUID().toString(), array);
             msg.setOriginatorId(transport.id());
+            msg.setIteration(iteration);
+            msg.setEpoch(epoch);
             transport.propagateMessage(msg, PropagationMode.BOTH_WAYS);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * This method sends gradient updates to the cluster
+     */
+    public void sendUpdate(@NonNull INDArray array) {
+        sendUpdate(array, 0, 0);
     }
 
     /**

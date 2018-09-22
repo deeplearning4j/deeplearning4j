@@ -109,6 +109,7 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
     @Override
     public void put(E e) throws InterruptedException {
         lock.readLock().lock();
+        log.info("Adding value to the buffer. Current size: [{}]", backingQueue.size());
         backingQueue.put(e);
         lock.readLock().unlock();
     }

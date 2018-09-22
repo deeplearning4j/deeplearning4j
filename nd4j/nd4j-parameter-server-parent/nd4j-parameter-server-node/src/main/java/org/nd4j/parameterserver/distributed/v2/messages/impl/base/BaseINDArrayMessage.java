@@ -43,7 +43,7 @@ public abstract class BaseINDArrayMessage implements INDArrayMessage {
     @Getter
     protected INDArray payload;
 
-    protected BaseINDArrayMessage(@NonNull String messageId, @NonNull INDArray payload) {
+    protected BaseINDArrayMessage(@NonNull String messageId, INDArray payload) {
         this.messageId = messageId;
         this.payload = payload;
     }

@@ -28,6 +28,11 @@ import org.reactivestreams.Publisher;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * This interface describes Transport abstraction, used to communicate between cluster nodes
+ *
+ * @author raver119@gmail.com
+ */
 public interface Transport {
 
     /**
@@ -41,6 +46,15 @@ public interface Transport {
      * @return
      */
     String getUpstreamId();
+
+    /**
+     * This method returns random
+     *
+     * @param id
+     * @param exclude
+     * @return
+     */
+    String getRandomDownstreamFrom(String id, String exclude);
 
     /**
      * This method returns consumer that accepts messages for delivery
@@ -136,6 +150,12 @@ public interface Transport {
     void onMeshUpdate(MeshOrganizer mesh);
 
     /**
+     * This method will be called upon remap request
+     * @param id
+     */
+    void onRemap(String id);
+
+    /**
      * This method returns total number of nodes known to this Transport
      * @return
      */
@@ -153,4 +173,16 @@ public interface Transport {
      * @return true
      */
     boolean isConnected();
+
+    /**
+     * This method checks if this node was properly introduced to driver
+     * @return
+     */
+    boolean isIntroduced();
+
+    /**
+     * This method checks connection to the given node ID, and if it's not connected - establishes connection
+     * @param id
+     */
+    void ensureConnection(String id);
 }

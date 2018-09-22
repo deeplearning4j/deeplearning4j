@@ -53,6 +53,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.*;
+import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
@@ -439,13 +440,14 @@ public class DifferentialFunctionFactory {
                                 SDVariable variance, SDVariable gamma,
                                 SDVariable beta,
                                 boolean applyGamma, boolean applyBeta,
-                                double epsilon) {
+                                double epsilon, int... axis) {
         BatchNorm batchNorm = BatchNorm.builder()
                 .inputFunctions(new SDVariable[]{input, mean, variance, gamma, beta})
                 .applyGamma(applyGamma)
                 .applyBeta(applyBeta)
                 .epsilon(epsilon)
                 .sameDiff(sameDiff())
+                .axis(axis)
                 .build();
 
         val outputVars = batchNorm.outputVariables();
@@ -1599,21 +1601,93 @@ public class DifferentialFunctionFactory {
         return new SegmentMax(sameDiff(), data, segmentIds).outputVariable();
     }
 
+    public SDVariable[] segmentMaxBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+        return new SegmentMaxBp(sameDiff(), data, segmentIds, gradient).outputVariables();
+    }
+
     public SDVariable segmentMin(SDVariable data, SDVariable segmentIds){
         return new SegmentMin(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable[] segmentMinBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+        return new SegmentMinBp(sameDiff(), data, segmentIds, gradient).outputVariables();
     }
 
     public SDVariable segmentMean(SDVariable data, SDVariable segmentIds){
         return new SegmentMean(sameDiff(), data, segmentIds).outputVariable();
     }
 
+    public SDVariable[] segmentMeanBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+        return new SegmentMeanBp(sameDiff(), data, segmentIds, gradient).outputVariables();
+    }
+
     public SDVariable segmentProd(SDVariable data, SDVariable segmentIds){
         return new SegmentProd(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable[] segmentProdBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+        return new SegmentProdBp(sameDiff(), data, segmentIds, gradient).outputVariables();
     }
 
     public SDVariable segmentSum(SDVariable data, SDVariable segmentIds){
         return new SegmentSum(sameDiff(), data, segmentIds).outputVariable();
     }
+
+    public SDVariable[] segmentSumBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+        return new SegmentSumBp(sameDiff(), data, segmentIds, gradient).outputVariables();
+    }
+
+
+    public SDVariable unsortedSegmentMax(SDVariable data, SDVariable segmentIds, int numSegments){
+        return new UnsortedSegmentMax(sameDiff(), data, segmentIds, numSegments).outputVariable();
+    }
+
+    public SDVariable[] unsortedSegmentMaxBp(SDVariable data, SDVariable segmentIds, SDVariable gradient, int numSegments){
+        return new UnsortedSegmentMaxBp(sameDiff(), data, segmentIds, gradient, numSegments).outputVariables();
+    }
+
+    public SDVariable unsortedSegmentMin(SDVariable data, SDVariable segmentIds, int numSegments){
+        return new UnsortedSegmentMin(sameDiff(), data, segmentIds, numSegments).outputVariable();
+    }
+
+    public SDVariable[] unsortedSegmentMinBp(SDVariable data, SDVariable segmentIds, SDVariable gradient, int numSegments){
+        return new UnsortedSegmentMinBp(sameDiff(), data, segmentIds, gradient, numSegments).outputVariables();
+    }
+
+    public SDVariable unsortedSegmentMean(SDVariable data, SDVariable segmentIds, int numSegments){
+        return new UnsortedSegmentMean(sameDiff(), data, segmentIds, numSegments).outputVariable();
+    }
+
+    public SDVariable[] unsortedSegmentMeanBp(SDVariable data, SDVariable segmentIds, SDVariable gradient, int numSegments){
+        return new UnsortedSegmentMeanBp(sameDiff(), data, segmentIds, gradient, numSegments).outputVariables();
+    }
+
+    public SDVariable unsortedSegmentProd(SDVariable data, SDVariable segmentIds, int numSegments){
+        return new UnsortedSegmentProd(sameDiff(), data, segmentIds, numSegments).outputVariable();
+    }
+
+    public SDVariable[] unsortedSegmentProdBp(SDVariable data, SDVariable segmentIds, SDVariable gradient, int numSegments){
+        return new UnsortedSegmentProdBp(sameDiff(), data, segmentIds, gradient, numSegments).outputVariables();
+    }
+
+    public SDVariable unsortedSegmentSum(SDVariable data, SDVariable segmentIds, int numSegments){
+        return new UnsortedSegmentSum(sameDiff(), data, segmentIds, numSegments).outputVariable();
+    }
+
+    public SDVariable[] unsortedSegmentSumBp(SDVariable data, SDVariable segmentIds, SDVariable gradient, int numSegments){
+        return new UnsortedSegmentSumBp(sameDiff(), data, segmentIds, gradient, numSegments).outputVariables();
+    }
+
+    public SDVariable unsortedSegmentSqrtN(SDVariable data, SDVariable segmentIds, int numSegments){
+        return new UnsortedSegmentSqrtN(sameDiff(), data, segmentIds, numSegments).outputVariable();
+    }
+
+    public SDVariable[] unsortedSegmentSqrtNBp(SDVariable data, SDVariable segmentIds, SDVariable gradient, int numSegments){
+        return new UnsortedSegmentSqrtNBp(sameDiff(), data, segmentIds, gradient, numSegments).outputVariables();
+    }
+
+
+
 
     public SDVariable dilation2D(SDVariable df, SDVariable weights, int[] strides,
                                  int[] rates, boolean isSameMode) {

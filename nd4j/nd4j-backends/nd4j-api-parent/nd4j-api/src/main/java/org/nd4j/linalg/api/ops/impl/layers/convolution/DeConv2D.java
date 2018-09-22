@@ -93,7 +93,7 @@ public class DeConv2D extends DynamicCustomOp {
         addIArgument(config.getDH());
         addIArgument(config.getDW());
         addIArgument(ArrayUtil.fromBoolean(config.isSameMode()));
-
+        addIArgument(config.getDataFormat().equalsIgnoreCase(DeConv2DConfig.NCHW) ? 0 : 1);
     }
 
     @Override
@@ -204,7 +204,7 @@ public class DeConv2D extends DynamicCustomOp {
         // FIXME: int cast
 
 
-        if (dataFormat.equalsIgnoreCase("nchw")) {
+        if (dataFormat.equalsIgnoreCase(DeConv2DConfig.NCHW)) {
             sH = tfStrides.get(2).intValue();
             sW = tfStrides.get(3).intValue();
 
@@ -226,8 +226,7 @@ public class DeConv2D extends DynamicCustomOp {
                 .sH(sW)
                 .sW(sH)
                 .isSameMode(isSameMode)
-                //c++ check checks for nchw
-                .isNHWC(dataFormat.equalsIgnoreCase("nhwc"))
+                .dataFormat(dataFormat.equalsIgnoreCase(DeConv2DConfig.NHWC) ? DeConv2DConfig.NHWC : DeConv2DConfig.NCHW)
                 .build();
         this.config = conv2DConfig;
 
@@ -269,8 +268,7 @@ public class DeConv2D extends DynamicCustomOp {
                 .sH(sH.intValue())
                 .sW(sW.intValue())
                 .isSameMode(isSameMode)
-                //c++ check checks for nchw
-                .isNHWC(dataFormat.equalsIgnoreCase("nhwc"))
+                .dataFormat(dataFormat.equalsIgnoreCase("nhwc") ? DeConv2DConfig.NHWC : DeConv2DConfig.NCHW)
                 .build();
         this.config = conv2DConfig;
 

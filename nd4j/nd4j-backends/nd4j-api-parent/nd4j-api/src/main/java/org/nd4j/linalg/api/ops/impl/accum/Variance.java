@@ -154,8 +154,8 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
-    public String tensorflowName() {
-        return "moments";
+    public String tensorflowName(){
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
 

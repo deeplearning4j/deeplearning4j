@@ -21,6 +21,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.nd4j.base.Preconditions;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -30,6 +31,9 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Conv3DConfig extends BaseConvolutionConfig {
+    public static final String NDHWC = "NDHWC";
+    public static final String NCDHW = "NCDHW";
+
     //kernel
     @Builder.Default
     private long kD = 1;
@@ -73,11 +77,23 @@ public class Conv3DConfig extends BaseConvolutionConfig {
     @Builder.Default
     private boolean biasUsed = false;
     private boolean isValidMode;
-    @Builder.Default
-    private boolean isNCDHW = true;
 
     @Builder.Default
-    private String dataFormat = "NDHWC";
+    private String dataFormat = NDHWC;
+
+    public boolean isNCDHW(){
+        Preconditions.checkState(dataFormat.equalsIgnoreCase(NCDHW) || dataFormat.equalsIgnoreCase(NDHWC),
+                "Data format must be one of %s or %s, got %s", NCDHW, NDHWC, dataFormat);
+        return dataFormat.equalsIgnoreCase(NCDHW);
+    }
+
+    public void isNCDHW(boolean isNCDHW){
+        if(isNCDHW){
+            dataFormat = NCDHW;
+        } else {
+            dataFormat = NDHWC;
+        }
+    }
 
     public Map<String, Object> toProperties() {
         Map<String, Object> ret = new LinkedHashMap<>();

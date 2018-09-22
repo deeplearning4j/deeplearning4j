@@ -248,6 +248,8 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         if (!remoteConnections.containsKey(message.getOriginatorId()))
             addConnection(message.getOriginatorId());
 
+        log.info("Got [{}] message from [{}]", message.getClass().getSimpleName(), message.getOriginatorId());
+
         // we're just putting deserialized message into the buffer
         try {
             messageQueue.put(message);
@@ -255,6 +257,37 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             // :(
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void onRemap(String id) {
+        try {
+            aeronLock.lock();
+
+            log.info("Trying to disconnect failed node: [{}]", id);
+
+            if (remoteConnections.containsKey(id)) {
+                val v = remoteConnections.get(id);
+                try {
+                    v.getPublication().close();
+                } catch (Exception e) {
+                    // no-op
+                }
+
+                remoteConnections.remove(id);
+            }
+
+            log.info("Trying to add failed node back again: [{}]", id);
+            addConnection(id);
+        } finally {
+            aeronLock.unlock();
+        }
+    }
+
+    @Override
+    public void ensureConnection(String id) {
+        // we just directly call addConnection
+        addConnection(id);
     }
 
     protected void addConnection(@NonNull String ipAndPort) {
@@ -267,6 +300,17 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             log.info("Adding UDP connection: [{}]", ipAndPort);
 
             val v = aeron.addPublication(ipAndPort, voidConfiguration.getStreamId());
+
+            int cnt = 0;
+            while (!v.isConnected()) {
+                try {
+                    Thread.sleep(100);
+                    if (cnt ++ > 100)
+                        throw new ND4JIllegalStateException("Can't establish connection afet 10 seconds. Terminating...");
+                } catch (InterruptedException e) {
+                    //
+                }
+            }
 
             val hash = HashUtil.getLongHash(ipAndPort);
 
@@ -355,6 +399,20 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             return;
         }
 
+        if (message instanceof INDArrayMessage) {
+            try {
+                val splits = splitter.split(message, voidConfiguration.getMaxChunkSize());
+
+                for(val m:splits) {
+                    sendMessage(m, id);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            return;
+        }
+
         // serialize out of locks
         val b = message.asUnsafeBuffer();
 
@@ -378,15 +436,43 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
             // if response != OK we must do something with response
             switch (status) {
-                case MAX_POSITION_EXCEEDED:
+                case MAX_POSITION_EXCEEDED: {
+                        log.warn("MaxPosition hit: [{}]", id);
+                        try {
+                            // in case of backpressure we're just sleeping for a while, and message out again
+                            Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                        } catch (InterruptedException e) {
+                            //
+                        }
+                    }
+                    break;
                 case CLOSED: {
                     // TODO: here we should properly handle reconnection
-                    log.warn("Upstream connection was closed: [{}]", id);
+                    log.warn(" Connection was closed: [{}]", id);
                     return;
                 }
-                case ADMIN_ACTION:
-                case NOT_CONNECTED:
+                case ADMIN_ACTION: {
+                        log.info("ADMIN_ACTION: [{}]", id);
+                        try {
+                            Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                        } catch (InterruptedException e) {
+                            //
+                        }
+                    }
+                    break;
+                case NOT_CONNECTED: {
+                            log.info("NOT_CONNECTED: [{}]", id);
+                            addConnection(id);
+                            try {
+                                // in case of backpressure we're just sleeping for a while, and message out again
+                                Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                            } catch (InterruptedException e) {
+                                //
+                            }
+                        }
+                        break;
                 case BACK_PRESSURED: {
+                    log.info("BACK_PRESSURED: [{}]", id);
                     try {
                         // in case of backpressure we're just sleeping for a while, and message out again
                         Thread.sleep(voidConfiguration.getRetransmitTimeout());
@@ -397,6 +483,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             }
         }
     }
+
 
     protected void shutdownSilent() {
         // closing own connection
