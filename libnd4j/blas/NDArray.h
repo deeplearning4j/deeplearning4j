@@ -142,13 +142,14 @@ namespace nd4j {
         std::string toStringValue(T value);
 
     public:
+        NDArray() = default;
+
+        NDArray(Nd4jLong *shapeInfo, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
         *  default constructor, do not allocate memory, memory for array is passed from outside 
         */
-        NDArray(void *buffer = nullptr, Nd4jLong* shapeInfo = nullptr, nd4j::memory::Workspace* workspace = nullptr);
-
-        void *bufferWithOffset(Nd4jLong offset);
+        NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
         *  copy constructor
@@ -181,6 +182,13 @@ namespace nd4j {
         *  this constructor creates new array using given buffer (without memory allocating) and shape information stored in shape
         */
         NDArray(void *buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr);
+
+        /**
+         * This method returns buffer pointer offset by given number of elements, wrt own data type
+         * @param offset
+         * @return
+         */
+        void *bufferWithOffset(Nd4jLong offset);
 
         /**
         *  copy assignment operator

@@ -113,6 +113,19 @@ namespace nd4j {
         _length = 0;
     }
 
+    NDArray::NDArray(Nd4jLong *shapeInfo, nd4j::memory::Workspace* workspace) {
+        auto dtype = ArrayOptions::dataType(shapeInfo);
+        _length = shape::length(shapeInfo);
+        _shapeInfo = shapeInfo;
+        ALLOCATE(_buffer, workspace, _length * DataTypeUtils::sizeOfElement(dtype) , int8_t);
+
+        memset(_buffer, 0, _length * DataTypeUtils::sizeOfElement(dtype));
+        _isShapeAlloc = true;
+        _isBuffAlloc = true;
+        _workspace = workspace;
+
+    }
+
     NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
         int rank = (int) shape.size();
 
@@ -2283,7 +2296,7 @@ NDArray NDArray::transp() const {
         if(product != 1 )
             pMin = new NDArray(min->tile(repeatMin));
 
-        std::vector<int> sameDims = ShapeUtils::getDimsWithSameShape(target, pMin);
+        std::vector<int> sameDims = ShapeUtils::getDimsWithSameShape(*target, *pMin);
 
         if(max == this) {
             target->applyBroadcast(op.b, sameDims, pMin, nullptr, extraArgs);
@@ -3270,7 +3283,7 @@ NDArray NDArray::transp() const {
             NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Subtract, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
         else {
             Nd4jLong *bShape = nullptr;
-            auto p = ShapeUtils::evalBroadcastShapeInfo(this, other, true, bShape, this->_workspace);
+            auto p = ShapeUtils::evalBroadcastShapeInfo(*this, other, true, bShape, this->_workspace);
             if (shape::shapeEquals(this->shapeInfo(), bShape))
                 this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &other, this, true);
             else
@@ -3389,7 +3402,7 @@ NDArray NDArray::transp() const {
             NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Multiply, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
         else {
             Nd4jLong *bShape = nullptr;
-            auto p = ShapeUtils::evalBroadcastShapeInfo(this, other, true, bShape, this->_workspace);
+            auto p = ShapeUtils::evalBroadcastShapeInfo(*this, other, true, bShape, this->_workspace);
             if (shape::shapeEquals(this->shapeInfo(), bShape))
                 this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), &other, this, true);
             else
@@ -3463,7 +3476,7 @@ NDArray NDArray::transp() const {
             NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Divide, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
         else {
             Nd4jLong *bShape = nullptr;
-            auto p = ShapeUtils::evalBroadcastShapeInfo(this, other, true, bShape, this->_workspace);
+            auto p = ShapeUtils::evalBroadcastShapeInfo(*this, other, true, bShape, this->_workspace);
             if (shape::shapeEquals(this->shapeInfo(), bShape))
                 this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &other, this, true);
             else

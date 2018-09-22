@@ -111,7 +111,7 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    auto newShape = ShapeUtils::evalReduceShapeInfo(x->ordering(), axis, x);
+                    auto newShape = ShapeUtils::evalReduceShapeInfo(x->ordering(), axis, *x);
                     auto z = new NDArray(newShape, x->getWorkspace());
 
                     NativeOpExcutioner::execReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
