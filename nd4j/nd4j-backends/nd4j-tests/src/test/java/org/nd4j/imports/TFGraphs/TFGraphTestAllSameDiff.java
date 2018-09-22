@@ -156,7 +156,8 @@ public class TFGraphTestAllSameDiff {
             "cnn2d_nn/nchw_b1_k12_s12_d12_SAME",
             "cnn2d_nn/nhwc_b1_k12_s12_d12_SAME",
 
-            "conv_4"
+            "conv_4",
+            "ae"
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 

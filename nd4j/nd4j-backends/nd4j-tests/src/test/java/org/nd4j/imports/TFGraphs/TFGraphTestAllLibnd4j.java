@@ -102,10 +102,8 @@ public class TFGraphTestAllLibnd4j {
             "reductions/count_nonzero.*",
             "sufficient_statistics.*",
 
-            "ae",
             "histogram_fixed.*",
-            "unsorted_segment.*",
-            ""
+            "unsorted_segment.*"
     };
 
     @BeforeClass
@@ -158,6 +156,7 @@ public class TFGraphTestAllLibnd4j {
             }
         }
 
+        log.info("Starting test: {}", this.modelName);
         Pair<Double,Double> precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
         Double maxRE = (precisionOverride == null ? null : precisionOverride.getFirst());
         Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());

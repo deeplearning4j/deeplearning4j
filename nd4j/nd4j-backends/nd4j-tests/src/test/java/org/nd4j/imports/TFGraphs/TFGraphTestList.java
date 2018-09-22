@@ -50,7 +50,7 @@ public class TFGraphTestList {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     public static String[] modelNames = new String[]{
-            "matrix_determinant/rank2_5,5"
+            "unsorted_segment/unsorted_segment_max_rank2"
 
     };
 
