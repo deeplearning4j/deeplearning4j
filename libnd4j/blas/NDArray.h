@@ -1027,7 +1027,7 @@ namespace nd4j {
         */
         double getTrace() const;
 
-        NDArray* createUninitialized() const;
+        NDArray* dupUninitialized() const;
 
         ResultSet* multipleTensorsAlongDimension(const std::vector<int>& indices, const std::vector<int>& dimensions) const;
 

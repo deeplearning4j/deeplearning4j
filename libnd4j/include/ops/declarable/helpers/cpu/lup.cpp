@@ -113,7 +113,7 @@ namespace helpers {
 
         T determinant = (T)1.0;
         std::unique_ptr<NDArray> compoundMatrix(input->dup()); // copy
-        std::unique_ptr<NDArray> permutationMatrix(input->createUninitialized()); //put identity
+        std::unique_ptr<NDArray> permutationMatrix(input->dupUninitialized()); //put identity
         permutationMatrix->setIdentity();
 
         T pivotValue; // = T(0.0);

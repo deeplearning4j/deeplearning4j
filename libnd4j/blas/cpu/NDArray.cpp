@@ -98,8 +98,11 @@ namespace nd4j {
         _isShapeAlloc = false;
         _workspace = workspace;
 
-        if (shapeInfo != nullptr)
+        if (shapeInfo != nullptr) {
             _length = shape::length(shapeInfo);
+            _dataType = ArrayOptions::dataType(shapeInfo);
+        } else
+            throw std::runtime_error("NDArray can't be initalized without shapeinfo");
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -3830,7 +3833,7 @@ NDArray NDArray::transp() const {
 
 
 ////////////////////////////////////////////////////////////////////////
-    NDArray* NDArray::createUninitialized() const {
+    NDArray* NDArray::dupUninitialized() const {
         Nd4jLong* newShape(nullptr);
         ALLOCATE(newShape, _workspace, shape::shapeInfoLength(_shapeInfo), Nd4jLong);
         memcpy(newShape, _shapeInfo, shape::shapeInfoByteLength(_shapeInfo));
