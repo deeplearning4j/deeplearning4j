@@ -43,12 +43,7 @@ namespace nd4j {
 
             for (int e = 0; e < inputShape->size(); e++) {
                 auto inShape = inputShape->at(e);
-
-                Nd4jLong *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
-                shape::shapeVector(shape::rank(inShape), newshape);
-
-                shapeList->push_back(newshape);
+                shapeList->push_back(ShapeBuilders::createVectorShapeInfo(nd4j::DataType::DataType_INT64, shape::rank(inShape), block.workspace()));
             }
 
             return shapeList;

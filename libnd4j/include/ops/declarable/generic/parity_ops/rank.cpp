@@ -36,12 +36,7 @@ namespace nd4j {
             return Status::OK();
         }
         DECLARE_SHAPE_FN(rank) {
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), Nd4jLong);
-
-            shape::shapeScalar(newShape);
-
-            return SHAPELIST(newShape);
+            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::DataType_INT32, block.workspace()));
         }
     }
 }

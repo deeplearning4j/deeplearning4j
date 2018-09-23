@@ -138,12 +138,11 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
             return newShapeInfo;
         }
         else if(supportOldShapes) {
-            ALLOCATE(newShapeInfo, workspace, 8, Nd4jLong);
-            shape::shapeOldScalar(newShapeInfo, 'c');
+            ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), Nd4jLong);
+            shape::shapeOldScalar(ArrayOptions::dataType(shapeInfo), newShapeInfo, 'c');
         }
         else {
-            ALLOCATE(newShapeInfo, workspace, 4, Nd4jLong);
-            shape::shapeScalar(newShapeInfo);
+            newShapeInfo = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(shapeInfo), workspace);
         }
         return newShapeInfo;
     }
@@ -171,12 +170,11 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
 	if (newRank==0 || (dimSize==1 && dimensions[0]==INT_MAX)) { 			// check whether given dimension is meant for the whole dimension
             
         if(supportOldShapes) {
-            ALLOCATE(newShapeInfo, workspace, 8, Nd4jLong);
-            shape::shapeOldScalar(newShapeInfo, 'c');
+            ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), Nd4jLong);
+            shape::shapeOldScalar(ArrayOptions::dataType(shapeInfo), newShapeInfo, 'c');
         }
         else {
-            ALLOCATE(newShapeInfo, workspace, 4, Nd4jLong);
-            shape::shapeScalar(newShapeInfo);
+            newShapeInfo = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(shapeInfo), workspace);
         }
             return newShapeInfo;
 	}
@@ -733,9 +731,7 @@ Nd4jLong* ShapeUtils::matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* theS
             shape[1] = tmpB[2];
         } else {
             // we have new 1D shape here
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, workspace, shape::shapeInfoLength(2), Nd4jLong);
-            shape::shapeVector(tmpA[1], newShape);
+            auto newShape = ShapeBuilders::createVectorShapeInfo(dtype, tmpA[1], workspace);
 
             RELEASE(shape, workspace);
             RELEASE(tmpA, workspace);

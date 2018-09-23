@@ -1012,12 +1012,7 @@ namespace shape {
     // return absolute index of array min, min is sub-array of max, index to be returned is min index and corresponds to maxIdx of max array
     ND4J_EXPORT _CUDA_H Nd4jLong subArrayIndex(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int maxIdx);
 
-    ND4J_EXPORT _CUDA_HD void shapeScalar(Nd4jLong* const buffer);
-
-    ND4J_EXPORT _CUDA_HD void shapeVector(const Nd4jLong length, Nd4jLong* const buffer);
-
-
-    ND4J_EXPORT _CUDA_HD void shapeOldScalar(Nd4jLong* const buffer, const char order);
+    ND4J_EXPORT _CUDA_HD void shapeOldScalar(nd4j::DataType dtype, Nd4jLong* const buffer, const char order);
 
 
 
@@ -4110,34 +4105,17 @@ template <typename T>
         return minIdx;
     }
 
+    INLINEDEF _CUDA_HD void shapeOldScalar(nd4j::DataType dataType, Nd4jLong* const buffer, const char order) {
 
-    INLINEDEF _CUDA_HD void shapeScalar(Nd4jLong* const buffer) {
-        
-        buffer[0] = 0;
-        buffer[1] = 0;        
-        buffer[2] = 1;        
-        buffer[3] = 99;
-    }
-
-    INLINEDEF _CUDA_HD void shapeOldScalar(Nd4jLong* const buffer, const char order) {
-        
         buffer[0] = 2;
         buffer[1] = 1;
         buffer[2] = 1;
         buffer[3] = 1;
         buffer[4] = 1;
-        buffer[5] = 0;
         buffer[6] = 1;
         buffer[7] = (int)order;
-    }
 
-    INLINEDEF _CUDA_HD void shapeVector(const Nd4jLong length, Nd4jLong* const buffer) {
-        buffer[0] = 1;
-        buffer[1] = length;
-        buffer[2] = 1;
-        buffer[3] = 0;
-        buffer[4] = 1;
-        buffer[5] = 99;
+        nd4j::ArrayOptions::setDataType(buffer, dataType);
     }
 
     template <typename T1, typename T2>

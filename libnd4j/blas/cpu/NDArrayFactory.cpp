@@ -143,10 +143,9 @@ namespace nd4j {
         auto res = new NDArray();
 
         int8_t *buffer = nullptr;
-        Nd4jLong *shapeInfo = nullptr;
+        auto shapeInfo = ShapeBuilders::createVectorShapeInfo(DataTypeUtils::fromT<T>(), values.size(), workspace);
         ALLOCATE(buffer, workspace, values.size() * sizeof(T), int8_t);
-        ALLOCATE(shapeInfo, workspace, shape::shapeInfoLength(1), Nd4jLong);
-        shape::shapeVector(values.size(), shapeInfo);
+
 
         ArrayOptions::setDataType(shapeInfo, DataTypeUtils::fromT<T>());
         res->setBuffer(buffer);

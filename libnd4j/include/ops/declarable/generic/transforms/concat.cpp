@@ -104,10 +104,7 @@ DECLARE_SHAPE_FN(concat) {
         if(!INPUT_VARIABLE(i)->isEmpty()) {
             
             if(inputShape->at(i)[0] == 0) {
-                Nd4jLong* vecShapeInfo = nullptr;
-                ALLOCATE(vecShapeInfo, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
-                shape::shapeVector(1, vecShapeInfo);
-                nonEmptyArrShapes.push_back(vecShapeInfo);
+                nonEmptyArrShapes.push_back(ShapeBuilders::createVectorShapeInfo(block.dataType(), 1, block.workspace()));
                 shapesToDelete.push_back(index);
             }
             else{

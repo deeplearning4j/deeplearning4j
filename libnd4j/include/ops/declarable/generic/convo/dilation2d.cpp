@@ -103,8 +103,7 @@ namespace ops {
             rates = r->template asVectorT<int>();
         } else {
             if (block.numI() < 9) {
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), Nd4jLong);
-                shape::shapeScalar(newShape);
+                newShape = ShapeBuilders::createScalarShapeInfo(block.dataType(), block.workspace());
                 return SHAPELIST(newShape);
             }
                 

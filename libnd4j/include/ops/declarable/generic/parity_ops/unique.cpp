@@ -44,11 +44,10 @@ namespace nd4j {
             int uniqueCount = helpers::uniqueCount(source);
 
             // all output shapes are 1D arrays (vectors)
-            ALLOCATE(valuesShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
-            shape::shapeVector(uniqueCount, valuesShape);
+            valuesShape = ShapeBuilders::createVectorShapeInfo(block.dataType(), uniqueCount, block.workspace());
 
-            ALLOCATE(indicesShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
-            shape::shapeVector(source->lengthOf(), indicesShape);
+            // second output is always LONG
+            indicesShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::DataType_INT64, source->lengthOf(), block.workspace());
 
             //COPY_SHAPE_EX(in, indicesShape, block.getWorkspace());
 
@@ -68,28 +67,19 @@ namespace nd4j {
         DECLARE_SHAPE_FN(unique_with_counts) {
             auto in = inputShape->at(0);
             auto source = INPUT_VARIABLE(0);
-            auto shapeList = SHAPELIST(); 
-
-            Nd4jLong* valuesShape;
-            Nd4jLong* indicesShape;
-            Nd4jLong* countsShape;
 
             int uniqueCount = helpers::uniqueCount(source);
             // all output shapes are 1D arrays (vectors)
-            ALLOCATE(valuesShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
-            shape::shapeVector(uniqueCount, valuesShape);
+            // all output shapes are 1D arrays (vectors)
+            auto valuesShape = ShapeBuilders::createVectorShapeInfo(block.dataType(), uniqueCount, block.workspace());
 
-            ALLOCATE(indicesShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
-            shape::shapeVector(source->lengthOf(), indicesShape);
+            // second output is always LONG
+            auto indicesShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::DataType_INT64, source->lengthOf(), block.workspace());
 
-            ALLOCATE(countsShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
-            shape::shapeVector(uniqueCount, countsShape);
+            // third one as well
+            auto countsShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::DataType_INT64, source->lengthOf(), block.workspace());
 
-            shapeList->push_back(valuesShape); 
-            shapeList->push_back(indicesShape); 
-            shapeList->push_back(countsShape); 
-
-            return shapeList;
+            return SHAPELIST(valuesShape, indicesShape, countsShape);
         }
 
     }

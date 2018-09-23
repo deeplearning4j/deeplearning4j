@@ -67,11 +67,7 @@ namespace nd4j {
             if (block.numI() > 1) 
                 maxLength = nd4j::math::nd4j_min(maxLength, INT_ARG(1));
 
-            Nd4jLong* newshape;
-            
-            ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
-
-            shape::shapeVector(maxLength,  newshape);
+            auto newshape = ShapeBuilders::createVectorShapeInfo(block.dataType(), maxLength, block.workspace());
 
             shapeList->push_back(newshape); 
             return shapeList;

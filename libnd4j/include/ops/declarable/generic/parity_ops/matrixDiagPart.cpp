@@ -45,8 +45,7 @@ namespace nd4j {
             int lastDimension = nd4j::math::nd4j_min(shape::sizeAt(in, -1), shape::sizeAt(in, -2));
             if(outRank == 1) {
                 //output shape is a vector with size min(sizeAt(0), sizeAt(1))
-                ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
-                shape::shapeVector(lastDimension, outShapeInfo);
+                outShapeInfo = ShapeBuilders::createVectorShapeInfo(block.dataType(), lastDimension, block.workspace());
             }
             else {
                 ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);

@@ -45,8 +45,7 @@ namespace nd4j {
                 determinantShape = shape::createScalarShapeInfo();
             }
             else if (targetRank == 1) { // vector 
-                ALLOCATE(determinantShape, block.getWorkspace(), shape::shapeInfoLength(targetRank), Nd4jLong);
-                shape::shapeVector(shape::sizeAt(inShape, 0), determinantShape);
+                determinantShape = ShapeBuilders::createVectorShapeInfo(block.dataType(), shape::sizeAt(inShape, 0), block.workspace());
             }
             else { // only two last dimensions are excluded
                 ALLOCATE(determinantShape, block.getWorkspace(), shape::shapeInfoLength(targetRank), Nd4jLong);

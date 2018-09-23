@@ -41,11 +41,8 @@ namespace nd4j {
         DECLARE_SHAPE_FN(shape_of) {
             auto inShape = inputShape->at(0);
 
-            Nd4jLong *newshape;
-            ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
-            shape::shapeVector(shape::rank(inShape), newshape);
-
-            return SHAPELIST(newshape);
+            // always LONG
+            return SHAPELIST(ShapeBuilders::createVectorShapeInfo(nd4j::DataType::DataType_INT64, shape::rank(inShape), block.workspace()));
         };
     }
 }
