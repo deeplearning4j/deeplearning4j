@@ -115,6 +115,9 @@ namespace nd4j {
 
     NDArray::NDArray() {
         nd4j_printf("Default constructor...\n","");
+
+        _isBuffAlloc = false;                                  // indicate that memory for array is passed from outside
+        _isShapeAlloc = false;
     }
 
     NDArray::NDArray(Nd4jLong *shapeInfo, nd4j::memory::Workspace* workspace) {
