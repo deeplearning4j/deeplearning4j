@@ -86,6 +86,9 @@ namespace nd4j {
         template <typename T>
         void templatedAssign(void *xBuffer, Nd4jLong xOffset, void *yBuffer, Nd4jLong yOffset) const;
 
+        template <typename X, typename Y>
+        void templatedDoubleAssign(void *xBuffer, Nd4jLong xOffset, void *yBuffer, Nd4jLong yOffset) const;
+
         template <typename T, typename R>
         FORCEINLINE R templatedGet(void *buffer, Nd4jLong index) const;
 /*

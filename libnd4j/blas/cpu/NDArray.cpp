@@ -782,6 +782,15 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 }
 
 
+    template <typename X, typename Y>
+    void NDArray::templatedDoubleAssign(void *xBuffer, Nd4jLong xOffset, void *yBuffer, Nd4jLong yOffset) const {
+        auto x = reinterpret_cast<X *>(xBuffer);
+        auto y = reinterpret_cast<Y *>(yBuffer);
+
+        x[xOffset] = y[yOffset];
+    }
+    BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedDoubleAssign, (void *xBuffer, Nd4jLong xOffset, void *yBuffer, Nd4jLong yOffset) const, LIBND4J_TYPES, LIBND4J_TYPES);
+
 
     ////////////////////////////////////////////////////////////////////////
     NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
@@ -827,13 +836,10 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     void NDArray::assign(NDArray *other) {
         if (this->isScalar() && other->isScalar()) {
             this ->_buffer[0] = other->_buffer[0];
+            BUILD_DOUBLE_SELECTOR(this->dataType(), other->dataType(), templatedDoubleAssign, (this->buffer(), 0, other->buffer(), 0), LIBND4J_TYPES, LIBND4J_TYPES);
             return;
         } else if (other->isScalar()) {
-            this->assign(other->_buffer[0]);
-            return;;
-        }
-        else if(other->isScalar()) {
-            this->assign(other->_buffer[0]);
+            NativeOpExcutioner::execScalar(scalar::Copy, this->buffer(), this->shapeInfo(), this->buffer(), this->shapeInfo(), other->buffer(), other->shapeInfo(), nullptr);
             return;
         }
 
