@@ -273,7 +273,7 @@ namespace nd4j {
         res.setBuffer(buffer);
         res.triggerAllocationFlag(true, true);
         res.setWorkspace(workspace);
-        const int v = 0;
+        const float v = 0.0f;
         res.assign(v);
 
         return res;
@@ -294,7 +294,7 @@ namespace nd4j {
         res.triggerAllocationFlag(true, true);
         res.setWorkspace(workspace);
 
-        res.assign(scalar);
+        res.bufferAsT<T>()[0] = scalar;
 
         return res;
     }
@@ -471,6 +471,12 @@ namespace nd4j {
     template NDArray* NDArrayFactory::vector(Nd4jLong length, const int16_t startingValue, nd4j::memory::Workspace *workspace);
     template NDArray* NDArrayFactory::vector(Nd4jLong length, const bool startingValue, nd4j::memory::Workspace *workspace);
 
+    template <typename T>
+    NDArray NDArrayFactory::_create(const char order, const std::initializer_list<Nd4jLong> shape, nd4j::memory::Workspace* workspace) {
+        std::vector<Nd4jLong> vec(shape);
+        return _create<T>(order, vec, workspace);
+    }
+    BUILD_SINGLE_TEMPLATE(template NDArray NDArrayFactory::_create, (const char, const std::initializer_list<Nd4jLong>, nd4j::memory::Workspace*), LIBND4J_TYPES);
 
 
     template <typename T>
