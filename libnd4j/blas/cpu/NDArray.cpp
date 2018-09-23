@@ -1480,7 +1480,7 @@ NDArray NDArray::transp() const {
         auto tmp = NDArrayFactory::_scalar<float>(0.0f, this->_workspace);
 
         // we don't need extraparams for this op
-        NativeOpExcutioner::execReduce3Scalar(4, _buffer, _shapeInfo, ptr, other->_buffer, other->_shapeInfo, tmp.buffer(), tmp.shapeInfo());
+        NativeOpExcutioner::execReduce3Scalar(reduce3::EqualsWithEps, _buffer, _shapeInfo, ptr, other->_buffer, other->_shapeInfo, tmp.buffer(), tmp.shapeInfo());
 
 
         RELEASE(reinterpret_cast<int8_t *>(ptr), _workspace);
