@@ -854,6 +854,9 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
         // memcpy is allowed only for same order && same ews (being equal to 1)
         if (ordering() == other->ordering() && this->dataType() == other->dataType() && shape::elementWiseStride(this->_shapeInfo) == 1 && shape::elementWiseStride(other->_shapeInfo) == 1) {
+            auto l = lengthOf();
+            auto s = sizeOfT();
+
             memcpy(_buffer, other->_buffer, lengthOf() * sizeOfT());
         } else {
             // now we invoke dup pwt against target buffer
@@ -954,11 +957,13 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         if (!isAttached())
             return this;
 
-        Nd4jLong newLength = shape::length(_shapeInfo);
         void* newBuffer;
         Nd4jLong* newShapeInfo;
 
-        newBuffer = new int8_t[newLength * sizeOfT()];
+        auto l = lengthOf();
+
+
+        newBuffer = new int8_t[lengthOf() * sizeOfT()];
 
         if (this->ordering() == 'f')
             newShapeInfo = shape::shapeBufferFortran(rankOf(), dataType(), shapeOf());
@@ -968,6 +973,12 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         auto result = new NDArray(newBuffer, newShapeInfo, nullptr);
         result->_isBuffAlloc = true;
         result->_isShapeAlloc = true;
+
+        auto d1 = this->dataType();
+        auto d2 = result->dataType();
+
+        auto s1 = this->sizeOfT();
+        auto s2 = result->sizeOfT();
 
         result->assign(this);
 
@@ -2559,6 +2570,7 @@ NDArray NDArray::transp() const {
         // return (*this)(i);
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, i), LIBND4J_TYPES);
     }
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::getIndexedScalar(const Nd4jLong) const, LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 // Returns value from 2D matrix by coordinates/indexes

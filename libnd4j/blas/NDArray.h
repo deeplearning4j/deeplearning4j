@@ -1108,7 +1108,7 @@ namespace nd4j {
         /**
         *  returns size of array elements type
         */ 
-        FORCEINLINE int sizeOfT() const;
+        FORCEINLINE size_t sizeOfT() const;
 
         /**
         *  returns element-wise-stride
@@ -1433,8 +1433,10 @@ namespace nd4j {
 
     //////////////////////////////////////////////////////////////////////////
 
-    int NDArray::sizeOfT() const {
-        return DataTypeUtils::sizeOf(this->dataType());
+    size_t NDArray::sizeOfT() const {
+        auto v = this->dataType();
+        auto s = DataTypeUtils::sizeOfElement(v);
+        return s;
     }
 
     //////////////////////////////////////////////////////////////////////////

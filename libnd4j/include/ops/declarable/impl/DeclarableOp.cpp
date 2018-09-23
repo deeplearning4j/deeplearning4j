@@ -181,6 +181,7 @@ namespace nd4j {
                     std::pair<int, int> pair(ctx.nodeId(), cnt++);
 
                     if (!ctx.isValueAvailable(pair.second)) {
+                        shape::printShapeInfoLinear("Going to create variable with shape", out);
                         auto outArr = new NDArray(out, true, workspace);
 
                         ctx.pushNDArrayToVariableSpace(pair, outArr);
