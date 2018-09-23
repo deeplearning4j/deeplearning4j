@@ -835,7 +835,6 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 // This method assigns values of given NDArray to this one, wrt order
     void NDArray::assign(NDArray *other) {
         if (this->isScalar() && other->isScalar()) {
-            this ->_buffer[0] = other->_buffer[0];
             BUILD_DOUBLE_SELECTOR(this->dataType(), other->dataType(), templatedDoubleAssign, (this->buffer(), 0, other->buffer(), 0), LIBND4J_TYPES, LIBND4J_TYPES);
             return;
         } else if (other->isScalar()) {
@@ -851,7 +850,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         }
 
         // memcpy is allowed only for same order && same ews (being equal to 1)
-        if (ordering() == other->ordering() && shape::elementWiseStride(this->_shapeInfo) == 1 && shape::elementWiseStride(other->_shapeInfo) == 1) {
+        if (ordering() == other->ordering() && this->dataType() == other->dataType() && shape::elementWiseStride(this->_shapeInfo) == 1 && shape::elementWiseStride(other->_shapeInfo) == 1) {
             memcpy(_buffer, other->_buffer, lengthOf() * sizeOfT());
         } else {
             // now we invoke dup pwt against target buffer
@@ -866,10 +865,10 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 // This method assigns values of given NDArray to this one
     void NDArray::assign(NDArray& other) {
         if (this->isScalar() && other.isScalar()) {
-            this->_buffer[0] = other._buffer[0];
+            BUILD_DOUBLE_SELECTOR(this->dataType(), other.dataType(), templatedDoubleAssign, (this->buffer(), 0, other.buffer(), 0), LIBND4J_TYPES, LIBND4J_TYPES);
             return;
         } else if (other.isScalar()) {
-            this->assign(other._buffer[0]);
+            NativeOpExcutioner::execScalar(scalar::Copy, this->buffer(), this->shapeInfo(), this->buffer(), this->shapeInfo(), other.buffer(), other.shapeInfo(), nullptr);
             return;;
         }
 
@@ -883,7 +882,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         }
 
         // memcpy is allowed only for same order && same ews (being equal to 1)
-        if (ordering() == other.ordering() && shape::elementWiseStride(_shapeInfo) == 1 && shape::elementWiseStride(other._shapeInfo) == 1) {
+        if (ordering() == other.ordering() && this->dataType() == other.dataType() && shape::elementWiseStride(_shapeInfo) == 1 && shape::elementWiseStride(other._shapeInfo) == 1) {
             
             memcpy(_buffer, other._buffer, lengthOf() * sizeOfT());
         } else {
