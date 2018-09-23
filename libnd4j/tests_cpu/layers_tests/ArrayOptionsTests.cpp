@@ -67,6 +67,8 @@ TEST_F(ArrayOptionsTests, TestShape_Basic_4) {
 
     ArrayOptions::setPropertyBits(shape, {ARRAY_HALF, ARRAY_QUANTIZED});
 
+    auto dtype = ArrayOptions::dataType(shape);
+
     ASSERT_FALSE(ArrayOptions::isSparseArray(shape));
     ASSERT_TRUE(nd4j::DataType::DataType_HALF == ArrayOptions::dataType(shape));
     ASSERT_EQ(nd4j::ArrayType::DENSE, ArrayOptions::arrayType(shape));
@@ -85,4 +87,11 @@ TEST_F(ArrayOptionsTests, TestShape_Basic_6) {
     ArrayOptions::setPropertyBits(shape, {ARRAY_EMPTY, ARRAY_INT, ARRAY_CSC});
 
     ASSERT_EQ(nd4j::ArrayType::EMPTY, ArrayOptions::arrayType(shape));
+}
+
+TEST_F(ArrayOptionsTests, TestShape_Basic_7) {
+    ArrayOptions::setDataType(shape, nd4j::DataType::DataType_FLOAT);
+    ArrayOptions::setDataType(shape, nd4j::DataType::DataType_FLOAT);
+
+    ASSERT_EQ(nd4j::DataType::DataType_FLOAT, ArrayOptions::dataType(shape));
 }

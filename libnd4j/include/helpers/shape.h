@@ -1440,8 +1440,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
                 for(int j=rank+1; j<doubleRank; ++j)
                     shape[j+1] = shape[j]*shape[j-rank];            
             }
-        // set last 3 elements in shape
-        shape[doubleRank + 1] = 0;
+        // set last 2 elements in shape
         shape[doubleRank + 2] = 1;
         shape[doubleRank + 3] = (int)order;
     }

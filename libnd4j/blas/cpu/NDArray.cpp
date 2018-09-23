@@ -1436,7 +1436,7 @@ NDArray NDArray::transp() const {
         } else if (!shape::equalsSoft(_shapeInfo, other->_shapeInfo))
             return false;
 
-        double *extras = new double[1]{eps};
+        float *extras = new float[1]{static_cast<float>(eps)};
 
         auto tmp = NDArrayFactory::_scalar<float>(0.0f, this->_workspace);
 
@@ -1577,6 +1577,14 @@ NDArray NDArray::transp() const {
         NativeOpExcutioner::execBroadcast(nd4j::broadcast::Ops::Multiply, _buffer, _shapeInfo, column->_buffer, column->_shapeInfo, _buffer, _shapeInfo,
                                              dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
                                              tad->tadOnlyShapeInfo, tad->tadOffsets);
+    }
+
+    template <>
+    void NDArray::applyScalar(nd4j::scalar::Ops op, const nd4j::NDArray* scalar, NDArray *target, void *extraParams) const {
+        if (target == nullptr)
+            NativeOpExcutioner::execScalar(op, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, scalar->getBuffer(), scalar->getShapeInfo(), extraParams);
+        else
+            NativeOpExcutioner::execScalar(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, scalar->getBuffer(), scalar->getShapeInfo(), extraParams);
     }
 
     template <typename T>
@@ -2253,13 +2261,11 @@ NDArray NDArray::transp() const {
 
         if (isScalar()) {
             target->assign(this);
-            // FIXME: uncomment
-            //target->applyPairwiseTransform(op, const_cast<NDArray*>(other), extraArgs);
+            target->applyPairwiseTransform(op.p, const_cast<NDArray*>(other), extraArgs);
             return;
         }
         if (other->isScalar()) {
-            // FIXME: uncomment
-            //this->applyScalar(op, *other, target, extraArgs);
+            this->applyScalar(op.s, other, target, extraArgs);
             return;
         }
 

@@ -51,9 +51,9 @@ namespace nd4j {
     }
 
     nd4j::DataType ArrayOptions::dataType(Nd4jLong *shapeInfo) {
-        if (hasPropertyBitSet(shapeInfo, ARRAY_QUANTIZED))
+        /*if (hasPropertyBitSet(shapeInfo, ARRAY_QUANTIZED))
             return nd4j::DataType::DataType_QINT8;
-        else if (hasPropertyBitSet(shapeInfo, ARRAY_FLOAT))
+        else */if (hasPropertyBitSet(shapeInfo, ARRAY_FLOAT))
             return nd4j::DataType::DataType_FLOAT;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_DOUBLE))
             return nd4j::DataType::DataType_DOUBLE;
@@ -70,8 +70,10 @@ namespace nd4j {
                 return nd4j::DataType ::DataType_UINT32;
             else if (hasPropertyBitSet(shapeInfo, ARRAY_LONG))
                 return nd4j::DataType ::DataType_UINT64;
-            else
+            else {
+                shape::printShapeInfoLinear("Bad unsigned datatype (not)stored in shape", shapeInfo);
                 throw std::runtime_error("Bad datatype");
+            }
         }
         else if (hasPropertyBitSet(shapeInfo, ARRAY_CHAR))
             return nd4j::DataType ::DataType_INT8;
@@ -81,8 +83,10 @@ namespace nd4j {
             return nd4j::DataType ::DataType_INT32;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_LONG))
             return nd4j::DataType ::DataType_INT64;
-        else
+        else {
+            shape::printShapeInfoLinear("Bad signed datatype (not)stored in shape", shapeInfo);
             throw std::runtime_error("Bad datatype");
+        }
     }
 
     SpaceType ArrayOptions::spaceType(const Nd4jLong *shapeInfo) {
