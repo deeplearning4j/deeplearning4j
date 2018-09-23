@@ -113,6 +113,10 @@ namespace nd4j {
         _length = 0;
     }
 
+    NDArray::NDArray() {
+        nd4j_printf("Default constructor...\n","");
+    }
+
     NDArray::NDArray(Nd4jLong *shapeInfo, nd4j::memory::Workspace* workspace) {
         auto dtype = ArrayOptions::dataType(shapeInfo);
         _length = shape::length(shapeInfo);
@@ -204,7 +208,7 @@ namespace nd4j {
 
     auto tLen = nd4j::DataTypeUtils::sizeOf(ArrayOptions::dataType(shapeInfo));
     ALLOCATE(_buffer, workspace, this->_length * tLen, int8_t);
-    ALLOCATE(_shapeInfo, workspace, shape::shapeInfoByteLength(shapeInfo), Nd4jLong);
+    ALLOCATE(_shapeInfo, workspace, shape::shapeInfoLength(shapeInfo), Nd4jLong);
 
     _workspace = workspace;
 
@@ -599,7 +603,7 @@ NDArray::NDArray(const NDArray& other) {
     _workspace = other._workspace;
     auto tLen = nd4j::DataTypeUtils::sizeOf(ArrayOptions::dataType(other._shapeInfo));
     ALLOCATE(_buffer, other._workspace, this->_length * tLen, int8_t);
-    ALLOCATE(_shapeInfo, other._workspace, shape::shapeInfoByteLength(other._shapeInfo), Nd4jLong);
+    ALLOCATE(_shapeInfo, other._workspace, shape::shapeInfoLength(other._shapeInfo), Nd4jLong);
 
     REPLICATE_SHAPE(other._shapeInfo, this->shapeInfo());
 

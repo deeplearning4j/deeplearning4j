@@ -35,7 +35,7 @@ namespace functions {
                                                 void *vz,
                                                 Nd4jLong *zShapeInfo) {
             auto x = reinterpret_cast<X *>(vx);
-            auto z = reinterpret_cast<X *>(vx);
+            auto z = reinterpret_cast<X *>(vz);
             auto extraParams = reinterpret_cast<X *>(vextraParams);
 
             const Nd4jLong length = shape::length(xShapeInfo);

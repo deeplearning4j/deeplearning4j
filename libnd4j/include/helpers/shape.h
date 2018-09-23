@@ -430,6 +430,8 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD int shapeInfoLength(Nd4jLong* shapeInfo);
 
+    ND4J_EXPORT _CUDA_HD int shapeInfoLength(const Nd4jLong* shapeInfo);
+
     ND4J_EXPORT _CUDA_HD size_t shapeInfoByteLength(int rank);
 
     ND4J_EXPORT _CUDA_HD size_t shapeInfoByteLength(Nd4jLong* shapeInfo);
@@ -2579,7 +2581,11 @@ template <typename T>
     }
 
     INLINEDEF _CUDA_HD int shapeInfoLength(Nd4jLong* shape) {
-        return shapeInfoLength(shape[0]);
+        return shapeInfoLength(static_cast<int>(shape[0]));
+    }
+
+    INLINEDEF _CUDA_HD int shapeInfoLength(const Nd4jLong* shape) {
+        return shapeInfoLength(static_cast<int>(shape[0]));
     }
 
     INLINEDEF _CUDA_HD size_t shapeInfoByteLength(int rank) {

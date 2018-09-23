@@ -142,7 +142,7 @@ namespace nd4j {
         std::string toStringValue(T value);
 
     public:
-        NDArray() = default;
+        NDArray();
 
         NDArray(Nd4jLong *shapeInfo, nd4j::memory::Workspace* workspace = nullptr);
 

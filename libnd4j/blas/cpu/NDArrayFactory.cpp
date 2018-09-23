@@ -122,7 +122,7 @@ namespace nd4j {
         int rank = (int) shape.size();
 
         Nd4jLong *shapeInfo = nullptr;
-        ALLOCATE(shapeInfo, workspace, shape::shapeInfoByteLength(rank), Nd4jLong);
+        ALLOCATE(shapeInfo, workspace, shape::shapeInfoLength(rank), Nd4jLong);
         shape::shapeBuffer(rank, shape.data(), shapeInfo);
         ArrayOptions::setDataType(shapeInfo, DataTypeUtils::fromT<T>());
         res->setShapeInfo(shapeInfo);
@@ -145,7 +145,7 @@ namespace nd4j {
         int8_t *buffer = nullptr;
         Nd4jLong *shapeInfo = nullptr;
         ALLOCATE(buffer, workspace, values.size() * sizeof(T), int8_t);
-        ALLOCATE(shapeInfo, workspace, shape::shapeInfoByteLength(1), Nd4jLong);
+        ALLOCATE(shapeInfo, workspace, shape::shapeInfoLength(1), Nd4jLong);
         shape::shapeVector(values.size(), shapeInfo);
 
         ArrayOptions::setDataType(shapeInfo, DataTypeUtils::fromT<T>());
@@ -235,7 +235,7 @@ namespace nd4j {
     NDArray NDArrayFactory::_create(const NDArray *other, const bool copyStrides, nd4j::memory::Workspace* workspace) {
         NDArray result;
         //this->_length = shape::length(other->_shapeInfo);
-        auto shapeLength = shape::shapeInfoByteLength(other->getShapeInfo());
+        auto shapeLength = shape::shapeInfoLength(other->getShapeInfo());
 
         result.setWorkspace(workspace);
         auto tLen = nd4j::DataTypeUtils::sizeOf(ArrayOptions::dataType(other->getShapeInfo()));
@@ -243,7 +243,7 @@ namespace nd4j {
         int8_t *buffer = nullptr;
         Nd4jLong *shapeInfo = nullptr;
         ALLOCATE(buffer, workspace, other->lengthOf() * tLen, int8_t);
-        ALLOCATE(shapeInfo, workspace, shape::shapeInfoByteLength(other->getShapeInfo()), Nd4jLong);
+        ALLOCATE(shapeInfo, workspace, shape::shapeInfoLength(other->getShapeInfo()), Nd4jLong);
         // FIXME: memcpy should be removed
         // memcpy(_buffer, other->_buffer, arrLength*sizeOfT());      // copy other._buffer information into new array
 
@@ -484,7 +484,7 @@ namespace nd4j {
         int rank = (int) shape.size();
 
         Nd4jLong *shapeInfo = nullptr;
-        ALLOCATE(shapeInfo, workspace, shape::shapeInfoByteLength(rank), Nd4jLong);
+        ALLOCATE(shapeInfo, workspace, shape::shapeInfoLength(rank), Nd4jLong);
         if (order == 'c')
             shape::shapeBuffer(rank, (const_cast<std::vector<Nd4jLong>&>(shape)).data(), shapeInfo);
         else

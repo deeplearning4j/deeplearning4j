@@ -54,6 +54,7 @@ TEST_F(WorkspaceTests, BasicInitialization2) {
 
     auto v = array.reduceNumber(reduce::Sum);
     auto f = v.getScalar<float>(0);
+    v.printShapeInfo("v shape");
 
     ASSERT_NEAR(2.0f, f, 1e-5);
 
