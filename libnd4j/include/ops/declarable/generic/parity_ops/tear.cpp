@@ -64,9 +64,9 @@ namespace nd4j {
                 Nd4jLong *newShape;
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(tad.tadOnlyShapeInfo), Nd4jLong);
                 if (shape::order(inShape) == 'c')
-                    shape::shapeBuffer(shape::rank(tad.tadOnlyShapeInfo), shape::shapeOf(tad.tadOnlyShapeInfo), newShape);
+                    shape::shapeBuffer(shape::rank(tad.tadOnlyShapeInfo), block.dataType(), shape::shapeOf(tad.tadOnlyShapeInfo), newShape);
                 else
-                    shape::shapeBufferFortran(shape::rank(tad.tadOnlyShapeInfo), shape::shapeOf(tad.tadOnlyShapeInfo), newShape);
+                    shape::shapeBufferFortran(shape::rank(tad.tadOnlyShapeInfo), block.dataType(), shape::shapeOf(tad.tadOnlyShapeInfo), newShape);
                 result->push_back(newShape);
             }
 

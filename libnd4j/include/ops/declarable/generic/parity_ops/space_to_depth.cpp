@@ -71,7 +71,7 @@ namespace ops {
             shape = {{bS, oH, oW, oD }};
         else 
             shape = {{bS, oD, oH, oW }};
-        shape::shapeBuffer(4, shape.data(), newShape);
+        shape::shapeBuffer(4, block.dataType(), shape.data(), newShape);
 
         return SHAPELIST(newShape);
     }

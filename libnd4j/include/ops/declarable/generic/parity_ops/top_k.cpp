@@ -67,9 +67,9 @@ namespace nd4j {
                 internalShape[shapeRank - 1] = k;
 
                 if (shape::order(in) == 'c')
-                    shape::shapeBuffer(shapeRank, internalShape.data(),  newshape);
+                    shape::shapeBuffer(shapeRank, block.dataType(), internalShape.data(),  newshape);
                 else
-                    shape::shapeBufferFortran(shapeRank, internalShape.data(),  newshape);
+                    shape::shapeBufferFortran(shapeRank, block.dataType(), internalShape.data(),  newshape);
 
                 shapeList->push_back(newshape); 
             }

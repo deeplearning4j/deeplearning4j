@@ -429,7 +429,7 @@ namespace nd4j {
             bool result = _preprocess_strided_slice(nullptr, &shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0);
 
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
-            shape::shapeBuffer(shape.size(), shape.data(), newShape);
+            shape::shapeBuffer(shape.size(), block.dataType(), shape.data(), newShape);
 
             return SHAPELIST(newShape);
         }

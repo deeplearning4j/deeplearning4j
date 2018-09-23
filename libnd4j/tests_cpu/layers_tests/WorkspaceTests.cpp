@@ -72,6 +72,10 @@ TEST_F(WorkspaceTests, BasicInitialization3) {
     array.putScalar(0, 1.0f);
     array.putScalar(5, 1.0f);
 
+    auto v = array.reduceNumber(reduce::Sum);
+    auto f = v.getScalar<float>(0);
+    v.printShapeInfo("v shape");
+
     ASSERT_NEAR(2.0f, array.reduceNumber(reduce::Sum).getScalar<float>(0), 1e-5);
 
     ASSERT_TRUE(workspace.getCurrentOffset() == 0);

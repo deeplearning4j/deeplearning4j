@@ -145,17 +145,17 @@ namespace nd4j {
         _workspace = workspace;
         if (workspace == nullptr) {
             if (order == 'f')
-                _shapeInfo = shape::shapeBufferFortran(rank, shapeOf);
+                _shapeInfo = shape::shapeBufferFortran(rank, dtype, shapeOf);
             else
-                _shapeInfo = shape::shapeBuffer(rank, shapeOf);
+                _shapeInfo = shape::shapeBuffer(rank, dtype, shapeOf);
 
             _buffer = new int8_t[shape::length(_shapeInfo) * DataTypeUtils::sizeOfElement(dtype)];
         } else {
             _shapeInfo = reinterpret_cast<Nd4jLong*>(workspace->allocateBytes(shape::shapeInfoByteLength(rank)));
             if (order == 'f')
-                shape::shapeBufferFortran(rank, shapeOf, _shapeInfo);
+                shape::shapeBufferFortran(rank, dtype, shapeOf, _shapeInfo);
             else
-                shape::shapeBuffer(rank, shapeOf, _shapeInfo);
+                shape::shapeBuffer(rank, dtype, shapeOf, _shapeInfo);
 
             _buffer = reinterpret_cast<int8_t *>(workspace->allocateBytes(shape::length(_shapeInfo) * DataTypeUtils::sizeOfElement(dtype)));
         }
@@ -797,16 +797,16 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
         if (workspace == nullptr) {
             if (order == 'f')
-                _shapeInfo = shape::shapeBufferFortran(rank, shapeOf);
+                _shapeInfo = shape::shapeBufferFortran(rank, dtype, shapeOf);
             else
-                _shapeInfo = shape::shapeBuffer(rank, shapeOf);
+                _shapeInfo = shape::shapeBuffer(rank, dtype, shapeOf);
         } else {
             _shapeInfo = reinterpret_cast<Nd4jLong*>(_workspace->allocateBytes(shape::shapeInfoByteLength(rank)));
 
             if (order == 'f')
-                shape::shapeBufferFortran(rank, shapeOf, _shapeInfo);
+                shape::shapeBufferFortran(rank, dtype, shapeOf, _shapeInfo);
             else
-                shape::shapeBuffer(rank, shapeOf, _shapeInfo);
+                shape::shapeBuffer(rank, dtype, shapeOf, _shapeInfo);
         }
 
         ArrayOptions::setDataType(_shapeInfo, dtype);
@@ -944,9 +944,9 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         newBuffer = new int8_t[newLength * sizeOfT()];
 
         if (this->ordering() == 'f')
-            newShapeInfo = shape::shapeBufferFortran(rankOf(), shapeOf());
+            newShapeInfo = shape::shapeBufferFortran(rankOf(), dataType(), shapeOf());
         else
-            newShapeInfo = shape::shapeBuffer(rankOf(), shapeOf());
+            newShapeInfo = shape::shapeBuffer(rankOf(), dataType(), shapeOf());
 
         auto result = new NDArray(newBuffer, newShapeInfo, nullptr);
         result->_isBuffAlloc = true;
@@ -974,18 +974,18 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         newBuffer = new int8_t[newLength * sizeOfT()];
 
         if (order == 'f')
-            newShapeInfo = shape::shapeBufferFortran(rankOf(), shapeOf());
+            newShapeInfo = shape::shapeBufferFortran(rankOf(), dataType(), shapeOf());
         else
-            newShapeInfo = shape::shapeBuffer(rankOf(), shapeOf());
+            newShapeInfo = shape::shapeBuffer(rankOf(), dataType(), shapeOf());
 
     } else {
         newBuffer = _workspace->allocateBytes(newLength * sizeOfT());
         newShapeInfo = reinterpret_cast<Nd4jLong *>(_workspace->allocateBytes(shape::shapeInfoByteLength(this->rankOf())));
 
         if (order == 'f')
-            shape::shapeBufferFortran(rankOf(), shapeOf(), newShapeInfo);
+            shape::shapeBufferFortran(rankOf(), dataType(), shapeOf(), newShapeInfo);
         else
-            shape::shapeBuffer(rankOf(), shapeOf(), newShapeInfo);
+            shape::shapeBuffer(rankOf(), dataType(), shapeOf(), newShapeInfo);
     }
     // FIXME: we know that EWS is always 1 after dup() result
     newShapeInfo[rankOf() * 2 + 2] = 1;
@@ -1653,9 +1653,9 @@ NDArray NDArray::transp() const {
         char order = o == 'a' ? this->ordering() : o;
 
         if (order == 'c')
-            shape::shapeBuffer(dimensions.size(), dimensions.data(), newShape);
+            shape::shapeBuffer(dimensions.size(), dataType(), dimensions.data(), newShape);
         else
-            shape::shapeBufferFortran(dimensions.size(), dimensions.data(), newShape);
+            shape::shapeBufferFortran(dimensions.size(), dataType(), dimensions.data(), newShape);
 
         if (_isShapeAlloc)
             RELEASE(_shapeInfo, _workspace);
@@ -1750,9 +1750,9 @@ NDArray NDArray::transp() const {
         ALLOCATE(shapeInfoNew, _workspace, shape::shapeInfoLength(rank), Nd4jLong);
 
         if (order == 'c')
-            shape::shapeBuffer(shape.size(), shape.data(), shapeInfoNew);
+            shape::shapeBuffer(shape.size(), dataType(), shape.data(), shapeInfoNew);
         else
-            shape::shapeBufferFortran(shape.size(), shape.data(), shapeInfoNew);
+            shape::shapeBufferFortran(shape.size(), dataType(), shape.data(), shapeInfoNew);
 
         int8_t *newBuffer;
         ALLOCATE(newBuffer, _workspace, this->lengthOf(), int8_t);
@@ -3711,9 +3711,9 @@ NDArray NDArray::transp() const {
             shape[e] = this->sizeAt(e);
 
         if (order == 'c')
-            shape::shapeBuffer(this->rankOf(), shape.data(), newShape);
+            shape::shapeBuffer(this->rankOf(),dataType(),  shape.data(), newShape);
         else
-            shape::shapeBufferFortran(this->rankOf(), shape.data(), newShape);
+            shape::shapeBufferFortran(this->rankOf(), dataType(), shape.data(), newShape);
 
         if (!isView()) {
             NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Copy, newBuffer, newShape, _buffer, _shapeInfo, newBuffer, newShape, nullptr);

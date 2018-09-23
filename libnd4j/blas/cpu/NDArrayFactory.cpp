@@ -123,7 +123,7 @@ namespace nd4j {
 
         Nd4jLong *shapeInfo = nullptr;
         ALLOCATE(shapeInfo, workspace, shape::shapeInfoLength(rank), Nd4jLong);
-        shape::shapeBuffer(rank, shape.data(), shapeInfo);
+        shape::shapeBuffer(rank, DataTypeUtils::fromT<T>(), shape.data(), shapeInfo);
         ArrayOptions::setDataType(shapeInfo, DataTypeUtils::fromT<T>());
         res->setShapeInfo(shapeInfo);
 
@@ -342,18 +342,18 @@ namespace nd4j {
 
         if (workspace == nullptr) {
             if (order == 'f')
-                result->setShapeInfo(shape::shapeBufferFortran(rank, shapeOf));
+                result->setShapeInfo(shape::shapeBufferFortran(rank, DataTypeUtils::fromT<T>(), shapeOf));
             else
-                result->setShapeInfo(shape::shapeBuffer(rank, shapeOf));
+                result->setShapeInfo(shape::shapeBuffer(rank, DataTypeUtils::fromT<T>(), shapeOf));
 
             result->setBuffer(new int8_t[result->lengthOf() * sizeof(T)]);
         } else {
             result->setBuffer(reinterpret_cast<int8_t *>(workspace->allocateBytes(data.size() * sizeof(T))));
             result->setShapeInfo(reinterpret_cast<Nd4jLong*>(workspace->allocateBytes(shape::shapeInfoByteLength(rank))));
             if (order == 'f')
-                shape::shapeBufferFortran(rank, shapeOf, result->shapeInfo());
+                shape::shapeBufferFortran(rank, DataTypeUtils::fromT<T>(), shapeOf, result->shapeInfo());
             else
-                shape::shapeBuffer(rank, shapeOf, result->shapeInfo());
+                shape::shapeBuffer(rank, DataTypeUtils::fromT<T>(), shapeOf, result->shapeInfo());
 
             // we're triggering length recalculation
             result->setShapeInfo(result->shapeInfo());
@@ -486,9 +486,9 @@ namespace nd4j {
         Nd4jLong *shapeInfo = nullptr;
         ALLOCATE(shapeInfo, workspace, shape::shapeInfoLength(rank), Nd4jLong);
         if (order == 'c')
-            shape::shapeBuffer(rank, (const_cast<std::vector<Nd4jLong>&>(shape)).data(), shapeInfo);
+            shape::shapeBuffer(rank, dtype, (const_cast<std::vector<Nd4jLong>&>(shape)).data(), shapeInfo);
         else
-            shape::shapeBufferFortran(rank, (const_cast<std::vector<Nd4jLong>&>(shape)).data(), shapeInfo);
+            shape::shapeBufferFortran(rank, dtype, (const_cast<std::vector<Nd4jLong>&>(shape)).data(), shapeInfo);
 
         ArrayOptions::setDataType(shapeInfo, dtype);
         res.setShapeInfo(shapeInfo);
@@ -497,6 +497,7 @@ namespace nd4j {
         ALLOCATE(buffer, workspace, res.lengthOf() * DataTypeUtils::sizeOfElement(dtype), int8_t);
         res.setBuffer(buffer);
         res.setWorkspace(workspace);
+        memset(buffer, 0, res.lengthOf() * res.sizeOfT());
 
         return res;
     }
@@ -590,16 +591,16 @@ namespace nd4j {
         res->setWorkspace(workspace);
         if (workspace == nullptr) {
             if (order == 'f')
-                res->setShapeInfo(shape::shapeBufferFortran(rank, shapeOf));
+                res->setShapeInfo(shape::shapeBufferFortran(rank, dataType, shapeOf));
             else
-                res->setShapeInfo(shape::shapeBuffer(rank, shapeOf));
+                res->setShapeInfo(shape::shapeBuffer(rank, dataType, shapeOf));
 
             res->setBuffer(new int8_t[res->lengthOf() * res->sizeOfT()]);
         } else {
             if (order == 'f')
-                shape::shapeBufferFortran(rank, shapeOf, res->shapeInfo());
+                shape::shapeBufferFortran(rank, dataType, shapeOf, res->shapeInfo());
             else
-                shape::shapeBuffer(rank, shapeOf, res->shapeInfo());
+                shape::shapeBuffer(rank, dataType, shapeOf, res->shapeInfo());
 
 
             res->setShapeInfo(reinterpret_cast<Nd4jLong*>(workspace->allocateBytes(shape::shapeInfoByteLength(rank))));

@@ -111,7 +111,7 @@ namespace nd4j {
                 memcpy(shape, shape::shapeOf(inShape), rank * sizeof(Nd4jLong));
 
                 ShapeUtils::insertDimension(rank, shape, axis, depth);
-                shape::shapeBuffer(rank, shape, newShape);
+                shape::shapeBuffer(rank, block.dataType(), shape, newShape);
 
                 RELEASE(shape, block.getWorkspace());
             } else {
@@ -125,7 +125,7 @@ namespace nd4j {
                     shape.push_back(shape::shapeOf(inShape)[e]);
 
                 shape.insert(shape.begin() + axis, depth);
-                shape::shapeBuffer(rank+1, shape.data(), newShape);
+                shape::shapeBuffer(rank+1, block.dataType(),  shape.data(), newShape);
             }
 
             return SHAPELIST(newShape);

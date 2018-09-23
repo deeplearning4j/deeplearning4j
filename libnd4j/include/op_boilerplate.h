@@ -1310,9 +1310,9 @@
                                                         Nd4jLong* newshape; \
                                                         ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), Nd4jLong); \
                                                         if (shape::order(inputShape->at(e)) == 'c') \
-                                                            shape::shapeBuffer(shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);\
+                                                            shape::shapeBuffer(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);\
                                                         else \
-                                                            shape::shapeBufferFortran(shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);\
+                                                            shape::shapeBufferFortran(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);\
                                                         shapeList->push_back(newshape); \
                                                     } \
                                                     return shapeList; \
@@ -1374,9 +1374,9 @@
                                                                                         Nd4jLong* newshape; \
                                                                                         ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), Nd4jLong); \
                                                                                         if (shape::order(inputShape->at(e)) == 'c') \
-                                                                                            shape::shapeBuffer(shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);\
+                                                                                            shape::shapeBuffer(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);\
                                                                                         else \
-                                                                                            shape::shapeBufferFortran(shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);\
+                                                                                            shape::shapeBufferFortran(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)),  shape::shapeOf(inputShape->at(e)), newshape);\
                                                                                         shapeList->push_back(newshape); \
                                                                                     } \
                                                                                     return shapeList; \
@@ -1428,9 +1428,9 @@
 #define DECLARE_DEVICE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)
 
 #define REPLICATE_SHAPE(SRC, TGT)   if (shape::order(SRC) == 'c')\
-                                        shape::shapeBuffer(shape::rank(SRC), shape::shapeOf(SRC), TGT);\
+                                        shape::shapeBuffer(shape::rank(SRC), nd4j::ArrayOptions::dataType(SRC), shape::shapeOf(SRC), TGT);\
                                     else \
-                                        shape::shapeBufferFortran(shape::rank(SRC), shape::shapeOf(SRC), TGT);\
+                                        shape::shapeBufferFortran(shape::rank(SRC),  nd4j::ArrayOptions::dataType(SRC), shape::shapeOf(SRC), TGT);\
 
 
 

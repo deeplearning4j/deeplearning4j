@@ -153,9 +153,9 @@ namespace nd4j {
 
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
             if (order == 'c')
-                shape::shapeBuffer(shape.size(), shape.data(), newShape);
+                shape::shapeBuffer(shape.size(), block.dataType(), shape.data(), newShape);
             else
-                shape::shapeBufferFortran(shape.size(), shape.data(), newShape);
+                shape::shapeBufferFortran(shape.size(), block.dataType(), shape.data(), newShape);
 
             shapeList->push_back(newShape);
 

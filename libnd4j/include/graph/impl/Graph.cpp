@@ -180,7 +180,7 @@ namespace nd4j {
                             //shape::TAD tad(oldShape, node->getDimensions()->data(), node->getDimensions()->size());
                             Nd4jLong numTads = shape::tadLength(oldShape, node->getDimensions()->data(), node->getDimensions()->size());
                             auto shape = new Nd4jLong[2]{1, (int) numTads};
-                            newShape = shape::shapeBuffer(2, shape);
+                            newShape = shape::shapeBuffer(2, ArrayOptions::dataType(oldShape), shape);
                         }
 
                         std::pair<int, int> pairAddr(node->id(), 0);

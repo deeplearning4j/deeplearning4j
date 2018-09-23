@@ -48,9 +48,9 @@ namespace ops {
         auto conv = ArrayUtils::toLongVector(*block.getIArguments());
 
         if (shape::order(in) == 'c')
-            shape::shapeBuffer(block.numI(), conv.data(), newShape);
+            shape::shapeBuffer(block.numI(), block.dataType(), conv.data(), newShape);
         else
-            shape::shapeBufferFortran(block.numI(), conv.data(), newShape);
+            shape::shapeBufferFortran(block.numI(),block.dataType(),  conv.data(), newShape);
 
         return SHAPELIST(newShape);
     }

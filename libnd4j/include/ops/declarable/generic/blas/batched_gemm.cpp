@@ -122,7 +122,7 @@ namespace nd4j {
                 Nd4jLong *newShape;
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
 
-                shape::shapeBufferFortran(2, shape.data(), newShape);
+                shape::shapeBufferFortran(2, block.dataType(), shape.data(), newShape);
 
                 shapeList->push_back(newShape);
             }

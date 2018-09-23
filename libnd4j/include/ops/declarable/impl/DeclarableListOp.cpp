@@ -54,7 +54,7 @@ namespace nd4j {
             std::vector<Nd4jLong> shape({1, 1});
             Nd4jLong *newShape;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
-            shape::shapeBuffer(2, shape.data(), newShape);
+            shape::shapeBuffer(2, block.dataType(), shape.data(), newShape);
 
             return SHAPELIST(newShape);
         }

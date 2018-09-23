@@ -46,7 +46,7 @@ namespace nd4j {
                 shapeOf[e] = inputShape->at(0)[e+1] * 2;
 
 
-            shape::shapeBuffer(shape::rank(inputShape->at(0)), shapeOf, newShape);
+            shape::shapeBuffer(shape::rank(inputShape->at(0)), block.dataType(), shapeOf, newShape);
 
             RELEASE(shapeOf, block.getWorkspace());
 

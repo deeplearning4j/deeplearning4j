@@ -50,9 +50,9 @@ namespace nd4j {
 
             ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(shapeRank), Nd4jLong);
             if (shape::order(in) == 'c')
-                shape::shapeBuffer(shape::rank(in), shape::shapeOf(in), newshape);
+                shape::shapeBuffer(shape::rank(in), block.dataType(),  shape::shapeOf(in), newshape);
             else 
-                shape::shapeBufferFortran(shape::rank(in), shape::shapeOf(in), newshape);
+                shape::shapeBufferFortran(shape::rank(in), block.dataType(), shape::shapeOf(in), newshape);
 
             shapeList->push_back(newshape); 
             return shapeList;

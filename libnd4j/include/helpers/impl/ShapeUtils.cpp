@@ -688,7 +688,7 @@ std::vector<int> ShapeUtils::evalBroadcastBackwardAxis(const Nd4jLong *operandSh
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-Nd4jLong* ShapeUtils::matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* theSecondShape, bool shouldTranspondFirst, bool shouldTranspondSecond,
+Nd4jLong* ShapeUtils::matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* theSecondShape, bool shouldTranspondFirst, bool shouldTranspondSecond, nd4j::DataType  dtype,
     nd4j::memory::Workspace* workspace) {
 
     auto inA = theFirstShape;
@@ -715,7 +715,7 @@ Nd4jLong* ShapeUtils::matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* theS
         shape[0] = 1;
         shape[1] = tmpB[2];
         ALLOCATE(newShape, workspace, shape::shapeInfoLength(2), Nd4jLong);
-        shape::shapeBufferFortran(2, shape, newShape);
+        shape::shapeBufferFortran(2, dtype, shape, newShape);
 
         RELEASE(shape, workspace);
         RELEASE(tmpA, workspace);
@@ -766,7 +766,7 @@ Nd4jLong* ShapeUtils::matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* theS
 
     Nd4jLong *newShape;
     ALLOCATE(newShape, workspace, shape::shapeInfoLength(2), Nd4jLong);
-    shape::shapeBufferFortran(2, shape, newShape);
+    shape::shapeBufferFortran(2, dtype, shape, newShape);
 
     RELEASE(shape, workspace);
 

@@ -65,7 +65,7 @@ DECLARE_SHAPE_FN(random_crop) {
     for (int e = 0; e < shape.size(); e++)
         shape[e] = (*in).getScalar<Nd4jLong>(e);
 
-    shape::shapeBuffer(shape.size(), shape.data(), newShape);
+    shape::shapeBuffer(shape.size(), block.dataType(), shape.data(), newShape);
 
     return SHAPELIST(newShape);
 }

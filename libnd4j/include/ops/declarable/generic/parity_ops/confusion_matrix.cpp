@@ -73,7 +73,7 @@ namespace nd4j {
             Nd4jLong *newShape;
             std::array<Nd4jLong, 2> shape = {{numClasses,numClasses}};
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
-            shape::shapeBuffer(2, shape.data(), newShape);
+            shape::shapeBuffer(2, block.dataType(), shape.data(), newShape);
 
             return SHAPELIST(newShape);
         }

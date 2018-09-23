@@ -70,9 +70,9 @@ DECLARE_SHAPE_FN(embedding_lookup) {
     for (int e = 1; e < outRank; e++)
         shapeInfo[e] = shape::sizeAt(inShapeInfo, e);
     if (shape::order(inShapeInfo) == 'c')
-        shape::shapeBuffer(outRank, shapeInfo.data(),  outShapeInfo);
+        shape::shapeBuffer(outRank, block.dataType(), shapeInfo.data(),  outShapeInfo);
     else
-        shape::shapeBufferFortran(outRank, shapeInfo.data(),  outShapeInfo);
+        shape::shapeBufferFortran(outRank, block.dataType(), shapeInfo.data(),  outShapeInfo);
 
     return SHAPELIST(outShapeInfo);    
 }

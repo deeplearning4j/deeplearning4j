@@ -125,7 +125,7 @@ namespace ops {
 
         std::array<Nd4jLong, 4> shape = {{batch_size, out_rows, out_cols, depth}};
         ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), Nd4jLong);
-        shape::shapeBuffer(4, shape.data(), newShape);
+        shape::shapeBuffer(4, block.dataType(), shape.data(), newShape);
 
         return SHAPELIST(newShape);
     }

@@ -52,9 +52,9 @@ namespace nd4j {
                 ALLOCATE(determinantShape, block.getWorkspace(), shape::shapeInfoLength(targetRank), Nd4jLong);
 
                 if (shape::order(inShape) == 'c')
-                    shape::shapeBuffer(targetRank, shape::shapeOf(inShape), determinantShape);
+                    shape::shapeBuffer(targetRank, block.dataType(), shape::shapeOf(inShape), determinantShape);
                 else
-                    shape::shapeBufferFortran(targetRank, shape::shapeOf(inShape), determinantShape);
+                    shape::shapeBufferFortran(targetRank, block.dataType(), shape::shapeOf(inShape), determinantShape);
             }
             return SHAPELIST(determinantShape);
         }

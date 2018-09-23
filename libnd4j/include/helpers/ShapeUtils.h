@@ -98,7 +98,7 @@ namespace nd4j {
 
         // utility to calculate matrix product shape with give source shapes and additional params 
         // returns ShapeList pointer with result shape
-        static Nd4jLong* matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* theSecondShape, bool shouldTranspondFirst, bool shouldTranspondSecond, nd4j::memory::Workspace* workspace);
+        static Nd4jLong* matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* theSecondShape, bool shouldTranspondFirst, bool shouldTranspondSecond, nd4j::DataType dtype, nd4j::memory::Workspace* workspace);
 
         /**
         *  This method evaluates permutation vector necessary for reducing of shapeFrom to shapeTo 

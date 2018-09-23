@@ -1348,8 +1348,12 @@ namespace nd4j {
         _shapeInfo = shapeInfo;
         _isShapeAlloc = false;
 
-        if (shapeInfo != nullptr)
+        if (shapeInfo != nullptr) {
             this->_length = shape::length(shapeInfo);
+            this->_dataType = ArrayOptions::dataType(shapeInfo);
+        } else {
+            this->_dataType = nd4j::DataType::DataType_INHERIT;
+        }
     }
 
     //////////////////////////////////////////////////////////////////////////
