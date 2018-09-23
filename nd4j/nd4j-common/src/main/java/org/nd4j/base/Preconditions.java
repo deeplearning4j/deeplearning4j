@@ -16,7 +16,7 @@
 
 package org.nd4j.base;
 
-import java.util.Arrays;
+import java.util.*;
 
 /**
  * Utility method for method checking arguments.
@@ -24,6 +24,21 @@ import java.util.Arrays;
  * @author Alex Black
  */
 public class Preconditions {
+
+    private static final Map<String,PreconditionsFormat> formatters = new HashMap<>();
+
+    static {
+        ServiceLoader<PreconditionsFormat> sl = ServiceLoader.load(PreconditionsFormat.class);
+        Iterator<PreconditionsFormat> iter = sl.iterator();
+        while(iter.hasNext()){
+            PreconditionsFormat pf = iter.next();
+            List<String> formatTags = pf.formatTags();
+            for(String s : formatTags){
+                formatters.put(s, pf);
+            }
+        }
+
+    }
 
     private Preconditions(){ }
 
@@ -644,9 +659,21 @@ public class Preconditions {
         int indexOfStart = 0;
         boolean consumedMessageFully = false;
         for (int i = 0; i < args.length; i++) {
+            //First: scan for next tag. This could be a %s, or it could be a custom loader for Preconditions class (PreconditionsFormat)
             int nextIdx = message.indexOf("%s", indexOfStart);
-            if (nextIdx < 0) {
-                //Malformed message: No more "%s" to replace, but more message args
+
+            int nextCustom = -1;
+            String nextCustomTag = null;
+            for(String s : formatters.keySet()){
+                int idxThis = message.indexOf(s, indexOfStart);
+                if(idxThis > 0 && (nextCustom < 0 || idxThis < nextCustom)){
+                    nextCustom = idxThis;
+                    nextCustomTag = s;
+                }
+            }
+
+            if (nextIdx < 0 && nextCustom < 0) {
+                //Malformed message: No more "%s" (or custom tags) to replace, but more message args
                 if (!consumedMessageFully) {
                     sb.append(message.substring(indexOfStart));
                     consumedMessageFully = true;
@@ -661,9 +688,18 @@ public class Preconditions {
                     sb.append("]");
                 }
             } else {
-                sb.append(message.substring(indexOfStart, nextIdx))
-                        .append(formatArg(args[i]));
-                indexOfStart = nextIdx + 2;
+                if(nextCustom < 0 || (nextIdx > 0 && nextIdx < nextCustom)){
+                    //%s tag
+                    sb.append(message.substring(indexOfStart, nextIdx))
+                            .append(formatArg(args[i]));
+                    indexOfStart = nextIdx + 2;
+                } else {
+                    //Custom tag
+                    sb.append(message.substring(indexOfStart, nextCustom));
+                    String s = formatters.get(nextCustomTag).format(nextCustomTag, args[i]);
+                    sb.append(s);
+                    indexOfStart = nextCustom + nextCustomTag.length();
+                }
             }
         }
         if (!consumedMessageFully) {

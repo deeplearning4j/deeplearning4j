@@ -62,15 +62,10 @@ public class DynamicPartition extends DynamicCustomOp {
     }
 
 
-//    @Override
-//    public List<SDVariable> doDiff(List<SDVariable> i_v) {
-//        // DynamicPartition and DynamicStitch are mutually inverse
-//        SDVariable[] gradients = (SDVariable[]) i_v.toArray();
-////         TODO: compute indices from partitions
-//        SDVariable[] indices = f(partitions, numPartitions);
-//        SDVariable ret = sameDiff.dynamicStitch(gradients, indices);
-//        return Collections.singletonList(i_v.get(0));
-//    }
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        return Arrays.asList(f().dynamicPartitionBp(arg(0), arg(1), i_v.toArray(new SDVariable[i_v.size()]), numPartitions));
+    }
 
     protected void addArgs() {
         addIArgument(numPartitions);

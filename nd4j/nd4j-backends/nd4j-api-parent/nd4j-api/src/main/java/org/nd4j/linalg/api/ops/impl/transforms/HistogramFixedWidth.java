@@ -14,57 +14,71 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.segment;
+package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Unsorted segment max operation
+ * Histogram fixed with op
  *
  * @author Alex Black
  */
-public class UnsortedSegmentMax extends DynamicCustomOp {
+public class HistogramFixedWidth extends DynamicCustomOp {
 
-    protected int numSegments;
-
-    public UnsortedSegmentMax(SameDiff sameDiff, SDVariable data, SDVariable segmentIds, int numSegments) {
-        super(null, sameDiff,  new SDVariable[] {data, segmentIds}, false);
-        this.numSegments = numSegments;
-        addIArgument(numSegments);
+    public HistogramFixedWidth(SameDiff sameDiff, SDVariable values, SDVariable valuesRange, SDVariable numBins) {
+        super(sameDiff, new SDVariable[]{values, valuesRange}, false);
     }
 
-    public UnsortedSegmentMax(){ }
+    public HistogramFixedWidth() {
+        //no-op
+    }
 
     @Override
-    public String opName(){
-        return "unsorted_segment_max";
+    public String opName() {
+        return "histogram_fixed_width";
+    }
+
+
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
     public String tensorflowName() {
-        return "UnsortedSegmentMax";
+        return "HistogramFixedWidth";
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        //No op - just need the inputs
     }
 
     @Override
     public void resolvePropertiesFromSameDiffBeforeExecution() {
-        if(args().length == 3 && iArguments == null || iArguments.size() == 0){
+        if(args().length == 3 && iArguments.isEmpty()){
+            //Num bins is 3rd array
             addIArgument(arg(2).getArr().getInt(0));
         }
         super.resolvePropertiesFromSameDiffBeforeExecution();
     }
 
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> gradients){
-        return Arrays.asList(f().unsortedSegmentMaxBp(arg(0), arg(1), gradients.get(0), numSegments));
-    }
 
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        throw new UnsupportedOperationException("Not supported");
+    }
 }

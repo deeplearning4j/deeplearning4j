@@ -88,4 +88,26 @@ public class TestSimpleRnn extends BaseDL4JTest {
         TestUtils.testModelSerialization(net);
     }
 
+    @Test
+    public void testBiasInit(){
+        Nd4j.getRandom().setSeed(12345);
+        int nIn = 5;
+        int layerSize = 6;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(new NoOp())
+                .weightInit(WeightInit.XAVIER)
+                .activation(Activation.TANH)
+                .list()
+                .layer(new SimpleRnn.Builder().nIn(nIn).nOut(layerSize)
+                        .biasInit(100)
+                        .build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        INDArray bArr = net.getParam("0_b");
+        assertEquals(Nd4j.valueArrayOf(new long[]{1,layerSize}, 100), bArr);
+    }
 }

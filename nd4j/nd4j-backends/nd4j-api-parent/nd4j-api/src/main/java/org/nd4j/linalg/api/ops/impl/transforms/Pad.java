@@ -18,6 +18,9 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -35,6 +38,7 @@ public class Pad extends DynamicCustomOp {
     public enum Mode {CONSTANT, REFLECT, SYMMETRIC}
 
     private Mode mode;
+    private double constant;
 
     public Pad(){ }
 
@@ -59,7 +63,19 @@ public class Pad extends DynamicCustomOp {
         //Based on TF codebase: gen_array_ops.mirror_pad is osed for BOTH REFLECT and SYMMETRIC mode. Hence only constant being imported here
         this.mode = Mode.CONSTANT;
         addIArgument(mode.ordinal());
+        //Constant value is resolved just before execution
     }
+
+    @Override
+    public void resolvePropertiesFromSameDiffBeforeExecution() {
+        if(args().length == 3){
+            INDArray arr = arg(2).getArr();
+            this.tArguments.clear();
+            this.tArguments.add(arr.getDouble(0));
+        }
+        super.resolvePropertiesFromSameDiffBeforeExecution();
+    }
+
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {

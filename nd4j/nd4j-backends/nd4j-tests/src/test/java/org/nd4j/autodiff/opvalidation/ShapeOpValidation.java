@@ -326,7 +326,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testSliceGradient() {
-        OpValidationSuite.ignoreFailing();
         Nd4j.getRandom().setSeed(12345);
 
         //Order here: original shape, begin, size
@@ -729,7 +728,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testTile() {
-        OpValidationSuite.ignoreFailing();
         Nd4j.getRandom().setSeed(12345);
 
         List<int[]> tileArg = Arrays.asList(
@@ -1103,7 +1101,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testReverseSequence() {
-        OpValidationSuite.ignoreFailing();
         SameDiff sameDiff = SameDiff.create();
         float[] input_data = new float[]{
                 1, 2, 3,
@@ -1150,7 +1147,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testMatrixDeterminant(){
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6072
+        OpValidationSuite.ignoreFailing();  //Gradient check failing
 
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.rand(3,3);
@@ -1171,7 +1168,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testDeterminant22(){
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6071
+        OpValidationSuite.ignoreFailing();  //Gradient check failing
 
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.create(new double[][]{{1, 2.5}, {3.5, 4.5}});
@@ -1195,7 +1192,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testMatrixDeterminant3(){
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6072
+        OpValidationSuite.ignoreFailing();  //Gradient checks failing
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.rand(3,3);
         //System.out.println(in.shapeInfoToString());   //Rank: 2,Offset: 0 Order: c Shape: [3,3],  stride: [3,1]
@@ -1226,7 +1223,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testMatrixDeterminant4(){
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6072
+        OpValidationSuite.ignoreFailing();  //Gradient checks failing
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.rand(4,4);
         //System.out.println(in.shapeInfoToString());   //Rank: 2,Offset: 0 Order: c Shape: [4,4],  stride: [4,1]
@@ -1246,7 +1243,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testSegmentOps(){
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6414
         INDArray s = Nd4j.create(new double[]{0,0,0,1,2,2,3,3}, new long[]{8});
         INDArray d = Nd4j.create(new double[]{5,1,7,2,3,4,1,3}, new long[]{8});
         int numSegments = 4;
@@ -1254,7 +1250,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         List<String> failed = new ArrayList<>();
 
         for(String op : new String[]{"max", "min", "mean", "prod", "sum",
-                "umax", "umin", "umean", "uprod", "usum", /*"usqrtn"*/}) {
+                "umax", "umin", "umean", "uprod", "usum", "usqrtn"}) {
             log.info("Starting test: {}", op);
 
             if(op.startsWith("u")){
@@ -1312,7 +1308,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                     break;
                 case "usqrtn":
                     sm = sd.unsortedSegmentSqrtN(data, segments, numSegments);
-                    exp = Nd4j.create(new double[]{Math.sqrt(3), 1, Math.sqrt(2), 1});
+                    exp = Nd4j.trueVector(new double[]{(5+7+1)/Math.sqrt(3), 2, (3+4)/Math.sqrt(2), (1+3)/Math.sqrt(2)});
                     break;
                 default:
                     throw new RuntimeException();
@@ -1332,28 +1328,6 @@ public class ShapeOpValidation extends BaseOpValidation {
         }
 
         assertEquals(failed.toString(), 0, failed.size());
-    }
-
-    @Test
-    public void testSegmentSqrtN(){
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6414
-
-        INDArray segmentIdxs = Nd4j.create(new double[]{3,1,0,0,2,0,3,2}, new long[]{8});
-        INDArray data = Nd4j.create(new double[]{1,2,5,7,3,1,3,4}, new long[]{8});
-
-        INDArray out = Nd4j.create(new long[]{4});
-
-        DynamicCustomOp op = DynamicCustomOp.builder("unsorted_segment_sqrt_n")
-                .addInputs(data, segmentIdxs)
-                .addIntegerArguments(4)
-                .addOutputs(out)
-                .build();
-
-        Nd4j.getExecutioner().exec(op);
-
-        INDArray exp = Nd4j.trueVector(new double[]{Math.sqrt(3), 1, Math.sqrt(2), Math.sqrt(2)});
-
-        assertEquals(exp, out);
     }
 
     @Test
@@ -1777,8 +1751,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testEye(){
-        OpValidationSuite.ignoreFailing();
-
         int[] rows = new int[]{3,3,3,3};
         int[] cols = new int[]{3,2,2,2};
         int[][] batch = new int[][]{null, null, {4}, {3,3}};

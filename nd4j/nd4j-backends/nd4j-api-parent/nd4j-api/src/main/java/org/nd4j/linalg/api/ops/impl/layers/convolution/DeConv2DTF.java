@@ -186,8 +186,10 @@ public class DeConv2DTF extends DynamicCustomOp {
         //TF uses [kH, kW, outC, inC] always for weights
         tfMappings.put("kH", new NDArrayShapeAdapter(0));
         tfMappings.put("kW", new NDArrayShapeAdapter(1));
-        tfMappings.put("sH", new IntArrayIntIndexAdpater(1));
-        tfMappings.put("sW", new IntArrayIntIndexAdpater(2));
+//        tfMappings.put("sH", new IntArrayIntIndexAdpater(1));
+//        tfMappings.put("sW", new IntArrayIntIndexAdpater(2));
+        tfMappings.put("sH", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 2, 1, fields.get("dataFormat")));
+        tfMappings.put("sW", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 3, 2, fields.get("dataFormat")));
         tfMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
         tfMappings.put("isNHWC", new StringEqualsAdapter("NHWC"));
 
