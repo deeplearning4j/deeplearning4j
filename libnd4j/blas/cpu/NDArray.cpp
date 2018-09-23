@@ -1452,7 +1452,7 @@ NDArray NDArray::transp() const {
 
         // FIXME: if we're going to merge this - move loop into selector
         for (int e = 0; e < this->lengthOf(); e++) {
-            BUILD_DOUBLE_SELECTOR(dtype, this->dataType(), templatedDoubleAssign, (ptr, 0, this->_buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
+            BUILD_DOUBLE_SELECTOR(dtype, this->dataType(), templatedDoubleAssign, (ptr, e, this->_buffer, e), LIBND4J_TYPES, LIBND4J_TYPES);
         }
         return ptr;
     }
