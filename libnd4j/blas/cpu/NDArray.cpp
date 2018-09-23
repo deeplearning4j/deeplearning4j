@@ -123,10 +123,12 @@ namespace nd4j {
     NDArray::NDArray(Nd4jLong *shapeInfo, nd4j::memory::Workspace* workspace) {
         auto dtype = ArrayOptions::dataType(shapeInfo);
         _length = shape::length(shapeInfo);
-        _shapeInfo = shapeInfo;
         ALLOCATE(_buffer, workspace, _length * DataTypeUtils::sizeOfElement(dtype) , int8_t);
 
         memset(_buffer, 0, _length * DataTypeUtils::sizeOfElement(dtype));
+
+        COPY_SHAPE_EX(shapeInfo, _shapeInfo, workspace);
+
         _isShapeAlloc = true;
         _isBuffAlloc = true;
         _workspace = workspace;
