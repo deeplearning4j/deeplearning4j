@@ -143,7 +143,6 @@ namespace functions {
             else if (sameShape) {
                 int rank = shape::rank(xShapeBuffer);
                 auto xShape = shape::shapeOf(xShapeBuffer);
-
                 auto xStride = shape::stride(xShapeBuffer);
                 auto yStride = shape::stride(yShapeBuffer);
                 auto resultStride = shape::stride(resultShapeBuffer);
@@ -154,7 +153,13 @@ namespace functions {
                 int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
                 num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared)
+                Nd4jLong shapeIter[MAX_RANK];
+                Nd4jLong coord[MAX_RANK];
+                Nd4jLong xStridesIter[MAX_RANK];
+                Nd4jLong yStridesIter[MAX_RANK];
+                Nd4jLong resultStridesIter[MAX_RANK];
+
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared) private(shapeIter,coord,xStridesIter,yStridesIter,resultStridesIter)
                 for (Nd4jLong i = 0; i < xShape[0]; i++) {
                     auto dxLocal = dx + xStride[0] * i;
                     auto yLocal = y + yStride[0] * i;
@@ -167,12 +172,7 @@ namespace functions {
                     auto yStrideLocal = yStride + 1;
                     auto resultStrideLocal = resultStride + 1;
 
-                    Nd4jLong shapeIter[MAX_RANK];
-                    Nd4jLong coord[MAX_RANK];
                     int dim;
-                    Nd4jLong xStridesIter[MAX_RANK];
-                    Nd4jLong yStridesIter[MAX_RANK];
-                    Nd4jLong resultStridesIter[MAX_RANK];
                     if (PrepareThreeRawArrayIter<X, Y>(rankLocal,
                                                        xShapeLocal,
                                                        dxLocal,
@@ -267,6 +267,6 @@ namespace functions {
             }
         }
 
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT PairWiseTransform, , FLOAT_TYPES, FLOAT_TYPES);
+        //BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT PairWiseTransform, , LIBND4J_TYPES, LIBND4J_TYPES);
     }
 }

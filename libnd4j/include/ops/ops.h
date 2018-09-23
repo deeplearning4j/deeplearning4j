@@ -1489,7 +1489,7 @@ namespace simdOps {
         no_op_exec_special_cuda
 
         op_def static X op(X d1, Y d2, X *params) {
-            X t = nd4j::math::nd4j_tanh<X>(d1);
+            X t = nd4j::math::nd4j_tanh<X,X>(d1);
             return (X) d2 * ((X) 1.0f - (t * t));
         }
     };
@@ -1673,7 +1673,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_tanh<X>(d1);
+			return nd4j::math::nd4j_tanh<X,X>(d1);
 		}
 	};
 
@@ -1684,7 +1684,7 @@ namespace simdOps {
         no_op_exec_special_cuda
 
         op_def static X op(X d1, X *params) {
-            return nd4j::math::nd4j_max<X>(static_cast<X>(0), nd4j::math::nd4j_tanh<X>(d1));
+            return nd4j::math::nd4j_max<X>(static_cast<X>(0), nd4j::math::nd4j_tanh<X,X>(d1));
         }
     };
 

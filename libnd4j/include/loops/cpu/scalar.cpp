@@ -297,6 +297,6 @@ namespace functions {
         //template class ND4J_EXPORT ScalarTransform<float>;
         //template class ND4J_EXPORT ScalarTransform<float16>;
         //template class ND4J_EXPORT ScalarTransform<double>;
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , FLOAT_TYPES, FLOAT_TYPES);
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , LIBND4J_TYPES, LIBND4J_TYPES);
     }
 }

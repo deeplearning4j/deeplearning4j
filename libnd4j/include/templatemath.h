@@ -200,8 +200,9 @@ template<typename T>
 		template<typename X, typename Z>
         math_def inline Z nd4j_sqrt(X val);
 
-		template<typename T>
-        math_def inline T nd4j_tanh(T val);
+		template<typename X, typename Z>
+        math_def inline Z nd4j_tanh(X val);
+
         template<typename T>
         math_def inline T nd4j_tan(T val);
 
@@ -275,7 +276,7 @@ template<typename T>
 
         template<typename T>
         math_def inline T nd4j_tanhderivative(T val) {
-			T tanh = nd4j_tanh(val);
+			T tanh = nd4j_tanh<T,T>(val);
 			return (T) 1.0f - tanh * tanh;
 		}
 		template<typename T>
@@ -732,9 +733,9 @@ template<typename T>
             } else if (std::is_same<X, double>::value) {
                 return static_cast<Z>(exp(val));
             } else if (std::is_same<X, float>::value) {
-                return static_cast<Z>(sqrtf(val));
+                return static_cast<Z>(expf(val));
             } else {
-                return static_cast<Z>(sqrtf((float) val));
+                return static_cast<Z>(expf((float) val));
             }
         }
 
@@ -989,28 +990,23 @@ template<typename T>
             }
         }
 
-		template<>
-        math_def inline float16 nd4j_tanh<float16>(float16 val) {
-			return (float16) tanhf((float) val);
+
+		template <typename X, typename Z>
+		math_def inline Z nd4j_tanh(X val) {
+			if (std::is_same<X, float16>::value) {
+				return static_cast<Z>(tanhf((float) val));
+			} else if (std::is_same<X, double>::value) {
+				return static_cast<Z>(tanh(val));
+			} else if (std::is_same<X, float>::value) {
+				return static_cast<Z>(tanhf(val));
+			} else {
+				return static_cast<Z>(tanhf((float) val));
+			}
 		}
 
 
-		template<>
-        math_def inline float nd4j_tanh<float>(float val) {
-			return tanhf(val);
-		}
 
 		template<>
-        math_def inline double nd4j_tanh<double>(double val) {
-			return tanh(val);
-		}
-		template<>
-        math_def inline int nd4j_tanh<int>(int val) {
-			return tanhf((float) val);
-		}
-
-
-        template<>
         math_def inline float16 nd4j_tan<float16>(float16 val) {
             return (float16) tanf((float) val);
         }
