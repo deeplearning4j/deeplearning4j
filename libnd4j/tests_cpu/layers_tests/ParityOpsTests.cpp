@@ -370,13 +370,16 @@ TEST_F(ParityOpsTests, ExpandDimsTest4) {
 
 TEST_F(ParityOpsTests, Test_Shape_1) {
     auto x = NDArrayFactory::_create<float>('c', {3, 4, 5, 6});
-    auto exp = NDArrayFactory::_create<float>('c', {4}, {3, 4, 5, 6});
+    auto exp = NDArrayFactory::_create<Nd4jLong>('c', {4}, {3, 4, 5, 6});
 
     nd4j::ops::shape_of op;
     auto result = op.execute({&x}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
+
+    z->printShapeInfo("z shape");
+    z->printIndexedBuffer(" z buffr");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));

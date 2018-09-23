@@ -790,7 +790,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         auto x = reinterpret_cast<X *>(xBuffer);
         auto y = reinterpret_cast<Y *>(yBuffer);
 
-        x[xOffset] = y[yOffset];
+        x[xOffset] = static_cast<X>(y[yOffset]);
     }
     BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedDoubleAssign, (void *xBuffer, Nd4jLong xOffset, void *yBuffer, Nd4jLong yOffset) const, LIBND4J_TYPES, LIBND4J_TYPES);
 
@@ -1446,8 +1446,21 @@ NDArray NDArray::transp() const {
         return equalsTo(&other, eps);
     }
 
+    void * NDArray::getBufferAsPointer(nd4j::DataType dtype) {
+        int8_t *ptr = nullptr;
+        ALLOCATE(ptr, _workspace, this->lengthOf() * DataTypeUtils::sizeOfElement(dtype), int8_t);
+
+        // FIXME: if we're going to merge this - move loop into selector
+        for (int e = 0; e < this->lengthOf(); e++) {
+            BUILD_DOUBLE_SELECTOR(dtype, this->dataType(), templatedDoubleAssign, (ptr, 0, this->_buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
+        }
+        return ptr;
+    }
+
     // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
     bool NDArray::equalsTo(const NDArray *other, double eps) const {
+        if (this->dataType() != other->dataType())
+            return false;
 
         if (lengthOf() != other->lengthOf()) {
             auto t = lengthOf();
@@ -1461,14 +1474,16 @@ NDArray NDArray::transp() const {
         } else if (!shape::equalsSoft(_shapeInfo, other->_shapeInfo))
             return false;
 
-        float *extras = new float[1]{static_cast<float>(eps)};
+        auto extras = NDArrayFactory::_scalar(eps);
+        auto ptr = extras.getBufferAsPointer(this->dataType());
 
         auto tmp = NDArrayFactory::_scalar<float>(0.0f, this->_workspace);
 
         // we don't need extraparams for this op
-        NativeOpExcutioner::execReduce3Scalar(4, _buffer, _shapeInfo, extras, other->_buffer, other->_shapeInfo, tmp.buffer(), tmp.shapeInfo());
+        NativeOpExcutioner::execReduce3Scalar(4, _buffer, _shapeInfo, ptr, other->_buffer, other->_shapeInfo, tmp.buffer(), tmp.shapeInfo());
 
-        delete[] extras;
+
+        RELEASE(reinterpret_cast<int8_t *>(ptr), _workspace);
 
         if (tmp.getScalar<int>(0) > 0)
             return false;
@@ -2553,15 +2568,7 @@ NDArray NDArray::transp() const {
     T NDArray::getScalar(const Nd4jLong i) const {
         return getIndexedScalar<T>(i);
     }
-    template double NDArray::getScalar(const Nd4jLong i) const;
-    template float NDArray::getScalar(const Nd4jLong i) const;
-    template float16 NDArray::getScalar(const Nd4jLong i) const;
-    template Nd4jLong NDArray::getScalar(const Nd4jLong i) const;
-    template int NDArray::getScalar(const Nd4jLong i) const;
-    template int8_t NDArray::getScalar(const Nd4jLong i) const;
-    template uint8_t NDArray::getScalar(const Nd4jLong i) const;
-    template int16_t NDArray::getScalar(const Nd4jLong i) const;
-    template bool NDArray::getScalar(const Nd4jLong i) const;
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::getScalar(const Nd4jLong) const, LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
     template <typename T>
@@ -2585,15 +2592,7 @@ NDArray NDArray::transp() const {
         //return (*this)(i, j);
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
     }
-    template double NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const;
-    template float NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const;
-    template float16 NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const;
-    template Nd4jLong NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const;
-    template int NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const;
-    template int8_t NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const;
-    template uint8_t NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const;
-    template int16_t NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const;
-    template bool NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const;
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::getScalar(const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 // returns value from 3D tensor by coordinates
@@ -2608,15 +2607,7 @@ NDArray NDArray::transp() const {
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
     }
-    template double NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
-    template float NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
-    template float16 NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
-    template Nd4jLong NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
-    template int NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
-    template int8_t NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
-    template uint8_t NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
-    template int16_t NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
-    template bool NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::getScalar(const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
 
     // returns value from 3D tensor by coordinates
     template <typename T>
@@ -2630,15 +2621,7 @@ NDArray NDArray::transp() const {
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
     }
-    template double NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
-    template float NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
-    template float16 NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
-    template Nd4jLong NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
-    template int NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
-    template int8_t NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
-    template uint8_t NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
-    template int16_t NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
-    template bool NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::getScalar(const Nd4jLong, const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
     void NDArray::putIndexedScalar(const Nd4jLong i, const NDArray& value) {
@@ -3559,7 +3542,7 @@ NDArray NDArray::transp() const {
     }
 
     DataType NDArray::dataType() const {
-        return _dataType;
+        return ArrayOptions::dataType(this->getShapeInfo());
     }
 
     ////////////////////////////////////////////////////////////////////////
