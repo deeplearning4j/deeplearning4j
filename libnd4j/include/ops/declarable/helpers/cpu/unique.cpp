@@ -77,7 +77,8 @@ namespace helpers {
 //#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < indices->lengthOf(); e++) {
             auto posI = std::find(valuesVector.begin(), valuesVector.end(), input->getScalar<T>(e));
-            indices->putScalar(e, std::distance(valuesVector.begin(), posI));//indicesMap[(*input)(e)];
+            auto dist = std::distance(valuesVector.begin(), posI);
+            indices->putScalar(e, Nd4jLong(dist));//indicesMap[(*input)(e)];
         }
 
         return Status::OK();
