@@ -389,6 +389,8 @@ namespace nd4j {
         */ 
         void assign(NDArray* other);
 
+        void assign(const NDArray* other);
+
         /**
         *  this method assigns values of given array to this one
         */ 

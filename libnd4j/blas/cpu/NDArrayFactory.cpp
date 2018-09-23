@@ -503,6 +503,7 @@ namespace nd4j {
         res.setBuffer(buffer);
         res.setWorkspace(workspace);
         memset(buffer, 0, res.lengthOf() * res.sizeOfT());
+        res.triggerAllocationFlag(true, true);
 
         return res;
     }

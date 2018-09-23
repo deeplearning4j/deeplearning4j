@@ -853,6 +853,10 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         }
     }
 
+    void NDArray::assign(const NDArray *other) {
+        this->assign(const_cast<NDArray*>(other));
+    }
+
 // This method assigns values of given NDArray to this one
     void NDArray::assign(NDArray& other) {
         if (this->isScalar() && other.isScalar()) {
@@ -1858,7 +1862,7 @@ NDArray NDArray::transp() const {
         auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, _workspace);
         // create new buffer, in any case the memory amount new buffer points to is bigger then those for old _buffer
         int8_t * newBuff = nullptr;
-        ALLOCATE(newBuff, _workspace, shape::length(newShapeInfo), int8_t);
+        ALLOCATE(newBuff, _workspace, shape::length(newShapeInfo) * sizeOfT(), int8_t);
         // assign new shape and new buffer to resulting array
         NDArray result(newBuff, newShapeInfo, _workspace);
         result._isShapeAlloc = true;
@@ -1869,10 +1873,11 @@ NDArray NDArray::transp() const {
         const auto resultLen = result.lengthOf();
         auto xType = this->dataType();
         if(result.ordering() == 'c') {           //  ews == 1 always here
-#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+//#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
             for(Nd4jLong i=0;  i<resultLen; ++i) {
                 auto yOffset = shape::subArrayIndex(newShapeInfo, _shapeInfo, i);
                 BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, i, this->_buffer, yOffset), LIBND4J_TYPES);
+
             }
         }
         else {
