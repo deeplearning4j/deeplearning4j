@@ -30,7 +30,7 @@ namespace nd4j {
             auto z = OUTPUT_VARIABLE(0);
 
             for (int e = 0; e < x->rankOf(); e++)
-                z->putIndexedScalar(e, x->sizeAt(e));
+                z->p(e, x->sizeAt(e));
 
             STORE_RESULT(z);
 

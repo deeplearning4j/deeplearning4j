@@ -29,8 +29,8 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
-            double val = input->getIndexedScalar<double>(0) + 2.0;
-            output->putIndexedScalar(0, val);
+            double val = input->e<double>(0) + 2.0;
+            output->p(0, val);
 
             return Status::OK();
         }

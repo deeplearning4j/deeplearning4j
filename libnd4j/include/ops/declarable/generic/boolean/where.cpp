@@ -43,13 +43,13 @@ namespace nd4j {
                     // FIXME: for perf it might be better to issue memcpy here, and fill only mismatched values from either X or Y
                     for (int e = 0; e < condition->lengthOf(); e++) {
                         if (y->isR()) {
-                            auto r = !condition->getIndexedScalar<bool>(e) ? y->getIndexedScalar<double>(e)
-                                                                           : x->getIndexedScalar<double>(e);
-                            z->putIndexedScalar(e, r);
+                            auto r = !condition->e<bool>(e) ? y->e<double>(e)
+                                                                           : x->e<double>(e);
+                            z->p(e, r);
                         } else {
-                            auto r = !condition->getIndexedScalar<bool>(e) ? y->getIndexedScalar<Nd4jLong>(e)
-                                                                           : x->getIndexedScalar<Nd4jLong>(e);
-                            z->putIndexedScalar(e, r);
+                            auto r = !condition->e<bool>(e) ? y->e<Nd4jLong>(e)
+                                                                           : x->e<Nd4jLong>(e);
+                            z->p(e, r);
                         }
                     }
                 } else {
@@ -61,7 +61,7 @@ namespace nd4j {
                     auto tadsZ = z->allTensorsAlongDimension(dims);
 
                     for (int e = 0; e < tadsX->size(); e++) {
-                        if (!condition->getIndexedScalar<bool>(e)) {
+                        if (!condition->e<bool>(e)) {
                             tadsZ->at(e)->assign(tadsY->at(e));
                         } else {
                             tadsZ->at(e)->assign(tadsX->at(e));
@@ -99,7 +99,7 @@ namespace nd4j {
                 // output shape is the 2D tensor num_true x rankOf (inShape)
                 auto condition = INPUT_VARIABLE(0);
                 auto inShape = inputShape->at(0);
-                Nd4jLong numOfTrue = condition->reduceNumber(reduce::CountNonZero, nullptr).getIndexedScalar<Nd4jLong>(0);
+                Nd4jLong numOfTrue = condition->reduceNumber(reduce::CountNonZero, nullptr).e<Nd4jLong>(0);
                 Nd4jLong *newshape;
                 ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
 

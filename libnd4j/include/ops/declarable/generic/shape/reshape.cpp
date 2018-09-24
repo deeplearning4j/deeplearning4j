@@ -203,15 +203,15 @@ namespace nd4j {
                 std::vector<Nd4jLong> shapeNew(y->lengthOf());
 
                 for (int e = 0; e < (int) y->lengthOf(); e++) {
-                    auto dim = y->getIndexedScalar<Nd4jLong>(e);
+                    auto dim = y->e<Nd4jLong>(e);
                     if (dim == -1){
                         long shapeLength = 1;
                         for(int e2 = 0; e2 < e; e2++){
-                            shapeLength *= y->getIndexedScalar<Nd4jLong>(e2);
+                            shapeLength *= y->e<Nd4jLong>(e2);
                         }
                         for(int e2 = e + 1; e2 < (int)y->lengthOf(); e2++){
-                            REQUIRE_TRUE(y->getIndexedScalar<Nd4jLong>(e2) != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
-                            shapeLength *= y->getIndexedScalar<Nd4jLong>(e2);
+                            REQUIRE_TRUE(y->e<Nd4jLong>(e2) != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
+                            shapeLength *= y->e<Nd4jLong>(e2);
                         }
                         long realShape = shape::length(inp) / shapeLength;
                         shapeNew[e] = realShape;

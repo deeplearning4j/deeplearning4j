@@ -31,25 +31,25 @@ BUILD_SINGLE_TEMPLATE(template NDArray* NDArrayFactory::create_, (const char ord
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-void NDArrayFactory::memcpy_(void *ptr, const std::vector<T> &vector) {
+void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<T> &vector) {
     memcpy(ptr, vector.data(), vector.size() * sizeof(T));
 }
 
 template <>
-void NDArrayFactory::memcpy_(void *ptr, const std::vector<bool> &vector) {
+void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<bool> &vector) {
     auto p = reinterpret_cast<bool *>(ptr);
     for (Nd4jLong e = 0; e < vector.size(); e++) 
         p[e] = vector[e];       
 }
 
-template void NDArrayFactory::memcpy_(void *ptr, const std::vector<double> &vector);
-template void NDArrayFactory::memcpy_(void *ptr, const std::vector<float> &vector);
-template void NDArrayFactory::memcpy_(void *ptr, const std::vector<float16> &vector);
-template void NDArrayFactory::memcpy_(void *ptr, const std::vector<Nd4jLong> &vector);
-template void NDArrayFactory::memcpy_(void *ptr, const std::vector<int> &vector);
-template void NDArrayFactory::memcpy_(void *ptr, const std::vector<int16_t> &vector);
-template void NDArrayFactory::memcpy_(void *ptr, const std::vector<uint8_t> &vector);
-template void NDArrayFactory::memcpy_(void *ptr, const std::vector<int8_t> &vector);
+template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<double> &vector);
+template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<float> &vector);
+template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<float16> &vector);
+template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<Nd4jLong> &vector);
+template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int> &vector);
+template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int16_t> &vector);
+template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<uint8_t> &vector);
+template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8_t> &vector);
 
 
 #ifndef __JAVACPP_HACK__
@@ -436,7 +436,7 @@ template void NDArrayFactory::memcpy_(void *ptr, const std::vector<int8_t> &vect
         res.setBuffer(buffer);
         res.setShapeInfo(shapeInfo);
 
-        memcpy_<T>(buffer, values);
+        memcpyFromVector<T>(buffer, values);
 
         res.triggerAllocationFlag(true, true);
         res.setWorkspace(workspace);
@@ -521,7 +521,7 @@ template void NDArrayFactory::memcpy_(void *ptr, const std::vector<int8_t> &vect
     NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace) {
         auto res = create<T>(order, shape, workspace);
         //memcpy(res.buffer(), data.data(), res.lengthOf() * res.sizeOfT());
-        memcpy_<T>(res.getBuffer(), data);
+        memcpyFromVector<T>(res.getBuffer(), data);
         return res;
     }
     template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double> &data, nd4j::memory::Workspace* workspace);

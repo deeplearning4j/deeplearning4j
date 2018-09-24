@@ -49,7 +49,7 @@ namespace nd4j {
             //nd4j_debug("Sizes length: %i\n", sizes->lengthOf());
             int cnt = 0;
             for (int e = 0; e < sizes->lengthOf(); e++) {
-                int c_size = sizes->getIndexedScalar<int>(e);
+                int c_size = sizes->e<int>(e);
                 IndicesList indices;
 
                 //nd4j_debug("Slice start: [%i]; Slice size: [%i]\n", cnt, c_size);

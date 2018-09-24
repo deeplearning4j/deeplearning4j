@@ -82,7 +82,7 @@ namespace nd4j {
         // FIXME: we want to avoid put/get indexed scalars here really
 #pragma omp parallel for
         for (int e = 0; e < l; e++) {
-            result->putIndexedScalar(e, this->e<T>(e));
+            result->p(e, this->e<T>(e));
         }
 
         return result;
@@ -264,7 +264,7 @@ namespace nd4j {
             limit = this->lengthOf();
 
         for (Nd4jLong e = 0; e < limit; e++) {
-            os << toStringValue(this->getIndexedScalar<float>(e));
+            os << toStringValue(this->e<float>(e));
 
             if (e < limit - 1)
                 os << ", ";
@@ -1328,7 +1328,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         else
             printf("[");
         for (Nd4jLong e = 0; e < limit; e++) {
-            printf("%f", this->getIndexedScalar<float>(e));
+            printf("%f", this->e<float>(e));
             if (e < limit - 1)
                 printf(", ");
         }
@@ -2057,16 +2057,16 @@ NDArray NDArray::transp() const {
             int retIdx = 0;
             if (isR()) {
                 for (int k = 0; k < thisTensor->lengthOf(); k++) {
-                    auto s = thisTensor->getIndexedScalar<double>(k);
+                    auto s = thisTensor->e<double>(k);
                     for (int j = 0; j < repeatDelta; j++) {
-                        retTensor->putIndexedScalar<double>(retIdx++, s);
+                        retTensor->p<double>(retIdx++, s);
                     }
                 }
             } else {
                 for (int k = 0; k < thisTensor->lengthOf(); k++) {
-                    auto s = thisTensor->getIndexedScalar<Nd4jLong>(k);
+                    auto s = thisTensor->e<Nd4jLong>(k);
                     for (int j = 0; j < repeatDelta; j++) {
-                        retTensor->putIndexedScalar<Nd4jLong>(retIdx++, s);
+                        retTensor->p<Nd4jLong>(retIdx++, s);
                     }
                 }
             }
@@ -2092,16 +2092,16 @@ NDArray NDArray::transp() const {
             int retIdx = 0;
             if (isR()) {
                 for (int k = 0; k < thisTensor->lengthOf(); k++) {
-                    auto s = thisTensor->getIndexedScalar<double>(k);
+                    auto s = thisTensor->e<double>(k);
                     for (int j = 0; j < repeatDelta; j++) {
-                        retTensor->putIndexedScalar<double>(retIdx++, s);
+                        retTensor->p<double>(retIdx++, s);
                     }
                 }
             } else {
                 for (int k = 0; k < thisTensor->lengthOf(); k++) {
-                    auto s = thisTensor->getIndexedScalar<Nd4jLong>(k);
+                    auto s = thisTensor->e<Nd4jLong>(k);
                     for (int j = 0; j < repeatDelta; j++) {
-                        retTensor->putIndexedScalar<Nd4jLong>(retIdx++, s);
+                        retTensor->p<Nd4jLong>(retIdx++, s);
                     }
                 }
             }
@@ -2520,7 +2520,7 @@ NDArray NDArray::transp() const {
 
 #pragma omp parallel for simd
         for (int e = 0; e < this->lengthOf(); e++)
-            result[e] = this->getIndexedScalar<T>(e);
+            result[e] = this->e<T>(e);
 
         return result;
     }
@@ -2564,22 +2564,15 @@ NDArray NDArray::transp() const {
         return result;
     }
 
-    //////////////////////////////////////////////////////////////////////////
-// Return value from linear buffer
-    template <typename T>
-    T NDArray::e(const Nd4jLong i) const {
-        return getIndexedScalar<T>(i);
-    }
-    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong) const, LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
     template <typename T>
-    T NDArray::getIndexedScalar(const Nd4jLong i) const {
+    T NDArray::e(const Nd4jLong i) const {
         auto xType = this->dataType();
         // return (*this)(i);
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, i), LIBND4J_TYPES);
     }
-    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::getIndexedScalar(const Nd4jLong) const, LIBND4J_TYPES);
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong) const, LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 // Returns value from 2D matrix by coordinates/indexes
@@ -2626,17 +2619,6 @@ NDArray NDArray::transp() const {
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-    void NDArray::putIndexedScalar(const Nd4jLong i, const NDArray& value) {
-        if (!value.isScalar())
-            throw std::invalid_argument("NDArray::putIndexedScalar: value must be scalar (all out of sudden!)");
-
-        auto xType = this->dataType();
-        auto yType = value.dataType();
-        BUILD_DOUBLE_SELECTOR(xType, yType, templatedSet, (this->_buffer, i, value._buffer), LIBND4J_TYPES, LIBND4J_TYPES);
-    }
-
-
-//////////////////////////////////////////////////////////////////////////
 // This method sets value in linear buffer to position i
     template <typename T>
     void NDArray::p(const Nd4jLong i, const T value) {
@@ -2655,20 +2637,6 @@ NDArray NDArray::transp() const {
     template void NDArray::p(const Nd4jLong i, const int16_t value);
     template void NDArray::p(const Nd4jLong i, const bool value);
 
-
-    template <typename T>
-    void NDArray::putIndexedScalar(const Nd4jLong i, const T value) {
-        p<T>(i, value);
-    }
-    template void NDArray::putIndexedScalar(const Nd4jLong i, const double value);
-    template void NDArray::putIndexedScalar(const Nd4jLong i, const float value);
-    template void NDArray::putIndexedScalar(const Nd4jLong i, const float16 value);
-    template void NDArray::putIndexedScalar(const Nd4jLong i, const Nd4jLong value);
-    template void NDArray::putIndexedScalar(const Nd4jLong i, const int value);
-    template void NDArray::putIndexedScalar(const Nd4jLong i, const int8_t value);
-    template void NDArray::putIndexedScalar(const Nd4jLong i, const uint8_t value);
-    template void NDArray::putIndexedScalar(const Nd4jLong i, const int16_t value);
-    template void NDArray::putIndexedScalar(const Nd4jLong i, const bool value);
 
     template <typename T>
     T* NDArray::bufferAsT() {

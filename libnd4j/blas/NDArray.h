@@ -1138,14 +1138,7 @@ namespace nd4j {
         */
         template <typename T>
         T e(const Nd4jLong i) const;
-
-        /** 
-        *  returns array element with given index, takes into account offset between elements (element-wise-stride)
-        *  i - element index in array
-        */
-        template <typename T>
-        T getIndexedScalar(const Nd4jLong i) const;
-        
+       
         /** 
         *  returns element with given indexes from 2D array 
         *  i - number of row 
@@ -1169,16 +1162,6 @@ namespace nd4j {
         template <typename T>
         T e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
         
-        /** 
-        *  assigns given scalar to array element by given index, takes into account offset between elements (element-wise-stride)
-        *  i - element index in array
-        *  value - scalar value to assign
-        */
-        template <typename T>
-        void putIndexedScalar(const Nd4jLong i, const T value);
-
-        void putIndexedScalar(const Nd4jLong i, const NDArray& value);
-
         /** 
         *  assigns given scalar to array element by given index, regards array buffer as linear
         *  i - element index in array
