@@ -147,8 +147,6 @@ namespace nd4j {
     public:
         NDArray();
 
-        NDArray(Nd4jLong *shapeInfo, nd4j::memory::Workspace* workspace = nullptr);
-
         /**
         *  do not allocate memory, memory for array is passed from outside 
         */
