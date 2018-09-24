@@ -48,12 +48,12 @@ namespace nd4j {
         static NDArray* linspace(const T from, const T to, const Nd4jLong numElements);
 
         template <typename T>
-        static NDArray* scalar(const T value, nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray* scalar_(const T value, nd4j::memory::Workspace* workspace = nullptr);
         template <typename T>
         static NDArray* create_(const T value, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
-        static NDArray _scalar(const T value, nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray scalar(const T value, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
         static NDArray create(const T value, nd4j::memory::Workspace* workspace = nullptr);

@@ -218,7 +218,7 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
     auto columns = NDArrayFactory::create(input->ordering(), {bS, oC, kH, kW, iH, iW}, input->dataType(), block.getWorkspace());
     
     LaunchContext ctx;
-    helpers::im2col(ctx, *gradO, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::_scalar(0.f, input->getWorkspace()));  // [bS, oC, oH, oW] is convoluted to [bS, oC, kH, kW, iH, iW]
+    helpers::im2col(ctx, *gradO, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::scalar(0.f, input->getWorkspace()));  // [bS, oC, oH, oW] is convoluted to [bS, oC, kH, kW, iH, iW]
     MmulHelper::tensorDot(input, &columns, gradW, inputAxesForDot, {0, 4, 5}, {3, 2, 0, 1});           // [bS, iC, iH, iW]/[bS, iH, iW, iC] x [bS, oC, kH, kW, iH, iW] = [iC, oC, kH, kW]
 
     // ----- calculation of gradB ----- //

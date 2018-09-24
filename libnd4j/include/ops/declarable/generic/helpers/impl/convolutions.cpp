@@ -421,7 +421,7 @@ static void conv2d_(const NDArray* input, const NDArray* weights, const NDArray*
 
     //----- calculation of output -----//
     LaunchContext ctx;
-    helpers::im2col(ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::_scalar(0.f, input->getWorkspace()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+    helpers::im2col(ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::scalar(0.f, input->getWorkspace()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
     MmulHelper::tensorDot(&columns, weights, output, {1,2,3}, weightsAxesForDot, permutForOutput); // [bS, iC, kH, kW, oH, oW] x [kH, kW, iC, oC]/[oC, iC, kH, kW] = [bS, oH, oW, oC]
 
     //----- add biases if required -----//
@@ -478,7 +478,7 @@ static void conv2dBP_(const NDArray* input, const NDArray* weights, const NDArra
     // ----- calculation of gradW ----- // 
     if(gradW) {
         LaunchContext ctx;
-        helpers::im2col(ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::_scalar(0.f, input->getWorkspace()));   // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]        
+        helpers::im2col(ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::scalar(0.f, input->getWorkspace()));   // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]        
         nd4j::MmulHelper::tensorDot(&columns, gradO, gradW, {0,4,5}, gradOaxesForDot, {2, 0, 1, 3});       // [bS, iC, kH, kW, oH, oW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, oC]
     }
 
@@ -549,7 +549,7 @@ static void depthwiseConv2d_(const NDArray* input, const NDArray* weights, const
     NDArray* outputReshaped = output->reshape(output->ordering(), outReShape);
     
     LaunchContext ctx;
-    helpers::im2col(ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::_scalar(0.f, input->getWorkspace()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]    
+    helpers::im2col(ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::scalar(0.f, input->getWorkspace()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]    
     MmulHelper::tensorDot(&columns, weights, outputReshaped, modifColumns, {{2,0,1,3},{iC,kH*kW,mC}}, modifOutput);              // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
     
     if(bias)
@@ -615,7 +615,7 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
     // ----- calculation of gradW and gradB ----- //            
     
     LaunchContext ctx;
-    helpers::im2col(ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::_scalar(0.f, input->getWorkspace()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]    
+    helpers::im2col(ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::scalar(0.f, input->getWorkspace()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]    
     nd4j::MmulHelper::tensorDot(&columns, gradOreshaped, gradW, modifColumns, modifGradO1, {{2,0,1,3},{iC,kH*kW,mC}});  // [iC, kW*kH, bS*oH*oW] x [iC, bS*oH*oW, mC] = [iC, kH*kW, mC]
 
     // ----- calculation of gradB ----- //
